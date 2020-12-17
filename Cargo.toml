@@ -1,0 +1,6 @@
+[workspace]
+members = ["build/cdl2d", "build/cdl3d"]
+
+[patch.crates-io]
+cdl2d = { path = "build/cdl2d" }
+cdl3d = { path = "build/cdl3d" }

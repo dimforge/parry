@@ -1,0 +1,205 @@
+use crate::bounding_volume::{BoundingVolume, AABB};
+use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::ContactManifoldsWorkspace;
+use crate::query::query_dispatcher::PersistentQueryDispatcher;
+use crate::query::ContactManifold;
+#[cfg(feature = "dim2")]
+use crate::shape::Capsule;
+use crate::shape::{Shape, TriMesh};
+use crate::utils::MaybeSerializableData;
+#[cfg(feature = "serde-serialize")]
+use erased_serde::Serialize;
+
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Clone)]
+pub struct TriMeshShapeContactManifoldsWorkspace {
+    interferences: Vec<u32>,
+    local_aabb2: AABB,
+    old_interferences: Vec<u32>,
+}
+
+impl TriMeshShapeContactManifoldsWorkspace {
+    pub fn new() -> Self {
+        Self {
+            interferences: Vec::new(),
+            local_aabb2: AABB::new_invalid(),
+            old_interferences: Vec::new(),
+        }
+    }
+}
+
+pub fn contact_manifolds_trimesh_shape_shapes<ManifoldData, ContactData>(
+    dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
+    pos12: &Isometry<Real>,
+    shape1: &dyn Shape,
+    shape2: &dyn Shape,
+    prediction: Real,
+    manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+    workspace: &mut Option<ContactManifoldsWorkspace>,
+) where
+    ManifoldData: Default,
+    ContactData: Default + Copy,
+{
+    if let Some(trimesh1) = shape1.as_trimesh() {
+        contact_manifolds_trimesh_shape(
+            dispatcher, pos12, trimesh1, shape2, prediction, manifolds, workspace, false,
+        )
+    } else if let Some(trimesh2) = shape2.as_trimesh() {
+        contact_manifolds_trimesh_shape(
+            dispatcher,
+            &pos12.inverse(),
+            trimesh2,
+            shape1,
+            prediction,
+            manifolds,
+            workspace,
+            true,
+        )
+    }
+}
+
+fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
+    if workspace
+        .as_mut()
+        .and_then(|w| w.0.downcast_mut::<TriMeshShapeContactManifoldsWorkspace>())
+        .is_some()
+    {
+        return;
+    }
+
+    *workspace = Some(ContactManifoldsWorkspace(Box::new(
+        TriMeshShapeContactManifoldsWorkspace::new(),
+    )));
+}
+
+pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
+    dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
+    pos12: &Isometry<Real>,
+    trimesh1: &TriMesh,
+    shape2: &dyn Shape,
+    prediction: Real,
+    manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+    workspace: &mut Option<ContactManifoldsWorkspace>,
+    flipped: bool,
+) where
+    ManifoldData: Default,
+    ContactData: Default + Copy,
+{
+    ensure_workspace_exists(workspace);
+    let workspace: &mut TriMeshShapeContactManifoldsWorkspace =
+        workspace.as_mut().unwrap().0.downcast_mut().unwrap();
+
+    /*
+     * Compute interferences.
+     */
+    // TODO: somehow precompute the AABB and reuse it?
+    let mut new_local_aabb2 = shape2.compute_aabb(&pos12).loosened(prediction);
+    let same_local_aabb2 = workspace.local_aabb2.contains(&new_local_aabb2);
+    let mut old_manifolds = Vec::new();
+
+    if !same_local_aabb2 {
+        let extra_margin =
+            (new_local_aabb2.maxs - new_local_aabb2.mins).map(|e| (e / 10.0).min(0.1));
+        new_local_aabb2.mins -= extra_margin;
+        new_local_aabb2.maxs += extra_margin;
+
+        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // FIXME: what would be the best value?
+        std::mem::swap(
+            &mut workspace.old_interferences,
+            &mut workspace.interferences,
+        );
+
+        std::mem::swap(manifolds, &mut old_manifolds);
+
+        // This assertion may fire due to the invalid triangle_ids that the
+        // near-phase may return (due to SIMD sentinels).
+        //
+        // assert_eq!(
+        //     workspace
+        //         .old_interferences
+        //         .len()
+        //         .min(trimesh1.num_triangles()),
+        //     workspace.old_manifolds.len()
+        // );
+
+        workspace.interferences.clear();
+        trimesh1
+            .quadtree()
+            .intersect_aabb(&local_aabb2, &mut workspace.interferences);
+        workspace.local_aabb2 = local_aabb2;
+    }
+
+    /*
+     * Dispatch to the specific solver by keeping the previous manifold if we already had one.
+     */
+    let new_interferences = &workspace.interferences;
+    let mut old_inter_it = workspace.old_interferences.drain(..).peekable();
+    let mut old_manifolds_it = old_manifolds.drain(..);
+
+    // TODO: don't redispatch at each frame (we should probably do the same as
+    // the heightfield).
+    for (i, triangle_id) in new_interferences.iter().enumerate() {
+        if *triangle_id >= trimesh1.num_triangles() as u32 {
+            // Because of SIMD padding, the broad-phase may return triangle indices greater
+            // than the max.
+            continue;
+        }
+
+        if !same_local_aabb2 {
+            loop {
+                match old_inter_it.peek() {
+                    Some(old_triangle_id) if *old_triangle_id < *triangle_id => {
+                        let _ = old_inter_it.next();
+                        let _ = old_manifolds_it.next();
+                    }
+                    _ => break,
+                }
+            }
+
+            let manifold = if old_inter_it.peek() != Some(triangle_id) {
+                let subshape_index_pair = if flipped {
+                    (0, *triangle_id as usize)
+                } else {
+                    (*triangle_id as usize, 0)
+                };
+                ContactManifold::with_data(subshape_index_pair, ManifoldData::default())
+            } else {
+                // We already have a manifold for this triangle.
+                let _ = old_inter_it.next();
+                old_manifolds_it.next().unwrap()
+            };
+
+            manifolds.push(manifold);
+        }
+
+        let manifold = &mut manifolds[i];
+        let triangle1 = trimesh1.triangle(*triangle_id);
+
+        if flipped {
+            let _ = dispatcher.contact_manifold_convex_convex(
+                &pos12.inverse(),
+                shape2,
+                &triangle1,
+                prediction,
+                manifold,
+            );
+        } else {
+            let _ = dispatcher
+                .contact_manifold_convex_convex(pos12, &triangle1, shape2, prediction, manifold);
+        }
+    }
+}
+
+impl MaybeSerializableData for TriMeshShapeContactManifoldsWorkspace {
+    #[cfg(feature = "serde-serialize")]
+    fn as_serialize(&self) -> Option<(u32, &dyn Serialize)> {
+        Some((
+            super::WorkspaceSerializationTag::TriMeshShapeContactManifoldsWorkspace as u32,
+            self,
+        ))
+    }
+
+    fn clone_dyn(&self) -> Box<dyn MaybeSerializableData> {
+        Box::new(self.clone())
+    }
+}

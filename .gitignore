@@ -1,0 +1,10 @@
+*.swp
+*.swo
+*.html
+BENCH
+lib
+target
+private
+Cargo.lock
+Makefile
+.vscode
