@@ -258,21 +258,24 @@ impl PolygonalFeature {
 
         // Also find all the vertices located inside of the other projected face.
         if face2.num_vertices > 2 {
-            let normal2 =
+            let normal2_1 =
                 (vertices2_1[2] - vertices2_1[1]).cross(&(vertices2_1[0] - vertices2_1[1]));
-            let denom = normal2.dot(&sep_axis1);
+            let denom = normal2_1.dot(&sep_axis1);
 
             if !relative_eq!(denom, 0.0) {
                 let last_index2 = face2.num_vertices as usize - 1;
                 'point_loop1: for i in 0..face1.num_vertices as usize {
                     let p1 = projected_face1[i];
 
-                    let sign = (projected_face2[0] - projected_face2[last_index2])
+                    let mut sign = (projected_face2[0] - projected_face2[last_index2])
                         .perp(&(p1 - projected_face2[last_index2]));
                     for j in 0..last_index2 {
                         let new_sign = (projected_face2[j + 1] - projected_face2[j])
                             .perp(&(p1 - projected_face2[j]));
-                        if new_sign * sign < 0.0 {
+
+                        if sign == 0.0 {
+                            sign = new_sign;
+                        } else if sign * new_sign < 0.0 {
                             // The point lies outside.
                             continue 'point_loop1;
                         }
@@ -280,7 +283,7 @@ impl PolygonalFeature {
 
                     // All the perp had the same sign: the point is inside of the other shapes projection.
                     // Output the contact.
-                    let dist = (vertices2_1[0] - face1.vertices[i]).dot(&normal2) / denom;
+                    let dist = (vertices2_1[0] - face1.vertices[i]).dot(&normal2_1) / denom;
                     let local_p1 = face1.vertices[i];
                     let local_p2_1 = face1.vertices[i] + dist * sep_axis1;
 
@@ -308,13 +311,15 @@ impl PolygonalFeature {
                 'point_loop2: for i in 0..face2.num_vertices as usize {
                     let p2 = projected_face2[i];
 
-                    let sign = (projected_face1[0] - projected_face1[last_index1])
+                    let mut sign = (projected_face1[0] - projected_face1[last_index1])
                         .perp(&(p2 - projected_face1[last_index1]));
                     for j in 0..last_index1 {
                         let new_sign = (projected_face1[j + 1] - projected_face1[j])
                             .perp(&(p2 - projected_face1[j]));
 
-                        if new_sign * sign < 0.0 {
+                        if sign == 0.0 {
+                            sign = new_sign;
+                        } else if sign * new_sign < 0.0 {
                             // The point lies outside.
                             continue 'point_loop2;
                         }
