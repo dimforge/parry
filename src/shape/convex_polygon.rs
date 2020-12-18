@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{ConvexPolygonalFeature, ConvexPolyhedron, FeatureId, SupportMap};
+use crate::shape::{FeatureId, SupportMap};
 use crate::utils;
 use na::{self, Unit};
 use std::f64;
@@ -79,6 +79,25 @@ impl ConvexPolygon {
     pub fn normals(&self) -> &[Unit<Vector<Real>>] {
         &self.normals
     }
+
+    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
+        let ceps = eps.cos();
+
+        // Check faces.
+        for i in 0..self.normals.len() {
+            let normal = &self.normals[i];
+
+            if normal.dot(local_dir.as_ref()) >= ceps {
+                return FeatureId::Face(i as u32);
+            }
+        }
+
+        // Support vertex.
+        FeatureId::Vertex(
+            utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points) as u32,
+        )
+    }
 }
 
 impl SupportMap for ConvexPolygon {
@@ -88,6 +107,7 @@ impl SupportMap for ConvexPolygon {
     }
 }
 
+/*
 impl ConvexPolyhedron for ConvexPolygon {
     fn vertex(&self, id: FeatureId) -> Point<Real> {
         self.points[id.unwrap_vertex() as usize]
@@ -174,3 +194,4 @@ impl ConvexPolyhedron for ConvexPolygon {
         )
     }
 }
+*/

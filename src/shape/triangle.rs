@@ -1,10 +1,10 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::Segment;
+use crate::shape::{Segment, PolygonalFeature};
 #[cfg(feature = "dim3")]
-use crate::shape::{ConvexPolygonalFeature, ConvexPolyhedron, FeatureId};
-use crate::shape::{CuboidFeatureFace, SupportMap};
+use crate::shape::{FeatureId};
+use crate::shape::SupportMap;
 use crate::utils;
 
 use na::{self, Unit};
@@ -146,7 +146,7 @@ impl Triangle {
         [self.b - self.a, self.c - self.b, self.a - self.c]
     }
 
-    pub fn support_face(&self, _dir: Vector<Real>) -> CuboidFeatureFace {
+    pub fn support_face(&self, _dir: Vector<Real>) -> PolygonalFeature {
         unimplemented!()
     }
 
@@ -388,6 +388,7 @@ impl SupportMap for Triangle {
     }
 }
 
+/*
 #[cfg(feature = "dim3")]
 impl ConvexPolyhedron for Triangle {
     fn vertex(&self, id: FeatureId) -> Point<Real> {
@@ -500,6 +501,7 @@ impl ConvexPolyhedron for Triangle {
         self.support_feature_id_toward(local_dir, na::convert::<f64, Real>(f64::consts::PI / 180.0))
     }
 }
+*/
 
 #[cfg(feature = "dim3")]
 #[cfg(test)]

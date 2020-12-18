@@ -1,7 +1,7 @@
 //! Definition of the segment shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{ConvexPolygonalFeature, ConvexPolyhedron, FeatureId, SupportMap};
+use crate::shape::{FeatureId, SupportMap};
 #[cfg(feature = "dim2")]
 use crate::utils;
 
@@ -133,6 +133,7 @@ impl SupportMap for Segment {
     }
 }
 
+/*
 impl ConvexPolyhedron for Segment {
     fn vertex(&self, id: FeatureId) -> Point<Real> {
         if id.unwrap_vertex() == 0 {
@@ -315,3 +316,4 @@ impl ConvexPolyhedron for Segment {
         }
     }
 }
+*/

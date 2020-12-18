@@ -2,7 +2,7 @@
 use crate::math::Vector;
 use crate::math::{Isometry, Real};
 use crate::query::{sat, ContactManifold, KinematicsCategory};
-use crate::shape::{Cuboid, CuboidFeature, Shape};
+use crate::shape::{Cuboid, Shape, PolygonalFeature};
 
 pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
@@ -85,44 +85,11 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     // Now the reference feature is from `cuboid1` and the best separation is `best_sep`.
     // Everything must be expressed in the local-space of `cuboid1` for contact clipping.
     let feature1 = cuboid1.support_feature(best_sep.1);
-    let feature2 = cuboid2.support_feature(pos21 * -best_sep.1);
+    let feature2 = cuboid2.support_feature(local_n2);
 
-    match (&feature1, &feature2) {
-        (CuboidFeature::Face(f1), CuboidFeature::Vertex(v2)) => {
-            CuboidFeature::face_vertex_contacts(pos12, f1, &best_sep.1, v2, manifold, false)
-        }
-        (CuboidFeature::Vertex(v1), CuboidFeature::Face(f2)) => {
-            CuboidFeature::face_vertex_contacts(&pos12, f2, &-best_sep.1, v1, manifold, true)
-        }
-        #[cfg(feature = "dim3")]
-        (CuboidFeature::Face(f1), CuboidFeature::Edge(e2)) => CuboidFeature::face_edge_contacts(
-            &pos12,
-            f1,
-            &best_sep.1,
-            e2,
-            prediction,
-            manifold,
-            false,
-        ),
-        (CuboidFeature::Face(f1), CuboidFeature::Face(f2)) => CuboidFeature::face_face_contacts(
-            &pos12,
-            f1,
-            &best_sep.1,
-            f2,
-            prediction,
-            manifold,
-            false,
-        ),
-        #[cfg(feature = "dim3")]
-        (CuboidFeature::Edge(e1), CuboidFeature::Edge(e2)) => {
-            CuboidFeature::edge_edge_contacts(&pos12, e1, &best_sep.1, e2, manifold, false)
-        }
-        #[cfg(feature = "dim3")]
-        (CuboidFeature::Edge(e1), CuboidFeature::Face(f2)) => {
-            CuboidFeature::face_edge_contacts(&pos21, f2, &local_n2, e1, prediction, manifold, true)
-        }
-        _ => unreachable!(), // The other cases are not possible.
-    }
+    PolygonalFeature::contacts(
+        pos12, pos21, &best_sep.1, &local_n2, &feature1, &feature2, prediction, manifold, false
+    );
 
     manifold.local_n1 = best_sep.1;
     manifold.local_n2 = local_n2;

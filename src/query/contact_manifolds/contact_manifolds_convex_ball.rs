@@ -2,7 +2,7 @@ use crate::math::{Isometry, Point, Real};
 use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
 use crate::shape::{Ball, Shape};
 #[cfg(feature = "dim2")]
-use crate::{math::Vector, shape::CuboidFeature};
+use crate::{math::Vector};
 use na::Unit;
 
 pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(

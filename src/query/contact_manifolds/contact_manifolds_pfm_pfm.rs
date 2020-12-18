@@ -6,6 +6,7 @@ use crate::query::{
 };
 use crate::shape::{PolygonalFeature, PolygonalFeatureMap, Shape};
 use na::Unit;
+use crate::motion::RigidMotionComposition;
 
 pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
@@ -80,8 +81,10 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
             PolygonalFeature::contacts(
                 pos12,
-                &feature1,
+                &pos12.inverse(),
                 &local_n1,
+                &local_n2,
+                &feature1,
                 &feature2,
                 total_prediction,
                 manifold,

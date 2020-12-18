@@ -1,8 +1,6 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
 #[cfg(feature = "dim2")]
-use crate::shape::CuboidFeature;
-#[cfg(feature = "dim2")]
 use crate::shape::SegmentPointLocation;
 use crate::shape::{Capsule, Shape};
 use approx::AbsDiffEq;

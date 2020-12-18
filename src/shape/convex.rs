@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{ConvexPolygonalFeature, ConvexPolyhedron, FeatureId, SupportMap};
+use crate::shape::{FeatureId, SupportMap};
 // use crate::transformation;
 use crate::utils::{self, SortedPair};
 use na::{self, Point2, Point3, Unit};
@@ -388,6 +388,11 @@ impl ConvexHull {
         // The vertex is the support feature.
         FeatureId::Vertex(support_pt_id as u32)
     }
+
+    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
+        self.support_feature_id_toward_eps(local_dir, eps)
+    }
 }
 
 impl SupportMap for ConvexHull {
@@ -397,6 +402,7 @@ impl SupportMap for ConvexHull {
     }
 }
 
+/*
 impl ConvexPolyhedron for ConvexHull {
     fn vertex(&self, id: FeatureId) -> Point<Real> {
         self.points[id.unwrap_vertex() as usize]
@@ -514,9 +520,5 @@ impl ConvexPolyhedron for ConvexHull {
 
         out.transform_by(transform);
     }
-
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
-        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-        self.support_feature_id_toward_eps(local_dir, eps)
-    }
 }
+*/

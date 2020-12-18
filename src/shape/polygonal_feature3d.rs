@@ -1,7 +1,7 @@
 use crate::approx::AbsDiffEq;
 use crate::math::{Isometry, Point, Vector};
 use crate::query::{ContactManifold, TrackedContact};
-use crate::shape::{CuboidFeatureFace, Segment, Triangle};
+use crate::shape::{Segment, Triangle};
 use crate::utils::WBasis;
 use na::Point2;
 
@@ -22,18 +22,6 @@ impl Default for PolygonalFeature {
             eids: [0; 4],
             fid: 0,
             num_vertices: 0,
-        }
-    }
-}
-
-impl From<CuboidFeatureFace> for PolygonalFeature {
-    fn from(face: CuboidFeatureFace) -> Self {
-        Self {
-            vertices: face.vertices,
-            vids: face.vids,
-            eids: face.eids,
-            fid: face.fid,
-            num_vertices: 4,
         }
     }
 }
@@ -83,19 +71,21 @@ impl PolygonalFeature {
 
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<f32>,
-        face1: &PolygonalFeature,
+        _pos21: &Isometry<f32>,
         sep_axis1: &Vector<f32>,
-        face2: &PolygonalFeature,
+        _sep_axis2: &Vector<f32>,
+        feature1: &Self,
+        feature2: &Self,
         prediction: f32,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
-        match (face1.num_vertices, face2.num_vertices) {
+        match (feature1.num_vertices, feature2.num_vertices) {
             (2, 2) => Self::contacts_edge_edge(
-                pos12, face1, sep_axis1, face2, prediction, manifold, flipped,
+                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
             ),
             _ => Self::contacts_face_face(
-                pos12, face1, sep_axis1, face2, prediction, manifold, flipped,
+                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
             ),
         }
     }

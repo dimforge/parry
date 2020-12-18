@@ -8,7 +8,7 @@ use crate::query::{PointProjection, PointQuery};
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexHull, Cylinder};
-use crate::shape::{ConvexPolyhedron, FeatureId, SupportMap};
+use crate::shape::{FeatureId, SupportMap};
 
 /// Projects a point on a shape using the GJK algorithm.
 pub fn local_point_projection_on_support_map<G>(
@@ -97,7 +97,7 @@ impl PointQuery for ConvexHull {
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
         if let Some(local_dir) = Unit::try_new(local_dir, crate::math::DEFAULT_EPSILON) {
-            let feature = ConvexPolyhedron::support_feature_id_toward(self, &local_dir);
+            let feature = self.support_feature_id_toward(&local_dir);
             (proj, feature)
         } else {
             (proj, FeatureId::Unknown)

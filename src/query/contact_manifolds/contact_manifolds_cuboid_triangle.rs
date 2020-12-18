@@ -1,10 +1,9 @@
 use crate::math::{Isometry, Real};
 use crate::query::{sat, ContactManifold, KinematicsCategory};
-#[cfg(feature = "dim3")]
 use crate::shape::PolygonalFeature;
 use crate::shape::{Cuboid, Shape, Triangle};
 #[cfg(feature = "dim2")]
-use crate::{math::Vector, shape::CuboidFeature};
+use crate::math::Vector;
 
 pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
@@ -113,7 +112,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     }
     #[cfg(feature = "dim3")]
     {
-        feature1 = cuboid1.polyhedron_support_face(best_sep.1);
+        feature1 = cuboid1.support_face(best_sep.1);
         feature2 = PolygonalFeature::from(*triangle2);
     }
 
@@ -122,22 +121,12 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     let old_manifold_points = manifold.points.clone();
     manifold.clear();
 
-    #[cfg(feature = "dim2")]
-    CuboidFeature::face_face_contacts(
-        pos12,
-        &feature1,
-        &best_sep.1,
-        &feature2,
-        prediction,
-        manifold,
-        flipped,
-    );
-
-    #[cfg(feature = "dim3")]
     PolygonalFeature::contacts(
         pos12,
-        &feature1,
+        pos21,
         &best_sep.1,
+        &normal2,
+        &feature1,
         &feature2,
         prediction,
         manifold,
