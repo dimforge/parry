@@ -15,13 +15,13 @@ fn main() {
     let ball_pos_disjoint = Isometry2::translation(0.0, 3.0);
 
     let dist_intersecting = query::distance(
-        &(ball_pos_intersecting.inverse() * cuboid_pos),
+        &ball_pos_intersecting.inv_mul(&cuboid_pos),
         &ball,
         &cuboid,
     )
     .unwrap();
     let dist_disjoint =
-        query::distance(&(ball_pos_disjoint.inverse() * cuboid_pos), &ball, &cuboid).unwrap();
+        query::distance(&ball_pos_disjoint.inv_mul(&cuboid_pos), &ball, &cuboid).unwrap();
 
     assert_eq!(dist_intersecting, 0.0);
     assert!(relative_eq!(dist_disjoint, 1.0, epsilon = 1.0e-7));

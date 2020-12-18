@@ -11,13 +11,13 @@ fn cuboid_cuboid_EPA() {
     let m1 = Isometry2::translation(3.5, 0.0);
     let m2 = Isometry2::identity();
 
-    let res = query::details::contact_support_map_support_map(&(m1.inverse() * m2), &c, &c, 10.0)
+    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
         .expect("Penetration not found.");
     assert_eq!(res.dist, -0.5);
     assert_eq!(res.normal1, -Vector2::x_axis());
 
     let m1 = Isometry2::translation(0.0, 0.2);
-    let res = query::details::contact_support_map_support_map(&(m1.inverse() * m2), &c, &c, 10.0)
+    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
         .expect("Penetration not found.");
     assert_eq!(res.dist, -1.8);
     assert_eq!(res.normal1, -Vector2::y_axis());
@@ -41,7 +41,7 @@ fn cuboids_large_size_ratio_issue_181() {
         angle += 0.005;
 
         let pos_a = Isometry2::new(p, angle);
-        let pos_ab = pos_a.inverse() * pos_b;
+        let pos_ab = pos_a.inv_mul(&pos_b);
         let mut manifold: ContactManifold<(), ()> = ContactManifold::new();
         dispatcher.contact_manifold_convex_convex(
             &pos_ab,

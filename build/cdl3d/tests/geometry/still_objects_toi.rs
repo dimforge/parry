@@ -26,7 +26,7 @@ fn collide(v_y: f32) -> Option<f32> {
     let cuboid = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
 
     time_of_impact(
-        &(pos1.inverse() * pos2),
+        &pos1.inv_mul(&pos2),
         &(vel2 - vel1),
         &cuboid,
         &cuboid,

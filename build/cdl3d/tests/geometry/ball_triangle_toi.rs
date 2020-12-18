@@ -19,7 +19,7 @@ fn ball_triangle_toi_infinite_loop_issue() {
     let vel2 = Vector3::zeros();
 
     let cast = query::time_of_impact(
-        &(m1.inverse() * m2),
+        &m1.inv_mul(&m2),
         &(vel2 - vel1),
         &b,
         &t,

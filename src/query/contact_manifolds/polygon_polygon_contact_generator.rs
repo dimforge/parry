@@ -34,7 +34,7 @@ fn generate_contacts<'a>(
     mut m2: &'a Isometry<f32>,
     manifold: &'a mut ContactManifold,
 ) {
-    let mut m12 = m1.inverse() * m2;
+    let mut m12 = m1.inv_mul(&m2);
     let mut m21 = m12.inverse();
 
     if manifold.try_update_contacts(&m12) {

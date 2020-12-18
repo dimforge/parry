@@ -28,7 +28,7 @@ fn detect_proximity<'a>(
     p2: &'a Polygon,
     m2: &'a Isometry<f32>,
 ) -> Proximity {
-    let m12 = m1.inverse() * m2;
+    let m12 = m1.inv_mul(&m2);
     let m21 = m12.inverse();
 
     let sep1 = sat::polygon_polygon_compute_separation_features(p1, p2, &m12);

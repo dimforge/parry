@@ -12,13 +12,13 @@ fn main() {
     let ball_pos_disjoint = Isometry3::translation(3.0, 3.0, 3.0);
 
     let intersecting = query::intersection_test(
-        &(ball_pos_intersecting.inverse() * cuboid_pos),
+        &ball_pos_intersecting.inv_mul(&cuboid_pos),
         &ball,
         &cuboid,
     )
     .unwrap();
     let not_intersecting =
-        !query::intersection_test(&(ball_pos_disjoint.inverse() * cuboid_pos), &ball, &cuboid)
+        !query::intersection_test(&ball_pos_disjoint.inv_mul(&cuboid_pos), &ball, &cuboid)
             .unwrap();
 
     assert!(intersecting);

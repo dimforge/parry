@@ -20,7 +20,7 @@ fn ball_cuboid_toi() {
     let ball_vel2 = Vector3::new(-0.5, -0.5, -0.5);
 
     let toi_intersecting = query::time_of_impact(
-        &(ball_pos_intersecting.inverse() * cuboid_pos),
+        &ball_pos_intersecting.inv_mul(&cuboid_pos),
         &(box_vel1 - ball_vel1),
         &ball,
         &cuboid,
@@ -30,7 +30,7 @@ fn ball_cuboid_toi() {
     .unwrap()
     .map(|toi| toi.toi);
     let toi_will_touch = query::time_of_impact(
-        &(ball_pos_will_touch.inverse() * cuboid_pos),
+        &ball_pos_will_touch.inv_mul(&cuboid_pos),
         &(box_vel2 - ball_vel2),
         &ball,
         &cuboid,
@@ -40,7 +40,7 @@ fn ball_cuboid_toi() {
     .unwrap()
     .map(|toi| toi.toi);
     let toi_wont_touch = query::time_of_impact(
-        &(ball_pos_wont_touch.inverse() * cuboid_pos),
+        &ball_pos_wont_touch.inv_mul(&cuboid_pos),
         &(box_vel1 - ball_vel1),
         &ball,
         &cuboid,
