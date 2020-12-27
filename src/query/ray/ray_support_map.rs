@@ -9,7 +9,7 @@ use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::ConvexPolygon;
 use crate::shape::{Capsule, FeatureId, Segment, SupportMap};
 #[cfg(feature = "dim3")]
-use crate::shape::{Cone, ConvexHull, Cylinder};
+use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use num::Zero;
 
 /// Cast a ray on a shape using the GJK algorithm.
@@ -114,7 +114,7 @@ impl RayCast for Capsule {
 }
 
 #[cfg(feature = "dim3")]
-impl RayCast for ConvexHull {
+impl RayCast for ConvexPolyhedron {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,

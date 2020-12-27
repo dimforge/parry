@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::{self, SortedPair};
 use na::{self, Point2, Point3, Unit};
@@ -9,17 +9,17 @@ use std::f64;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
-struct Vertex {
-    first_adj_face_or_edge: usize,
-    num_adj_faces_or_edge: usize,
+pub struct Vertex {
+    pub first_adj_face_or_edge: usize,
+    pub num_adj_faces_or_edge: usize,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
-struct Edge {
-    vertices: Point2<u32>,
-    faces: Point2<u32>,
-    dir: Unit<Vector<Real>>,
+pub struct Edge {
+    pub vertices: Point2<u32>,
+    pub faces: Point2<u32>,
+    pub dir: Unit<Vector<Real>>,
     deleted: bool,
 }
 
@@ -35,10 +35,10 @@ impl Edge {
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
-struct Face {
-    first_vertex_or_edge: usize,
-    num_vertices_or_edges: usize,
-    normal: Unit<Vector<Real>>,
+pub struct Face {
+    pub first_vertex_or_edge: usize,
+    pub num_vertices_or_edges: usize,
+    pub normal: Unit<Vector<Real>>,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -65,7 +65,7 @@ impl Triangle {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Clone)]
 /// A convex polyhedron without degenerate faces.
-pub struct ConvexHull {
+pub struct ConvexPolyhedron {
     points: Vec<Point<Real>>,
     vertices: Vec<Vertex>,
     faces: Vec<Face>,
@@ -80,12 +80,12 @@ pub struct ConvexHull {
     vertices_adj_to_face: Vec<usize>,
 }
 
-impl ConvexHull {
+impl ConvexPolyhedron {
     /// Creates a new convex polyhedron from an arbitrary set of points.
     ///
     /// This explicitly computes the convex hull of the given set of points. Use
     /// Returns `None` if the convex hull computation failed.
-    pub fn try_from_points(points: &[Point<Real>]) -> Option<ConvexHull> {
+    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<ConvexPolyhedron> {
         let (vertices, indices) = crate::transformation::convex_hull(points);
         let mut flat_indices = Vec::new();
         for idx in indices {
@@ -94,7 +94,7 @@ impl ConvexHull {
             }
         }
 
-        Self::try_new(vertices, &flat_indices)
+        Self::from_convex_mesh(vertices, &flat_indices)
     }
 
     /// Attempts to create a new solid assumed to be convex from the set of points and indices.
@@ -108,7 +108,10 @@ impl ConvexHull {
     ///
     ///   1. The given solid does not satisfy the euler characteristic.
     ///   2. The given solid contains degenerate edges/triangles.
-    pub fn try_new(points: Vec<Point<Real>>, indices: &[usize]) -> Option<ConvexHull> {
+    pub fn from_convex_mesh(
+        points: Vec<Point<Real>>,
+        indices: &[usize],
+    ) -> Option<ConvexPolyhedron> {
         let eps = crate::math::DEFAULT_EPSILON.sqrt();
 
         let mut vertices = Vec::new();
@@ -320,7 +323,7 @@ impl ConvexHull {
         if num_valid_vertices + faces.len() - num_valid_edges != 2 {
             None
         } else {
-            let res = ConvexHull {
+            let res = ConvexPolyhedron {
                 points,
                 vertices,
                 faces,
@@ -354,6 +357,36 @@ impl ConvexHull {
     #[inline]
     pub fn points(&self) -> &[Point<Real>] {
         &self.points[..]
+    }
+
+    #[inline]
+    pub fn vertices(&self) -> &[Vertex] {
+        &self.vertices[..]
+    }
+
+    #[inline]
+    pub fn edges(&self) -> &[Edge] {
+        &self.edges[..]
+    }
+
+    #[inline]
+    pub fn faces(&self) -> &[Face] {
+        &self.faces[..]
+    }
+
+    #[inline]
+    pub fn vertices_adj_to_face(&self) -> &[usize] {
+        &self.vertices_adj_to_face[..]
+    }
+
+    #[inline]
+    pub fn edges_adj_to_face(&self) -> &[usize] {
+        &self.edges_adj_to_face[..]
+    }
+
+    #[inline]
+    pub fn faces_adj_to_vertex(&self) -> &[usize] {
+        &self.faces_adj_to_vertex[..]
     }
 
     fn support_feature_id_toward_eps(
@@ -395,15 +428,63 @@ impl ConvexHull {
     }
 }
 
-impl SupportMap for ConvexHull {
+impl SupportMap for ConvexPolyhedron {
     #[inline]
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
 
+impl PolygonalFeatureMap for ConvexPolyhedron {
+    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+        assert!(
+            self.points.len() < u8::MAX as usize,
+            "This operation is not supported yet for polyhedron with more than 256 vertices."
+        );
+        assert!(
+            self.edges.len() < u8::MAX as usize,
+            "This operation is not supported yet for polyhedron with more than 256 edges."
+        );
+        assert!(
+            self.faces.len() < u8::MAX as usize,
+            "This operation is not supported yet for polyhedron with more than 256 faces."
+        );
+
+        let mut best_fid = 0;
+        let mut best_dot = self.faces[0].normal.dot(dir);
+
+        for (fid, face) in self.faces[1..].iter().enumerate() {
+            let new_dot = face.normal.dot(dir);
+
+            if new_dot > best_dot {
+                best_fid = fid + 1;
+                best_dot = new_dot;
+            }
+        }
+
+        let face = &self.faces[best_fid];
+        let i1 = face.first_vertex_or_edge;
+        // TODO: if there are more than 4 vertices, we need to select four vertices that maximize the area.
+        let num_vertices = face.num_vertices_or_edges.min(4);
+        let i2 = i1 + num_vertices;
+
+        for (i, (vid, eid)) in self.vertices_adj_to_face[i1..i2]
+            .iter()
+            .zip(self.edges_adj_to_face[i1..i2].iter())
+            .enumerate()
+        {
+            out_feature.vertices[i] = self.points[*vid];
+            out_feature.vids[i] = *vid as u8;
+            out_feature.eids[i] = *eid as u8;
+        }
+
+        out_feature.fid = best_fid as u8;
+        out_feature.num_vertices = num_vertices;
+    }
+}
+
 /*
-impl ConvexPolyhedron for ConvexHull {
+impl ConvexPolyhedron for ConvexPolyhedron {
     fn vertex(&self, id: FeatureId) -> Point<Real> {
         self.points[id.unwrap_vertex() as usize]
     }

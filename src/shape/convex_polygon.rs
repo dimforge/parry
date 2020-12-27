@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
-use na::{self, Unit};
+use na::{self, RealField, Unit};
 use std::f64;
 
 /// A 2D convex polygon.
@@ -17,18 +17,18 @@ impl ConvexPolygon {
     ///
     /// This explicitly computes the convex hull of the given set of points. Use
     /// Returns `None` if the convex hull computation failed.
-    pub fn try_from_points(points: &[Point<Real>]) -> Option<Self> {
+    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
         let mut vertices = crate::transformation::convex_hull(points);
         vertices.reverse(); // FIXME: it is unfortunate to have to do this reverse.
 
-        Self::try_new(vertices)
+        Self::from_convex_polyline(vertices)
     }
 
     /// Creates a new 2D convex polygon from a set of points assumed to describe a counter-clockwise convex polyline.
     ///
     /// Convexity of the input polyline is not checked.
-    /// Returns `None` if some consecutive points are identical (or too close to being so).
-    pub fn try_new(mut points: Vec<Point<Real>>) -> Option<Self> {
+    /// Returns `None` if all points form an almost flat line.
+    pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         let eps = crate::math::DEFAULT_EPSILON.sqrt();
         let mut normals = Vec::with_capacity(points.len());
 
@@ -39,7 +39,7 @@ impl ConvexPolygon {
         }
 
         let mut nremoved = 0;
-        // See if the first vexrtex must be removed.
+        // See if the first vertex must be removed.
         if normals[0].dot(&*normals[normals.len() - 1]) > na::one::<Real>() - eps {
             nremoved = 1;
         }
@@ -81,7 +81,7 @@ impl ConvexPolygon {
     }
 
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
-        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
+        let eps: Real = Real::pi() / 180.0;
         let ceps = eps.cos();
 
         // Check faces.
@@ -104,6 +104,33 @@ impl SupportMap for ConvexPolygon {
     #[inline]
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         utils::point_cloud_support_point(dir, self.points())
+    }
+}
+
+impl PolygonalFeatureMap for ConvexPolygon {
+    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+        let cuboid = crate::shape::Cuboid::new(self.points[2].coords);
+        cuboid.local_support_feature(dir, out_feature);
+        let mut best_face = 0;
+        let mut max_dot = self.normals[0].dot(&dir);
+
+        for i in 1..self.normals.len() {
+            let dot = self.normals[i].dot(&dir);
+
+            if dot > max_dot {
+                max_dot = dot;
+                best_face = i;
+            }
+        }
+
+        let i1 = best_face;
+        let i2 = (best_face + 1) % self.points.len();
+        *out_feature = PolygonalFeature {
+            vertices: [self.points[i1], self.points[i2]],
+            vids: [i1 as u8 * 2, i2 as u8 * 2],
+            fid: i1 as u8 * 2 + 1,
+            num_vertices: 2,
+        };
     }
 }
 

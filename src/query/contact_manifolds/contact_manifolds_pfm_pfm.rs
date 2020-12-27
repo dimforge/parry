@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Real};
+use crate::motion::RigidMotionComposition;
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
@@ -6,7 +7,6 @@ use crate::query::{
 };
 use crate::shape::{PolygonalFeature, PolygonalFeatureMap, Shape};
 use na::Unit;
-use crate::motion::RigidMotionComposition;
 
 pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
@@ -71,7 +71,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     manifold.clear();
 
     match contact {
-        GJKResult::ClosestPoints(p1, p2, dir) => {
+        GJKResult::ClosestPoints(p1, p2_1, dir) => {
             let local_n1 = dir;
             let local_n2 = pos12.inverse_transform_unit_vector(&-dir);
             let mut feature1 = PolygonalFeature::default();
@@ -91,15 +91,18 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 false,
             );
 
-            let ctct = TrackedContact::new(
-                p1,
-                pos12.inverse_transform_point(&p2),
-                u8::MAX, // We don't know what features are involved.
-                u8::MAX,
-                (p2 - p1).dot(&dir),
-            );
-            manifold.points.push(ctct);
+            if cfg!(feature = "dim3") || (cfg!(feature = "dim2") && manifold.points.is_empty()) {
+                let contact = TrackedContact::new(
+                    p1,
+                    pos12.inverse_transform_point(&p2_1),
+                    u8::MAX, // We don't know what features are involved.
+                    u8::MAX,
+                    (p2_1 - p1).dot(&dir),
+                );
+                manifold.points.push(contact);
+            }
 
+            // Adjust points to take the radius into account.
             if border_radius1 != 0.0 || border_radius2 != 0.0 {
                 for contact in &mut manifold.points {
                     contact.local_p1 += *local_n1 * border_radius1;
@@ -108,7 +111,6 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 }
             }
 
-            // Adjust points to take the radius into account.
             manifold.local_n1 = *local_n1;
             manifold.local_n2 = *local_n2;
             manifold.kinematics.category = KinematicsCategory::PlanePoint; // TODO: is this the most appropriate?

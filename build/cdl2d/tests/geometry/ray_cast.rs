@@ -108,7 +108,7 @@ fn convexpoly_raycast_fuzz() {
         .map(|[x, y]| Point2::new(x as Real, y as Real))
         .collect();
 
-    let square = ConvexPolygon::try_new(vertices).unwrap();
+    let square = ConvexPolygon::from_convex_polyline(vertices).unwrap();
 
     let test_raycast = |ray_origin: Point2<Real>, ray_look_at: Point2<Real>| -> Option<Real> {
         let ray_angle = ray_look_at - ray_origin;

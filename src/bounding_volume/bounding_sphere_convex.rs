@@ -1,9 +1,9 @@
 use crate::bounding_volume;
 use crate::bounding_volume::BoundingSphere;
 use crate::math::{Isometry, Real};
-use crate::shape::ConvexHull;
+use crate::shape::ConvexPolyhedron;
 
-impl ConvexHull {
+impl ConvexPolyhedron {
     #[inline]
     pub fn bounding_sphere(&self, m: &Isometry<Real>) -> BoundingSphere {
         let bv: BoundingSphere = self.local_bounding_sphere();

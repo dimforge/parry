@@ -1,6 +1,6 @@
 extern crate nalgebra as na;
 
-use cdl3d::shape::ConvexHull;
+use cdl3d::shape::ConvexPolyhedron;
 use na::Point3;
 
 fn main() {
@@ -17,6 +17,7 @@ fn main() {
         0, 4, 2, 0, 3, 4, 5, 0, 2, 5, 3, 0, 1, 5, 2, 1, 3, 5, 4, 1, 2, 4, 3, 1,
     ];
 
-    let convex = ConvexHull::try_new(points, &indices).expect("Invalid convex shape.");
+    let convex =
+        ConvexPolyhedron::from_convex_mesh(points, &indices).expect("Invalid convex shape.");
     convex.check_geometry();
 }

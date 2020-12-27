@@ -271,6 +271,24 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
     }
 
+    pub fn match_contacts_using_positions(
+        &mut self,
+        old_contacts: &[TrackedContact<ContactData>],
+        dist_threshold: Real,
+    ) {
+        let sq_threshold = dist_threshold * dist_threshold;
+        for contact in &mut self.points {
+            for old_contact in old_contacts {
+                if na::distance_squared(&contact.local_p1, &old_contact.local_p1) < sq_threshold
+                    && na::distance_squared(&contact.local_p2, &old_contact.local_p2) < sq_threshold
+                {
+                    // Transfer the tracked data.
+                    contact.data = old_contact.data;
+                }
+            }
+        }
+    }
+
     pub fn clear(&mut self) {
         self.points.clear();
         self.num_active_contacts = 0;

@@ -4,7 +4,7 @@ use crate::math::Point;
 use crate::shape::MassProperties;
 
 impl MassProperties {
-    pub(crate) fn from_polygon(density: f32, vertices: &[Point<f32>]) -> MassProperties {
+    pub(crate) fn from_convex_polygon(density: f32, vertices: &[Point<f32>]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
         if area == 0.0 {

@@ -7,7 +7,7 @@ use crate::query::{PointProjection, PointQuery};
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "dim3")]
-use crate::shape::{Cone, ConvexHull, Cylinder};
+use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::shape::{FeatureId, SupportMap};
 
 /// Projects a point on a shape using the GJK algorithm.
@@ -81,7 +81,7 @@ impl PointQuery for Cone {
 }
 
 #[cfg(feature = "dim3")]
-impl PointQuery for ConvexHull {
+impl PointQuery for ConvexPolyhedron {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
         local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)

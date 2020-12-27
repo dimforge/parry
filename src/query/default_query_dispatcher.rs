@@ -397,8 +397,9 @@ where
         use crate::query::contact_manifolds::*;
 
         match (shape1.shape_type(), shape2.shape_type()) {
-            (ShapeType::Ball, ShapeType::Ball) =>
-                contact_manifold_ball_ball_shapes(pos12, shape1, shape2, prediction, manifold),
+            (ShapeType::Ball, ShapeType::Ball) => {
+                contact_manifold_ball_ball_shapes(pos12, shape1, shape2, prediction, manifold)
+            }
             (ShapeType::Cuboid, ShapeType::Cuboid) =>
                 contact_manifold_cuboid_cuboid_shapes(pos12, shape1, shape2, prediction, manifold)
             ,
@@ -409,24 +410,29 @@ where
             //     },
             //     None,
             // ),
-            (ShapeType::Capsule, ShapeType::Capsule) =>
-                contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold),
-            (_, ShapeType::Ball) | (ShapeType::Ball, _) =>
-            contact_manifold_convex_ball_shapes(pos12, shape1, shape2, prediction, manifold),
+            (ShapeType::Capsule, ShapeType::Capsule) => {
+                contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold)
+            }
+            (_, ShapeType::Ball) | (ShapeType::Ball, _) => {
+                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, prediction, manifold)
+            }
             // (ShapeType::Capsule, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Capsule) =>
             //     contact_manifold_cuboid_capsule_shapes(pos12, shape1, shape2, prediction, manifold),
-            (ShapeType::Triangle, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Triangle) =>
-            contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, prediction, manifold),
-            #[cfg(feature = "dim3")]
-            (ShapeType::Cylinder, _)
-            | (_, ShapeType::Cylinder)
-            | (ShapeType::Cone, _)
-            | (_, ShapeType::Cone)
-            | (ShapeType::RoundCylinder, _)
-            | (_, ShapeType::RoundCylinder)
-            | (ShapeType::Capsule, _)
-            | (_, ShapeType::Capsule) => contact_manifold_pfm_pfm_shapes(pos12, shape1, shape2, prediction, manifold),
-            _ => return Err(Unsupported)
+            (ShapeType::Triangle, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Triangle) => {
+                contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, prediction, manifold)
+            }
+            _ => {
+                if let (Some(pfm1), Some(pfm2)) = (
+                    shape1.as_polygonal_feature_map(),
+                    shape2.as_polygonal_feature_map(),
+                ) {
+                    contact_manifold_pfm_pfm(
+                        pos12, pfm1.0, pfm1.1, pfm2.0, pfm2.1, prediction, manifold,
+                    )
+                } else {
+                    return Err(Unsupported);
+                }
+            }
         }
 
         Ok(())

@@ -1,9 +1,9 @@
 use crate::bounding_volume::aabb_utils;
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Real};
-use crate::shape::ConvexHull;
+use crate::shape::ConvexPolyhedron;
 
-impl ConvexHull {
+impl ConvexPolyhedron {
     #[inline]
     pub fn aabb(&self, m: &Isometry<Real>) -> AABB {
         aabb_utils::point_cloud_aabb(m, self.points())

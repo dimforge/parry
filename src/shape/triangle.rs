@@ -1,10 +1,10 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{Segment, PolygonalFeature};
 #[cfg(feature = "dim3")]
-use crate::shape::{FeatureId};
+use crate::shape::FeatureId;
 use crate::shape::SupportMap;
+use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
 use na::{self, Unit};
@@ -146,8 +146,37 @@ impl Triangle {
         [self.b - self.a, self.c - self.b, self.a - self.c]
     }
 
+    #[cfg(feature = "dim3")]
     pub fn support_face(&self, _dir: Vector<Real>) -> PolygonalFeature {
-        unimplemented!()
+        PolygonalFeature::from(*self)
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn support_face(&self, dir: Vector<Real>) -> PolygonalFeature {
+        let mut best = 0;
+        let mut best_dot = -Real::MAX;
+
+        for (i, tangent) in self.edges_scaled_directions().iter().enumerate() {
+            let normal = Vector::new(tangent.y, -tangent.x);
+            if let Some(normal) = Unit::try_new(normal, 0.0) {
+                let dot = normal.dot(&dir);
+                if normal.dot(&dir) > best_dot {
+                    best = i;
+                    best_dot = dot;
+                }
+            }
+        }
+
+        let pts = self.vertices();
+        let i1 = best;
+        let i2 = (best + 1) % 3;
+
+        PolygonalFeature {
+            vertices: [pts[i1], pts[i2]],
+            vids: [i1 as u8, i2 as u8],
+            fid: i1 as u8,
+            num_vertices: 2,
+        }
     }
 
     /// A vector normal of this triangle.

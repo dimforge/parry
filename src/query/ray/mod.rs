@@ -18,6 +18,7 @@ mod ray_cuboid;
 mod ray_halfspace;
 mod ray_heightfield;
 mod ray_polyline;
+mod ray_shape_with_border;
 mod ray_support_map;
 mod ray_triangle;
 mod ray_trimesh;

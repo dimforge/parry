@@ -1,16 +1,17 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::{BoundingVolume, AABB};
 use crate::math::{Isometry, Point, Vector};
 use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{
-    Ball, Capsule, Cuboid, FeatureId, HalfSpace, HeightField, MassProperties, Segment, SupportMap,
-    TriMesh, Triangle,
+    Ball, Capsule, Cuboid, FeatureId, HalfSpace, HeightField, MassProperties, PolygonalFeatureMap,
+    RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
 };
 #[cfg(feature = "dim3")]
-use crate::{
-    bounding_volume::BoundingVolume,
-    shape::{Cone, Cylinder, PolygonalFeatureMap, RoundCylinder},
+use crate::shape::{
+    Cone, ConvexPolyhedron, Cylinder, RoundCone, RoundConvexPolyhedron, RoundCylinder,
 };
+#[cfg(feature = "dim2")]
+use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
 #[cfg(feature = "serde-serialize")]
 use erased_serde::Serialize;
@@ -39,6 +40,11 @@ pub enum ShapeType {
     HalfSpace,
     /// A heightfield shape.
     HeightField,
+    #[cfg(feature = "dim2")]
+    ConvexPolygon,
+    #[cfg(feature = "dim3")]
+    /// A convex polyhedron.
+    ConvexPolyhedron,
     #[cfg(feature = "dim3")]
     /// A cylindrical shape.
     Cylinder,
@@ -47,10 +53,10 @@ pub enum ShapeType {
     Cone,
     // /// A custom shape type.
     // Custom(u8),
-    // /// A cuboid with rounded corners.
-    // RoundedCuboid,
-    // /// A triangle with rounded corners.
-    // RoundedTriangle,
+    /// A cuboid with rounded corners.
+    RoundCuboid,
+    /// A triangle with rounded corners.
+    RoundTriangle,
     // /// A triangle-mesh with rounded corners.
     // RoundedTriMesh,
     // /// An heightfield with rounded corners.
@@ -58,8 +64,15 @@ pub enum ShapeType {
     /// A cylinder with rounded corners.
     #[cfg(feature = "dim3")]
     RoundCylinder,
-    // /// A cone with rounded corners.
-    // RoundedCone,
+    /// A cone with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundCone,
+    /// A convex polyhedron with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundConvexPolyhedron,
+    /// A convex polygon with rounded corners.
+    #[cfg(feature = "dim2")]
+    RoundConvexPolygon,
 }
 
 /// Trait implemented by shapes usable by Rapier.
@@ -103,7 +116,6 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     }
 
     /// Converts this shape to a polygonal feature-map, if it is one.
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         None
     }
@@ -160,6 +172,32 @@ impl dyn Shape {
         self.downcast_ref()
     }
 
+    /// Converts this abstract shape to a round cuboid, if it is one.
+    pub fn as_round_cuboid(&self) -> Option<&RoundCuboid> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a round triangle, if it is one.
+    pub fn as_round_triangle(&self) -> Option<&RoundTriangle> {
+        self.downcast_ref()
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a round convex polygon, if it is one.
+    #[cfg(feature = "dim2")]
+    pub fn as_round_convex_polygon(&self) -> Option<&RoundConvexPolygon> {
+        self.downcast_ref()
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
+        self.downcast_ref()
+    }
+
     /// Converts this abstract shape to a cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cylinder(&self) -> Option<&Cylinder> {
@@ -172,9 +210,21 @@ impl dyn Shape {
         self.downcast_ref()
     }
 
-    /// Converts this abstract shape to a cone, if it is one.
+    /// Converts this abstract shape to a round cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cylinder(&self) -> Option<&RoundCylinder> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a round cone, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_round_cone(&self) -> Option<&RoundCone> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a round convex polyhedron, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_round_convex_polyhedron(&self) -> Option<&RoundConvexPolyhedron> {
         self.downcast_ref()
     }
 }
@@ -259,7 +309,6 @@ impl Shape for Cuboid {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
@@ -295,7 +344,6 @@ impl Shape for Capsule {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((&self.segment as &dyn PolygonalFeatureMap, self.radius))
     }
@@ -331,7 +379,6 @@ impl Shape for Triangle {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
@@ -367,7 +414,6 @@ impl Shape for Segment {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
@@ -423,6 +469,79 @@ impl Shape for HeightField {
     }
 }
 
+#[cfg(feature = "dim2")]
+impl Shape for ConvexPolygon {
+    #[cfg(feature = "serde-serialize")]
+    fn as_serialize(&self) -> Option<&dyn Serialize> {
+        Some(self as &dyn Serialize)
+    }
+
+    fn compute_local_aabb(&self) -> AABB {
+        self.local_aabb()
+    }
+
+    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+        self.aabb(position)
+    }
+
+    fn mass_properties(&self, density: f32) -> MassProperties {
+        MassProperties::from_convex_polygon(density, &self.points())
+    }
+
+    fn is_convex(&self) -> bool {
+        true
+    }
+
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::ConvexPolygon
+    }
+
+    fn as_support_map(&self) -> Option<&dyn SupportMap> {
+        Some(self as &dyn SupportMap)
+    }
+
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+        Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl Shape for ConvexPolyhedron {
+    #[cfg(feature = "serde-serialize")]
+    fn as_serialize(&self) -> Option<&dyn Serialize> {
+        Some(self as &dyn Serialize)
+    }
+
+    fn compute_local_aabb(&self) -> AABB {
+        self.local_aabb()
+    }
+
+    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+        self.aabb(position)
+    }
+
+    fn mass_properties(&self, density: f32) -> MassProperties {
+        let (vertices, indices) = self.to_trimesh();
+        MassProperties::from_convex_polyhedron(density, &vertices, &indices)
+    }
+
+    fn is_convex(&self) -> bool {
+        true
+    }
+
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::ConvexPolyhedron
+    }
+
+    fn as_support_map(&self) -> Option<&dyn SupportMap> {
+        Some(self as &dyn SupportMap)
+    }
+
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+        Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+}
+
 #[cfg(feature = "dim3")]
 impl Shape for Cylinder {
     #[cfg(feature = "serde-serialize")]
@@ -454,7 +573,6 @@ impl Shape for Cylinder {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
@@ -491,52 +609,8 @@ impl Shape for Cone {
         Some(self as &dyn SupportMap)
     }
 
-    #[cfg(feature = "dim3")]
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
-    }
-}
-
-#[cfg(feature = "dim3")]
-impl Shape for RoundCylinder {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
-    fn compute_local_aabb(&self) -> AABB {
-        self.cylinder.local_aabb().loosened(self.border_radius)
-    }
-
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
-        self.cylinder
-            .compute_aabb(position)
-            .loosened(self.border_radius)
-    }
-
-    fn mass_properties(&self, density: f32) -> MassProperties {
-        // We ignore the margin here.
-        self.cylinder.mass_properties(density)
-    }
-
-    fn is_convex(&self) -> bool {
-        true
-    }
-
-    fn shape_type(&self) -> ShapeType {
-        ShapeType::RoundCylinder
-    }
-
-    fn as_support_map(&self) -> Option<&dyn SupportMap> {
-        Some(self as &dyn SupportMap)
-    }
-
-    #[cfg(feature = "dim3")]
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
-        Some((
-            &self.cylinder as &dyn PolygonalFeatureMap,
-            self.border_radius,
-        ))
     }
 }
 
@@ -566,3 +640,55 @@ impl Shape for HalfSpace {
         ShapeType::HalfSpace
     }
 }
+
+macro_rules! impl_shape_for_shape_with_border(
+    ($($S: ty, $Tag: expr);*) => {$(
+        impl Shape for RoundShape<$S> {
+            #[cfg(feature = "serde-serialize")]
+            fn as_serialize(&self) -> Option<&dyn Serialize> {
+                Some(self as &dyn Serialize)
+            }
+
+            fn compute_local_aabb(&self) -> AABB {
+                self.base_shape.local_aabb().loosened(self.border_radius)
+            }
+
+            fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+                self.base_shape.aabb(position).loosened(self.border_radius)
+            }
+
+            fn mass_properties(&self, density: f32) -> MassProperties {
+                self.base_shape.mass_properties(density)
+            }
+
+            fn is_convex(&self) -> bool {
+                self.base_shape.is_convex()
+            }
+
+            fn shape_type(&self) -> ShapeType {
+                $Tag
+            }
+
+            fn as_support_map(&self) -> Option<&dyn SupportMap> {
+                Some(self as &dyn SupportMap)
+            }
+
+            fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+                Some((&self.base_shape as &dyn PolygonalFeatureMap, self.border_radius))
+            }
+        }
+    )*}
+);
+
+impl_shape_for_shape_with_border!(
+    Cuboid, ShapeType::RoundCuboid;
+    Triangle, ShapeType::RoundTriangle
+);
+#[cfg(feature = "dim2")]
+impl_shape_for_shape_with_border!(ConvexPolygon, ShapeType::RoundConvexPolygon);
+#[cfg(feature = "dim3")]
+impl_shape_for_shape_with_border!(
+    Cylinder, ShapeType::RoundCylinder;
+    Cone, ShapeType::RoundCone;
+    ConvexPolyhedron, ShapeType::RoundConvexPolyhedron
+);

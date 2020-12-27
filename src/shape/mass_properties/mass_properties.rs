@@ -1,4 +1,4 @@
-use crate::math::{AngVector, AngularInertia, Isometry, Point, Rotation, Vector};
+use crate::math::{AngVector, AngularInertia, Isometry, Matrix, Point, Real, Rotation, Vector};
 use crate::utils;
 use num::Zero;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -10,18 +10,18 @@ use {na::Matrix3, std::ops::MulAssign};
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
-    pub local_com: Point<f32>,
+    pub local_com: Point<Real>,
     /// The inverse of the mass of a rigid-body.
     ///
     /// If this is zero, the rigid-body is assumed to have infinite mass.
-    pub inv_mass: f32,
+    pub inv_mass: Real,
     /// The inverse of the principal angular inertia of the rigid-body.
     ///
     /// Components set to zero are assumed to be infinite along the corresponding principal axis.
-    pub inv_principal_inertia_sqrt: AngVector<f32>,
+    pub inv_principal_inertia_sqrt: AngVector<Real>,
     #[cfg(feature = "dim3")]
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
-    pub principal_inertia_local_frame: Rotation<f32>,
+    pub principal_inertia_local_frame: Rotation<Real>,
 }
 
 impl MassProperties {
@@ -29,7 +29,7 @@ impl MassProperties {
     ///
     /// The center-of-mass is specified in the local-space of the rigid-body.
     #[cfg(feature = "dim2")]
-    pub fn new(local_com: Point<f32>, mass: f32, principal_inertia: f32) -> Self {
+    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: Real) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt = utils::inv(principal_inertia.sqrt());
         Self {
@@ -45,7 +45,7 @@ impl MassProperties {
     /// The principal angular inertia are the angular inertia along the coordinate axes in the local-space
     /// of the rigid-body.
     #[cfg(feature = "dim3")]
-    pub fn new(local_com: Point<f32>, mass: f32, principal_inertia: AngVector<f32>) -> Self {
+    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: AngVector<Real>) -> Self {
         Self::with_principal_inertia_frame(local_com, mass, principal_inertia, Rotation::identity())
     }
 
@@ -56,10 +56,10 @@ impl MassProperties {
     /// the `principal_inertia_local_frame` expressed in the local-space of the rigid-body.
     #[cfg(feature = "dim3")]
     pub fn with_principal_inertia_frame(
-        local_com: Point<f32>,
-        mass: f32,
-        principal_inertia: AngVector<f32>,
-        principal_inertia_local_frame: Rotation<f32>,
+        local_com: Point<Real>,
+        mass: Real,
+        principal_inertia: AngVector<Real>,
+        principal_inertia_local_frame: Rotation<Real>,
     ) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt = principal_inertia.map(|e| utils::inv(e.sqrt()));
@@ -71,20 +71,36 @@ impl MassProperties {
         }
     }
 
+    #[cfg(feature = "dim3")]
+    pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix<Real>) -> Self {
+        let eigen = inertia.symmetric_eigen();
+        let principal_inertia_local_frame =
+            Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
+        // Drop negative eigenvalues.
+        let principal_inertia = eigen.eigenvalues.map(|e| e.max(0.0));
+
+        Self::with_principal_inertia_frame(
+            local_com,
+            mass,
+            principal_inertia,
+            principal_inertia_local_frame,
+        )
+    }
+
     /// The world-space center of mass of the rigid-body.
-    pub fn world_com(&self, pos: &Isometry<f32>) -> Point<f32> {
+    pub fn world_com(&self, pos: &Isometry<Real>) -> Point<Real> {
         pos * self.local_com
     }
 
     #[cfg(feature = "dim2")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation<f32>) -> AngularInertia<f32> {
+    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation<Real>) -> AngularInertia<Real> {
         self.inv_principal_inertia_sqrt
     }
 
     #[cfg(feature = "dim3")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation<f32>) -> AngularInertia<f32> {
+    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation<Real>) -> AngularInertia<Real> {
         if !self.inv_principal_inertia_sqrt.is_zero() {
             let mut lhs = (rot * self.principal_inertia_local_frame)
                 .to_rotation_matrix()
@@ -105,7 +121,7 @@ impl MassProperties {
 
     #[cfg(feature = "dim3")]
     /// Reconstructs the inverse angular inertia tensor of the rigid body from its principal inertia values and axes.
-    pub fn reconstruct_inverse_inertia_matrix(&self) -> Matrix3<f32> {
+    pub fn reconstruct_inverse_inertia_matrix(&self) -> Matrix3<Real> {
         let inv_principal_inertia = self.inv_principal_inertia_sqrt.map(|e| e * e);
         self.principal_inertia_local_frame.to_rotation_matrix()
             * Matrix3::from_diagonal(&inv_principal_inertia)
@@ -117,7 +133,7 @@ impl MassProperties {
 
     #[cfg(feature = "dim3")]
     /// Reconstructs the angular inertia tensor of the rigid body from its principal inertia values and axes.
-    pub fn reconstruct_inertia_matrix(&self) -> Matrix3<f32> {
+    pub fn reconstruct_inertia_matrix(&self) -> Matrix3<Real> {
         let principal_inertia = self.inv_principal_inertia_sqrt.map(|e| utils::inv(e * e));
         self.principal_inertia_local_frame.to_rotation_matrix()
             * Matrix3::from_diagonal(&principal_inertia)
@@ -128,7 +144,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim2")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<f32>) -> f32 {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Real {
         let i = utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
 
         if self.inv_mass != 0.0 {
@@ -140,7 +156,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim3")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<f32>) -> Matrix3<f32> {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Matrix3<Real> {
         let matrix = self.reconstruct_inertia_matrix();
 
         if self.inv_mass != 0.0 {
@@ -154,7 +170,7 @@ impl MassProperties {
     }
 
     /// Transform each element of the mass properties.
-    pub fn transform_by(&self, m: &Isometry<f32>) -> Self {
+    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
         // NOTE: we don't apply the parallel axis theorem here
         // because the center of mass is also transformed.
         Self {
@@ -223,19 +239,7 @@ impl Sub<MassProperties> for MassProperties {
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 - i2;
-        let eigen = inertia.symmetric_eigen();
-        let principal_inertia_local_frame =
-            Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
-        let principal_inertia = eigen.eigenvalues;
-        // NOTE: we drop the negative eigenvalues that may result from subtraction rounding errors.
-        let inv_principal_inertia_sqrt = principal_inertia.map(|e| utils::inv(e.max(0.0).sqrt()));
-
-        Self {
-            local_com,
-            inv_mass,
-            inv_principal_inertia_sqrt,
-            principal_inertia_local_frame,
-        }
+        Self::with_inertia_matrix(local_com, m1 - m2, inertia)
     }
 }
 
@@ -287,18 +291,8 @@ impl Add<MassProperties> for MassProperties {
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 + i2;
-        let eigen = inertia.symmetric_eigen();
-        let principal_inertia_local_frame =
-            Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
-        let principal_inertia = eigen.eigenvalues;
-        let inv_principal_inertia_sqrt = principal_inertia.map(|e| utils::inv(e.sqrt()));
 
-        Self {
-            local_com,
-            inv_mass,
-            inv_principal_inertia_sqrt,
-            principal_inertia_local_frame,
-        }
+        Self::with_inertia_matrix(local_com, m1 + m2, inertia)
     }
 }
 
@@ -309,9 +303,9 @@ impl AddAssign<MassProperties> for MassProperties {
 }
 
 impl approx::AbsDiffEq for MassProperties {
-    type Epsilon = f32;
+    type Epsilon = Real;
     fn default_epsilon() -> Self::Epsilon {
-        f32::default_epsilon()
+        Real::default_epsilon()
     }
 
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
@@ -336,7 +330,7 @@ impl approx::AbsDiffEq for MassProperties {
 
 impl approx::RelativeEq for MassProperties {
     fn default_max_relative() -> Self::Epsilon {
-        f32::default_max_relative()
+        Real::default_max_relative()
     }
 
     fn relative_eq(

@@ -20,7 +20,6 @@ pub use self::contact_manifolds_cuboid_triangle::{
 pub use self::contact_manifolds_heightfield_shape::{
     contact_manifolds_heightfield_shape, contact_manifolds_heightfield_shape_shapes,
 };
-#[cfg(feature = "dim3")]
 pub use self::contact_manifolds_pfm_pfm::{
     contact_manifold_pfm_pfm, contact_manifold_pfm_pfm_shapes,
 };
@@ -41,7 +40,6 @@ mod contact_manifolds_convex_ball;
 mod contact_manifolds_cuboid_cuboid;
 mod contact_manifolds_cuboid_triangle;
 mod contact_manifolds_heightfield_shape;
-#[cfg(feature = "dim3")]
 mod contact_manifolds_pfm_pfm;
 mod contact_manifolds_trimesh_shape;
 mod contact_manifolds_workspace;
