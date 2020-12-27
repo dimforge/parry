@@ -641,7 +641,7 @@ impl Shape for HalfSpace {
     }
 }
 
-macro_rules! impl_shape_for_shape_with_border(
+macro_rules! impl_shape_for_round_shape(
     ($($S: ty, $Tag: expr);*) => {$(
         impl Shape for RoundShape<$S> {
             #[cfg(feature = "serde-serialize")]
@@ -680,14 +680,14 @@ macro_rules! impl_shape_for_shape_with_border(
     )*}
 );
 
-impl_shape_for_shape_with_border!(
+impl_shape_for_round_shape!(
     Cuboid, ShapeType::RoundCuboid;
     Triangle, ShapeType::RoundTriangle
 );
 #[cfg(feature = "dim2")]
-impl_shape_for_shape_with_border!(ConvexPolygon, ShapeType::RoundConvexPolygon);
+impl_shape_for_round_shape!(ConvexPolygon, ShapeType::RoundConvexPolygon);
 #[cfg(feature = "dim3")]
-impl_shape_for_shape_with_border!(
+impl_shape_for_round_shape!(
     Cylinder, ShapeType::RoundCylinder;
     Cone, ShapeType::RoundCone;
     ConvexPolyhedron, ShapeType::RoundConvexPolyhedron

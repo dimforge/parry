@@ -10,10 +10,10 @@ pub use self::half_space::HalfSpace;
 pub use self::mass_properties::MassProperties;
 pub use self::polygonal_feature_map::PolygonalFeatureMap;
 pub use self::polyline::Polyline;
+pub use self::round_shape::RoundShape;
 pub use self::segment::{Segment, SegmentPointLocation};
 #[doc(inline)]
 pub use self::shape::{Shape, ShapeType};
-pub use self::shape_with_border::RoundShape;
 #[doc(inline)]
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TrianglePointLocation};
@@ -57,10 +57,10 @@ pub mod composite_shape;
 mod cuboid;
 mod half_space;
 mod polyline;
+mod round_shape;
 mod segment;
 #[doc(hidden)]
 pub mod shape;
-mod shape_with_border;
 #[doc(hidden)]
 pub mod support_map;
 mod triangle;

@@ -14,8 +14,8 @@ mod point_heightfield;
 mod point_polyline;
 #[doc(hidden)]
 pub mod point_query;
+mod point_round_shape;
 mod point_segment;
-mod point_shape_with_border;
 mod point_support_map;
 #[cfg(feature = "dim3")]
 mod point_tetrahedron;
