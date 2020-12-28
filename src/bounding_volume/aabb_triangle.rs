@@ -34,7 +34,7 @@ mod test {
     use crate::{
         bounding_volume::support_map_aabb,
         math::{Isometry, Point, Translation},
-        shape::{Shape, Triangle},
+        shape::Triangle,
     };
     use na::{RealField, UnitQuaternion};
 

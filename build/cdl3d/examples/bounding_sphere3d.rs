@@ -1,6 +1,6 @@
 extern crate nalgebra as na;
 
-use cdl3d::bounding_volume::{self, BoundingVolume};
+use cdl3d::bounding_volume::BoundingVolume;
 use cdl3d::shape::Cuboid;
 use na::{Isometry3, Vector3};
 

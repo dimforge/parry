@@ -1,7 +1,7 @@
 use crate::math::Real;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
-use na::{self, Point2, RealField};
+use na::{self, Point2};
 
 impl Cuboid {
     pub fn to_polyline(&self) -> Vec<Point2<Real>> {

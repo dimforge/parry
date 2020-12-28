@@ -8,16 +8,21 @@ use na;
 pub struct PointProjection {
     /// Whether or not the point to project was inside of the shape.
     pub is_inside: bool,
-    /// The projection result, expressed in the local-space of the shape the point was projected on.
-    pub local_point: Point<Real>,
+    /// The projection result.
+    pub point: Point<Real>,
 }
 
 impl PointProjection {
     /// Initializes a new `PointProjection`.
-    pub fn new(is_inside: bool, local_point: Point<Real>) -> PointProjection {
+    pub fn new(is_inside: bool, point: Point<Real>) -> Self {
+        PointProjection { is_inside, point }
+    }
+
+    /// Transforms `self.point` by `pos`.
+    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
         PointProjection {
-            is_inside,
-            local_point,
+            is_inside: self.is_inside,
+            point: pos * self.point,
         }
     }
 }
@@ -35,7 +40,7 @@ pub trait PointQuery {
     /// Computes the minimal distance between a point and `self`.
     fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
         let proj = self.project_local_point(pt, solid);
-        let dist = na::distance(pt, &proj.local_point);
+        let dist = na::distance(pt, &proj.point);
 
         if solid || !proj.is_inside {
             dist
@@ -52,6 +57,7 @@ pub trait PointQuery {
     /// Projects a point on `self` transformed by `m`.
     fn project_point(&self, m: &Isometry<Real>, pt: &Point<Real>, solid: bool) -> PointProjection {
         self.project_local_point(&m.inverse_transform_point(pt), solid)
+            .transform_by(m)
     }
 
     /// Computes the minimal distance between a point and `self` transformed by `m`.
@@ -67,7 +73,8 @@ pub trait PointQuery {
         m: &Isometry<Real>,
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        self.project_local_point_and_get_feature(&m.inverse_transform_point(pt))
+        let res = self.project_local_point_and_get_feature(&m.inverse_transform_point(pt));
+        (res.0.transform_by(m), res.1)
     }
 
     /// Tests if the given point is inside of `self` transformed by `m`.
@@ -114,6 +121,7 @@ pub trait PointQueryWithLocation {
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
-        self.project_local_point_with_location(&m.inverse_transform_point(pt), solid)
+        let res = self.project_local_point_with_location(&m.inverse_transform_point(pt), solid);
+        (res.0.transform_by(m), res.1)
     }
 }

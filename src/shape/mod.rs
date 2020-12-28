@@ -3,7 +3,8 @@
 pub use self::ball::Ball;
 pub use self::capsule::Capsule;
 #[doc(inline)]
-pub use self::composite_shape::SimdCompositeShape;
+pub use self::composite_shape::{SimdCompositeShape, TypedSimdCompositeShape};
+pub use self::compound::Compound;
 pub use self::cuboid::Cuboid;
 pub use self::feature_id::FeatureId;
 pub use self::half_space::HalfSpace;
@@ -54,6 +55,7 @@ mod ball;
 mod capsule;
 #[doc(hidden)]
 pub mod composite_shape;
+mod compound;
 mod cuboid;
 mod half_space;
 mod polyline;

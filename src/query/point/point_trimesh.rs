@@ -107,7 +107,7 @@ impl<'a> SimdBestFirstVisitor<u32, SimdAABB> for TriMeshPointProjVisitor<'a> {
                     let (proj, extra_info) =
                         triangle.project_local_point_with_location(self.point, true);
                     results[ii] = Some((proj, (*data[ii].unwrap(), extra_info)));
-                    weights[ii] = na::distance(self.point, &proj.local_point);
+                    weights[ii] = na::distance(self.point, &proj.point);
                 }
             }
 

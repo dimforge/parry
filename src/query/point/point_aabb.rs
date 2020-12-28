@@ -141,7 +141,7 @@ impl PointQuery for AABB {
             shift.norm()
         } else {
             // FIXME: optimize that.
-            -na::distance(pt, &self.project_local_point(pt, solid).local_point)
+            -na::distance(pt, &self.project_local_point(pt, solid).point)
         }
     }
 }

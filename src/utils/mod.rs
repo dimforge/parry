@@ -2,12 +2,12 @@
 
 pub use self::ccw_face_normal::ccw_face_normal;
 pub use self::center::center;
-pub(crate) use self::deterministic_state::DeterministicState;
+pub use self::deterministic_state::DeterministicState;
 
 #[cfg(feature = "dim3")]
 pub use self::cleanup::remove_unused_points;
 pub(crate) use self::inv::inv;
-pub use self::isometry_ops::IsometryOps;
+pub use self::isometry_ops::{IsometryOps, IsometryOpt};
 pub use self::maybe_serializable_data::MaybeSerializableData;
 pub use self::median::median;
 pub use self::point_cloud_support_point::{
@@ -20,7 +20,7 @@ pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::hashable_partial_eq::HashablePartialEq;
 pub(crate) use self::sort::sort3;
-pub(crate) use self::sorted_pair::SortedPair;
+pub use self::sorted_pair::SortedPair;
 pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WSign};
 

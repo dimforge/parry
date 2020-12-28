@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
 
-use cdl2d::bounding_volume::{self, BoundingVolume};
+use cdl2d::bounding_volume::BoundingVolume;
 use cdl2d::shape::Ball;
-use na::{Isometry2, Vector2};
+use na::Isometry2;
 
 fn main() {
     /*

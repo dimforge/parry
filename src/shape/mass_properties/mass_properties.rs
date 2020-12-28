@@ -1,4 +1,4 @@
-use crate::math::{AngVector, AngularInertia, Isometry, Matrix, Point, Real, Rotation, Vector};
+use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
 use crate::utils;
 use num::Zero;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -72,7 +72,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim3")]
-    pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix<Real>) -> Self {
+    pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
         let eigen = inertia.symmetric_eigen();
         let principal_inertia_local_frame =
             Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
@@ -366,7 +366,9 @@ impl approx::RelativeEq for MassProperties {
 #[cfg(test)]
 mod test {
     use super::MassProperties;
-    use crate::math::{Point, Rotation, Vector};
+    use crate::math::Point;
+    #[cfg(feature = "dim3")]
+    use crate::math::{Rotation, Vector};
     use crate::shape::{Ball, Capsule, Shape};
     use approx::assert_relative_eq;
     use num::Zero;

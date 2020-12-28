@@ -1,11 +1,10 @@
-use na::{self, Vector3};
-
+use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
-use crate::math::{Point, Real};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, Triangle};
-use num::Zero;
+#[cfg(feature = "dim3")]
+use {crate::math::Point, na::Vector3};
 
 impl RayCast for Triangle {
     #[inline]
@@ -80,7 +79,7 @@ pub fn local_ray_intersection_with_triangle(
     let d = n.dot(&ray.dir);
 
     // the normal and the ray direction are parallel
-    if d.is_zero() {
+    if d == 0.0 {
         return None;
     }
 
@@ -88,13 +87,11 @@ pub fn local_ray_intersection_with_triangle(
     let t = ap.dot(&n);
 
     // the ray does not intersect the halfspace defined by the triangle
-    if (t < na::zero::<Real>() && d < na::zero::<Real>())
-        || (t > na::zero::<Real>() && d > na::zero::<Real>())
-    {
+    if (t < 0.0 && d < 0.0) || (t > 0.0 && d > 0.0) {
         return None;
     }
 
-    let fid = if d < na::zero::<Real>() { 0 } else { 1 };
+    let fid = if d < 0.0 { 0 } else { 1 };
 
     let d = d.abs();
 
@@ -108,20 +105,20 @@ pub fn local_ray_intersection_with_triangle(
     let toi;
     let normal;
 
-    if t < na::zero::<Real>() {
+    if t < 0.0 {
         v = -ac.dot(&e);
 
-        if v < na::zero::<Real>() || v > d {
+        if v < 0.0 || v > d {
             return None;
         }
 
         w = ab.dot(&e);
 
-        if w < na::zero::<Real>() || v + w > d {
+        if w < 0.0 || v + w > d {
             return None;
         }
 
-        let invd = na::one::<Real>() / d;
+        let invd = 1.0 / d;
         toi = -t * invd;
         normal = -n.normalize();
         v = v * invd;
@@ -129,17 +126,17 @@ pub fn local_ray_intersection_with_triangle(
     } else {
         v = ac.dot(&e);
 
-        if v < na::zero::<Real>() || v > d {
+        if v < 0.0 || v > d {
             return None;
         }
 
         w = -ab.dot(&e);
 
-        if w < na::zero::<Real>() || v + w > d {
+        if w < 0.0 || v + w > d {
             return None;
         }
 
-        let invd = na::one::<Real>() / d;
+        let invd = 1.0 / d;
         toi = t * invd;
         normal = n.normalize();
         v = v * invd;
@@ -148,6 +145,6 @@ pub fn local_ray_intersection_with_triangle(
 
     Some((
         RayIntersection::new(toi, normal, FeatureId::Face(fid)),
-        Vector3::new(-v - w + na::one::<Real>(), v, w),
+        Vector3::new(-v - w + 1.0, v, w),
     ))
 }

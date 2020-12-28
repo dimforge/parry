@@ -3,6 +3,7 @@ use crate::math::{Isometry, Real, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, SimdCompositeShape};
+use crate::utils::IsometryOpt;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
@@ -100,10 +101,14 @@ where
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.g1.map_part_at(*data[ii].unwrap(), &mut |g1| {
-                        found_intersection =
-                            self.dispatcher.intersection_test(&self.pos12, g1, self.g2) == Ok(true);
-                    });
+                    self.g1
+                        .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
+                            found_intersection = self.dispatcher.intersection_test(
+                                &part_pos1.inv_mul(self.pos12),
+                                g1,
+                                self.g2,
+                            ) == Ok(true);
+                        });
 
                     if found_intersection {
                         return SimdBestFirstVisitStatus::ExitEarly(Some(true));

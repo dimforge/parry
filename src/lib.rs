@@ -58,6 +58,7 @@ extern crate serde;
 #[macro_use]
 extern crate approx;
 #[macro_use]
+#[cfg(feature = "dim3")]
 extern crate bitflags;
 extern crate num_traits as num;
 

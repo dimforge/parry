@@ -1,14 +1,8 @@
 use cdl2d::query;
 use cdl2d::shape::{Ball, Cuboid};
-use nalgebra::{Isometry2, Point2, Vector2};
+use nalgebra::{Isometry2, Vector2};
 #[cfg(feature = "improved_fixed_point_support")]
 use simba::scalar::FixedI40F24;
-
-fn test_collide<T>(type_from_f64: fn(f64) -> T)
-where
-    T: simba::scalar::RealField,
-{
-}
 
 #[test]
 fn test_ball_cuboid_query_contact() {

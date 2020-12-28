@@ -3,8 +3,6 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
-#[cfg(feature = "dim2")]
-use crate::shape::Capsule;
 use crate::shape::{Shape, TriMesh};
 use crate::utils::MaybeSerializableData;
 #[cfg(feature = "serde-serialize")]

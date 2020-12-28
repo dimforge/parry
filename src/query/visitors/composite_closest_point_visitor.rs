@@ -49,12 +49,18 @@ impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAABB>
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.shape.map_part_at(*data[ii].unwrap(), &mut |obj| {
-                        let proj = obj.project_local_point(self.point, self.solid);
-                        weights[ii] = na::distance(self.point, &proj.local_point);
-                        mask[ii] = true;
-                        results[ii] = Some(proj);
-                    });
+                    self.shape
+                        .map_part_at(*data[ii].unwrap(), &mut |part_pos, obj| {
+                            let proj = if let Some(part_pos) = part_pos {
+                                obj.project_point(part_pos, self.point, self.solid)
+                            } else {
+                                obj.project_local_point(self.point, self.solid)
+                            };
+
+                            weights[ii] = na::distance(self.point, &proj.point);
+                            mask[ii] = true;
+                            results[ii] = Some(proj);
+                        });
                 }
             }
 

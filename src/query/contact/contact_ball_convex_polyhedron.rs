@@ -35,7 +35,7 @@ pub fn contact_convex_polyhedron_ball(
     let dist;
     let normal1;
     if let Some((dir1, len)) =
-        Unit::try_new_and_get(proj.local_point - center2_1, crate::math::DEFAULT_EPSILON)
+        Unit::try_new_and_get(proj.point - center2_1, crate::math::DEFAULT_EPSILON)
     {
         if proj.is_inside {
             dist = -len - ball2.radius;
@@ -51,13 +51,13 @@ pub fn contact_convex_polyhedron_ball(
         }
 
         dist = -ball2.radius;
-        normal1 = shape1.feature_normal_at_point(f1, &proj.local_point)?;
+        normal1 = shape1.feature_normal_at_point(f1, &proj.point)?;
     }
 
     if dist <= prediction {
         let normal2 = pos12.inverse_transform_unit_vector(&-normal1);
         let point2 = Point::from(*normal2 * ball2.radius);
-        let point1 = proj.local_point;
+        let point1 = proj.point;
         return Some(Contact::new(point1, point2, normal1, normal2, dist));
     }
 

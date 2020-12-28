@@ -70,6 +70,17 @@ pub mod details {
         contact_shape_composite_shape, contact_support_map_halfspace,
         contact_support_map_support_map, contact_support_map_support_map_with_params,
     };
+    pub use super::contact_manifolds::{
+        contact_manifold_ball_ball, contact_manifold_ball_ball_shapes,
+        contact_manifold_capsule_capsule, contact_manifold_capsule_capsule_shapes,
+        contact_manifold_convex_ball, contact_manifold_convex_ball_shapes,
+        contact_manifold_cuboid_cuboid, contact_manifold_cuboid_cuboid_shapes,
+        contact_manifold_cuboid_triangle, contact_manifold_cuboid_triangle_shapes,
+        contact_manifold_pfm_pfm, contact_manifold_pfm_pfm_shapes,
+        contact_manifolds_heightfield_shape, contact_manifolds_heightfield_shape_shapes,
+        contact_manifolds_trimesh_shape_shapes,
+    };
+
     pub use super::distance::{
         distance_ball_ball, distance_composite_shape_shape, distance_halfspace_support_map,
         distance_shape_composite_shape, distance_support_map_halfspace,

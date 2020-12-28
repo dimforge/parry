@@ -133,23 +133,39 @@ where
             ) {
                 if let Some(data) = data {
                     if toi.toi < best && data[ii].is_some() {
-                        self.g1.map_part_at(*data[ii].unwrap(), &mut |g1| {
-                            if let Some(toi) = self
-                                .dispatcher
-                                .nonlinear_time_of_impact(
-                                    self.motion12,
-                                    g1,
-                                    self.g2,
-                                    self.max_toi,
-                                    self.target_distance,
-                                )
-                                .unwrap_or(None)
-                            {
-                                weights[ii] = toi.toi;
-                                mask[ii] = toi.toi < best;
-                                results[ii] = Some(toi);
-                            }
-                        });
+                        self.g1
+                            .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
+                                let toi = if let Some(part_pos1) = part_pos1 {
+                                    self.dispatcher
+                                        .nonlinear_time_of_impact(
+                                            &self
+                                                .motion12
+                                                .append_transformation(part_pos1.inverse()),
+                                            g1,
+                                            self.g2,
+                                            self.max_toi,
+                                            self.target_distance,
+                                        )
+                                        .unwrap_or(None)
+                                        .map(|toi| toi.transform1_by(part_pos1))
+                                } else {
+                                    self.dispatcher
+                                        .nonlinear_time_of_impact(
+                                            self.motion12,
+                                            g1,
+                                            self.g2,
+                                            self.max_toi,
+                                            self.target_distance,
+                                        )
+                                        .unwrap_or(None)
+                                };
+
+                                if let Some(toi) = toi {
+                                    weights[ii] = toi.toi;
+                                    mask[ii] = toi.toi < best;
+                                    results[ii] = Some(toi);
+                                }
+                            });
                     }
                 } else {
                     weights[ii] = toi.toi;

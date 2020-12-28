@@ -28,9 +28,12 @@ pub use self::contact_manifolds_trimesh_shape::{
 };
 pub use self::contact_manifolds_workspace::ContactManifoldsWorkspace;
 
-pub(self) use self::contact_manifolds_heightfield_shape::HeightFieldShapeContactManifoldsWorkspace;
-pub(self) use self::contact_manifolds_trimesh_shape::TriMeshShapeContactManifoldsWorkspace;
-pub(self) use self::contact_manifolds_workspace::WorkspaceSerializationTag;
+#[cfg(feature = "serde-serialize")]
+pub(self) use {
+    self::contact_manifolds_heightfield_shape::HeightFieldShapeContactManifoldsWorkspace,
+    self::contact_manifolds_trimesh_shape::TriMeshShapeContactManifoldsWorkspace,
+    self::contact_manifolds_workspace::WorkspaceSerializationTag,
+};
 
 mod contact_manifold;
 mod contact_manifolds_ball_ball;

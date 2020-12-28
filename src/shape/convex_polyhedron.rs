@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Point, Real, Vector};
 use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::{self, SortedPair};

@@ -1,6 +1,6 @@
 // https://github.com/rustsim/cdl/issues/242
 
-use cdl3d::query::{PointQuery, Ray, RayCast};
+use cdl3d::query::Ray;
 use cdl3d::shape::{Ball, Cuboid, Shape};
 use na::{Isometry3, Point3, Translation3, UnitQuaternion, Vector3};
 
@@ -27,8 +27,8 @@ where
             ));
 
         let point = ray.origin + ray.dir * intersection.toi;
-        let point_nudged_in = point + position * intersection.normal * -0.001;
-        let point_nudged_out = point + position * intersection.normal * 0.001;
+        let point_nudged_in = point + intersection.normal * -0.001;
+        let point_nudged_out = point + intersection.normal * 0.001;
 
         assert!(
             shape.contains_point(&position, &point_nudged_in),

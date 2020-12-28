@@ -56,6 +56,17 @@ impl TOI {
             status: self.status,
         }
     }
+
+    pub fn transform1_by(&self, pos: &Isometry<Real>) -> Self {
+        Self {
+            toi: self.toi,
+            witness1: pos * self.witness1,
+            witness2: self.witness2,
+            normal1: self.normal1,
+            normal2: pos * self.normal2,
+            status: self.status,
+        }
+    }
 }
 
 /// Computes the smallest time when two shapes under translational movement are separated by a

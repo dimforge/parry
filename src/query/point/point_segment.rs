@@ -21,7 +21,7 @@ impl PointQuery for Segment {
                 #[cfg(feature = "dim2")]
                 {
                     let dir = self.scaled_direction();
-                    let dpt = *pt - proj.local_point;
+                    let dpt = *pt - proj.point;
                     if dpt.perp(&dir) >= na::zero::<Real>() {
                         FeatureId::Face(0)
                     } else {

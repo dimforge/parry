@@ -102,17 +102,11 @@ impl Face {
 
         match loc {
             TrianglePointLocation::OnFace(_, bcoords) => (
-                Self::new_with_proj(vertices, proj.local_point, bcoords, pts, adj),
+                Self::new_with_proj(vertices, proj.point, bcoords, pts, adj),
                 true,
             ),
             _ => (
-                Self::new_with_proj(
-                    vertices,
-                    proj.local_point,
-                    [na::zero::<Real>(); 3],
-                    pts,
-                    adj,
-                ),
+                Self::new_with_proj(vertices, proj.point, [na::zero::<Real>(); 3], pts, adj),
                 false,
             ),
         }

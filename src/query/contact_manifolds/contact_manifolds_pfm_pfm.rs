@@ -1,5 +1,4 @@
 use crate::math::{Isometry, Real};
-use crate::motion::RigidMotionComposition;
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},

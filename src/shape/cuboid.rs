@@ -1,10 +1,8 @@
 //! Support mapping based Cuboid shape.
 
-use crate::math::{Isometry, Point, Real, Vector, DIM};
-use crate::shape::{FeatureId, SupportMap, PolygonalFeature};
+use crate::math::{Point, Real, Vector};
+use crate::shape::{PolygonalFeature, SupportMap};
 use crate::utils::WSign;
-use na::{self, Unit};
-use std::f64;
 
 /// Shape of a box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -1,9 +1,10 @@
-use super::{HeightFieldShapeContactManifoldsWorkspace, TriMeshShapeContactManifoldsWorkspace};
 use crate::utils::MaybeSerializableData;
 
+#[cfg(feature = "serde-serialize")]
 use num_derive::FromPrimitive;
 
 #[derive(Copy, Clone, Debug, FromPrimitive)]
+#[cfg(feature = "serde-serialize")]
 pub(super) enum WorkspaceSerializationTag {
     TriMeshShapeContactManifoldsWorkspace = 0,
     HeightfieldShapeContactManifoldsWorkspace,
@@ -51,6 +52,10 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
     where
         D: serde::Deserializer<'de>,
     {
+        use super::{
+            HeightFieldShapeContactManifoldsWorkspace, TriMeshShapeContactManifoldsWorkspace,
+        };
+
         struct Visitor {};
         impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = ContactManifoldsWorkspace;

@@ -4,7 +4,7 @@ pub use self::visitor::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
     SimdVisitor,
 };
-pub use self::wquadtree::{IndexedData, WQuadtree};
+pub use self::wquadtree::{IndexedData, SimdQuadTree};
 
 mod visitor;
 mod wquadtree;

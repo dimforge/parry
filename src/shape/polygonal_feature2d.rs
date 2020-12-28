@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, ContactManifold, TrackedContact};
-use crate::shape::{Cuboid, Segment};
+use crate::shape::Segment;
 
 #[derive(Debug)]
 pub struct PolygonalFeature {
@@ -100,7 +100,7 @@ impl PolygonalFeature {
         face1: &Self,
         normal1: &Vector<Real>,
         face2: &Self,
-        prediction: Real,
+        _prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {

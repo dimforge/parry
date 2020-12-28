@@ -1,23 +1,23 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Isometry, Point};
-use crate::partitioning::WQuadtree;
+use crate::math::{Isometry, Point, Real};
+use crate::partitioning::SimdQuadTree;
 use crate::shape::composite_shape::SimdCompositeShape;
-use crate::shape::{FeatureId, Segment, Shape};
+use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
 use na::Point2;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A polyline.
 pub struct Polyline {
-    quadtree: WQuadtree<u32>,
+    quadtree: SimdQuadTree<u32>,
     aabb: AABB,
-    vertices: Vec<Point<f32>>,
+    vertices: Vec<Point<Real>>,
     indices: Vec<Point2<u32>>,
 }
 
 impl Polyline {
     /// Creates a new polyline from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<f32>>, indices: Option<Vec<Point2<u32>>>) -> Self {
+    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<Point2<u32>>>) -> Self {
         let indices = indices.unwrap_or_else(|| {
             (0..vertices.len() as u32 - 2)
                 .map(|i| Point2::new(i, i + 1))
@@ -30,7 +30,7 @@ impl Polyline {
             (i as u32, aabb)
         });
 
-        let mut quadtree = WQuadtree::new();
+        let mut quadtree = SimdQuadTree::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         quadtree.clear_and_rebuild(data, 0.0);
@@ -44,7 +44,7 @@ impl Polyline {
     }
 
     /// Compute the axis-aligned bounding box of this polyline.
-    pub fn aabb(&self, pos: &Isometry<f32>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
         self.aabb.transform_by(pos)
     }
 
@@ -53,7 +53,7 @@ impl Polyline {
         &self.aabb
     }
 
-    pub(crate) fn quadtree(&self) -> &WQuadtree<u32> {
+    pub(crate) fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
     }
 
@@ -88,7 +88,7 @@ impl Polyline {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<f32>] {
+    pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices[..]
     }
 
@@ -112,12 +112,26 @@ impl SimdCompositeShape for Polyline {
         self.num_segments()
     }
 
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(&dyn Shape)) {
+    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.segment(i);
-        f(&tri)
+        f(None, &tri)
     }
 
-    fn quadtree(&self) -> &WQuadtree<u32> {
+    fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
+    }
+}
+
+impl TypedSimdCompositeShape for Polyline {
+    type PartShape = Segment;
+
+    #[inline(always)]
+    fn map_typed_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+    ) {
+        let seg = self.segment(i);
+        f(None, &seg)
     }
 }

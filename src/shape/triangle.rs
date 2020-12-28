@@ -1,8 +1,6 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-#[cfg(feature = "dim3")]
-use crate::shape::FeatureId;
 use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
@@ -219,60 +217,60 @@ impl Triangle {
             }
         }
     }
-
-    #[cfg(feature = "dim3")]
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>, eps: Real) -> FeatureId {
-        if let Some(normal) = self.normal() {
-            let (seps, ceps) = eps.sin_cos();
-
-            let normal_dot = local_dir.dot(&*normal);
-            if normal_dot >= ceps {
-                FeatureId::Face(0)
-            } else if normal_dot <= -ceps {
-                FeatureId::Face(1)
-            } else {
-                let edges = self.edges();
-                let mut dots = [na::zero::<Real>(); 3];
-
-                let dir1 = edges[0].direction();
-                if let Some(dir1) = dir1 {
-                    dots[0] = dir1.dot(local_dir);
-
-                    if dots[0].abs() < seps {
-                        return FeatureId::Edge(0);
-                    }
-                }
-
-                let dir2 = edges[1].direction();
-                if let Some(dir2) = dir2 {
-                    dots[1] = dir2.dot(local_dir);
-
-                    if dots[1].abs() < seps {
-                        return FeatureId::Edge(1);
-                    }
-                }
-
-                let dir3 = edges[2].direction();
-                if let Some(dir3) = dir3 {
-                    dots[2] = dir3.dot(local_dir);
-
-                    if dots[2].abs() < seps {
-                        return FeatureId::Edge(2);
-                    }
-                }
-
-                if dots[0] > na::zero::<Real>() && dots[1] < na::zero::<Real>() {
-                    FeatureId::Vertex(1)
-                } else if dots[1] > na::zero::<Real>() && dots[2] < na::zero::<Real>() {
-                    FeatureId::Vertex(2)
-                } else {
-                    FeatureId::Vertex(0)
-                }
-            }
-        } else {
-            FeatureId::Vertex(0)
-        }
-    }
+    //
+    // #[cfg(feature = "dim3")]
+    // fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>, eps: Real) -> FeatureId {
+    //     if let Some(normal) = self.normal() {
+    //         let (seps, ceps) = eps.sin_cos();
+    //
+    //         let normal_dot = local_dir.dot(&*normal);
+    //         if normal_dot >= ceps {
+    //             FeatureId::Face(0)
+    //         } else if normal_dot <= -ceps {
+    //             FeatureId::Face(1)
+    //         } else {
+    //             let edges = self.edges();
+    //             let mut dots = [na::zero::<Real>(); 3];
+    //
+    //             let dir1 = edges[0].direction();
+    //             if let Some(dir1) = dir1 {
+    //                 dots[0] = dir1.dot(local_dir);
+    //
+    //                 if dots[0].abs() < seps {
+    //                     return FeatureId::Edge(0);
+    //                 }
+    //             }
+    //
+    //             let dir2 = edges[1].direction();
+    //             if let Some(dir2) = dir2 {
+    //                 dots[1] = dir2.dot(local_dir);
+    //
+    //                 if dots[1].abs() < seps {
+    //                     return FeatureId::Edge(1);
+    //                 }
+    //             }
+    //
+    //             let dir3 = edges[2].direction();
+    //             if let Some(dir3) = dir3 {
+    //                 dots[2] = dir3.dot(local_dir);
+    //
+    //                 if dots[2].abs() < seps {
+    //                     return FeatureId::Edge(2);
+    //                 }
+    //             }
+    //
+    //             if dots[0] > na::zero::<Real>() && dots[1] < na::zero::<Real>() {
+    //                 FeatureId::Vertex(1)
+    //             } else if dots[1] > na::zero::<Real>() && dots[2] < na::zero::<Real>() {
+    //                 FeatureId::Vertex(2)
+    //             } else {
+    //                 FeatureId::Vertex(0)
+    //             }
+    //         }
+    //     } else {
+    //         FeatureId::Vertex(0)
+    //     }
+    // }
 
     /// The area of this triangle.
     #[inline]

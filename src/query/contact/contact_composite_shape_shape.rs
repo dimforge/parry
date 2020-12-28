@@ -3,6 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::query::visitors::BoundingVolumeInterferencesCollector;
 use crate::query::{Contact, QueryDispatcher};
 use crate::shape::{Shape, SimdCompositeShape};
+use crate::utils::IsometryOpt;
 
 /// Best contact between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn contact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
@@ -28,11 +29,16 @@ where
     let mut res = None::<Contact>;
 
     for i in interferences.into_iter() {
-        g1.map_part_at(i, &mut |part| {
-            if let Ok(Some(c)) = dispatcher.contact(pos12, part, g2, prediction) {
+        g1.map_part_at(i, &mut |part_pos1, part1| {
+            if let Ok(Some(mut c)) =
+                dispatcher.contact(&part_pos1.inv_mul(pos12), part1, g2, prediction)
+            {
                 let replace = res.map_or(true, |cbest| c.dist < cbest.dist);
 
                 if replace {
+                    if let Some(part_pos1) = part_pos1 {
+                        c.transform1_by_mut(part_pos1);
+                    }
                     res = Some(c)
                 }
             }

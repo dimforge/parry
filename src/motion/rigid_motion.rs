@@ -177,6 +177,14 @@ pub trait RigidMotionComposition: RigidMotion {
             transformation,
         }
     }
+
+    /// Append a transformation to the rigid motion `self`.
+    fn append_transformation(&self, transformation: Isometry<Real>) -> AppendTransformation<Self> {
+        AppendTransformation {
+            motion: self,
+            transformation,
+        }
+    }
 }
 
 impl<M: ?Sized + RigidMotion> RigidMotionComposition for M {}
@@ -228,5 +236,18 @@ impl<'a, M: ?Sized + RigidMotion> RigidMotion for PrependTransformation<'a, M> {
     fn position_at_time(&self, t: Real) -> Isometry<Real> {
         let m = self.motion.position_at_time(t);
         m * self.transformation
+    }
+}
+
+/// The result of prepending an isometric transformation to a rigid motion.
+pub struct AppendTransformation<'a, M: ?Sized> {
+    motion: &'a M,
+    transformation: Isometry<Real>,
+}
+
+impl<'a, M: ?Sized + RigidMotion> RigidMotion for AppendTransformation<'a, M> {
+    fn position_at_time(&self, t: Real) -> Isometry<Real> {
+        let m = self.motion.position_at_time(t);
+        self.transformation * m
     }
 }

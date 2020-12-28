@@ -1,8 +1,6 @@
 use crate::math::{Isometry, Point, Real};
 use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
 use crate::shape::{Ball, Shape};
-#[cfg(feature = "dim2")]
-use crate::{math::Vector};
 use na::Unit;
 
 pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
@@ -34,7 +32,7 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
 {
     let local_p2_1 = Point::from(pos12.translation.vector);
     let proj = shape1.project_local_point(&local_p2_1, cfg!(feature = "dim3"));
-    let dpos = local_p2_1 - proj.local_point;
+    let dpos = local_p2_1 - proj.point;
 
     #[allow(unused_mut)] // Because `mut local_n1, mut dist` is needed in 2D but not in 3D.
     if let Some((mut local_n1, mut dist)) = Unit::try_new_and_get(dpos, 0.0) {
@@ -47,14 +45,8 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
         if dist <= ball2.radius + prediction {
             let local_n2 = pos12.inverse_transform_vector(&-*local_n1);
             let local_p2 = (local_n2 * ball2.radius).into();
-            let contact_point = TrackedContact::flipped(
-                proj.local_point,
-                local_p2,
-                0,
-                0,
-                dist - ball2.radius,
-                flipped,
-            );
+            let contact_point =
+                TrackedContact::flipped(proj.point, local_p2, 0, 0, dist - ball2.radius, flipped);
 
             if manifold.points.len() != 1 {
                 manifold.clear();

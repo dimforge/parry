@@ -69,7 +69,7 @@ impl NodeIndex {
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-struct WQuadtreeNode {
+struct SimdQuadTreeNode {
     pub simd_aabb: SimdAABB,
     // Index of the nodes of the 4 nodes represented by self.
     // If this is a leaf, it contains the proxy ids instead.
@@ -81,12 +81,12 @@ struct WQuadtreeNode {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-struct WQuadtreeProxy<T> {
+struct SimdQuadTreeProxy<T> {
     node: NodeIndex,
     data: T, // The collider data. TODO: only set the collider generation here?
 }
 
-impl<T: IndexedData> WQuadtreeProxy<T> {
+impl<T: IndexedData> SimdQuadTreeProxy<T> {
     fn invalid() -> Self {
         Self {
             node: NodeIndex::invalid(),
@@ -97,15 +97,15 @@ impl<T: IndexedData> WQuadtreeProxy<T> {
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
-pub struct WQuadtree<T> {
-    nodes: Vec<WQuadtreeNode>,
+pub struct SimdQuadTree<T> {
+    nodes: Vec<SimdQuadTreeNode>,
     dirty_nodes: VecDeque<u32>,
-    proxies: Vec<WQuadtreeProxy<T>>,
+    proxies: Vec<SimdQuadTreeProxy<T>>,
 }
 
-impl<T: IndexedData> WQuadtree<T> {
+impl<T: IndexedData> SimdQuadTree<T> {
     pub fn new() -> Self {
-        WQuadtree {
+        SimdQuadTree {
             nodes: Vec::new(),
             dirty_nodes: VecDeque::new(),
             proxies: Vec::new(),
@@ -123,12 +123,12 @@ impl<T: IndexedData> WQuadtree<T> {
         // Create proxies.
         let mut indices = Vec::with_capacity(data.len());
         let mut aabbs = vec![AABB::new_invalid(); data.len()];
-        self.proxies = vec![WQuadtreeProxy::invalid(); data.len()];
+        self.proxies = vec![SimdQuadTreeProxy::invalid(); data.len()];
 
         for (data, aabb) in data {
             let index = data.index();
             if index >= self.proxies.len() {
-                self.proxies.resize(index + 1, WQuadtreeProxy::invalid());
+                self.proxies.resize(index + 1, SimdQuadTreeProxy::invalid());
                 aabbs.resize(index + 1, AABB::new_invalid());
             }
 
@@ -138,7 +138,7 @@ impl<T: IndexedData> WQuadtree<T> {
         }
 
         // Build the tree recursively.
-        let root_node = WQuadtreeNode {
+        let root_node = SimdQuadTreeNode {
             simd_aabb: SimdAABB::new_invalid(),
             children: [1, u32::MAX, u32::MAX, u32::MAX],
             parent: NodeIndex::invalid(),
@@ -226,7 +226,7 @@ impl<T: IndexedData> WQuadtree<T> {
                 self.proxies[*id].node = NodeIndex::new(my_id as u32, k as u8);
             }
 
-            let mut node = WQuadtreeNode {
+            let mut node = SimdQuadTreeNode {
                 simd_aabb: SimdAABB::from(leaf_aabbs),
                 children: proxy_ids,
                 parent,
@@ -293,7 +293,7 @@ impl<T: IndexedData> WQuadtree<T> {
         //     right_top.len()
         // );
 
-        let node = WQuadtreeNode {
+        let node = SimdQuadTreeNode {
             simd_aabb: SimdAABB::new_invalid(),
             children: [0; 4], // Will be set after the recursive call
             parent,
@@ -504,24 +504,24 @@ impl<T: IndexedData> WQuadtree<T> {
 }
 
 #[allow(dead_code)]
-struct WQuadtreeIncrementalBuilderStep {
+struct SimdQuadTreeIncrementalBuilderStep {
     range: Range<usize>,
     parent: NodeIndex,
 }
 
 #[allow(dead_code)]
-struct WQuadtreeIncrementalBuilder<T> {
-    quadtree: WQuadtree<T>,
-    to_insert: Vec<WQuadtreeIncrementalBuilderStep>,
+struct SimdQuadTreeIncrementalBuilder<T> {
+    quadtree: SimdQuadTree<T>,
+    to_insert: Vec<SimdQuadTreeIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<T: IndexedData> WQuadtreeIncrementalBuilder<T> {
+impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
     pub fn new() -> Self {
         Self {
-            quadtree: WQuadtree::new(),
+            quadtree: SimdQuadTree::new(),
             to_insert: Vec::new(),
             aabbs: Vec::new(),
             indices: Vec::new(),
@@ -545,7 +545,7 @@ impl<T: IndexedData> WQuadtreeIncrementalBuilder<T> {
                     proxy_ids[k] = *id as u32;
                 }
 
-                let node = WQuadtreeNode {
+                let node = SimdQuadTreeNode {
                     simd_aabb: SimdAABB::from(leaf_aabbs),
                     children: proxy_ids,
                     parent: to_insert.parent,
@@ -611,7 +611,7 @@ impl<T: IndexedData> WQuadtreeIncrementalBuilder<T> {
             let (right_bottom, right_top) =
                 split_indices_wrt_dim(right, &self.aabbs, &center, subdiv_dims[1]);
 
-            let node = WQuadtreeNode {
+            let node = SimdQuadTreeNode {
                 simd_aabb: SimdAABB::new_invalid(),
                 children: [0; 4], // Will be set after the recursive call
                 parent: to_insert.parent,
@@ -627,19 +627,19 @@ impl<T: IndexedData> WQuadtreeIncrementalBuilder<T> {
             let b = a + left_top.len();
             let c = b + right_bottom.len();
             let d = c + right_top.len();
-            self.to_insert.push(WQuadtreeIncrementalBuilderStep {
+            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
                 range: 0..a,
                 parent: NodeIndex::new(id, 0),
             });
-            self.to_insert.push(WQuadtreeIncrementalBuilderStep {
+            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
                 range: a..b,
                 parent: NodeIndex::new(id, 1),
             });
-            self.to_insert.push(WQuadtreeIncrementalBuilderStep {
+            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
                 range: b..c,
                 parent: NodeIndex::new(id, 2),
             });
-            self.to_insert.push(WQuadtreeIncrementalBuilderStep {
+            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
                 range: c..d,
                 parent: NodeIndex::new(id, 3),
             });
@@ -693,16 +693,16 @@ fn split_indices_wrt_dim<'a>(
 mod test {
     use crate::bounding_volume::AABB;
     use crate::math::{Point, Vector};
-    use crate::partitioning::WQuadtree;
+    use crate::partitioning::SimdQuadTree;
 
     #[test]
-    fn multiple_identical_AABB_stack_overflow() {
+    fn multiple_identical_aabb_stack_overflow() {
         // A stack overflow was caused during the construction of the
-        // WQuadtree with more than four AABB with the same center.
+        // SimdQuadTree with more than four AABB with the same center.
         let aabb = AABB::new(Point::origin(), Vector::repeat(1.0).into());
 
         for k in 0u32..20 {
-            let mut tree = WQuadtree::new();
+            let mut tree = SimdQuadTree::new();
             tree.clear_and_rebuild((0..k).map(|i| (i, aabb)), 0.0);
         }
     }

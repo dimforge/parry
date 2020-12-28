@@ -1,6 +1,6 @@
 use cdl2d::math::Real;
 use cdl2d::query::{Ray, RayCast};
-use cdl2d::shape::{ConvexPolygon, Segment, Shape};
+use cdl2d::shape::{ConvexPolygon, Segment};
 use na::{self, Isometry2, Point2, Vector2};
 
 #[test]

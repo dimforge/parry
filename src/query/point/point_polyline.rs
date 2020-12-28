@@ -103,7 +103,7 @@ macro_rules! gen_visitor(
                             );
 
                             let extra_info = (*data[ii].unwrap(), extra_info);
-                            weights[ii] = na::distance(self.point, &proj.local_point);
+                            weights[ii] = na::distance(self.point, &proj.point);
                             results[ii] = Some((proj, extra_info));
                         }
                     }

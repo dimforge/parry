@@ -1,12 +1,9 @@
 //! Definition of the segment shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
-#[cfg(feature = "dim2")]
-use crate::utils;
+use crate::shape::SupportMap;
 
 use na::{self, Unit};
-use std::f64;
 use std::mem;
 
 /// A segment shape.

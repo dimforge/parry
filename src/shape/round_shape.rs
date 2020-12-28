@@ -1,8 +1,5 @@
-use crate::math::{Isometry, Point, Vector};
-use crate::query::{
-    gjk::VoronoiSimplex, PointProjection, PointQuery, Ray, RayCast, RayIntersection,
-};
-use crate::shape::{FeatureId, SupportMap};
+use crate::math::{Point, Vector};
+use crate::shape::SupportMap;
 use na::Unit;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]

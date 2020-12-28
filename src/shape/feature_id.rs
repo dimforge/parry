@@ -1,6 +1,6 @@
 /// An identifier of a feature of a convex polyhedron.
 ///
-/// This identifier is shape-dependent and is seach that it
+/// This identifier is shape-dependent and is such that it
 /// allows an efficient retrieval of the geometric information of the
 /// feature.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

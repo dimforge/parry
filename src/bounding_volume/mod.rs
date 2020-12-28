@@ -4,8 +4,10 @@
 pub use crate::bounding_volume::aabb::AABB;
 pub use crate::bounding_volume::simd_aabb::SimdAABB;
 
+#[cfg(feature = "dim3")]
+pub(crate) use crate::bounding_volume::aabb_utils::support_map_aabb;
 pub(crate) use crate::bounding_volume::aabb_utils::{
-    local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb, support_map_aabb,
+    local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb,
 };
 #[doc(inline)]
 pub use crate::bounding_volume::bounding_sphere::BoundingSphere;
@@ -19,10 +21,10 @@ pub mod bounding_volume;
 #[doc(hidden)]
 pub mod aabb;
 mod aabb_ball;
-#[cfg(feature = "dim3")]
-mod aabb_convex;
 #[cfg(feature = "dim2")]
 mod aabb_convex_polygon;
+#[cfg(feature = "dim3")]
+mod aabb_convex_polyhedron;
 mod aabb_cuboid;
 mod aabb_halfspace;
 mod aabb_heightfield;

@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector};
 use na::{self, Unit};
 use std::mem;
 
@@ -61,5 +61,10 @@ impl Contact {
     pub fn flipped(mut self) -> Self {
         self.flip();
         self
+    }
+
+    pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {
+        self.point1 = pos * self.point1;
+        self.normal1 = pos * self.normal1;
     }
 }

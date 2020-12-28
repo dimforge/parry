@@ -3,6 +3,7 @@ use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, SimdCompositeShape};
+use crate::utils::IsometryOpt;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Smallest distance between a composite shape and any other shape.
@@ -88,18 +89,24 @@ where
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let mut dist = Ok(0.0);
-                    self.g1.map_part_at(*data[ii].unwrap(), &mut |g1| {
-                        dist = self.dispatcher.distance(&self.pos12, g1, self.g2);
-                    });
+                    self.g1
+                        .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
+                            dist = self.dispatcher.distance(
+                                &part_pos1.inv_mul(self.pos12),
+                                g1,
+                                self.g2,
+                            );
+                        });
 
                     match dist {
-                        Ok(0.0) => {
-                            return SimdBestFirstVisitStatus::ExitEarly(Some(0.0));
-                        }
                         Ok(dist) => {
-                            weights[ii] = dist;
-                            mask[ii] = dist < best;
-                            results[ii] = Some(dist);
+                            if dist == 0.0 {
+                                return SimdBestFirstVisitStatus::ExitEarly(Some(0.0));
+                            } else {
+                                weights[ii] = dist;
+                                mask[ii] = dist < best;
+                                results[ii] = Some(dist);
+                            }
                         }
                         Err(_) => {}
                     }

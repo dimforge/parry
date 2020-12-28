@@ -16,7 +16,7 @@ impl PointQuery for HeightField {
         let iter = self.triangles();
         for elt in iter {
             let proj = elt.project_local_point(point, false);
-            let dist = na::distance_squared(point, &proj.local_point);
+            let dist = na::distance_squared(point, &proj.point);
 
             if dist < smallest_dist {
                 smallest_dist = dist;

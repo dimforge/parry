@@ -115,7 +115,7 @@ impl VoronoiSimplex {
                 _ => unreachable!(),
             }
 
-            proj.local_point
+            proj.point
         } else {
             assert!(self.dim == 2);
             // FIXME: NLL
@@ -152,7 +152,7 @@ impl VoronoiSimplex {
                 _ => {}
             }
 
-            proj.local_point
+            proj.point
         }
     }
 
@@ -163,7 +163,7 @@ impl VoronoiSimplex {
         } else if self.dim == 1 {
             let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
             seg.project_local_point(&Point::<Real>::origin(), true)
-                .local_point
+                .point
         } else {
             assert!(self.dim == 2);
             let tri = Triangle::new(
@@ -172,7 +172,7 @@ impl VoronoiSimplex {
                 self.vertices[2].point,
             );
             tri.project_local_point(&Point::<Real>::origin(), true)
-                .local_point
+                .point
         }
     }
 

@@ -139,19 +139,35 @@ where
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let mut toi = None;
-                    self.g1.map_part_at(*data[ii].unwrap(), &mut |g1| {
-                        toi = self
-                            .dispatcher
-                            .time_of_impact(
-                                self.pos12,
-                                self.vel12,
-                                g1,
-                                self.g2,
-                                self.max_toi,
-                                self.target_distance,
-                            )
-                            .unwrap_or(None);
-                    });
+                    self.g1
+                        .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
+                            if let Some(part_pos1) = part_pos1 {
+                                toi = self
+                                    .dispatcher
+                                    .time_of_impact(
+                                        &part_pos1.inv_mul(&self.pos12),
+                                        self.vel12,
+                                        g1,
+                                        self.g2,
+                                        self.max_toi,
+                                        self.target_distance,
+                                    )
+                                    .unwrap_or(None)
+                                    .map(|toi| toi.transform1_by(part_pos1));
+                            } else {
+                                toi = self
+                                    .dispatcher
+                                    .time_of_impact(
+                                        &self.pos12,
+                                        self.vel12,
+                                        g1,
+                                        self.g2,
+                                        self.max_toi,
+                                        self.target_distance,
+                                    )
+                                    .unwrap_or(None);
+                            }
+                        });
 
                     if let Some(toi) = toi {
                         results[ii] = Some(toi);

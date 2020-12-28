@@ -5,7 +5,7 @@ pub use self::bounding_volume_interferences_collector::BoundingVolumeInterferenc
 pub use self::composite_closest_point_visitor::CompositeClosestPointVisitor;
 pub use self::composite_point_containment_test::CompositePointContainmentTest;
 pub use self::point_interferences_collector::PointInterferencesCollector;
-pub use self::ray_interferences_collector::RayInterferencesCollector;
+pub use self::ray_interferences_collector::RayIntersectionsCollector;
 
 mod aabb_sets_interferences_collector;
 mod bounding_volume_interferences_collector;

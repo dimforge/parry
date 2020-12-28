@@ -3,6 +3,7 @@ use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{Shape, SimdCompositeShape};
+use crate::utils::IsometryOpt;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
@@ -110,23 +111,28 @@ where
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.g1.map_part_at(*data[ii].unwrap(), &mut |g1| {
-                        let pts =
-                            self.dispatcher
-                                .closest_points(&self.pos12, g1, self.g2, self.margin);
-                        match pts {
-                            Ok(ClosestPoints::WithinMargin(ref p1, ref p2)) => {
-                                let p2_1 = self.pos12 * p2;
-                                weights[ii] = na::distance(p1, &p2_1);
-                                results[ii] = Some(ClosestPoints::WithinMargin(*p1, *p2));
-                                mask[ii] = true;
-                            }
-                            Ok(ClosestPoints::Intersecting) => {
-                                found_intersection = true;
-                            }
-                            Err(_) | Ok(ClosestPoints::Disjoint) => {}
-                        };
-                    });
+                    self.g1
+                        .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
+                            let pts = self.dispatcher.closest_points(
+                                &part_pos1.inv_mul(self.pos12),
+                                g1,
+                                self.g2,
+                                self.margin,
+                            );
+                            match pts {
+                                Ok(ClosestPoints::WithinMargin(ref p1, ref p2)) => {
+                                    let p1 = part_pos1.transform_point(p1);
+                                    let p2_1 = self.pos12 * p2;
+                                    weights[ii] = na::distance(&p1, &p2_1);
+                                    results[ii] = Some(ClosestPoints::WithinMargin(p1, *p2));
+                                    mask[ii] = true;
+                                }
+                                Ok(ClosestPoints::Intersecting) => {
+                                    found_intersection = true;
+                                }
+                                Err(_) | Ok(ClosestPoints::Disjoint) => {}
+                            };
+                        });
 
                     if found_intersection {
                         return SimdBestFirstVisitStatus::ExitEarly(Some(

@@ -1,23 +1,25 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Isometry, Point};
-use crate::partitioning::WQuadtree;
+use crate::math::{Isometry, Point, Real};
+use crate::partitioning::SimdQuadTree;
 use crate::shape::composite_shape::SimdCompositeShape;
-use crate::shape::{Cuboid, HeightField, Shape, Triangle};
+#[cfg(feature = "dim3")]
+use crate::shape::{Cuboid, HeightField};
+use crate::shape::{Shape, Triangle, TypedSimdCompositeShape};
 use na::Point3;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A triangle mesh.
 pub struct TriMesh {
-    quadtree: WQuadtree<u32>,
+    quadtree: SimdQuadTree<u32>,
     aabb: AABB,
-    vertices: Vec<Point<f32>>,
+    vertices: Vec<Point<Real>>,
     indices: Vec<Point3<u32>>,
 }
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<f32>>, indices: Vec<Point3<u32>>) -> Self {
+    pub fn new(vertices: Vec<Point<Real>>, indices: Vec<Point3<u32>>) -> Self {
         assert!(
             indices.len() > 0,
             "A triangle mesh must contain at least one triangle."
@@ -34,7 +36,7 @@ impl TriMesh {
             (i as u32, aabb)
         });
 
-        let mut quadtree = WQuadtree::new();
+        let mut quadtree = SimdQuadTree::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         quadtree.clear_and_rebuild(data, 0.0);
@@ -48,7 +50,7 @@ impl TriMesh {
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<f32>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
         self.aabb.transform_by(pos)
     }
 
@@ -57,7 +59,7 @@ impl TriMesh {
         &self.aabb
     }
 
-    pub fn quadtree(&self) -> &WQuadtree<u32> {
+    pub fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
     }
 
@@ -88,7 +90,7 @@ impl TriMesh {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<f32>] {
+    pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices[..]
     }
 
@@ -113,7 +115,7 @@ impl RayCast for TriMesh {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: f32,
+        max_toi: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         // FIXME: do a best-first search.
@@ -137,7 +139,7 @@ impl RayCast for TriMesh {
         best
     }
 
-    fn intersects_local_ray(&self, ray: &Ray, max_toi: f32) -> bool {
+    fn intersects_local_ray(&self, ray: &Ray, max_toi: Real) -> bool {
         // FIXME: do a best-first search.
         let mut intersections = Vec::new();
         self.quadtree.cast_ray(&ray, max_toi, &mut intersections);
@@ -175,12 +177,26 @@ impl SimdCompositeShape for TriMesh {
         self.num_triangles()
     }
 
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(&dyn Shape)) {
+    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.triangle(i);
-        f(&tri)
+        f(None, &tri)
     }
 
-    fn quadtree(&self) -> &WQuadtree<u32> {
+    fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
+    }
+}
+
+impl TypedSimdCompositeShape for TriMesh {
+    type PartShape = Triangle;
+
+    #[inline(always)]
+    fn map_typed_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+    ) {
+        let tri = self.triangle(i);
+        f(None, &tri)
     }
 }

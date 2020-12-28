@@ -6,6 +6,7 @@ use crate::shape::SupportMap;
 use na;
 
 /// Computes the AABB of an support mapped shape.
+#[cfg(feature = "dim3")]
 pub fn support_map_aabb<G>(m: &Isometry<Real>, i: &G) -> AABB
 where
     G: SupportMap,

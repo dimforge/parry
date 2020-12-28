@@ -9,7 +9,7 @@ impl PointQuery for BoundingSphere {
         let centered_pt = pt - self.center().coords;
         let mut proj = Ball::new(self.radius()).project_local_point(&centered_pt, solid);
 
-        proj.local_point += self.center().coords;
+        proj.point += self.center().coords;
         proj
     }
 

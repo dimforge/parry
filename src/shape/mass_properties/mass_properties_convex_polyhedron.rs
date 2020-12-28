@@ -1,5 +1,5 @@
 use crate::math::{Matrix, Point, Real};
-use crate::shape::{ConvexPolyhedron, MassProperties, Tetrahedron};
+use crate::shape::{MassProperties, Tetrahedron};
 use crate::utils;
 use num::Zero;
 

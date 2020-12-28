@@ -58,10 +58,10 @@ pub struct RayIntersection {
     /// `dir` is its direction and `toi` is the value of this field.
     pub toi: Real,
 
-    /// The normal at the intersection point, expressed in the shape's local-space.
+    /// The normal at the intersection point.
     ///
     /// If the `toi` is exactly zero, the normal might not be reliable.
-    // XXX: use a Unit<Vetor> instead.
+    // XXX: use a Unit<Vector> instead.
     pub normal: Vector<Real>,
 
     /// Feature at the intersection point.
@@ -88,6 +88,15 @@ impl RayIntersection {
             toi,
             normal,
             feature,
+        }
+    }
+
+    #[inline]
+    pub fn transform_by(&self, transform: &Isometry<Real>) -> Self {
+        RayIntersection {
+            toi: self.toi,
+            normal: transform * self.normal,
+            feature: self.feature,
         }
     }
 }
@@ -130,6 +139,7 @@ pub trait RayCast {
     ) -> Option<RayIntersection> {
         let ls_ray = ray.inverse_transform_by(m);
         self.cast_local_ray_and_get_normal(&ls_ray, max_toi, solid)
+            .map(|inter| inter.transform_by(m))
     }
 
     /// Tests whether a ray intersects this transformed shape.

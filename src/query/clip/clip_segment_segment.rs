@@ -1,6 +1,6 @@
-use crate::math::{Point, Vector};
+use crate::math::Point;
 #[cfg(feature = "dim2")]
-use crate::utils;
+use crate::{math::Vector, utils};
 
 // Features in clipping points are:
 // 0 = First vertex.

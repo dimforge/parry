@@ -1,9 +1,14 @@
-use crate::math::{Point, Vector};
-#[cfg(feature = "dim3")]
-use crate::shape::{Cone, Cylinder};
+use crate::math::Vector;
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
-use approx::AbsDiffEq;
-use na::{Unit, Vector2};
+use na::Unit;
+#[cfg(feature = "dim3")]
+use {
+    crate::{
+        math::Point,
+        shape::{Cone, Cylinder},
+    },
+    approx::AbsDiffEq,
+};
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
@@ -31,6 +36,8 @@ impl PolygonalFeatureMap for Cuboid {
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cylinder {
     fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_features: &mut PolygonalFeature) {
+        use na::Vector2;
+
         // About feature ids.
         // At all times, we consider our cylinder to be approximated as follows:
         // - The curved part is approximated by a single segment.
@@ -88,6 +95,8 @@ impl PolygonalFeatureMap for Cylinder {
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cone {
     fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_features: &mut PolygonalFeature) {
+        use na::Vector2;
+
         // About feature ids. It is very similar to the feature ids of cylinders.
         // At all times, we consider our cone to be approximated as follows:
         // - The curved part is approximated by a single segment.

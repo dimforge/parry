@@ -1,4 +1,4 @@
-use cdl3d::query::{time_of_impact, DefaultQueryDispatcher};
+use cdl3d::query::time_of_impact;
 use cdl3d::shape::Cuboid;
 use na::{self, Isometry3, Vector3};
 

@@ -1,9 +1,10 @@
-use crate::bounding_volume;
-use crate::math::{Point, Real};
+use crate::math::Real;
 use crate::num::Bounded;
 use na;
 use na::allocator::Allocator;
 use na::base::{DefaultAllocator, DimName};
+#[cfg(feature = "dim3")]
+use {crate::bounding_volume, crate::math::Point};
 
 /// Returns the index of the support point of a list of points.
 pub fn support_point_id<D: DimName>(
@@ -55,6 +56,7 @@ where
 }
 
 /// Scale and center the given set of point depending on their AABB.
+#[cfg(feature = "dim3")]
 pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
     let aabb = bounding_volume::local_point_cloud_aabb(&coords[..]);
     let diag = na::distance(&aabb.mins, &aabb.maxs);
@@ -68,6 +70,7 @@ pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
 }
 
 /// Scale and translates the given set of point.
+#[cfg(feature = "dim3")]
 pub fn denormalize(coords: &mut [Point<Real>], center: &Point<Real>, diag: Real) {
     for c in coords.iter_mut() {
         *c = *c * diag + center.coords;

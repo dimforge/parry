@@ -1,8 +1,8 @@
 use crate::math::Real;
 use crate::query::Ray;
 
-/// Bounding Volume Tree visitor collecting interferences with a given ray.
-pub struct RayInterferencesCollector<'a, T: 'a> {
+/// Bounding Volume Tree visitor collecting intersections with a given ray.
+pub struct RayIntersectionsCollector<'a, T: 'a> {
     /// Ray to be tested.
     pub ray: &'a Ray,
     /// The maximum allowed time of impact.
@@ -11,15 +11,15 @@ pub struct RayInterferencesCollector<'a, T: 'a> {
     pub collector: &'a mut Vec<T>,
 }
 
-impl<'a, T> RayInterferencesCollector<'a, T> {
-    /// Creates a new `RayInterferencesCollector`.
+impl<'a, T> RayIntersectionsCollector<'a, T> {
+    /// Creates a new `RayIntersectionsCollector`.
     #[inline]
     pub fn new(
         ray: &'a Ray,
         max_toi: Real,
         buffer: &'a mut Vec<T>,
-    ) -> RayInterferencesCollector<'a, T> {
-        RayInterferencesCollector {
+    ) -> RayIntersectionsCollector<'a, T> {
+        RayIntersectionsCollector {
             ray,
             max_toi,
             collector: buffer,
@@ -27,7 +27,7 @@ impl<'a, T> RayInterferencesCollector<'a, T> {
     }
 }
 
-// impl<'a, T, BV> Visitor<T, BV> for RayInterferencesCollector<'a, T>
+// impl<'a, T, BV> Visitor<T, BV> for RayIntersectionsCollector<'a, T>
 // where
 //     T: Clone,
 //     BV: RayCast,

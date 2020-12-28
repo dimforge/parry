@@ -93,7 +93,7 @@ impl PointQuery for ConvexPolyhedron {
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
-        let dpt = *point - proj.local_point;
+        let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
         if let Some(local_dir) = Unit::try_new(local_dir, crate::math::DEFAULT_EPSILON) {
@@ -118,7 +118,7 @@ impl PointQuery for ConvexPolygon {
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
-        let dpt = *point - proj.local_point;
+        let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
         if let Some(local_dir) = Unit::try_new(local_dir, crate::math::DEFAULT_EPSILON) {

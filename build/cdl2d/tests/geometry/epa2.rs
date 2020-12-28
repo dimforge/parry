@@ -1,6 +1,4 @@
-use cdl2d::query::{
-    self, ContactManifold, DefaultQueryDispatcher, PersistentQueryDispatcher, QueryDispatcher,
-};
+use cdl2d::query::{self, ContactManifold, DefaultQueryDispatcher, PersistentQueryDispatcher};
 use cdl2d::shape::Cuboid;
 use na::{self, Isometry2, Vector2};
 
@@ -43,13 +41,9 @@ fn cuboids_large_size_ratio_issue_181() {
         let pos_a = Isometry2::new(p, angle);
         let pos_ab = pos_a.inv_mul(&pos_b);
         let mut manifold: ContactManifold<(), ()> = ContactManifold::new();
-        dispatcher.contact_manifold_convex_convex(
-            &pos_ab,
-            &cuboid_a,
-            &cuboid_b,
-            0.0,
-            &mut manifold,
-        );
+        dispatcher
+            .contact_manifold_convex_convex(&pos_ab, &cuboid_a, &cuboid_b, 0.0, &mut manifold)
+            .unwrap();
 
         if let Some(deepest) = manifold.find_deepest_contact() {
             p += pos_a * manifold.local_n1 * deepest.dist;
