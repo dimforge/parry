@@ -5,7 +5,7 @@
 use crate::bounding_volume::{BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
 use crate::partitioning::SimdQuadTree;
-use crate::shape::{Shape, SimdCompositeShape};
+use crate::shape::{Shape, SimdCompositeShape, TypedSimdCompositeShape};
 use std::sync::Arc;
 
 /// A compound shape with an aabb bounding volume.
@@ -69,7 +69,7 @@ impl Compound {
 
     /// The AABB of this compound in its local-space.
     #[inline]
-    pub fn aabb(&self) -> &AABB {
+    pub fn local_aabb(&self) -> &AABB {
         &self.aabb
     }
 
@@ -77,6 +77,11 @@ impl Compound {
     #[inline]
     pub fn aabbs(&self) -> &[AABB] {
         &self.aabbs[..]
+    }
+
+    #[inline]
+    pub fn quadtree(&self) -> &SimdQuadTree<u32> {
+        &self.quadtree
     }
 }
 
@@ -96,5 +101,20 @@ impl SimdCompositeShape for Compound {
     #[inline]
     fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
+    }
+}
+
+impl TypedSimdCompositeShape for Compound {
+    type PartShape = dyn Shape;
+
+    #[inline(always)]
+    fn map_typed_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+    ) {
+        if let Some((part_pos, part)) = self.shapes.get(i as usize) {
+            f(Some(part_pos), &**part)
+        }
     }
 }

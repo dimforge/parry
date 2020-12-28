@@ -1,6 +1,7 @@
 use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
 use crate::utils;
 use num::Zero;
+use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "dim3")]
 use {na::Matrix3, std::ops::MulAssign};
@@ -299,6 +300,68 @@ impl Add<MassProperties> for MassProperties {
 impl AddAssign<MassProperties> for MassProperties {
     fn add_assign(&mut self, rhs: MassProperties) {
         *self = *self + rhs
+    }
+}
+
+impl Sum<MassProperties> for MassProperties {
+    #[cfg(feature = "dim2")]
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        let mut total_mass = 0.0;
+        let mut total_com = Point::origin();
+        let mut total_inertia = 0.0;
+        // TODO: avoid this allocation.
+        // This is needed because we iterate twice.
+        let mut all_props = Vec::new();
+
+        for props in iter {
+            let mass = utils::inv(props.inv_mass);
+            total_mass += mass;
+            total_com += props.local_com.coords * mass;
+            all_props.push(props);
+        }
+
+        total_com /= total_mass;
+
+        for props in all_props {
+            total_inertia += props.construct_shifted_inertia_matrix(total_com - props.local_com);
+        }
+
+        Self {
+            local_com: total_com,
+            inv_mass: utils::inv(total_mass),
+            inv_principal_inertia_sqrt: utils::inv(total_inertia.sqrt()),
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        let mut total_mass = 0.0;
+        let mut total_com = Point::origin();
+        let mut total_inertia = Matrix3::zeros();
+        // TODO: avoid this allocation.
+        // This is needed because we iterate twice.
+        let mut all_props = Vec::new();
+
+        for props in iter {
+            let mass = utils::inv(props.inv_mass);
+            total_mass += mass;
+            total_com += props.local_com.coords * mass;
+            all_props.push(props);
+        }
+
+        total_com /= total_mass;
+
+        for props in all_props {
+            total_inertia += props.construct_shifted_inertia_matrix(total_com - props.local_com);
+        }
+
+        Self::with_inertia_matrix(total_com, total_mass, total_inertia)
     }
 }
 

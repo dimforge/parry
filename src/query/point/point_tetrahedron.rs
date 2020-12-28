@@ -6,7 +6,7 @@ use na;
 impl PointQuery for Tetrahedron {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_with_location(pt, solid).0
+        self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
@@ -14,7 +14,7 @@ impl PointQuery for Tetrahedron {
         &self,
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        let (proj, loc) = self.project_local_point_with_location(pt, false);
+        let (proj, loc) = self.project_local_point_and_get_location(pt, false);
         let feature = match loc {
             TetrahedronPointLocation::OnVertex(i) => FeatureId::Vertex(i),
             TetrahedronPointLocation::OnEdge(i, _) => FeatureId::Edge(i),
@@ -30,7 +30,7 @@ impl PointQueryWithLocation for Tetrahedron {
     type Location = TetrahedronPointLocation;
 
     #[inline]
-    fn project_local_point_with_location(
+    fn project_local_point_and_get_location(
         &self,
         pt: &Point<Real>,
         solid: bool,

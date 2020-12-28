@@ -97,7 +97,7 @@ pub trait PointQuery {
 /// Any shapes that implement `PointQuery` but are able to provide extra
 /// information, can implement `PointQueryWithLocation` in addition and have their
 /// `PointQuery::project_point` implementation just call out to
-/// `PointQueryWithLocation::project_point_with_location`.
+/// `PointQueryWithLocation::project_point_and_get_location`.
 pub trait PointQueryWithLocation {
     /// Additional shape-specific projection information
     ///
@@ -108,20 +108,20 @@ pub trait PointQueryWithLocation {
     type Location;
 
     /// Projects a point on `self`.
-    fn project_local_point_with_location(
+    fn project_local_point_and_get_location(
         &self,
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location);
 
     /// Projects a point on `self` transformed by `m`.
-    fn project_point_with_location(
+    fn project_point_and_get_location(
         &self,
         m: &Isometry<Real>,
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
-        let res = self.project_local_point_with_location(&m.inverse_transform_point(pt), solid);
+        let res = self.project_local_point_and_get_location(&m.inverse_transform_point(pt), solid);
         (res.0.transform_by(m), res.1)
     }
 }

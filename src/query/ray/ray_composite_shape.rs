@@ -2,7 +2,7 @@ use crate::bounding_volume::SimdAABB;
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
-use crate::shape::{FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};
+use crate::shape::{Compound, FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 impl RayCast for TriMesh {
@@ -82,8 +82,45 @@ impl RayCast for Polyline {
     }
 }
 
+impl RayCast for Compound {
+    #[inline]
+    fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
+        let mut visitor = CompositeShapeRayToiVisitor {
+            shape: self,
+            ray,
+            simd_ray: SimdRay::splat(*ray),
+            max_toi,
+            solid,
+        };
+
+        self.quadtree()
+            .traverse_best_first(&mut visitor)
+            .map(|res| res.1)
+    }
+
+    #[inline]
+    fn cast_local_ray_and_get_normal(
+        &self,
+        ray: &Ray,
+        max_toi: Real,
+        solid: bool,
+    ) -> Option<RayIntersection> {
+        let mut visitor = CompositeShapeRayToiAndNormalVisitor {
+            shape: self,
+            ray,
+            simd_ray: SimdRay::splat(*ray),
+            max_toi,
+            solid,
+        };
+
+        self.quadtree()
+            .traverse_best_first(&mut visitor)
+            .map(|(_, (_, res))| res)
+    }
+}
+
 /*
- * Costs functions.
+ * Visitors
  */
 struct CompositeShapeRayToiVisitor<'a, S> {
     shape: &'a S,

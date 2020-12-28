@@ -3,6 +3,7 @@ pub use self::mass_properties::MassProperties;
 mod mass_properties;
 mod mass_properties_ball;
 mod mass_properties_capsule;
+mod mass_properties_compound;
 #[cfg(feature = "dim3")]
 mod mass_properties_cone;
 #[cfg(featuer = "dim2")]

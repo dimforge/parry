@@ -98,7 +98,7 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (proj, loc) = tri.project_local_point_with_location(&Point::<Real>::origin(), true);
+        let (proj, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
         match loc {
             TrianglePointLocation::OnFace(_, bcoords) => (

@@ -21,7 +21,7 @@ fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
 impl PointQuery for Triangle {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_with_location(pt, solid).0
+        self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
@@ -30,9 +30,9 @@ impl PointQuery for Triangle {
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
         let (proj, loc) = if DIM == 2 {
-            self.project_local_point_with_location(pt, false)
+            self.project_local_point_and_get_location(pt, false)
         } else {
-            self.project_local_point_with_location(pt, true)
+            self.project_local_point_and_get_location(pt, true)
         };
 
         let feature = match loc {
@@ -56,7 +56,7 @@ impl PointQueryWithLocation for Triangle {
     type Location = TrianglePointLocation;
 
     #[inline]
-    fn project_local_point_with_location(
+    fn project_local_point_and_get_location(
         &self,
         pt: &Point<Real>,
         solid: bool,

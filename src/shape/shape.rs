@@ -3,8 +3,9 @@ use crate::math::{Isometry, Point, Vector};
 use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{
-    Ball, Capsule, Cuboid, FeatureId, HalfSpace, HeightField, MassProperties, PolygonalFeatureMap,
-    RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
+    Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, MassProperties,
+    PolygonalFeatureMap, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh,
+    Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{
@@ -24,8 +25,6 @@ use num_derive::FromPrimitive;
 pub enum ShapeType {
     /// A ball shape.
     Ball = 0,
-    /// A convex polygon shape.
-    Polygon,
     /// A cuboid shape.
     Cuboid,
     /// A capsule shape.
@@ -40,6 +39,8 @@ pub enum ShapeType {
     HalfSpace,
     /// A heightfield shape.
     HeightField,
+    /// A Compound shape.
+    Compound,
     #[cfg(feature = "dim2")]
     ConvexPolygon,
     #[cfg(feature = "dim3")]
@@ -100,7 +101,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     /// Is this shape known to be convex?
     ///
     /// If this returns `true` then `self` is known to be convex.
-    /// If this returns `false` then `self` it is not known whether or
+    /// If this returns `false` then it is not known whether or
     /// not `self` is convex.
     fn is_convex(&self) -> bool {
         false
@@ -159,6 +160,11 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a triangle, if it is one.
     pub fn as_triangle(&self) -> Option<&Triangle> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a compound shape, if it is one.
+    pub fn as_compound(&self) -> Option<&Compound> {
         self.downcast_ref()
     }
 
@@ -416,6 +422,34 @@ impl Shape for Segment {
 
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+}
+
+impl Shape for Compound {
+    #[cfg(feature = "serde-serialize")]
+    fn as_serialize(&self) -> Option<&dyn Serialize> {
+        // TODO.
+        None
+    }
+
+    fn compute_local_aabb(&self) -> AABB {
+        *self.local_aabb()
+    }
+
+    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+        self.local_aabb().transform_by(position)
+    }
+
+    fn mass_properties(&self, density: f32) -> MassProperties {
+        MassProperties::from_compound(density, self.shapes())
+    }
+
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::Compound
+    }
+
+    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
+        Some(self as &dyn SimdCompositeShape)
     }
 }
 

@@ -48,7 +48,7 @@ impl PointQueryWithLocation for HeightField {
     type Location = (usize, TrianglePointLocation);
 
     #[inline]
-    fn project_local_point_with_location(
+    fn project_local_point_and_get_location(
         &self,
         _point: &Point<Real>,
         _: bool,

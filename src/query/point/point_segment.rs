@@ -6,7 +6,7 @@ use na;
 impl PointQuery for Segment {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_with_location(pt, solid).0
+        self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
@@ -14,7 +14,7 @@ impl PointQuery for Segment {
         &self,
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        let (proj, loc) = self.project_local_point_with_location(pt, false);
+        let (proj, loc) = self.project_local_point_and_get_location(pt, false);
         let feature = match loc {
             SegmentPointLocation::OnVertex(i) => FeatureId::Vertex(i),
             SegmentPointLocation::OnEdge(..) => {
@@ -47,7 +47,7 @@ impl PointQueryWithLocation for Segment {
     type Location = SegmentPointLocation;
 
     #[inline]
-    fn project_local_point_with_location(
+    fn project_local_point_and_get_location(
         &self,
         pt: &Point<Real>,
         _: bool,
