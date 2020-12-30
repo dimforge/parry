@@ -41,23 +41,14 @@ pub struct TrackedContact<Data> {
     pub local_p1: Point<Real>,
     /// The contact point in the local-space of the second shape.
     pub local_p2: Point<Real>,
-    /// The identifier of the subshape of the first shape involved in this contact.
-    ///
-    /// For primitive shapes like cuboid, ball, etc., this is 0.
-    /// For shapes like trimesh and heightfield this identifies the specific triangle
-    /// involved in the contact.
-    pub fid1: u8,
-    /// The identifier of the subshape of the second shape involved in this contact.
-    ///
-    /// For primitive shapes like cuboid, ball, etc., this is 0.
-    /// For shapes like trimesh and heightfield this identifies the specific triangle
-    /// involved in the contact.
-    pub fid2: u8,
-    /// The distance between the two shapes along the contact normal.
-    ///
-    /// If this is negative, the shapes are penetrating.
+    /// The distance between the two contact points.
     pub dist: Real,
-    /// Data associated to this contact.
+
+    /// The feature ID of the first shape involved in the contact.
+    pub fid1: u8,
+    /// The feature ID of the second shape involved in the contact.
+    pub fid2: u8,
+    /// User-data associated to this contact.
     pub data: Data,
 }
 

@@ -48,7 +48,7 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
 
         manifold.local_n1 = local_n1;
         manifold.local_n2 = local_n2;
-        manifold.kinematics.category = KinematicsCategory::PointPoint;
+        manifold.kinematics.category = KinematicsCategory::PlanePoint;
         manifold.kinematics.radius1 = radius_a;
         manifold.kinematics.radius2 = radius_b;
     } else {

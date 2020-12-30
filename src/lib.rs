@@ -82,9 +82,6 @@ pub mod math {
     /// The default tolerance used for geometric operations.
     pub const DEFAULT_EPSILON: Real = f32::EPSILON;
 
-    /// The maximum number of point a contact manifold can hold.
-    pub const MAX_MANIFOLD_POINTS: usize = 4;
-
     /// The scalar type used throughout this crate.
     pub type Real = f32;
 
@@ -154,16 +151,13 @@ pub mod math {
     /// The default tolerance used for geometric operations.
     pub const DEFAULT_EPSILON: Real = f32::EPSILON;
 
-    /// The maximum number of point a contact manifold can hold.
-    pub const MAX_MANIFOLD_POINTS: usize = 2;
-
     /// The scalar type used throughout this crate.
     pub type Real = f32;
 
     /// The dimension of the space.
     pub const DIM: usize = 2;
 
-    /// The dimension of the ambiant space.
+    /// The dimension of the ambient space.
     pub type Dim = U2;
 
     /// The point type.
