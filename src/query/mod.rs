@@ -28,7 +28,8 @@
 pub use self::closest_points::{closest_points, ClosestPoints};
 pub use self::contact::{contact, Contact};
 pub use self::contact_manifolds::{
-    ContactManifold, ContactManifoldsWorkspace, KinematicsCategory, TrackedContact,
+    ContactKinematics, ContactManifold, ContactManifoldsWorkspace, KinematicsCategory,
+    TrackedContact,
 };
 pub use self::default_query_dispatcher::DefaultQueryDispatcher;
 pub use self::distance::distance;

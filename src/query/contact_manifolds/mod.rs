@@ -1,4 +1,6 @@
-pub use self::contact_manifold::{ContactManifold, KinematicsCategory, TrackedContact};
+pub use self::contact_manifold::{
+    ContactKinematics, ContactManifold, KinematicsCategory, TrackedContact,
+};
 pub use self::contact_manifolds_ball_ball::{
     contact_manifold_ball_ball, contact_manifold_ball_ball_shapes,
 };
