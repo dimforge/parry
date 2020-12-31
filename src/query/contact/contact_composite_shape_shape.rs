@@ -1,6 +1,6 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
-use crate::query::visitors::BoundingVolumeInterferencesCollector;
+use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{Contact, QueryDispatcher};
 use crate::shape::{Shape, SimdCompositeShape};
 use crate::utils::IsometryOpt;
@@ -19,17 +19,10 @@ where
 {
     // Find new collisions
     let ls_aabb2 = g2.compute_aabb(pos12).loosened(prediction);
-    let mut interferences = Vec::new();
-
-    {
-        let mut visitor = BoundingVolumeInterferencesCollector::new(&ls_aabb2, &mut interferences);
-        g1.quadtree().traverse_depth_first(&mut visitor);
-    }
-
     let mut res = None::<Contact>;
 
-    for i in interferences.into_iter() {
-        g1.map_part_at(i, &mut |part_pos1, part1| {
+    let mut leaf_callback = |i: &_| {
+        g1.map_part_at(*i, &mut |part_pos1, part1| {
             if let Ok(Some(mut c)) =
                 dispatcher.contact(&part_pos1.inv_mul(pos12), part1, g2, prediction)
             {
@@ -43,8 +36,12 @@ where
                 }
             }
         });
-    }
 
+        true
+    };
+
+    let mut visitor = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2, &mut leaf_callback);
+    g1.quadtree().traverse_depth_first(&mut visitor);
     res
 }
 

@@ -2,32 +2,33 @@ use crate::bounding_volume::{SimdAABB, AABB};
 use crate::math::SIMD_WIDTH;
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use simba::simd::SimdBool as _;
+use std::marker::PhantomData;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
-pub struct BoundingVolumeInterferencesCollector<'a, T: 'a> {
-    /// The bounding volume used for interference tests.
-    pub bv: SimdAABB,
-    /// The data contained by the nodes with bounding volumes intersecting `self.bv`.
-    pub collector: &'a mut Vec<T>,
+pub struct BoundingVolumeIntersectionsVisitor<'a, T: 'a, F> {
+    bv: SimdAABB,
+    callback: &'a mut F,
+    _phantom: PhantomData<T>,
 }
 
-impl<'a, T> BoundingVolumeInterferencesCollector<'a, T> {
-    /// Creates a new `BoundingVolumeInterferencesCollector`.
+impl<'a, T, F> BoundingVolumeIntersectionsVisitor<'a, T, F>
+where
+    F: FnMut(&T) -> bool,
+{
+    /// Creates a new `BoundingVolumeIntersectionsVisitor`.
     #[inline]
-    pub fn new(
-        bv: &'a AABB,
-        buffer: &'a mut Vec<T>,
-    ) -> BoundingVolumeInterferencesCollector<'a, T> {
-        BoundingVolumeInterferencesCollector {
+    pub fn new(bv: &'a AABB, callback: &'a mut F) -> BoundingVolumeIntersectionsVisitor<'a, T, F> {
+        BoundingVolumeIntersectionsVisitor {
             bv: SimdAABB::splat(*bv),
-            collector: buffer,
+            callback,
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<'a, T> SimdVisitor<T, SimdAABB> for BoundingVolumeInterferencesCollector<'a, T>
+impl<'a, T, F> SimdVisitor<T, SimdAABB> for BoundingVolumeIntersectionsVisitor<'a, T, F>
 where
-    T: Clone,
+    F: FnMut(&T) -> bool,
 {
     #[inline]
     fn visit(&mut self, bv: &SimdAABB, b: Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus {
@@ -38,7 +39,9 @@ where
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.collector.push(data[ii].unwrap().clone())
+                    if !(self.callback)(data[ii].unwrap()) {
+                        return SimdVisitStatus::ExitEarly;
+                    }
                 }
             }
         }
