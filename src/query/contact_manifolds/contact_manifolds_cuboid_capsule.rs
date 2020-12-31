@@ -52,7 +52,6 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     if (!flipped && manifold.try_update_contacts(&pos12))
         || (flipped && manifold.try_update_contacts(&pos21))
     {
-        manifold.sort_contacts(prediction);
         return;
     }
 
@@ -171,5 +170,4 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);
-    manifold.sort_contacts(prediction);
 }

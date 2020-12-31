@@ -63,8 +63,6 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
                 manifold.local_n1 = *local_n1;
                 manifold.local_n2 = local_n2;
             }
-
-            manifold.sort_contacts(prediction);
         } else {
             manifold.clear();
         }

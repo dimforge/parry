@@ -51,7 +51,6 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     // cause numerical drifts with the effect of introducing bumps in
     // what should have been smooth rolling motions.
     if manifold.try_update_contacts_eps(&pos12, crate::utils::COS_1_DEGREES, 1.0e-6) {
-        manifold.sort_contacts(prediction);
         return;
     }
 
@@ -125,5 +124,4 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);
-    manifold.sort_contacts(prediction);
 }

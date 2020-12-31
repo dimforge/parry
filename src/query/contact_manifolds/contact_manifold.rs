@@ -74,10 +74,6 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     pub points: arrayvec::ArrayVec<[TrackedContact<ContactData>; 2]>,
     #[cfg(feature = "dim3")]
     pub points: Vec<TrackedContact<ContactData>>,
-    /// The number of active contacts on this contact manifold.
-    ///
-    /// Active contacts are these that may result in contact forces.
-    pub num_active_contacts: usize,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the first shape.
     pub local_n1: Vector<Real>,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
@@ -102,7 +98,6 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             points: arrayvec::ArrayVec::new(),
             #[cfg(feature = "dim3")]
             points: Vec::new(),
-            num_active_contacts: 0,
             local_n1: Vector::zeros(),
             local_n2: Vector::zeros(),
             subshape_index_pair,
@@ -119,7 +114,6 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             points: self.points.clone(),
             #[cfg(feature = "dim3")]
             points: std::mem::replace(&mut self.points, Vec::new()),
-            num_active_contacts: self.num_active_contacts,
             local_n1: self.local_n1,
             local_n2: self.local_n2,
             subshape_index_pair: self.subshape_index_pair,
@@ -141,28 +135,9 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     }
     */
 
-    /// Number of active contacts on this contact manifold.
-    #[inline]
-    pub fn num_active_contacts(&self) -> usize {
-        self.num_active_contacts
-    }
-
-    /// The slice of all the active contacts on this contact manifold.
-    ///
-    /// Active contacts are contacts that may end up generating contact forces.
-    #[inline]
-    pub fn active_contacts(&self) -> &[TrackedContact<ContactData>] {
-        &self.points[..self.num_active_contacts]
-    }
-
-    #[inline]
-    pub fn active_contacts_mut(&mut self) -> &mut [TrackedContact<ContactData>] {
-        &mut self.points[..self.num_active_contacts]
-    }
-
     /// The slice of all the contacts, active or not, on this contact manifold.
     #[inline]
-    pub fn all_contacts(&self) -> &[TrackedContact<ContactData>] {
+    pub fn contacts(&self) -> &[TrackedContact<ContactData>] {
         &self.points
     }
 
@@ -245,7 +220,6 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
 
     pub fn clear(&mut self) {
         self.points.clear();
-        self.num_active_contacts = 0;
     }
 
     pub fn find_deepest_contact(&self) -> Option<&TrackedContact<ContactData>> {
@@ -258,35 +232,5 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
 
         Some(deepest)
-    }
-
-    /// Sort the contacts of this contact manifold such that the active contacts are in the first
-    /// positions of the array.
-    #[inline]
-    pub fn sort_contacts(&mut self, prediction_distance: Real) {
-        let num_contacts = self.points.len();
-        match num_contacts {
-            0 => {
-                self.num_active_contacts = 0;
-            }
-            1 => {
-                self.num_active_contacts = (self.points[0].dist < prediction_distance) as usize;
-            }
-            _ => {
-                let mut first_inactive_index = num_contacts;
-
-                self.num_active_contacts = 0;
-                while self.num_active_contacts != first_inactive_index {
-                    if self.points[self.num_active_contacts].dist >= prediction_distance {
-                        // Swap with the last contact.
-                        self.points
-                            .swap(self.num_active_contacts, first_inactive_index - 1);
-                        first_inactive_index -= 1;
-                    } else {
-                        self.num_active_contacts += 1;
-                    }
-                }
-            }
-        }
     }
 }

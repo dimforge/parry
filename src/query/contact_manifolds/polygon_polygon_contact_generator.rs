@@ -22,7 +22,6 @@ pub fn generate_contacts_polygon_polygon(_ctxt: &mut PrimitiveContactGenerationC
     //     unreachable!()
     // }
     //
-    // ctxt.manifold.sort_contacts(ctxt.prediction_distance);
 }
 
 fn generate_contacts<'a>(

@@ -123,7 +123,6 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     }
 
     manifold.match_contacts(&old_manifold_points);
-    manifold.sort_contacts(prediction);
 }
 
 #[cfg(feature = "dim3")]
@@ -174,6 +173,4 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     } else {
         manifold.clear();
     }
-
-    manifold.sort_contacts(prediction);
 }

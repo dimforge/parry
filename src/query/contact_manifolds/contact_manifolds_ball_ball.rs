@@ -51,6 +51,4 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
     } else {
         manifold.points.clear();
     }
-
-    manifold.sort_contacts(prediction);
 }

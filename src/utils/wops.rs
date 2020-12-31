@@ -5,7 +5,7 @@ use na::{Matrix3, Point2, Point3, Scalar, SimdRealField, Vector2, Vector3};
 use simba::simd::SimdValue;
 
 #[cfg(feature = "simd-is-enabled")]
-use {na::SimdPartialOrd, num::One};
+use na::SimdPartialOrd;
 
 /// Conditionally swaps each lanes of `a` with those of `b`.
 ///
