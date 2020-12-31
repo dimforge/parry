@@ -27,10 +27,7 @@
 
 pub use self::closest_points::{closest_points, ClosestPoints};
 pub use self::contact::{contact, Contact};
-pub use self::contact_manifolds::{
-    ContactKinematics, ContactManifold, ContactManifoldsWorkspace, KinematicsCategory,
-    TrackedContact,
-};
+pub use self::contact_manifolds::{ContactManifold, ContactManifoldsWorkspace, TrackedContact};
 pub use self::default_query_dispatcher::DefaultQueryDispatcher;
 pub use self::distance::distance;
 pub use self::error::Unsupported;

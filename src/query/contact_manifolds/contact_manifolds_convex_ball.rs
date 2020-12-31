@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real};
-use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
+use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, Shape};
 use na::Unit;
 
@@ -64,9 +64,6 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
                 manifold.local_n2 = local_n2;
             }
 
-            manifold.kinematics.category = KinematicsCategory::PlanePoint;
-            manifold.kinematics.radius1 = 0.0;
-            manifold.kinematics.radius2 = ball2.radius;
             manifold.sort_contacts(prediction);
         } else {
             manifold.clear();

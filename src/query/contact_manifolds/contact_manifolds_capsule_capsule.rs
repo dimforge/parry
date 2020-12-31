@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
+use crate::query::{ContactManifold, TrackedContact};
 #[cfg(feature = "dim2")]
 use crate::shape::SegmentPointLocation;
 use crate::shape::{Capsule, Shape};
@@ -74,9 +74,6 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 
         manifold.local_n1 = *local_n1;
         manifold.local_n2 = *local_n2;
-        manifold.kinematics.category = KinematicsCategory::PlanePoint;
-        manifold.kinematics.radius1 = 0.0;
-        manifold.kinematics.radius2 = 0.0;
     } else {
         // No contact within tolerance.
         return;
@@ -174,9 +171,6 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 
         manifold.local_n1 = *local_n1;
         manifold.local_n2 = *local_n2;
-        manifold.kinematics.category = KinematicsCategory::PlanePoint;
-        manifold.kinematics.radius1 = 0.0;
-        manifold.kinematics.radius2 = 0.0;
     } else {
         manifold.clear();
     }

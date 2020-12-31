@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::{ContactManifold, KinematicsCategory, TrackedContact};
+use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, Shape};
 
 pub fn contact_manifold_ball_ball_shapes<ManifoldData, ContactData: Default + Copy>(
@@ -48,9 +48,6 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
 
         manifold.local_n1 = local_n1;
         manifold.local_n2 = local_n2;
-        manifold.kinematics.category = KinematicsCategory::PlanePoint;
-        manifold.kinematics.radius1 = radius_a;
-        manifold.kinematics.radius2 = radius_b;
     } else {
         manifold.points.clear();
     }

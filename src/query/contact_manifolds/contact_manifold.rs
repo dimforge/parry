@@ -1,38 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-/// The type local linear approximation of the neighborhood of a pair contact points on two shapes
-pub enum KinematicsCategory {
-    /// Both neighborhoods are assimilated to a single point.
-    PointPoint,
-    /// The first shape's neighborhood at the contact point is assimilated to a plane while
-    /// the second is assimilated to a point.
-    PlanePoint,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-/// Local contact geometry at the neighborhood of a pair of contact points.
-pub struct ContactKinematics {
-    /// The local contact geometry.
-    pub category: KinematicsCategory,
-    /// The dilation applied to the first contact geometry.
-    pub radius1: Real,
-    /// The dilation applied to the second contact geometry.
-    pub radius2: Real,
-}
-
-impl Default for ContactKinematics {
-    fn default() -> Self {
-        ContactKinematics {
-            category: KinematicsCategory::PointPoint,
-            radius1: 0.0,
-            radius2: 0.0,
-        }
-    }
-}
-
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A single contact between two shape.
@@ -115,8 +82,6 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     pub local_n1: Vector<Real>,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
     pub local_n2: Vector<Real>,
-    /// The contact kinematics of all the contacts of this manifold.
-    pub kinematics: ContactKinematics,
     /// The pair of subshapes involved in this contact manifold.
     pub subshape_index_pair: (usize, usize),
     /// Additional tracked data associated to this contact manifold.
@@ -141,7 +106,6 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             local_n1: Vector::zeros(),
             local_n2: Vector::zeros(),
             subshape_index_pair,
-            kinematics: ContactKinematics::default(),
             data,
         }
     }
@@ -158,7 +122,6 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             num_active_contacts: self.num_active_contacts,
             local_n1: self.local_n1,
             local_n2: self.local_n2,
-            kinematics: self.kinematics,
             subshape_index_pair: self.subshape_index_pair,
             data: self.data.clone(),
         }

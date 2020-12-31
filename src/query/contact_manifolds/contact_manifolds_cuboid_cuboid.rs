@@ -1,8 +1,8 @@
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
 use crate::math::{Isometry, Real};
-use crate::query::{sat, ContactManifold, KinematicsCategory};
-use crate::shape::{Cuboid, Shape, PolygonalFeature};
+use crate::query::{sat, ContactManifold};
+use crate::shape::{Cuboid, PolygonalFeature, Shape};
 
 pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
@@ -88,14 +88,19 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     let feature2 = cuboid2.support_feature(local_n2);
 
     PolygonalFeature::contacts(
-        pos12, pos21, &best_sep.1, &local_n2, &feature1, &feature2, prediction, manifold, false
+        pos12,
+        pos21,
+        &best_sep.1,
+        &local_n2,
+        &feature1,
+        &feature2,
+        prediction,
+        manifold,
+        false,
     );
 
     manifold.local_n1 = best_sep.1;
     manifold.local_n2 = local_n2;
-    manifold.kinematics.category = KinematicsCategory::PlanePoint;
-    manifold.kinematics.radius1 = 0.0;
-    manifold.kinematics.radius2 = 0.0;
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);

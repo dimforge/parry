@@ -2,7 +2,7 @@ use crate::math::{Isometry, Real};
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
-    ContactManifold, KinematicsCategory, TrackedContact,
+    ContactManifold, TrackedContact,
 };
 use crate::shape::{PolygonalFeature, PolygonalFeatureMap, Shape};
 use na::Unit;
@@ -112,9 +112,6 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
             manifold.local_n1 = *local_n1;
             manifold.local_n2 = *local_n2;
-            manifold.kinematics.category = KinematicsCategory::PlanePoint; // TODO: is this the most appropriate?
-            manifold.kinematics.radius1 = 0.0;
-            manifold.kinematics.radius2 = 0.0;
         }
         GJKResult::NoIntersection(dir) => {
             // Use the manifold normal as a cache.

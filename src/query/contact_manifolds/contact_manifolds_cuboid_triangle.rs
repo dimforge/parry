@@ -1,9 +1,9 @@
-use crate::math::{Isometry, Real};
-use crate::query::{sat, ContactManifold, KinematicsCategory};
-use crate::shape::PolygonalFeature;
-use crate::shape::{Cuboid, Shape, Triangle};
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
+use crate::math::{Isometry, Real};
+use crate::query::{sat, ContactManifold};
+use crate::shape::PolygonalFeature;
+use crate::shape::{Cuboid, Shape, Triangle};
 
 pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
@@ -140,10 +140,6 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
         manifold.local_n1 = best_sep.1;
         manifold.local_n2 = normal2;
     }
-
-    manifold.kinematics.category = KinematicsCategory::PlanePoint;
-    manifold.kinematics.radius1 = 0.0;
-    manifold.kinematics.radius2 = 0.0;
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);

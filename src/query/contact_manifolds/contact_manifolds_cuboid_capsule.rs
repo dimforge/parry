@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::{sat, ContactManifold, KinematicsCategory};
+use crate::query::{sat, ContactManifold};
 #[cfg(feature = "dim3")]
 use crate::shape::PolygonalFeature;
 use crate::shape::{Capsule, Cuboid, Shape};
@@ -168,10 +168,6 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
             point.dist -= capsule2.radius;
         }
     }
-
-    manifold.kinematics.category = KinematicsCategory::PlanePoint;
-    manifold.kinematics.radius1 = 0.0;
-    manifold.kinematics.radius2 = 0.0;
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);
