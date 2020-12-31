@@ -1,5 +1,9 @@
 //! Point inclusion and projection.
 
+pub use self::point_composite_shape::{
+    PointCompositeShapeProjBestFirstVisitor, PointCompositeShapeProjWithFeatureBestFirstVisitor,
+    PointCompositeShapeProjWithLocationBestFirstVisitor,
+};
 #[doc(inline)]
 pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation};
 pub use self::point_support_map::local_point_projection_on_support_map;

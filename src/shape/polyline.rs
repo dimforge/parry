@@ -108,10 +108,6 @@ impl Polyline {
 }
 
 impl SimdCompositeShape for Polyline {
-    fn nparts(&self) -> usize {
-        self.num_segments()
-    }
-
     fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.segment(i);
         f(None, &tri)
@@ -124,6 +120,7 @@ impl SimdCompositeShape for Polyline {
 
 impl TypedSimdCompositeShape for Polyline {
     type PartShape = Segment;
+    type PartId = u32;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -133,5 +130,15 @@ impl TypedSimdCompositeShape for Polyline {
     ) {
         let seg = self.segment(i);
         f(None, &seg)
+    }
+
+    #[inline(always)]
+    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+        let seg = self.segment(i);
+        f(None, &seg)
+    }
+
+    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+        &self.quadtree
     }
 }

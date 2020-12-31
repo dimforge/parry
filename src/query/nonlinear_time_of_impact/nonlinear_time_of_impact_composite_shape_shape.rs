@@ -3,7 +3,7 @@ use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::motion::{RigidMotion, RigidMotionComposition};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{self, QueryDispatcher, TOI};
-use crate::shape::{Ball, Shape, SimdCompositeShape};
+use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
 use simba::simd::SimdValue;
 
 /// Time Of Impact of a composite shape with any other shape, under a rigid motion (translation + rotation).
@@ -17,9 +17,9 @@ pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
-    let mut visitor = CompositeShapeAgainstAnyNonlinearTOIVisitor::new(
+    let mut visitor = NonlinearTOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
         motion12,
         g1,
@@ -28,9 +28,9 @@ where
         target_distance,
     );
 
-    g1.quadtree()
+    g1.typed_quadtree()
         .traverse_best_first(&mut visitor)
-        .map(|res| res.1)
+        .map(|res| res.1 .1)
 }
 
 /// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
@@ -44,7 +44,7 @@ pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G2: SimdCompositeShape,
+    G2: TypedSimdCompositeShape,
 {
     nonlinear_time_of_impact_composite_shape_shape(
         dispatcher,
@@ -56,7 +56,7 @@ where
     )
 }
 
-struct CompositeShapeAgainstAnyNonlinearTOIVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
+pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     sphere2: BoundingSphere,
     max_toi: Real,
     target_distance: Real,
@@ -67,10 +67,10 @@ struct CompositeShapeAgainstAnyNonlinearTOIVisitor<'a, D: ?Sized, G1: ?Sized + '
     g2: &'a dyn Shape,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> CompositeShapeAgainstAnyNonlinearTOIVisitor<'a, D, G1>
+impl<'a, D: ?Sized, G1: ?Sized> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
     pub fn new(
         dispatcher: &'a D,
@@ -79,8 +79,8 @@ where
         g2: &'a dyn Shape,
         max_toi: Real,
         target_distance: Real,
-    ) -> CompositeShapeAgainstAnyNonlinearTOIVisitor<'a, D, G1> {
-        CompositeShapeAgainstAnyNonlinearTOIVisitor {
+    ) -> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1> {
+        NonlinearTOICompositeShapeShapeBestFirstVisitor {
             dispatcher,
             sphere2: g2.compute_local_aabb().bounding_sphere(),
             max_toi,
@@ -92,20 +92,20 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<u32, SimdAABB>
-    for CompositeShapeAgainstAnyNonlinearTOIVisitor<'a, D, G1>
+impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
+    for NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
-    type Result = TOI;
+    type Result = (G1::PartId, TOI);
 
     #[inline]
     fn visit(
         &mut self,
         best: Real,
         bv: &SimdAABB,
-        data: Option<[Option<&u32>; SIMD_WIDTH]>,
+        data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         let mut weights = [0.0; SIMD_WIDTH];
         let mut mask = [false; SIMD_WIDTH];
@@ -133,39 +133,37 @@ where
             ) {
                 if let Some(data) = data {
                     if toi.toi < best && data[ii].is_some() {
-                        self.g1
-                            .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
-                                let toi = if let Some(part_pos1) = part_pos1 {
-                                    self.dispatcher
-                                        .nonlinear_time_of_impact(
-                                            &self
-                                                .motion12
-                                                .append_transformation(part_pos1.inverse()),
-                                            g1,
-                                            self.g2,
-                                            self.max_toi,
-                                            self.target_distance,
-                                        )
-                                        .unwrap_or(None)
-                                        .map(|toi| toi.transform1_by(part_pos1))
-                                } else {
-                                    self.dispatcher
-                                        .nonlinear_time_of_impact(
-                                            self.motion12,
-                                            g1,
-                                            self.g2,
-                                            self.max_toi,
-                                            self.target_distance,
-                                        )
-                                        .unwrap_or(None)
-                                };
+                        let part_id = *data[ii].unwrap();
+                        self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                            let toi = if let Some(part_pos1) = part_pos1 {
+                                self.dispatcher
+                                    .nonlinear_time_of_impact(
+                                        &self.motion12.append_transformation(part_pos1.inverse()),
+                                        g1,
+                                        self.g2,
+                                        self.max_toi,
+                                        self.target_distance,
+                                    )
+                                    .unwrap_or(None)
+                                    .map(|toi| toi.transform1_by(part_pos1))
+                            } else {
+                                self.dispatcher
+                                    .nonlinear_time_of_impact(
+                                        self.motion12,
+                                        g1,
+                                        self.g2,
+                                        self.max_toi,
+                                        self.target_distance,
+                                    )
+                                    .unwrap_or(None)
+                            };
 
-                                if let Some(toi) = toi {
-                                    weights[ii] = toi.toi;
-                                    mask[ii] = toi.toi < best;
-                                    results[ii] = Some(toi);
-                                }
-                            });
+                            if let Some(toi) = toi {
+                                weights[ii] = toi.toi;
+                                mask[ii] = toi.toi < best;
+                                results[ii] = Some((part_id, toi));
+                            }
+                        });
                     }
                 } else {
                     weights[ii] = toi.toi;

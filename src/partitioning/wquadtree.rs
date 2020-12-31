@@ -112,6 +112,22 @@ impl<T: IndexedData> SimdQuadTree<T> {
         }
     }
 
+    /// Returns the data associated to a given leaf.
+    ///
+    /// Returns `None` if the provided node ID does not identify a leaf.
+    pub fn leaf_data(&mut self, node_id: NodeIndex) -> Option<T> {
+        let node = self.nodes.get(node_id.index as usize)?;
+
+        if !node.leaf {
+            return None;
+        }
+
+        let proxy = self
+            .proxies
+            .get(node.children[node_id.lane as usize] as usize)?;
+        Some(proxy.data)
+    }
+
     pub fn clear_and_rebuild(
         &mut self,
         data: impl ExactSizeIterator<Item = (T, AABB)>,
@@ -409,6 +425,10 @@ impl<T: IndexedData> SimdQuadTree<T> {
         BFS: SimdBestFirstVisitor<T, SimdAABB>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
+        if self.nodes.is_empty() {
+            return None;
+        }
+
         let mut queue: BinaryHeap<WeightedValue<u32>> = BinaryHeap::new();
 
         let mut best_cost = Real::max_value();

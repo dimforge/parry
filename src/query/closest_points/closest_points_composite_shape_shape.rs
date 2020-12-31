@@ -2,7 +2,7 @@ use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
-use crate::shape::{Shape, SimdCompositeShape};
+use crate::shape::{Shape, SimdCompositeShape, TypedSimdCompositeShape};
 use crate::utils::IsometryOpt;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
@@ -17,15 +17,16 @@ pub fn closest_points_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> ClosestPoints
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
     let mut visitor =
         CompositeShapeAgainstShapeClosestPointsVisitor::new(dispatcher, pos12, g1, g2, margin);
 
-    g1.quadtree()
+    g1.typed_quadtree()
         .traverse_best_first(&mut visitor)
         .expect("The composite shape must not be empty.")
         .1
+         .1
 }
 
 /// Closest points between a shape and a composite shape.
@@ -38,12 +39,12 @@ pub fn closest_points_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> ClosestPoints
 where
     D: QueryDispatcher,
-    G2: SimdCompositeShape,
+    G2: TypedSimdCompositeShape,
 {
     closest_points_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, margin).flipped()
 }
 
-struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
+pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     msum_shift: Vector<SimdReal>,
     msum_margin: Vector<SimdReal>,
     margin: Real,
@@ -57,7 +58,7 @@ struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized 
 impl<'a, D: ?Sized, G1: ?Sized> CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
     pub fn new(
         dispatcher: &'a D,
@@ -80,19 +81,19 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<u32, SimdAABB>
+impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
     for CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: SimdCompositeShape,
+    G1: TypedSimdCompositeShape,
 {
-    type Result = ClosestPoints;
+    type Result = (G1::PartId, ClosestPoints);
 
     fn visit(
         &mut self,
         best: Real,
         bv: &SimdAABB,
-        data: Option<[Option<&u32>; SIMD_WIDTH]>,
+        data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         // Compute the minkowski sum of the two AABBs.
         let msum = SimdAABB {
@@ -111,33 +112,34 @@ where
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.g1
-                        .map_part_at(*data[ii].unwrap(), &mut |part_pos1, g1| {
-                            let pts = self.dispatcher.closest_points(
-                                &part_pos1.inv_mul(self.pos12),
-                                g1,
-                                self.g2,
-                                self.margin,
-                            );
-                            match pts {
-                                Ok(ClosestPoints::WithinMargin(ref p1, ref p2)) => {
-                                    let p1 = part_pos1.transform_point(p1);
-                                    let p2_1 = self.pos12 * p2;
-                                    weights[ii] = na::distance(&p1, &p2_1);
-                                    results[ii] = Some(ClosestPoints::WithinMargin(p1, *p2));
-                                    mask[ii] = true;
-                                }
-                                Ok(ClosestPoints::Intersecting) => {
-                                    found_intersection = true;
-                                }
-                                Err(_) | Ok(ClosestPoints::Disjoint) => {}
-                            };
-                        });
+                    let part_id = *data[ii].unwrap();
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                        let pts = self.dispatcher.closest_points(
+                            &part_pos1.inv_mul(self.pos12),
+                            g1,
+                            self.g2,
+                            self.margin,
+                        );
+                        match pts {
+                            Ok(ClosestPoints::WithinMargin(ref p1, ref p2)) => {
+                                let p1 = part_pos1.transform_point(p1);
+                                let p2_1 = self.pos12 * p2;
+                                weights[ii] = na::distance(&p1, &p2_1);
+                                results[ii] = Some((part_id, ClosestPoints::WithinMargin(p1, *p2)));
+                                mask[ii] = true;
+                            }
+                            Ok(ClosestPoints::Intersecting) => {
+                                found_intersection = true;
+                            }
+                            Err(_) | Ok(ClosestPoints::Disjoint) => {}
+                        };
+                    });
 
                     if found_intersection {
-                        return SimdBestFirstVisitStatus::ExitEarly(Some(
+                        return SimdBestFirstVisitStatus::ExitEarly(Some((
+                            part_id,
                             ClosestPoints::Intersecting,
-                        ));
+                        )));
                     }
                 }
             }

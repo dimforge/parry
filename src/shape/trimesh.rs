@@ -173,10 +173,6 @@ impl From<Cuboid> for TriMesh {
 }
 
 impl SimdCompositeShape for TriMesh {
-    fn nparts(&self) -> usize {
-        self.num_triangles()
-    }
-
     fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.triangle(i);
         f(None, &tri)
@@ -189,6 +185,7 @@ impl SimdCompositeShape for TriMesh {
 
 impl TypedSimdCompositeShape for TriMesh {
     type PartShape = Triangle;
+    type PartId = u32;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -198,5 +195,15 @@ impl TypedSimdCompositeShape for TriMesh {
     ) {
         let tri = self.triangle(i);
         f(None, &tri)
+    }
+
+    #[inline(always)]
+    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+        let tri = self.triangle(i);
+        f(None, &tri)
+    }
+
+    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+        &self.quadtree
     }
 }

@@ -15,6 +15,16 @@ pub struct CompositePointContainmentTest<'a, S: 'a> {
     pub found: bool,
 }
 
+impl<'a, S> CompositePointContainmentTest<'a, S> {
+    pub fn new(shape: &'a S, point: &'a Point<Real>) -> Self {
+        Self {
+            shape,
+            point,
+            found: false,
+        }
+    }
+}
+
 impl<'a, S: SimdCompositeShape> SimdVisitor<u32, SimdAABB>
     for CompositePointContainmentTest<'a, S>
 {

@@ -83,6 +83,7 @@ pub mod details {
         distance_ball_ball, distance_composite_shape_shape, distance_halfspace_support_map,
         distance_shape_composite_shape, distance_support_map_halfspace,
         distance_support_map_support_map, distance_support_map_support_map_with_params,
+        CompositeShapeAgainstAnyDistanceVisitor,
     };
     pub use super::intersection_test::*;
     pub use super::nonlinear_time_of_impact::{
@@ -90,17 +91,25 @@ pub mod details {
         nonlinear_time_of_impact_shape_composite_shape,
         nonlinear_time_of_impact_support_map_support_map,
         nonlinear_time_of_impact_support_map_support_map_with_closest_points_function,
+        NonlinearTOICompositeShapeShapeBestFirstVisitor,
     };
     pub use super::point::local_point_projection_on_support_map;
+    pub use super::point::{
+        PointCompositeShapeProjBestFirstVisitor,
+        PointCompositeShapeProjWithFeatureBestFirstVisitor,
+        PointCompositeShapeProjWithLocationBestFirstVisitor,
+    };
     #[cfg(feature = "dim3")]
     pub use super::ray::local_ray_intersection_with_triangle;
     pub use super::ray::{
         line_toi_with_halfspace, local_ray_intersection_with_support_map_with_params,
-        ray_toi_with_ball, ray_toi_with_halfspace,
+        ray_toi_with_ball, ray_toi_with_halfspace, RayCompositeShapeToiAndNormalBestFirstVisitor,
+        RayCompositeShapeToiBestFirstVisitor,
     };
     pub use super::time_of_impact::{
         time_of_impact_ball_ball, time_of_impact_composite_shape_shape,
         time_of_impact_halfspace_support_map, time_of_impact_shape_composite_shape,
         time_of_impact_support_map_halfspace, time_of_impact_support_map_support_map,
+        TOICompositeShapeShapeBestFirstVisitor,
     };
 }

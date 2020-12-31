@@ -3,6 +3,7 @@
 pub use self::nonlinear_time_of_impact_ball_ball::nonlinear_time_of_impact_ball_ball;
 pub use self::nonlinear_time_of_impact_composite_shape_shape::{
     nonlinear_time_of_impact_composite_shape_shape, nonlinear_time_of_impact_shape_composite_shape,
+    NonlinearTOICompositeShapeShapeBestFirstVisitor,
 };
 //pub use self::nonlinear_time_of_impact_halfspace_support_map::{nonlinear_time_of_impact_halfspace_support_map, nonlinear_time_of_impact_support_map_halfspace};
 pub use self::nonlinear_time_of_impact::nonlinear_time_of_impact;

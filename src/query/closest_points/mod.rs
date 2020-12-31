@@ -4,6 +4,7 @@ pub use self::closest_points::ClosestPoints;
 pub use self::closest_points_ball_ball::closest_points_ball_ball;
 pub use self::closest_points_composite_shape_shape::{
     closest_points_composite_shape_shape, closest_points_shape_composite_shape,
+    CompositeShapeAgainstShapeClosestPointsVisitor,
 };
 pub use self::closest_points_halfspace_support_map::{
     closest_points_halfspace_support_map, closest_points_support_map_halfspace,

@@ -87,11 +87,6 @@ impl Compound {
 
 impl SimdCompositeShape for Compound {
     #[inline]
-    fn nparts(&self) -> usize {
-        self.shapes.len()
-    }
-
-    #[inline]
     fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         if let Some(shape) = self.shapes.get(shape_id as usize) {
             f(Some(&shape.0), &*shape.1)
@@ -106,6 +101,7 @@ impl SimdCompositeShape for Compound {
 
 impl TypedSimdCompositeShape for Compound {
     type PartShape = dyn Shape;
+    type PartId = u32;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -116,5 +112,21 @@ impl TypedSimdCompositeShape for Compound {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
             f(Some(part_pos), &**part)
         }
+    }
+
+    #[inline(always)]
+    fn map_untyped_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+    ) {
+        if let Some((part_pos, part)) = self.shapes.get(i as usize) {
+            f(Some(part_pos), &**part)
+        }
+    }
+
+    #[inline]
+    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+        &self.quadtree
     }
 }
