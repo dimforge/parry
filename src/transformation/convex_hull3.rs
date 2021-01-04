@@ -203,7 +203,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
     ];
 
     /*
-     * Sort in deacreasing order wrt. eigenvalues.
+     * Sort in decreasing order wrt. eigenvalues.
      */
     eigpairs.sort_by(|a, b| {
         if a.1 > b.1 {
@@ -275,7 +275,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
             InitialMesh::ResultMesh(coords, triangles)
         }
         3 => {
-            // The hull is a polyedra.
+            // The hull is a polyhedron.
             // Find a initial triangle lying on the principal halfspace…
             let _1: Real = na::one::<Real>();
             let diag = Vector3::new(_1 / eigval[0], _1 / eigval[1], _1 / eigval[2]);

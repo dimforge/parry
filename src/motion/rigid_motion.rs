@@ -151,6 +151,13 @@ pub trait RigidMotionComposition: RigidMotion {
         Inverse { motion: self }
     }
 
+    fn inv_mul<'a>(&'a self, rhs: &'a dyn RigidMotion) -> InvMul<'a, Self, dyn RigidMotion + 'a> {
+        InvMul {
+            motion1: self,
+            motion2: rhs,
+        }
+    }
+
     /// Prepend a translation to the rigid motion `self`.
     fn prepend_translation(&self, translation: Vector<Real>) -> PrependTranslation<Self> {
         PrependTranslation {
@@ -197,6 +204,20 @@ pub struct Inverse<'a, M: ?Sized> {
 impl<'a, M: ?Sized + RigidMotion> RigidMotion for Inverse<'a, M> {
     fn position_at_time(&self, t: Real) -> Isometry<Real> {
         self.motion.position_at_time(t).inverse()
+    }
+}
+
+/// The result of inverting `M1.inverse() * M2`.
+pub struct InvMul<'a, M1: ?Sized, M2: ?Sized> {
+    motion1: &'a M1,
+    motion2: &'a M2,
+}
+
+impl<'a, M1: ?Sized + RigidMotion, M2: ?Sized + RigidMotion> RigidMotion for InvMul<'a, M1, M2> {
+    fn position_at_time(&self, t: Real) -> Isometry<Real> {
+        let m1 = self.motion1.position_at_time(t);
+        let m2 = self.motion2.position_at_time(t);
+        m1.inv_mul(&m2)
     }
 }
 

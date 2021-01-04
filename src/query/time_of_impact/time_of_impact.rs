@@ -74,12 +74,16 @@ impl TOI {
 ///
 /// Returns `0.0` if the objects are touching or penetrating.
 pub fn time_of_impact(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos1: &Isometry<Real>,
+    vel1: &Vector<Real>,
     g1: &dyn Shape,
+    pos2: &Isometry<Real>,
+    vel2: &Vector<Real>,
     g2: &dyn Shape,
     max_toi: Real,
     target_distance: Real,
 ) -> Result<Option<TOI>, Unsupported> {
-    DefaultQueryDispatcher.time_of_impact(pos12, vel12, g1, g2, max_toi, target_distance)
+    let pos12 = pos1.inv_mul(pos2);
+    let vel12 = vel2 - vel1;
+    DefaultQueryDispatcher.time_of_impact(&pos12, &vel12, g1, g2, max_toi, target_distance)
 }

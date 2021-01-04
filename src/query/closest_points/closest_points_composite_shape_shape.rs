@@ -2,7 +2,7 @@ use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
-use crate::shape::{Shape, SimdCompositeShape, TypedSimdCompositeShape};
+use crate::shape::{Shape, TypedSimdCompositeShape};
 use crate::utils::IsometryOpt;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};

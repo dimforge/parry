@@ -12,11 +12,6 @@ fn main() {
     let ball_pos_intersecting = Isometry2::translation(1.0, 1.0);
     let ball_pos_disjoint = Isometry2::translation(3.0, 3.0);
 
-    assert!(
-        query::intersection_test(&ball_pos_intersecting.inv_mul(&cuboid_pos), &ball, &cuboid)
-            .unwrap()
-    );
-    assert!(
-        !query::intersection_test(&ball_pos_disjoint.inv_mul(&cuboid_pos), &ball, &cuboid).unwrap()
-    );
+    assert!(query::intersection_test(&ball_pos_intersecting, &ball, &cuboid_pos, &cuboid).unwrap());
+    assert!(!query::intersection_test(&ball_pos_disjoint, &ball, &cuboid_pos, &cuboid).unwrap());
 }

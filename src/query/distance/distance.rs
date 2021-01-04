@@ -7,9 +7,11 @@ use crate::shape::Shape;
 ///
 /// Returns `0.0` if the objects are touching or penetrating.
 pub fn distance(
-    pos12: &Isometry<Real>,
+    pos1: &Isometry<Real>,
     g1: &dyn Shape,
+    pos2: &Isometry<Real>,
     g2: &dyn Shape,
 ) -> Result<Real, Unsupported> {
-    DefaultQueryDispatcher.distance(pos12, g1, g2)
+    let pos12 = pos1.inv_mul(&pos2);
+    DefaultQueryDispatcher.distance(&pos12, g1, g2)
 }

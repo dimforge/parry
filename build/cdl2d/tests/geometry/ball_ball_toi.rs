@@ -13,8 +13,7 @@ fn test_ball_ball_toi() {
     let v1 = Vector2::new(0.0, 10.0);
     let v2 = Vector2::zeros();
 
-    let cast =
-        query::time_of_impact(&m1.inv_mul(&m2), &(v2 - v1), &b, &b, Real::MAX, 0.0).unwrap();
+    let cast = query::time_of_impact(&m1, &v1, &b, &m2, &v2, &b, Real::MAX, 0.0).unwrap();
 
     assert_eq!(cast.unwrap().toi, 0.9);
 }

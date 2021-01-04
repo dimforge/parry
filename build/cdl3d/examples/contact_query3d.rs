@@ -15,26 +15,23 @@ fn main() {
     let ball_pos_too_far = Isometry3::translation(3.0, 3.0, 3.0);
 
     let ctct_penetrating = query::contact(
-        &ball_pos_penetrating.inv_mul(&cuboid_pos),
+        &ball_pos_penetrating,
         &ball,
+        &cuboid_pos,
         &cuboid,
         prediction,
     )
     .unwrap();
     let ctct_in_prediction = query::contact(
-        &ball_pos_in_prediction.inv_mul(&cuboid_pos),
+        &ball_pos_in_prediction,
         &ball,
+        &cuboid_pos,
         &cuboid,
         prediction,
     )
     .unwrap();
-    let ctct_too_far = query::contact(
-        &ball_pos_too_far.inv_mul(&cuboid_pos),
-        &ball,
-        &cuboid,
-        prediction,
-    )
-    .unwrap();
+    let ctct_too_far =
+        query::contact(&ball_pos_too_far, &ball, &cuboid_pos, &cuboid, prediction).unwrap();
 
     assert!(ctct_penetrating.unwrap().dist <= 0.0);
     assert!(ctct_in_prediction.unwrap().dist >= 0.0);

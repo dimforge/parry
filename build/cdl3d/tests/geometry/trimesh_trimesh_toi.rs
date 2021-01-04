@@ -38,9 +38,11 @@ fn do_toi_test() -> Option<Real> {
     let vel_two = Vector3::new(0.0, 0.0, 0.0);
 
     query::time_of_impact(
-        &transform_one.inv_mul(&transform_two),
-        &(vel_two - vel_one),
+        &transform_one,
+        &vel_one,
         &shape_one,
+        &transform_two,
+        &vel_two,
         &shape_two,
         Real::MAX,
         0.0,

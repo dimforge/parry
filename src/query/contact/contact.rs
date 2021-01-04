@@ -6,20 +6,18 @@ use std::mem;
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Contact {
-    /// Position of the contact on the first object. The position is expressed in local-space of the first shape.
+    /// Position of the contact on the first object.
     pub point1: Point<Real>,
 
-    /// Position of the contact on the second object. The position is expressed in local-space of the second shape.
+    /// Position of the contact on the second object.
     pub point2: Point<Real>,
 
-    /// Contact normal expressed in the local-space of the first shape.
-    ///
-    /// This is an outward normal, i.e., it points towards the exterior of the first shape.
+    /// Contact normal, pointing towards the exterior of the first shape.
     pub normal1: Unit<Vector<Real>>,
 
-    /// Contact normal expressed in the local-space of the second shape.
+    /// Contact normal, pointing towards the exterior of the second shape.
     ///
-    /// This is an outward normal, i.e., it points towards the exterior of the second shape.
+    /// If these contact data are expressed in world-space, this normal is equal to `-normal1`.
     pub normal2: Unit<Vector<Real>>,
 
     /// Distance between the two contact points.
@@ -61,6 +59,14 @@ impl Contact {
     pub fn flipped(mut self) -> Self {
         self.flip();
         self
+    }
+
+    #[inline]
+    pub fn transform_by_mut(&mut self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) {
+        self.point1 = pos1 * self.point1;
+        self.point2 = pos2 * self.point2;
+        self.normal1 = pos1 * self.normal1;
+        self.normal2 = pos2 * self.normal2;
     }
 
     pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {

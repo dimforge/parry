@@ -21,27 +21,33 @@ fn main() {
     let ball_vel2 = Vector2::new(-0.5, -0.5);
 
     let toi_intersecting = query::time_of_impact(
-        &ball_pos_intersecting.inv_mul(&cuboid_pos),
-        &(box_vel1 - ball_vel1),
+        &ball_pos_intersecting,
+        &ball_vel1,
         &ball,
+        &cuboid_pos,
+        &box_vel1,
         &cuboid,
         Real::MAX,
         0.0,
     )
     .unwrap();
     let toi_will_touch = query::time_of_impact(
-        &ball_pos_will_touch.inv_mul(&cuboid_pos),
-        &(box_vel2 - ball_vel2),
+        &ball_pos_will_touch,
+        &ball_vel2,
         &ball,
+        &cuboid_pos,
+        &box_vel2,
         &cuboid,
         Real::MAX,
         0.0,
     )
     .unwrap();
     let toi_wont_touch = query::time_of_impact(
-        &ball_pos_wont_touch.inv_mul(&cuboid_pos),
-        &(box_vel1 - ball_vel1),
+        &ball_pos_wont_touch,
+        &ball_vel1,
         &ball,
+        &cuboid_pos,
+        &box_vel1,
         &cuboid,
         Real::MAX,
         0.0,
