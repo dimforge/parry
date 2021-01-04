@@ -31,19 +31,19 @@ impl Default for Voxel {
 }
 
 pub struct VoxelSet {
-    min_bb: Point3<f32>,
+    min_bb: Point3<Real>,
     min_bb_voxels: Point3<u32>,
     max_bb_voxels: Point3<u32>,
-    min_bb_pts: Point3<f32>,
-    max_bb_pts: Point3<f32>,
+    min_bb_pts: Point3<Real>,
+    max_bb_pts: Point3<Real>,
     barycenter: Point3<u32>,
-    barycenter_pca: Point3<f32>,
-    scale: f32,
-    unit_volume: f32,
+    barycenter_pca: Point3<Real>,
+    scale: Real,
+    unit_volume: Real,
     num_voxels_on_surface: u32,
     num_voxels_inside_surface: u32,
     voxels: Vec<Voxel>,
-    eigenvalues: Vector3<f32>,
+    eigenvalues: Vector3<Real>,
 }
 
 impl VoxelSet {
@@ -73,19 +73,19 @@ impl VoxelSet {
         self.max_bb_voxels
     }
 
-    pub fn eigenvalues(&self) -> Vector3<f32> {
+    pub fn eigenvalues(&self) -> Vector3<Real> {
         self.eigenvalues
     }
 
-    pub fn compute_volume(&self) -> f32 {
-        self.unit_volume * self.voxels.len() as f32
+    pub fn compute_volume(&self) -> Real {
+        self.unit_volume * self.voxels.len() as Real
     }
 
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point3<f32> {
+    fn get_voxel_point(&self, voxel: &Voxel) -> Point3<Real> {
         self.get_point(na::convert(voxel.coords))
     }
 
-    pub fn get_point(&self, voxel: Point3<f32>) -> Point3<f32> {
+    pub fn get_point(&self, voxel: Point3<Real>) -> Point3<Real> {
         self.min_bb + voxel.coords * self.scale
     }
 
@@ -107,9 +107,9 @@ impl VoxelSet {
             self.max_bb_voxels = self.max_bb_voxels.sup(&self.voxels[p].coords);
         }
 
-        let bary = bary.coords.map(|e| e as f32 / num_voxels as f32);
-        self.min_bb_pts = self.min_bb + self.min_bb_voxels.coords.map(|e| e as f32 * self.scale);
-        self.max_bb_pts = self.min_bb + self.max_bb_voxels.coords.map(|e| e as f32 * self.scale);
+        let bary = bary.coords.map(|e| e as Real / num_voxels as Real);
+        self.min_bb_pts = self.min_bb + self.min_bb_voxels.coords.map(|e| e as Real * self.scale);
+        self.max_bb_pts = self.min_bb + self.max_bb_voxels.coords.map(|e| e as Real * self.scale);
     }
 
     pub fn compute_convex_hull(&self, mesh: &mut Mesh, sampling: u32) {
@@ -241,8 +241,8 @@ impl VoxelSet {
     }
 
     /// Gets the vertices of the given voxel.
-    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point3<f32>)) {
-        let ijk = voxel.coords.coords.map(|e| e as f32);
+    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point3<Real>)) {
+        let ijk = voxel.coords.coords.map(|e| e as Real);
 
         let shifts = [
             Vector3::new(-0.5, -0.5, -0.5),
@@ -263,8 +263,8 @@ impl VoxelSet {
     pub fn intersect(
         &self,
         plane: &Plane,
-        positive_pts: &mut Vec<Point3<f32>>,
-        negative_pts: &mut Vec<Point3<f32>>,
+        positive_pts: &mut Vec<Point3<Real>>,
+        negative_pts: &mut Vec<Point3<Real>>,
         sampling: u32,
     ) {
         let num_voxels = self.voxels.len();
@@ -314,7 +314,7 @@ impl VoxelSet {
         &self,
         plane: &Plane,
         mesh: &Mesh,
-        exterior_pts: &mut Vec<Point3<f32>>,
+        exterior_pts: &mut Vec<Point3<Real>>,
     ) {
         let num_voxels = self.voxels.len();
         if num_voxels == 0 {
@@ -335,7 +335,7 @@ impl VoxelSet {
     }
 
     // Returns (negative_volume, positive_volume)
-    pub fn compute_clipped_volumes(&self, plane: &Plane) -> (f32, f32) {
+    pub fn compute_clipped_volumes(&self, plane: &Plane) -> (Real, Real) {
         if self.voxels.is_empty() {
             return (0.0, 0.0);
         }
@@ -349,8 +349,8 @@ impl VoxelSet {
         }
 
         let num_negative_voxels = self.voxels.len() - num_positive_voxels;
-        let positive_volume = self.unit_volume * (num_positive_voxels as f32);
-        let negative_volume = self.unit_volume * (num_negative_voxels as f32);
+        let positive_volume = self.unit_volume * (num_positive_voxels as Real);
+        let negative_volume = self.unit_volume * (num_negative_voxels as Real);
 
         (negative_volume, positive_volume)
     }
@@ -454,16 +454,16 @@ impl VoxelSet {
         }
 
         self.barycenter_pca = Point3::origin();
-        let denom = 1.0 / (num_voxels as f32);
+        let denom = 1.0 / (num_voxels as Real);
 
         for voxel in &self.voxels {
-            self.barycenter_pca += voxel.coords.map(|e| e as f32).coords * denom;
+            self.barycenter_pca += voxel.coords.map(|e| e as Real).coords * denom;
         }
 
         let mut cov_mat = Matrix3::zeros();
 
         for voxel in &self.voxels {
-            let xyz = voxel.coords.map(|e| e as f32) - self.barycenter_pca;
+            let xyz = voxel.coords.map(|e| e as Real) - self.barycenter_pca;
             cov_mat.syger(denom, &xyz, &xyz, 1.0);
         }
 
@@ -473,12 +473,12 @@ impl VoxelSet {
 
 pub struct Volume {
     dim: Point3<u32>,
-    min_bb: Point3<f32>,
-    max_bb: Point3<f32>,
+    min_bb: Point3<Real>,
+    max_bb: Point3<Real>,
     num_voxels_on_surface: u32,
     num_voxels_inside_surface: u32,
     num_voxels_outside_surface: u32,
-    scale: f32,
+    scale: Real,
     data: Vec<VoxelValue>,
 }
 
@@ -496,14 +496,14 @@ impl Volume {
         }
     }
 
-    pub fn scale(&self) -> f32 {
+    pub fn scale(&self) -> Real {
         self.scale
     }
 
     pub fn voxelize(
         &mut self,
-        transform: &Isometry3<f32>,
-        points: &[Point3<f32>],
+        transform: &Isometry3<Real>,
+        points: &[Point3<Real>],
         triangles: &[Point3<u32>],
         dim: u32,
         fill_mode: FillMode,
@@ -522,22 +522,22 @@ impl Volume {
         if d[0] > d[1] && d[0] > d[2] {
             r = d[0];
             self.dim[0] = dim;
-            self.dim[1] = 2 + (dim as f32 * d[1] / d[0]) as u32;
-            self.dim[2] = 2 + (dim as f32 * d[2] / d[0]) as u32;
+            self.dim[1] = 2 + (dim as Real * d[1] / d[0]) as u32;
+            self.dim[2] = 2 + (dim as Real * d[2] / d[0]) as u32;
         } else if d[1] > d[0] && d[1] > d[2] {
             r = d[1];
             self.dim[1] = dim;
-            self.dim[0] = 2 + (dim as f32 * d[0] / d[1]) as u32;
-            self.dim[2] = 2 + (dim as f32 * d[2] / d[1]) as u32;
+            self.dim[0] = 2 + (dim as Real * d[0] / d[1]) as u32;
+            self.dim[2] = 2 + (dim as Real * d[2] / d[1]) as u32;
         } else {
             r = d[2];
             self.dim[2] = dim;
-            self.dim[0] = 2 + (dim as f32 * d[0] / d[2]) as u32;
-            self.dim[1] = 2 + (dim as f32 * d[1] / d[2]) as u32;
+            self.dim[0] = 2 + (dim as Real * d[0] / d[2]) as u32;
+            self.dim[1] = 2 + (dim as Real * d[1] / d[2]) as u32;
         }
 
-        self.scale = r / (dim as f32 - 1.0);
-        let inv_scale = (dim as f32 - 1.0) / r;
+        self.scale = r / (dim as Real - 1.0);
+        let inv_scale = (dim as Real - 1.0) / r;
         self.allocate();
 
         self.num_voxels_on_surface = 0;
@@ -626,7 +626,7 @@ impl Volume {
                         if *value == VoxelValue::PrimitiveUndefined {
                             let triangle = Triangle::from(tri_pts);
                             let aabb = AABB::from_half_extents(
-                                Point3::new(i as f32, j as f32, k as f32),
+                                Point3::new(i as Real, j as Real, k as Real),
                                 box_half_size,
                             );
 
@@ -891,9 +891,9 @@ impl Volume {
                     let voxel = self.voxel(i, j, k);
 
                     if voxel == value {
-                        let i = i as f32;
-                        let j = j as f32;
-                        let k = k as f32;
+                        let i = i as Real;
+                        let j = j as Real;
+                        let k = k as Real;
 
                         let p0 = Vector3::new(
                             (i - 0.5) * self.scale,
@@ -1003,8 +1003,8 @@ impl Volume {
 /*
 fn traceRay(
     mesh: &RaycastMesh,
-    start: f32,
-    dir: &Vector3<f32>,
+    start: Real,
+    dir: &Vector3<Real>,
     inside_count: &mut u32,
     outside_count: &mut u32,
 ) {
@@ -1045,9 +1045,9 @@ for i in 0..i0 {
 
             if voxel != VoxelValue::PrimitiveOnSurface {
                 let start = Vector3::new(
-                    i as f32 * scale + bmin[0],
-                    j as f32 * scale + bmin[1],
-                    k as f32 * scale + bmin[2],
+                    i as Real * scale + bmin[0],
+                    j as Real * scale + bmin[1],
+                    k as Real * scale + bmin[2],
                 );
 
                 let mut inside_count = 0;

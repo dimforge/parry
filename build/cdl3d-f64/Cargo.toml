@@ -1,5 +1,5 @@
 [package]
-name    = "cdl2d"
+name    = "cdl3d-f64"
 version = "0.1.0"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
@@ -13,9 +13,9 @@ license = "Apache-2.0"
 edition = "2018"
 
 [features]
-default = [ "dim2", "f32" ]
-dim2    = [ ]
-f32     = [ ]
+default = [ "dim3", "f64" ]
+dim3    = [ ]
+f64     = [ ]
 serde-serialize = [ "serde", "erased-serde", "nalgebra/serde-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
@@ -25,27 +25,27 @@ enhanced-determinism = [ "simba/libm_force", "indexmap" ]
 simd-is-enabled = [ ]
 
 [lib]
-name = "cdl2d"
+name = "cdl3d_f64"
 path = "../../src/lib.rs"
-required-features = [ "dim2", "f32" ]
+required-features = [ "dim3", "f64" ]
 
 [dependencies]
-either          = "1"
-bitflags        = "1"
-downcast-rs     = "1"
-num-traits      = { version = "0.2", default-features = false }
-smallvec        = "1"
-slab            = "0.4"
-arrayvec        = "0.5"
-simba           = "0.3"
-nalgebra        = "0.24"
-approx          = { version = "0.4", default-features = false }
-serde           = { version = "1.0", optional = true, features = ["derive"]}
-erased-serde    = { version = "0.3", optional = true }
-num-derive      = "0.3"
+either      = "1"
+bitflags    = "1"
+downcast-rs = "1"
+num-traits = { version = "0.2", default-features = false }
+smallvec   = "1"
+slab       = "0.4"
+simba      = "0.3"
+nalgebra   = "0.24"
+approx     = { version = "0.4", default-features = false }
+serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
+erased-serde = { version = "0.3", optional = true }
+num-derive   = "0.3"
 indexmap = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = "1"
 
+
 [dev-dependencies]
-rand  = { version = "0.7", default-features = false }
-simba = { version = "0.3", features = [ "partial_fixed_point_support" ] }
+rand_isaac = "0.2"
+rand       = { version = "0.7", default-features = false }

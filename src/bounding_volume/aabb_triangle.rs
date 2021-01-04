@@ -33,7 +33,7 @@ impl Triangle {
 mod test {
     use crate::{
         bounding_volume::support_map_aabb,
-        math::{Isometry, Point, Translation},
+        math::{Isometry, Point, Real, Translation},
         shape::Triangle,
     };
     use na::{RealField, UnitQuaternion};
@@ -48,7 +48,7 @@ mod test {
 
         let m = Isometry::from_parts(
             Translation::new(-0.2, 5.0, 0.2),
-            UnitQuaternion::from_euler_angles(0.0, f32::frac_pi_2(), 0.0),
+            UnitQuaternion::from_euler_angles(0.0, Real::frac_pi_2(), 0.0),
         );
 
         assert_eq!(t.aabb(&m), support_map_aabb(&m, &t));

@@ -28,7 +28,7 @@ impl RayCast for Triangle {
         }
 
         let mut best = None;
-        let mut smallest_toi = f32::MAX;
+        let mut smallest_toi = Real::MAX;
 
         for i in 0..3 {
             if let Some(inter) = edges[i].cast_local_ray_and_get_normal(ray, max_toi, solid) {

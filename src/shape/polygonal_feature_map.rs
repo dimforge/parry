@@ -1,4 +1,4 @@
-use crate::math::Vector;
+use crate::math::{Real, Vector};
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
 use na::Unit;
 #[cfg(feature = "dim3")]
@@ -12,30 +12,30 @@ use {
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature);
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature);
 }
 
 impl PolygonalFeatureMap for Segment {
-    fn local_support_feature(&self, _: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, _: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
         *out_feature = PolygonalFeature::from(*self);
     }
 }
 
 impl PolygonalFeatureMap for Triangle {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
         *out_feature = self.support_face(**dir);
     }
 }
 
 impl PolygonalFeatureMap for Cuboid {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
         *out_feature = self.support_face(**dir).into();
     }
 }
 
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cylinder {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_features: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_features: &mut PolygonalFeature) {
         use na::Vector2;
 
         // About feature ids.
@@ -53,7 +53,7 @@ impl PolygonalFeatureMap for Cylinder {
         // - Note that at all times, one of each cap's vertices are the same as the curved-part
         //   segment endpoints.
         let dir2 = Vector2::new(dir.x, dir.z)
-            .try_normalize(f32::default_epsilon())
+            .try_normalize(Real::default_epsilon())
             .unwrap_or(Vector2::x());
 
         if dir.y.abs() < 0.5 {
@@ -94,7 +94,7 @@ impl PolygonalFeatureMap for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cone {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_features: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_features: &mut PolygonalFeature) {
         use na::Vector2;
 
         // About feature ids. It is very similar to the feature ids of cylinders.
@@ -110,7 +110,7 @@ impl PolygonalFeatureMap for Cone {
         // - Note that at all times, one of the cap's vertices are the same as the curved-part
         //   segment endpoints.
         let dir2 = Vector2::new(dir.x, dir.z)
-            .try_normalize(f32::default_epsilon())
+            .try_normalize(Real::default_epsilon())
             .unwrap_or(Vector2::x());
 
         if dir.y > 0.0 {

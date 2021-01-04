@@ -70,7 +70,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     }
 
     #[cfg(feature = "dim3")]
-    let sep2 = (-f32::MAX, Vector::x());
+    let sep2 = (-Real::MAX, Vector::x());
     #[cfg(feature = "dim2")]
     let sep2 = sat::segment_cuboid_find_local_separating_normal_oneway(&segment2, cube1, &pos21);
     if sep2.0 > prediction + capsule2.radius {
@@ -84,7 +84,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
      *
      */
     #[cfg(feature = "dim2")]
-    let sep3 = (-f32::MAX, Vector::x()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, Vector::x()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_segment_find_local_separating_edge_twoway(cube1, &segment2, &pos12);
     if sep3.0 > prediction + capsule2.radius {

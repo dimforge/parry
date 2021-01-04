@@ -1,11 +1,11 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Isometry, Vector};
+use crate::math::{Isometry, Real, Vector};
 use crate::shape::Capsule;
 
 impl Capsule {
     /// The axis-aligned bounding box of this capsule.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<f32>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
         self.transform_by(pos).local_aabb()
     }
 

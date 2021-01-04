@@ -1,17 +1,17 @@
 use crate::approx::AbsDiffEq;
-use crate::math::{Point, Vector};
+use crate::math::{Point, Real, Vector};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Capsule, FeatureId, Segment};
 use na::{self, Unit};
 
 impl PointQuery for Capsule {
     #[inline]
-    fn project_local_point(&self, pt: &Point<f32>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
         let seg = Segment::new(self.segment.a, self.segment.b);
         let proj = seg.project_local_point(pt, solid);
         let dproj = *pt - proj.point;
 
-        if let Some((dir, dist)) = Unit::try_new_and_get(dproj, f32::default_epsilon()) {
+        if let Some((dir, dist)) = Unit::try_new_and_get(dproj, Real::default_epsilon()) {
             let inside = dist <= self.radius;
             if solid && inside {
                 return PointProjection::new(true, *pt);
@@ -42,7 +42,10 @@ impl PointQuery for Capsule {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(&self, pt: &Point<f32>) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(
+        &self,
+        pt: &Point<Real>,
+    ) -> (PointProjection, FeatureId) {
         (self.project_local_point(pt, false), FeatureId::Face(0))
     }
 }

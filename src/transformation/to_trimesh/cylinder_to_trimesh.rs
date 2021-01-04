@@ -14,7 +14,7 @@ impl Cylinder {
 }
 
 /// Generates a cylinder with unit height and diameter.
-fn unit_cylinder(nsubdiv: u32) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+fn unit_cylinder(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
     let two_pi = Real::two_pi();
     let invsubdiv = 1.0 / (nsubdiv as Real);
     let dtheta = two_pi * invsubdiv;

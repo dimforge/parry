@@ -1,5 +1,5 @@
 use crate::bounding_volume::{BoundingVolume, AABB};
-use crate::math::{Isometry, Point, Vector};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{
@@ -88,12 +88,12 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn compute_local_aabb(&self) -> AABB;
 
     /// Computes the AABB of this shape with the given position.
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.compute_local_aabb().transform_by(position)
     }
 
     /// Compute the mass-properties of this shape given its uniform density.
-    fn mass_properties(&self, density: f32) -> MassProperties;
+    fn mass_properties(&self, density: Real) -> MassProperties;
 
     /// Gets the type tag of this shape.
     fn shape_type(&self) -> ShapeType;
@@ -117,7 +117,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     }
 
     /// Converts this shape to a polygonal feature-map, if it is one.
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         None
     }
 
@@ -129,8 +129,8 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn feature_normal_at_point(
         &self,
         _feature: FeatureId,
-        _point: &Point<f32>,
-    ) -> Option<Unit<Vector<f32>>> {
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
         None
     }
 }
@@ -245,11 +245,11 @@ impl Shape for Ball {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_ball(density, self.radius)
     }
 
@@ -272,11 +272,11 @@ impl Shape for Ball {
 //         Some(self as &dyn Serialize)
 //     }
 //
-//     fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+//     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
 //         self.aabb(position)
 //     }
 //
-//     fn mass_properties(&self, _density: f32) -> MassProperties {
+//     fn mass_properties(&self, _density: Real) -> MassProperties {
 //         unimplemented!()
 //     }
 //
@@ -295,11 +295,11 @@ impl Shape for Cuboid {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_cuboid(density, self.half_extents)
     }
 
@@ -315,7 +315,7 @@ impl Shape for Cuboid {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -330,11 +330,11 @@ impl Shape for Capsule {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_capsule(density, self.segment.a, self.segment.b, self.radius)
     }
 
@@ -350,7 +350,7 @@ impl Shape for Capsule {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((&self.segment as &dyn PolygonalFeatureMap, self.radius))
     }
 }
@@ -365,11 +365,11 @@ impl Shape for Triangle {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: f32) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         MassProperties::zero()
     }
 
@@ -385,7 +385,7 @@ impl Shape for Triangle {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -400,11 +400,11 @@ impl Shape for Segment {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: f32) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         MassProperties::zero()
     }
 
@@ -420,7 +420,7 @@ impl Shape for Segment {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -436,11 +436,11 @@ impl Shape for Compound {
         *self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.local_aabb().transform_by(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_compound(density, self.shapes())
     }
 
@@ -463,11 +463,11 @@ impl Shape for TriMesh {
         *self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: f32) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         MassProperties::zero()
     }
 
@@ -490,11 +490,11 @@ impl Shape for HeightField {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: f32) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         MassProperties::zero()
     }
 
@@ -514,11 +514,11 @@ impl Shape for ConvexPolygon {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_convex_polygon(density, &self.points())
     }
 
@@ -534,7 +534,7 @@ impl Shape for ConvexPolygon {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -550,11 +550,11 @@ impl Shape for ConvexPolyhedron {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         let (vertices, indices) = self.to_trimesh();
         MassProperties::from_convex_polyhedron(density, &vertices, &indices)
     }
@@ -571,7 +571,7 @@ impl Shape for ConvexPolyhedron {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -587,11 +587,11 @@ impl Shape for Cylinder {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_cylinder(density, self.half_height, self.radius)
     }
 
@@ -607,7 +607,7 @@ impl Shape for Cylinder {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -623,11 +623,11 @@ impl Shape for Cone {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: f32) -> MassProperties {
+    fn mass_properties(&self, density: Real) -> MassProperties {
         MassProperties::from_cone(density, self.half_height, self.radius)
     }
 
@@ -643,7 +643,7 @@ impl Shape for Cone {
         Some(self as &dyn SupportMap)
     }
 
-    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+    fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 }
@@ -658,7 +658,7 @@ impl Shape for HalfSpace {
         self.local_aabb()
     }
 
-    fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
 
@@ -666,7 +666,7 @@ impl Shape for HalfSpace {
         true
     }
 
-    fn mass_properties(&self, _: f32) -> MassProperties {
+    fn mass_properties(&self, _: Real) -> MassProperties {
         MassProperties::zero()
     }
 
@@ -687,11 +687,11 @@ macro_rules! impl_shape_for_round_shape(
                 self.base_shape.local_aabb().loosened(self.border_radius)
             }
 
-            fn compute_aabb(&self, position: &Isometry<f32>) -> AABB {
+            fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
                 self.base_shape.aabb(position).loosened(self.border_radius)
             }
 
-            fn mass_properties(&self, density: f32) -> MassProperties {
+            fn mass_properties(&self, density: Real) -> MassProperties {
                 self.base_shape.mass_properties(density)
             }
 
@@ -707,7 +707,7 @@ macro_rules! impl_shape_for_round_shape(
                 Some(self as &dyn SupportMap)
             }
 
-            fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, f32)> {
+            fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
                 Some((&self.base_shape as &dyn PolygonalFeatureMap, self.border_radius))
             }
         }

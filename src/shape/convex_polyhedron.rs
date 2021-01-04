@@ -436,7 +436,7 @@ impl SupportMap for ConvexPolyhedron {
 }
 
 impl PolygonalFeatureMap for ConvexPolyhedron {
-    fn local_support_feature(&self, dir: &Unit<Vector<f32>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
         assert!(
             self.points.len() < u8::MAX as usize,
             "This operation is not supported yet for polyhedron with more than 256 vertices."

@@ -13,8 +13,9 @@ license = "Apache-2.0"
 edition = "2018"
 
 [features]
-default = [ "dim3" ]
+default = [ "dim3", "f32" ]
 dim3    = [ ]
+f32     = [ ]
 serde-serialize = [ "serde", "erased-serde", "nalgebra/serde-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
@@ -26,7 +27,7 @@ simd-is-enabled = [ ]
 [lib]
 name = "cdl3d"
 path = "../../src/lib.rs"
-required-features = [ "dim3" ]
+required-features = [ "dim3", "f32" ]
 
 [dependencies]
 either      = "1"

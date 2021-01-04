@@ -1,8 +1,9 @@
+use crate::math::Real;
 use crate::shape::ConvexPolyhedron;
 use na::Point3;
 
 impl ConvexPolyhedron {
-    pub fn to_trimesh(&self) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
         let mut indices = Vec::new();
 
         for face in self.faces() {

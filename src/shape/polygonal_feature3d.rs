@@ -1,5 +1,5 @@
 use crate::approx::AbsDiffEq;
-use crate::math::{Isometry, Point, Vector};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Segment, Triangle};
 use crate::utils::WBasis;
@@ -7,7 +7,7 @@ use na::Point2;
 
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
-    pub vertices: [Point<f32>; 4],
+    pub vertices: [Point<Real>; 4],
     pub vids: [u8; 4], // Feature ID of the vertices.
     pub eids: [u8; 4], // Feature ID of the edges.
     pub fid: u8,       // Feature ID of the face.
@@ -63,20 +63,20 @@ impl PolygonalFeature {
         }
     }
 
-    pub fn transform_by(&mut self, iso: &Isometry<f32>) {
+    pub fn transform_by(&mut self, iso: &Isometry<Real>) {
         for p in &mut self.vertices[0..self.num_vertices] {
             *p = iso * *p;
         }
     }
 
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<f32>,
-        _pos21: &Isometry<f32>,
-        sep_axis1: &Vector<f32>,
-        _sep_axis2: &Vector<f32>,
+        pos12: &Isometry<Real>,
+        _pos21: &Isometry<Real>,
+        sep_axis1: &Vector<Real>,
+        _sep_axis2: &Vector<Real>,
         feature1: &Self,
         feature2: &Self,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -91,11 +91,11 @@ impl PolygonalFeature {
     }
 
     fn contacts_edge_edge<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<f32>,
+        pos12: &Isometry<Real>,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<f32>,
+        sep_axis1: &Vector<Real>,
         face2: &PolygonalFeature,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -128,9 +128,9 @@ impl PolygonalFeature {
         ];
 
         let tangent1 =
-            (projected_edge1[1] - projected_edge1[0]).try_normalize(f32::default_epsilon());
+            (projected_edge1[1] - projected_edge1[0]).try_normalize(Real::default_epsilon());
         let tangent2 =
-            (projected_edge2[1] - projected_edge2[0]).try_normalize(f32::default_epsilon());
+            (projected_edge2[1] - projected_edge2[0]).try_normalize(Real::default_epsilon());
 
         // TODO: not sure what the best value for eps is.
         // Empirically, it appears that an epsilon smaller than 1.0e-3 is too small.
@@ -199,11 +199,11 @@ impl PolygonalFeature {
     }
 
     fn contacts_face_face<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<f32>,
+        pos12: &Isometry<Real>,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<f32>,
+        sep_axis1: &Vector<Real>,
         face2: &PolygonalFeature,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -390,7 +390,10 @@ impl PolygonalFeature {
 
 /// Compute the barycentric coordinates of the intersection between the two given lines.
 /// Returns `None` if the lines are parallel.
-fn closest_points_line2d(edge1: [Point2<f32>; 2], edge2: [Point2<f32>; 2]) -> Option<(f32, f32)> {
+fn closest_points_line2d(
+    edge1: [Point2<Real>; 2],
+    edge2: [Point2<Real>; 2],
+) -> Option<(Real, Real)> {
     // Inspired by Real-time collision detection by Christer Ericson.
     let dir1 = edge1[1] - edge1[0];
     let dir2 = edge2[1] - edge2[0];
@@ -400,7 +403,7 @@ fn closest_points_line2d(edge1: [Point2<f32>; 2], edge2: [Point2<f32>; 2]) -> Op
     let e = dir2.norm_squared();
     let f = dir2.dot(&r);
 
-    let eps = f32::default_epsilon();
+    let eps = Real::default_epsilon();
 
     if a <= eps && e <= eps {
         Some((0.0, 0.0))

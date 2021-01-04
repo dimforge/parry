@@ -29,7 +29,7 @@ fn less_msb(x: usize, y: usize) -> bool {
 // Algorithm 1
 //
 // http://compgeom.com/~piyush/papers/tvcg_stann.pdf
-pub fn z_cmp_floats(p1: &[f32], p2: &[f32]) -> Option<Ordering> {
+pub fn z_cmp_floats(p1: &[Real], p2: &[Real]) -> Option<Ordering> {
     assert_eq!(
         p1.len(),
         p2.len(),
@@ -49,7 +49,7 @@ pub fn z_cmp_floats(p1: &[f32], p2: &[f32]) -> Option<Ordering> {
     p1[dim].partial_cmp(&p2[dim])
 }
 
-fn xor_msb_float(fa: f32, fb: f32) -> i16 {
+fn xor_msb_float(fa: Real, fb: Real) -> i16 {
     let (mantissa1, exponent1, _sign1) = fa.integer_decode();
     let (mantissa2, exponent2, _sign2) = fb.integer_decode();
     let x = exponent1; // To keep the same notation as the paper.

@@ -6,6 +6,8 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "dim3")]
 use {na::Matrix3, std::ops::MulAssign};
 
+const EPSILON: Real = f32::EPSILON as Real;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// The local mass properties of a rigid-body.
@@ -78,7 +80,7 @@ impl MassProperties {
         let principal_inertia_local_frame =
             Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
         // Drop negative eigenvalues.
-        let principal_inertia = eigen.eigenvalues.map(|e| e.max(0.0));
+        let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { 0.0 } else { e });
 
         Self::with_principal_inertia_frame(
             local_com,
@@ -211,14 +213,28 @@ impl Sub<MassProperties> for MassProperties {
 
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
-        let inv_mass = utils::inv(m1 - m2);
+
+        let mut new_mass = m1 - m2;
+
+        if new_mass < EPSILON {
+            // Account for small numerical errors.
+            new_mass = 0.0;
+        }
+
+        let inv_mass = utils::inv(new_mass);
 
         let local_com = (self.local_com * m1 - other.local_com.coords * m2) * inv_mass;
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
-        let inertia = i1 - i2;
+        let mut inertia = i1 - i2;
+
+        if inertia < EPSILON {
+            // Account for small numerical errors.
+            inertia = 0.0;
+        }
+
         // NOTE: we drop the negative eigenvalues that may result from subtraction rounding errors.
-        let inv_principal_inertia_sqrt = utils::inv(inertia.max(0.0).sqrt());
+        let inv_principal_inertia_sqrt = utils::inv(inertia.sqrt());
 
         Self {
             local_com,
@@ -235,12 +251,18 @@ impl Sub<MassProperties> for MassProperties {
 
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
-        let inv_mass = utils::inv(m1 - m2);
+        let mut new_mass = m1 - m2;
+
+        if new_mass < EPSILON {
+            new_mass = 0.0;
+        }
+
+        let inv_mass = utils::inv(new_mass);
         let local_com = (self.local_com * m1 - other.local_com.coords * m2) * inv_mass;
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 - i2;
-        Self::with_inertia_matrix(local_com, m1 - m2, inertia)
+        Self::with_inertia_matrix(local_com, new_mass, inertia)
     }
 }
 

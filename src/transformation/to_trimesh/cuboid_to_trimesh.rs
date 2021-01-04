@@ -1,9 +1,10 @@
+use crate::math::Real;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 use na::{self, Point3};
 
 impl Cuboid {
-    pub fn to_trimesh(&self) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
         let (vtx, idx) = unit_cuboid();
         (utils::scaled(vtx, self.half_extents * 2.0), idx)
     }
@@ -14,7 +15,7 @@ impl Cuboid {
  *
  * The cuboid is centered at the origin, and has its half extents set to 0.5.
  */
-fn unit_cuboid() -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+fn unit_cuboid() -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
     let mut coords = Vec::with_capacity(8);
     let mut faces = Vec::with_capacity(12);
 

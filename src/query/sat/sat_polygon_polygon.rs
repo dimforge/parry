@@ -1,9 +1,9 @@
 pub fn polygon_polygon_compute_separation_features(
     p1: &Polygon,
     p2: &Polygon,
-    pos12: &Isometry<f32>,
-) -> (f32, usize, usize) {
-    let mut max_separation = -f32::MAX;
+    pos12: &Isometry<Real>,
+) -> (Real, usize, usize) {
+    let mut max_separation = -Real::MAX;
     let mut separation_features = (0, 0);
 
     for (i, (p1, n1)) in p1.vertices.iter().zip(p1.normals.iter()).enumerate() {

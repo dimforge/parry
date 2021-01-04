@@ -1,14 +1,14 @@
 #![allow(dead_code)] // TODO: remove this once we support polygons.
 
-use crate::math::{Isometry, Point, Vector};
+use crate::math::{Isometry, Point, Real, Vector};
 use cdl::bounding_volume::AABB;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A convex planar polygon.
 pub struct Polygon {
-    pub(crate) vertices: Vec<Point<f32>>,
-    pub(crate) normals: Vec<Vector<f32>>,
+    pub(crate) vertices: Vec<Point<Real>>,
+    pub(crate) normals: Vec<Vector<Real>>,
 }
 
 impl Polygon {
@@ -22,12 +22,12 @@ impl Polygon {
     /// The vertices must form a convex polygon.
     ///
     /// One normal must be provided per edge and mut point towards the outside of the polygon.
-    pub fn new(vertices: Vec<Point<f32>>, normals: Vec<Vector<f32>>) -> Self {
+    pub fn new(vertices: Vec<Point<Real>>, normals: Vec<Vector<Real>>) -> Self {
         Self { vertices, normals }
     }
 
     /// Compute the axis-aligned bounding box of the polygon.
-    pub fn aabb(&self, pos: &Isometry<f32>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
         let p0 = pos * self.vertices[0];
         let mut mins = p0;
         let mut maxs = p0;
@@ -42,12 +42,12 @@ impl Polygon {
     }
 
     /// The vertices of this polygon.
-    pub fn vertices(&self) -> &[Point<f32>] {
+    pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices
     }
 
-    pub(crate) fn support_point(&self, dir: &Vector<f32>) -> usize {
-        let mut best_dot = -f32::MAX;
+    pub(crate) fn support_point(&self, dir: &Vector<Real>) -> usize {
+        let mut best_dot = -Real::MAX;
         let mut best_i = 0;
 
         for (i, pt) in self.vertices.iter().enumerate() {
@@ -61,8 +61,8 @@ impl Polygon {
         best_i
     }
 
-    pub(crate) fn support_face(&self, dir: &Vector<f32>) -> usize {
-        let mut max_dot = -f32::MAX;
+    pub(crate) fn support_face(&self, dir: &Vector<Real>) -> usize {
+        let mut max_dot = -Real::MAX;
         let mut max_dot_i = 0;
 
         for (i, normal) in self.normals.iter().enumerate() {

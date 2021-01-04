@@ -9,14 +9,14 @@ impl Ball {
         &self,
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
-    ) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+    ) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
         let diameter = self.radius * 2.0;
         let (vtx, idx) = unit_sphere(ntheta_subdiv, nphi_subdiv);
         (utils::scaled(vtx, Vector::repeat(diameter)), idx)
     }
 }
 
-fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
     let pi = Real::pi();
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();

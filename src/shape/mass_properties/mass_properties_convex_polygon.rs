@@ -1,10 +1,10 @@
 #![allow(dead_code)] // TODO: remove this
 
-use crate::math::Point;
+use crate::math::{Point, Real};
 use crate::shape::MassProperties;
 
 impl MassProperties {
-    pub(crate) fn from_convex_polygon(density: f32, vertices: &[Point<f32>]) -> MassProperties {
+    pub(crate) fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
         if area == 0.0 {
@@ -40,11 +40,11 @@ impl MassProperties {
     }
 }
 
-fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<f32>]) -> (f32, Point<f32>) {
+fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<Real>]) -> (Real, Point<Real>) {
     let geometric_center = convex_polygon
         .iter()
         .fold(Point::origin(), |e1, e2| e1 + e2.coords)
-        / convex_polygon.len() as f32;
+        / convex_polygon.len() as Real;
     let mut res = Point::origin();
     let mut areasum = 0.0;
 
@@ -70,7 +70,7 @@ fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<f32>]) -> (f32
     }
 }
 
-pub fn triangle_area(pa: &Point<f32>, pb: &Point<f32>, pc: &Point<f32>) -> f32 {
+pub fn triangle_area(pa: &Point<Real>, pb: &Point<Real>, pc: &Point<Real>) -> Real {
     // Kahan's formula.
     let a = na::distance(pa, pb);
     let b = na::distance(pb, pc);
@@ -88,7 +88,7 @@ pub fn triangle_area(pa: &Point<f32>, pb: &Point<f32>, pc: &Point<f32>) -> f32 {
 
 /// Sorts a set of three values in increasing order.
 #[inline]
-pub fn sort3<'a>(a: &'a f32, b: &'a f32, c: &'a f32) -> (&'a f32, &'a f32, &'a f32) {
+pub fn sort3<'a>(a: &'a Real, b: &'a Real, c: &'a Real) -> (&'a Real, &'a Real, &'a Real) {
     let a_b = *a > *b;
     let a_c = *a > *c;
     let b_c = *b > *c;

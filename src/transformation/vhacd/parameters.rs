@@ -6,10 +6,10 @@ pub enum FillMode {
 }
 
 pub struct Parameters {
-    pub concavity: f32,
-    pub alpha: f32,
-    pub beta: f32,
-    pub min_volume_per_ch: f32,
+    pub concavity: Real,
+    pub alpha: Real,
+    pub beta: Real,
+    pub min_volume_per_ch: Real,
     pub resolution: u32,
     pub max_num_vertices_per_ch: u32,
     pub plane_downsampling: u32,

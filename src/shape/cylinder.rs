@@ -3,7 +3,7 @@
 use crate::math::{Point, Real, Vector};
 use crate::shape::SupportMap;
 use na;
-use num::{Signed, Zero};
+use num::Zero;
 
 /// Cylinder shape with its principal axis aligned with the `y` axis.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -22,7 +22,7 @@ impl Cylinder {
     /// * `half_height` - the half length of the cylinder along the `y` axis.
     /// * `radius` - the length of the cylinder along all other axis.
     pub fn new(half_height: Real, radius: Real) -> Cylinder {
-        assert!(half_height.is_positive() && radius.is_positive());
+        assert!(half_height.is_sign_positive() && radius.is_sign_positive());
 
         Cylinder {
             half_height,

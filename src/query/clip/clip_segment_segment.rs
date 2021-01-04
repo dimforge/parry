@@ -1,4 +1,4 @@
-use crate::math::Point;
+use crate::math::{Point, Real};
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
 
@@ -6,13 +6,13 @@ use crate::{math::Vector, utils};
 // 0 = First vertex.
 // 1 = On the face.
 // 2 = Second vertex.
-pub type ClippingPoints = (Point<f32>, Point<f32>, usize, usize);
+pub type ClippingPoints = (Point<Real>, Point<Real>, usize, usize);
 
 #[cfg(feature = "dim2")]
 pub fn clip_segment_segment_with_normal(
-    mut seg1: (Point<f32>, Point<f32>),
-    mut seg2: (Point<f32>, Point<f32>),
-    normal: Vector<f32>,
+    mut seg1: (Point<Real>, Point<Real>),
+    mut seg2: (Point<Real>, Point<Real>),
+    normal: Vector<Real>,
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     use crate::utils::WBasis;
     let tangent = normal.orthonormal_basis()[0];
@@ -71,8 +71,8 @@ pub fn clip_segment_segment_with_normal(
 }
 
 pub fn clip_segment_segment(
-    mut seg1: (Point<f32>, Point<f32>),
-    mut seg2: (Point<f32>, Point<f32>),
+    mut seg1: (Point<Real>, Point<Real>),
+    mut seg2: (Point<Real>, Point<Real>),
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     // NOTE: no need to normalize the tangent.
     let tangent1 = seg1.1 - seg1.0;

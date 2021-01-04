@@ -1,12 +1,13 @@
-use crate::math::{Point, PrincipalAngularInertia, Rotation, Vector};
+use crate::math::{Point, PrincipalAngularInertia, Real, Rotation, Vector};
 use crate::shape::MassProperties;
+use na::RealField;
 
 impl MassProperties {
     pub(crate) fn cone_y_volume_unit_inertia(
-        half_height: f32,
-        radius: f32,
-    ) -> (f32, PrincipalAngularInertia<f32>) {
-        let volume = radius * radius * std::f32::consts::PI * half_height * 2.0 / 3.0;
+        half_height: Real,
+        radius: Real,
+    ) -> (Real, PrincipalAngularInertia<Real>) {
+        let volume = radius * radius * Real::pi() * half_height * 2.0 / 3.0;
         let sq_radius = radius * radius;
         let sq_height = half_height * half_height * 4.0;
         let off_principal = sq_radius * 3.0 / 20.0 + sq_height * 3.0 / 5.0;
@@ -15,7 +16,7 @@ impl MassProperties {
         (volume, Vector::new(off_principal, principal, off_principal))
     }
 
-    pub(crate) fn from_cone(density: f32, half_height: f32, radius: f32) -> Self {
+    pub(crate) fn from_cone(density: Real, half_height: Real, radius: Real) -> Self {
         let (cyl_vol, cyl_unit_i) = Self::cone_y_volume_unit_inertia(half_height, radius);
         let cyl_mass = cyl_vol * density;
 

@@ -23,19 +23,19 @@ impl Axis {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Plane {
-    pub abc: Vector3<f32>,
-    pub d: f32,
+    pub abc: Vector3<Real>,
+    pub d: Real,
     pub axis: Axis,
     pub index: u32,
 }
 
 pub struct Mesh {
-    pub points: Vec<Point3<f32>>,
+    pub points: Vec<Point3<Real>>,
     pub triangles: Vec<Point3<u32>>,
-    pub min_bb: Point3<f32>,
-    pub max_bb: Point3<f32>,
-    pub diag: f32,
-    pub center: Point3<f32>,
+    pub min_bb: Point3<Real>,
+    pub max_bb: Point3<Real>,
+    pub diag: Real,
+    pub center: Point3<Real>,
 }
 
 impl Mesh {
@@ -50,7 +50,7 @@ impl Mesh {
         }
     }
 
-    pub(crate) fn compute_convex_hull(&mut self, points: &[Point3<f32>]) {
+    pub(crate) fn compute_convex_hull(&mut self, points: &[Point3<Real>]) {
         // Set `self` to the convex hull of `points`.
         unimplemented!()
     }
@@ -69,7 +69,7 @@ impl Mesh {
 
     /// Computes the volume of this mesh, assuming it is convex.
     // TODO: rename this "compute_convex_volume".
-    pub(crate) fn compute_volume(&self) -> f32 {
+    pub(crate) fn compute_volume(&self) -> Real {
         let num_points = self.points.len();
         let num_triangles = self.triangles.len();
 
@@ -96,8 +96,8 @@ impl Mesh {
     pub(crate) fn clip(
         &self,
         plane: &Plane,
-        positive_part: &mut Vec<Point3<f32>>,
-        negative_part: &mut Vec<Point3<f32>>,
+        positive_part: &mut Vec<Point3<Real>>,
+        negative_part: &mut Vec<Point3<Real>>,
     ) {
         for pt in &self.points {
             let d = plane.abc.dot(&pt.coords) + plane.d;
@@ -114,7 +114,7 @@ impl Mesh {
     }
 
     /// Tests if the given point is inside of this mesh, assuming this mesh is convex.
-    pub(super) fn is_inside(&self, pt: &Point3<f32>) -> bool {
+    pub(super) fn is_inside(&self, pt: &Point3<Real>) -> bool {
         if self.points.is_empty() || self.triangles.is_empty() {
             return false;
         }

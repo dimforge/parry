@@ -666,7 +666,7 @@ mod test {
         use crate::shape::Ball;
 
         // This triggered a failure to an affinely dependent facet.
-        let (points, _) = Ball::new(0.4f32).to_trimesh(20, 20);
+        let (points, _) = Ball::new(0.4).to_trimesh(20, 20);
         let (vertices, _) = transformation::convex_hull(points.as_slice());
 
         // dummy test, we are just checking that the construction did not fail.

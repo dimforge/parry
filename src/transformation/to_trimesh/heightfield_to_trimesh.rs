@@ -1,9 +1,10 @@
+use crate::math::Real;
 use crate::shape::HeightField;
 use na::Point3;
 
 impl HeightField {
     /// Converts this height-field to a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<Point3<f32>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 

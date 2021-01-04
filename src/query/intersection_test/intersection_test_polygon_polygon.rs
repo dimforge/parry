@@ -2,7 +2,7 @@
 
 use crate::geometry::proximity_detector::PrimitiveProximityDetectionContext;
 use crate::geometry::{sat, Polygon, Proximity};
-use crate::math::Isometry;
+use crate::math::{Isometry, Real};
 
 pub fn detect_proximity_polygon_polygon(
     _ctxt: &mut PrimitiveProximityDetectionContext,
@@ -22,11 +22,11 @@ pub fn detect_proximity_polygon_polygon(
 }
 
 fn detect_proximity<'a>(
-    prediction_distance: f32,
+    prediction_distance: Real,
     p1: &'a Polygon,
-    m1: &'a Isometry<f32>,
+    m1: &'a Isometry<Real>,
     p2: &'a Polygon,
-    m2: &'a Isometry<f32>,
+    m2: &'a Isometry<Real>,
 ) -> Proximity {
     let m12 = m1.inv_mul(&m2);
     let m21 = m12.inverse();

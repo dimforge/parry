@@ -63,7 +63,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     let local_p2_1 = seg2_1.a * bcoords2[0] + seg2_1.b.coords * bcoords2[1];
 
     let local_n1 =
-        Unit::try_new(local_p2_1 - local_p1, f32::default_epsilon()).unwrap_or(Vector::y_axis());
+        Unit::try_new(local_p2_1 - local_p1, Real::default_epsilon()).unwrap_or(Vector::y_axis());
     let dist = (local_p2_1 - local_p1).dot(&local_n1) - capsule1.radius - capsule2.radius;
 
     if dist <= prediction {
@@ -91,7 +91,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
                 *local_n1,
             ) {
                 let contact =
-                    if (clip_a.0 - local_p1).norm_squared() > f32::default_epsilon() * 100.0 {
+                    if (clip_a.0 - local_p1).norm_squared() > Real::default_epsilon() * 100.0 {
                         // Use clip_a as the second contact.
                         TrackedContact::new(
                             clip_a.0,
@@ -149,7 +149,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     let local_p2_1 = seg2_1.a * bcoords2[0] + seg2_1.b.coords * bcoords2[1];
 
     let local_n1 =
-        Unit::try_new(local_p2_1 - local_p1, f32::default_epsilon()).unwrap_or(Vector::y_axis());
+        Unit::try_new(local_p2_1 - local_p1, Real::default_epsilon()).unwrap_or(Vector::y_axis());
     let dist = (local_p2_1 - local_p1).dot(&local_n1) - capsule1.radius - capsule2.radius;
 
     if dist <= prediction {

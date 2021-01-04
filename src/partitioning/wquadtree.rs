@@ -131,7 +131,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
     pub fn clear_and_rebuild(
         &mut self,
         data: impl ExactSizeIterator<Item = (T, AABB)>,
-        dilation_factor: f32,
+        dilation_factor: Real,
     ) {
         self.nodes.clear();
         self.proxies.clear();
@@ -183,7 +183,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         }
     }
 
-    pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: f32)
+    pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: Real)
     where
         F: Fn(&T) -> AABB,
     {
@@ -226,7 +226,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         indices: &mut [usize],
         aabbs: &[AABB],
         parent: NodeIndex,
-        dilation_factor: f32,
+        dilation_factor: Real,
     ) -> (u32, AABB) {
         if indices.len() <= 4 {
             // Leaf case.
@@ -264,7 +264,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         #[cfg(feature = "dim3")]
         let mut variance = Vector::zeros();
 
-        let denom = 1.0 / (indices.len() as f32);
+        let denom = 1.0 / (indices.len() as Real);
 
         for i in &*indices {
             let coords = aabbs[*i].center().coords;
@@ -487,7 +487,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         best_result
     }
 
-    pub fn cast_ray(&self, ray: &Ray, max_toi: f32, out: &mut Vec<T>) {
+    pub fn cast_ray(&self, ray: &Ray, max_toi: Real, out: &mut Vec<T>) {
         if self.nodes.is_empty() {
             return;
         }
@@ -590,7 +590,7 @@ impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
             #[cfg(feature = "dim3")]
             let mut variance = Vector::zeros();
 
-            let denom = 1.0 / (indices.len() as f32);
+            let denom = 1.0 / (indices.len() as Real);
             let mut aabb = AABB::new_invalid();
 
             for i in &*indices {
@@ -676,7 +676,7 @@ impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
 fn split_indices_wrt_dim<'a>(
     indices: &'a mut [usize],
     aabbs: &[AABB],
-    split_point: &Point<f32>,
+    split_point: &Point<Real>,
     dim: usize,
 ) -> (&'a mut [usize], &'a mut [usize]) {
     let mut icurr = 0;

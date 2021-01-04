@@ -1,12 +1,9 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Point, Vector, DIM, SIMD_WIDTH};
+use crate::math::{Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
 use crate::query::SimdRay;
 use crate::utils;
 use num::{One, Zero};
-use {
-    crate::math::{SimdBool, SimdReal},
-    simba::simd::{SimdPartialOrd, SimdValue},
-};
+use simba::simd::{SimdPartialOrd, SimdValue};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SimdAABB {
@@ -22,12 +19,12 @@ impl serde::Serialize for SimdAABB {
     {
         use serde::ser::SerializeStruct;
 
-        let mins: Point<[f32; SIMD_WIDTH]> = Point::from(
+        let mins: Point<[Real; SIMD_WIDTH]> = Point::from(
             self.mins
                 .coords
                 .map(|e| array![|ii| e.extract(ii); SIMD_WIDTH]),
         );
-        let maxs: Point<[f32; SIMD_WIDTH]> = Point::from(
+        let maxs: Point<[Real; SIMD_WIDTH]> = Point::from(
             self.maxs
                 .coords
                 .map(|e| array![|ii| e.extract(ii); SIMD_WIDTH]),
@@ -61,10 +58,10 @@ impl<'de> serde::Deserialize<'de> for SimdAABB {
             where
                 A: serde::de::SeqAccess<'de>,
             {
-                let mins: Point<[f32; SIMD_WIDTH]> = seq
+                let mins: Point<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-                let maxs: Point<[f32; SIMD_WIDTH]> = seq
+                let maxs: Point<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
                 let mins = Point::from(mins.coords.map(|e| SimdReal::from(e)));
@@ -106,7 +103,7 @@ impl SimdAABB {
         // NOTE: we multiply each by factor instead of doing
         // (maxs - mins) * factor. That's to avoid overflows (and
         // therefore NaNs if this SimdAABB contains some invalid
-        // AABBs initialised with f32::MAX
+        // AABBs initialised with Real::MAX
         let dilation = self.maxs * factor - self.mins * factor;
         self.mins -= dilation;
         self.maxs += dilation;
@@ -120,7 +117,7 @@ impl SimdAABB {
     pub fn cast_local_ray(&self, ray: &SimdRay, max_toi: SimdReal) -> (SimdBool, SimdReal) {
         let zero = SimdReal::zero();
         let one = SimdReal::one();
-        let infinity = SimdReal::splat(f32::MAX);
+        let infinity = SimdReal::splat(Real::MAX);
 
         let mut hit = SimdBool::splat(true);
         let mut tmin = SimdReal::zero();

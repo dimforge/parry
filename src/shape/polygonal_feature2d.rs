@@ -39,13 +39,13 @@ impl PolygonalFeature {
     }
 
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<f32>,
-        pos21: &Isometry<f32>,
-        sep_axis1: &Vector<f32>,
-        sep_axis2: &Vector<f32>,
+        pos12: &Isometry<Real>,
+        pos21: &Isometry<Real>,
+        sep_axis1: &Vector<Real>,
+        sep_axis2: &Vector<Real>,
         feature1: &Self,
         feature2: &Self,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {

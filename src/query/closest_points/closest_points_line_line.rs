@@ -40,7 +40,7 @@ pub fn closest_points_line_line_parameters_eps<D: DimName>(
     eps: Real,
 ) -> (Real, Real, bool)
 where
-    DefaultAllocator: Allocator<f32, D>,
+    DefaultAllocator: Allocator<Real, D>,
 {
     // Inspired by RealField-time collision detection by Christer Ericson.
     let r = orig1 - orig2;

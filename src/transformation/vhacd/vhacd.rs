@@ -4,9 +4,9 @@ use crate::transformation::vhacd::Parameters;
 use crate::utils;
 use na::{Point3, Vector3};
 
-fn find_minimum_element(d: &[f32], m: &mut f32, begin: i32, end: i32) -> i32 {
+fn find_minimum_element(d: &[Real], m: &mut Real, begin: i32, end: i32) -> i32 {
     let mut idx = -1;
-    let mut min = f32::MAX;
+    let mut min = Real::MAX;
 
     for i in begin..end {
         if d[i as usize] < min {
@@ -22,18 +22,18 @@ fn find_minimum_element(d: &[f32], m: &mut f32, begin: i32, end: i32) -> i32 {
 pub struct VHACD {
     // raycast_mesh: Option<RaycastMesh>,
     convex_hulls: Vec<Mesh>,
-    volume_ch0: f32,
+    volume_ch0: Real,
     dim: u32,
-    voxel_resolution: f32, // 1
+    voxel_resolution: Real, // 1
     volume: Volume,
     pset: VoxelSet,
-    max_concavity: f32,
+    max_concavity: Real,
 }
 
 impl VHACD {
     pub fn compute(
         &mut self,
-        points: &[Point3<f32>],
+        points: &[Point3<Real>],
         triangles: &[Point3<u32>],
         params: &Parameters,
     ) {
@@ -46,12 +46,12 @@ impl VHACD {
         self.volume = Volume::new();
         self.volume_ch0 = 0.0;
         self.pset = VoxelSet::new();
-        self.max_concavity = -f32::MAX;
+        self.max_concavity = -Real::MAX;
     }
 
     fn compute_acd(
         &mut self,
-        points: &[Point3<f32>],
+        points: &[Point3<Real>],
         triangles: &[Point3<u32>],
         params: &Parameters,
     ) {
@@ -71,13 +71,13 @@ impl VHACD {
 
     fn voxelize_mesh(
         &mut self,
-        points: &[Point3<f32>],
+        points: &[Point3<Real>],
         triangles: &[Point3<u32>],
         params: &Parameters,
     ) {
         // Default dimensions is the cube root of the resolution provided times the
         // default voxel dimension of 64
-        let a = (params.resolution as f32).powf(0.33);
+        let a = (params.resolution as Real).powf(0.33);
         self.dim = (a * 1.5) as u32;
 
         // Minimum voxel resolution is 32x32x32
@@ -105,7 +105,7 @@ impl VHACD {
     }
 
     // TODO: this should just be a method of VoxelSet.
-    fn compute_preferred_cutting_direction(tset: &VoxelSet) -> (Vector3<f32>, f32) {
+    fn compute_preferred_cutting_direction(tset: &VoxelSet) -> (Vector3<Real>, Real) {
         let eigv = tset.eigenvalues();
 
         let vx = (eigv.y - eigv.z) * (eigv.y - eigv.z);
@@ -159,7 +159,7 @@ impl VHACD {
                 let plane = Plane {
                     abc: Vector3::ith(dim, 1.0),
                     axis: Axis::try_from(dim).unwrap(),
-                    d: -(i as f32 + 0.5),
+                    d: -(i as Real + 0.5),
                     index: i,
                 };
 
@@ -185,7 +185,7 @@ impl VHACD {
             let plane = Plane {
                 abc: Vector3::ith(best_id, 1.0),
                 axis: best_plane.axis,
-                d: -(i as f32 + 0.5),
+                d: -(i as Real + 0.5),
                 index: i,
             };
             planes.push(plane);
@@ -198,20 +198,20 @@ impl VHACD {
         input_pset: &VoxelSet,
         input_pset_ch: Option<&Mesh>,
         planes: &[Plane],
-        preferred_cutting_direction: &Vector3<f32>,
-        w: f32,
-        alpha: f32,
-        beta: f32,
+        preferred_cutting_direction: &Vector3<Real>,
+        w: Real,
+        alpha: Real,
+        beta: Real,
         convex_hull_downsampling: u32,
         params: &Parameters,
-    ) -> (Plane, f32) {
+    ) -> (Plane, Real) {
         let mut best_plane = planes[0];
-        let mut min_concavity = f32::MAX;
+        let mut min_concavity = Real::MAX;
         let mut i_best = -1;
         let mut done = 0;
-        let mut min_total = f32::MAX;
-        let mut min_balance = f32::MAX;
-        let mut min_symmetry = f32::MAX;
+        let mut min_total = Real::MAX;
+        let mut min_balance = Real::MAX;
+        let mut min_symmetry = Real::MAX;
 
         let mut left_ch = Mesh::new();
         let mut right_ch = Mesh::new();
@@ -288,7 +288,7 @@ impl VHACD {
         first_iteration: bool,
         parts: &mut Vec<VoxelSet>,
         temp: &mut Vec<VoxelSet>,
-        max_concavity: f32,
+        max_concavity: Real,
         mut pset: VoxelSet,
     ) {
         let volume = pset.compute_volume(); // Compute the volume for this primitive set
@@ -444,7 +444,7 @@ impl VHACD {
     }
 
     /*
-    fn simplify_convex_hull(&self, ch: &mut mesh, nvertices: usize, min_volume: f32) {
+    fn simplify_convex_hull(&self, ch: &mut mesh, nvertices: usize, min_volume: Real) {
         if nvertices <= 4 {
             return;
         }
@@ -573,7 +573,7 @@ impl VHACD {
 
             loop {
                 // Search for lowest cost
-                let bestCost = f32::MAX;
+                let bestCost = Real::MAX;
 
                 let addr = find_minimum_element(cost_matrix.Data(), &bestCost, 0, cost_matrix.len());
                 if (cost_size - 1) < params.max_convex_hulls {
@@ -661,7 +661,7 @@ impl VHACD {
     }
 
 
-    fn compute_center_of_mass(&self, center_of_mass: Point3<f32>) -> bool {
+    fn compute_center_of_mass(&self, center_of_mass: Point3<Real>) -> bool {
         let mut ret = false;
 
         center_of_mass[0] = 0;
@@ -701,11 +701,11 @@ impl VHACD {
      */
 }
 
-fn compute_local_concavity(volume: f32, volume_ch: f32) -> f32 {
+fn compute_local_concavity(volume: Real, volume_ch: Real) -> Real {
     compute_concavity(volume, volume_ch, volume_ch)
 }
 
-fn compute_concavity(volume: f32, volume_ch: f32, volume0: f32) -> f32 {
+fn compute_concavity(volume: Real, volume_ch: Real, volume0: Real) -> Real {
     (volume_ch - volume).abs() / volume0
 }
 
@@ -718,15 +718,15 @@ struct PrimitiveSetBase<'a> {
 }
 
 impl PrimitiveSetBase {
-    fn get_concavity(&self) -> f32 {
+    fn get_concavity(&self) -> Real {
         self.parameters.concavity
     }
 
-    fn get_alpha(&self) -> f32 {
+    fn get_alpha(&self) -> Real {
         self.parameters.alpha
     }
 
-    fn get_beta(&self) -> f32 {
+    fn get_beta(&self) -> Real {
         self.parameters.beta
     }
 
@@ -738,7 +738,7 @@ impl PrimitiveSetBase {
         self.parameters.plane_downsampling
     }
 
-    fn refresh_concavity(&mut self, min_concavity: f32) {
+    fn refresh_concavity(&mut self, min_concavity: Real) {
         if *self.max_concavity < min_concavity {
             *self.max_concavity = min_concavity;
         }
@@ -754,14 +754,14 @@ impl PrimitiveSetBase {
 }
 
 
-fn add_points(mesh: &Mesh, pts: &mut Vec<Vector3<f32>>) {
+fn add_points(mesh: &Mesh, pts: &mut Vec<Vector3<Real>>) {
     const int32_t n = (int32_t)mesh.get_num_points();
     for i in 0..n {
         pts.push(mesh.get_point(i));
     }
 }
 
-fn compute_convex_hull(ch1: &Mesh, ch2: &Mesh, pts: &mut [Vector3<f32>], combined_ch: &mut Mesh) {
+fn compute_convex_hull(ch1: &Mesh, ch2: &Mesh, pts: &mut [Vector3<Real>], combined_ch: &mut Mesh) {
     pts.resize(0);
 
     add_points(ch1, pts);

@@ -1,3 +1,4 @@
+use crate::math::Real;
 use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
 use std::ops::{Add, Mul};
 
@@ -319,11 +320,11 @@ impl<N: SimdRealField> Mul<Matrix3x2<N>> for SdpMatrix3<N> {
     }
 }
 
-impl<T> From<[SdpMatrix3<f32>; 4]> for SdpMatrix3<T>
+impl<T> From<[SdpMatrix3<Real>; 4]> for SdpMatrix3<T>
 where
-    T: From<[f32; 4]>,
+    T: From<[Real; 4]>,
 {
-    fn from(data: [SdpMatrix3<f32>; 4]) -> Self {
+    fn from(data: [SdpMatrix3<Real>; 4]) -> Self {
         SdpMatrix3 {
             m11: T::from([data[0].m11, data[1].m11, data[2].m11, data[3].m11]),
             m12: T::from([data[0].m12, data[1].m12, data[2].m12, data[3].m12]),
@@ -336,8 +337,8 @@ where
 }
 
 #[cfg(feature = "simd-nightly")]
-impl From<[SdpMatrix3<f32>; 8]> for SdpMatrix3<simba::simd::f32x8> {
-    fn from(data: [SdpMatrix3<f32>; 8]) -> Self {
+impl From<[SdpMatrix3<Real>; 8]> for SdpMatrix3<simba::simd::f32x8> {
+    fn from(data: [SdpMatrix3<Real>; 8]) -> Self {
         SdpMatrix3 {
             m11: simba::simd::f32x8::from([
                 data[0].m11,
@@ -404,8 +405,8 @@ impl From<[SdpMatrix3<f32>; 8]> for SdpMatrix3<simba::simd::f32x8> {
 }
 
 #[cfg(feature = "simd-nightly")]
-impl From<[SdpMatrix3<f32>; 16]> for SdpMatrix3<simba::simd::f32x16> {
-    fn from(data: [SdpMatrix3<f32>; 16]) -> Self {
+impl From<[SdpMatrix3<Real>; 16]> for SdpMatrix3<simba::simd::f32x16> {
+    fn from(data: [SdpMatrix3<Real>; 16]) -> Self {
         SdpMatrix3 {
             m11: simba::simd::f32x16::from([
                 data[0].m11,

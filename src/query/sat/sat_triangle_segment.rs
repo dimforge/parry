@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Vector};
+use crate::math::{Isometry, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Segment, SupportMap, Triangle};
 use na::Unit;
@@ -6,8 +6,8 @@ use na::Unit;
 pub fn triangle_segment_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     segment2: &Segment,
-    pos12: &Isometry<f32>,
-) -> (f32, Vector<f32>) {
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
     if let Some(dir) = triangle1.normal() {
         let p2a = segment2.support_point_toward(pos12, &-dir);
         let p2b = segment2.support_point_toward(pos12, &dir);
@@ -20,15 +20,15 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
             (sep_b, -*dir)
         }
     } else {
-        (-f32::MAX, Vector::zeros())
+        (-Real::MAX, Vector::zeros())
     }
 }
 
 pub fn segment_triangle_find_local_separating_edge(
     segment1: &Segment,
     triangle2: &Triangle,
-    pos12: &Isometry<f32>,
-) -> (f32, Vector<f32>) {
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
     let x2 = pos12 * (triangle2.b - triangle2.a);
     let y2 = pos12 * (triangle2.c - triangle2.b);
     let z2 = pos12 * (triangle2.a - triangle2.c);
@@ -43,7 +43,7 @@ pub fn segment_triangle_find_local_separating_edge(
         -crosses1[1],
         -crosses1[2],
     ];
-    let mut max_separation = -f32::MAX;
+    let mut max_separation = -Real::MAX;
     let mut sep_dir = axes1[0];
 
     for axis1 in &axes1 {

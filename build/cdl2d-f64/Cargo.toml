@@ -1,5 +1,5 @@
 [package]
-name    = "cdl2d"
+name    = "cdl2d-f64"
 version = "0.1.0"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
@@ -13,9 +13,9 @@ license = "Apache-2.0"
 edition = "2018"
 
 [features]
-default = [ "dim2", "f32" ]
+default = [ "dim2", "f64" ]
 dim2    = [ ]
-f32     = [ ]
+f64     = [ ]
 serde-serialize = [ "serde", "erased-serde", "nalgebra/serde-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
@@ -25,9 +25,9 @@ enhanced-determinism = [ "simba/libm_force", "indexmap" ]
 simd-is-enabled = [ ]
 
 [lib]
-name = "cdl2d"
+name = "cdl2d_f64"
 path = "../../src/lib.rs"
-required-features = [ "dim2", "f32" ]
+required-features = [ "dim2", "f64" ]
 
 [dependencies]
 either          = "1"

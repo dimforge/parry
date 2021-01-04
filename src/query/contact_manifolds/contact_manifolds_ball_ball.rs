@@ -18,7 +18,7 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
     ball1: &Ball,
     ball2: &Ball,
-    prediction: f32,
+    prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
 ) {
     let radius_a = ball1.radius;

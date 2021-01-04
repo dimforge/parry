@@ -2,7 +2,7 @@
 
 use crate::geometry::contact_generator::PrimitiveContactGenerationContext;
 use crate::geometry::{sat, Contact, ContactData, ContactManifold, ContactManifoldData, Polygon};
-use crate::math::{Isometry, Point};
+use crate::math::{Isometry, Point, Real};
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
 use cdl::query;
@@ -26,9 +26,9 @@ pub fn generate_contacts_polygon_polygon(_ctxt: &mut PrimitiveContactGenerationC
 
 fn generate_contacts<'a>(
     mut p1: &'a Polygon,
-    mut m1: &'a Isometry<f32>,
+    mut m1: &'a Isometry<Real>,
     mut p2: &'a Polygon,
-    mut m2: &'a Isometry<f32>,
+    mut m2: &'a Isometry<Real>,
     manifold: &'a mut ContactManifold,
 ) {
     let mut m12 = m1.inv_mul(&m2);

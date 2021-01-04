@@ -1,5 +1,6 @@
 //! Miscellaneous utilities.
 
+use crate::math::Real;
 use crate::simd::{SimdBool, SimdReal};
 use na::{Matrix3, Point2, Point3, Scalar, SimdRealField, Vector2, Vector3};
 use simba::simd::SimdValue;
@@ -24,10 +25,11 @@ pub trait WSign<Rhs>: Sized {
     fn copy_sign_to(self, to: Rhs) -> Rhs;
 }
 
-impl WSign<f32> for f32 {
+impl WSign<Real> for Real {
     fn copy_sign_to(self, to: Self) -> Self {
-        let signbit: u32 = (-0.0f32).to_bits();
-        f32::from_bits((signbit & self.to_bits()) | ((!signbit) & to.to_bits()))
+        let minus_zero: Real = -0.0;
+        let signbit = minus_zero.to_bits();
+        Real::from_bits((signbit & self.to_bits()) | ((!signbit) & to.to_bits()))
     }
 }
 
@@ -77,8 +79,8 @@ pub(crate) trait WComponent: Sized {
     fn max_component(self) -> Self::Element;
 }
 
-impl WComponent for f32 {
-    type Element = f32;
+impl WComponent for Real {
+    type Element = Real;
 
     fn min_component(self) -> Self::Element {
         self
@@ -90,7 +92,7 @@ impl WComponent for f32 {
 
 #[cfg(feature = "simd-is-enabled")]
 impl WComponent for SimdReal {
-    type Element = f32;
+    type Element = Real;
 
     fn min_component(self) -> Self::Element {
         self.simd_horizontal_min()
@@ -224,8 +226,8 @@ pub(crate) trait WCrossMatrix: Sized {
     fn gcross_matrix(self) -> Self::CrossMat;
 }
 
-impl WCrossMatrix for Vector3<f32> {
-    type CrossMat = Matrix3<f32>;
+impl WCrossMatrix for Vector3<Real> {
+    type CrossMat = Matrix3<Real>;
 
     #[inline]
     #[rustfmt::skip]
@@ -238,8 +240,8 @@ impl WCrossMatrix for Vector3<f32> {
     }
 }
 
-impl WCrossMatrix for Vector2<f32> {
-    type CrossMat = Vector2<f32>;
+impl WCrossMatrix for Vector2<Real> {
+    type CrossMat = Vector2<Real>;
 
     #[inline]
     fn gcross_matrix(self) -> Self::CrossMat {
@@ -252,26 +254,26 @@ pub(crate) trait WCross<Rhs>: Sized {
     fn gcross(&self, rhs: Rhs) -> Self::Result;
 }
 
-impl WCross<Vector3<f32>> for Vector3<f32> {
+impl WCross<Vector3<Real>> for Vector3<Real> {
     type Result = Self;
 
-    fn gcross(&self, rhs: Vector3<f32>) -> Self::Result {
+    fn gcross(&self, rhs: Vector3<Real>) -> Self::Result {
         self.cross(&rhs)
     }
 }
 
-impl WCross<Vector2<f32>> for Vector2<f32> {
-    type Result = f32;
+impl WCross<Vector2<Real>> for Vector2<Real> {
+    type Result = Real;
 
-    fn gcross(&self, rhs: Vector2<f32>) -> Self::Result {
+    fn gcross(&self, rhs: Vector2<Real>) -> Self::Result {
         self.x * rhs.y - self.y * rhs.x
     }
 }
 
-impl WCross<Vector2<f32>> for f32 {
-    type Result = Vector2<f32>;
+impl WCross<Vector2<Real>> for Real {
+    type Result = Vector2<Real>;
 
-    fn gcross(&self, rhs: Vector2<f32>) -> Self::Result {
+    fn gcross(&self, rhs: Vector2<Real>) -> Self::Result {
         Vector2::new(-rhs.y * *self, rhs.x * *self)
     }
 }
@@ -281,26 +283,26 @@ pub(crate) trait WDot<Rhs>: Sized {
     fn gdot(&self, rhs: Rhs) -> Self::Result;
 }
 
-impl WDot<Vector3<f32>> for Vector3<f32> {
-    type Result = f32;
+impl WDot<Vector3<Real>> for Vector3<Real> {
+    type Result = Real;
 
-    fn gdot(&self, rhs: Vector3<f32>) -> Self::Result {
+    fn gdot(&self, rhs: Vector3<Real>) -> Self::Result {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 }
 
-impl WDot<Vector2<f32>> for Vector2<f32> {
-    type Result = f32;
+impl WDot<Vector2<Real>> for Vector2<Real> {
+    type Result = Real;
 
-    fn gdot(&self, rhs: Vector2<f32>) -> Self::Result {
+    fn gdot(&self, rhs: Vector2<Real>) -> Self::Result {
         self.x * rhs.x + self.y * rhs.y
     }
 }
 
-impl WDot<f32> for f32 {
-    type Result = f32;
+impl WDot<Real> for Real {
+    type Result = Real;
 
-    fn gdot(&self, rhs: f32) -> Self::Result {
+    fn gdot(&self, rhs: Real) -> Self::Result {
         *self * rhs
     }
 }

@@ -351,7 +351,7 @@ where
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
-        prediction: f32,
+        prediction: Real,
         manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
         workspace: &mut Option<ContactManifoldsWorkspace>,
     ) -> Result<(), Unsupported> {
@@ -391,7 +391,7 @@ where
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> Result<(), Unsupported> {
         use crate::query::contact_manifolds::*;

@@ -37,6 +37,10 @@ std::compile_error!("The `simd-is-enabled` feature should not be enabled explici
 std::compile_error!(
     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
 );
+#[cfg(all(feature = "simd-is-enabled", feature = "f64"))]
+std::compile_error!(
+    "Explicit SIMD optimization are not yet supported when the f64 feature is enabled."
+);
 
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
@@ -73,17 +77,25 @@ pub mod shape;
 pub mod transformation;
 pub mod utils;
 
+mod real {
+    /// The scalar type used throughout this crate.
+    #[cfg(feature = "f64")]
+    pub type Real = f64;
+
+    /// The scalar type used throughout this crate.
+    #[cfg(feature = "f32")]
+    pub type Real = f32;
+}
+
 /// Compilation flags dependent aliases for mathematical types.
 #[cfg(feature = "dim3")]
 pub mod math {
+    pub use super::real::*;
     pub use super::simd::*;
     use na::{Isometry3, Matrix3, Point3, Translation3, UnitQuaternion, Vector3, Vector6, U3, U6};
 
     /// The default tolerance used for geometric operations.
-    pub const DEFAULT_EPSILON: Real = f32::EPSILON;
-
-    /// The scalar type used throughout this crate.
-    pub type Real = f32;
+    pub const DEFAULT_EPSILON: Real = Real::EPSILON;
 
     /// The dimension of the space.
     pub const DIM: usize = 3;
@@ -143,16 +155,14 @@ pub mod math {
 /// Compilation flags dependent aliases for mathematical types.
 #[cfg(feature = "dim2")]
 pub mod math {
+    pub use super::real::*;
     pub use super::simd::*;
     use na::{
         Isometry2, Matrix2, Point2, Translation2, UnitComplex, Vector1, Vector2, Vector3, U2,
     };
 
     /// The default tolerance used for geometric operations.
-    pub const DEFAULT_EPSILON: Real = f32::EPSILON;
-
-    /// The scalar type used throughout this crate.
-    pub type Real = f32;
+    pub const DEFAULT_EPSILON: Real = Real::EPSILON;
 
     /// The dimension of the space.
     pub const DIM: usize = 2;
@@ -202,13 +212,20 @@ pub mod math {
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
-    use simba::simd::{AutoBoolx4, AutoF32x4};
+    use simba::simd::AutoBoolx4;
     /// The number of lanes of a SIMD number.
     pub const SIMD_WIDTH: usize = 4;
     /// SIMD_WIDTH - 1
     pub const SIMD_LAST_INDEX: usize = 3;
+
     /// A SIMD float with SIMD_WIDTH lanes.
-    pub type SimdReal = AutoF32x4;
+    #[cfg(feature = "f32")]
+    pub type SimdReal = simba::simd::AutoF32x4;
+
+    /// A SIMD float with SIMD_WIDTH lanes.
+    #[cfg(feature = "f64")]
+    pub type SimdReal = simba::simd::AutoF64x4;
+
     /// A SIMD bool with SIMD_WIDTH lanes.
     pub type SimdBool = AutoBoolx4;
 }

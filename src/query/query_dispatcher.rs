@@ -17,7 +17,7 @@ pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher 
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
-        prediction: f32,
+        prediction: Real,
         manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
         workspace: &mut Option<ContactManifoldsWorkspace>,
     ) -> Result<(), Unsupported>;
@@ -27,7 +27,7 @@ pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher 
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
-        prediction: f32,
+        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> Result<(), Unsupported>;
 }

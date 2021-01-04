@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Vector};
+use crate::math::{Isometry, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Cuboid, Triangle};
 
@@ -6,8 +6,8 @@ use crate::shape::{Cuboid, Triangle};
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     triangle2: &Triangle,
-    pos12: &Isometry<f32>,
-) -> (f32, Vector<f32>) {
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
     let x2 = pos12 * (triangle2.b - triangle2.a);
     let y2 = pos12 * (triangle2.c - triangle2.b);
     let z2 = pos12 * (triangle2.a - triangle2.c);
@@ -34,8 +34,8 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,
-    pos12: &Isometry<f32>,
-) -> (f32, Vector<f32>) {
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
     sat::point_cuboid_find_local_separating_normal_oneway(
         triangle1.a,
         triangle1.normal(),
