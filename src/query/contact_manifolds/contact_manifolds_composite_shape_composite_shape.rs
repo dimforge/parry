@@ -1,3 +1,4 @@
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
@@ -90,14 +91,14 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
     }
 
     // Traverse quadtree1 first.
-    let ls_aabb2_1 = ls_aabb2.transform_by(&pos12);
+    let ls_aabb2_1 = ls_aabb2.transform_by(&pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
-    let mut leaf1_fn = |leaf1: &u32| {
+    let mut leaf_fn1 = |leaf1: &u32| {
         composite1.map_part_at(*leaf1, &mut |part_pos1, part_shape1| {
             let pos211 = part_pos1.prepend_to(&pos21); // == pos21 * part_pos1
-            let ls_part_aabb1_2 = part_shape1.compute_aabb(&pos211);
-            let mut leaf2_fn = |leaf2: &u32| {
+            let ls_part_aabb1_2 = part_shape1.compute_aabb(&pos211).loosened(prediction);
+            let mut leaf_fn2 = |leaf2: &u32| {
                 composite2.map_part_at(*leaf2, &mut |part_pos2, part_shape2| {
                     let pos2211 = part_pos2.inv_mul(&pos211);
                     let entry_key = if flipped {
@@ -121,8 +122,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
                                 timestamp: new_timestamp,
                             };
 
-                            let mut manifold =
-                                ContactManifold::with_data(0, 0, ManifoldData::default());
+                            let mut manifold = ContactManifold::new();
 
                             if flipped {
                                 manifold.subshape1 = *leaf2;
@@ -166,7 +166,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
             };
 
             let mut visitor2 =
-                BoundingVolumeIntersectionsVisitor::new(&ls_part_aabb1_2, &mut leaf2_fn);
+                BoundingVolumeIntersectionsVisitor::new(&ls_part_aabb1_2, &mut leaf_fn2);
 
             quadtree2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
         });
@@ -174,7 +174,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
         true
     };
 
-    let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf1_fn);
+    let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf_fn1);
     quadtree1.traverse_depth_first(&mut visitor1);
 
     workspace

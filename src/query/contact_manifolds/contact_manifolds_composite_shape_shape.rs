@@ -1,3 +1,4 @@
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
@@ -77,7 +78,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     let pos21 = pos12.inverse();
 
     // Traverse quadtree1 first.
-    let ls_aabb2_1 = shape2.compute_aabb(&pos12);
+    let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
     let mut leaf1_fn = |leaf1: &u32| {
@@ -97,7 +98,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
                         timestamp: new_timestamp,
                     };
 
-                    let mut manifold = ContactManifold::with_data(0, 0, ManifoldData::default());
+                    let mut manifold = ContactManifold::new();
 
                     if flipped {
                         manifold.subshape1 = 0;

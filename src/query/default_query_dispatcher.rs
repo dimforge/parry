@@ -374,10 +374,43 @@ where
                     self, pos12, shape1, shape2, prediction, manifolds, workspace,
                 );
             }
-            (ShapeType::HeightField, _) | (_, ShapeType::HeightField) => {
-                contact_manifolds_heightfield_shape_shapes(
-                    self, pos12, shape1, shape2, prediction, manifolds, workspace,
-                );
+            (ShapeType::HeightField, _) => {
+                if let Some(composite2) = composite2 {
+                    contact_manifolds_heightfield_composite_shape(
+                        self,
+                        pos12,
+                        &pos12.inverse(),
+                        shape1.as_heightfield().unwrap(),
+                        composite2,
+                        prediction,
+                        manifolds,
+                        workspace,
+                        false,
+                    )
+                } else {
+                    contact_manifolds_heightfield_shape_shapes(
+                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                    );
+                }
+            }
+            (_, ShapeType::HeightField) => {
+                if let Some(composite1) = composite1 {
+                    contact_manifolds_heightfield_composite_shape(
+                        self,
+                        &pos12.inverse(),
+                        pos12,
+                        shape2.as_heightfield().unwrap(),
+                        composite1,
+                        prediction,
+                        manifolds,
+                        workspace,
+                        true,
+                    )
+                } else {
+                    contact_manifolds_heightfield_shape_shapes(
+                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                    );
+                }
             }
             _ => {
                 if let Some(composite1) = composite1 {

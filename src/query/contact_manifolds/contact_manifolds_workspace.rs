@@ -8,6 +8,7 @@ use num_derive::FromPrimitive;
 pub(super) enum WorkspaceSerializationTag {
     TriMeshShapeContactManifoldsWorkspace = 0,
     HeightfieldShapeContactManifoldsWorkspace,
+    HeightfieldCompositeShapeContactManifoldsWorkspace,
     CompositeShapeCompositeShapeContactManifoldsWorkspace,
     CompositeShapeShapeContactManifoldsWorkspace,
 }
@@ -57,6 +58,7 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
         use super::{
             CompositeShapeCompositeShapeContactManifoldsWorkspace,
             CompositeShapeShapeContactManifoldsWorkspace,
+            HeightFieldCompositeShapeContactManifoldsWorkspace,
             HeightFieldShapeContactManifoldsWorkspace, TriMeshShapeContactManifoldsWorkspace,
         };
 
@@ -92,6 +94,9 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
                 let workspace = match WorkspaceSerializationTag::from_u32(tag) {
                     Some(WorkspaceSerializationTag::HeightfieldShapeContactManifoldsWorkspace) => {
                         deser::<A, HeightFieldShapeContactManifoldsWorkspace>(&mut seq)?
+                    }
+                    Some(WorkspaceSerializationTag::HeightfieldCompositeShapeContactManifoldsWorkspace) => {
+                        deser::<A, HeightFieldCompositeShapeContactManifoldsWorkspace>(&mut seq)?
                     }
                     Some(WorkspaceSerializationTag::TriMeshShapeContactManifoldsWorkspace) => {
                         deser::<A, TriMeshShapeContactManifoldsWorkspace>(&mut seq)?

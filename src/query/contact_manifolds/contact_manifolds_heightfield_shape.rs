@@ -22,7 +22,7 @@ struct SubDetector {
 #[derive(Clone)]
 pub struct HeightFieldShapeContactManifoldsWorkspace {
     timestamp: bool,
-    sub_detectors: HashMap<usize, SubDetector>,
+    sub_detectors: HashMap<u32, SubDetector>,
 }
 
 impl HeightFieldShapeContactManifoldsWorkspace {
@@ -119,7 +119,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
         #[cfg(feature = "dim3")]
         let sub_shape1 = *part1;
 
-        let sub_detector = match workspace.sub_detectors.entry(i as usize) {
+        let sub_detector = match workspace.sub_detectors.entry(i) {
             Entry::Occupied(entry) => {
                 let sub_detector = entry.into_mut();
                 let manifold = old_manifolds[sub_detector.manifold_id].take();
