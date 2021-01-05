@@ -10,7 +10,6 @@ use na::Point2;
 /// A polyline.
 pub struct Polyline {
     quadtree: SimdQuadTree<u32>,
-    aabb: AABB,
     vertices: Vec<Point<Real>>,
     indices: Vec<Point2<u32>>,
 }
@@ -23,7 +22,6 @@ impl Polyline {
                 .map(|i| Point2::new(i, i + 1))
                 .collect()
         });
-        let aabb = AABB::from_points(&vertices);
         let data = indices.iter().enumerate().map(|(i, idx)| {
             let aabb =
                 Segment::new(vertices[idx[0] as usize], vertices[idx[1] as usize]).local_aabb();
@@ -37,7 +35,6 @@ impl Polyline {
 
         Self {
             quadtree,
-            aabb,
             vertices,
             indices,
         }
@@ -45,12 +42,12 @@ impl Polyline {
 
     /// Compute the axis-aligned bounding box of this polyline.
     pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
-        self.aabb.transform_by(pos)
+        self.quadtree.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this polyline.
     pub fn local_aabb(&self) -> &AABB {
-        &self.aabb
+        &self.quadtree.root_aabb()
     }
 
     pub(crate) fn quadtree(&self) -> &SimdQuadTree<u32> {

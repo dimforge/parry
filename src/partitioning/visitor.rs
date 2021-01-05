@@ -37,6 +37,15 @@ pub enum SimdVisitStatus {
     ExitEarly,
 }
 
+/// The status of the simultaneous traversal of two spatial partitioning structures.
+pub enum SimdSimultaneousVisitStatus {
+    /// The traversal should continue on the children of the currently visited nodes for which
+    /// the boolean lane is set to `1`.
+    MaybeContinue([SimdBool; SIMD_WIDTH]),
+    /// The traversal should exit immediately.
+    ExitEarly,
+}
+
 /// Trait implemented by visitor called during the traversal of a spatial partitioning data structure.
 pub trait SimdVisitor<T, SimdBV> {
     /// Execute an operation on the content of a node of the spatial partitioning structure.
@@ -44,6 +53,15 @@ pub trait SimdVisitor<T, SimdBV> {
     /// Returns whether the traversal should continue on the node's children, if it should not continue
     /// on those children, or if the whole traversal should be exited early.
     fn visit(&mut self, bv: &SimdBV, data: Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus;
+}
+
+impl<F, T, SimdBV> SimdVisitor<T, SimdBV> for F
+where
+    F: FnMut(&SimdBV, Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus,
+{
+    fn visit(&mut self, bv: &SimdBV, data: Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus {
+        (self)(bv, data)
+    }
 }
 
 /// Trait implemented by visitor called during a simultaneous spatial partitioning data structure tarversal.
@@ -58,5 +76,5 @@ pub trait SimdSimultaneousVisitor<T, SimdBV> {
         left_data: Option<[Option<&T>; SIMD_WIDTH]>,
         right_bv: &SimdBV,
         right_data: Option<[Option<&T>; SIMD_WIDTH]>,
-    ) -> SimdVisitStatus;
+    ) -> SimdSimultaneousVisitStatus;
 }

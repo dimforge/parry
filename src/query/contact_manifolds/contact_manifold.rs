@@ -79,7 +79,14 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
     pub local_n2: Vector<Real>,
     /// The pair of subshapes involved in this contact manifold.
-    pub subshape_index_pair: (usize, usize),
+    pub subshape1: u32,
+    pub subshape2: u32,
+    /// If the first shape involved is a composite shape, this contains the position of its subshape
+    /// involved in this contact.
+    pub subshape_pos1: Option<Isometry<Real>>,
+    /// If the second shape involved is a composite shape, this contains the position of its subshape
+    /// involved in this contact.
+    pub subshape_pos2: Option<Isometry<Real>>,
     /// Additional tracked data associated to this contact manifold.
     pub data: ManifoldData,
 }
@@ -89,10 +96,10 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     where
         ManifoldData: Default,
     {
-        Self::with_data((0, 0), ManifoldData::default())
+        Self::with_data(0, 0, ManifoldData::default())
     }
 
-    pub fn with_data(subshape_index_pair: (usize, usize), data: ManifoldData) -> Self {
+    pub fn with_data(subshape1: u32, subshape2: u32, data: ManifoldData) -> Self {
         Self {
             #[cfg(feature = "dim2")]
             points: arrayvec::ArrayVec::new(),
@@ -100,7 +107,10 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             points: Vec::new(),
             local_n1: Vector::zeros(),
             local_n2: Vector::zeros(),
-            subshape_index_pair,
+            subshape1,
+            subshape2,
+            subshape_pos1: None,
+            subshape_pos2: None,
             data,
         }
     }
@@ -116,7 +126,10 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             points: std::mem::replace(&mut self.points, Vec::new()),
             local_n1: self.local_n1,
             local_n2: self.local_n2,
-            subshape_index_pair: self.subshape_index_pair,
+            subshape1: self.subshape1,
+            subshape2: self.subshape2,
+            subshape_pos1: self.subshape_pos1,
+            subshape_pos2: self.subshape_pos2,
             data: self.data.clone(),
         }
     }

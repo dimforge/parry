@@ -357,6 +357,17 @@ where
     ) -> Result<(), Unsupported> {
         use crate::query::contact_manifolds::*;
 
+        let composite1 = shape1.as_composite_shape();
+        let composite2 = shape2.as_composite_shape();
+
+        if let (Some(composite1), Some(composite2)) = (composite1, composite2) {
+            contact_manifolds_composite_shape_composite_shape(
+                self, pos12, composite1, composite2, prediction, manifolds, workspace,
+            );
+
+            return Ok(());
+        }
+
         match (shape1.shape_type(), shape2.shape_type()) {
             (ShapeType::TriMesh, _) | (_, ShapeType::TriMesh) => {
                 contact_manifolds_trimesh_shape_shapes(
@@ -369,17 +380,34 @@ where
                 );
             }
             _ => {
-                if manifolds.is_empty() {
-                    manifolds.push(ContactManifold::new());
-                }
+                if let Some(composite1) = composite1 {
+                    contact_manifolds_composite_shape_shape(
+                        self, pos12, composite1, shape2, prediction, manifolds, workspace, false,
+                    );
+                } else if let Some(composite2) = composite2 {
+                    contact_manifolds_composite_shape_shape(
+                        self,
+                        &pos12.inverse(),
+                        composite2,
+                        shape1,
+                        prediction,
+                        manifolds,
+                        workspace,
+                        true,
+                    );
+                } else {
+                    if manifolds.is_empty() {
+                        manifolds.push(ContactManifold::new());
+                    }
 
-                return self.contact_manifold_convex_convex(
-                    pos12,
-                    shape1,
-                    shape2,
-                    prediction,
-                    &mut manifolds[0],
-                );
+                    return self.contact_manifold_convex_convex(
+                        pos12,
+                        shape1,
+                        shape2,
+                        prediction,
+                        &mut manifolds[0],
+                    );
+                }
             }
         }
 

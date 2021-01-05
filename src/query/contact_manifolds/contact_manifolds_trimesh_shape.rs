@@ -155,12 +155,12 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
             }
 
             let manifold = if old_inter_it.peek() != Some(triangle_id) {
-                let subshape_index_pair = if flipped {
-                    (0, *triangle_id as usize)
+                let (id1, id2) = if flipped {
+                    (0, *triangle_id)
                 } else {
-                    (*triangle_id as usize, 0)
+                    (*triangle_id, 0)
                 };
-                ContactManifold::with_data(subshape_index_pair, ManifoldData::default())
+                ContactManifold::with_data(id1, id2, ManifoldData::default())
             } else {
                 // We already have a manifold for this triangle.
                 let _ = old_inter_it.next();

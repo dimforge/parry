@@ -134,13 +134,10 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
                     timestamp: new_timestamp,
                 };
 
-                let subshape_index_pair = if flipped {
-                    (0, i as usize)
-                } else {
-                    (i as usize, 0)
-                };
+                let (id1, id2) = if flipped { (0, i) } else { (i, 0) };
                 manifolds.push(ContactManifold::with_data(
-                    subshape_index_pair,
+                    id1,
+                    id2,
                     ManifoldData::default(),
                 ));
 

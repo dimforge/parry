@@ -12,7 +12,6 @@ use na::Point3;
 /// A triangle mesh.
 pub struct TriMesh {
     quadtree: SimdQuadTree<u32>,
-    aabb: AABB,
     vertices: Vec<Point<Real>>,
     indices: Vec<Point3<u32>>,
 }
@@ -25,7 +24,6 @@ impl TriMesh {
             "A triangle mesh must contain at least one triangle."
         );
 
-        let aabb = AABB::from_points(&vertices);
         let data = indices.iter().enumerate().map(|(i, idx)| {
             let aabb = Triangle::new(
                 vertices[idx[0] as usize],
@@ -43,7 +41,6 @@ impl TriMesh {
 
         Self {
             quadtree,
-            aabb,
             vertices,
             indices,
         }
@@ -51,12 +48,12 @@ impl TriMesh {
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
     pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
-        self.aabb.transform_by(pos)
+        self.quadtree.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
     pub fn local_aabb(&self) -> &AABB {
-        &self.aabb
+        self.quadtree.root_aabb()
     }
 
     pub fn quadtree(&self) -> &SimdQuadTree<u32> {

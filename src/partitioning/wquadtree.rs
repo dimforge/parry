@@ -98,6 +98,7 @@ impl<T: IndexedData> SimdQuadTreeProxy<T> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct SimdQuadTree<T> {
+    root_aabb: AABB,
     nodes: Vec<SimdQuadTreeNode>,
     dirty_nodes: VecDeque<u32>,
     proxies: Vec<SimdQuadTreeProxy<T>>,
@@ -106,10 +107,16 @@ pub struct SimdQuadTree<T> {
 impl<T: IndexedData> SimdQuadTree<T> {
     pub fn new() -> Self {
         SimdQuadTree {
+            root_aabb: AABB::new_invalid(),
             nodes: Vec::new(),
             dirty_nodes: VecDeque::new(),
             proxies: Vec::new(),
         }
+    }
+
+    /// The AABB of the root of this tree.
+    pub fn root_aabb(&self) -> &AABB {
+        &self.root_aabb
     }
 
     /// Returns the data associated to a given leaf.
@@ -165,6 +172,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         self.nodes.push(root_node);
         let root_id = NodeIndex::new(0, 0);
         let (_, aabb) = self.do_recurse_build(&mut indices, &aabbs, root_id, dilation_factor);
+        self.root_aabb = aabb;
         self.nodes[0].simd_aabb = SimdAABB::from([
             aabb,
             AABB::new_invalid(),
@@ -375,11 +383,17 @@ impl<T: IndexedData> SimdQuadTree<T> {
     }
 
     /// Performs a depth-first traversal on the BVH.
-    pub fn traverse_depth_first<Visitor>(&self, visitor: &mut Visitor)
-    where
-        Visitor: SimdVisitor<T, SimdAABB>,
-    {
-        let mut stack: Vec<u32> = Vec::new();
+    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<T, SimdAABB>) {
+        self.traverse_depth_first_with_stack(visitor, &mut Vec::new())
+    }
+
+    /// Performs a depth-first traversal on the BVH.
+    pub fn traverse_depth_first_with_stack(
+        &self,
+        visitor: &mut impl SimdVisitor<T, SimdAABB>,
+        stack: &mut Vec<u32>,
+    ) {
+        stack.clear();
         stack.push(0);
 
         while let Some(entry) = stack.pop() {

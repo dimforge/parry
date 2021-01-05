@@ -8,6 +8,8 @@ use num_derive::FromPrimitive;
 pub(super) enum WorkspaceSerializationTag {
     TriMeshShapeContactManifoldsWorkspace = 0,
     HeightfieldShapeContactManifoldsWorkspace,
+    CompositeShapeCompositeShapeContactManifoldsWorkspace,
+    CompositeShapeShapeContactManifoldsWorkspace,
 }
 
 // Note we have this newtype because it simplifies the serialization/deserialization code.
@@ -53,6 +55,8 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
         D: serde::Deserializer<'de>,
     {
         use super::{
+            CompositeShapeCompositeShapeContactManifoldsWorkspace,
+            CompositeShapeShapeContactManifoldsWorkspace,
             HeightFieldShapeContactManifoldsWorkspace, TriMeshShapeContactManifoldsWorkspace,
         };
 
@@ -91,6 +95,12 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
                     }
                     Some(WorkspaceSerializationTag::TriMeshShapeContactManifoldsWorkspace) => {
                         deser::<A, TriMeshShapeContactManifoldsWorkspace>(&mut seq)?
+                    }
+                    Some(WorkspaceSerializationTag::CompositeShapeCompositeShapeContactManifoldsWorkspace) => {
+                        deser::<A, CompositeShapeCompositeShapeContactManifoldsWorkspace>(&mut seq)?
+                    }
+                    Some(WorkspaceSerializationTag::CompositeShapeShapeContactManifoldsWorkspace) => {
+                        deser::<A, CompositeShapeShapeContactManifoldsWorkspace>(&mut seq)?
                     }
                     None => {
                         return Err(serde::de::Error::custom(
