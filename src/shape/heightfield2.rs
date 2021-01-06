@@ -157,7 +157,7 @@ impl HeightField {
     }
 
     /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
-    pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(usize, &Segment)) {
+    pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(u32, &Segment)) {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let ref_mins = aabb.mins.coords.component_div(&self.scale);
         let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
@@ -199,11 +199,8 @@ impl HeightField {
             // Build the segment.
             let seg = Segment::new(p0, p1);
 
-            // Build the contact preprocessor.
-            let seg_id = i;
-
             // Call the callback.
-            f(seg_id, &seg);
+            f(i as u32, &seg);
         }
     }
 }

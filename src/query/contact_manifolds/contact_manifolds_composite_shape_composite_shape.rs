@@ -4,8 +4,6 @@ use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
-#[cfg(feature = "dim2")]
-use crate::shape::Capsule;
 use crate::shape::SimdCompositeShape;
 use crate::utils::{IsometryOpt, MaybeSerializableData};
 #[cfg(feature = "serde-serialize")]
