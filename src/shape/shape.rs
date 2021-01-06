@@ -369,8 +369,11 @@ impl Shape for Triangle {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: Real) -> MassProperties {
-        MassProperties::zero()
+    fn mass_properties(&self, density: Real) -> MassProperties {
+        #[cfg(feature = "dim2")]
+        return MassProperties::from_triangle(density, &self.a, &self.b, &self.c);
+        #[cfg(feature = "dim3")]
+        return MassProperties::zero();
     }
 
     fn is_convex(&self) -> bool {

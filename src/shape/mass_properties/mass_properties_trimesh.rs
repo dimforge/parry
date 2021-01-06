@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: remove this
-
 use crate::math::{Point, Real};
 use crate::shape::{MassProperties, Triangle};
 use na::Point3;
@@ -17,7 +15,6 @@ impl MassProperties {
         }
 
         let mut itot = 0.0;
-        let factor = 1.0 / 6.0;
 
         for idx in indices {
             let triangle = Triangle::new(
@@ -25,23 +22,10 @@ impl MassProperties {
                 vertices[idx.y as usize],
                 vertices[idx.z as usize],
             );
-            let area = triangle.area();
 
             // TODO: is the parallel axis theorem correctly applied here?
-            // algorithm adapted from the convex polygon code.
-            let e1 = triangle.b - triangle.a;
-            let e2 = triangle.c - triangle.a;
-
-            let ex1 = e1[0];
-            let ey1 = e1[1];
-            let ex2 = e2[0];
-            let ey2 = e2[1];
-
-            let intx2 = ex1 * ex1 + ex2 * ex1 + ex2 * ex2;
-            let inty2 = ey1 * ey1 + ey2 * ey1 + ey2 * ey2;
-
-            let ipart = factor * (intx2 + inty2);
-
+            let area = triangle.area();
+            let ipart = triangle.unit_angular_inertia();
             itot += ipart * area;
         }
 

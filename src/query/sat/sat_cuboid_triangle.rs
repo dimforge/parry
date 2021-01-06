@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
+#[cfg(feature = "dim3")]
 use crate::query::sat;
 use crate::query::sat::support_map_support_map_compute_separation;
 use crate::shape::{Cuboid, SupportMap, Triangle};

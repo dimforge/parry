@@ -15,4 +15,6 @@ mod mass_properties_convex_polyhedron;
 mod mass_properties_cuboid;
 mod mass_properties_cylinder;
 #[cfg(feature = "dim2")]
+mod mass_properties_triangle;
+#[cfg(feature = "dim2")]
 mod mass_properties_trimesh;

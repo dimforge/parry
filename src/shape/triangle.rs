@@ -292,6 +292,19 @@ impl Triangle {
         sqr.max(0.0).sqrt() * 0.25
     }
 
+    #[cfg(feature = "dim2")]
+    pub fn unit_angular_inertia(&self) -> Real {
+        let factor = 1.0 / 6.0;
+
+        // Algorithm adapted from Box2D
+        let e1 = self.b - self.a;
+        let e2 = self.c - self.a;
+
+        let intx2 = e1.x * e1.x + e2.x * e1.x + e2.x * e2.x;
+        let inty2 = e1.y * e1.y + e2.y * e1.y + e2.y * e2.y;
+        factor * (intx2 + inty2)
+    }
+
     /// The geometric center of this triangle.
     #[inline]
     pub fn center(&self) -> Point<Real> {
