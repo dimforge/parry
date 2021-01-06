@@ -30,10 +30,6 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 ) where
     ContactData: Default + Copy,
 {
-    // FIXME: the contact kinematics is not correctly set here.
-    // We use the common "Point-Plane" kinematics with zero radius everytime.
-    // Instead we should select point/point ore point-plane (with non-zero
-    // radius for the point) depending on the features involved in the contact.
     let seg1 = capsule1.segment;
     let seg2_1 = capsule2.segment.transformed(&pos12);
     let (loc1, loc2) = crate::query::details::closest_points_segment_segment_with_locations_nD(
@@ -64,9 +60,9 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 
     let local_n1 =
         Unit::try_new(local_p2_1 - local_p1, Real::default_epsilon()).unwrap_or(Vector::y_axis());
-    let dist = (local_p2_1 - local_p1).dot(&local_n1) - capsule1.radius - capsule2.radius;
+    let dist = (local_p2_1 - local_p1).dot(&local_n1);
 
-    if dist <= prediction {
+    if dist <= prediction + capsule1.radius + capsule2.radius {
         let local_n2 = pos12.inverse_transform_unit_vector(&-local_n1);
         let local_p2 = pos12.inverse_transform_point(&local_p2_1);
         let contact = TrackedContact::new(local_p1, local_p2, fid1, fid2, dist);

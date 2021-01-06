@@ -287,12 +287,14 @@ impl Triangle {
 
         let sqr = (a + (b + c)) * (c - (a - b)) * (c + (a - b)) * (a + (b - c));
 
-        sqr.sqrt() * na::convert::<f64, Real>(0.25)
+        // We take the max(0.0) because it can be slightly negative
+        // because of numerical errors due to almost-degenerate triangles.
+        sqr.max(0.0).sqrt() * 0.25
     }
 
     /// The geometric center of this triangle.
     #[inline]
-    pub fn triangle_center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point<Real> {
         utils::center(&[self.a, self.b, self.c])
     }
 

@@ -71,8 +71,8 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
      * Compute interferences.
      */
 
-    let quadtree1 = composite1.quadtree();
-    let quadtree2 = composite2.quadtree();
+    let mut quadtree1 = composite1.quadtree();
+    let mut quadtree2 = composite2.quadtree();
 
     let mut pos12 = *pos12;
     let mut pos21 = pos12.inverse();
@@ -84,6 +84,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
 
     if flipped {
         std::mem::swap(&mut composite1, &mut composite2);
+        std::mem::swap(&mut quadtree1, &mut quadtree2);
         std::mem::swap(&mut pos12, &mut pos21);
         std::mem::swap(&mut ls_aabb1, &mut ls_aabb2);
     }

@@ -1,6 +1,7 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::sat;
-use crate::shape::{Cuboid, Triangle};
+use crate::query::sat::support_map_support_map_compute_separation;
+use crate::shape::{Cuboid, SupportMap, Triangle};
 
 #[cfg(feature = "dim3")]
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
@@ -31,6 +32,39 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
     sat::cuboid_support_map_find_local_separating_edge_twoway(cube1, triangle2, &axes, pos12)
 }
 
+#[cfg(feature = "dim2")]
+pub fn triangle_support_map_find_local_separating_normal_oneway(
+    triangle1: &Triangle,
+    shape2: &impl SupportMap,
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
+    let mut best_sep = -Real::MAX;
+    let mut best_normal = Vector::zeros();
+
+    for edge in &triangle1.edges() {
+        if let Some(normal) = edge.normal() {
+            let sep = support_map_support_map_compute_separation(triangle1, shape2, pos12, &normal);
+
+            if sep > best_sep {
+                best_sep = sep;
+                best_normal = *normal;
+            }
+        }
+    }
+
+    (best_sep, best_normal)
+}
+
+#[cfg(feature = "dim2")]
+pub fn triangle_cuboid_find_local_separating_normal_oneway(
+    triangle1: &Triangle,
+    shape2: &Cuboid,
+    pos12: &Isometry<Real>,
+) -> (Real, Vector<Real>) {
+    triangle_support_map_find_local_separating_normal_oneway(triangle1, shape2, pos12)
+}
+
+#[cfg(feature = "dim3")]
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,

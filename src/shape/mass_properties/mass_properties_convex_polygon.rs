@@ -1,7 +1,7 @@
 #![allow(dead_code)] // TODO: remove this
 
 use crate::math::{Point, Real};
-use crate::shape::MassProperties;
+use crate::shape::{MassProperties, Triangle};
 
 impl MassProperties {
     pub(crate) fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
@@ -17,11 +17,12 @@ impl MassProperties {
         let mut iterpeek = vertices.iter().peekable();
         let firstelement = *iterpeek.peek().unwrap(); // store first element to close the cycle in the end with unwrap_or
         while let Some(elem) = iterpeek.next() {
-            let area = triangle_area(&com, elem, iterpeek.peek().unwrap_or(&firstelement));
+            let triangle = Triangle::new(com, *elem, **iterpeek.peek().unwrap_or(&firstelement));
+            let area = triangle.area();
 
             // algorithm adapted from Box2D
-            let e1 = *elem - com;
-            let e2 = **(iterpeek.peek().unwrap_or(&firstelement)) - com;
+            let e1 = triangle.b - com;
+            let e2 = triangle.c - com;
 
             let ex1 = e1[0];
             let ey1 = e1[1];
@@ -56,7 +57,7 @@ fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<Real>]) -> (Re
             iterpeek.peek().unwrap_or(&firstelement),
             &geometric_center,
         );
-        let area = triangle_area(a, b, c);
+        let area = Triangle::new(*a, **b, *c).area();
         let center = (a.coords + b.coords + c.coords) / 3.0;
 
         res += center * area;
@@ -68,79 +69,4 @@ fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<Real>]) -> (Re
     } else {
         (areasum, res / areasum)
     }
-}
-
-pub fn triangle_area(pa: &Point<Real>, pb: &Point<Real>, pc: &Point<Real>) -> Real {
-    // Kahan's formula.
-    let a = na::distance(pa, pb);
-    let b = na::distance(pb, pc);
-    let c = na::distance(pc, pa);
-
-    let (c, b, a) = sort3(&a, &b, &c);
-    let a = *a;
-    let b = *b;
-    let c = *c;
-
-    let sqr = (a + (b + c)) * (c - (a - b)) * (c + (a - b)) * (a + (b - c));
-
-    sqr.sqrt() * 0.25
-}
-
-/// Sorts a set of three values in increasing order.
-#[inline]
-pub fn sort3<'a>(a: &'a Real, b: &'a Real, c: &'a Real) -> (&'a Real, &'a Real, &'a Real) {
-    let a_b = *a > *b;
-    let a_c = *a > *c;
-    let b_c = *b > *c;
-
-    let sa;
-    let sb;
-    let sc;
-
-    // Sort the three values.
-    // FIXME: move this to the utilities?
-    if a_b {
-        // a > b
-        if a_c {
-            // a > c
-            sc = a;
-
-            if b_c {
-                // b > c
-                sa = c;
-                sb = b;
-            } else {
-                // b <= c
-                sa = b;
-                sb = c;
-            }
-        } else {
-            // a <= c
-            sa = b;
-            sb = a;
-            sc = c;
-        }
-    } else {
-        // a < b
-        if !a_c {
-            // a <= c
-            sa = a;
-
-            if b_c {
-                // b > c
-                sb = c;
-                sc = b;
-            } else {
-                sb = b;
-                sc = c;
-            }
-        } else {
-            // a > c
-            sa = c;
-            sb = a;
-            sc = b;
-        }
-    }
-
-    (sa, sb, sc)
 }
