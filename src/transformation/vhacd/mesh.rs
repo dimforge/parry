@@ -1,3 +1,4 @@
+use crate::math::Real;
 use crate::shape::Tetrahedron;
 use bitflags::_core::cmp::min;
 use na::{Point3, Vector3};
@@ -50,9 +51,18 @@ impl Mesh {
         }
     }
 
+    // Set `self` to the convex hull of `points`.
     pub(crate) fn compute_convex_hull(&mut self, points: &[Point3<Real>]) {
-        // Set `self` to the convex hull of `points`.
-        unimplemented!()
+        if points.len() > 2 {
+            let (vertices, indices) = crate::transformation::convex_hull(&points);
+            let aabb = crate::bounding_volume::local_point_cloud_aabb(&vertices);
+            self.center = crate::utils::center(&vertices);
+            self.min_bb = aabb.mins;
+            self.max_bb = aabb.maxs;
+            self.triangles = indices;
+            self.diag = aabb.half_extents().norm() * 2.0;
+            self.points = vertices;
+        }
     }
 
     // Update the mesh center and its bounding-box.

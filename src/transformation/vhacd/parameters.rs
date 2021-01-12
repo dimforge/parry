@@ -1,3 +1,6 @@
+use crate::math::Real;
+use na::Point3;
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FillMode {
     SurfaceOnly,
@@ -5,7 +8,7 @@ pub enum FillMode {
     // RaycastFill
 }
 
-pub struct Parameters {
+pub struct VHACDParameters {
     pub concavity: Real,
     pub alpha: Real,
     pub beta: Real,
@@ -24,10 +27,10 @@ pub struct Parameters {
     pub project_hull_vertices: bool,
 }
 
-impl Default for Parameters {
+impl Default for VHACDParameters {
     fn default() -> Self {
         Self {
-            resolution: 100000,
+            resolution: 64,
             concavity: 0.001,
             plane_downsampling: 4,
             convex_hull_downsampling: 4,

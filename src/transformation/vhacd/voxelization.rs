@@ -1,8 +1,10 @@
 use super::mesh::{Axis, Mesh, Plane};
 use super::FillMode;
-use super::Parameters;
+use super::VHACDParameters;
 use crate::bounding_volume::AABB;
+use crate::math::Real;
 use crate::na::{Isometry3, SymmetricEigen};
+use crate::query;
 use crate::shape::Triangle;
 use na::{Matrix3, Point3, Vector3};
 
@@ -31,14 +33,14 @@ impl Default for Voxel {
 }
 
 pub struct VoxelSet {
-    min_bb: Point3<Real>,
+    pub min_bb: Point3<Real>,
     min_bb_voxels: Point3<u32>,
     max_bb_voxels: Point3<u32>,
     min_bb_pts: Point3<Real>,
     max_bb_pts: Point3<Real>,
     barycenter: Point3<u32>,
     barycenter_pca: Point3<Real>,
-    scale: Real,
+    pub scale: Real,
     unit_volume: Real,
     num_voxels_on_surface: u32,
     num_voxels_inside_surface: u32,
@@ -89,6 +91,10 @@ impl VoxelSet {
         self.min_bb + voxel.coords * self.scale
     }
 
+    pub fn len(&self) -> usize {
+        self.voxels.len()
+    }
+
     /// Update the bounding box of this voxel set.
     pub fn compute_bb(&mut self) {
         let num_voxels = self.voxels.len();
@@ -113,131 +119,20 @@ impl VoxelSet {
     }
 
     pub fn compute_convex_hull(&self, mesh: &mut Mesh, sampling: u32) {
-        unimplemented!()
-        /*
-        const CLUSTER_SIZE: usize = 65536;
-        const num_voxels: usize = self.voxels.len();
+        let mut points = Vec::new();
 
-        if num_voxels == 0 {
-            return;
+        // Grab all the points.
+        for voxel in self
+            .voxels
+            .iter()
+            .filter(|v| v.data == VoxelValue::PrimitiveOnSurface)
+            .step_by(sampling as usize)
+        {
+            self.map_voxel_points(voxel, |p| points.push(p));
         }
 
-        let mut cpoints = Vec::new();
-        let mut points = vec![Vector3::zeros(); CLUSTER_SIZE];
-
-        let mut p = 0;
-        let mut s = 0;
-        let mut i = 0;
-        let mut j = 0;
-        let mut k = 0;
-
-        while p < num_voxels {
-            let mut q = 0;
-
-            while q < CLUSTER_SIZE && p < num_voxels {
-                if self.voxels[p].data == VoxelValue::PrimitiveOnSurface {
-                    s += 1;
-
-                    if s == sampling {
-                        s = 0;
-                        i = self.voxels[p].coords[0];
-                        j = self.voxels[p].coords[1];
-                        k = self.voxels[p].coords[2];
-
-                        let p0 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p1 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p2 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p3 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p4 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p5 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p6 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p7 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-
-                        points[q + 0] = p0 + self.min_bb;
-                        points[q + 1] = p1 + self.min_bb;
-                        points[q + 2] = p2 + self.min_bb;
-                        points[q + 3] = p3 + self.min_bb;
-                        points[q + 4] = p4 + self.min_bb;
-                        points[q + 5] = p5 + self.min_bb;
-                        points[q + 6] = p6 + self.min_bb;
-                        points[q + 7] = p7 + self.min_bb;
-
-                        q += 8;
-                    }
-                }
-
-                p += 1;
-            }
-
-            let mut ch = ConvexHullComputer::new();
-            ch.compute(points, 3, q, -1.0, -1.0);
-
-            for v in 0..ch.vertices.len() {
-                cpoints.push(ch.vertices[v]);
-            }
-        }
-
-        points = cpoints.data();
-
-        let mut ch = ConvexHullComputer::new();
-        ch.compute(points, 3, cpoints.len(), -1.0, -1.0);
-
-        mesh_ch.resize_points(0);
-        mesh_ch.resize_triangles(0);
-
-        for v in 0..ch.vertices.len() {
-            mesh_ch.add_point(ch.vertices[v]);
-        }
-
-        let nt = ch.faces.len();
-
-        for t in 0..nt {
-            let source_edge = &(ch.edges[ch.faces[t]]);
-            let a = source_edge.get_source_vertex();
-            let b = source_edge.get_target_vertex();
-            let edge = source_edge.get_next_edge_of_face();
-            let c = edge.get_target_vertex();
-
-            while c != a {
-                mesh_ch.add_triangle(Vector3::new(a, b, c));
-                edge = edge.get_next_edge_of_face();
-                b = c;
-                c = edge.get_target_vertex();
-            }
-        }
-         */
+        // Compute the convex-hull.
+        mesh.compute_convex_hull(&points);
     }
 
     /// Gets the vertices of the given voxel.
@@ -381,18 +276,19 @@ impl VoxelSet {
         }
 
         negative_part.min_bb = self.min_bb;
-        positive_part.min_bb = self.min_bb;
-        positive_part.voxels.clear();
         negative_part.voxels.clear();
-        positive_part.voxels.reserve(num_voxels);
         negative_part.voxels.reserve(num_voxels);
         negative_part.scale = self.scale;
-        positive_part.scale = self.scale;
         negative_part.unit_volume = self.unit_volume;
-        positive_part.unit_volume = self.unit_volume;
         negative_part.num_voxels_on_surface = 0;
-        positive_part.num_voxels_on_surface = 0;
         negative_part.num_voxels_inside_surface = 0;
+
+        positive_part.min_bb = self.min_bb;
+        positive_part.voxels.clear();
+        positive_part.voxels.reserve(num_voxels);
+        positive_part.scale = self.scale;
+        positive_part.unit_volume = self.unit_volume;
+        positive_part.num_voxels_on_surface = 0;
         positive_part.num_voxels_inside_surface = 0;
 
         let d0 = self.scale;
@@ -496,6 +392,10 @@ impl Volume {
         }
     }
 
+    pub fn resolution(&self) -> Point3<u32> {
+        self.dim
+    }
+
     pub fn scale(&self) -> Real {
         self.scale
     }
@@ -555,9 +455,10 @@ impl Volume {
         let mut k1 = 0;
 
         for tri in triangles {
+            // Find the range of voxels potentially intersecting the triangle.
             for c in 0..3 {
                 let pt = transform * points[tri[c] as usize];
-                tri_pts[c] = pt - self.min_bb.coords * inv_scale;
+                tri_pts[c] = (pt - self.min_bb.coords) * inv_scale;
 
                 let i = (tri_pts[c].x + 0.5) as u32;
                 let j = (tri_pts[c].y + 0.5) as u32;
@@ -618,6 +519,7 @@ impl Volume {
                 k1 += 1;
             }
 
+            // Determine exactly what voxel intersect the triangle.
             for i in i0..i1 {
                 for j in j0..j1 {
                     for k in k0..k1 {
@@ -630,7 +532,7 @@ impl Volume {
                                 box_half_size,
                             );
 
-                            if super::aabb_intersects_triangle(&aabb, &triangle) {
+                            if query::details::intersection_test_aabb_triangle(&aabb, &triangle) {
                                 *value = VoxelValue::PrimitiveOnSurface;
                                 self.num_voxels_on_surface += 1;
                             }
@@ -697,7 +599,7 @@ impl Volume {
         &mut self.data[idx as usize]
     }
 
-    fn voxel(&self, i: u32, j: u32, k: u32) -> VoxelValue {
+    pub fn voxel(&self, i: u32, j: u32, k: u32) -> VoxelValue {
         let idx = self.voxel_index(i, j, k);
         self.data[idx as usize]
     }
@@ -706,7 +608,7 @@ impl Volume {
         self.data = Vec::new();
     }
 
-    /// Mark all the PrimitiveUndefinedvoxels within the given bounds as PrimitiveOutsideSurfaceToWalk.
+    /// Mark all the PrimitiveUndefined voxels within the given bounds as PrimitiveOutsideSurfaceToWalk.
     fn mark_outside_surface(&mut self, i0: u32, j0: u32, k0: u32, i1: u32, j1: u32, k1: u32) {
         for i in i0..i1 {
             for j in j0..j1 {

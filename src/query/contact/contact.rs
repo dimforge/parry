@@ -51,7 +51,7 @@ impl Contact {
     #[inline]
     pub fn flip(&mut self) {
         mem::swap(&mut self.point1, &mut self.point2);
-        mem::swap(&mut self.point1, &mut self.point2);
+        mem::swap(&mut self.normal1, &mut self.normal2);
     }
 
     /// Returns a new contact containing the swapped points and normals of `self`.

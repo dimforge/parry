@@ -1,6 +1,7 @@
 use super::{Axis, Mesh, Plane, Volume, VoxelSet};
+use crate::math::Real;
 use crate::na::Isometry;
-use crate::transformation::vhacd::Parameters;
+use crate::transformation::vhacd::VHACDParameters;
 use crate::utils;
 use na::{Point3, Vector3};
 
@@ -35,28 +36,34 @@ impl VHACD {
         &mut self,
         points: &[Point3<Real>],
         triangles: &[Point3<u32>],
-        params: &Parameters,
+        params: &VHACDParameters,
     ) {
         self.compute_acd(points, triangles, params)
     }
 
-    fn init(&mut self) {
-        // self.raycast_mesh = None;
-        self.dim = 64;
-        self.volume = Volume::new();
-        self.volume_ch0 = 0.0;
-        self.pset = VoxelSet::new();
-        self.max_concavity = -Real::MAX;
+    pub fn new() -> Self {
+        Self {
+            // raycast_mesh: None,
+            convex_hulls: Vec::new(),
+            volume_ch0: 0.0,
+            dim: 64,
+            voxel_resolution: 1.0,
+            volume: Volume::new(),
+            pset: VoxelSet::new(),
+            max_concavity: -Real::MAX,
+        }
+    }
+
+    pub fn convex_hulls(&self) -> &[Mesh] {
+        &self.convex_hulls
     }
 
     fn compute_acd(
         &mut self,
         points: &[Point3<Real>],
         triangles: &[Point3<u32>],
-        params: &Parameters,
+        params: &VHACDParameters,
     ) {
-        self.init();
-
         // if params.project_hull_vertices || params.fill_mode == FillMode::RAYCAST_FILL {
         //     self.raycast_mesh =
         //         RaycastMesh::create_raycast_mesh(num_points, points, num_triangles, triangles);
@@ -73,17 +80,9 @@ impl VHACD {
         &mut self,
         points: &[Point3<Real>],
         triangles: &[Point3<u32>],
-        params: &Parameters,
+        params: &VHACDParameters,
     ) {
-        // Default dimensions is the cube root of the resolution provided times the
-        // default voxel dimension of 64
-        let a = (params.resolution as Real).powf(0.33);
-        self.dim = (a * 1.5) as u32;
-
-        // Minimum voxel resolution is 32x32x32
-        if self.dim < 32 {
-            self.dim = 32;
-        }
+        self.dim = params.resolution;
 
         self.volume = Volume::new();
         self.volume.voxelize(
@@ -98,7 +97,7 @@ impl VHACD {
         self.voxel_resolution = self.volume.scale();
     }
 
-    fn compute_primitive_set(&mut self, params: &Parameters) {
+    fn compute_primitive_set(&mut self, params: &VHACDParameters) {
         self.pset = VoxelSet::new();
         self.volume.convert_to_voxel_set(&mut self.pset);
         self.volume = Volume::new(); // Free the volume memory.
@@ -159,7 +158,7 @@ impl VHACD {
                 let plane = Plane {
                     abc: Vector3::ith(dim, 1.0),
                     axis: Axis::try_from(dim).unwrap(),
-                    d: -(i as Real + 0.5),
+                    d: -(vset.min_bb[dim] + (i as Real + 0.5) * vset.scale),
                     index: i,
                 };
 
@@ -178,14 +177,14 @@ impl VHACD {
         let max_v = vset.max_bb_voxels();
 
         let best_id = best_plane.axis as usize;
-        let i0 = min_v[best_id].max(best_plane.index - downsampling);
+        let i0 = min_v[best_id].max(best_plane.index.saturating_sub(downsampling));
         let i1 = max_v[best_id].min(best_plane.index + downsampling);
 
         for i in i0..=i1 {
             let plane = Plane {
                 abc: Vector3::ith(best_id, 1.0),
                 axis: best_plane.axis,
-                d: -(i as Real + 0.5),
+                d: -(vset.min_bb[best_id] + (i as Real + 0.5) * vset.scale),
                 index: i,
             };
             planes.push(plane);
@@ -203,7 +202,7 @@ impl VHACD {
         alpha: Real,
         beta: Real,
         convex_hull_downsampling: u32,
-        params: &Parameters,
+        params: &VHACDParameters,
     ) -> (Plane, Real) {
         let mut best_plane = planes[0];
         let mut min_concavity = Real::MAX;
@@ -284,7 +283,7 @@ impl VHACD {
 
     fn process_primitive_set(
         &mut self,
-        params: &Parameters,
+        params: &VHACDParameters,
         first_iteration: bool,
         parts: &mut Vec<VoxelSet>,
         temp: &mut Vec<VoxelSet>,
@@ -309,6 +308,11 @@ impl VHACD {
         let concavity = compute_concavity(volume, volume_ch, self.volume_ch0);
 
         // Compute the volume error
+        // println!(
+        //     "step: {}, {}, {}, {}, {}",
+        //     volume, volume_ch, self.volume_ch0, concavity, params.concavity
+        // );
+
         if concavity > params.concavity {
             let (preferred_cutting_direction, w) = Self::compute_preferred_cutting_direction(&pset);
 
@@ -365,6 +369,7 @@ impl VHACD {
             let mut best_right = VoxelSet::new();
 
             pset.clip(&best_plane, &mut best_right, &mut best_left);
+
             temp.push(best_left);
             temp.push(best_right);
         } else {
@@ -372,7 +377,7 @@ impl VHACD {
         }
     }
 
-    fn do_compute_acd(&mut self, params: &Parameters) {
+    fn do_compute_acd(&mut self, params: &VHACDParameters) {
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();

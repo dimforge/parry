@@ -1,6 +1,13 @@
+use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Real};
 use crate::query::sat;
 use crate::shape::{Cuboid, Triangle};
+
+pub fn intersection_test_aabb_triangle(aabb1: &AABB, triangle2: &Triangle) -> bool {
+    let cuboid1 = Cuboid::new(aabb1.half_extents());
+    let pos12 = Isometry::from_parts((-aabb1.center().coords).into(), na::one());
+    intersection_test_cuboid_triangle(&pos12, &cuboid1, triangle2)
+}
 
 /// Intersection test between a triangle and a cuboid.
 #[inline]

@@ -22,7 +22,7 @@ where
         GJKResult::ClosestPoints(point1, point2_1, normal1) => {
             let dist = (point2_1 - point1).dot(&normal1);
             let point2 = pos12.inverse_transform_point(&point2_1);
-            let normal2 = pos12.inverse_transform_unit_vector(&normal1);
+            let normal2 = pos12.inverse_transform_unit_vector(&-normal1);
             Some(Contact::new(point1, point2, normal1, normal2, dist))
         }
         GJKResult::NoIntersection(_) => None,

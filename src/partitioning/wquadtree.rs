@@ -478,17 +478,22 @@ impl<T: IndexedData> SimdQuadTree<T> {
 
                     for ii in 0..SIMD_WIDTH {
                         if (bitmask & (1 << ii)) != 0 {
-                            if node.leaf && weights[ii] < best_cost && results[ii].is_some() {
-                                // We found a leaf!
-                                if let Some(proxy) = self.proxies.get(node.children[ii] as usize) {
-                                    best_cost = weights[ii];
-                                    best_result = Some((proxy.node, results[ii].clone().unwrap()))
+                            if node.leaf {
+                                if weights[ii] < best_cost && results[ii].is_some() {
+                                    // We found a leaf!
+                                    if let Some(proxy) =
+                                        self.proxies.get(node.children[ii] as usize)
+                                    {
+                                        best_cost = weights[ii];
+                                        best_result =
+                                            Some((proxy.node, results[ii].clone().unwrap()))
+                                    }
                                 }
                             } else {
                                 // Internal node, visit the child.
                                 // Un fortunately, we have this check because invalid AABBs
                                 // return a hit as well.
-                                if node.children[ii] as usize <= self.nodes.len() {
+                                if (node.children[ii] as usize) < self.nodes.len() {
                                     queue.push(WeightedValue::new(node.children[ii], -weights[ii]));
                                 }
                             }
@@ -527,7 +532,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
                         // Internal node, visit the child.
                         // Un fortunately, we have this check because invalid AABBs
                         // return a hit as well.
-                        if node.children[ii] as usize <= self.nodes.len() {
+                        if (node.children[ii] as usize) < self.nodes.len() {
                             stack.push(node.children[ii]);
                         }
                     }

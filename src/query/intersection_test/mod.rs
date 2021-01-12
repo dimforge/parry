@@ -11,7 +11,8 @@ pub use self::intersection_test_composite_shape_shape::{
 };
 pub use self::intersection_test_cuboid_cuboid::intersection_test_cuboid_cuboid;
 pub use self::intersection_test_cuboid_triangle::{
-    intersection_test_cuboid_triangle, intersection_test_triangle_cuboid,
+    intersection_test_aabb_triangle, intersection_test_cuboid_triangle,
+    intersection_test_triangle_cuboid,
 };
 pub use self::intersection_test_halfspace_support_map::{
     intersection_test_halfspace_support_map, intersection_test_support_map_halfspace,
