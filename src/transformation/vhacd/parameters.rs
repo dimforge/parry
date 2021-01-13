@@ -1,12 +1,6 @@
 use crate::math::Real;
+use crate::transformation::voxelization::FillMode;
 use na::Point3;
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub enum FillMode {
-    SurfaceOnly,
-    FloodFill,
-    // RaycastFill
-}
 
 pub struct VHACDParameters {
     pub concavity: Real,

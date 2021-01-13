@@ -1,12 +1,35 @@
-use super::mesh::{Axis, Mesh, Plane};
-use super::FillMode;
-use super::VHACDParameters;
+// Rust port, with modifications, of https://github.com/kmammou/v-hacd/blob/master/src/VHACD_Lib/src/vhacdVolume.cpp
+// By Khaled Mamou
+//
+// # License of the original C++ code:
+// > Copyright (c) 2011 Khaled Mamou (kmamou at gmail dot com)
+// > All rights reserved.
+// >
+// >
+// > Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+// >
+// > 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+// >
+// > 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+// >
+// > 3. The names of the contributors may not be used to endorse or promote products derived from this software without specific prior written permission.
+// >
+// > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::bounding_volume::AABB;
 use crate::math::Real;
 use crate::na::{Isometry3, SymmetricEigen};
 use crate::query;
 use crate::shape::Triangle;
+use crate::transformation::voxelization::{Voxel, VoxelSet};
 use na::{Matrix3, Point3, Vector3};
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum FillMode {
+    SurfaceOnly,
+    FloodFill,
+    // RaycastFill
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VoxelValue {
@@ -17,357 +40,7 @@ pub enum VoxelValue {
     PrimitiveOnSurface,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Voxel {
-    pub coords: Point3<u32>,
-    pub data: VoxelValue,
-}
-
-impl Default for Voxel {
-    fn default() -> Self {
-        Self {
-            coords: Point3::origin(),
-            data: VoxelValue::PrimitiveUndefined,
-        }
-    }
-}
-
-pub struct VoxelSet {
-    pub min_bb: Point3<Real>,
-    min_bb_voxels: Point3<u32>,
-    max_bb_voxels: Point3<u32>,
-    min_bb_pts: Point3<Real>,
-    max_bb_pts: Point3<Real>,
-    barycenter: Point3<u32>,
-    barycenter_pca: Point3<Real>,
-    pub scale: Real,
-    unit_volume: Real,
-    num_voxels_on_surface: u32,
-    num_voxels_inside_surface: u32,
-    voxels: Vec<Voxel>,
-    eigenvalues: Vector3<Real>,
-}
-
-impl VoxelSet {
-    pub fn new() -> Self {
-        Self {
-            min_bb: Point3::origin(),
-            min_bb_voxels: Point3::origin(),
-            max_bb_voxels: Point3::new(1, 1, 1),
-            min_bb_pts: Point3::origin(),
-            max_bb_pts: Point3::new(1.0, 1.0, 1.0),
-            barycenter: Point3::origin(),
-            barycenter_pca: Point3::origin(),
-            scale: 1.0,
-            unit_volume: 1.0,
-            num_voxels_on_surface: 0,
-            num_voxels_inside_surface: 0,
-            voxels: Vec::new(),
-            eigenvalues: Vector3::zeros(),
-        }
-    }
-
-    pub fn min_bb_voxels(&self) -> Point3<u32> {
-        self.min_bb_voxels
-    }
-
-    pub fn max_bb_voxels(&self) -> Point3<u32> {
-        self.max_bb_voxels
-    }
-
-    pub fn eigenvalues(&self) -> Vector3<Real> {
-        self.eigenvalues
-    }
-
-    pub fn compute_volume(&self) -> Real {
-        self.unit_volume * self.voxels.len() as Real
-    }
-
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point3<Real> {
-        self.get_point(na::convert(voxel.coords))
-    }
-
-    pub fn get_point(&self, voxel: Point3<Real>) -> Point3<Real> {
-        self.min_bb + voxel.coords * self.scale
-    }
-
-    pub fn len(&self) -> usize {
-        self.voxels.len()
-    }
-
-    /// Update the bounding box of this voxel set.
-    pub fn compute_bb(&mut self) {
-        let num_voxels = self.voxels.len();
-
-        if num_voxels == 0 {
-            return;
-        }
-
-        self.min_bb_voxels = self.voxels[0].coords;
-        self.max_bb_voxels = self.voxels[0].coords;
-        let mut bary = self.voxels[0].coords;
-
-        for p in 0..num_voxels {
-            bary += self.voxels[p].coords.coords;
-            self.min_bb_voxels = self.min_bb_voxels.inf(&self.voxels[p].coords);
-            self.max_bb_voxels = self.max_bb_voxels.sup(&self.voxels[p].coords);
-        }
-
-        let bary = bary.coords.map(|e| e as Real / num_voxels as Real);
-        self.min_bb_pts = self.min_bb + self.min_bb_voxels.coords.map(|e| e as Real * self.scale);
-        self.max_bb_pts = self.min_bb + self.max_bb_voxels.coords.map(|e| e as Real * self.scale);
-    }
-
-    pub fn compute_convex_hull(&self, mesh: &mut Mesh, sampling: u32) {
-        let mut points = Vec::new();
-
-        // Grab all the points.
-        for voxel in self
-            .voxels
-            .iter()
-            .filter(|v| v.data == VoxelValue::PrimitiveOnSurface)
-            .step_by(sampling as usize)
-        {
-            self.map_voxel_points(voxel, |p| points.push(p));
-        }
-
-        // Compute the convex-hull.
-        mesh.compute_convex_hull(&points);
-    }
-
-    /// Gets the vertices of the given voxel.
-    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point3<Real>)) {
-        let ijk = voxel.coords.coords.map(|e| e as Real);
-
-        let shifts = [
-            Vector3::new(-0.5, -0.5, -0.5),
-            Vector3::new(0.5, -0.5, -0.5),
-            Vector3::new(0.5, 0.5, -0.5),
-            Vector3::new(-0.5, 0.5, -0.5),
-            Vector3::new(-0.5, -0.5, 0.5),
-            Vector3::new(0.5, -0.5, 0.5),
-            Vector3::new(0.5, 0.5, 0.5),
-            Vector3::new(-0.5, 0.5, 0.5),
-        ];
-
-        for l in 0..8 {
-            f(self.min_bb + (ijk + shifts[l]) * self.scale)
-        }
-    }
-
-    pub fn intersect(
-        &self,
-        plane: &Plane,
-        positive_pts: &mut Vec<Point3<Real>>,
-        negative_pts: &mut Vec<Point3<Real>>,
-        sampling: u32,
-    ) {
-        let num_voxels = self.voxels.len();
-
-        if num_voxels == 0 {
-            return;
-        }
-
-        let d0 = self.scale;
-        let mut sp = 0;
-        let mut sn = 0;
-
-        for v in 0..num_voxels {
-            let voxel = self.voxels[v];
-            let pt = self.get_voxel_point(&voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
-
-            // if      (d >= 0.0 && d <= d0) positive_pts.push(pt);
-            // else if (d < 0.0 && -d <= d0) negative_pts.push(pt);
-
-            if d >= 0.0 {
-                if d <= d0 {
-                    self.map_voxel_points(&voxel, |p| positive_pts.push(p));
-                } else {
-                    sp += 1;
-
-                    if sp == sampling {
-                        self.map_voxel_points(&voxel, |p| positive_pts.push(p));
-                        sp = 0;
-                    }
-                }
-            } else {
-                if -d <= d0 {
-                    self.map_voxel_points(&voxel, |p| negative_pts.push(p));
-                } else {
-                    sn += 1;
-                    if sn == sampling {
-                        self.map_voxel_points(&voxel, |p| negative_pts.push(p));
-                        sn = 0;
-                    }
-                }
-            }
-        }
-    }
-
-    fn compute_exterior_points(
-        &self,
-        plane: &Plane,
-        mesh: &Mesh,
-        exterior_pts: &mut Vec<Point3<Real>>,
-    ) {
-        let num_voxels = self.voxels.len();
-        if num_voxels == 0 {
-            return;
-        }
-
-        for v in 0..num_voxels {
-            let voxel = self.voxels[v];
-            let pt = self.get_voxel_point(&voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
-
-            if d >= 0.0 {
-                if !mesh.is_inside(&pt) {
-                    self.map_voxel_points(&voxel, |p| exterior_pts.push(p));
-                }
-            }
-        }
-    }
-
-    // Returns (negative_volume, positive_volume)
-    pub fn compute_clipped_volumes(&self, plane: &Plane) -> (Real, Real) {
-        if self.voxels.is_empty() {
-            return (0.0, 0.0);
-        }
-
-        let mut num_positive_voxels = 0;
-
-        for voxel in &self.voxels {
-            let pt = self.get_voxel_point(voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
-            num_positive_voxels += (d >= 0.0) as usize;
-        }
-
-        let num_negative_voxels = self.voxels.len() - num_positive_voxels;
-        let positive_volume = self.unit_volume * (num_positive_voxels as Real);
-        let negative_volume = self.unit_volume * (num_negative_voxels as Real);
-
-        (negative_volume, positive_volume)
-    }
-
-    // Set `on_surf` such that it contains only the voxel on surface contained by `self`.
-    pub fn select_on_surface(&self, on_surf: &mut VoxelSet) {
-        on_surf.min_bb = self.min_bb;
-        on_surf.voxels.clear();
-        on_surf.scale = self.scale;
-        on_surf.unit_volume = self.unit_volume;
-        on_surf.num_voxels_on_surface = 0;
-        on_surf.num_voxels_inside_surface = 0;
-
-        for voxel in &self.voxels {
-            if voxel.data == VoxelValue::PrimitiveOnSurface {
-                on_surf.voxels.push(*voxel);
-                on_surf.num_voxels_on_surface += 1;
-            }
-        }
-    }
-
-    /// Splits this voxel set into two parts, depending on where the voxel center lies wrt. the given plane.
-    pub fn clip(&self, plane: &Plane, positive_part: &mut VoxelSet, negative_part: &mut VoxelSet) {
-        let num_voxels = self.voxels.len();
-
-        if num_voxels == 0 {
-            return;
-        }
-
-        negative_part.min_bb = self.min_bb;
-        negative_part.voxels.clear();
-        negative_part.voxels.reserve(num_voxels);
-        negative_part.scale = self.scale;
-        negative_part.unit_volume = self.unit_volume;
-        negative_part.num_voxels_on_surface = 0;
-        negative_part.num_voxels_inside_surface = 0;
-
-        positive_part.min_bb = self.min_bb;
-        positive_part.voxels.clear();
-        positive_part.voxels.reserve(num_voxels);
-        positive_part.scale = self.scale;
-        positive_part.unit_volume = self.unit_volume;
-        positive_part.num_voxels_on_surface = 0;
-        positive_part.num_voxels_inside_surface = 0;
-
-        let d0 = self.scale;
-
-        for v in 0..num_voxels {
-            let mut voxel = self.voxels[v];
-            let pt = self.get_voxel_point(&voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
-
-            if d >= 0.0 {
-                if voxel.data == VoxelValue::PrimitiveOnSurface || d <= d0 {
-                    voxel.data = VoxelValue::PrimitiveOnSurface;
-                    positive_part.voxels.push(voxel);
-                    positive_part.num_voxels_on_surface += 1;
-                } else {
-                    positive_part.voxels.push(voxel);
-                    positive_part.num_voxels_inside_surface += 1;
-                }
-            } else {
-                if voxel.data == VoxelValue::PrimitiveOnSurface || -d <= d0 {
-                    voxel.data = VoxelValue::PrimitiveOnSurface;
-                    negative_part.voxels.push(voxel);
-                    negative_part.num_voxels_on_surface += 1;
-                } else {
-                    negative_part.voxels.push(voxel);
-                    negative_part.num_voxels_inside_surface += 1;
-                }
-            }
-        }
-    }
-
-    /// Convert this voxelset into a mesh, including only the voxels with the given value.
-    fn convert(&self, mesh: &mut Mesh, value: VoxelValue) {
-        for voxel in &self.voxels {
-            if voxel.data == value {
-                let s = mesh.points.len() as u32;
-                self.map_voxel_points(voxel, |p| mesh.points.push(p));
-
-                mesh.triangles.push(Point3::new(s + 0, s + 2, s + 1));
-                mesh.triangles.push(Point3::new(s + 0, s + 3, s + 2));
-                mesh.triangles.push(Point3::new(s + 4, s + 5, s + 6));
-                mesh.triangles.push(Point3::new(s + 4, s + 6, s + 7));
-                mesh.triangles.push(Point3::new(s + 7, s + 6, s + 2));
-                mesh.triangles.push(Point3::new(s + 7, s + 2, s + 3));
-                mesh.triangles.push(Point3::new(s + 4, s + 1, s + 5));
-                mesh.triangles.push(Point3::new(s + 4, s + 0, s + 1));
-                mesh.triangles.push(Point3::new(s + 6, s + 5, s + 1));
-                mesh.triangles.push(Point3::new(s + 6, s + 1, s + 2));
-                mesh.triangles.push(Point3::new(s + 7, s + 0, s + 4));
-                mesh.triangles.push(Point3::new(s + 7, s + 3, s + 0));
-            }
-        }
-    }
-
-    pub fn compute_principal_axes(&mut self) {
-        let num_voxels = self.voxels.len();
-        if num_voxels == 0 {
-            return;
-        }
-
-        self.barycenter_pca = Point3::origin();
-        let denom = 1.0 / (num_voxels as Real);
-
-        for voxel in &self.voxels {
-            self.barycenter_pca += voxel.coords.map(|e| e as Real).coords * denom;
-        }
-
-        let mut cov_mat = Matrix3::zeros();
-
-        for voxel in &self.voxels {
-            let xyz = voxel.coords.map(|e| e as Real) - self.barycenter_pca;
-            cov_mat.syger(denom, &xyz, &xyz, 1.0);
-        }
-
-        self.eigenvalues = cov_mat.symmetric_eigenvalues();
-    }
-}
-
-pub struct Volume {
+pub struct VoxelizedVolume {
     dim: Point3<u32>,
     min_bb: Point3<Real>,
     max_bb: Point3<Real>,
@@ -378,9 +51,15 @@ pub struct Volume {
     data: Vec<VoxelValue>,
 }
 
-impl Volume {
-    pub fn new() -> Self {
-        Volume {
+impl VoxelizedVolume {
+    pub fn voxelize(
+        transform: &Isometry3<Real>,
+        points: &[Point3<Real>],
+        triangles: &[Point3<u32>],
+        dim: u32,
+        fill_mode: FillMode,
+    ) -> Self {
+        let mut result = VoxelizedVolume {
             dim: Point3::origin(),
             min_bb: Point3::origin(),
             max_bb: Point3::new(1.0, 1.0, 1.0),
@@ -389,61 +68,44 @@ impl Volume {
             num_voxels_outside_surface: 0,
             scale: 1.0,
             data: Vec::new(),
-        }
-    }
+        };
 
-    pub fn resolution(&self) -> Point3<u32> {
-        self.dim
-    }
-
-    pub fn scale(&self) -> Real {
-        self.scale
-    }
-
-    pub fn voxelize(
-        &mut self,
-        transform: &Isometry3<Real>,
-        points: &[Point3<Real>],
-        triangles: &[Point3<u32>],
-        dim: u32,
-        fill_mode: FillMode,
-    ) {
         if points.is_empty() {
-            return;
+            return result;
         }
 
         let aabb = crate::bounding_volume::point_cloud_aabb(transform, points);
-        self.min_bb = aabb.mins;
-        self.max_bb = aabb.maxs;
+        result.min_bb = aabb.mins;
+        result.max_bb = aabb.maxs;
 
-        let d = self.max_bb - self.min_bb;
+        let d = result.max_bb - result.min_bb;
         let r;
 
         if d[0] > d[1] && d[0] > d[2] {
             r = d[0];
-            self.dim[0] = dim;
-            self.dim[1] = 2 + (dim as Real * d[1] / d[0]) as u32;
-            self.dim[2] = 2 + (dim as Real * d[2] / d[0]) as u32;
+            result.dim[0] = dim;
+            result.dim[1] = 2 + (dim as Real * d[1] / d[0]) as u32;
+            result.dim[2] = 2 + (dim as Real * d[2] / d[0]) as u32;
         } else if d[1] > d[0] && d[1] > d[2] {
             r = d[1];
-            self.dim[1] = dim;
-            self.dim[0] = 2 + (dim as Real * d[0] / d[1]) as u32;
-            self.dim[2] = 2 + (dim as Real * d[2] / d[1]) as u32;
+            result.dim[1] = dim;
+            result.dim[0] = 2 + (dim as Real * d[0] / d[1]) as u32;
+            result.dim[2] = 2 + (dim as Real * d[2] / d[1]) as u32;
         } else {
             r = d[2];
-            self.dim[2] = dim;
-            self.dim[0] = 2 + (dim as Real * d[0] / d[2]) as u32;
-            self.dim[1] = 2 + (dim as Real * d[1] / d[2]) as u32;
+            result.dim[2] = dim;
+            result.dim[0] = 2 + (dim as Real * d[0] / d[2]) as u32;
+            result.dim[1] = 2 + (dim as Real * d[1] / d[2]) as u32;
         }
 
-        self.scale = r / (dim as Real - 1.0);
+        result.scale = r / (dim as Real - 1.0);
         let inv_scale = (dim as Real - 1.0) / r;
-        self.allocate();
+        result.allocate();
 
-        self.num_voxels_on_surface = 0;
-        self.num_voxels_on_surface = 0;
-        self.num_voxels_inside_surface = 0;
-        self.num_voxels_outside_surface = 0;
+        result.num_voxels_on_surface = 0;
+        result.num_voxels_on_surface = 0;
+        result.num_voxels_inside_surface = 0;
+        result.num_voxels_outside_surface = 0;
 
         let mut tri_pts = [Point3::origin(); 3];
         let box_half_size = Vector3::repeat(0.5);
@@ -458,13 +120,13 @@ impl Volume {
             // Find the range of voxels potentially intersecting the triangle.
             for c in 0..3 {
                 let pt = transform * points[tri[c] as usize];
-                tri_pts[c] = (pt - self.min_bb.coords) * inv_scale;
+                tri_pts[c] = (pt - result.min_bb.coords) * inv_scale;
 
                 let i = (tri_pts[c].x + 0.5) as u32;
                 let j = (tri_pts[c].y + 0.5) as u32;
                 let k = (tri_pts[c].z + 0.5) as u32;
 
-                assert!(i < self.dim[0] && j < self.dim[1] && k < self.dim[2]);
+                assert!(i < result.dim[0] && j < result.dim[1] && k < result.dim[2]);
 
                 if c == 0 {
                     i0 = i;
@@ -507,15 +169,15 @@ impl Volume {
                 k0 -= 1;
             }
 
-            if i1 < self.dim.x {
+            if i1 < result.dim.x {
                 i1 += 1;
             }
 
-            if j1 < self.dim.y {
+            if j1 < result.dim.y {
                 j1 += 1;
             }
 
-            if k1 < self.dim.z {
+            if k1 < result.dim.z {
                 k1 += 1;
             }
 
@@ -523,7 +185,7 @@ impl Volume {
             for i in i0..i1 {
                 for j in j0..j1 {
                     for k in k0..k1 {
-                        let value = self.voxel_mut(i, j, k);
+                        let value = result.voxel_mut(i, j, k);
 
                         if *value == VoxelValue::PrimitiveUndefined {
                             let triangle = Triangle::from(tri_pts);
@@ -534,7 +196,7 @@ impl Volume {
 
                             if query::details::intersection_test_aabb_triangle(&aabb, &triangle) {
                                 *value = VoxelValue::PrimitiveOnSurface;
-                                self.num_voxels_on_surface += 1;
+                                result.num_voxels_on_surface += 1;
                             }
                         }
                     }
@@ -544,44 +206,54 @@ impl Volume {
 
         match fill_mode {
             FillMode::SurfaceOnly => {
-                for value in &mut self.data {
+                for value in &mut result.data {
                     if *value != VoxelValue::PrimitiveOnSurface {
                         *value = VoxelValue::PrimitiveOutsideSurface
                     }
                 }
             }
             FillMode::FloodFill => {
-                self.mark_outside_surface(0, 0, 0, self.dim[0], self.dim[1], 1);
-                self.mark_outside_surface(
+                result.mark_outside_surface(0, 0, 0, result.dim[0], result.dim[1], 1);
+                result.mark_outside_surface(
                     0,
                     0,
-                    self.dim[2] - 1,
-                    self.dim[0],
-                    self.dim[1],
-                    self.dim[2],
+                    result.dim[2] - 1,
+                    result.dim[0],
+                    result.dim[1],
+                    result.dim[2],
                 );
-                self.mark_outside_surface(0, 0, 0, self.dim[0], 1, self.dim[2]);
-                self.mark_outside_surface(
+                result.mark_outside_surface(0, 0, 0, result.dim[0], 1, result.dim[2]);
+                result.mark_outside_surface(
                     0,
-                    self.dim[1] - 1,
+                    result.dim[1] - 1,
                     0,
-                    self.dim[0],
-                    self.dim[1],
-                    self.dim[2],
+                    result.dim[0],
+                    result.dim[1],
+                    result.dim[2],
                 );
-                self.mark_outside_surface(0, 0, 0, 1, self.dim[1], self.dim[2]);
-                self.mark_outside_surface(
-                    self.dim[0] - 1,
+                result.mark_outside_surface(0, 0, 0, 1, result.dim[1], result.dim[2]);
+                result.mark_outside_surface(
+                    result.dim[0] - 1,
                     0,
                     0,
-                    self.dim[0],
-                    self.dim[1],
-                    self.dim[2],
+                    result.dim[0],
+                    result.dim[1],
+                    result.dim[2],
                 );
-                self.fill_outside_surface();
-                self.fill_inside_surface();
+                result.fill_outside_surface();
+                result.fill_inside_surface();
             }
         }
+
+        result
+    }
+
+    pub fn resolution(&self) -> Point3<u32> {
+        self.dim
+    }
+
+    pub fn scale(&self) -> Real {
+        self.scale
     }
 
     fn allocate(&mut self) {
@@ -782,7 +454,10 @@ impl Volume {
         }
     }
 
-    pub fn convert_to_mesh(&self, mesh: &mut Mesh, value: VoxelValue) {
+    pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+        let mut vertices = Vec::new();
+        let mut indices = Vec::new();
+
         let i0 = self.dim[0];
         let j0 = self.dim[1];
         let k0 = self.dim[2];
@@ -838,36 +513,41 @@ impl Volume {
                             (k + 0.5) * self.scale,
                         );
 
-                        let s = mesh.points.len() as u32;
+                        let s = vertices.len() as u32;
 
-                        mesh.points.push(self.min_bb + p0);
-                        mesh.points.push(self.min_bb + p1);
-                        mesh.points.push(self.min_bb + p2);
-                        mesh.points.push(self.min_bb + p3);
-                        mesh.points.push(self.min_bb + p4);
-                        mesh.points.push(self.min_bb + p5);
-                        mesh.points.push(self.min_bb + p6);
-                        mesh.points.push(self.min_bb + p7);
+                        vertices.push(self.min_bb + p0);
+                        vertices.push(self.min_bb + p1);
+                        vertices.push(self.min_bb + p2);
+                        vertices.push(self.min_bb + p3);
+                        vertices.push(self.min_bb + p4);
+                        vertices.push(self.min_bb + p5);
+                        vertices.push(self.min_bb + p6);
+                        vertices.push(self.min_bb + p7);
 
-                        mesh.triangles.push(Point3::new(s + 0, s + 2, s + 1));
-                        mesh.triangles.push(Point3::new(s + 0, s + 3, s + 2));
-                        mesh.triangles.push(Point3::new(s + 4, s + 5, s + 6));
-                        mesh.triangles.push(Point3::new(s + 4, s + 6, s + 7));
-                        mesh.triangles.push(Point3::new(s + 7, s + 6, s + 2));
-                        mesh.triangles.push(Point3::new(s + 7, s + 2, s + 3));
-                        mesh.triangles.push(Point3::new(s + 4, s + 1, s + 5));
-                        mesh.triangles.push(Point3::new(s + 4, s + 0, s + 1));
-                        mesh.triangles.push(Point3::new(s + 6, s + 5, s + 1));
-                        mesh.triangles.push(Point3::new(s + 6, s + 1, s + 2));
-                        mesh.triangles.push(Point3::new(s + 7, s + 0, s + 4));
-                        mesh.triangles.push(Point3::new(s + 7, s + 3, s + 0));
+                        indices.push(Point3::new(s + 0, s + 2, s + 1));
+                        indices.push(Point3::new(s + 0, s + 3, s + 2));
+                        indices.push(Point3::new(s + 4, s + 5, s + 6));
+                        indices.push(Point3::new(s + 4, s + 6, s + 7));
+                        indices.push(Point3::new(s + 7, s + 6, s + 2));
+                        indices.push(Point3::new(s + 7, s + 2, s + 3));
+                        indices.push(Point3::new(s + 4, s + 1, s + 5));
+                        indices.push(Point3::new(s + 4, s + 0, s + 1));
+                        indices.push(Point3::new(s + 6, s + 5, s + 1));
+                        indices.push(Point3::new(s + 6, s + 1, s + 2));
+                        indices.push(Point3::new(s + 7, s + 0, s + 4));
+                        indices.push(Point3::new(s + 7, s + 3, s + 0));
                     }
                 }
             }
         }
-    }
 
-    pub fn convert_to_voxel_set(&self, vset: &mut VoxelSet) {
+        (vertices, indices)
+    }
+}
+
+impl Into<VoxelSet> for VoxelizedVolume {
+    fn into(self) -> VoxelSet {
+        let mut vset = VoxelSet::new();
         vset.min_bb = self.min_bb;
         vset.voxels
             .reserve((self.num_voxels_inside_surface + self.num_voxels_on_surface) as usize);
@@ -899,6 +579,8 @@ impl Volume {
                 }
             }
         }
+
+        vset
     }
 }
 

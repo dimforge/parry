@@ -2,7 +2,7 @@ use crate::math::{Point, Real};
 use crate::shape::{MassProperties, Triangle};
 
 impl MassProperties {
-    pub(crate) fn from_triangle(
+    pub fn from_triangle(
         density: Real,
         a: &Point<Real>,
         b: &Point<Real>,

@@ -1,11 +1,11 @@
 use crate::bounding_volume::{BoundingVolume, AABB};
+use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, MassProperties,
-    PolygonalFeatureMap, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh,
-    Triangle,
+    Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, PolygonalFeatureMap,
+    RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{
@@ -97,6 +97,8 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
 
     /// Gets the type tag of this shape.
     fn shape_type(&self) -> ShapeType;
+
+    fn ccd_thickness(&self) -> Real;
 
     /// Is this shape known to be convex?
     ///
@@ -253,6 +255,10 @@ impl Shape for Ball {
         MassProperties::from_ball(density, self.radius)
     }
 
+    fn ccd_thickness(&self) -> Real {
+        self.radius
+    }
+
     fn is_convex(&self) -> bool {
         true
     }
@@ -311,6 +317,10 @@ impl Shape for Cuboid {
         ShapeType::Cuboid
     }
 
+    fn ccd_thickness(&self) -> Real {
+        self.half_extents.min()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -344,6 +354,10 @@ impl Shape for Capsule {
 
     fn shape_type(&self) -> ShapeType {
         ShapeType::Capsule
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        self.radius
     }
 
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
@@ -384,6 +398,11 @@ impl Shape for Triangle {
         ShapeType::Triangle
     }
 
+    fn ccd_thickness(&self) -> Real {
+        // TODO: in 2D use the smallest height of the triangle.
+        0.0
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -413,6 +432,10 @@ impl Shape for Segment {
 
     fn is_convex(&self) -> bool {
         true
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        0.0
     }
 
     fn shape_type(&self) -> ShapeType {
@@ -451,6 +474,12 @@ impl Shape for Compound {
         ShapeType::Compound
     }
 
+    fn ccd_thickness(&self) -> Real {
+        self.shapes()
+            .iter()
+            .fold(Real::MAX, |curr, (_, s)| curr.min(s.ccd_thickness()))
+    }
+
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
@@ -481,6 +510,11 @@ impl Shape for TriMesh {
         ShapeType::TriMesh
     }
 
+    fn ccd_thickness(&self) -> Real {
+        // TODO: in 2D, return the smallest CCD thickness among triangles?
+        0.0
+    }
+
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
@@ -506,6 +540,10 @@ impl Shape for HeightField {
 
     fn shape_type(&self) -> ShapeType {
         ShapeType::HeightField
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        0.0
     }
 }
 
@@ -534,6 +572,11 @@ impl Shape for ConvexPolygon {
 
     fn shape_type(&self) -> ShapeType {
         ShapeType::ConvexPolygon
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        // TODO: we should use the OBB instead.
+        self.compute_local_aabb().half_extents().min()
     }
 
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
@@ -573,6 +616,11 @@ impl Shape for ConvexPolyhedron {
         ShapeType::ConvexPolyhedron
     }
 
+    fn ccd_thickness(&self) -> Real {
+        // TODO: we should use the OBB instead.
+        self.compute_local_aabb().half_extents().min()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -607,6 +655,10 @@ impl Shape for Cylinder {
 
     fn shape_type(&self) -> ShapeType {
         ShapeType::Cylinder
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        self.radius
     }
 
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
@@ -645,6 +697,10 @@ impl Shape for Cone {
         ShapeType::Cone
     }
 
+    fn ccd_thickness(&self) -> Real {
+        self.radius
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -670,6 +726,10 @@ impl Shape for HalfSpace {
 
     fn is_convex(&self) -> bool {
         true
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        f32::MAX as Real
     }
 
     fn mass_properties(&self, _: Real) -> MassProperties {
@@ -707,6 +767,10 @@ macro_rules! impl_shape_for_round_shape(
 
             fn shape_type(&self) -> ShapeType {
                 $Tag
+            }
+
+            fn ccd_thickness(&self) -> Real {
+                self.base_shape.ccd_thickness() + self.border_radius
             }
 
             fn as_support_map(&self) -> Option<&dyn SupportMap> {

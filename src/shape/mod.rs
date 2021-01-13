@@ -8,7 +8,6 @@ pub use self::compound::Compound;
 pub use self::cuboid::Cuboid;
 pub use self::feature_id::FeatureId;
 pub use self::half_space::HalfSpace;
-pub use self::mass_properties::MassProperties;
 pub use self::polygonal_feature_map::PolygonalFeatureMap;
 pub use self::polyline::Polyline;
 pub use self::round_shape::RoundShape;
@@ -88,6 +87,5 @@ mod tetrahedron;
 mod trimesh;
 // TODO: move this elsewhere?
 mod feature_id;
-mod mass_properties;
 #[cfg(feature = "dim2")]
 mod polygonal_feature2d;

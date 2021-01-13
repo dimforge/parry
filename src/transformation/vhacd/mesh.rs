@@ -30,129 +30,129 @@ pub struct Plane {
     pub index: u32,
 }
 
-pub struct Mesh {
-    pub points: Vec<Point3<Real>>,
-    pub triangles: Vec<Point3<u32>>,
-    pub min_bb: Point3<Real>,
-    pub max_bb: Point3<Real>,
-    pub diag: Real,
-    pub center: Point3<Real>,
-}
-
-impl Mesh {
-    pub fn new() -> Self {
-        Self {
-            points: Vec::new(),
-            triangles: Vec::new(),
-            min_bb: Point3::origin(),
-            max_bb: Point3::origin(),
-            diag: 0.0,
-            center: Point3::origin(),
-        }
-    }
-
-    // Set `self` to the convex hull of `points`.
-    pub(crate) fn compute_convex_hull(&mut self, points: &[Point3<Real>]) {
-        if points.len() > 2 {
-            let (vertices, indices) = crate::transformation::convex_hull(&points);
-            let aabb = crate::bounding_volume::local_point_cloud_aabb(&vertices);
-            self.center = crate::utils::center(&vertices);
-            self.min_bb = aabb.mins;
-            self.max_bb = aabb.maxs;
-            self.triangles = indices;
-            self.diag = aabb.half_extents().norm() * 2.0;
-            self.points = vertices;
-        }
-    }
-
-    // Update the mesh center and its bounding-box.
-    pub(crate) fn compute_center(&mut self) {
-        if !self.points.is_empty() {
-            // FIXME: use the ncollide center function instead.
-            self.center = crate::utils::center(&self.points);
-
-            let aabb = crate::bounding_volume::local_point_cloud_aabb(&self.points);
-            self.min_bb = aabb.mins;
-            self.max_bb = aabb.maxs;
-        }
-    }
-
-    /// Computes the volume of this mesh, assuming it is convex.
-    // TODO: rename this "compute_convex_volume".
-    pub(crate) fn compute_volume(&self) -> Real {
-        let num_points = self.points.len();
-        let num_triangles = self.triangles.len();
-
-        if num_points == 0 || num_triangles == 0 {
-            return 0.0;
-        }
-
-        let barycenter = crate::utils::center(&self.points);
-        let mut total_volume = 0.0;
-
-        for tri in &self.triangles {
-            let a = self.points[tri.x as usize];
-            let b = self.points[tri.y as usize];
-            let c = self.points[tri.z as usize];
-            total_volume += Tetrahedron::new(a, b, c, barycenter).volume();
-        }
-
-        total_volume
-    }
-
-    /// Split the vertices of this mesh into two parts, depending on what side of the given plan they lie.
-    ///
-    /// Points located exactly on the plane boundary are pushed to both positive and negative parts.
-    pub(crate) fn clip(
-        &self,
-        plane: &Plane,
-        positive_part: &mut Vec<Point3<Real>>,
-        negative_part: &mut Vec<Point3<Real>>,
-    ) {
-        for pt in &self.points {
-            let d = plane.abc.dot(&pt.coords) + plane.d;
-
-            if d > 0.0 {
-                positive_part.push(*pt);
-            } else if d < 0.0 {
-                negative_part.push(*pt);
-            } else {
-                positive_part.push(*pt);
-                negative_part.push(*pt);
-            }
-        }
-    }
-
-    /// Tests if the given point is inside of this mesh, assuming this mesh is convex.
-    pub(super) fn is_inside(&self, pt: &Point3<Real>) -> bool {
-        if self.points.is_empty() || self.triangles.is_empty() {
-            return false;
-        }
-
-        for tri in &self.triangles {
-            let ver0 = self.points[tri[0] as usize];
-            let ver1 = self.points[tri[1] as usize];
-            let ver2 = self.points[tri[2] as usize];
-            let volume = Tetrahedron::new(ver0, ver1, ver2, *pt).signed_volume();
-
-            if volume < 0.0 {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// Updates the diagonal of the bounding box of this mesh.
-    fn compute_diag_bb(&mut self) {
-        if self.points.is_empty() {
-            return;
-        }
-
-        let aabb = crate::bounding_volume::local_point_cloud_aabb(&self.points);
-        self.diag = aabb.extents().norm();
-    }
-}
+// pub struct Mesh {
+//     pub points: Vec<Point3<Real>>,
+//     pub triangles: Vec<Point3<u32>>,
+//     pub min_bb: Point3<Real>,
+//     pub max_bb: Point3<Real>,
+//     pub diag: Real,
+//     pub center: Point3<Real>,
+// }
+//
+// impl Mesh {
+//     pub fn new() -> Self {
+//         Self {
+//             points: Vec::new(),
+//             triangles: Vec::new(),
+//             min_bb: Point3::origin(),
+//             max_bb: Point3::origin(),
+//             diag: 0.0,
+//             center: Point3::origin(),
+//         }
+//     }
+//
+//     // Set `self` to the convex hull of `points`.
+//     pub(crate) fn compute_convex_hull(&mut self, points: &[Point3<Real>]) {
+//         if points.len() > 2 {
+//             let (vertices, indices) = crate::transformation::convex_hull(&points);
+//             let aabb = crate::bounding_volume::local_point_cloud_aabb(&vertices);
+//             self.center = crate::utils::center(&vertices);
+//             self.min_bb = aabb.mins;
+//             self.max_bb = aabb.maxs;
+//             self.triangles = indices;
+//             self.diag = aabb.half_extents().norm() * 2.0;
+//             self.points = vertices;
+//         }
+//     }
+//
+//     // Update the mesh center and its bounding-box.
+//     pub(crate) fn compute_center(&mut self) {
+//         if !self.points.is_empty() {
+//             // FIXME: use the ncollide center function instead.
+//             self.center = crate::utils::center(&self.points);
+//
+//             let aabb = crate::bounding_volume::local_point_cloud_aabb(&self.points);
+//             self.min_bb = aabb.mins;
+//             self.max_bb = aabb.maxs;
+//         }
+//     }
+//
+//     /// Computes the volume of this mesh, assuming it is convex.
+//     // TODO: rename this "compute_convex_volume".
+//     pub(crate) fn compute_volume(&self) -> Real {
+//         let num_points = self.points.len();
+//         let num_triangles = self.triangles.len();
+//
+//         if num_points == 0 || num_triangles == 0 {
+//             return 0.0;
+//         }
+//
+//         let barycenter = crate::utils::center(&self.points);
+//         let mut total_volume = 0.0;
+//
+//         for tri in &self.triangles {
+//             let a = self.points[tri.x as usize];
+//             let b = self.points[tri.y as usize];
+//             let c = self.points[tri.z as usize];
+//             total_volume += Tetrahedron::new(a, b, c, barycenter).volume();
+//         }
+//
+//         total_volume
+//     }
+//
+//     /// Split the vertices of this mesh into two parts, depending on what side of the given plan they lie.
+//     ///
+//     /// Points located exactly on the plane boundary are pushed to both positive and negative parts.
+//     pub(crate) fn clip(
+//         &self,
+//         plane: &Plane,
+//         positive_part: &mut Vec<Point3<Real>>,
+//         negative_part: &mut Vec<Point3<Real>>,
+//     ) {
+//         for pt in &self.points {
+//             let d = plane.abc.dot(&pt.coords) + plane.d;
+//
+//             if d > 0.0 {
+//                 positive_part.push(*pt);
+//             } else if d < 0.0 {
+//                 negative_part.push(*pt);
+//             } else {
+//                 positive_part.push(*pt);
+//                 negative_part.push(*pt);
+//             }
+//         }
+//     }
+//
+//     /// Tests if the given point is inside of this mesh, assuming this mesh is convex.
+//     pub(super) fn is_inside(&self, pt: &Point3<Real>) -> bool {
+//         if self.points.is_empty() || self.triangles.is_empty() {
+//             return false;
+//         }
+//
+//         for tri in &self.triangles {
+//             let ver0 = self.points[tri[0] as usize];
+//             let ver1 = self.points[tri[1] as usize];
+//             let ver2 = self.points[tri[2] as usize];
+//             let volume = Tetrahedron::new(ver0, ver1, ver2, *pt).signed_volume();
+//
+//             if volume < 0.0 {
+//                 return false;
+//             }
+//         }
+//
+//         true
+//     }
+//
+//     /// Updates the diagonal of the bounding box of this mesh.
+//     fn compute_diag_bb(&mut self) {
+//         if self.points.is_empty() {
+//             return;
+//         }
+//
+//         let aabb = crate::bounding_volume::local_point_cloud_aabb(&self.points);
+//         self.diag = aabb.extents().norm();
+//     }
+// }
 
 /*
 void Mesh::ComputeConvexHull(const double* const pts, const size_t nPts)

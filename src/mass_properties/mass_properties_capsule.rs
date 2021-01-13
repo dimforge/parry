@@ -1,15 +1,10 @@
+use crate::mass_properties::MassProperties;
 use crate::math::{Point, Real};
 #[cfg(feature = "dim3")]
 use crate::shape::Capsule;
-use crate::shape::MassProperties;
 
 impl MassProperties {
-    pub(crate) fn from_capsule(
-        density: Real,
-        a: Point<Real>,
-        b: Point<Real>,
-        radius: Real,
-    ) -> Self {
+    pub fn from_capsule(density: Real, a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
         let half_height = (b - a).norm() / 2.0;
         let (cyl_vol, cyl_unit_i) = Self::cylinder_y_volume_unit_inertia(half_height, radius);
         let (ball_vol, ball_unit_i) = Self::ball_volume_unit_angular_inertia(radius);

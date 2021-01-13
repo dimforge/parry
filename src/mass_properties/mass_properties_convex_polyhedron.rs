@@ -1,10 +1,11 @@
+use crate::mass_properties::MassProperties;
 use crate::math::{Matrix, Point, Real};
-use crate::shape::{MassProperties, Tetrahedron};
+use crate::shape::Tetrahedron;
 use crate::utils;
 use num::Zero;
 
 impl MassProperties {
-    pub(crate) fn from_convex_polyhedron(
+    pub fn from_convex_polyhedron(
         density: Real,
         vertices: &[Point<Real>],
         indices: &[Point<u32>],
@@ -32,7 +33,7 @@ impl MassProperties {
     }
 }
 
-fn tetrahedron_unit_inertia_tensor_wrt_point(
+pub fn tetrahedron_unit_inertia_tensor_wrt_point(
     point: &Point<Real>,
     p1: &Point<Real>,
     p2: &Point<Real>,
@@ -148,7 +149,7 @@ fn tetrahedron_unit_inertia_tensor_wrt_point(
     Matrix::new(a0, -b1, -c1, -b1, b0, -a1, -c1, -a1, c0)
 }
 
-fn convex_mesh_volume_and_center_of_mass_unchecked(
+pub fn convex_mesh_volume_and_center_of_mass_unchecked(
     vertices: &[Point<Real>],
     indices: &[Point<u32>],
 ) -> (Real, Point<Real>) {

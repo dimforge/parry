@@ -26,10 +26,9 @@ fn cov(pts: &[Point3<Real>]) -> Matrix3<Real> {
 
 /// Computes the convex hull of a set of 3d points.
 pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
-    assert!(
-        points.len() != 0,
-        "Cannot compute the convex hull of an empty set of point."
-    );
+    if points.is_empty() {
+        return (Vec::new(), Vec::new());
+    }
 
     let mut points = points.to_vec();
 
@@ -554,7 +553,7 @@ impl TriangleFacet {
 
         TriangleFacet {
             valid: true,
-            normal: normal,
+            normal,
             adj: [0, 0, 0],
             indirect_adj_id: [0, 0, 0],
             pts: [p1, p2, p3],

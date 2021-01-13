@@ -1,7 +1,7 @@
+use crate::mass_properties::MassProperties;
 #[cfg(feature = "dim3")]
 use crate::math::Vector;
 use crate::math::{Point, PrincipalAngularInertia, Real};
-use crate::shape::MassProperties;
 use na::RealField;
 
 impl MassProperties {
@@ -23,7 +23,7 @@ impl MassProperties {
         }
     }
 
-    pub(crate) fn from_ball(density: Real, radius: Real) -> Self {
+    pub fn from_ball(density: Real, radius: Real) -> Self {
         let (vol, unit_i) = Self::ball_volume_unit_angular_inertia(radius);
         let mass = vol * density;
         Self::new(Point::origin(), mass, unit_i * mass)

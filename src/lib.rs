@@ -70,6 +70,7 @@ pub extern crate nalgebra as na;
 pub extern crate simba;
 
 pub mod bounding_volume;
+pub mod mass_properties;
 pub mod motion;
 pub mod partitioning;
 pub mod query;

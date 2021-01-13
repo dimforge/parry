@@ -3,7 +3,7 @@ use crate::shape::{MassProperties, Triangle};
 use na::Point3;
 
 impl MassProperties {
-    pub(crate) fn from_trimesh(
+    pub fn from_trimesh(
         density: Real,
         vertices: &[Point<Real>],
         indices: &[Point3<u32>],
@@ -33,7 +33,7 @@ impl MassProperties {
     }
 }
 
-fn trimesh_area_and_center_of_mass(
+pub fn trimesh_area_and_center_of_mass(
     vertices: &[Point<Real>],
     indices: &[Point3<u32>],
 ) -> (Real, Point<Real>) {

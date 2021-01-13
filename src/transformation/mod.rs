@@ -14,6 +14,8 @@ pub(crate) mod convex_hull_utils;
 
 #[cfg(feature = "dim3")]
 pub mod vhacd;
+#[cfg(feature = "dim3")]
+pub mod voxelization;
 
 #[cfg(feature = "dim2")]
 mod to_polyline;

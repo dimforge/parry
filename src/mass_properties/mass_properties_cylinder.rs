@@ -1,5 +1,5 @@
+use crate::mass_properties::MassProperties;
 use crate::math::{PrincipalAngularInertia, Real, Vector};
-use crate::shape::MassProperties;
 #[cfg(feature = "dim3")]
 use {
     crate::math::{Point, Rotation},
@@ -29,7 +29,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim3")]
-    pub(crate) fn from_cylinder(density: Real, half_height: Real, radius: Real) -> Self {
+    pub fn from_cylinder(density: Real, half_height: Real, radius: Real) -> Self {
         let (cyl_vol, cyl_unit_i) = Self::cylinder_y_volume_unit_inertia(half_height, radius);
         let cyl_mass = cyl_vol * density;
 

@@ -4,7 +4,7 @@ use crate::math::{Point, Real};
 use crate::shape::{MassProperties, Triangle};
 
 impl MassProperties {
-    pub(crate) fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
+    pub fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
         if area == 0.0 {
@@ -26,7 +26,9 @@ impl MassProperties {
     }
 }
 
-fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Point<Real>]) -> (Real, Point<Real>) {
+pub fn convex_polygon_area_and_center_of_mass(
+    convex_polygon: &[Point<Real>],
+) -> (Real, Point<Real>) {
     let geometric_center = convex_polygon
         .iter()
         .fold(Point::origin(), |e1, e2| e1 + e2.coords)

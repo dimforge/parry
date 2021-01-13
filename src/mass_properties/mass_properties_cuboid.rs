@@ -1,5 +1,5 @@
+use crate::mass_properties::MassProperties;
 use crate::math::{Point, PrincipalAngularInertia, Real, Vector};
-use crate::shape::MassProperties;
 
 impl MassProperties {
     pub(crate) fn cuboid_volume_unit_inertia(
@@ -25,7 +25,7 @@ impl MassProperties {
         }
     }
 
-    pub(crate) fn from_cuboid(density: Real, half_extents: Vector<Real>) -> Self {
+    pub fn from_cuboid(density: Real, half_extents: Vector<Real>) -> Self {
         let (vol, unit_i) = Self::cuboid_volume_unit_inertia(half_extents);
         let mass = vol * density;
         Self::new(Point::origin(), mass, unit_i * mass)
