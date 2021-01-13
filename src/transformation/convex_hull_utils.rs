@@ -68,11 +68,3 @@ pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
 
     (center, diag)
 }
-
-/// Scale and translates the given set of point.
-#[cfg(feature = "dim3")]
-pub fn denormalize(coords: &mut [Point<Real>], center: &Point<Real>, diag: Real) {
-    for c in coords.iter_mut() {
-        *c = *c * diag + center.coords;
-    }
-}

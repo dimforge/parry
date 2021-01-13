@@ -1,8 +1,9 @@
 use crate::math::{Isometry, Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::query::sat;
-use crate::query::sat::support_map_support_map_compute_separation;
-use crate::shape::{Cuboid, SupportMap, Triangle};
+use crate::shape::{Cuboid, Triangle};
+#[cfg(feature = "dim2")]
+use crate::{query::sat::support_map_support_map_compute_separation, shape::SupportMap};
 
 #[cfg(feature = "dim3")]
 pub fn cuboid_triangle_find_local_separating_edge_twoway(

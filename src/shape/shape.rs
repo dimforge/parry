@@ -383,9 +383,9 @@ impl Shape for Triangle {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: Real) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         #[cfg(feature = "dim2")]
-        return MassProperties::from_triangle(density, &self.a, &self.b, &self.c);
+        return MassProperties::from_triangle(_density, &self.a, &self.b, &self.c);
         #[cfg(feature = "dim3")]
         return MassProperties::zero();
     }
@@ -499,9 +499,9 @@ impl Shape for TriMesh {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, density: Real) -> MassProperties {
+    fn mass_properties(&self, _density: Real) -> MassProperties {
         #[cfg(feature = "dim2")]
-        return MassProperties::from_trimesh(density, self.vertices(), self.indices());
+        return MassProperties::from_trimesh(_density, self.vertices(), self.indices());
         #[cfg(feature = "dim3")]
         return MassProperties::zero();
     }

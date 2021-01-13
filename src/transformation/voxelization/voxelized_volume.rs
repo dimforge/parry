@@ -18,11 +18,11 @@
 
 use crate::bounding_volume::AABB;
 use crate::math::Real;
-use crate::na::{Isometry3, SymmetricEigen};
+use crate::na::Isometry3;
 use crate::query;
 use crate::shape::Triangle;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
-use na::{Matrix3, Point3, Vector3};
+use na::{Point3, Vector3};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FillMode {
@@ -234,10 +234,17 @@ impl VoxelizedVolume {
         self.data[idx as usize]
     }
 
-    fn free(&mut self) {
-        self.data = Vec::new();
+    pub fn num_voxels_on_surface(&self) -> u32 {
+        self.num_voxels_on_surface
     }
 
+    pub fn num_voxels_inside_surface(&self) -> u32 {
+        self.num_voxels_inside_surface
+    }
+
+    pub fn num_voxels_outside_surface(&self) -> u32 {
+        self.num_voxels_outside_surface
+    }
     /// Mark all the PrimitiveUndefined voxels within the given bounds as PrimitiveOutsideSurfaceToWalk.
     fn mark_outside_surface(&mut self, i0: u32, j0: u32, k0: u32, i1: u32, j1: u32, k1: u32) {
         for i in i0..i1 {
@@ -296,7 +303,7 @@ impl VoxelizedVolume {
     }
 
     fn fill_outside_surface(&mut self) {
-        let mut voxels_walked = 0;
+        let mut voxels_walked;
         let i0 = self.resolution[0];
         let j0 = self.resolution[1];
         let k0 = self.resolution[2];

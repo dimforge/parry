@@ -17,11 +17,8 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{FillMode, VoxelizedVolume};
-use crate::bounding_volume::AABB;
 use crate::math::Real;
-use crate::na::{Isometry3, SymmetricEigen};
-use crate::query;
-use crate::shape::Triangle;
+use crate::na::Isometry3;
 use crate::transformation::vhacd::CutPlane;
 use na::{Matrix3, Point3, Vector3};
 
@@ -125,8 +122,6 @@ impl VoxelSet {
             self.min_bb_voxels = self.min_bb_voxels.inf(&self.voxels[p].coords);
             self.max_bb_voxels = self.max_bb_voxels.sup(&self.voxels[p].coords);
         }
-
-        let bary = bary.coords.map(|e| e as Real / num_voxels as Real);
     }
 
     pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
@@ -300,7 +295,7 @@ impl VoxelSet {
 
     /// Convert this voxelset into a mesh, including only the voxels on the surface or only the voxel
     /// inside of the volume.
-    fn to_trimesh(
+    pub fn to_trimesh(
         &self,
         base_index: u32,
         is_on_surface: bool,

@@ -5,7 +5,7 @@ use crate::math::Real;
 use crate::shape::Triangle;
 use crate::transformation::{
     self,
-    convex_hull_utils::{denormalize, indexed_support_point_id, normalize, support_point_id},
+    convex_hull_utils::{indexed_support_point_id, normalize, support_point_id},
 };
 use crate::utils;
 use na::{self, Matrix3, Point2, Point3, Vector3};

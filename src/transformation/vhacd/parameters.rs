@@ -1,6 +1,5 @@
 use crate::math::Real;
 use crate::transformation::voxelization::FillMode;
-use na::Point3;
 
 pub struct VHACDParameters {
     pub concavity: Real,

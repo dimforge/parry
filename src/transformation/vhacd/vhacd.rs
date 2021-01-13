@@ -20,7 +20,6 @@ use crate::math::Real;
 use crate::na::Isometry;
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
-use crate::utils;
 use na::{Point3, Vector3};
 
 #[derive(Copy, Clone, Debug)]
@@ -207,13 +206,10 @@ impl VHACD {
         let mut best_plane = planes[0];
         let mut min_concavity = Real::MAX;
         let mut i_best = -1;
-        let mut done = 0;
         let mut min_total = Real::MAX;
-        let mut min_balance = Real::MAX;
-        let mut min_symmetry = Real::MAX;
 
-        let mut left_ch = (Vec::new(), Vec::new());
-        let mut right_ch = (Vec::new(), Vec::new());
+        let mut left_ch;
+        let mut right_ch;
         let mut left_ch_pts = Vec::new();
         let mut right_ch_pts = Vec::new();
         let mut left_pset = VoxelSet::new();
@@ -261,14 +257,10 @@ impl VHACD {
 
             if total < min_total || (total == min_total && (x as i32) < i_best) {
                 min_concavity = concavity;
-                min_balance = balance;
-                min_symmetry = symmetry;
                 best_plane = *plane;
                 min_total = total;
                 i_best = x as i32;
             }
-
-            done += 1;
         }
 
         (best_plane, min_concavity)
@@ -280,7 +272,6 @@ impl VHACD {
         first_iteration: bool,
         parts: &mut Vec<VoxelSet>,
         temp: &mut Vec<VoxelSet>,
-        max_concavity: Real,
         mut pset: VoxelSet,
     ) {
         let volume = pset.compute_volume(); // Compute the volume for this primitive set
@@ -401,15 +392,12 @@ impl VHACD {
                 break;
             }
 
-            let max_concavity = 0.0;
-
             for input_part in input_parts.drain(..) {
                 self.process_primitive_set(
                     params,
                     first_iteration,
                     &mut parts,
                     &mut temp,
-                    max_concavity,
                     input_part,
                 );
                 first_iteration = false;
@@ -434,10 +422,6 @@ impl VHACD {
 
         parts.clear();
     }
-}
-
-fn compute_local_concavity(volume: Real, volume_ch: Real) -> Real {
-    compute_concavity(volume, volume_ch, volume_ch)
 }
 
 fn compute_concavity(volume: Real, volume_ch: Real, volume0: Real) -> Real {
