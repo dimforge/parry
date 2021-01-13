@@ -1,7 +1,8 @@
 #![allow(dead_code)] // TODO: remove this
 
+use crate::mass_properties::MassProperties;
 use crate::math::{Point, Real};
-use crate::shape::{MassProperties, Triangle};
+use crate::shape::Triangle;
 
 impl MassProperties {
     pub fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {

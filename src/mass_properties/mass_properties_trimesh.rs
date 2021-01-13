@@ -1,5 +1,6 @@
+use crate::mass_properties::MassProperties;
 use crate::math::{Point, Real};
-use crate::shape::{MassProperties, Triangle};
+use crate::shape::Triangle;
 use na::Point3;
 
 impl MassProperties {
