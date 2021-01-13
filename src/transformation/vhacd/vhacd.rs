@@ -32,76 +32,48 @@ pub struct CutPlane {
 
 pub struct VHACD {
     // raycast_mesh: Option<RaycastMesh>,
-    convex_hulls: Vec<(Vec<Point3<Real>>, Vec<Point3<u32>>)>,
+    voxel_parts: Vec<VoxelSet>,
     volume_ch0: Real,
-    dim: u32,
-    voxel_resolution: Real, // 1
-    pset: VoxelSet,
     max_concavity: Real,
 }
 
 impl VHACD {
-    pub fn compute(
-        &mut self,
+    pub fn from_trimesh(
+        params: &VHACDParameters,
         points: &[Point3<Real>],
         triangles: &[Point3<u32>],
-        params: &VHACDParameters,
-    ) {
-        self.compute_acd(points, triangles, params)
-    }
-
-    pub fn new() -> Self {
-        Self {
-            // raycast_mesh: None,
-            convex_hulls: Vec::new(),
-            volume_ch0: 0.0,
-            dim: 64,
-            voxel_resolution: 1.0,
-            pset: VoxelSet::new(),
-            max_concavity: -Real::MAX,
-        }
-    }
-
-    pub fn convex_hulls(&self) -> &[(Vec<Point3<Real>>, Vec<Point3<u32>>)] {
-        &self.convex_hulls
-    }
-
-    fn compute_acd(
-        &mut self,
-        points: &[Point3<Real>],
-        triangles: &[Point3<u32>],
-        params: &VHACDParameters,
-    ) {
+    ) -> Self {
         // if params.project_hull_vertices || params.fill_mode == FillMode::RAYCAST_FILL {
         //     self.raycast_mesh =
         //         RaycastMesh::create_raycast_mesh(num_points, points, num_triangles, triangles);
         // }
 
-        self.voxelize_mesh(points, triangles, params);
-        self.do_compute_acd(params);
-        // self.merge_convex_hulls(params);
-        // self.simplify_convex_hulls(params);
-    }
-
-    fn voxelize_mesh(
-        &mut self,
-        points: &[Point3<Real>],
-        triangles: &[Point3<u32>],
-        params: &VHACDParameters,
-    ) {
-        self.dim = params.resolution;
-
-        let volume = VoxelizedVolume::voxelize(
+        let voxelized = VoxelizedVolume::voxelize(
             &Isometry::identity(),
             points,
             triangles,
-            self.dim,
+            params.resolution,
             params.fill_mode,
             // &self.raycast_mesh,
         );
 
-        self.voxel_resolution = volume.scale();
-        self.pset = volume.into();
+        Self::from_voxels(params, voxelized.into())
+    }
+
+    pub fn from_voxels(params: &VHACDParameters, voxels: VoxelSet) -> Self {
+        let mut result = Self {
+            // raycast_mesh: None,
+            voxel_parts: Vec::new(),
+            volume_ch0: 0.0,
+            max_concavity: -Real::MAX,
+        };
+
+        result.do_compute_acd(params, voxels);
+        result
+    }
+
+    pub fn voxel_parts(&self) -> &[VoxelSet] {
+        &self.voxel_parts
     }
 
     // TODO: this should just be a method of VoxelSet.
@@ -193,8 +165,8 @@ impl VHACD {
     // Returns the best plane, and the min concavity.
     fn compute_best_clipping_plane(
         &self,
-        input_pset: &VoxelSet,
-        input_pset_ch: &(Vec<Point3<Real>>, Vec<Point3<u32>>),
+        input_voxels: &VoxelSet,
+        input_voxels_ch: &(Vec<Point3<Real>>, Vec<Point3<u32>>),
         planes: &[CutPlane],
         preferred_cutting_direction: &Vector3<Real>,
         w: Real,
@@ -212,11 +184,11 @@ impl VHACD {
         let mut right_ch;
         let mut left_ch_pts = Vec::new();
         let mut right_ch_pts = Vec::new();
-        let mut left_pset = VoxelSet::new();
-        let mut right_pset = VoxelSet::new();
-        let mut on_surface_pset = VoxelSet::new();
+        let mut left_voxels = VoxelSet::new();
+        let mut right_voxels = VoxelSet::new();
+        let mut on_surface_voxels = VoxelSet::new();
 
-        input_pset.select_on_surface(&mut on_surface_pset);
+        input_voxels.select_on_surface(&mut on_surface_voxels);
 
         for (x, plane) in planes.iter().enumerate() {
             // Compute convex hulls.
@@ -224,27 +196,32 @@ impl VHACD {
                 right_ch_pts.clear();
                 left_ch_pts.clear();
 
-                on_surface_pset.intersect(
+                on_surface_voxels.intersect(
                     plane,
                     &mut right_ch_pts,
                     &mut left_ch_pts,
                     convex_hull_downsampling * 32,
                 );
 
-                clip_mesh(&input_pset_ch.0, plane, &mut right_ch_pts, &mut left_ch_pts);
+                clip_mesh(
+                    &input_voxels_ch.0,
+                    plane,
+                    &mut right_ch_pts,
+                    &mut left_ch_pts,
+                );
                 right_ch = convex_hull(&right_ch_pts);
                 left_ch = convex_hull(&left_ch_pts);
             } else {
-                on_surface_pset.clip(plane, &mut right_pset, &mut left_pset);
-                right_ch = right_pset.compute_convex_hull(convex_hull_downsampling);
-                left_ch = left_pset.compute_convex_hull(convex_hull_downsampling);
+                on_surface_voxels.clip(plane, &mut right_voxels, &mut left_voxels);
+                right_ch = right_voxels.compute_convex_hull(convex_hull_downsampling);
+                left_ch = left_voxels.compute_convex_hull(convex_hull_downsampling);
             }
 
             let volume_left_ch = compute_volume(&left_ch);
             let volume_right_ch = compute_volume(&right_ch);
 
             // compute clipped volumes
-            let (volume_left, volume_right) = input_pset.compute_clipped_volumes(plane);
+            let (volume_left, volume_right) = input_voxels.compute_clipped_volumes(plane);
             let concavity_left = compute_concavity(volume_left, volume_left_ch, self.volume_ch0);
             let concavity_right = compute_concavity(volume_right, volume_right_ch, self.volume_ch0);
             let concavity = concavity_left + concavity_right;
@@ -272,14 +249,14 @@ impl VHACD {
         first_iteration: bool,
         parts: &mut Vec<VoxelSet>,
         temp: &mut Vec<VoxelSet>,
-        mut pset: VoxelSet,
+        mut voxels: VoxelSet,
     ) {
-        let volume = pset.compute_volume(); // Compute the volume for this primitive set
-        pset.compute_bb(); // Compute the bounding box for this primitive set.
-        let pset_convex_hull = pset.compute_convex_hull(params.convex_hull_downsampling); // Generate the convex hull for this primitive set.
+        let volume = voxels.compute_volume(); // Compute the volume for this primitive set
+        voxels.compute_bb(); // Compute the bounding box for this primitive set.
+        let voxels_convex_hull = voxels.compute_convex_hull(params.convex_hull_downsampling); // Generate the convex hull for this primitive set.
 
         // Compute the volume of the convex hull
-        let volume_ch = compute_volume(&pset_convex_hull);
+        let volume_ch = compute_volume(&voxels_convex_hull);
 
         // If this is the first iteration, store the volume of the base
         if first_iteration {
@@ -291,20 +268,20 @@ impl VHACD {
 
         // Compute the volume error.
         if concavity > params.concavity {
-            let eigenvalues = pset.compute_principal_axes();
+            let eigenvalues = voxels.compute_principal_axes();
             let (preferred_cutting_direction, w) =
                 Self::compute_preferred_cutting_direction(&eigenvalues);
 
             let mut planes = Vec::new();
             Self::compute_axes_aligned_clipping_planes(
-                &pset,
+                &voxels,
                 params.plane_downsampling,
                 &mut planes,
             );
 
             let (mut best_plane, mut min_concavity) = self.compute_best_clipping_plane(
-                &pset,
-                &pset_convex_hull,
+                &voxels,
+                &voxels_convex_hull,
                 &planes,
                 &preferred_cutting_direction,
                 w,
@@ -318,15 +295,15 @@ impl VHACD {
                 let mut planes_ref = Vec::new();
 
                 Self::refine_axes_aligned_clipping_planes(
-                    &pset,
+                    &voxels,
                     &best_plane,
                     params.plane_downsampling,
                     &mut planes_ref,
                 );
 
                 let best = self.compute_best_clipping_plane(
-                    &pset,
-                    &pset_convex_hull,
+                    &voxels,
+                    &voxels_convex_hull,
                     &planes_ref,
                     &preferred_cutting_direction,
                     w,
@@ -347,20 +324,20 @@ impl VHACD {
             let mut best_left = VoxelSet::new();
             let mut best_right = VoxelSet::new();
 
-            pset.clip(&best_plane, &mut best_right, &mut best_left);
+            voxels.clip(&best_plane, &mut best_right, &mut best_left);
 
             temp.push(best_left);
             temp.push(best_right);
         } else {
-            parts.push(pset);
+            parts.push(voxels);
         }
     }
 
-    fn do_compute_acd(&mut self, params: &VHACDParameters) {
+    fn do_compute_acd(&mut self, params: &VHACDParameters, mut voxels: VoxelSet) {
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();
-        input_parts.push(std::mem::replace(&mut self.pset, VoxelSet::new()));
+        input_parts.push(std::mem::replace(&mut voxels, VoxelSet::new()));
 
         let mut first_iteration = true;
         self.volume_ch0 = 1.0;
@@ -412,15 +389,18 @@ impl VHACD {
         }
 
         parts.append(&mut input_parts);
+        self.voxel_parts = parts;
+    }
 
-        self.convex_hulls.clear();
-
-        for part in &parts {
-            let mesh = part.compute_convex_hull(params.convex_hull_downsampling);
-            self.convex_hulls.push(mesh);
-        }
-
-        parts.clear();
+    pub fn compute_convex_hulls(
+        &self,
+        downsampling: u32,
+    ) -> Vec<(Vec<Point3<Real>>, Vec<Point3<u32>>)> {
+        let downsampling = downsampling.max(1);
+        self.voxel_parts
+            .iter()
+            .map(|part| part.compute_convex_hull(downsampling))
+            .collect()
     }
 }
 
