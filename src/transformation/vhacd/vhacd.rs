@@ -114,15 +114,13 @@ impl VHACD {
     }
 
     // TODO: this should just be a method of VoxelSet.
-    fn compute_preferred_cutting_direction(tset: &VoxelSet) -> (Vector3<Real>, Real) {
-        let eigv = tset.eigenvalues();
-
-        let vx = (eigv.y - eigv.z) * (eigv.y - eigv.z);
-        let vy = (eigv.x - eigv.z) * (eigv.x - eigv.z);
-        let vz = (eigv.x - eigv.y) * (eigv.x - eigv.y);
+    fn compute_preferred_cutting_direction(eigenvalues: &Vector3<Real>) -> (Vector3<Real>, Real) {
+        let vx = (eigenvalues.y - eigenvalues.z) * (eigenvalues.y - eigenvalues.z);
+        let vy = (eigenvalues.x - eigenvalues.z) * (eigenvalues.x - eigenvalues.z);
+        let vz = (eigenvalues.x - eigenvalues.y) * (eigenvalues.x - eigenvalues.y);
 
         if vx < vy && vx < vz {
-            let e = eigv.y * eigv.y + eigv.z * eigv.z;
+            let e = eigenvalues.y * eigenvalues.y + eigenvalues.z * eigenvalues.z;
             let dir = Vector3::x();
 
             if e == 0.0 {
@@ -131,7 +129,7 @@ impl VHACD {
                 (dir, 1.0 - vx / e)
             }
         } else if vy < vx && vy < vz {
-            let e = eigv.x * eigv.x + eigv.z * eigv.z;
+            let e = eigenvalues.x * eigenvalues.x + eigenvalues.z * eigenvalues.z;
             let dir = Vector3::y();
 
             if e == 0.0 {
@@ -140,7 +138,7 @@ impl VHACD {
                 (dir, 1.0 - vy / e)
             }
         } else {
-            let e = eigv.x * eigv.x + eigv.y * eigv.y;
+            let e = eigenvalues.x * eigenvalues.x + eigenvalues.y * eigenvalues.y;
             let dir = Vector3::z();
 
             if e == 0.0 {
@@ -168,7 +166,7 @@ impl VHACD {
                 let plane = Plane {
                     abc: Vector3::ith(dim, 1.0),
                     axis: Axis::try_from(dim).unwrap(),
-                    d: -(vset.min_bb[dim] + (i as Real + 0.5) * vset.scale),
+                    d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
                     index: i,
                 };
 
@@ -194,7 +192,7 @@ impl VHACD {
             let plane = Plane {
                 abc: Vector3::ith(best_id, 1.0),
                 axis: best_plane.axis,
-                d: -(vset.min_bb[best_id] + (i as Real + 0.5) * vset.scale),
+                d: -(vset.origin[best_id] + (i as Real + 0.5) * vset.scale),
                 index: i,
             };
             planes.push(plane);
@@ -295,7 +293,6 @@ impl VHACD {
     ) {
         let volume = pset.compute_volume(); // Compute the volume for this primitive set
         pset.compute_bb(); // Compute the bounding box for this primitive set.
-        pset.compute_principal_axes(); // Compute the principle axes.
         let pset_convex_hull = pset.compute_convex_hull(params.convex_hull_downsampling); // Generate the convex hull for this primitive set.
 
         // Compute the volume of the convex hull
@@ -311,7 +308,9 @@ impl VHACD {
 
         // Compute the volume error.
         if concavity > params.concavity {
-            let (preferred_cutting_direction, w) = Self::compute_preferred_cutting_direction(&pset);
+            let eigenvalues = pset.compute_principal_axes();
+            let (preferred_cutting_direction, w) =
+                Self::compute_preferred_cutting_direction(&eigenvalues);
 
             let mut planes = Vec::new();
             Self::compute_axes_aligned_clipping_planes(

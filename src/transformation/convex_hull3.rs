@@ -10,20 +10,6 @@ use crate::transformation::{
 use crate::utils;
 use na::{self, Matrix3, Point2, Point3, Vector3};
 
-/// Computes the convariance matrix of a set of points.
-fn cov(pts: &[Point3<Real>]) -> Matrix3<Real> {
-    let center = utils::center(pts);
-    let mut cov: Matrix3<Real> = na::zero();
-    let normalizer: Real = 1.0 / (pts.len() as Real);
-
-    for p in pts.iter() {
-        let cp = *p - center;
-        cov = cov + cp * (cp * normalizer).transpose();
-    }
-
-    cov
-}
-
 /// Computes the convex hull of a set of 3d points.
 pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
     if points.is_empty() {
@@ -182,7 +168,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
 
     #[cfg(not(feature = "improved_fixed_point_support"))]
     {
-        cov_mat = cov(points);
+        cov_mat = crate::utils::cov(points);
         let eig = cov_mat.symmetric_eigen();
         eigvec = eig.eigenvectors;
         eigval = eig.eigenvalues;
@@ -192,7 +178,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
     {
         cov_mat = Matrix3::identity();
         eigvec = Matrix3::identity();
-        eigval = Vector3::repeat(na::one::<Real>());
+        eigval = Vector3::repeat(1.0);
     }
 
     let mut eigpairs = [

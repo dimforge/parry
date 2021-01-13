@@ -18,6 +18,7 @@ pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
 pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
+pub use self::cov::cov;
 pub use self::hashable_partial_eq::HashablePartialEq;
 pub(crate) use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
@@ -30,6 +31,7 @@ mod center;
 #[cfg(feature = "dim3")]
 mod cleanup;
 mod consts;
+mod cov;
 mod deterministic_state;
 mod hashable_partial_eq;
 pub mod hashmap;

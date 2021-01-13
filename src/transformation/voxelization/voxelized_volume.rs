@@ -41,13 +41,12 @@ pub enum VoxelValue {
 }
 
 pub struct VoxelizedVolume {
-    dim: Point3<u32>,
-    min_bb: Point3<Real>,
-    max_bb: Point3<Real>,
+    origin: Point3<Real>,
+    scale: Real,
+    resolution: Point3<u32>,
     num_voxels_on_surface: u32,
     num_voxels_inside_surface: u32,
     num_voxels_outside_surface: u32,
-    scale: Real,
     data: Vec<VoxelValue>,
 }
 
@@ -56,13 +55,12 @@ impl VoxelizedVolume {
         transform: &Isometry3<Real>,
         points: &[Point3<Real>],
         triangles: &[Point3<u32>],
-        dim: u32,
+        resolution: u32,
         fill_mode: FillMode,
     ) -> Self {
         let mut result = VoxelizedVolume {
-            dim: Point3::origin(),
-            min_bb: Point3::origin(),
-            max_bb: Point3::new(1.0, 1.0, 1.0),
+            resolution: Point3::origin(),
+            origin: Point3::origin(),
             num_voxels_on_surface: 0,
             num_voxels_inside_surface: 0,
             num_voxels_outside_surface: 0,
@@ -75,31 +73,30 @@ impl VoxelizedVolume {
         }
 
         let aabb = crate::bounding_volume::point_cloud_aabb(transform, points);
-        result.min_bb = aabb.mins;
-        result.max_bb = aabb.maxs;
+        result.origin = aabb.mins;
 
-        let d = result.max_bb - result.min_bb;
+        let d = aabb.maxs - aabb.mins;
         let r;
 
         if d[0] > d[1] && d[0] > d[2] {
             r = d[0];
-            result.dim[0] = dim;
-            result.dim[1] = 2 + (dim as Real * d[1] / d[0]) as u32;
-            result.dim[2] = 2 + (dim as Real * d[2] / d[0]) as u32;
+            result.resolution[0] = resolution;
+            result.resolution[1] = 2 + (resolution as Real * d[1] / d[0]) as u32;
+            result.resolution[2] = 2 + (resolution as Real * d[2] / d[0]) as u32;
         } else if d[1] > d[0] && d[1] > d[2] {
             r = d[1];
-            result.dim[1] = dim;
-            result.dim[0] = 2 + (dim as Real * d[0] / d[1]) as u32;
-            result.dim[2] = 2 + (dim as Real * d[2] / d[1]) as u32;
+            result.resolution[1] = resolution;
+            result.resolution[0] = 2 + (resolution as Real * d[0] / d[1]) as u32;
+            result.resolution[2] = 2 + (resolution as Real * d[2] / d[1]) as u32;
         } else {
             r = d[2];
-            result.dim[2] = dim;
-            result.dim[0] = 2 + (dim as Real * d[0] / d[2]) as u32;
-            result.dim[1] = 2 + (dim as Real * d[1] / d[2]) as u32;
+            result.resolution[2] = resolution;
+            result.resolution[0] = 2 + (resolution as Real * d[0] / d[2]) as u32;
+            result.resolution[1] = 2 + (resolution as Real * d[1] / d[2]) as u32;
         }
 
-        result.scale = r / (dim as Real - 1.0);
-        let inv_scale = (dim as Real - 1.0) / r;
+        result.scale = r / (resolution as Real - 1.0);
+        let inv_scale = (resolution as Real - 1.0) / r;
         result.allocate();
 
         result.num_voxels_on_surface = 0;
@@ -120,13 +117,17 @@ impl VoxelizedVolume {
             // Find the range of voxels potentially intersecting the triangle.
             for c in 0..3 {
                 let pt = transform * points[tri[c] as usize];
-                tri_pts[c] = (pt - result.min_bb.coords) * inv_scale;
+                tri_pts[c] = (pt - result.origin.coords) * inv_scale;
 
                 let i = (tri_pts[c].x + 0.5) as u32;
                 let j = (tri_pts[c].y + 0.5) as u32;
                 let k = (tri_pts[c].z + 0.5) as u32;
 
-                assert!(i < result.dim[0] && j < result.dim[1] && k < result.dim[2]);
+                assert!(
+                    i < result.resolution[0]
+                        && j < result.resolution[1]
+                        && k < result.resolution[2]
+                );
 
                 if c == 0 {
                     i0 = i;
@@ -169,15 +170,15 @@ impl VoxelizedVolume {
                 k0 -= 1;
             }
 
-            if i1 < result.dim.x {
+            if i1 < result.resolution.x {
                 i1 += 1;
             }
 
-            if j1 < result.dim.y {
+            if j1 < result.resolution.y {
                 j1 += 1;
             }
 
-            if k1 < result.dim.z {
+            if k1 < result.resolution.z {
                 k1 += 1;
             }
 
@@ -213,32 +214,32 @@ impl VoxelizedVolume {
                 }
             }
             FillMode::FloodFill => {
-                result.mark_outside_surface(0, 0, 0, result.dim[0], result.dim[1], 1);
+                result.mark_outside_surface(0, 0, 0, result.resolution[0], result.resolution[1], 1);
                 result.mark_outside_surface(
                     0,
                     0,
-                    result.dim[2] - 1,
-                    result.dim[0],
-                    result.dim[1],
-                    result.dim[2],
+                    result.resolution[2] - 1,
+                    result.resolution[0],
+                    result.resolution[1],
+                    result.resolution[2],
                 );
-                result.mark_outside_surface(0, 0, 0, result.dim[0], 1, result.dim[2]);
+                result.mark_outside_surface(0, 0, 0, result.resolution[0], 1, result.resolution[2]);
                 result.mark_outside_surface(
                     0,
-                    result.dim[1] - 1,
+                    result.resolution[1] - 1,
                     0,
-                    result.dim[0],
-                    result.dim[1],
-                    result.dim[2],
+                    result.resolution[0],
+                    result.resolution[1],
+                    result.resolution[2],
                 );
-                result.mark_outside_surface(0, 0, 0, 1, result.dim[1], result.dim[2]);
+                result.mark_outside_surface(0, 0, 0, 1, result.resolution[1], result.resolution[2]);
                 result.mark_outside_surface(
-                    result.dim[0] - 1,
+                    result.resolution[0] - 1,
                     0,
                     0,
-                    result.dim[0],
-                    result.dim[1],
-                    result.dim[2],
+                    result.resolution[0],
+                    result.resolution[1],
+                    result.resolution[2],
                 );
                 result.fill_outside_surface();
                 result.fill_inside_surface();
@@ -249,7 +250,7 @@ impl VoxelizedVolume {
     }
 
     pub fn resolution(&self) -> Point3<u32> {
-        self.dim
+        self.resolution
     }
 
     pub fn scale(&self) -> Real {
@@ -257,13 +258,13 @@ impl VoxelizedVolume {
     }
 
     fn allocate(&mut self) {
-        let len = self.dim[0] * self.dim[1] * self.dim[2];
+        let len = self.resolution[0] * self.resolution[1] * self.resolution[2];
         self.data
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
     }
 
     fn voxel_index(&self, i: u32, j: u32, k: u32) -> u32 {
-        i + j * self.dim[0] + k * self.dim[0] * self.dim[1]
+        i + j * self.resolution[0] + k * self.resolution[0] * self.resolution[1]
     }
 
     fn voxel_mut(&mut self, i: u32, j: u32, k: u32) -> &mut VoxelValue {
@@ -339,9 +340,9 @@ impl VoxelizedVolume {
 
     fn fill_outside_surface(&mut self) {
         let mut voxels_walked = 0;
-        let i0 = self.dim[0];
-        let j0 = self.dim[1];
-        let k0 = self.dim[2];
+        let i0 = self.resolution[0];
+        let j0 = self.resolution[1];
+        let k0 = self.resolution[2];
 
         // Avoid striding too far in each direction to stay in L1 cache as much as possible.
         // The cache size required for the walk is roughly (4 * walk_distance * 64) since
@@ -441,9 +442,9 @@ impl VoxelizedVolume {
     }
 
     fn fill_inside_surface(&mut self) {
-        for i in 0..self.dim.x {
-            for j in 0..self.dim.y {
-                for k in 0..self.dim.z {
+        for i in 0..self.resolution.x {
+            for j in 0..self.resolution.y {
+                for k in 0..self.resolution.z {
                     let v = self.voxel_mut(i, j, k);
                     if *v == VoxelValue::PrimitiveUndefined {
                         *v = VoxelValue::PrimitiveInsideSurface;
@@ -458,9 +459,9 @@ impl VoxelizedVolume {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
-        let i0 = self.dim[0];
-        let j0 = self.dim[1];
-        let k0 = self.dim[2];
+        let i0 = self.resolution[0];
+        let j0 = self.resolution[1];
+        let k0 = self.resolution[2];
 
         for i in 0..i0 {
             for j in 0..j0 {
@@ -515,14 +516,14 @@ impl VoxelizedVolume {
 
                         let s = vertices.len() as u32;
 
-                        vertices.push(self.min_bb + p0);
-                        vertices.push(self.min_bb + p1);
-                        vertices.push(self.min_bb + p2);
-                        vertices.push(self.min_bb + p3);
-                        vertices.push(self.min_bb + p4);
-                        vertices.push(self.min_bb + p5);
-                        vertices.push(self.min_bb + p6);
-                        vertices.push(self.min_bb + p7);
+                        vertices.push(self.origin + p0);
+                        vertices.push(self.origin + p1);
+                        vertices.push(self.origin + p2);
+                        vertices.push(self.origin + p3);
+                        vertices.push(self.origin + p4);
+                        vertices.push(self.origin + p5);
+                        vertices.push(self.origin + p6);
+                        vertices.push(self.origin + p7);
 
                         indices.push(Point3::new(s + 0, s + 2, s + 1));
                         indices.push(Point3::new(s + 0, s + 3, s + 2));
@@ -548,33 +549,28 @@ impl VoxelizedVolume {
 impl Into<VoxelSet> for VoxelizedVolume {
     fn into(self) -> VoxelSet {
         let mut vset = VoxelSet::new();
-        vset.min_bb = self.min_bb;
+        vset.origin = self.origin;
         vset.voxels
             .reserve((self.num_voxels_inside_surface + self.num_voxels_on_surface) as usize);
         vset.scale = self.scale;
-        vset.unit_volume = self.scale * self.scale * self.scale;
-        vset.num_voxels_on_surface = 0;
-        vset.num_voxels_inside_surface = 0;
 
-        for i in 0..self.dim.x {
-            for j in 0..self.dim.y {
-                for k in 0..self.dim.z {
+        for i in 0..self.resolution.x {
+            for j in 0..self.resolution.y {
+                for k in 0..self.resolution.z {
                     let value = self.voxel(i, j, k);
 
                     if value == VoxelValue::PrimitiveInsideSurface {
                         let voxel = Voxel {
                             coords: Point3::new(i, j, k),
-                            data: VoxelValue::PrimitiveInsideSurface,
+                            is_on_surface: false,
                         };
                         vset.voxels.push(voxel);
-                        vset.num_voxels_inside_surface += 1;
                     } else if value == VoxelValue::PrimitiveOnSurface {
                         let voxel = Voxel {
                             coords: Point3::new(i, j, k),
-                            data: VoxelValue::PrimitiveOnSurface,
+                            is_on_surface: true,
                         };
                         vset.voxels.push(voxel);
-                        vset.num_voxels_on_surface += 1;
                     }
                 }
             }
@@ -618,9 +614,9 @@ if !raycast_mesh {
 let scale = volume.scale;
 let bmin = volume.min_bb;
 
-let i0 = volume.dim[0];
-let j0 = volume.dim[1];
-let k0 = volume.dim[2];
+let i0 = volume.resolution[0];
+let j0 = volume.resolution[1];
+let k0 = volume.resolution[2];
 
 for i in 0..i0 {
     for j in 0..j0 {
