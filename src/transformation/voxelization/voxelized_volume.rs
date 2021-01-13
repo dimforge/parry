@@ -106,12 +106,8 @@ impl VoxelizedVolume {
 
         let mut tri_pts = [Point3::origin(); 3];
         let box_half_size = Vector3::repeat(0.5);
-        let mut i0 = 0;
-        let mut i1 = 0;
-        let mut j0 = 0;
-        let mut j1 = 0;
-        let mut k0 = 0;
-        let mut k1 = 0;
+        let mut ijk0 = Vector3::new(0u32, 0, 0);
+        let mut ijk1 = Vector3::new(0u32, 0, 0);
 
         for tri in triangles {
             // Find the range of voxels potentially intersecting the triangle.
@@ -129,63 +125,24 @@ impl VoxelizedVolume {
                         && k < result.resolution[2]
                 );
 
+                let ijk = Vector3::new(i, j, k);
+
                 if c == 0 {
-                    i0 = i;
-                    i1 = i;
-                    j0 = j;
-                    j1 = j;
-                    k0 = k;
-                    k1 = k;
+                    ijk0 = ijk;
+                    ijk1 = ijk;
                 } else {
-                    if i < i0 {
-                        i0 = i;
-                    }
-                    if j < j0 {
-                        j0 = j;
-                    }
-                    if k < k0 {
-                        k0 = k;
-                    }
-                    if i > i1 {
-                        i1 = i;
-                    }
-                    if j > j1 {
-                        j1 = j;
-                    }
-                    if k > k1 {
-                        k1 = k;
-                    }
+                    ijk0 = ijk0.inf(&ijk);
+                    ijk1 = ijk1.sup(&ijk);
                 }
             }
 
-            if i0 > 0 {
-                i0 -= 1;
-            }
-
-            if j0 > 0 {
-                j0 -= 1;
-            }
-
-            if k0 > 0 {
-                k0 -= 1;
-            }
-
-            if i1 < result.resolution.x {
-                i1 += 1;
-            }
-
-            if j1 < result.resolution.y {
-                j1 += 1;
-            }
-
-            if k1 < result.resolution.z {
-                k1 += 1;
-            }
+            ijk0.apply(|e| e.saturating_sub(1));
+            ijk1 = ijk1.map(|e| e + 1).inf(&result.resolution.coords);
 
             // Determine exactly what voxel intersect the triangle.
-            for i in i0..i1 {
-                for j in j0..j1 {
-                    for k in k0..k1 {
+            for i in ijk0.x..ijk1.x {
+                for j in ijk0.y..ijk1.y {
+                    for k in ijk0.z..ijk1.z {
                         let value = result.voxel_mut(i, j, k);
 
                         if *value == VoxelValue::PrimitiveUndefined {
@@ -459,72 +416,30 @@ impl VoxelizedVolume {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
-        let i0 = self.resolution[0];
-        let j0 = self.resolution[1];
-        let k0 = self.resolution[2];
-
-        for i in 0..i0 {
-            for j in 0..j0 {
-                for k in 0..k0 {
+        for i in 0..self.resolution.x {
+            for j in 0..self.resolution.y {
+                for k in 0..self.resolution.z {
                     let voxel = self.voxel(i, j, k);
 
                     if voxel == value {
-                        let i = i as Real;
-                        let j = j as Real;
-                        let k = k as Real;
+                        let ijk = Vector3::new(i as Real, j as Real, k as Real);
 
-                        let p0 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p1 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p2 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p3 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k - 0.5) * self.scale,
-                        );
-                        let p4 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p5 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j - 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p6 = Vector3::new(
-                            (i + 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
-                        let p7 = Vector3::new(
-                            (i - 0.5) * self.scale,
-                            (j + 0.5) * self.scale,
-                            (k + 0.5) * self.scale,
-                        );
+                        let shifts = [
+                            Vector3::new(-0.5, -0.5, -0.5),
+                            Vector3::new(0.5, -0.5, -0.5),
+                            Vector3::new(0.5, 0.5, -0.5),
+                            Vector3::new(-0.5, 0.5, -0.5),
+                            Vector3::new(-0.5, -0.5, 0.5),
+                            Vector3::new(0.5, -0.5, 0.5),
+                            Vector3::new(0.5, 0.5, 0.5),
+                            Vector3::new(-0.5, 0.5, 0.5),
+                        ];
+
+                        for shift in &shifts {
+                            vertices.push(self.origin + (ijk + shift) * self.scale);
+                        }
 
                         let s = vertices.len() as u32;
-
-                        vertices.push(self.origin + p0);
-                        vertices.push(self.origin + p1);
-                        vertices.push(self.origin + p2);
-                        vertices.push(self.origin + p3);
-                        vertices.push(self.origin + p4);
-                        vertices.push(self.origin + p5);
-                        vertices.push(self.origin + p6);
-                        vertices.push(self.origin + p7);
-
                         indices.push(Point3::new(s + 0, s + 2, s + 1));
                         indices.push(Point3::new(s + 0, s + 3, s + 2));
                         indices.push(Point3::new(s + 4, s + 5, s + 6));
