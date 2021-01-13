@@ -16,9 +16,8 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
         return (Vec::new(), Vec::new());
     }
 
-    let mut points = points.to_vec();
-
-    let (norm_center, norm_diag) = normalize(&mut points[..]);
+    let mut normalized_points = points.to_vec();
+    let _ = normalize(&mut normalized_points[..]);
 
     let mut undecidable_points = Vec::new();
     let mut horizon_loop_facets = Vec::new();
@@ -26,15 +25,12 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
     let mut removed_facets = Vec::new();
 
     let mut triangles;
-    let denormalizer;
 
-    match get_initial_mesh(&mut points[..], &mut undecidable_points) {
-        InitialMesh::Facets(facets, denorm) => {
+    match get_initial_mesh(points, &mut normalized_points[..], &mut undecidable_points) {
+        InitialMesh::Facets(facets) => {
             triangles = facets;
-            denormalizer = denorm;
         }
-        InitialMesh::ResultMesh(mut vertices, indices) => {
-            denormalize(&mut vertices, &norm_center, norm_diag);
+        InitialMesh::ResultMesh(vertices, indices) => {
             return (vertices, indices);
         }
     }
@@ -52,7 +48,7 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
         // FIXME: use triangles[i].furthest_point instead.
         let pt_id = indexed_support_point_id(
             &triangles[i].normal,
-            &points[..],
+            &normalized_points[..],
             &triangles[i].visible_points[..],
         );
 
@@ -69,7 +65,7 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
                     point,
                     &mut horizon_loop_facets,
                     &mut horizon_loop_ids,
-                    &points[..],
+                    &normalized_points[..],
                     &mut removed_facets,
                     &mut triangles[..],
                 );
@@ -98,7 +94,7 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
                 &horizon_loop_facets[..],
                 &horizon_loop_ids[..],
                 point,
-                &points[..],
+                &normalized_points[..],
                 &mut triangles,
                 &removed_facets[..],
                 &mut undecidable_points,
@@ -120,21 +116,16 @@ pub fn convex_hull3(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u
         }
     }
 
+    let mut points = points.to_vec();
     utils::remove_unused_points(&mut points, &mut idx[..]);
 
     assert!(points.len() != 0, "Internal error: empty output mesh.");
-
-    for point in points.iter_mut() {
-        *point = denormalizer * *point;
-    }
-
-    denormalize(&mut points[..], &norm_center, norm_diag);
 
     (points, idx)
 }
 
 enum InitialMesh {
-    Facets(Vec<TriangleFacet>, Matrix3<Real>),
+    Facets(Vec<TriangleFacet>),
     ResultMesh(Vec<Point3<Real>>, Vec<Point3<u32>>),
 }
 
@@ -158,7 +149,11 @@ fn build_degenerate_mesh_segment(
     (vec![a, b], vec![ta, tb])
 }
 
-fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -> InitialMesh {
+fn get_initial_mesh(
+    original_points: &[Point3<Real>],
+    normalized_points: &mut [Point3<Real>],
+    undecidable: &mut Vec<usize>,
+) -> InitialMesh {
     /*
      * Compute the eigenvectors to see if the input data live on a subspace.
      */
@@ -168,7 +163,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
 
     #[cfg(not(feature = "improved_fixed_point_support"))]
     {
-        cov_mat = crate::utils::cov(points);
+        cov_mat = crate::utils::cov(normalized_points);
         let eig = cov_mat.symmetric_eigen();
         eigvec = eig.eigenvectors;
         eigval = eig.eigenvalues;
@@ -205,11 +200,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
      */
     let mut dimension = 0;
     while dimension < 3 {
-        if relative_eq!(
-            eigpairs[dimension].1,
-            na::zero::<Real>(),
-            epsilon = na::convert::<f64, Real>(1.0e-7f64)
-        ) {
+        if relative_eq!(eigpairs[dimension].1, 0.0, epsilon = 1.0e-7) {
             break;
         }
 
@@ -219,12 +210,12 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
     match dimension {
         0 => {
             // The hull is a point.
-            let (vtx, idx) = build_degenerate_mesh_point(points[0].clone());
+            let (vtx, idx) = build_degenerate_mesh_point(original_points[0].clone());
             InitialMesh::ResultMesh(vtx, idx)
         }
         1 => {
             // The hull is a segment.
-            let (vtx, idx) = build_degenerate_mesh_segment(&eigpairs[0].0, points);
+            let (vtx, idx) = build_degenerate_mesh_segment(&eigpairs[0].0, original_points);
             InitialMesh::ResultMesh(vtx, idx)
         }
         2 => {
@@ -233,9 +224,9 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
             let axis1 = &eigpairs[0].0;
             let axis2 = &eigpairs[1].0;
 
-            let mut subspace_points = Vec::with_capacity(points.len());
+            let mut subspace_points = Vec::with_capacity(normalized_points.len());
 
-            for point in points.iter() {
+            for point in normalized_points.iter() {
                 subspace_points.push(Point2::new(
                     point.coords.dot(axis1),
                     point.coords.dot(axis2),
@@ -247,7 +238,10 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
 
             // Finalize the result, triangulating the polyline.
             let npoints = idx.len();
-            let coords = idx.into_iter().map(|i| points[i].clone()).collect();
+            let coords = idx
+                .into_iter()
+                .map(|i| original_points[i].clone())
+                .collect();
             let mut triangles = Vec::with_capacity(npoints + npoints - 4);
 
             let a = 0u32;
@@ -262,23 +256,23 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
         3 => {
             // The hull is a polyhedron.
             // Find a initial triangle lying on the principal halfspace…
-            let _1: Real = na::one::<Real>();
-            let diag = Vector3::new(_1 / eigval[0], _1 / eigval[1], _1 / eigval[2]);
+            let diag = eigval.map(|e| 1.0 / e);
             let diag = Matrix3::from_diagonal(&diag);
             let icov = eigvec * diag * eigvec.transpose();
 
-            for point in points.iter_mut() {
+            for point in normalized_points.iter_mut() {
                 *point = Point3::origin() + icov * point.coords;
             }
 
-            let p1 = support_point_id(&eigpairs[0].0, points).unwrap();
-            let p2 = support_point_id(&-eigpairs[0].0, points).unwrap();
+            let p1 = support_point_id(&eigpairs[0].0, normalized_points).unwrap();
+            let p2 = support_point_id(&-eigpairs[0].0, normalized_points).unwrap();
 
-            let mut max_area = na::zero::<Real>();
+            let mut max_area = 0.0;
             let mut p3 = usize::max_value();
 
-            for (i, point) in points.iter().enumerate() {
-                let area = Triangle::new(points[p1], points[p2], *point).area();
+            for (i, point) in normalized_points.iter().enumerate() {
+                let area =
+                    Triangle::new(normalized_points[p1], normalized_points[p2], *point).area();
 
                 if area > max_area {
                     max_area = area;
@@ -292,8 +286,8 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
             );
 
             // Build two facets with opposite normals
-            let mut f1 = TriangleFacet::new(p1, p2, p3, points);
-            let mut f2 = TriangleFacet::new(p2, p1, p3, points);
+            let mut f1 = TriangleFacet::new(p1, p2, p3, normalized_points);
+            let mut f2 = TriangleFacet::new(p2, p1, p3, normalized_points);
 
             // Link the facets together
             f1.set_facets_adjascency(1, 1, 1, 0, 2, 1);
@@ -304,17 +298,17 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
             // … and attribute visible points to each one of them.
             // FIXME: refactor this with the two others.
             let mut ignored = 0usize;
-            for point in 0..points.len() {
+            for point in 0..normalized_points.len() {
                 if point == p1 || point == p2 || point == p3 {
                     continue;
                 }
 
                 let mut furthest = usize::max_value();
-                let mut furthest_dist = na::zero::<Real>();
+                let mut furthest_dist = 0.0;
 
                 for (i, curr_facet) in facets.iter().enumerate() {
-                    if curr_facet.can_be_seen_by(point, points) {
-                        let distance = curr_facet.distance_to_point(point, points);
+                    if curr_facet.can_be_seen_by(point, normalized_points) {
+                        let distance = curr_facet.distance_to_point(point, normalized_points);
 
                         if distance > furthest_dist {
                             furthest = i;
@@ -324,7 +318,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
                 }
 
                 if furthest != usize::max_value() {
-                    facets[furthest].add_visible_point(point, points);
+                    facets[furthest].add_visible_point(point, normalized_points);
                 } else {
                     undecidable.push(point);
                     ignored = ignored + 1;
@@ -336,7 +330,7 @@ fn get_initial_mesh(points: &mut [Point3<Real>], undecidable: &mut Vec<usize>) -
             verify_facet_links(0, &facets[..]);
             verify_facet_links(1, &facets[..]);
 
-            InitialMesh::Facets(facets, cov_mat)
+            InitialMesh::Facets(facets)
         }
         _ => unreachable!(),
     }
@@ -461,7 +455,7 @@ fn attach_and_push_facets3(
             }
 
             let mut furthest = usize::max_value();
-            let mut furthest_dist = na::zero::<Real>();
+            let mut furthest_dist = 0.0;
 
             for (i, curr_facet) in new_facets.iter_mut().enumerate() {
                 if curr_facet.can_be_seen_by(*visible_point, points) {
@@ -487,7 +481,7 @@ fn attach_and_push_facets3(
 
     while i != undecidable.len() {
         let mut furthest = usize::max_value();
-        let mut furthest_dist = na::zero::<Real>();
+        let mut furthest_dist = 0.0;
         let undecidable_point = undecidable[i];
 
         for (j, curr_facet) in new_facets.iter_mut().enumerate() {
@@ -545,7 +539,7 @@ impl TriangleFacet {
             pts: [p1, p2, p3],
             visible_points: Vec::new(),
             furthest_point: Bounded::max_value(),
-            furthest_distance: na::zero::<Real>(),
+            furthest_distance: 0.0,
         }
     }
 
@@ -598,7 +592,7 @@ impl TriangleFacet {
 
         let _eps = crate::math::DEFAULT_EPSILON;
 
-        (pt - p0).dot(&self.normal) > _eps * na::convert::<f64, Real>(100.0f64)
+        (pt - p0).dot(&self.normal) > _eps * 100.0
             && !Triangle::new(p0, p1, pt).is_affinely_dependent()
             && !Triangle::new(p0, p2, pt).is_affinely_dependent()
             && !Triangle::new(p1, p2, pt).is_affinely_dependent()
@@ -621,7 +615,7 @@ impl TriangleFacet {
             || Triangle::new(pt, p0, p1).is_affinely_dependent()
             || Triangle::new(pt, p1, p0).is_affinely_dependent();
 
-        (pt - p0).dot(&self.normal) >= na::zero::<Real>() || aff_dep
+        (pt - p0).dot(&self.normal) >= 0.0 || aff_dep
     }
 }
 
