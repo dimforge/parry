@@ -16,7 +16,6 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use super::{Axis, Plane};
 use crate::math::Real;
 use crate::na::Isometry;
 use crate::transformation::vhacd::VHACDParameters;
@@ -24,19 +23,12 @@ use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 use crate::utils;
 use na::{Point3, Vector3};
 
-fn find_minimum_element(d: &[Real], m: &mut Real, begin: i32, end: i32) -> i32 {
-    let mut idx = -1;
-    let mut min = Real::MAX;
-
-    for i in begin..end {
-        if d[i as usize] < min {
-            idx = i;
-            min = d[i as usize];
-        }
-    }
-
-    *m = min;
-    return idx;
+#[derive(Copy, Clone, Debug)]
+pub struct CutPlane {
+    pub abc: Vector3<Real>,
+    pub d: Real,
+    pub axis: u8,
+    pub index: u32,
 }
 
 pub struct VHACD {
@@ -153,7 +145,7 @@ impl VHACD {
     fn compute_axes_aligned_clipping_planes(
         vset: &VoxelSet,
         downsampling: u32,
-        planes: &mut Vec<Plane>,
+        planes: &mut Vec<CutPlane>,
     ) {
         let min_v = vset.min_bb_voxels();
         let max_v = vset.max_bb_voxels();
@@ -163,9 +155,9 @@ impl VHACD {
             let i1 = max_v[dim];
 
             for i in (i0..=i1).step_by(downsampling as usize) {
-                let plane = Plane {
+                let plane = CutPlane {
                     abc: Vector3::ith(dim, 1.0),
-                    axis: Axis::try_from(dim).unwrap(),
+                    axis: dim as u8,
                     d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
                     index: i,
                 };
@@ -177,9 +169,9 @@ impl VHACD {
 
     fn refine_axes_aligned_clipping_planes(
         vset: &VoxelSet,
-        best_plane: &Plane,
+        best_plane: &CutPlane,
         downsampling: u32,
-        planes: &mut Vec<Plane>,
+        planes: &mut Vec<CutPlane>,
     ) {
         let min_v = vset.min_bb_voxels();
         let max_v = vset.max_bb_voxels();
@@ -189,7 +181,7 @@ impl VHACD {
         let i1 = max_v[best_id].min(best_plane.index + downsampling);
 
         for i in i0..=i1 {
-            let plane = Plane {
+            let plane = CutPlane {
                 abc: Vector3::ith(best_id, 1.0),
                 axis: best_plane.axis,
                 d: -(vset.origin[best_id] + (i as Real + 0.5) * vset.scale),
@@ -204,14 +196,14 @@ impl VHACD {
         &self,
         input_pset: &VoxelSet,
         input_pset_ch: &(Vec<Point3<Real>>, Vec<Point3<u32>>),
-        planes: &[Plane],
+        planes: &[CutPlane],
         preferred_cutting_direction: &Vector3<Real>,
         w: Real,
         alpha: Real,
         beta: Real,
         convex_hull_downsampling: u32,
         params: &VHACDParameters,
-    ) -> (Plane, Real) {
+    ) -> (CutPlane, Real) {
         let mut best_plane = planes[0];
         let mut min_concavity = Real::MAX;
         let mut i_best = -1;
@@ -454,7 +446,7 @@ fn compute_concavity(volume: Real, volume_ch: Real, volume0: Real) -> Real {
 
 fn clip_mesh(
     points: &[Point3<Real>],
-    plane: &Plane,
+    plane: &CutPlane,
     positive_part: &mut Vec<Point3<Real>>,
     negative_part: &mut Vec<Point3<Real>>,
 ) {

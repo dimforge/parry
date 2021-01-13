@@ -1,7 +1,5 @@
-pub use self::mesh::{Axis, Plane};
 pub use self::parameters::VHACDParameters;
-pub use self::vhacd::VHACD;
+pub use self::vhacd::{CutPlane, VHACD};
 
-mod mesh;
 mod parameters;
 mod vhacd;

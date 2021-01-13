@@ -22,7 +22,7 @@ use crate::math::Real;
 use crate::na::{Isometry3, SymmetricEigen};
 use crate::query;
 use crate::shape::Triangle;
-use crate::transformation::vhacd::Plane;
+use crate::transformation::vhacd::CutPlane;
 use na::{Matrix3, Point3, Vector3};
 
 #[derive(Copy, Clone, Debug)]
@@ -168,7 +168,7 @@ impl VoxelSet {
 
     pub fn intersect(
         &self,
-        plane: &Plane,
+        plane: &CutPlane,
         positive_pts: &mut Vec<Point3<Real>>,
         negative_pts: &mut Vec<Point3<Real>>,
         sampling: u32,
@@ -217,7 +217,7 @@ impl VoxelSet {
     }
 
     // Returns (negative_volume, positive_volume)
-    pub fn compute_clipped_volumes(&self, plane: &Plane) -> (Real, Real) {
+    pub fn compute_clipped_volumes(&self, plane: &CutPlane) -> (Real, Real) {
         if self.voxels.is_empty() {
             return (0.0, 0.0);
         }
@@ -251,7 +251,12 @@ impl VoxelSet {
     }
 
     /// Splits this voxel set into two parts, depending on where the voxel center lies wrt. the given plane.
-    pub fn clip(&self, plane: &Plane, positive_part: &mut VoxelSet, negative_part: &mut VoxelSet) {
+    pub fn clip(
+        &self,
+        plane: &CutPlane,
+        positive_part: &mut VoxelSet,
+        negative_part: &mut VoxelSet,
+    ) {
         let num_voxels = self.voxels.len();
 
         if num_voxels == 0 {
