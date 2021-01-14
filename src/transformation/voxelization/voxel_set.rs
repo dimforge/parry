@@ -182,8 +182,8 @@ impl VoxelSet {
             Vector::new(-0.5, 0.5, 0.5),
         ];
 
-        for l in 0..8 {
-            f(self.origin + (ijk + shifts[l]) * self.scale)
+        for shift in &shifts {
+            f(self.origin + (ijk + *shift) * self.scale)
         }
     }
 

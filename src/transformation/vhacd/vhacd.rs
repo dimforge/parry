@@ -16,7 +16,7 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 
@@ -89,6 +89,7 @@ impl VHACD {
             max_concavity: -Real::MAX,
         };
 
+        println!("Num voxels: {}", voxels.voxels.len());
         result.do_compute_acd(params, voxels);
         result
     }
@@ -168,7 +169,7 @@ impl VHACD {
         let min_v = vset.min_bb_voxels();
         let max_v = vset.max_bb_voxels();
 
-        for dim in 0..3 {
+        for dim in 0..DIM {
             let i0 = min_v[dim];
             let i1 = max_v[dim];
 

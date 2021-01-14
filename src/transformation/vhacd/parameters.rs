@@ -16,8 +16,14 @@ pub struct VHACDParameters {
 impl Default for VHACDParameters {
     fn default() -> Self {
         Self {
+            #[cfg(feature = "dim3")]
             resolution: 64,
+            #[cfg(feature = "dim3")]
             concavity: 0.001,
+            #[cfg(feature = "dim2")]
+            resolution: 512,
+            #[cfg(feature = "dim2")]
+            concavity: 0.01,
             plane_downsampling: 4,
             convex_hull_downsampling: 4,
             alpha: 0.05,
