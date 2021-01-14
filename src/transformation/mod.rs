@@ -12,9 +12,7 @@ mod convex_hull2;
 mod convex_hull3;
 pub(crate) mod convex_hull_utils;
 
-#[cfg(feature = "dim3")]
 pub mod vhacd;
-#[cfg(feature = "dim3")]
 pub mod voxelization;
 
 #[cfg(feature = "dim2")]

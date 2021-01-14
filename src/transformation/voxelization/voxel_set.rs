@@ -17,14 +17,12 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{FillMode, VoxelizedVolume};
-use crate::math::Real;
-use crate::na::Isometry3;
+use crate::math::{Isometry, Matrix, Point, Real, Vector};
 use crate::transformation::vhacd::CutPlane;
-use na::{Matrix3, Point3, Vector3};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
-    pub coords: Point3<u32>,
+    pub coords: Point<u32>,
     /// Is this voxel on the surface of the volume (i.e. not inside of it)?
     pub is_on_surface: bool,
 }
@@ -32,26 +30,26 @@ pub struct Voxel {
 impl Default for Voxel {
     fn default() -> Self {
         Self {
-            coords: Point3::origin(),
+            coords: Point::origin(),
             is_on_surface: false,
         }
     }
 }
 
 pub struct VoxelSet {
-    pub origin: Point3<Real>,
+    pub origin: Point<Real>,
     pub scale: Real,
-    pub(crate) min_bb_voxels: Point3<u32>,
-    pub(crate) max_bb_voxels: Point3<u32>,
+    pub(crate) min_bb_voxels: Point<u32>,
+    pub(crate) max_bb_voxels: Point<u32>,
     pub(crate) voxels: Vec<Voxel>,
 }
 
 impl VoxelSet {
     pub fn new() -> Self {
         Self {
-            origin: Point3::origin(),
-            min_bb_voxels: Point3::origin(),
-            max_bb_voxels: Point3::new(1, 1, 1),
+            origin: Point::origin(),
+            min_bb_voxels: Point::origin(),
+            max_bb_voxels: Vector::repeat(1).into(),
             scale: 1.0,
             voxels: Vec::new(),
         }
@@ -68,20 +66,20 @@ impl VoxelSet {
     }
 
     pub fn voxelize(
-        transform: &Isometry3<Real>,
-        points: &[Point3<Real>],
-        triangles: &[Point3<u32>],
+        transform: &Isometry<Real>,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
         dim: u32,
         fill_mode: FillMode,
     ) -> Self {
-        VoxelizedVolume::voxelize(transform, points, triangles, dim, fill_mode).into()
+        VoxelizedVolume::voxelize(transform, points, indices, dim, fill_mode).into()
     }
 
-    pub fn min_bb_voxels(&self) -> Point3<u32> {
+    pub fn min_bb_voxels(&self) -> Point<u32> {
         self.min_bb_voxels
     }
 
-    pub fn max_bb_voxels(&self) -> Point3<u32> {
+    pub fn max_bb_voxels(&self) -> Point<u32> {
         self.max_bb_voxels
     }
 
@@ -89,11 +87,11 @@ impl VoxelSet {
         self.voxel_volume() * self.voxels.len() as Real
     }
 
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point3<Real> {
+    fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
         self.get_point(na::convert(voxel.coords))
     }
 
-    pub fn get_point(&self, voxel: Point3<Real>) -> Point3<Real> {
+    pub fn get_point(&self, voxel: Point<Real>) -> Point<Real> {
         self.origin + voxel.coords * self.scale
     }
 
@@ -124,7 +122,26 @@ impl VoxelSet {
         }
     }
 
-    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    #[cfg(feature = "dim2")]
+    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point<Real>> {
+        let mut points = Vec::new();
+
+        // Grab all the points.
+        for voxel in self
+            .voxels
+            .iter()
+            .filter(|v| v.is_on_surface)
+            .step_by(sampling as usize)
+        {
+            self.map_voxel_points(voxel, |p| points.push(p));
+        }
+
+        // Compute the convex-hull.
+        convex_hull(&points)
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -142,18 +159,27 @@ impl VoxelSet {
     }
 
     /// Gets the vertices of the given voxel.
-    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point3<Real>)) {
+    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point<Real>)) {
         let ijk = voxel.coords.coords.map(|e| e as Real);
 
+        #[cfg(feature = "dim2")]
         let shifts = [
-            Vector3::new(-0.5, -0.5, -0.5),
-            Vector3::new(0.5, -0.5, -0.5),
-            Vector3::new(0.5, 0.5, -0.5),
-            Vector3::new(-0.5, 0.5, -0.5),
-            Vector3::new(-0.5, -0.5, 0.5),
-            Vector3::new(0.5, -0.5, 0.5),
-            Vector3::new(0.5, 0.5, 0.5),
-            Vector3::new(-0.5, 0.5, 0.5),
+            Vector::new(-0.5, -0.5),
+            Vector::new(0.5, -0.5),
+            Vector::new(0.5, 0.5),
+            Vector::new(-0.5, 0.5),
+        ];
+
+        #[cfg(feature = "dim3")]
+        let shifts = [
+            Vector::new(-0.5, -0.5, -0.5),
+            Vector::new(0.5, -0.5, -0.5),
+            Vector::new(0.5, 0.5, -0.5),
+            Vector::new(-0.5, 0.5, -0.5),
+            Vector::new(-0.5, -0.5, 0.5),
+            Vector::new(0.5, -0.5, 0.5),
+            Vector::new(0.5, 0.5, 0.5),
+            Vector::new(-0.5, 0.5, 0.5),
         ];
 
         for l in 0..8 {
@@ -164,8 +190,8 @@ impl VoxelSet {
     pub fn intersect(
         &self,
         plane: &CutPlane,
-        positive_pts: &mut Vec<Point3<Real>>,
-        negative_pts: &mut Vec<Point3<Real>>,
+        positive_pts: &mut Vec<Point<Real>>,
+        negative_pts: &mut Vec<Point<Real>>,
         sampling: u32,
     ) {
         let num_voxels = self.voxels.len();
@@ -295,11 +321,12 @@ impl VoxelSet {
 
     /// Convert this voxelset into a mesh, including only the voxels on the surface or only the voxel
     /// inside of the volume.
+    #[cfg(feature = "dim3")]
     pub fn to_trimesh(
         &self,
         base_index: u32,
         is_on_surface: bool,
-    ) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    ) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -307,42 +334,42 @@ impl VoxelSet {
             if voxel.is_on_surface == is_on_surface {
                 self.map_voxel_points(voxel, |p| vertices.push(p));
 
-                indices.push(Point3::new(base_index + 0, base_index + 2, base_index + 1));
-                indices.push(Point3::new(base_index + 0, base_index + 3, base_index + 2));
-                indices.push(Point3::new(base_index + 4, base_index + 5, base_index + 6));
-                indices.push(Point3::new(base_index + 4, base_index + 6, base_index + 7));
-                indices.push(Point3::new(base_index + 7, base_index + 6, base_index + 2));
-                indices.push(Point3::new(base_index + 7, base_index + 2, base_index + 3));
-                indices.push(Point3::new(base_index + 4, base_index + 1, base_index + 5));
-                indices.push(Point3::new(base_index + 4, base_index + 0, base_index + 1));
-                indices.push(Point3::new(base_index + 6, base_index + 5, base_index + 1));
-                indices.push(Point3::new(base_index + 6, base_index + 1, base_index + 2));
-                indices.push(Point3::new(base_index + 7, base_index + 0, base_index + 4));
-                indices.push(Point3::new(base_index + 7, base_index + 3, base_index + 0));
+                indices.push(Point::new(base_index + 0, base_index + 2, base_index + 1));
+                indices.push(Point::new(base_index + 0, base_index + 3, base_index + 2));
+                indices.push(Point::new(base_index + 4, base_index + 5, base_index + 6));
+                indices.push(Point::new(base_index + 4, base_index + 6, base_index + 7));
+                indices.push(Point::new(base_index + 7, base_index + 6, base_index + 2));
+                indices.push(Point::new(base_index + 7, base_index + 2, base_index + 3));
+                indices.push(Point::new(base_index + 4, base_index + 1, base_index + 5));
+                indices.push(Point::new(base_index + 4, base_index + 0, base_index + 1));
+                indices.push(Point::new(base_index + 6, base_index + 5, base_index + 1));
+                indices.push(Point::new(base_index + 6, base_index + 1, base_index + 2));
+                indices.push(Point::new(base_index + 7, base_index + 0, base_index + 4));
+                indices.push(Point::new(base_index + 7, base_index + 3, base_index + 0));
             }
         }
 
         (vertices, indices)
     }
 
-    pub fn compute_principal_axes(&self) -> Vector3<Real> {
+    pub fn compute_principal_axes(&self) -> Vector<Real> {
         let num_voxels = self.voxels.len();
         if num_voxels == 0 {
-            return Vector3::zeros();
+            return Vector::zeros();
         }
 
         // TODO: find a way to reuse crate::utils::cov?
         // The difficulty being that we need to iterate through the set of
         // points twice. So passing an iterator to crate::utils::cov
         // isn't really possible.
-        let mut center = Point3::origin();
+        let mut center = Point::origin();
         let denom = 1.0 / (num_voxels as Real);
 
         for voxel in &self.voxels {
             center += voxel.coords.map(|e| e as Real).coords * denom;
         }
 
-        let mut cov_mat = Matrix3::zeros();
+        let mut cov_mat = Matrix::zeros();
         for voxel in &self.voxels {
             let xyz = voxel.coords.map(|e| e as Real) - center;
             cov_mat.syger(denom, &xyz, &xyz, 1.0);
@@ -352,7 +379,17 @@ impl VoxelSet {
     }
 }
 
-fn convex_hull(vertices: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+#[cfg(feature = "dim2")]
+fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
+    if vertices.len() > 1 {
+        crate::transformation::convex_hull(vertices)
+    } else {
+        Vec::new()
+    }
+}
+
+#[cfg(feature = "dim3")]
+fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {

@@ -130,6 +130,12 @@ impl SupportMap for Segment {
     }
 }
 
+impl From<[Point<Real>; 2]> for Segment {
+    fn from(arr: [Point<Real>; 2]) -> Self {
+        *Self::from_array(&arr)
+    }
+}
+
 /*
 impl ConvexPolyhedron for Segment {
     fn vertex(&self, id: FeatureId) -> Point<Real> {

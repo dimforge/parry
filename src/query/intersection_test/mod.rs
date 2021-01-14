@@ -10,6 +10,10 @@ pub use self::intersection_test_composite_shape_shape::{
     IntersectionCompositeShapeShapeBestFirstVisitor,
 };
 pub use self::intersection_test_cuboid_cuboid::intersection_test_cuboid_cuboid;
+pub use self::intersection_test_cuboid_segment::{
+    intersection_test_aabb_segment, intersection_test_cuboid_segment,
+    intersection_test_segment_cuboid,
+};
 pub use self::intersection_test_cuboid_triangle::{
     intersection_test_aabb_triangle, intersection_test_cuboid_triangle,
     intersection_test_triangle_cuboid,
@@ -25,6 +29,7 @@ mod intersection_test_ball_ball;
 mod intersection_test_ball_point_query;
 mod intersection_test_composite_shape_shape;
 mod intersection_test_cuboid_cuboid;
+mod intersection_test_cuboid_segment;
 mod intersection_test_cuboid_triangle;
 mod intersection_test_halfspace_support_map;
 mod intersection_test_support_map_support_map;

@@ -16,15 +16,18 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::math::Real;
-use crate::na::Isometry;
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
-use na::{Point3, Vector3};
+
+#[cfg(feature = "dim2")]
+type ConvexHull = Vec<Point<Real>>;
+#[cfg(feature = "dim3")]
+type ConvexHull = (Vec<Point<Real>>, Vec<Point<u32>>);
 
 #[derive(Copy, Clone, Debug)]
 pub struct CutPlane {
-    pub abc: Vector3<Real>,
+    pub abc: Vector<Real>,
     pub d: Real,
     pub axis: u8,
     pub index: u32,
@@ -38,10 +41,28 @@ pub struct VHACD {
 }
 
 impl VHACD {
+    #[cfg(feature = "dim2")]
+    pub fn from_polyline(
+        params: &VHACDParameters,
+        points: &[Point<Real>],
+        segments: &[Point<u32>],
+    ) -> Self {
+        Self::from_trimesh_or_polyline(params, points, segments)
+    }
+
+    #[cfg(feature = "dim3")]
     pub fn from_trimesh(
         params: &VHACDParameters,
-        points: &[Point3<Real>],
-        triangles: &[Point3<u32>],
+        points: &[Point<Real>],
+        triangles: &[Point<u32>],
+    ) -> Self {
+        Self::from_trimesh_or_polyline(params, points, triangles)
+    }
+
+    fn from_trimesh_or_polyline(
+        params: &VHACDParameters,
+        points: &[Point<Real>],
+        triangles: &[Point<u32>],
     ) -> Self {
         // if params.project_hull_vertices || params.fill_mode == FillMode::RAYCAST_FILL {
         //     self.raycast_mesh =
@@ -76,15 +97,41 @@ impl VHACD {
         &self.voxel_parts
     }
 
-    // TODO: this should just be a method of VoxelSet.
-    fn compute_preferred_cutting_direction(eigenvalues: &Vector3<Real>) -> (Vector3<Real>, Real) {
+    #[cfg(feature = "dim2")]
+    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
+        let vx = eigenvalues.y * eigenvalues.y;
+        let vy = eigenvalues.x * eigenvalues.x;
+
+        if vx < vy {
+            let e = eigenvalues.y * eigenvalues.y;
+            let dir = Vector::x();
+
+            if e == 0.0 {
+                (dir, 0.0)
+            } else {
+                (dir, 1.0 - vx / e)
+            }
+        } else {
+            let e = eigenvalues.x * eigenvalues.x;
+            let dir = Vector::y();
+
+            if e == 0.0 {
+                (dir, 0.0)
+            } else {
+                (dir, 1.0 - vy / e)
+            }
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
         let vx = (eigenvalues.y - eigenvalues.z) * (eigenvalues.y - eigenvalues.z);
         let vy = (eigenvalues.x - eigenvalues.z) * (eigenvalues.x - eigenvalues.z);
         let vz = (eigenvalues.x - eigenvalues.y) * (eigenvalues.x - eigenvalues.y);
 
         if vx < vy && vx < vz {
             let e = eigenvalues.y * eigenvalues.y + eigenvalues.z * eigenvalues.z;
-            let dir = Vector3::x();
+            let dir = Vector::x();
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -93,7 +140,7 @@ impl VHACD {
             }
         } else if vy < vx && vy < vz {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.z * eigenvalues.z;
-            let dir = Vector3::y();
+            let dir = Vector::y();
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -102,7 +149,7 @@ impl VHACD {
             }
         } else {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.y * eigenvalues.y;
-            let dir = Vector3::z();
+            let dir = Vector::z();
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -127,7 +174,7 @@ impl VHACD {
 
             for i in (i0..=i1).step_by(downsampling as usize) {
                 let plane = CutPlane {
-                    abc: Vector3::ith(dim, 1.0),
+                    abc: Vector::ith(dim, 1.0),
                     axis: dim as u8,
                     d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
                     index: i,
@@ -153,7 +200,7 @@ impl VHACD {
 
         for i in i0..=i1 {
             let plane = CutPlane {
-                abc: Vector3::ith(best_id, 1.0),
+                abc: Vector::ith(best_id, 1.0),
                 axis: best_plane.axis,
                 d: -(vset.origin[best_id] + (i as Real + 0.5) * vset.scale),
                 index: i,
@@ -166,9 +213,9 @@ impl VHACD {
     fn compute_best_clipping_plane(
         &self,
         input_voxels: &VoxelSet,
-        input_voxels_ch: &(Vec<Point3<Real>>, Vec<Point3<u32>>),
+        input_voxels_ch: &ConvexHull,
         planes: &[CutPlane],
-        preferred_cutting_direction: &Vector3<Real>,
+        preferred_cutting_direction: &Vector<Real>,
         w: Real,
         alpha: Real,
         beta: Real,
@@ -204,6 +251,9 @@ impl VHACD {
                 );
 
                 clip_mesh(
+                    #[cfg(feature = "dim2")]
+                    &input_voxels_ch,
+                    #[cfg(feature = "dim3")]
                     &input_voxels_ch.0,
                     plane,
                     &mut right_ch_pts,
@@ -392,10 +442,20 @@ impl VHACD {
         self.voxel_parts = parts;
     }
 
+    #[cfg(feature = "dim2")]
+    pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<Vec<Point<Real>>> {
+        let downsampling = downsampling.max(1);
+        self.voxel_parts
+            .iter()
+            .map(|part| part.compute_convex_hull(downsampling))
+            .collect()
+    }
+
+    #[cfg(feature = "dim3")]
     pub fn compute_convex_hulls(
         &self,
         downsampling: u32,
-    ) -> Vec<(Vec<Point3<Real>>, Vec<Point3<u32>>)> {
+    ) -> Vec<(Vec<Point<Real>>, Vec<Point<u32>>)> {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
@@ -409,10 +469,10 @@ fn compute_concavity(volume: Real, volume_ch: Real, volume0: Real) -> Real {
 }
 
 fn clip_mesh(
-    points: &[Point3<Real>],
+    points: &[Point<Real>],
     plane: &CutPlane,
-    positive_part: &mut Vec<Point3<Real>>,
-    negative_part: &mut Vec<Point3<Real>>,
+    positive_part: &mut Vec<Point<Real>>,
+    negative_part: &mut Vec<Point<Real>>,
 ) {
     for pt in points {
         let d = plane.abc.dot(&pt.coords) + plane.d;
@@ -428,7 +488,17 @@ fn clip_mesh(
     }
 }
 
-fn convex_hull(vertices: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+#[cfg(feature = "dim2")]
+fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
+    if vertices.len() > 1 {
+        crate::transformation::convex_hull(vertices)
+    } else {
+        Vec::new()
+    }
+}
+
+#[cfg(feature = "dim3")]
+fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -436,7 +506,17 @@ fn convex_hull(vertices: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>
     }
 }
 
-fn compute_volume(mesh: &(Vec<Point3<Real>>, Vec<Point3<u32>>)) -> Real {
+#[cfg(feature = "dim2")]
+fn compute_volume(polygon: &[Point<Real>]) -> Real {
+    if !polygon.is_empty() {
+        crate::mass_properties::details::convex_polygon_area_and_center_of_mass(&polygon).0
+    } else {
+        0.0
+    }
+}
+
+#[cfg(feature = "dim3")]
+fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<Point<u32>>)) -> Real {
     if !mesh.0.is_empty() {
         crate::mass_properties::details::convex_mesh_volume_and_center_of_mass_unchecked(
             &mesh.0, &mesh.1,
