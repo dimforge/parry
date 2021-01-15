@@ -204,13 +204,10 @@ impl SegmentFacet {
         let p1p2 = points[p2] - points[p1];
 
         let mut normal = Vector2::new(-p1p2.y, p1p2.x);
-
-        if normal.normalize_mut().is_zero() {
-            panic!("ConvexHull hull failure: a segment must not be affinely dependent.");
-        }
+        let norm = normal.normalize_mut();
 
         SegmentFacet {
-            valid: true,
+            valid: norm != 0.0,
             normal,
             prev,
             next,

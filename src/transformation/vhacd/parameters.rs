@@ -21,7 +21,7 @@ impl Default for VHACDParameters {
             #[cfg(feature = "dim3")]
             concavity: 0.001,
             #[cfg(feature = "dim2")]
-            resolution: 512,
+            resolution: 256,
             #[cfg(feature = "dim2")]
             concavity: 0.01,
             plane_downsampling: 4,
@@ -32,6 +32,8 @@ impl Default for VHACDParameters {
             max_convex_hulls: 1024,
             fill_mode: FillMode::FloodFill {
                 detect_cavities: false,
+                #[cfg(feature = "dim2")]
+                detect_self_intersections: false,
             },
         }
     }

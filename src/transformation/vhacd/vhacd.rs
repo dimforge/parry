@@ -89,7 +89,6 @@ impl VHACD {
             max_concavity: -Real::MAX,
         };
 
-        println!("Num voxels: {}", voxels.voxels.len());
         result.do_compute_acd(params, voxels);
         result
     }

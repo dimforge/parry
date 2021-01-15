@@ -20,8 +20,7 @@ impl RayCast for AABB {
                     return None;
                 }
             } else {
-                let _1: Real = na::one::<Real>();
-                let denom = _1 / ray.dir[i];
+                let denom = 1.0 / ray.dir[i];
                 let mut inter_with_near_halfspace = (self.mins[i] - ray.origin[i]) * denom;
                 let mut inter_with_far_halfspace = (self.maxs[i] - ray.origin[i]) * denom;
 
@@ -126,9 +125,6 @@ fn clip_line(
     origin: &Point<Real>,
     dir: &Vector<Real>,
 ) -> Option<((Real, Vector<Real>, isize), (Real, Vector<Real>, isize))> {
-    // NOTE: we don't start with tmin = 0 so we can return the correct normal
-    // when the ray starts exactly on the object contour.
-
     let mut tmax: Real = Bounded::max_value();
     let mut tmin: Real = -tmax;
     let mut near_side = 0;
@@ -142,8 +138,7 @@ fn clip_line(
                 return None;
             }
         } else {
-            let _1: Real = na::one::<Real>();
-            let denom = _1 / dir[i];
+            let denom = 1.0 / dir[i];
             let flip_sides;
             let mut inter_with_near_halfspace = (aabb.mins[i] - origin[i]) * denom;
             let mut inter_with_far_halfspace = (aabb.maxs[i] - origin[i]) * denom;

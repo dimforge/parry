@@ -24,8 +24,39 @@ use crate::transformation::voxelization::{Voxel, VoxelSet};
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FillMode {
     SurfaceOnly,
-    FloodFill { detect_cavities: bool },
+    FloodFill {
+        detect_cavities: bool,
+        #[cfg(feature = "dim2")]
+        detect_self_intersections: bool,
+    },
     // RaycastFill
+}
+
+impl FillMode {
+    pub fn detect_cavities(self) -> bool {
+        match self {
+            FillMode::FloodFill {
+                detect_cavities, ..
+            } => detect_cavities,
+            _ => false,
+        }
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn detect_self_intersections(self) -> bool {
+        match self {
+            FillMode::FloodFill {
+                detect_self_intersections,
+                ..
+            } => detect_self_intersections,
+            _ => false,
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn detect_self_intersections(self) -> bool {
+        false
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -35,9 +66,17 @@ pub enum VoxelValue {
     PrimitiveOutsideSurface,
     PrimitiveInsideSurfaceToWalk,
     PrimitiveInsideSurface,
+    PrimitiveOnSurfaceNoWalk,
     PrimitiveOnSurfaceToWalk1,
     PrimitiveOnSurfaceToWalk2,
     PrimitiveOnSurface,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+struct VoxelData {
+    #[cfg(feature = "dim2")]
+    multiplicity: u32,
+    num_intersections: u32,
 }
 
 pub struct VoxelizedVolume {
@@ -45,6 +84,7 @@ pub struct VoxelizedVolume {
     scale: Real,
     resolution: Point<u32>,
     values: Vec<VoxelValue>,
+    data: Vec<VoxelData>,
 }
 
 impl VoxelizedVolume {
@@ -60,6 +100,7 @@ impl VoxelizedVolume {
             origin: Point::origin(),
             scale: 1.0,
             values: Vec::new(),
+            data: Vec::new(),
         };
 
         if points.is_empty() {
@@ -110,6 +151,10 @@ impl VoxelizedVolume {
         let mut ijk0 = Vector::repeat(0u32);
         let mut ijk1 = Vector::repeat(0u32);
 
+        let detect_all_intersections = fill_mode.detect_self_intersections();
+        let lock_high_multiplicities =
+            fill_mode.detect_cavities() && fill_mode.detect_self_intersections();
+
         for tri in triangles {
             // Find the range of voxels potentially intersecting the triangle.
             for c in 0..DIM {
@@ -150,34 +195,72 @@ impl VoxelizedVolume {
             // Determine exactly what voxel intersect the triangle.
             for i in ijk0.x..ijk1.x {
                 for j in ijk0.y..ijk1.y {
-                    for _k in range_k.clone() {
+                    for k in range_k.clone() {
                         #[cfg(feature = "dim2")]
-                        let (value, pt) =
-                            (result.voxel_mut(i, j, 0), Point::new(i as Real, j as Real));
-
+                        let pt = Point::new(i as Real, j as Real);
                         #[cfg(feature = "dim3")]
-                        let (value, pt) = (
-                            result.voxel_mut(i, j, _k),
-                            Point::new(i as Real, j as Real, _k as Real),
-                        );
+                        let pt = Point::new(i as Real, j as Real, k as Real);
 
-                        if *value == VoxelValue::PrimitiveUndefined {
+                        let id = result.voxel_index(i, j, k);
+                        let value = &mut result.values[id as usize];
+                        let data = &mut result.data[id as usize];
+
+                        if detect_all_intersections || *value == VoxelValue::PrimitiveUndefined {
                             let aabb = AABB::from_half_extents(pt, box_half_size);
+
                             #[cfg(feature = "dim2")]
-                            let intersect = {
-                                let segment = crate::shape::Segment::from(tri_pts);
-                                query::details::intersection_test_aabb_segment(&aabb, &segment)
+                            {
+                                if !detect_all_intersections {
+                                    let segment = crate::shape::Segment::from(tri_pts);
+                                    let intersect = query::details::intersection_test_aabb_segment(
+                                        &aabb, &segment,
+                                    );
+
+                                    if intersect {
+                                        *value = VoxelValue::PrimitiveOnSurface;
+                                    }
+                                } else {
+                                    if let Some(params) = aabb.clip_line_parameters(
+                                        &tri_pts[0],
+                                        &(tri_pts[1] - tri_pts[0]),
+                                    ) {
+                                        let eps = 0.0; // -1.0e-6;
+
+                                        assert!(params.0 <= params.1);
+                                        if params.0 > 1.0 + eps || params.1 < 0.0 - eps {
+                                            continue;
+                                        }
+
+                                        data.multiplicity += ((params.0 >= -eps && params.0 <= eps)
+                                            || (params.0 >= 1.0 - eps && params.0 <= 1.0 + eps))
+                                            as u32;
+                                        data.multiplicity += ((params.1 >= -eps && params.1 <= eps)
+                                            || (params.1 >= 1.0 - eps && params.1 <= 1.0 + eps))
+                                            as u32;
+                                        data.multiplicity += (params.0 > eps) as u32 * 2;
+                                        data.multiplicity += (params.1 < 1.0 - eps) as u32 * 2;
+                                        data.num_intersections += 1;
+
+                                        if data.multiplicity > 4 && lock_high_multiplicities {
+                                            *value = VoxelValue::PrimitiveOnSurfaceNoWalk;
+                                        } else {
+                                            *value = VoxelValue::PrimitiveOnSurface;
+                                        }
+                                    }
+                                }
                             };
 
                             #[cfg(feature = "dim3")]
-                            let intersect = {
+                            {
                                 let triangle = crate::shape::Triangle::from(tri_pts);
-                                query::details::intersection_test_aabb_triangle(&aabb, &triangle)
-                            };
+                                let intersect = query::details::intersection_test_aabb_triangle(
+                                    &aabb, &triangle,
+                                );
 
-                            if intersect {
-                                *value = VoxelValue::PrimitiveOnSurface;
-                            }
+                                if intersect {
+                                    *value = VoxelValue::PrimitiveOnSurface;
+                                }
+                            };
                         }
                     }
                 }
@@ -192,7 +275,11 @@ impl VoxelizedVolume {
                     }
                 }
             }
-            FillMode::FloodFill { detect_cavities } => {
+            FillMode::FloodFill {
+                detect_cavities,
+                #[cfg(feature = "dim2")]
+                detect_self_intersections,
+            } => {
                 #[cfg(feature = "dim2")]
                 {
                     result.mark_outside_surface(0, 0, result.resolution[0], 1);
@@ -291,14 +378,14 @@ impl VoxelizedVolume {
                         }
                     }
 
-                    result.replace_value(
-                        VoxelValue::PrimitiveOnSurfaceToWalk1,
-                        VoxelValue::PrimitiveOnSurface,
-                    );
-                    result.replace_value(
-                        VoxelValue::PrimitiveOnSurfaceToWalk2,
-                        VoxelValue::PrimitiveOnSurface,
-                    );
+                    for voxel in &mut result.values {
+                        if *voxel == VoxelValue::PrimitiveOnSurfaceToWalk1
+                            || *voxel == VoxelValue::PrimitiveOnSurfaceToWalk2
+                            || *voxel == VoxelValue::PrimitiveOnSurfaceNoWalk
+                        {
+                            *voxel = VoxelValue::PrimitiveOnSurface;
+                        }
+                    }
                 } else {
                     let _ = result.propagate_values(
                         VoxelValue::PrimitiveOutsideSurfaceToWalk,
@@ -333,6 +420,14 @@ impl VoxelizedVolume {
         let len = self.resolution.x * self.resolution.y * self.resolution.z;
         self.values
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
+        self.data.resize(
+            len as usize,
+            VoxelData {
+                #[cfg(feature = "dim2")]
+                multiplicity: 0,
+                num_intersections: 0,
+            },
+        );
     }
 
     fn voxel_index(&self, i: u32, j: u32, _k: u32) -> u32 {
@@ -424,10 +519,7 @@ impl VoxelizedVolume {
         let mut i = start;
         let mut count = 0;
 
-        while count < max_distance
-            && i >= end
-            && out[ptr as usize] == VoxelValue::PrimitiveUndefined
-        {
+        while count < max_distance && i >= end {
             if out[ptr as usize] == VoxelValue::PrimitiveUndefined {
                 out[ptr as usize] = primitive_undefined_value_to_set;
             } else if out[ptr as usize] == VoxelValue::PrimitiveOnSurface {
