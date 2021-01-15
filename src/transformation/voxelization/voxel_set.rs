@@ -17,14 +17,18 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{FillMode, VoxelizedVolume};
-use crate::math::{Isometry, Matrix, Point, Real, Vector};
+use crate::bounding_volume::AABB;
+use crate::math::{Matrix, Point, Real, Vector};
 use crate::transformation::vhacd::CutPlane;
+use std::ops::Range;
+use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
     pub coords: Point<u32>,
     /// Is this voxel on the surface of the volume (i.e. not inside of it)?
     pub is_on_surface: bool,
+    pub intersections_range: (usize, usize),
 }
 
 impl Default for Voxel {
@@ -32,6 +36,7 @@ impl Default for Voxel {
         Self {
             coords: Point::origin(),
             is_on_surface: false,
+            intersections_range: (0, 0),
         }
     }
 }
@@ -42,6 +47,7 @@ pub struct VoxelSet {
     pub(crate) min_bb_voxels: Point<u32>,
     pub(crate) max_bb_voxels: Point<u32>,
     pub(crate) voxels: Vec<Voxel>,
+    pub(crate) intersections: Arc<Vec<u32>>,
 }
 
 impl VoxelSet {
@@ -52,6 +58,7 @@ impl VoxelSet {
             max_bb_voxels: Vector::repeat(1).into(),
             scale: 1.0,
             voxels: Vec::new(),
+            intersections: Arc::new(Vec::new()),
         }
     }
 
@@ -66,13 +73,20 @@ impl VoxelSet {
     }
 
     pub fn voxelize(
-        transform: &Isometry<Real>,
         points: &[Point<Real>],
         indices: &[Point<u32>],
         dim: u32,
         fill_mode: FillMode,
+        keep_voxel_to_primitives_map: bool,
     ) -> Self {
-        VoxelizedVolume::voxelize(transform, points, indices, dim, fill_mode).into()
+        VoxelizedVolume::voxelize(
+            points,
+            indices,
+            dim,
+            fill_mode,
+            keep_voxel_to_primitives_map,
+        )
+        .into()
     }
 
     pub fn min_bb_voxels(&self) -> Point<u32> {
@@ -113,13 +127,47 @@ impl VoxelSet {
 
         self.min_bb_voxels = self.voxels[0].coords;
         self.max_bb_voxels = self.voxels[0].coords;
-        let mut bary = self.voxels[0].coords;
 
         for p in 0..num_voxels {
-            bary += self.voxels[p].coords.coords;
             self.min_bb_voxels = self.min_bb_voxels.inf(&self.voxels[p].coords);
             self.max_bb_voxels = self.max_bb_voxels.sup(&self.voxels[p].coords);
         }
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn compute_exact_convex_hull(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> Vec<Point<Real>> {
+        assert!(!self.intersections.is_empty(),
+                "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
+        let mut surface_points = Vec::new();
+
+        // Grab all the points.
+        for voxel in self.voxels.iter().filter(|v| v.is_on_surface) {
+            let intersections =
+                &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
+            for prim_id in intersections {
+                let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                let aabb = AABB::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+
+                let pa = points[indices[*prim_id as usize].x as usize];
+                let pb = points[indices[*prim_id as usize].y as usize];
+
+                if let Some(seg) = aabb.clip_segment(&pa, &pb) {
+                    surface_points.push(seg.a);
+                    surface_points.push(seg.b);
+                }
+            }
+
+            if intersections.is_empty() {
+                self.map_voxel_points(voxel, |p| surface_points.push(p));
+            }
+        }
+
+        // Compute the convex-hull.
+        convex_hull(&surface_points)
     }
 
     #[cfg(feature = "dim2")]

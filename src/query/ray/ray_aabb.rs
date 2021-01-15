@@ -69,6 +69,16 @@ impl RayCast for AABB {
 }
 
 impl AABB {
+    /// Computes the intersection of a segment with this AABB.
+    ///
+    /// Returns `None` if there is no intersection.
+    #[inline]
+    pub fn clip_segment(&self, pa: &Point<Real>, pb: &Point<Real>) -> Option<Segment> {
+        let ab = pb - pa;
+        clip_line(self, pa, &ab)
+            .map(|clip| Segment::new(pa + ab * (clip.0).0.max(0.0), pa + ab * (clip.1).0.min(1.0)))
+    }
+
     /// Computes the parameters of the two intersection points between a line and this AABB.
     ///
     /// The parameters are such that the point are given by `orig + dir * parameter`.

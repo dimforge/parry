@@ -63,9 +63,9 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
     loop {
         let curr = &segments[curr_facet];
 
-        assert!(curr.valid);
-
-        idx.push(curr.pts[0]);
+        if curr.valid {
+            idx.push(curr.pts[0]);
+        }
 
         curr_facet = curr.next;
 

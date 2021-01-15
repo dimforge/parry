@@ -16,7 +16,7 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 
@@ -41,28 +41,11 @@ pub struct VHACD {
 }
 
 impl VHACD {
-    #[cfg(feature = "dim2")]
-    pub fn from_polyline(
+    pub fn decompose(
         params: &VHACDParameters,
         points: &[Point<Real>],
-        segments: &[Point<u32>],
-    ) -> Self {
-        Self::from_trimesh_or_polyline(params, points, segments)
-    }
-
-    #[cfg(feature = "dim3")]
-    pub fn from_trimesh(
-        params: &VHACDParameters,
-        points: &[Point<Real>],
-        triangles: &[Point<u32>],
-    ) -> Self {
-        Self::from_trimesh_or_polyline(params, points, triangles)
-    }
-
-    fn from_trimesh_or_polyline(
-        params: &VHACDParameters,
-        points: &[Point<Real>],
-        triangles: &[Point<u32>],
+        indices: &[Point<u32>],
+        keep_voxel_to_primitives_map: bool,
     ) -> Self {
         // if params.project_hull_vertices || params.fill_mode == FillMode::RAYCAST_FILL {
         //     self.raycast_mesh =
@@ -70,11 +53,11 @@ impl VHACD {
         // }
 
         let voxelized = VoxelizedVolume::voxelize(
-            &Isometry::identity(),
             points,
-            triangles,
+            indices,
             params.resolution,
             params.fill_mode,
+            keep_voxel_to_primitives_map,
             // &self.raycast_mesh,
         );
 
@@ -384,6 +367,7 @@ impl VHACD {
     }
 
     fn do_compute_acd(&mut self, params: &VHACDParameters, mut voxels: VoxelSet) {
+        let intersections = voxels.intersections.clone();
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();
@@ -440,6 +424,22 @@ impl VHACD {
 
         parts.append(&mut input_parts);
         self.voxel_parts = parts;
+
+        for part in &mut self.voxel_parts {
+            part.intersections = intersections.clone();
+        }
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn compute_exact_convex_hulls(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> Vec<Vec<Point<Real>>> {
+        self.voxel_parts
+            .iter()
+            .map(|part| part.compute_exact_convex_hull(points, indices))
+            .collect()
     }
 
     #[cfg(feature = "dim2")]
