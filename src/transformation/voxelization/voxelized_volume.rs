@@ -24,7 +24,7 @@ use crate::transformation::voxelization::{Voxel, VoxelSet};
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FillMode {
     SurfaceOnly,
-    FloodFill,
+    FloodFill { detect_cavities: bool },
     // RaycastFill
 }
 
@@ -33,7 +33,10 @@ pub enum VoxelValue {
     PrimitiveUndefined,
     PrimitiveOutsideSurfaceToWalk,
     PrimitiveOutsideSurface,
+    PrimitiveInsideSurfaceToWalk,
     PrimitiveInsideSurface,
+    PrimitiveOnSurfaceToWalk1,
+    PrimitiveOnSurfaceToWalk2,
     PrimitiveOnSurface,
 }
 
@@ -41,10 +44,7 @@ pub struct VoxelizedVolume {
     origin: Point<Real>,
     scale: Real,
     resolution: Point<u32>,
-    num_voxels_on_surface: u32,
-    num_voxels_inside_surface: u32,
-    num_voxels_outside_surface: u32,
-    data: Vec<VoxelValue>,
+    values: Vec<VoxelValue>,
 }
 
 impl VoxelizedVolume {
@@ -58,11 +58,8 @@ impl VoxelizedVolume {
         let mut result = VoxelizedVolume {
             resolution: Point::origin(),
             origin: Point::origin(),
-            num_voxels_on_surface: 0,
-            num_voxels_inside_surface: 0,
-            num_voxels_outside_surface: 0,
             scale: 1.0,
-            data: Vec::new(),
+            values: Vec::new(),
         };
 
         if points.is_empty() {
@@ -107,11 +104,6 @@ impl VoxelizedVolume {
         result.scale = r / (resolution as Real - 1.0);
         let inv_scale = (resolution as Real - 1.0) / r;
         result.allocate();
-
-        result.num_voxels_on_surface = 0;
-        result.num_voxels_on_surface = 0;
-        result.num_voxels_inside_surface = 0;
-        result.num_voxels_outside_surface = 0;
 
         let mut tri_pts = [Point::origin(); DIM];
         let box_half_size = Vector::repeat(0.5);
@@ -185,7 +177,6 @@ impl VoxelizedVolume {
 
                             if intersect {
                                 *value = VoxelValue::PrimitiveOnSurface;
-                                result.num_voxels_on_surface += 1;
                             }
                         }
                     }
@@ -195,13 +186,13 @@ impl VoxelizedVolume {
 
         match fill_mode {
             FillMode::SurfaceOnly => {
-                for value in &mut result.data {
+                for value in &mut result.values {
                     if *value != VoxelValue::PrimitiveOnSurface {
                         *value = VoxelValue::PrimitiveOutsideSurface
                     }
                 }
             }
-            FillMode::FloodFill => {
+            FillMode::FloodFill { detect_cavities } => {
                 #[cfg(feature = "dim2")]
                 {
                     result.mark_outside_surface(0, 0, result.resolution[0], 1);
@@ -271,8 +262,56 @@ impl VoxelizedVolume {
                         result.resolution[2],
                     );
                 }
-                result.fill_outside_surface();
-                result.fill_inside_surface();
+
+                if detect_cavities {
+                    let _ = result.propagate_values(
+                        VoxelValue::PrimitiveOutsideSurfaceToWalk,
+                        VoxelValue::PrimitiveOutsideSurface,
+                        None,
+                        VoxelValue::PrimitiveOnSurfaceToWalk1,
+                    );
+
+                    loop {
+                        if !result.propagate_values(
+                            VoxelValue::PrimitiveInsideSurfaceToWalk,
+                            VoxelValue::PrimitiveInsideSurface,
+                            Some(VoxelValue::PrimitiveOnSurfaceToWalk1),
+                            VoxelValue::PrimitiveOnSurfaceToWalk2,
+                        ) {
+                            break;
+                        }
+
+                        if !result.propagate_values(
+                            VoxelValue::PrimitiveOutsideSurfaceToWalk,
+                            VoxelValue::PrimitiveOutsideSurface,
+                            Some(VoxelValue::PrimitiveOnSurfaceToWalk2),
+                            VoxelValue::PrimitiveOnSurfaceToWalk1,
+                        ) {
+                            break;
+                        }
+                    }
+
+                    result.replace_value(
+                        VoxelValue::PrimitiveOnSurfaceToWalk1,
+                        VoxelValue::PrimitiveOnSurface,
+                    );
+                    result.replace_value(
+                        VoxelValue::PrimitiveOnSurfaceToWalk2,
+                        VoxelValue::PrimitiveOnSurface,
+                    );
+                } else {
+                    let _ = result.propagate_values(
+                        VoxelValue::PrimitiveOutsideSurfaceToWalk,
+                        VoxelValue::PrimitiveOutsideSurface,
+                        None,
+                        VoxelValue::PrimitiveOnSurface,
+                    );
+
+                    result.replace_value(
+                        VoxelValue::PrimitiveUndefined,
+                        VoxelValue::PrimitiveInsideSurface,
+                    );
+                }
             }
         }
 
@@ -292,7 +331,7 @@ impl VoxelizedVolume {
         let len = self.resolution.x * self.resolution.y;
         #[cfg(feature = "dim3")]
         let len = self.resolution.x * self.resolution.y * self.resolution.z;
-        self.data
+        self.values
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
     }
 
@@ -305,24 +344,12 @@ impl VoxelizedVolume {
 
     fn voxel_mut(&mut self, i: u32, j: u32, k: u32) -> &mut VoxelValue {
         let idx = self.voxel_index(i, j, k);
-        &mut self.data[idx as usize]
+        &mut self.values[idx as usize]
     }
 
     pub fn voxel(&self, i: u32, j: u32, k: u32) -> VoxelValue {
         let idx = self.voxel_index(i, j, k);
-        self.data[idx as usize]
-    }
-
-    pub fn num_voxels_on_surface(&self) -> u32 {
-        self.num_voxels_on_surface
-    }
-
-    pub fn num_voxels_inside_surface(&self) -> u32 {
-        self.num_voxels_inside_surface
-    }
-
-    pub fn num_voxels_outside_surface(&self) -> u32 {
-        self.num_voxels_outside_surface
+        self.values[idx as usize]
     }
 
     /// Mark all the PrimitiveUndefined voxels within the given bounds as PrimitiveOutsideSurfaceToWalk.
@@ -356,6 +383,8 @@ impl VoxelizedVolume {
     }
 
     fn walk_forward(
+        primitive_undefined_value_to_set: VoxelValue,
+        on_surface_value_to_set: VoxelValue,
         start: isize,
         end: isize,
         mut ptr: isize,
@@ -366,9 +395,16 @@ impl VoxelizedVolume {
         let mut i = start;
         let mut count = 0;
 
-        while count < max_distance && i < end && out[ptr as usize] == VoxelValue::PrimitiveUndefined
-        {
-            out[ptr as usize] = VoxelValue::PrimitiveOutsideSurfaceToWalk;
+        while count < max_distance && i < end {
+            if out[ptr as usize] == VoxelValue::PrimitiveUndefined {
+                out[ptr as usize] = primitive_undefined_value_to_set;
+            } else if out[ptr as usize] == VoxelValue::PrimitiveOnSurface {
+                out[ptr as usize] = on_surface_value_to_set;
+                break;
+            } else {
+                break;
+            }
+
             i += 1;
             ptr += stride;
             count += 1;
@@ -376,6 +412,8 @@ impl VoxelizedVolume {
     }
 
     fn walk_backward(
+        primitive_undefined_value_to_set: VoxelValue,
+        on_surface_value_to_set: VoxelValue,
         start: isize,
         end: isize,
         mut ptr: isize,
@@ -390,15 +428,30 @@ impl VoxelizedVolume {
             && i >= end
             && out[ptr as usize] == VoxelValue::PrimitiveUndefined
         {
-            out[ptr as usize] = VoxelValue::PrimitiveOutsideSurfaceToWalk;
+            if out[ptr as usize] == VoxelValue::PrimitiveUndefined {
+                out[ptr as usize] = primitive_undefined_value_to_set;
+            } else if out[ptr as usize] == VoxelValue::PrimitiveOnSurface {
+                out[ptr as usize] = on_surface_value_to_set;
+                break;
+            } else {
+                break;
+            }
+
             i -= 1;
             ptr -= stride;
             count += 1;
         }
     }
 
-    fn fill_outside_surface(&mut self) {
+    fn propagate_values(
+        &mut self,
+        inside_surface_value_to_walk: VoxelValue,
+        inside_surface_value_to_set: VoxelValue,
+        on_surface_value_to_walk: Option<VoxelValue>,
+        on_surface_value_to_set: VoxelValue,
+    ) -> bool {
         let mut voxels_walked;
+        let mut walked_at_least_once = false;
         let i0 = self.resolution[0];
         let j0 = self.resolution[1];
         #[cfg(feature = "dim2")]
@@ -413,7 +466,7 @@ impl VoxelizedVolume {
         let walk_distance = 64;
 
         // using the stride directly instead of calling get_voxel for each iterations saves
-        // a lot of multiplications and pipeline stalls due to data dependencies on imul.
+        // a lot of multiplications and pipeline stalls due to values dependencies on imul.
         let istride = self.voxel_index(1, 0, 0) as isize - self.voxel_index(0, 0, 0) as isize;
         let jstride = self.voxel_index(0, 1, 0) as isize - self.voxel_index(0, 0, 0) as isize;
         #[cfg(feature = "dim3")]
@@ -434,93 +487,97 @@ impl VoxelizedVolume {
                         let idx = self.voxel_index(i, j, k) as isize;
                         let voxel = self.voxel_mut(i, j, k);
 
-                        if *voxel == VoxelValue::PrimitiveOutsideSurfaceToWalk {
+                        if *voxel == inside_surface_value_to_walk {
                             voxels_walked += 1;
-                            *voxel = VoxelValue::PrimitiveOutsideSurface;
-
-                            // walk in each direction to mark other voxel that should be walked.
-                            // this will generate a 3d pattern that will help the overall
-                            // algorithm converge faster while remaining cache friendly.
-                            #[cfg(feature = "dim3")]
-                            Self::walk_forward(
-                                k as isize + 1,
-                                k0 as isize,
-                                idx + kstride,
-                                &mut self.data,
-                                kstride,
-                                walk_distance,
-                            );
-                            #[cfg(feature = "dim3")]
-                            Self::walk_backward(
-                                k as isize - 1,
-                                0,
-                                idx - kstride,
-                                &mut self.data,
-                                kstride,
-                                walk_distance,
-                            );
-
-                            Self::walk_forward(
-                                j as isize + 1,
-                                j0 as isize,
-                                idx + jstride,
-                                &mut self.data,
-                                jstride,
-                                walk_distance,
-                            );
-                            Self::walk_backward(
-                                j as isize - 1,
-                                0,
-                                idx - jstride,
-                                &mut self.data,
-                                jstride,
-                                walk_distance,
-                            );
-
-                            Self::walk_forward(
-                                (i + 1) as isize,
-                                i0 as isize,
-                                idx + istride,
-                                &mut self.data,
-                                istride,
-                                walk_distance,
-                            );
-                            Self::walk_backward(
-                                i as isize - 1,
-                                0,
-                                idx - istride,
-                                &mut self.data,
-                                istride,
-                                walk_distance,
-                            );
+                            walked_at_least_once = true;
+                            *voxel = inside_surface_value_to_set;
+                        } else if Some(*voxel) != on_surface_value_to_walk {
+                            continue;
                         }
+
+                        // walk in each direction to mark other voxel that should be walked.
+                        // this will generate a 3d pattern that will help the overall
+                        // algorithm converge faster while remaining cache friendly.
+                        #[cfg(feature = "dim3")]
+                        Self::walk_forward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            k as isize + 1,
+                            k0 as isize,
+                            idx + kstride,
+                            &mut self.values,
+                            kstride,
+                            walk_distance,
+                        );
+                        #[cfg(feature = "dim3")]
+                        Self::walk_backward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            k as isize - 1,
+                            0,
+                            idx - kstride,
+                            &mut self.values,
+                            kstride,
+                            walk_distance,
+                        );
+
+                        Self::walk_forward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            j as isize + 1,
+                            j0 as isize,
+                            idx + jstride,
+                            &mut self.values,
+                            jstride,
+                            walk_distance,
+                        );
+                        Self::walk_backward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            j as isize - 1,
+                            0,
+                            idx - jstride,
+                            &mut self.values,
+                            jstride,
+                            walk_distance,
+                        );
+
+                        Self::walk_forward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            (i + 1) as isize,
+                            i0 as isize,
+                            idx + istride,
+                            &mut self.values,
+                            istride,
+                            walk_distance,
+                        );
+                        Self::walk_backward(
+                            inside_surface_value_to_walk,
+                            on_surface_value_to_set,
+                            i as isize - 1,
+                            0,
+                            idx - istride,
+                            &mut self.values,
+                            istride,
+                            walk_distance,
+                        );
                     }
                 }
             }
-
-            self.num_voxels_outside_surface += voxels_walked;
 
             if voxels_walked == 0 {
                 break;
             }
         }
+
+        walked_at_least_once
     }
 
-    fn fill_inside_surface(&mut self) {
-        #[cfg(feature = "dim2")]
-        let k1 = 1;
-        #[cfg(feature = "dim3")]
-        let k1 = self.resolution.z;
-
-        for i in 0..self.resolution.x {
-            for j in 0..self.resolution.y {
-                for k in 0..k1 {
-                    let v = self.voxel_mut(i, j, k);
-                    if *v == VoxelValue::PrimitiveUndefined {
-                        *v = VoxelValue::PrimitiveInsideSurface;
-                        self.num_voxels_inside_surface += 1;
-                    }
-                }
+    fn replace_value(&mut self, current_value: VoxelValue, new_value: VoxelValue) {
+        for voxel in &mut self.values {
+            if *voxel == current_value {
+                *voxel = new_value;
             }
         }
     }
@@ -579,8 +636,6 @@ impl Into<VoxelSet> for VoxelizedVolume {
     fn into(self) -> VoxelSet {
         let mut vset = VoxelSet::new();
         vset.origin = self.origin;
-        vset.voxels
-            .reserve((self.num_voxels_inside_surface + self.num_voxels_on_surface) as usize);
         vset.scale = self.scale;
 
         #[cfg(feature = "dim2")]

@@ -30,7 +30,9 @@ impl Default for VHACDParameters {
             beta: 0.05,
             convex_hull_approximation: true,
             max_convex_hulls: 1024,
-            fill_mode: FillMode::FloodFill,
+            fill_mode: FillMode::FloodFill {
+                detect_cavities: false,
+            },
         }
     }
 }
