@@ -23,6 +23,11 @@ use crate::transformation::vhacd::CutPlane;
 use std::ops::Range;
 use std::sync::Arc;
 
+#[cfg(feature = "dim2")]
+type ConvexHull = Vec<Point<Real>>;
+#[cfg(feature = "dim3")]
+type ConvexHull = (Vec<Point<Real>>, Vec<Point<u32>>);
+
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
     pub coords: Point<u32>,
@@ -48,6 +53,7 @@ pub struct VoxelSet {
     pub(crate) max_bb_voxels: Point<u32>,
     pub(crate) voxels: Vec<Voxel>,
     pub(crate) intersections: Arc<Vec<u32>>,
+    pub(crate) primitive_classes: Arc<Vec<u32>>,
 }
 
 impl VoxelSet {
@@ -59,6 +65,7 @@ impl VoxelSet {
             scale: 1.0,
             voxels: Vec::new(),
             intersections: Arc::new(Vec::new()),
+            primitive_classes: Arc::new(Vec::new()),
         }
     }
 
@@ -134,15 +141,129 @@ impl VoxelSet {
         }
     }
 
+    // We have these cfg because we need to
+    // use the correct return type. We could just
+    // return ConvexHull but that would expose though
+    // the API a type alias that isn't really worth
+    // existing.
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hull(
         &self,
         points: &[Point<Real>],
         indices: &[Point<u32>],
     ) -> Vec<Point<Real>> {
+        self.do_compute_exact_convex_hull(points, indices)
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn compute_exact_convex_hull(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+        self.do_compute_exact_convex_hull(points, indices)
+    }
+
+    fn do_compute_exact_convex_hull(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> ConvexHull {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
+        #[cfg(feature = "dim3")]
+        let (mut polygon, mut workspace) = (Vec::new(), Vec::new());
+        let mut pushed_points = vec![false; points.len()];
+
+        // Grab all the points.
+        for voxel in self.voxels.iter().filter(|v| v.is_on_surface) {
+            let intersections =
+                &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
+            for prim_id in intersections {
+                let ia = indices[*prim_id as usize].x as usize;
+                let ib = indices[*prim_id as usize].y as usize;
+                #[cfg(feature = "dim3")]
+                let ic = indices[*prim_id as usize].z as usize;
+
+                // If the primitives have been classified by VHACD, we know that:
+                // - A class equal to Some(u32::MAX) means that the primitives intersects multiple
+                //   convex parts, so we need to split it.
+                // - A class equal to None means that we did not compute any classes (so we
+                //   must assume that each triangle have to be split since it may intersect
+                //   multiple parts.
+                // - A class different from `None` and `Some(u32::MAX)` means that the triangle is
+                //   included in only one convex part. So instead of cutting it, just push the whole
+                //   triangle once.
+                let prim_class = self.primitive_classes.get(*prim_id as usize).copied();
+                if prim_class == Some(u32::MAX) || prim_class == None {
+                    let aabb_center =
+                        self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                    let aabb =
+                        AABB::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+
+                    #[cfg(feature = "dim2")]
+                    if let Some(seg) = aabb.clip_segment(&points[ia], &points[ib]) {
+                        surface_points.push(seg.a);
+                        surface_points.push(seg.b);
+                    }
+
+                    #[cfg(feature = "dim3")]
+                    {
+                        polygon.clear();
+                        polygon.extend_from_slice(&[points[ia], points[ib], points[ic]]);
+                        aabb.clip_polygon_with_workspace(&mut polygon, &mut workspace);
+                        surface_points.append(&mut polygon);
+                    }
+                } else {
+                    // We know this triangle is only contained by
+                    // one voxel set, i.e., `self`. So we don't
+                    // need to cut it.
+                    //
+                    // Because one triangle may intersect multiple voxels contained by
+                    // the same convex part, we only push vertices we have not pushed
+                    // so far in order to avoid some useless duplicate points (duplicate
+                    // points are OK as far as convex hull computation is concerned, but
+                    // they imply some redundant computations).
+                    let mut push_pt = |i: usize| {
+                        if !pushed_points[i] {
+                            surface_points.push(points[i]);
+                            pushed_points[i] = true;
+                        }
+                    };
+
+                    push_pt(ia);
+                    push_pt(ib);
+                    #[cfg(feature = "dim3")]
+                    push_pt(ic);
+                }
+            }
+
+            if intersections.is_empty() {
+                self.map_voxel_points(voxel, |p| surface_points.push(p));
+            }
+        }
+
+        // Compute the convex-hull.
+        convex_hull(&surface_points)
+    }
+
+    /// Computes the intersections between all the voxels of this voxel set,
+    /// and all the primitives (triangle or segments) it intersected (as per
+    /// the voxel-to-primitives-map computed during voxelization).
+    ///
+    /// Panics if the voxelization was performed without setting the parameter
+    /// `voxel_to_primitives_map = true`.
+    pub fn compute_primitive_intersections(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> Vec<Point<Real>> {
+        assert!(!self.intersections.is_empty(),
+                "Cannot compute primitive intersections voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
+        let mut surface_points = Vec::new();
+        #[cfg(feature = "dim3")]
+        let (mut polygon, mut workspace) = (Vec::new(), Vec::new());
 
         // Grab all the points.
         for voxel in self.voxels.iter().filter(|v| v.is_on_surface) {
@@ -154,20 +275,34 @@ impl VoxelSet {
 
                 let pa = points[indices[*prim_id as usize].x as usize];
                 let pb = points[indices[*prim_id as usize].y as usize];
+                #[cfg(feature = "dim3")]
+                let pc = points[indices[*prim_id as usize].z as usize];
 
+                #[cfg(feature = "dim2")]
                 if let Some(seg) = aabb.clip_segment(&pa, &pb) {
                     surface_points.push(seg.a);
                     surface_points.push(seg.b);
                 }
-            }
 
-            if intersections.is_empty() {
-                self.map_voxel_points(voxel, |p| surface_points.push(p));
+                #[cfg(feature = "dim3")]
+                {
+                    workspace.clear();
+                    polygon.clear();
+                    polygon.extend_from_slice(&[pa, pb, pc]);
+                    aabb.clip_polygon_with_workspace(&mut polygon, &mut workspace);
+
+                    if polygon.len() > 2 {
+                        for i in 1..polygon.len() - 1 {
+                            surface_points.push(polygon[0]);
+                            surface_points.push(polygon[i]);
+                            surface_points.push(polygon[i + 1]);
+                        }
+                    }
+                }
             }
         }
 
-        // Compute the convex-hull.
-        convex_hull(&surface_points)
+        surface_points
     }
 
     #[cfg(feature = "dim2")]

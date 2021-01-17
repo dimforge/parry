@@ -19,6 +19,7 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
+use std::sync::Arc;
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
@@ -61,7 +62,14 @@ impl VHACD {
             // &self.raycast_mesh,
         );
 
-        Self::from_voxels(params, voxelized.into())
+        let mut result = Self::from_voxels(params, voxelized.into());
+
+        let primitive_classes = Arc::new(result.classify_primitives(indices.len()));
+        for part in &mut result.voxel_parts {
+            part.primitive_classes = primitive_classes.clone();
+        }
+
+        result
     }
 
     pub fn from_voxels(params: &VHACDParameters, voxels: VoxelSet) -> Self {
@@ -430,12 +438,69 @@ impl VHACD {
         }
     }
 
+    // Returns a vector such that `result[i]` gives the index of the the voxelized convex part that
+    // intersects it.
+    //
+    // If multiple convex parts intersect the same primitive, then `result[i]` is set to `u32::MAX`.
+    // This is used to avoid some useless triangle/segment cutting when computing the exact convex hull
+    // of a voxelized convex part.
+    fn classify_primitives(&self, num_primitives: usize) -> Vec<u32> {
+        if num_primitives == 0 {
+            return Vec::new();
+        }
+
+        const NO_CLASS: u32 = u32::MAX - 1;
+        const MULTICLASS: u32 = u32::MAX;
+
+        let mut primitive_classes = Vec::new();
+        primitive_classes.resize(num_primitives, NO_CLASS);
+
+        for (ipart, part) in self.voxel_parts.iter().enumerate() {
+            for voxel in &part.voxels {
+                let range = voxel.intersections_range.0..voxel.intersections_range.1;
+                for inter in &part.intersections[range] {
+                    let class = &mut primitive_classes[*inter as usize];
+                    if *class == NO_CLASS {
+                        *class = ipart as u32;
+                    } else if *class != ipart as u32 {
+                        *class = MULTICLASS;
+                    }
+                }
+            }
+        }
+
+        primitive_classes
+    }
+
+    pub fn compute_primitive_intersections(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> Vec<Vec<Point<Real>>> {
+        self.voxel_parts
+            .iter()
+            .map(|part| part.compute_primitive_intersections(points, indices))
+            .collect()
+    }
+
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hulls(
         &self,
         points: &[Point<Real>],
         indices: &[Point<u32>],
     ) -> Vec<Vec<Point<Real>>> {
+        self.voxel_parts
+            .iter()
+            .map(|part| part.compute_exact_convex_hull(points, indices))
+            .collect()
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn compute_exact_convex_hulls(
+        &self,
+        points: &[Point<Real>],
+        indices: &[Point<u32>],
+    ) -> Vec<(Vec<Point<Real>>, Vec<Point<u32>>)> {
         self.voxel_parts
             .iter()
             .map(|part| part.compute_exact_convex_hull(points, indices))
