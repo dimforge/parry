@@ -126,8 +126,8 @@ impl PolygonalFeatureMap for ConvexPolygon {
         let i2 = (best_face + 1) % self.points.len();
         *out_feature = PolygonalFeature {
             vertices: [self.points[i1], self.points[i2]],
-            vids: [i1 as u8 * 2, i2 as u8 * 2],
-            fid: i1 as u8 * 2 + 1,
+            vids: [i1 as u32 * 2, i2 as u32 * 2],
+            fid: i1 as u32 * 2 + 1,
             num_vertices: 2,
         };
     }

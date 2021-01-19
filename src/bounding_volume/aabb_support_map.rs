@@ -9,12 +9,12 @@ use crate::shape::{Cone, Cylinder};
 impl Cone {
     #[inline]
     pub fn aabb(&self, m: &Isometry<Real>) -> AABB {
-        bounding_volume::support_map_aabb(m, self)
+        bounding_volume::details::support_map_aabb(m, self)
     }
 
     #[inline]
     pub fn local_aabb(&self) -> AABB {
-        bounding_volume::local_support_map_aabb(self)
+        bounding_volume::details::local_support_map_aabb(self)
     }
 }
 
@@ -22,12 +22,12 @@ impl Cone {
 impl Cylinder {
     #[inline]
     pub fn aabb(&self, m: &Isometry<Real>) -> AABB {
-        bounding_volume::support_map_aabb(m, self)
+        bounding_volume::details::support_map_aabb(m, self)
     }
 
     #[inline]
     pub fn local_aabb(&self) -> AABB {
-        bounding_volume::local_support_map_aabb(self)
+        bounding_volume::details::local_support_map_aabb(self)
     }
 }
 
@@ -39,6 +39,6 @@ impl Segment {
 
     #[inline]
     pub fn local_aabb(&self) -> AABB {
-        bounding_volume::local_support_map_aabb(self)
+        bounding_volume::details::local_support_map_aabb(self)
     }
 }

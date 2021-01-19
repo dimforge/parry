@@ -5,8 +5,8 @@ use crate::shape::Segment;
 #[derive(Debug)]
 pub struct PolygonalFeature {
     pub vertices: [Point<Real>; 2],
-    pub vids: [u8; 2],
-    pub fid: u8,
+    pub vids: [u32; 2],
+    pub fid: u32,
     pub num_vertices: usize,
 }
 

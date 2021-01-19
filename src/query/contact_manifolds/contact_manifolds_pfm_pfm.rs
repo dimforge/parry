@@ -93,8 +93,8 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 let contact = TrackedContact::new(
                     p1,
                     pos12.inverse_transform_point(&p2_1),
-                    u8::MAX, // We don't know what features are involved.
-                    u8::MAX,
+                    u32::MAX, // We don't know what features are involved.
+                    u32::MAX,
                     (p2_1 - p1).dot(&dir),
                 );
                 manifold.points.push(contact);

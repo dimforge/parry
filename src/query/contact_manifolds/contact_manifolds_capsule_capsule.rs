@@ -43,12 +43,12 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     manifold.clear();
 
     let fid1 = if let SegmentPointLocation::OnVertex(v1) = loc1 {
-        v1 as u8 * 2
+        v1 * 2
     } else {
         1
     };
     let fid2 = if let SegmentPointLocation::OnVertex(v2) = loc2 {
-        v2 as u8 * 2
+        v2 * 2
     } else {
         1
     };
@@ -92,8 +92,8 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
                         TrackedContact::new(
                             clip_a.0,
                             pos12.inverse_transform_point(&clip_a.1),
-                            clip_a.2 as u8,
-                            clip_a.3 as u8,
+                            clip_a.2 as u32,
+                            clip_a.3 as u32,
                             (clip_a.1 - clip_a.0).dot(&local_n1),
                         )
                     } else {
@@ -101,8 +101,8 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
                         TrackedContact::new(
                             clip_b.0,
                             pos12.inverse_transform_point(&clip_b.1),
-                            clip_b.2 as u8,
-                            clip_b.3 as u8,
+                            clip_b.2 as u32,
+                            clip_b.3 as u32,
                             (clip_b.1 - clip_b.0).dot(&local_n1),
                         )
                     };

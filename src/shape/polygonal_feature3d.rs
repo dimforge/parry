@@ -8,9 +8,9 @@ use na::Point2;
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
     pub vertices: [Point<Real>; 4],
-    pub vids: [u8; 4], // Feature ID of the vertices.
-    pub eids: [u8; 4], // Feature ID of the edges.
-    pub fid: u8,       // Feature ID of the face.
+    pub vids: [u32; 4], // Feature ID of the vertices.
+    pub eids: [u32; 4], // Feature ID of the edges.
+    pub fid: u32,       // Feature ID of the face.
     pub num_vertices: usize,
 }
 

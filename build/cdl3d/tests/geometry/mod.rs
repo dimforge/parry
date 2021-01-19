@@ -1,5 +1,6 @@
 mod ball_ball_toi;
 mod ball_triangle_toi;
+mod convex_hull;
 mod cuboid_ray_cast;
 mod cylinder_cuboid_contact;
 mod epa3;

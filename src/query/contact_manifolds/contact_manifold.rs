@@ -12,9 +12,9 @@ pub struct TrackedContact<Data> {
     pub dist: Real,
 
     /// The feature ID of the first shape involved in the contact.
-    pub fid1: u8,
+    pub fid1: u32,
     /// The feature ID of the second shape involved in the contact.
-    pub fid2: u8,
+    pub fid2: u32,
     /// User-data associated to this contact.
     pub data: Data,
 }
@@ -23,8 +23,8 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     pub fn new(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
-        fid1: u8,
-        fid2: u8,
+        fid1: u32,
+        fid2: u32,
         dist: Real,
     ) -> Self {
         Self {
@@ -40,8 +40,8 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     pub fn flipped(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
-        fid1: u8,
-        fid2: u8,
+        fid1: u32,
+        fid2: u32,
         dist: Real,
         flipped: bool,
     ) -> Self {

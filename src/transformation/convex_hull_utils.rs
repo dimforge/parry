@@ -31,23 +31,48 @@ where
 }
 
 /// Returns the index of the support point of an indexed list of points.
-pub fn indexed_support_point_id<D: DimName>(
+pub fn indexed_support_point_id<D: DimName, I>(
     direction: &na::VectorN<Real, D>,
     points: &[na::Point<Real, D>],
-    idx: &[usize],
+    idx: I,
 ) -> Option<usize>
 where
+    I: Iterator<Item = usize>,
     DefaultAllocator: Allocator<Real, D>,
 {
     let mut argmax = None;
-    let _max: Real = Bounded::max_value();
-    let mut max = -_max;
+    let mut max = -Real::MAX;
 
-    for i in idx.iter() {
-        let dot = direction.dot(&points[*i].coords);
+    for i in idx.into_iter() {
+        let dot = direction.dot(&points[i].coords);
 
         if dot > max {
-            argmax = Some(*i);
+            argmax = Some(i);
+            max = dot;
+        }
+    }
+
+    argmax
+}
+
+/// Returns the number `n` such that `points[idx.nth(n)]` is the support point.
+pub fn indexed_support_point_nth<D: DimName, I>(
+    direction: &na::VectorN<Real, D>,
+    points: &[na::Point<Real, D>],
+    idx: I,
+) -> Option<usize>
+where
+    I: Iterator<Item = usize>,
+    DefaultAllocator: Allocator<Real, D>,
+{
+    let mut argmax = None;
+    let mut max = -Real::MAX;
+
+    for (k, i) in idx.into_iter().enumerate() {
+        let dot = direction.dot(&points[i].coords);
+
+        if dot > max {
+            argmax = Some(k);
             max = dot;
         }
     }
@@ -58,7 +83,7 @@ where
 /// Scale and center the given set of point depending on their AABB.
 #[cfg(feature = "dim3")]
 pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
-    let aabb = bounding_volume::local_point_cloud_aabb(&coords[..]);
+    let aabb = bounding_volume::details::local_point_cloud_aabb(&coords[..]);
     let diag = na::distance(&aabb.mins, &aabb.maxs);
     let center = aabb.center();
 

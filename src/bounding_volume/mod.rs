@@ -4,14 +4,8 @@
 pub use crate::bounding_volume::aabb::AABB;
 pub use crate::bounding_volume::simd_aabb::SimdAABB;
 
-#[cfg(feature = "dim3")]
-pub(crate) use crate::bounding_volume::aabb_utils::support_map_aabb;
-pub(crate) use crate::bounding_volume::aabb_utils::{
-    local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb,
-};
 #[doc(inline)]
 pub use crate::bounding_volume::bounding_sphere::BoundingSphere;
-pub(crate) use crate::bounding_volume::bounding_sphere_utils::point_cloud_bounding_sphere;
 #[doc(inline)]
 pub use crate::bounding_volume::bounding_volume::BoundingVolume;
 
@@ -55,3 +49,10 @@ mod bounding_sphere_triangle;
 mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
 mod simd_aabb;
+
+pub mod details {
+    #[cfg(feature = "dim3")]
+    pub use super::aabb_utils::support_map_aabb;
+    pub use super::aabb_utils::{local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb};
+    pub use super::bounding_sphere_utils::point_cloud_bounding_sphere;
+}

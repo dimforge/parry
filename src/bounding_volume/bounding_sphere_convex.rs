@@ -12,7 +12,7 @@ impl ConvexPolyhedron {
 
     #[inline]
     pub fn local_bounding_sphere(&self) -> BoundingSphere {
-        let (center, radius) = bounding_volume::point_cloud_bounding_sphere(self.points());
+        let (center, radius) = bounding_volume::details::point_cloud_bounding_sphere(self.points());
 
         BoundingSphere::new(center, radius)
     }

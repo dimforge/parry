@@ -21,8 +21,8 @@ impl Cuboid {
     }
 
     #[cfg(feature = "dim2")]
-    pub fn vertex_feature_id(vertex: Point<Real>) -> u8 {
-        ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u8
+    pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
+        ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
     }
 
     #[cfg(feature = "dim2")]
@@ -145,7 +145,7 @@ impl Cuboid {
             _ => unreachable!(),
         };
 
-        pub fn vid(i: u8) -> u8 {
+        pub fn vid(i: u32) -> u32 {
             // Each vertex has an even feature id.
             i * 2
         }
@@ -199,7 +199,7 @@ impl Cuboid {
             vertices,
             vids,
             eids,
-            fid: fid as u8,
+            fid: fid as u32,
             num_vertices: 4,
         }
     }

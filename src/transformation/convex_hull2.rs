@@ -31,8 +31,11 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
             continue;
         }
 
-        let pt_id =
-            indexed_support_point_id(&segments[i].normal, points, &segments[i].visible_points[..]);
+        let pt_id = indexed_support_point_id(
+            &segments[i].normal,
+            points,
+            segments[i].visible_points.iter().copied(),
+        );
 
         if let Some(point) = pt_id {
             segments[i].valid = false;

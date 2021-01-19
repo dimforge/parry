@@ -32,7 +32,7 @@ impl Triangle {
 #[cfg(feature = "dim3")]
 mod test {
     use crate::{
-        bounding_volume::support_map_aabb,
+        bounding_volume::details::support_map_aabb,
         math::{Isometry, Point, Real, Translation},
         shape::Triangle,
     };

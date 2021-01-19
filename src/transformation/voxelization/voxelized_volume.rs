@@ -110,7 +110,7 @@ impl VoxelizedVolume {
             return result;
         }
 
-        let aabb = crate::bounding_volume::local_point_cloud_aabb(points);
+        let aabb = crate::bounding_volume::details::local_point_cloud_aabb(points);
         result.origin = aabb.mins;
 
         let d = aabb.maxs - aabb.mins;
