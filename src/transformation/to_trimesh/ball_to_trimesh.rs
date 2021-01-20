@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::Ball;
 use crate::transformation::utils;
 use na::{self, Point3, RealField};
@@ -9,14 +9,14 @@ impl Ball {
         &self,
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
-    ) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let diameter = self.radius * 2.0;
         let (vtx, idx) = unit_sphere(ntheta_subdiv, nphi_subdiv);
         (utils::scaled(vtx, Vector::repeat(diameter)), idx)
     }
 }
 
-fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let pi = Real::pi();
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();
@@ -55,7 +55,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
 pub fn unit_hemisphere(
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
-) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();
     let dtheta = two_pi / (ntheta_subdiv as Real);

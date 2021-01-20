@@ -1,8 +1,8 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::{self, SortedPair};
-use na::{self, Point2, Point3, Unit};
+use na::{self, Point2, Unit};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::f64;
@@ -44,8 +44,8 @@ pub struct Face {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 struct Triangle {
-    vertices: Point3<u32>,
-    edges: Point3<u32>,
+    vertices: [u32; 3],
+    edges: [u32; 3],
     normal: Vector<Real>,
     parent_face: Option<u32>,
     is_degenerate: bool,
@@ -101,7 +101,7 @@ impl ConvexPolyhedron {
     /// Retruns `None` if he given solid is not manifold (contains t-junctions, not closed, etc.)
     pub fn from_convex_mesh(
         points: Vec<Point<Real>>,
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> Option<ConvexPolyhedron> {
         let eps = crate::math::DEFAULT_EPSILON.sqrt();
 
@@ -124,7 +124,7 @@ impl ConvexPolyhedron {
          *  Initialize triangles and edges adjacency information.
          */
         for vtx in indices {
-            let mut edges_id = Point3::new(u32::MAX, u32::MAX, u32::MAX);
+            let mut edges_id = [u32::MAX; DIM];
             let face_id = triangles.len();
 
             assert!(vtx[0] != vtx[1]);
@@ -167,14 +167,13 @@ impl ConvexPolyhedron {
                 }
             }
 
-            let vertices = Point3::new(vtx[0], vtx[1], vtx[2]);
             let normal = utils::ccw_face_normal([
                 &points[vtx[0] as usize],
                 &points[vtx[1] as usize],
                 &points[vtx[2] as usize],
             ]);
             let triangle = Triangle {
-                vertices,
+                vertices: *vtx,
                 edges: edges_id,
                 normal: normal.map(|n| *n).unwrap_or(Vector::zeros()),
                 parent_face: None,

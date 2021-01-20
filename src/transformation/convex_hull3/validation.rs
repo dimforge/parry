@@ -25,7 +25,7 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
     }
 }
 
-pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[Point3<u32>]) {
+pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
     use crate::utils::SortedPair;
     use std::collections::hash_map::{Entry, HashMap};
     let mut edges = HashMap::new();
@@ -52,9 +52,9 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[Point3<u32>]) {
     }
 
     for (itri, tri) in triangles.iter().enumerate() {
-        assert!(tri.x != tri.y);
-        assert!(tri.x != tri.z);
-        assert!(tri.z != tri.y);
+        assert!(tri[0] != tri[1]);
+        assert!(tri[0] != tri[2]);
+        assert!(tri[2] != tri[1]);
 
         for i in 0..3 {
             let ivtx1 = tri[i as usize];

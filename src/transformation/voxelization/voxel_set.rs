@@ -18,14 +18,14 @@
 
 use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::AABB;
-use crate::math::{Matrix, Point, Real, Vector};
+use crate::math::{Matrix, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
 #[cfg(feature = "dim3")]
-type ConvexHull = (Vec<Point<Real>>, Vec<Point<u32>>);
+type ConvexHull = (Vec<Point<Real>>, Vec<[u32; DIM]>);
 
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
@@ -80,7 +80,7 @@ impl VoxelSet {
 
     pub fn voxelize(
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
         dim: u32,
         fill_mode: FillMode,
         keep_voxel_to_primitives_map: bool,
@@ -149,7 +149,7 @@ impl VoxelSet {
     pub fn compute_exact_convex_hull(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> Vec<Point<Real>> {
         self.do_compute_exact_convex_hull(points, indices)
     }
@@ -158,15 +158,15 @@ impl VoxelSet {
     pub fn compute_exact_convex_hull(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
-    ) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+        indices: &[[u32; DIM]],
+    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
     fn do_compute_exact_convex_hull(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> ConvexHull {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
@@ -180,10 +180,10 @@ impl VoxelSet {
             let intersections =
                 &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
             for prim_id in intersections {
-                let ia = indices[*prim_id as usize].x as usize;
-                let ib = indices[*prim_id as usize].y as usize;
+                let ia = indices[*prim_id as usize][0] as usize;
+                let ib = indices[*prim_id as usize][1] as usize;
                 #[cfg(feature = "dim3")]
-                let ic = indices[*prim_id as usize].z as usize;
+                let ic = indices[*prim_id as usize][2] as usize;
 
                 // If the primitives have been classified by VHACD, we know that:
                 // - A class equal to Some(u32::MAX) means that the primitives intersects multiple
@@ -256,7 +256,7 @@ impl VoxelSet {
     pub fn compute_primitive_intersections(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> Vec<Point<Real>> {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute primitive intersections voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
@@ -272,10 +272,10 @@ impl VoxelSet {
                 let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
                 let aabb = AABB::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
 
-                let pa = points[indices[*prim_id as usize].x as usize];
-                let pb = points[indices[*prim_id as usize].y as usize];
+                let pa = points[indices[*prim_id as usize][0] as usize];
+                let pb = points[indices[*prim_id as usize][1] as usize];
                 #[cfg(feature = "dim3")]
-                let pc = points[indices[*prim_id as usize].z as usize];
+                let pc = points[indices[*prim_id as usize][2] as usize];
 
                 #[cfg(feature = "dim2")]
                 if let Some(seg) = aabb.clip_segment(&pa, &pb) {
@@ -323,7 +323,7 @@ impl VoxelSet {
     }
 
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -508,7 +508,7 @@ impl VoxelSet {
         &self,
         base_index: u32,
         is_on_surface: bool,
-    ) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -516,18 +516,18 @@ impl VoxelSet {
             if voxel.is_on_surface == is_on_surface {
                 self.map_voxel_points(voxel, |p| vertices.push(p));
 
-                indices.push(Point::new(base_index + 0, base_index + 2, base_index + 1));
-                indices.push(Point::new(base_index + 0, base_index + 3, base_index + 2));
-                indices.push(Point::new(base_index + 4, base_index + 5, base_index + 6));
-                indices.push(Point::new(base_index + 4, base_index + 6, base_index + 7));
-                indices.push(Point::new(base_index + 7, base_index + 6, base_index + 2));
-                indices.push(Point::new(base_index + 7, base_index + 2, base_index + 3));
-                indices.push(Point::new(base_index + 4, base_index + 1, base_index + 5));
-                indices.push(Point::new(base_index + 4, base_index + 0, base_index + 1));
-                indices.push(Point::new(base_index + 6, base_index + 5, base_index + 1));
-                indices.push(Point::new(base_index + 6, base_index + 1, base_index + 2));
-                indices.push(Point::new(base_index + 7, base_index + 0, base_index + 4));
-                indices.push(Point::new(base_index + 7, base_index + 3, base_index + 0));
+                indices.push([base_index + 0, base_index + 2, base_index + 1]);
+                indices.push([base_index + 0, base_index + 3, base_index + 2]);
+                indices.push([base_index + 4, base_index + 5, base_index + 6]);
+                indices.push([base_index + 4, base_index + 6, base_index + 7]);
+                indices.push([base_index + 7, base_index + 6, base_index + 2]);
+                indices.push([base_index + 7, base_index + 2, base_index + 3]);
+                indices.push([base_index + 4, base_index + 1, base_index + 5]);
+                indices.push([base_index + 4, base_index + 0, base_index + 1]);
+                indices.push([base_index + 6, base_index + 5, base_index + 1]);
+                indices.push([base_index + 6, base_index + 1, base_index + 2]);
+                indices.push([base_index + 7, base_index + 0, base_index + 4]);
+                indices.push([base_index + 7, base_index + 3, base_index + 0]);
             }
         }
 
@@ -571,7 +571,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {

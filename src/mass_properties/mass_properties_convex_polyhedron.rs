@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Matrix, Point, Real};
+use crate::math::{Matrix, Point, Real, DIM};
 use crate::shape::Tetrahedron;
 use crate::utils;
 use num::Zero;
@@ -8,7 +8,7 @@ impl MassProperties {
     pub fn from_convex_polyhedron(
         density: Real,
         vertices: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> MassProperties {
         let (volume, com) = convex_mesh_volume_and_center_of_mass_unchecked(vertices, indices);
 
@@ -19,9 +19,9 @@ impl MassProperties {
         let mut itot = Matrix::zeros();
 
         for t in indices {
-            let p2 = &vertices[t.x as usize];
-            let p3 = &vertices[t.y as usize];
-            let p4 = &vertices[t.z as usize];
+            let p2 = &vertices[t[0] as usize];
+            let p3 = &vertices[t[1] as usize];
+            let p4 = &vertices[t[2] as usize];
 
             let vol = Tetrahedron::new(com, *p2, *p3, *p4).volume();
             let ipart = tetrahedron_unit_inertia_tensor_wrt_point(&com, &com, p2, p3, p4);
@@ -151,7 +151,7 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
 
 pub fn convex_mesh_volume_and_center_of_mass_unchecked(
     vertices: &[Point<Real>],
-    indices: &[Point<u32>],
+    indices: &[[u32; DIM]],
 ) -> (Real, Point<Real>) {
     let geometric_center = utils::center(vertices);
 
@@ -159,9 +159,9 @@ pub fn convex_mesh_volume_and_center_of_mass_unchecked(
     let mut vol = 0.0;
 
     for t in indices {
-        let p2 = vertices[t.x as usize];
-        let p3 = vertices[t.y as usize];
-        let p4 = vertices[t.z as usize];
+        let p2 = vertices[t[0] as usize];
+        let p3 = vertices[t[1] as usize];
+        let p4 = vertices[t[2] as usize];
 
         let volume = Tetrahedron::new(geometric_center, p2, p3, p4).volume();
         let center = Tetrahedron::new(geometric_center, p2, p3, p4).center();

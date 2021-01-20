@@ -9,12 +9,12 @@ use std::cmp::Ordering;
 
 pub enum InitialMesh {
     Facets(Vec<TriangleFacet>),
-    ResultMesh(Vec<Point3<Real>>, Vec<Point3<u32>>),
+    ResultMesh(Vec<Point3<Real>>, Vec<[u32; 3]>),
 }
 
-fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
-    let ta = Point3::new(0u32, 0, 0);
-    let tb = Point3::new(0u32, 0, 0);
+fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    let ta = [0u32; 3];
+    let tb = [0u32; 3];
 
     (vec![point], vec![ta, tb])
 }
@@ -22,12 +22,12 @@ fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<P
 fn build_degenerate_mesh_segment(
     dir: &Vector3<Real>,
     points: &[Point3<Real>],
-) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let a = utils::point_cloud_support_point(dir, points);
     let b = utils::point_cloud_support_point(&-*dir, points);
 
-    let ta = Point3::new(0u32, 1, 0);
-    let tb = Point3::new(1u32, 0, 0);
+    let ta = [0u32, 1, 0];
+    let tb = [1u32, 0, 0];
 
     (vec![a, b], vec![ta, tb])
 }
@@ -126,7 +126,7 @@ pub fn get_initial_mesh(
             let mut triangles = Vec::with_capacity(npoints + npoints - 4);
 
             for id in 1u32..npoints as u32 - 1 {
-                triangles.push(Point3::new(0, id, id + 1));
+                triangles.push([0, id, id + 1]);
             }
 
             // NOTE: We use a different starting point for the triangulation
@@ -134,7 +134,7 @@ pub fn get_initial_mesh(
             // and edge would end be being shared by more than two triangles.
             for id in 0u32..npoints as u32 - 2 {
                 let a = npoints as u32 - 1;
-                triangles.push(Point3::new(a, id + 1, id));
+                triangles.push([a, id + 1, id]);
             }
 
             InitialMesh::ResultMesh(coords, triangles)

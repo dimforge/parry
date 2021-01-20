@@ -5,7 +5,6 @@ use crate::shape::composite_shape::SimdCompositeShape;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cuboid, HeightField};
 use crate::shape::{Shape, Triangle, TypedSimdCompositeShape};
-use na::Point3;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -13,12 +12,12 @@ use na::Point3;
 pub struct TriMesh {
     quadtree: SimdQuadTree<u32>,
     vertices: Vec<Point<Real>>,
-    indices: Vec<Point3<u32>>,
+    indices: Vec<[u32; 3]>,
 }
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Vec<Point3<u32>>) -> Self {
+    pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
         assert!(
             indices.len() > 0,
             "A triangle mesh must contain at least one triangle."
@@ -69,9 +68,9 @@ impl TriMesh {
     pub fn triangles(&self) -> impl Iterator<Item = Triangle> + '_ {
         self.indices.iter().map(move |ids| {
             Triangle::new(
-                self.vertices[ids.x as usize],
-                self.vertices[ids.y as usize],
-                self.vertices[ids.z as usize],
+                self.vertices[ids[0] as usize],
+                self.vertices[ids[1] as usize],
+                self.vertices[ids[2] as usize],
             )
         })
     }
@@ -80,9 +79,9 @@ impl TriMesh {
     pub fn triangle(&self, i: u32) -> Triangle {
         let idx = self.indices[i as usize];
         Triangle::new(
-            self.vertices[idx.x as usize],
-            self.vertices[idx.y as usize],
-            self.vertices[idx.z as usize],
+            self.vertices[idx[0] as usize],
+            self.vertices[idx[1] as usize],
+            self.vertices[idx[2] as usize],
         )
     }
 
@@ -92,7 +91,7 @@ impl TriMesh {
     }
 
     /// The index buffer of this mesh.
-    pub fn indices(&self) -> &[Point3<u32>] {
+    pub fn indices(&self) -> &[[u32; 3]] {
         &self.indices
     }
 

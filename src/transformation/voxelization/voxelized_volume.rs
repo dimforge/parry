@@ -83,7 +83,7 @@ struct VoxelData {
 pub struct VoxelizedVolume {
     origin: Point<Real>,
     scale: Real,
-    resolution: Point<u32>,
+    resolution: [u32; DIM],
     values: Vec<VoxelValue>,
     data: Vec<VoxelData>,
     primitive_intersections: Vec<(u32, u32)>,
@@ -92,13 +92,13 @@ pub struct VoxelizedVolume {
 impl VoxelizedVolume {
     pub fn voxelize(
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
         resolution: u32,
         fill_mode: FillMode,
         keep_voxel_to_primitives_map: bool,
     ) -> Self {
         let mut result = VoxelizedVolume {
-            resolution: Point::origin(),
+            resolution: [0; DIM],
             origin: Point::origin(),
             scale: 1.0,
             values: Vec::new(),
@@ -189,7 +189,9 @@ impl VoxelizedVolume {
             }
 
             ijk0.apply(|e| e.saturating_sub(1));
-            ijk1 = ijk1.map(|e| e + 1).inf(&result.resolution.coords);
+            ijk1 = ijk1
+                .map(|e| e + 1)
+                .inf(&Point::from(result.resolution).coords);
 
             #[cfg(feature = "dim2")]
             let range_k = 0..1;
@@ -428,7 +430,7 @@ impl VoxelizedVolume {
         result
     }
 
-    pub fn resolution(&self) -> Point<u32> {
+    pub fn resolution(&self) -> [u32; DIM] {
         self.resolution
     }
 
@@ -438,9 +440,9 @@ impl VoxelizedVolume {
 
     fn allocate(&mut self) {
         #[cfg(feature = "dim2")]
-        let len = self.resolution.x * self.resolution.y;
+        let len = self.resolution[0] * self.resolution[1];
         #[cfg(feature = "dim3")]
-        let len = self.resolution.x * self.resolution.y * self.resolution.z;
+        let len = self.resolution[0] * self.resolution[1] * self.resolution[2];
         self.values
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
         self.data.resize(
@@ -455,9 +457,9 @@ impl VoxelizedVolume {
 
     fn voxel_index(&self, i: u32, j: u32, _k: u32) -> u32 {
         #[cfg(feature = "dim2")]
-        return i + j * self.resolution.x;
+        return i + j * self.resolution[0];
         #[cfg(feature = "dim3")]
-        return i + j * self.resolution.x + _k * self.resolution.x * self.resolution.y;
+        return i + j * self.resolution[0] + _k * self.resolution[0] * self.resolution[1];
     }
 
     fn voxel_mut(&mut self, i: u32, j: u32, k: u32) -> &mut VoxelValue {
@@ -698,13 +700,13 @@ impl VoxelizedVolume {
     }
 
     #[cfg(feature = "dim3")]
-    pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+    pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
-        for i in 0..self.resolution.x {
-            for j in 0..self.resolution.y {
-                for k in 0..self.resolution.z {
+        for i in 0..self.resolution[0] {
+            for j in 0..self.resolution[1] {
+                for k in 0..self.resolution[2] {
                     let voxel = self.voxel(i, j, k);
 
                     if voxel == value {
@@ -726,18 +728,18 @@ impl VoxelizedVolume {
                         }
 
                         let s = vertices.len() as u32;
-                        indices.push(Point::new(s + 0, s + 2, s + 1));
-                        indices.push(Point::new(s + 0, s + 3, s + 2));
-                        indices.push(Point::new(s + 4, s + 5, s + 6));
-                        indices.push(Point::new(s + 4, s + 6, s + 7));
-                        indices.push(Point::new(s + 7, s + 6, s + 2));
-                        indices.push(Point::new(s + 7, s + 2, s + 3));
-                        indices.push(Point::new(s + 4, s + 1, s + 5));
-                        indices.push(Point::new(s + 4, s + 0, s + 1));
-                        indices.push(Point::new(s + 6, s + 5, s + 1));
-                        indices.push(Point::new(s + 6, s + 1, s + 2));
-                        indices.push(Point::new(s + 7, s + 0, s + 4));
-                        indices.push(Point::new(s + 7, s + 3, s + 0));
+                        indices.push([s + 0, s + 2, s + 1]);
+                        indices.push([s + 0, s + 3, s + 2]);
+                        indices.push([s + 4, s + 5, s + 6]);
+                        indices.push([s + 4, s + 6, s + 7]);
+                        indices.push([s + 7, s + 6, s + 2]);
+                        indices.push([s + 7, s + 2, s + 3]);
+                        indices.push([s + 4, s + 1, s + 5]);
+                        indices.push([s + 4, s + 0, s + 1]);
+                        indices.push([s + 6, s + 5, s + 1]);
+                        indices.push([s + 6, s + 1, s + 2]);
+                        indices.push([s + 7, s + 0, s + 4]);
+                        indices.push([s + 7, s + 3, s + 0]);
                     }
                 }
             }
@@ -758,10 +760,10 @@ impl Into<VoxelSet> for VoxelizedVolume {
         #[cfg(feature = "dim2")]
         let k1 = 1;
         #[cfg(feature = "dim3")]
-        let k1 = self.resolution.z;
+        let k1 = self.resolution[2];
 
-        for i in 0..self.resolution.x {
-            for j in 0..self.resolution.y {
+        for i in 0..self.resolution[0] {
+            for j in 0..self.resolution[1] {
                 for k in 0..k1 {
                     let id = self.voxel_index(i, j, k) as usize;
                     let value = self.values[id];

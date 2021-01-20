@@ -3,7 +3,7 @@ use crate::shape::ConvexPolyhedron;
 use na::Point3;
 
 impl ConvexPolyhedron {
-    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let mut indices = Vec::new();
 
         for face in self.faces() {
@@ -12,7 +12,7 @@ impl ConvexPolyhedron {
             let first_id = self.vertices_adj_to_face()[i1 as usize] as u32;
 
             for idx in self.vertices_adj_to_face()[i1 as usize + 1..i2 as usize].windows(2) {
-                indices.push(Point3::new(first_id, idx[0] as u32, idx[1] as u32));
+                indices.push([first_id, idx[0] as u32, idx[1] as u32]);
             }
         }
 

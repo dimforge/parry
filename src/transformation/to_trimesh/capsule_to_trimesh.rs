@@ -8,7 +8,7 @@ impl Capsule {
         &self,
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
-    ) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let diameter = self.radius * 2.0;
         let height = self.half_height() * 2.0;
         let (vtx, idx) = canonical_capsule(diameter, height, ntheta_subdiv, nphi_subdiv);
@@ -22,7 +22,7 @@ pub fn canonical_capsule(
     cylinder_height: Real,
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
-) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let (coords, indices) = super::ball_to_trimesh::unit_hemisphere(ntheta_subdiv, nphi_subdiv);
     let mut bottom_coords = coords.clone();
     let mut bottom_indices = indices.clone();
@@ -51,9 +51,9 @@ pub fn canonical_capsule(
     let base_top_coords = bottom_coords.len() as u32;
 
     for idx in top_indices.iter_mut() {
-        idx.x = idx.x + base_top_coords;
-        idx.y = idx.y + base_top_coords;
-        idx.z = idx.z + base_top_coords;
+        idx[0] = idx[0] + base_top_coords;
+        idx[1] = idx[1] + base_top_coords;
+        idx[2] = idx[2] + base_top_coords;
     }
 
     // merge all buffers

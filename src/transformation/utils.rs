@@ -2,7 +2,7 @@
 
 use crate::math::{Isometry, Point, Real, Vector};
 #[cfg(feature = "dim3")]
-use num::Zero;
+use {crate::math::DIM, num::Zero};
 
 pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
     points.iter_mut().for_each(|p| *p = m * *p);
@@ -58,7 +58,7 @@ pub fn push_ring_indices(
     base_lower_circle: u32,
     base_upper_circle: u32,
     nsubdiv: u32,
-    out: &mut Vec<Point<u32>>,
+    out: &mut Vec<[u32; DIM]>,
 ) {
     push_open_ring_indices(base_lower_circle, base_upper_circle, nsubdiv, out);
 
@@ -79,7 +79,7 @@ pub fn push_open_ring_indices(
     base_lower_circle: u32,
     base_upper_circle: u32,
     nsubdiv: u32,
-    out: &mut Vec<Point<u32>>,
+    out: &mut Vec<[u32; DIM]>,
 ) {
     assert!(nsubdiv > 0);
 
@@ -97,11 +97,11 @@ pub fn push_degenerate_top_ring_indices(
     base_circle: u32,
     point: u32,
     nsubdiv: u32,
-    out: &mut Vec<Point<u32>>,
+    out: &mut Vec<[u32; DIM]>,
 ) {
     push_degenerate_open_top_ring_indices(base_circle, point, nsubdiv, out);
 
-    out.push(Point::new(base_circle + nsubdiv - 1, point, base_circle));
+    out.push([base_circle + nsubdiv - 1, point, base_circle]);
 }
 
 /// Creates the faces from a circle and a point that is shared by all triangle.
@@ -111,12 +111,12 @@ pub fn push_degenerate_open_top_ring_indices(
     base_circle: u32,
     point: u32,
     nsubdiv: u32,
-    out: &mut Vec<Point<u32>>,
+    out: &mut Vec<[u32; DIM]>,
 ) {
     assert!(nsubdiv > 0);
 
     for i in 0..nsubdiv - 1 {
-        out.push(Point::new(base_circle + i, point, base_circle + i + 1));
+        out.push([base_circle + i, point, base_circle + i + 1]);
     }
 }
 
@@ -125,9 +125,9 @@ pub fn push_degenerate_open_top_ring_indices(
 /// Pushes `nsubdiv - 2` elements to `out`.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<Point<u32>>) {
+pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<[u32; DIM]>) {
     for i in base_circle + 1..base_circle + nsubdiv - 1 {
-        out.push(Point::new(base_circle, i, i + 1));
+        out.push([base_circle, i, i + 1]);
     }
 }
 
@@ -140,16 +140,16 @@ pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<
 /// * `ur` - the up-left point.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<Point<u32>>) {
-    out.push(Point::new(ul.clone(), dl, dr.clone()));
-    out.push(Point::new(dr, ur, ul));
+pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<[u32; DIM]>) {
+    out.push([ul.clone(), dl, dr.clone()]);
+    out.push([dr, ur, ul]);
 }
 
 /// Reverses the clockwising of a set of faces.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn reverse_clockwising(indices: &mut [Point<u32>]) {
+pub fn reverse_clockwising(indices: &mut [[u32; DIM]]) {
     for i in indices.iter_mut() {
-        i.coords.swap((0, 0), (1, 0));
+        i.swap(0, 1);
     }
 }

@@ -4,7 +4,7 @@ use na::Point3;
 
 impl HeightField {
     /// Converts this height-field to a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -14,7 +14,7 @@ impl HeightField {
             vertices.push(tri.c);
 
             let i = i as u32;
-            indices.push(Point3::new(i * 3, i * 3 + 1, i * 3 + 2))
+            indices.push([i * 3, i * 3 + 1, i * 3 + 2])
         }
 
         (vertices, indices)

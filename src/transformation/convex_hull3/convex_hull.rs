@@ -7,7 +7,7 @@ use crate::utils;
 use na::{self, Point3};
 
 /// Computes the convex hull of a set of 3d points.
-pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     if points.is_empty() {
         return (Vec::new(), Vec::new());
     }
@@ -133,11 +133,11 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<Point3<u3
 
     for facet in triangles.iter() {
         if facet.valid {
-            idx.push(Point3::new(
+            idx.push([
                 facet.pts[0] as u32,
                 facet.pts[1] as u32,
                 facet.pts[2] as u32,
-            ));
+            ]);
         }
     }
 

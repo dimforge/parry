@@ -24,7 +24,7 @@ use std::sync::Arc;
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
 #[cfg(feature = "dim3")]
-type ConvexHull = (Vec<Point<Real>>, Vec<Point<u32>>);
+type ConvexHull = (Vec<Point<Real>>, Vec<[u32; 3]>);
 
 #[derive(Copy, Clone, Debug)]
 pub struct CutPlane {
@@ -45,7 +45,7 @@ impl VHACD {
     pub fn decompose(
         params: &VHACDParameters,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
         keep_voxel_to_primitives_map: bool,
     ) -> Self {
         // if params.project_hull_vertices || params.fill_mode == FillMode::RAYCAST_FILL {
@@ -475,7 +475,7 @@ impl VHACD {
     pub fn compute_primitive_intersections(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> Vec<Vec<Point<Real>>> {
         self.voxel_parts
             .iter()
@@ -487,7 +487,7 @@ impl VHACD {
     pub fn compute_exact_convex_hulls(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
+        indices: &[[u32; DIM]],
     ) -> Vec<Vec<Point<Real>>> {
         self.voxel_parts
             .iter()
@@ -499,8 +499,8 @@ impl VHACD {
     pub fn compute_exact_convex_hulls(
         &self,
         points: &[Point<Real>],
-        indices: &[Point<u32>],
-    ) -> Vec<(Vec<Point<Real>>, Vec<Point<u32>>)> {
+        indices: &[[u32; DIM]],
+    ) -> Vec<(Vec<Point<Real>>, Vec<[u32; DIM]>)> {
         self.voxel_parts
             .iter()
             .map(|part| part.compute_exact_convex_hull(points, indices))
@@ -520,7 +520,7 @@ impl VHACD {
     pub fn compute_convex_hulls(
         &self,
         downsampling: u32,
-    ) -> Vec<(Vec<Point<Real>>, Vec<Point<u32>>)> {
+    ) -> Vec<(Vec<Point<Real>>, Vec<[u32; DIM]>)> {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
@@ -563,7 +563,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<Point<u32>>) {
+fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -581,7 +581,7 @@ fn compute_volume(polygon: &[Point<Real>]) -> Real {
 }
 
 #[cfg(feature = "dim3")]
-fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<Point<u32>>)) -> Real {
+fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<[u32; DIM]>)) -> Real {
     if !mesh.0.is_empty() {
         crate::mass_properties::details::convex_mesh_volume_and_center_of_mass_unchecked(
             &mesh.0, &mesh.1,

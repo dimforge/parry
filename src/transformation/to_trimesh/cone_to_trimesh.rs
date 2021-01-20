@@ -4,7 +4,7 @@ use crate::transformation::utils;
 use na::{self, Point3, RealField, Vector3};
 
 impl Cone {
-    pub fn to_trimesh(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+    pub fn to_trimesh(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let diameter = self.radius * 2.0;
         let height = self.half_height * 2.0;
         let scale = Vector3::new(diameter, height, diameter);
@@ -14,7 +14,7 @@ impl Cone {
 }
 
 /// Generates a cone with unit height and diameter.
-fn unit_cone(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<Point3<u32>>) {
+fn unit_cone(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let two_pi = Real::two_pi();
     let dtheta = two_pi / (nsubdiv as Real);
     let mut coords = Vec::new();

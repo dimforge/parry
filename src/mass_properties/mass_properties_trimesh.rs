@@ -1,13 +1,12 @@
 use crate::mass_properties::MassProperties;
 use crate::math::{Point, Real};
 use crate::shape::Triangle;
-use na::Point3;
 
 impl MassProperties {
     pub fn from_trimesh(
         density: Real,
         vertices: &[Point<Real>],
-        indices: &[Point3<u32>],
+        indices: &[[u32; 3]],
     ) -> MassProperties {
         let (area, com) = trimesh_area_and_center_of_mass(vertices, indices);
 
@@ -19,9 +18,9 @@ impl MassProperties {
 
         for idx in indices {
             let triangle = Triangle::new(
-                vertices[idx.x as usize],
-                vertices[idx.y as usize],
-                vertices[idx.z as usize],
+                vertices[idx[0] as usize],
+                vertices[idx[1] as usize],
+                vertices[idx[2] as usize],
             );
 
             // TODO: is the parallel axis theorem correctly applied here?
@@ -36,16 +35,16 @@ impl MassProperties {
 
 pub fn trimesh_area_and_center_of_mass(
     vertices: &[Point<Real>],
-    indices: &[Point3<u32>],
+    indices: &[[u32; 3]],
 ) -> (Real, Point<Real>) {
     let mut res = Point::origin();
     let mut areasum = 0.0;
 
     for idx in indices {
         let triangle = Triangle::new(
-            vertices[idx.x as usize],
-            vertices[idx.y as usize],
-            vertices[idx.z as usize],
+            vertices[idx[0] as usize],
+            vertices[idx[1] as usize],
+            vertices[idx[2] as usize],
         );
         let area = triangle.area();
         let center = triangle.center();
