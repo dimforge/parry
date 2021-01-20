@@ -1,12 +1,11 @@
-use crate::num::Bounded;
 use std::mem;
 
 use na;
 
 use crate::bounding_volume::AABB;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Real, Vector, DIM};
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{FeatureId, Segment};
+use crate::shape::FeatureId;
 use num::Zero;
 
 impl RayCast for AABB {

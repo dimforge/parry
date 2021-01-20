@@ -1,0 +1,128 @@
+use crate::math::Real;
+use crate::shape::Triangle;
+use na::{Point3, Vector3};
+use num::Bounded;
+
+#[derive(Debug)]
+pub struct TriangleFacet {
+    pub valid: bool,
+    pub affinely_dependent: bool,
+    pub normal: Vector3<Real>,
+    pub adj: [usize; 3],
+    pub indirect_adj_id: [usize; 3],
+    pub pts: [usize; 3],
+    pub visible_points: Vec<usize>,
+    pub furthest_point: usize,
+    pub furthest_distance: Real,
+}
+
+impl TriangleFacet {
+    pub fn new(p1: usize, p2: usize, p3: usize, points: &[Point3<Real>]) -> TriangleFacet {
+        let p1p2 = points[p2] - points[p1];
+        let p1p3 = points[p3] - points[p1];
+
+        let normal = p1p2.cross(&p1p3).normalize();
+
+        TriangleFacet {
+            valid: true,
+            affinely_dependent: Triangle::new(points[p1], points[p2], points[p3])
+                .is_affinely_dependent(),
+            normal,
+            adj: [0, 0, 0],
+            indirect_adj_id: [0, 0, 0],
+            pts: [p1, p2, p3],
+            visible_points: Vec::new(),
+            furthest_point: Bounded::max_value(),
+            furthest_distance: 0.0,
+        }
+    }
+
+    pub fn add_visible_point(&mut self, pid: usize, points: &[Point3<Real>]) {
+        let distance = self.distance_to_point(pid, points);
+        assert!(distance > crate::math::DEFAULT_EPSILON);
+
+        if distance > self.furthest_distance {
+            self.furthest_distance = distance;
+            self.furthest_point = pid;
+        }
+
+        self.visible_points.push(pid);
+    }
+
+    pub fn distance_to_point(&self, point: usize, points: &[Point3<Real>]) -> Real {
+        self.normal.dot(&(points[point] - points[self.pts[0]]))
+    }
+
+    pub fn set_facets_adjascency(
+        &mut self,
+        adj1: usize,
+        adj2: usize,
+        adj3: usize,
+        id_adj1: usize,
+        id_adj2: usize,
+        id_adj3: usize,
+    ) {
+        self.indirect_adj_id[0] = id_adj1;
+        self.indirect_adj_id[1] = id_adj2;
+        self.indirect_adj_id[2] = id_adj3;
+
+        self.adj[0] = adj1;
+        self.adj[1] = adj2;
+        self.adj[2] = adj3;
+    }
+
+    pub fn first_point_from_edge(&self, id: usize) -> usize {
+        self.pts[id]
+    }
+
+    pub fn second_point_from_edge(&self, id: usize) -> usize {
+        self.pts[(id + 1) % 3]
+    }
+
+    pub fn can_be_seen_by(&self, point: usize, points: &[Point3<Real>]) -> bool {
+        if self.affinely_dependent {
+            return false;
+        }
+
+        for i in 0..3 {
+            let p0 = points[self.pts[i]];
+            let p1 = points[self.pts[(i + 1) % 3]];
+            let pt = points[point];
+
+            // TODO: do we really need to test all the combinations?
+            let aff_dep = Triangle::new(p0, p1, pt).is_affinely_dependent()
+                || Triangle::new(p0, pt, p1).is_affinely_dependent()
+                || Triangle::new(p1, p0, pt).is_affinely_dependent()
+                || Triangle::new(p1, pt, p0).is_affinely_dependent()
+                || Triangle::new(pt, p0, p1).is_affinely_dependent()
+                || Triangle::new(pt, p1, p0).is_affinely_dependent();
+
+            if aff_dep || (pt - p0).dot(&self.normal) < 1.0e-6 {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn can_be_seen_by_or_is_affinely_dependent_with_contour(
+        &self,
+        point: usize,
+        points: &[Point3<Real>],
+    ) -> bool {
+        if self.affinely_dependent {
+            return true;
+        }
+
+        for i in 0..3 {
+            let p0 = points[self.pts[i]];
+            let pt = points[point];
+
+            if (pt - p0).dot(&self.normal) >= 0.0 {
+                return true;
+            }
+        }
+
+        false
+    }
+}

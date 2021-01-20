@@ -171,8 +171,8 @@ impl Triangle {
 
         PolygonalFeature {
             vertices: [pts[i1], pts[i2]],
-            vids: [i1 as u8, i2 as u8],
-            fid: i1 as u8,
+            vids: [i1 as u32, i2 as u32],
+            fid: i1 as u32,
             num_vertices: 2,
         }
     }
@@ -370,17 +370,15 @@ impl Triangle {
     /// Tests if this triangle is affinely dependent, i.e., its points are almost aligned.
     #[cfg(feature = "dim3")]
     pub fn is_affinely_dependent(&self) -> bool {
-        let p1p2 = self.b - self.a;
-        let p1p3 = self.c - self.a;
+        // let p1p2 = self.b - self.a;
+        // let p1p3 = self.c - self.a;
 
-        // FIXME: use this as nalgebra standard epsilon?
-        let _eps = crate::math::DEFAULT_EPSILON; // FIXME: use Real::epsilon instead?
-        let _eps_tol = _eps * na::convert::<f64, Real>(100.0f64);
+        const EPS: Real = crate::math::DEFAULT_EPSILON * 100.0;
 
         relative_eq!(
-            p1p2.cross(&p1p3).norm_squared(),
-            na::zero::<Real>(),
-            epsilon = _eps_tol * _eps_tol
+            self.area(), // p1p2.cross(&p1p3).norm_squared(),
+            0.0,
+            epsilon = EPS * self.perimeter()
         )
     }
 

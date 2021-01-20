@@ -20,7 +20,6 @@ use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::AABB;
 use crate::math::{Matrix, Point, Real, Vector};
 use crate::transformation::vhacd::CutPlane;
-use std::ops::Range;
 use std::sync::Arc;
 
 #[cfg(feature = "dim2")]

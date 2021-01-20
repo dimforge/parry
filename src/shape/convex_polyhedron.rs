@@ -10,8 +10,8 @@ use std::f64;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vertex {
-    pub first_adj_face_or_edge: usize,
-    pub num_adj_faces_or_edge: usize,
+    pub first_adj_face_or_edge: u32,
+    pub num_adj_faces_or_edge: u32,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -36,25 +36,26 @@ impl Edge {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Face {
-    pub first_vertex_or_edge: usize,
-    pub num_vertices_or_edges: usize,
+    pub first_vertex_or_edge: u32,
+    pub num_vertices_or_edges: u32,
     pub normal: Unit<Vector<Real>>,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 struct Triangle {
-    vertices: Point3<usize>,
-    edges: Point3<usize>,
-    normal: Unit<Vector<Real>>,
-    parent_face: Option<usize>,
+    vertices: Point3<u32>,
+    edges: Point3<u32>,
+    normal: Vector<Real>,
+    parent_face: Option<u32>,
+    is_degenerate: bool,
 }
 
 impl Triangle {
-    fn next_edge_id(&self, id: usize) -> usize {
+    fn next_edge_id(&self, id: u32) -> u32 {
         for i in 0..3 {
             if self.edges[i] == id {
-                return (i + 1) % 3;
+                return (i as u32 + 1) % 3;
             }
         }
 
@@ -71,13 +72,13 @@ pub struct ConvexPolyhedron {
     faces: Vec<Face>,
     edges: Vec<Edge>,
     // Faces adjascent to a vertex.
-    faces_adj_to_vertex: Vec<usize>,
+    faces_adj_to_vertex: Vec<u32>,
     // Edges adjascent to a vertex.
-    edges_adj_to_vertex: Vec<usize>,
+    edges_adj_to_vertex: Vec<u32>,
     // Edges adjascent to a face.
-    edges_adj_to_face: Vec<usize>,
+    edges_adj_to_face: Vec<u32>,
     // Vertices adjascent to a face.
-    vertices_adj_to_face: Vec<usize>,
+    vertices_adj_to_face: Vec<u32>,
 }
 
 impl ConvexPolyhedron {
@@ -87,14 +88,7 @@ impl ConvexPolyhedron {
     /// Returns `None` if the convex hull computation failed.
     pub fn from_convex_hull(points: &[Point<Real>]) -> Option<ConvexPolyhedron> {
         let (vertices, indices) = crate::transformation::convex_hull(points);
-        let mut flat_indices = Vec::new();
-        for idx in indices {
-            for i in idx.iter() {
-                flat_indices.push(*i as usize);
-            }
-        }
-
-        Self::from_convex_mesh(vertices, &flat_indices)
+        Self::from_convex_mesh(vertices, &indices)
     }
 
     /// Attempts to create a new solid assumed to be convex from the set of points and indices.
@@ -104,13 +98,10 @@ impl ConvexPolyhedron {
     ///
     /// # Return
     ///
-    /// Retruns `None` if:
-    ///
-    ///   1. The given solid does not satisfy the euler characteristic.
-    ///   2. The given solid contains degenerate edges/triangles.
+    /// Retruns `None` if he given solid is not manifold (contains t-junctions, not closed, etc.)
     pub fn from_convex_mesh(
         points: Vec<Point<Real>>,
-        indices: &[usize],
+        indices: &[Point<u32>],
     ) -> Option<ConvexPolyhedron> {
         let eps = crate::math::DEFAULT_EPSILON.sqrt();
 
@@ -118,7 +109,7 @@ impl ConvexPolyhedron {
         let mut edges = Vec::<Edge>::new();
         let mut faces = Vec::<Face>::new();
         let mut triangles = Vec::new();
-        let mut edge_map = HashMap::<SortedPair<usize>, usize>::new();
+        let mut edge_map = HashMap::<SortedPair<u32>, u32>::new();
 
         let mut faces_adj_to_vertex = Vec::new();
         let mut edges_adj_to_vertex = Vec::new();
@@ -126,15 +117,19 @@ impl ConvexPolyhedron {
         let mut vertices_adj_to_face = Vec::new();
 
         //// Euler characteristic.
-        let nedges = points.len() + (indices.len() / 3) - 2;
+        let nedges = points.len() + indices.len() - 2;
         edges.reserve(nedges);
 
         /*
-         *  Initialize triangles and edges adjascency information.
+         *  Initialize triangles and edges adjacency information.
          */
-        for vtx in indices.chunks(3) {
-            let mut edges_id = Point3::origin();
+        for vtx in indices {
+            let mut edges_id = Point3::new(u32::MAX, u32::MAX, u32::MAX);
             let face_id = triangles.len();
+
+            assert!(vtx[0] != vtx[1]);
+            assert!(vtx[0] != vtx[2]);
+            assert!(vtx[2] != vtx[1]);
 
             for i1 in 0..3 {
                 // Deal with edges.
@@ -143,52 +138,59 @@ impl ConvexPolyhedron {
 
                 match edge_map.entry(key) {
                     Entry::Occupied(e) => {
-                        edges_id[i1] = *e.get();
-                        edges[*e.get()].faces[1] = face_id as u32
-                    }
-                    Entry::Vacant(e) => {
-                        edges_id[i1] = *e.insert(edges.len());
+                        let edge = &mut edges[*e.get() as usize];
+                        let out_face_id = &mut edge.faces[1];
 
-                        if let Some(dir) = Unit::try_new(
-                            points[vtx[i2]] - points[vtx[i1]],
-                            crate::math::DEFAULT_EPSILON,
-                        ) {
-                            edges.push(Edge {
-                                vertices: Point2::new(vtx[i1] as u32, vtx[i2] as u32),
-                                faces: Point2::new(face_id as u32, 0),
-                                dir,
-                                deleted: false,
-                            })
+                        if *out_face_id == u32::MAX {
+                            edges_id[i1] = *e.get();
+                            *out_face_id = face_id as u32
                         } else {
+                            // We have a t-junction.
                             return None;
                         }
+                    }
+                    Entry::Vacant(e) => {
+                        edges_id[i1] = *e.insert(edges.len() as u32);
+
+                        let dir = Unit::try_new(
+                            points[vtx[i2] as usize] - points[vtx[i1] as usize],
+                            crate::math::DEFAULT_EPSILON,
+                        );
+
+                        edges.push(Edge {
+                            vertices: Point2::new(vtx[i1], vtx[i2]),
+                            faces: Point2::new(face_id as u32, u32::MAX),
+                            dir: dir.unwrap_or(Vector::x_axis()),
+                            deleted: dir.is_none(),
+                        });
                     }
                 }
             }
 
             let vertices = Point3::new(vtx[0], vtx[1], vtx[2]);
-            let normal =
-                utils::ccw_face_normal([&points[vtx[0]], &points[vtx[1]], &points[vtx[2]]])?;
+            let normal = utils::ccw_face_normal([
+                &points[vtx[0] as usize],
+                &points[vtx[1] as usize],
+                &points[vtx[2] as usize],
+            ]);
             let triangle = Triangle {
                 vertices,
                 edges: edges_id,
-                normal,
+                normal: normal.map(|n| *n).unwrap_or(Vector::zeros()),
                 parent_face: None,
+                is_degenerate: normal.is_none(),
             };
 
             triangles.push(triangle);
         }
 
         // Find edges that must be deleted.
-        let mut num_valid_edges = 0;
 
         for e in &mut edges {
-            let n1 = triangles[e.faces[0] as usize].normal;
-            let n2 = triangles[e.faces[1] as usize].normal;
-            if n1.dot(&*n2) > na::one::<Real>() - eps {
+            let tri1 = triangles.get(e.faces[0] as usize)?;
+            let tri2 = triangles.get(e.faces[1] as usize)?;
+            if tri1.normal.dot(&tri2.normal) > 1.0 - eps {
                 e.deleted = true;
-            } else {
-                num_valid_edges += 1;
             }
         }
 
@@ -198,13 +200,13 @@ impl ConvexPolyhedron {
         for i in 0..triangles.len() {
             if triangles[i].parent_face.is_none() {
                 for j1 in 0..3 {
-                    if !edges[triangles[i].edges[j1]].deleted {
+                    if !edges[triangles[i].edges[j1] as usize].deleted {
                         // Create a new face, setup its first edge/vertex and construct it.
                         let new_face_id = faces.len();
                         let mut new_face = Face {
-                            first_vertex_or_edge: edges_adj_to_face.len(),
+                            first_vertex_or_edge: edges_adj_to_face.len() as u32,
                             num_vertices_or_edges: 1,
-                            normal: triangles[i].normal,
+                            normal: Unit::new_unchecked(triangles[i].normal),
                         };
 
                         edges_adj_to_face.push(triangles[i].edges[j1]);
@@ -222,19 +224,26 @@ impl ConvexPolyhedron {
                         while triangles[curr_triangle].vertices[curr_edge_id] != start_vertex {
                             let curr_edge = triangles[curr_triangle].edges[curr_edge_id];
                             let curr_vertex = triangles[curr_triangle].vertices[curr_edge_id];
-                            triangles[curr_triangle].parent_face = Some(new_face_id);
+                            // NOTE: we should use this assertion. However, it can currently
+                            // happen if there are some isolated non-deleted edges due to
+                            // rounding errors.
+                            //
+                            // assert!(triangles[curr_triangle].parent_face.is_none());
+                            triangles[curr_triangle].parent_face = Some(new_face_id as u32);
 
-                            if !edges[curr_edge].deleted {
+                            if !edges[curr_edge as usize].deleted {
                                 edges_adj_to_face.push(curr_edge);
                                 vertices_adj_to_face.push(curr_vertex);
                                 new_face.num_vertices_or_edges += 1;
 
                                 curr_edge_id = (curr_edge_id + 1) % 3;
                             } else {
-                                // Find adjascent edge on the next triange.
-                                curr_triangle =
-                                    edges[curr_edge].other_triangle(curr_triangle as u32) as usize;
-                                curr_edge_id = triangles[curr_triangle].next_edge_id(curr_edge);
+                                // Find adjacent edge on the next triangle.
+                                curr_triangle = edges[curr_edge as usize]
+                                    .other_triangle(curr_triangle as u32)
+                                    as usize;
+                                curr_edge_id =
+                                    triangles[curr_triangle].next_edge_id(curr_edge) as usize;
                                 assert!(
                                     triangles[curr_triangle].vertices[curr_edge_id] == curr_vertex
                                 );
@@ -242,6 +251,11 @@ impl ConvexPolyhedron {
                         }
 
                         if new_face.num_vertices_or_edges > 2 {
+                            // Sometimes degenerate faces may be generated
+                            // due to numerical errors resulting in an isolated
+                            // edge not being deleted.
+                            //
+                            // This kind of degenerate faces are not valid.
                             faces.push(new_face);
                         }
                         break;
@@ -252,12 +266,12 @@ impl ConvexPolyhedron {
 
         // Update face ids inside edges so that they point to the faces instead of the triangles.
         for e in &mut edges {
-            if let Some(fid) = triangles[e.faces[0] as usize].parent_face {
-                e.faces[0] = fid as u32;
+            if let Some(fid) = triangles.get(e.faces[0] as usize)?.parent_face {
+                e.faces[0] = fid;
             }
 
-            if let Some(fid) = triangles[e.faces[1] as usize].parent_face {
-                e.faces[1] = fid as u32;
+            if let Some(fid) = triangles.get(e.faces[1] as usize)?.parent_face {
+                e.faces[1] = fid;
             }
         }
 
@@ -276,8 +290,8 @@ impl ConvexPolyhedron {
             let first_vid = face.first_vertex_or_edge;
             let last_vid = face.first_vertex_or_edge + face.num_vertices_or_edges;
 
-            for i in &vertices_adj_to_face[first_vid..last_vid] {
-                vertices[*i].num_adj_faces_or_edge += 1;
+            for i in &vertices_adj_to_face[first_vid as usize..last_vid as usize] {
+                vertices[*i as usize].num_adj_faces_or_edge += 1;
             }
         }
 
@@ -287,8 +301,8 @@ impl ConvexPolyhedron {
             v.first_adj_face_or_edge = total_num_adj_faces;
             total_num_adj_faces += v.num_adj_faces_or_edge;
         }
-        faces_adj_to_vertex.resize(total_num_adj_faces, 0);
-        edges_adj_to_vertex.resize(total_num_adj_faces, 0);
+        faces_adj_to_vertex.resize(total_num_adj_faces as usize, 0);
+        edges_adj_to_vertex.resize(total_num_adj_faces as usize, 0);
 
         // Reset the number of adjascent faces.
         // It will be set againt to the right value as
@@ -303,49 +317,43 @@ impl ConvexPolyhedron {
             let last_vid = face.first_vertex_or_edge + face.num_vertices_or_edges;
 
             for vid in first_vid..last_vid {
-                let v = &mut vertices[vertices_adj_to_face[vid]];
-                faces_adj_to_vertex[v.first_adj_face_or_edge + v.num_adj_faces_or_edge] = face_id;
-                edges_adj_to_vertex[v.first_adj_face_or_edge + v.num_adj_faces_or_edge] =
-                    edges_adj_to_face[vid];
+                let v = &mut vertices[vertices_adj_to_face[vid as usize] as usize];
+                faces_adj_to_vertex
+                    [(v.first_adj_face_or_edge + v.num_adj_faces_or_edge) as usize] =
+                    face_id as u32;
+                edges_adj_to_vertex
+                    [(v.first_adj_face_or_edge + v.num_adj_faces_or_edge) as usize] =
+                    edges_adj_to_face[vid as usize];
                 v.num_adj_faces_or_edge += 1;
             }
         }
 
-        let mut num_valid_vertices = 0;
+        // Note numerical errors may throw off the Euler characteristic.
+        // So we don't check it right now.
 
-        for v in &vertices {
-            if v.num_adj_faces_or_edge != 0 {
-                num_valid_vertices += 1;
-            }
-        }
+        let res = ConvexPolyhedron {
+            points,
+            vertices,
+            faces,
+            edges,
+            faces_adj_to_vertex,
+            edges_adj_to_vertex,
+            edges_adj_to_face,
+            vertices_adj_to_face,
+        };
 
-        // Check that the Euler characteristic is respected.
-        if num_valid_vertices + faces.len() - num_valid_edges != 2 {
-            None
-        } else {
-            let res = ConvexPolyhedron {
-                points,
-                vertices,
-                faces,
-                edges,
-                faces_adj_to_vertex,
-                edges_adj_to_vertex,
-                edges_adj_to_face,
-                vertices_adj_to_face,
-            };
+        // FIXME: for debug.
+        // res.check_geometry();
 
-            // FIXME: for debug.
-            // res.check_geometry();
-
-            Some(res)
-        }
+        Some(res)
     }
 
     /// Verify if this convex polyhedron is actually convex.
     #[inline]
     pub fn check_geometry(&self) {
         for face in &self.faces {
-            let p0 = self.points[self.vertices_adj_to_face[face.first_vertex_or_edge]];
+            let p0 =
+                self.points[self.vertices_adj_to_face[face.first_vertex_or_edge as usize] as usize];
 
             for v in &self.points {
                 assert!((v - p0).dot(face.normal.as_ref()) <= crate::math::DEFAULT_EPSILON);
@@ -375,17 +383,17 @@ impl ConvexPolyhedron {
     }
 
     #[inline]
-    pub fn vertices_adj_to_face(&self) -> &[usize] {
+    pub fn vertices_adj_to_face(&self) -> &[u32] {
         &self.vertices_adj_to_face[..]
     }
 
     #[inline]
-    pub fn edges_adj_to_face(&self) -> &[usize] {
+    pub fn edges_adj_to_face(&self) -> &[u32] {
         &self.edges_adj_to_face[..]
     }
 
     #[inline]
-    pub fn faces_adj_to_vertex(&self) -> &[usize] {
+    pub fn faces_adj_to_vertex(&self) -> &[u32] {
         &self.faces_adj_to_vertex[..]
     }
 
@@ -400,21 +408,21 @@ impl ConvexPolyhedron {
 
         // Check faces.
         for i in 0..vertex.num_adj_faces_or_edge {
-            let face_id = self.faces_adj_to_vertex[vertex.first_adj_face_or_edge + i];
-            let face = &self.faces[face_id];
+            let face_id = self.faces_adj_to_vertex[(vertex.first_adj_face_or_edge + i) as usize];
+            let face = &self.faces[face_id as usize];
 
             if face.normal.dot(local_dir.as_ref()) >= ceps {
-                return FeatureId::Face(face_id as u32);
+                return FeatureId::Face(face_id);
             }
         }
 
         // Check edges.
         for i in 0..vertex.num_adj_faces_or_edge {
-            let edge_id = self.edges_adj_to_vertex[vertex.first_adj_face_or_edge + i];
-            let edge = &self.edges[edge_id];
+            let edge_id = self.edges_adj_to_vertex[(vertex.first_adj_face_or_edge + i) as usize];
+            let edge = &self.edges[edge_id as usize];
 
             if edge.dir.dot(local_dir.as_ref()).abs() <= seps {
-                return FeatureId::Edge(edge_id as u32);
+                return FeatureId::Edge(edge_id);
             }
         }
 
@@ -437,19 +445,6 @@ impl SupportMap for ConvexPolyhedron {
 
 impl PolygonalFeatureMap for ConvexPolyhedron {
     fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
-        assert!(
-            self.points.len() < u8::MAX as usize,
-            "This operation is not supported yet for polyhedron with more than 256 vertices."
-        );
-        assert!(
-            self.edges.len() < u8::MAX as usize,
-            "This operation is not supported yet for polyhedron with more than 256 edges."
-        );
-        assert!(
-            self.faces.len() < u8::MAX as usize,
-            "This operation is not supported yet for polyhedron with more than 256 faces."
-        );
-
         let mut best_fid = 0;
         let mut best_dot = self.faces[0].normal.dot(dir);
 
@@ -468,18 +463,18 @@ impl PolygonalFeatureMap for ConvexPolyhedron {
         let num_vertices = face.num_vertices_or_edges.min(4);
         let i2 = i1 + num_vertices;
 
-        for (i, (vid, eid)) in self.vertices_adj_to_face[i1..i2]
+        for (i, (vid, eid)) in self.vertices_adj_to_face[i1 as usize..i2 as usize]
             .iter()
-            .zip(self.edges_adj_to_face[i1..i2].iter())
+            .zip(self.edges_adj_to_face[i1 as usize..i2 as usize].iter())
             .enumerate()
         {
-            out_feature.vertices[i] = self.points[*vid];
-            out_feature.vids[i] = *vid as u8;
-            out_feature.eids[i] = *eid as u8;
+            out_feature.vertices[i] = self.points[*vid as usize];
+            out_feature.vids[i] = *vid;
+            out_feature.eids[i] = *eid;
         }
 
-        out_feature.fid = best_fid as u8;
-        out_feature.num_vertices = num_vertices;
+        out_feature.fid = best_fid as u32;
+        out_feature.num_vertices = num_vertices as usize;
     }
 }
 
@@ -512,8 +507,8 @@ impl ConvexPolyhedron for ConvexPolyhedron {
         for i in first_vertex..last_vertex {
             let vid = self.vertices_adj_to_face[i];
             let eid = self.edges_adj_to_face[i];
-            out.push(self.points[vid], FeatureId::Vertex(vid as u32));
-            out.push_edge_feature_id(FeatureId::Edge(eid as u32));
+            out.push(self.points[vid], FeatureId::Vertex(vid));
+            out.push_edge_feature_id(FeatureId::Edge(eid));
         }
 
         out.set_normal(face.normal);
@@ -567,7 +562,7 @@ impl ConvexPolyhedron for ConvexPolyhedron {
             }
         }
 
-        self.face(FeatureId::Face(best_face as u32), out);
+        self.face(FeatureId::Face(best_face), out);
         out.transform_by(m);
     }
 

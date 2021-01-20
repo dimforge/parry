@@ -1,6 +1,5 @@
 use crate::math::{Point, Real, Vector};
 use crate::query::{self, Ray};
-use crate::shape::HalfSpace;
 
 pub fn clip_halfspace_polygon(
     center: &Point<Real>,

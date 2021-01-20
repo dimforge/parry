@@ -56,6 +56,7 @@ where
 }
 
 /// Returns the number `n` such that `points[idx.nth(n)]` is the support point.
+#[cfg(feature = "dim3")] // We only use this in 3D right now.
 pub fn indexed_support_point_nth<D: DimName, I>(
     direction: &na::VectorN<Real, D>,
     points: &[na::Point<Real, D>],
