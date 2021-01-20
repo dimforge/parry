@@ -79,37 +79,31 @@ impl TriangleFacet {
         self.pts[(id + 1) % 3]
     }
 
-    pub fn can_be_seen_by(&self, point: usize, points: &[Point3<Real>]) -> bool {
+    pub fn can_see_point(&self, point: usize, points: &[Point3<Real>]) -> bool {
+        // An affinely-dependent triangle cannot see any point.
         if self.affinely_dependent {
             return false;
         }
 
-        for i in 0..3 {
-            let p0 = points[self.pts[i]];
-            let p1 = points[self.pts[(i + 1) % 3]];
-            let pt = points[point];
+        let p0 = points[self.pts[0]];
+        let pt = points[point];
 
-            // TODO: do we really need to test all the combinations?
-            let aff_dep = Triangle::new(p0, p1, pt).is_affinely_dependent()
-                || Triangle::new(p0, pt, p1).is_affinely_dependent()
-                || Triangle::new(p1, p0, pt).is_affinely_dependent()
-                || Triangle::new(p1, pt, p0).is_affinely_dependent()
-                || Triangle::new(pt, p0, p1).is_affinely_dependent()
-                || Triangle::new(pt, p1, p0).is_affinely_dependent();
-
-            if aff_dep || (pt - p0).dot(&self.normal) < 1.0e-6 {
-                return false;
-            }
+        if (pt - p0).dot(&self.normal) < crate::math::DEFAULT_EPSILON * 100.0 {
+            return false;
         }
 
         true
     }
 
-    pub fn can_be_seen_by_or_is_affinely_dependent_with_contour(
+    // Check that a given point can see this triangle,
+    // making sure that the order of the three indices of
+    // this triangle don't affect the test result.
+    pub fn order_independent_can_be_seen_by_point(
         &self,
         point: usize,
         points: &[Point3<Real>],
     ) -> bool {
+        // An affinely-dependent triangle can be seen by any point.
         if self.affinely_dependent {
             return true;
         }

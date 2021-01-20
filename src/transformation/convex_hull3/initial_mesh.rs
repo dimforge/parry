@@ -194,7 +194,7 @@ pub fn get_initial_mesh(
                 let mut furthest_dist = 0.0;
 
                 for (i, curr_facet) in facets.iter().enumerate() {
-                    if curr_facet.can_be_seen_by(point, normalized_points) {
+                    if curr_facet.can_see_point(point, normalized_points) {
                         let distance = curr_facet.distance_to_point(point, normalized_points);
 
                         if distance > furthest_dist {

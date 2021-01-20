@@ -370,16 +370,17 @@ impl Triangle {
     /// Tests if this triangle is affinely dependent, i.e., its points are almost aligned.
     #[cfg(feature = "dim3")]
     pub fn is_affinely_dependent(&self) -> bool {
-        // let p1p2 = self.b - self.a;
-        // let p1p3 = self.c - self.a;
-
         const EPS: Real = crate::math::DEFAULT_EPSILON * 100.0;
 
-        relative_eq!(
-            self.area(), // p1p2.cross(&p1p3).norm_squared(),
-            0.0,
-            epsilon = EPS * self.perimeter()
-        )
+        let p1p2 = self.b - self.a;
+        let p1p3 = self.c - self.a;
+        relative_eq!(p1p2.cross(&p1p3).norm_squared(), 0.0, epsilon = EPS * EPS)
+
+        // relative_eq!(
+        //     self.area(),
+        //     0.0,
+        //     epsilon = EPS * self.perimeter()
+        // )
     }
 
     /// Tests if a point is inside of this triangle.
