@@ -1,7 +1,7 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::Ball;
 use crate::transformation::utils;
-use na::{self, Point3, RealField};
+use na::{self, ComplexField, Point3, RealField};
 use num_traits::One;
 
 impl Ball {
@@ -30,10 +30,10 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
 
     for _ in 0..nphi_subdiv + 1 {
         utils::push_circle(
-            curr_phi.cos(),
+            ComplexField::cos(curr_phi),
             ntheta_subdiv + 1,
             dtheta,
-            curr_phi.sin(),
+            ComplexField::sin(curr_phi),
             &mut coords,
         );
         curr_phi = curr_phi + dphi;
@@ -66,10 +66,10 @@ pub fn unit_hemisphere(
 
     for _ in 0..nphi_subdiv - 1 {
         utils::push_circle(
-            curr_phi.cos(),
+            ComplexField::cos(curr_phi),
             ntheta_subdiv,
             dtheta,
-            curr_phi.sin(),
+            ComplexField::sin(curr_phi),
             &mut coords,
         );
         curr_phi = curr_phi + dphi;

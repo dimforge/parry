@@ -18,13 +18,13 @@ where
     for d in 0..DIM {
         // FIXME: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = na::one::<Real>();
+        basis[d] = 1.0;
         max[d] = i.support_point(m, &basis)[d];
 
-        basis[d] = -na::one::<Real>();
+        basis[d] = -1.0;
         min[d] = i.support_point(m, &basis)[d];
 
-        basis[d] = na::zero::<Real>();
+        basis[d] = 0.0;
     }
 
     AABB::new(Point::from(min), Point::from(max))
@@ -42,13 +42,13 @@ where
     for d in 0..DIM {
         // FIXME: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = na::one::<Real>();
+        basis[d] = 1.0;
         max[d] = i.local_support_point(&basis)[d];
 
-        basis[d] = -na::one::<Real>();
+        basis[d] = -1.0;
         min[d] = i.local_support_point(&basis)[d];
 
-        basis[d] = na::zero::<Real>();
+        basis[d] = 0.0;
     }
 
     AABB::new(Point::from(min), Point::from(max))

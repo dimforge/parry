@@ -17,7 +17,7 @@ where
 {
     /*
     let halfspace_normal = mhalfspace * halfspace.normal();
-    let mut curr = na::zero::<Real>();
+    let mut curr = 0.0;
 
 
     loop {

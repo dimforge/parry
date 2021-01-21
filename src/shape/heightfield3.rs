@@ -93,7 +93,7 @@ impl HeightField {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let i = na::clamp(
             ((val + _0_5) / cell_size).floor(),
-            na::zero::<Real>(),
+            0.0,
             na::convert::<f64, Real>((num_cells - 1) as f64),
         );
         na::convert_unchecked::<Real, f64>(i) as usize
@@ -103,7 +103,7 @@ impl HeightField {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let i = na::clamp(
             ((val + _0_5) / cell_size).ceil(),
-            na::zero::<Real>(),
+            0.0,
             na::convert::<f64, Real>(num_cells as f64),
         );
         na::convert_unchecked::<Real, f64>(i) as usize
@@ -262,12 +262,12 @@ impl HeightField {
 
     /// The width (extent along its local `x` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_width(&self) -> Real {
-        na::one::<Real>() / na::convert::<f64, Real>(self.heights.ncols() as f64 - 1.0)
+        1.0 / na::convert::<f64, Real>(self.heights.ncols() as f64 - 1.0)
     }
 
     /// The height (extent along its local `z` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_height(&self) -> Real {
-        na::one::<Real>() / na::convert::<f64, Real>(self.heights.nrows() as f64 - 1.0)
+        1.0 / na::convert::<f64, Real>(self.heights.nrows() as f64 - 1.0)
     }
 
     /// The AABB of this heightmap.

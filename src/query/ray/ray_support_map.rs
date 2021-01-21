@@ -180,7 +180,7 @@ impl RayCast for Segment {
                     let dist1 = dpos.dot(&ray.dir);
                     let dist2 = dist1 + seg_dir.dot(&ray.dir);
 
-                    match (dist1 >= na::zero::<Real>(), dist2 >= na::zero::<Real>()) {
+                    match (dist1 >= 0.0, dist2 >= 0.0) {
                         (true, true) => {
                             if dist1 <= dist2 {
                                 Some(RayIntersection::new(
@@ -198,11 +198,7 @@ impl RayCast for Segment {
                         }
                         (true, false) | (false, true) => {
                             // The ray origin lies on the segment.
-                            Some(RayIntersection::new(
-                                na::zero::<Real>(),
-                                normal,
-                                FeatureId::Face(0),
-                            ))
+                            Some(RayIntersection::new(0.0, normal, FeatureId::Face(0)))
                         }
                         (false, false) => {
                             // The segment is behind the ray.
@@ -213,10 +209,10 @@ impl RayCast for Segment {
                     // The rays never intersect.
                     None
                 }
-            } else if s >= na::zero::<Real>() && t >= na::zero::<Real>() && t <= na::one::<Real>() {
+            } else if s >= 0.0 && t >= 0.0 && t <= 1.0 {
                 let normal = self.scaled_normal();
 
-                if normal.dot(&ray.dir) > na::zero::<Real>() {
+                if normal.dot(&ray.dir) > 0.0 {
                     Some(RayIntersection::new(s, -normal, FeatureId::Face(1)))
                 } else {
                     Some(RayIntersection::new(s, normal, FeatureId::Face(0)))

@@ -1,5 +1,6 @@
 use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
 use crate::utils;
+use na::ComplexField;
 use num::Zero;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -34,7 +35,7 @@ impl MassProperties {
     #[cfg(feature = "dim2")]
     pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: Real) -> Self {
         let inv_mass = utils::inv(mass);
-        let inv_principal_inertia_sqrt = utils::inv(principal_inertia.sqrt());
+        let inv_principal_inertia_sqrt = utils::inv(ComplexField::sqrt(principal_inertia));
         Self {
             local_com,
             inv_mass,
@@ -65,7 +66,8 @@ impl MassProperties {
         principal_inertia_local_frame: Rotation<Real>,
     ) -> Self {
         let inv_mass = utils::inv(mass);
-        let inv_principal_inertia_sqrt = principal_inertia.map(|e| utils::inv(e.sqrt()));
+        let inv_principal_inertia_sqrt =
+            principal_inertia.map(|e| utils::inv(ComplexField::sqrt(e)));
         Self {
             local_com,
             inv_mass,
@@ -234,7 +236,7 @@ impl Sub<MassProperties> for MassProperties {
         }
 
         // NOTE: we drop the negative eigenvalues that may result from subtraction rounding errors.
-        let inv_principal_inertia_sqrt = utils::inv(inertia.sqrt());
+        let inv_principal_inertia_sqrt = utils::inv(ComplexField::sqrt(inertia));
 
         Self {
             local_com,
@@ -290,7 +292,7 @@ impl Add<MassProperties> for MassProperties {
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 + i2;
-        let inv_principal_inertia_sqrt = utils::inv(inertia.sqrt());
+        let inv_principal_inertia_sqrt = utils::inv(ComplexField::sqrt(inertia));
 
         Self {
             local_com,
@@ -354,7 +356,7 @@ impl Sum<MassProperties> for MassProperties {
         Self {
             local_com: total_com,
             inv_mass: utils::inv(total_mass),
-            inv_principal_inertia_sqrt: utils::inv(total_inertia.sqrt()),
+            inv_principal_inertia_sqrt: utils::inv(ComplexField::sqrt(total_inertia)),
         }
     }
 

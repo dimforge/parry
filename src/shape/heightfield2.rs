@@ -67,7 +67,7 @@ impl HeightField {
 
     /// The width of a single cell of this heightfield, without taking the scale factor into account.
     pub fn unit_cell_width(&self) -> Real {
-        na::one::<Real>() / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0)
+        1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0)
     }
 
     /// The left-most x-coordinate of this heightfield.
@@ -79,7 +79,7 @@ impl HeightField {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let i = na::clamp(
             ((val + _0_5) / seg_length).floor(),
-            na::zero::<Real>(),
+            0.0,
             na::convert::<f64, Real>((self.num_cells() - 1) as f64),
         );
         na::convert_unchecked::<Real, f64>(i) as usize
@@ -89,7 +89,7 @@ impl HeightField {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let i = na::clamp(
             ((val + _0_5) / seg_length).ceil(),
-            na::zero::<Real>(),
+            0.0,
             na::convert::<f64, Real>(self.num_cells() as f64),
         );
         na::convert_unchecked::<Real, f64>(i) as usize
@@ -123,8 +123,7 @@ impl HeightField {
         }
 
         let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let seg_length =
-            na::one::<Real>() / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
+        let seg_length = 1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
 
         let x0 = -_0_5 + seg_length * na::convert::<f64, Real>(i as f64);
         let x1 = x0 + seg_length;
@@ -161,8 +160,7 @@ impl HeightField {
         let _0_5: Real = na::convert::<f64, Real>(0.5);
         let ref_mins = aabb.mins.coords.component_div(&self.scale);
         let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
-        let seg_length =
-            na::one::<Real>() / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
+        let seg_length = 1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
 
         if ref_maxs.x < -_0_5 || ref_mins.x > _0_5 {
             // Outside of the heightfield bounds.

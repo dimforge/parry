@@ -1,7 +1,6 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
-use na;
 
 #[inline]
 fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
@@ -65,7 +64,7 @@ impl PointQueryWithLocation for Triangle {
         let b = self.b;
         let c = self.c;
 
-        let _1 = na::one::<Real>();
+        let _1 = 1.0;
 
         let ab = b - a;
         let ac = c - a;
@@ -74,7 +73,7 @@ impl PointQueryWithLocation for Triangle {
         let ab_ap = ab.dot(&ap);
         let ac_ap = ac.dot(&ap);
 
-        if ab_ap <= na::zero::<Real>() && ac_ap <= na::zero::<Real>() {
+        if ab_ap <= 0.0 && ac_ap <= 0.0 {
             // Voronoï region of `a`.
             return (compute_result(pt, a), TrianglePointLocation::OnVertex(0));
         }
@@ -83,7 +82,7 @@ impl PointQueryWithLocation for Triangle {
         let ab_bp = ab.dot(&bp);
         let ac_bp = ac.dot(&bp);
 
-        if ab_bp >= na::zero::<Real>() && ac_bp <= ab_bp {
+        if ab_bp >= 0.0 && ac_bp <= ab_bp {
             // Voronoï region of `b`.
             return (compute_result(pt, b), TrianglePointLocation::OnVertex(1));
         }
@@ -92,7 +91,7 @@ impl PointQueryWithLocation for Triangle {
         let ab_cp = ab.dot(&cp);
         let ac_cp = ac.dot(&cp);
 
-        if ac_cp >= na::zero::<Real>() && ab_cp <= ac_cp {
+        if ac_cp >= 0.0 && ab_cp <= ac_cp {
             // Voronoï region of `c`.
             return (compute_result(pt, c), TrianglePointLocation::OnVertex(2));
         }
@@ -126,26 +125,17 @@ impl PointQueryWithLocation for Triangle {
             {
                 let n = ab.perp(&ac);
                 let vc = n * ab.perp(&ap);
-                if vc < na::zero::<Real>()
-                    && ab_ap >= na::zero::<Real>()
-                    && ab_bp <= na::zero::<Real>()
-                {
+                if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
                 let vb = -n * ac.perp(&cp);
-                if vb < na::zero::<Real>()
-                    && ac_ap >= na::zero::<Real>()
-                    && ac_cp <= na::zero::<Real>()
-                {
+                if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
                 let va = n * bc.perp(&bp);
-                if va < na::zero::<Real>()
-                    && ac_bp - ab_bp >= na::zero::<Real>()
-                    && ab_cp - ac_cp >= na::zero::<Real>()
-                {
+                if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
 
@@ -158,9 +148,7 @@ impl PointQueryWithLocation for Triangle {
                 #[cfg(feature = "improved_fixed_point_support")]
                 {
                     let scaled_n = ab.cross(&ac);
-                    n = scaled_n
-                        .try_normalize(na::zero::<Real>())
-                        .unwrap_or(scaled_n);
+                    n = scaled_n.try_normalize(0.0).unwrap_or(scaled_n);
                 }
 
                 #[cfg(not(feature = "improved_fixed_point_support"))]
@@ -169,34 +157,21 @@ impl PointQueryWithLocation for Triangle {
                 }
 
                 let vc = n.dot(&ab.cross(&ap));
-                if vc < na::zero::<Real>()
-                    && ab_ap >= na::zero::<Real>()
-                    && ab_bp <= na::zero::<Real>()
-                {
+                if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
                 let vb = -n.dot(&ac.cross(&cp));
-                if vb < na::zero::<Real>()
-                    && ac_ap >= na::zero::<Real>()
-                    && ac_cp <= na::zero::<Real>()
-                {
+                if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
                 let va = n.dot(&bc.cross(&bp));
-                if va < na::zero::<Real>()
-                    && ac_bp - ab_bp >= na::zero::<Real>()
-                    && ab_cp - ac_cp >= na::zero::<Real>()
-                {
+                if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
 
-                let clockwise = if n.dot(&ap) >= na::zero::<Real>() {
-                    0
-                } else {
-                    1
-                };
+                let clockwise = if n.dot(&ap) >= 0.0 { 0 } else { 1 };
 
                 return ProjectionInfo::OnFace(clockwise, va, vb, vc);
             }
@@ -245,7 +220,7 @@ impl PointQueryWithLocation for Triangle {
                     // NOTE: in some cases, numerical instability
                     // may result in the denominator being zero
                     // when the triangle is nearly degenerate.
-                    if va + vb + vc != na::zero::<Real>() {
+                    if va + vb + vc != 0.0 {
                         let denom = _1 / (va + vb + vc);
                         let v = vb * denom;
                         let w = vc * denom;

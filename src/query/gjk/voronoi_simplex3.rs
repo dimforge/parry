@@ -5,7 +5,6 @@ use crate::shape::{
     Segment, SegmentPointLocation, Tetrahedron, TetrahedronPointLocation, Triangle,
     TrianglePointLocation,
 };
-use na;
 
 /// A simplex of dimension up to 3 that uses Voronoï regions for computing point projections.
 #[derive(Clone, Debug)]
@@ -24,10 +23,10 @@ impl VoronoiSimplex {
     pub fn new() -> VoronoiSimplex {
         VoronoiSimplex {
             prev_vertices: [0, 1, 2, 3],
-            prev_proj: [na::zero::<Real>(); 3],
+            prev_proj: [0.0; 3],
             prev_dim: 0,
             vertices: [CSOPoint::origin(); 4],
-            proj: [na::zero::<Real>(); 3],
+            proj: [0.0; 3],
             dim: 0,
         }
     }
@@ -114,7 +113,7 @@ impl VoronoiSimplex {
     /// by `prev_`.
     pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
         if self.dim == 0 {
-            self.proj[0] = na::one::<Real>();
+            self.proj[0] = 1.0;
             self.vertices[0].point
         } else if self.dim == 1 {
             // FIXME: NLL
@@ -125,12 +124,12 @@ impl VoronoiSimplex {
 
             match location {
                 SegmentPointLocation::OnVertex(0) => {
-                    self.proj[0] = na::one::<Real>();
+                    self.proj[0] = 1.0;
                     self.dim = 0;
                 }
                 SegmentPointLocation::OnVertex(1) => {
                     self.swap(0, 1);
-                    self.proj[0] = na::one::<Real>();
+                    self.proj[0] = 1.0;
                     self.dim = 0;
                 }
                 SegmentPointLocation::OnEdge(coords) => {
@@ -155,7 +154,7 @@ impl VoronoiSimplex {
             match location {
                 TrianglePointLocation::OnVertex(i) => {
                     self.swap(0, i as usize);
-                    self.proj[0] = na::one::<Real>();
+                    self.proj[0] = 1.0;
                     self.dim = 0;
                 }
                 TrianglePointLocation::OnEdge(0, coords) => {
@@ -198,7 +197,7 @@ impl VoronoiSimplex {
             match location {
                 TetrahedronPointLocation::OnVertex(i) => {
                     self.swap(0, i as usize);
-                    self.proj[0] = na::one::<Real>();
+                    self.proj[0] = 1.0;
                     self.dim = 0;
                 }
                 TetrahedronPointLocation::OnEdge(i, coords) => {
@@ -330,7 +329,7 @@ impl VoronoiSimplex {
 
     /// The maximum squared length of the vertices of this simplex.
     pub fn max_sq_len(&self) -> Real {
-        let mut max_sq_len = na::zero::<Real>();
+        let mut max_sq_len = 0.0;
 
         for i in 0..self.dim + 1 {
             let norm = self.vertices[i].point.coords.norm_squared();

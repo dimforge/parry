@@ -5,7 +5,7 @@ use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
-use na::{self, Unit};
+use na::{self, ComplexField, Unit};
 use num::Zero;
 #[cfg(feature = "dim3")]
 use std::f64;
@@ -52,10 +52,10 @@ impl TrianglePointLocation {
     ///
     /// Returns `None` if the location is `TrianglePointLocation::OnSolid`.
     pub fn barycentric_coordinates(&self) -> Option<[Real; 3]> {
-        let mut bcoords = [na::zero::<Real>(); 3];
+        let mut bcoords = [0.0; 3];
 
         match self {
-            TrianglePointLocation::OnVertex(i) => bcoords[*i as usize] = na::one::<Real>(),
+            TrianglePointLocation::OnVertex(i) => bcoords[*i as usize] = 1.0,
             TrianglePointLocation::OnEdge(i, uv) => {
                 let idx = match i {
                     0 => (0, 1),
@@ -221,7 +221,7 @@ impl Triangle {
     // #[cfg(feature = "dim3")]
     // fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>, eps: Real) -> FeatureId {
     //     if let Some(normal) = self.normal() {
-    //         let (seps, ceps) = eps.sin_cos();
+    //         let (seps, ceps) = ComplexField::sin_cos(eps);
     //
     //         let normal_dot = local_dir.dot(&*normal);
     //         if normal_dot >= ceps {
@@ -230,7 +230,7 @@ impl Triangle {
     //             FeatureId::Face(1)
     //         } else {
     //             let edges = self.edges();
-    //             let mut dots = [na::zero::<Real>(); 3];
+    //             let mut dots = [0.0; 3];
     //
     //             let dir1 = edges[0].direction();
     //             if let Some(dir1) = dir1 {
@@ -259,9 +259,9 @@ impl Triangle {
     //                 }
     //             }
     //
-    //             if dots[0] > na::zero::<Real>() && dots[1] < na::zero::<Real>() {
+    //             if dots[0] > 0.0 && dots[1] < 0.0 {
     //                 FeatureId::Vertex(1)
-    //             } else if dots[1] > na::zero::<Real>() && dots[2] < na::zero::<Real>() {
+    //             } else if dots[1] > 0.0 && dots[2] < 0.0 {
     //                 FeatureId::Vertex(2)
     //             } else {
     //                 FeatureId::Vertex(0)
@@ -289,7 +289,7 @@ impl Triangle {
 
         // We take the max(0.0) because it can be slightly negative
         // because of numerical errors due to almost-degenerate triangles.
-        sqr.max(0.0).sqrt() * 0.25
+        ComplexField::sqrt(sqr.max(0.0)) * 0.25
     }
 
     #[cfg(feature = "dim2")]
@@ -342,19 +342,19 @@ impl Triangle {
                 // Longest segment: [&self.a, &self.b]
                 (
                     na::center(&self.a, &self.b),
-                    nc.sqrt() / na::convert::<f64, Real>(2.0f64),
+                    ComplexField::sqrt(nc) / na::convert::<f64, Real>(2.0f64),
                 )
             } else if na >= nb && na >= nc {
                 // Longest segment: [&self.a, pc]
                 (
                     na::center(&self.a, &self.c),
-                    na.sqrt() / na::convert::<f64, Real>(2.0f64),
+                    ComplexField::sqrt(na) / na::convert::<f64, Real>(2.0f64),
                 )
             } else {
                 // Longest segment: [&self.b, &self.c]
                 (
                     na::center(&self.b, &self.c),
-                    nb.sqrt() / na::convert::<f64, Real>(2.0f64),
+                    ComplexField::sqrt(nb) / na::convert::<f64, Real>(2.0f64),
                 )
             }
         } else {
@@ -397,11 +397,11 @@ impl Triangle {
         let d12 = p2p.dot(&p2p3);
         let d13 = p3p.dot(&p3p1);
 
-        d11 >= na::zero::<Real>()
+        d11 >= 0.0
             && d11 <= p1p2.norm_squared()
-            && d12 >= na::zero::<Real>()
+            && d12 >= 0.0
             && d12 <= p2p3.norm_squared()
-            && d13 >= na::zero::<Real>()
+            && d13 >= 0.0
             && d13 <= p3p1.norm_squared()
     }
 }
@@ -501,7 +501,7 @@ impl ConvexPolyhedron for Triangle {
     ) {
         let normal = self.scaled_normal();
 
-        if normal.dot(&*dir) >= na::zero::<Real>() {
+        if normal.dot(&*dir) >= 0.0 {
             ConvexPolyhedron::face(self, FeatureId::Face(0), face);
         } else {
             ConvexPolyhedron::face(self, FeatureId::Face(1), face);

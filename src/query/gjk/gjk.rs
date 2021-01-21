@@ -1,6 +1,6 @@
 //! The Gilbert–Johnson–Keerthi distance algorithm.
 
-use na::{self, Unit};
+use na::{self, ComplexField, Unit};
 
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
@@ -97,14 +97,14 @@ where
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
-    let _eps_rel: Real = _eps_tol.sqrt();
+    let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     // FIXME: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
 
     let mut old_dir;
 
-    if let Some(proj_dir) = Unit::try_new(proj.coords, na::zero::<Real>()) {
+    if let Some(proj_dir) = Unit::try_new(proj.coords, 0.0) {
         old_dir = -proj_dir;
     } else {
         return GJKResult::Intersection;
@@ -141,7 +141,7 @@ where
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
-        } else if !exact_dist && min_bound > na::zero::<Real>() && max_bound <= max_dist {
+        } else if !exact_dist && min_bound > 0.0 && max_bound <= max_dist {
             return GJKResult::Proximity(old_dir);
         } else if max_bound - min_bound <= _eps_rel * max_bound {
             if exact_dist {
@@ -240,15 +240,15 @@ where
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
-    let _eps_rel: Real = _eps_tol.sqrt();
+    let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     let ray_length = ray.dir.norm();
 
-    if relative_eq!(ray_length, na::zero::<Real>()) {
+    if relative_eq!(ray_length, 0.0) {
         return None;
     }
 
-    let mut ltoi = na::zero::<Real>();
+    let mut ltoi = 0.0;
     let mut curr_ray = Ray::new(ray.origin, ray.dir / ray_length);
     let dir = -curr_ray.dir;
     let mut ldir = dir;
@@ -282,8 +282,8 @@ where
             CSOPoint::from_shapes(pos12, g1, g2, &dir)
         };
 
-        if last_chance && ltoi > na::zero::<Real>() {
-            // last_chance && ltoi > na::zero::<Real>() && (support_point.point - curr_ray.origin).dot(&ldir) >= na::zero::<Real>() {
+        if last_chance && ltoi > 0.0 {
+            // last_chance && ltoi > 0.0 && (support_point.point - curr_ray.origin).dot(&ldir) >= 0.0 {
             return Some((ltoi / ray_length, ldir));
         }
 
@@ -297,7 +297,7 @@ where
         //          > 0             |  > 0  | New higher bound.
         match query::details::ray_toi_with_halfspace(&support_point.point, &dir, &curr_ray) {
             Some(t) => {
-                if dir.dot(&curr_ray.dir) < na::zero::<Real>() && t > na::zero::<Real>() {
+                if dir.dot(&curr_ray.dir) < 0.0 && t > 0.0 {
                     // new lower bound
                     ldir = *dir;
                     ltoi += t;

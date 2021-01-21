@@ -106,7 +106,7 @@ impl Face {
                 true,
             ),
             _ => (
-                Self::new_with_proj(vertices, proj.point, [na::zero::<Real>(); 3], pts, adj),
+                Self::new_with_proj(vertices, proj.point, [0.0; 3], pts, adj),
                 false,
             ),
         }
@@ -241,14 +241,14 @@ impl EPA {
 
         if simplex.dimension() == 0 {
             let mut n: Vector<Real> = na::zero();
-            n[1] = na::one::<Real>();
+            n[1] = 1.0;
             return Some((Point::origin(), Point::origin(), Unit::new_unchecked(n)));
         } else if simplex.dimension() == 3 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
             let dp3 = self.vertices[3] - self.vertices[0];
 
-            if dp1.cross(&dp2).dot(&dp3) > na::zero::<Real>() {
+            if dp1.cross(&dp2).dot(&dp3) > 0.0 {
                 self.vertices.swap(1, 2)
             }
 
@@ -315,8 +315,8 @@ impl EPA {
             self.faces.push(face1);
             self.faces.push(face2);
 
-            self.heap.push(FaceId::new(0, na::zero::<Real>())?);
-            self.heap.push(FaceId::new(1, na::zero::<Real>())?);
+            self.heap.push(FaceId::new(0, 0.0)?);
+            self.heap.push(FaceId::new(1, 0.0)?);
         }
 
         let mut niter = 0;

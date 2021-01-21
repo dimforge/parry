@@ -29,10 +29,10 @@ pub enum SegmentPointLocation {
 impl SegmentPointLocation {
     /// The barycentric coordinates corresponding to this point location.
     pub fn barycentric_coordinates(&self) -> [Real; 2] {
-        let mut bcoords = [na::zero::<Real>(); 2];
+        let mut bcoords = [0.0; 2];
 
         match self {
-            SegmentPointLocation::OnVertex(i) => bcoords[*i as usize] = na::one::<Real>(),
+            SegmentPointLocation::OnVertex(i) => bcoords[*i as usize] = 1.0,
             SegmentPointLocation::OnEdge(uv) => {
                 bcoords[0] = uv[0];
                 bcoords[1] = uv[1];
@@ -196,7 +196,7 @@ impl ConvexPolyhedron for Segment {
                 FeatureId::Edge(_) => {
                     let iamin = direction.iamin();
                     let mut normal = Vector::zeros();
-                    normal[iamin] = na::one::<Real>();
+                    normal[iamin] = 1.0;
                     normal -= *direction * direction[iamin];
                     Unit::new_normalize(normal)
                 }
@@ -227,7 +227,7 @@ impl ConvexPolyhedron for Segment {
     ) {
         let seg_dir = self.scaled_direction();
 
-        if dir.perp(&seg_dir) >= na::zero::<Real>() {
+        if dir.perp(&seg_dir) >= 0.0 {
             self.face(FeatureId::Face(0), face);
         } else {
             self.face(FeatureId::Face(1), face);
@@ -259,7 +259,7 @@ impl ConvexPolyhedron for Segment {
     ) {
         face.clear();
         let seg = self.transformed(transform);
-        let ceps = eps.sin();
+        let ceps = ComplexField::sin(eps);
 
         if let Some(seg_dir) = seg.direction() {
             let cang = dir.dot(&seg_dir);
@@ -280,7 +280,7 @@ impl ConvexPolyhedron for Segment {
                 }
                 #[cfg(feature = "dim2")]
                 {
-                    if dir.perp(&seg_dir) >= na::zero::<Real>() {
+                    if dir.perp(&seg_dir) >= 0.0 {
                         seg.face(FeatureId::Face(0), face);
                     } else {
                         seg.face(FeatureId::Face(1), face);
@@ -293,13 +293,13 @@ impl ConvexPolyhedron for Segment {
     fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         if let Some(seg_dir) = self.direction() {
             let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-            let seps = eps.sin();
+            let seps = ComplexField::sin(eps);
             let dot = seg_dir.dot(local_dir.as_ref());
 
             if dot <= seps {
                 #[cfg(feature = "dim2")]
                 {
-                    if local_dir.perp(seg_dir.as_ref()) >= na::zero::<Real>() {
+                    if local_dir.perp(seg_dir.as_ref()) >= 0.0 {
                         FeatureId::Face(0)
                     } else {
                         FeatureId::Face(1)
@@ -309,7 +309,7 @@ impl ConvexPolyhedron for Segment {
                 {
                     FeatureId::Edge(0)
                 }
-            } else if dot >= na::zero::<Real>() {
+            } else if dot >= 0.0 {
                 FeatureId::Vertex(1)
             } else {
                 FeatureId::Vertex(0)

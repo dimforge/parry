@@ -1,4 +1,4 @@
-use na;
+use na::{self, ComplexField};
 
 use crate::math::{Point, Real};
 use crate::query::{Ray, RayCast, RayIntersection};
@@ -44,28 +44,28 @@ pub fn ray_toi_with_ball(
 
     // Special case for when the dir is zero.
     if a.is_zero() {
-        if c > na::zero::<Real>() {
+        if c > 0.0 {
             return (false, None);
         } else {
-            return (true, Some(na::zero::<Real>()));
+            return (true, Some(0.0));
         }
     }
 
-    if c > na::zero::<Real>() && b > na::zero::<Real>() {
+    if c > 0.0 && b > 0.0 {
         (false, None)
     } else {
         let delta = b * b - a * c;
 
-        if delta < na::zero::<Real>() {
+        if delta < 0.0 {
             // no solution
             (false, None)
         } else {
-            let t = (-b - delta.sqrt()) / a;
+            let t = (-b - ComplexField::sqrt(delta)) / a;
 
-            if t <= na::zero::<Real>() {
+            if t <= 0.0 {
                 // origin inside of the ball
                 if solid {
-                    (true, Some(na::zero::<Real>()))
+                    (true, Some(0.0))
                 } else {
                     (true, Some((-b + delta.sqrt()) / a))
                 }

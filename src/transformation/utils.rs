@@ -1,6 +1,7 @@
 //! Utilities useful for various generations tasks.
 
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
 
@@ -25,9 +26,9 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 
     for _ in 0..nsubdiv {
         out.push(Point::new(
-            curr_theta.cos() * radius,
+            ComplexField::cos(curr_theta) * radius,
             y.clone(),
-            curr_theta.sin() * radius,
+            ComplexField::sin(curr_theta) * radius,
         ));
         curr_theta = curr_theta + dtheta;
     }
@@ -43,8 +44,8 @@ pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point
     for _ in 0..nsubdiv {
         let mut pt_coords = Vector::zeros();
 
-        pt_coords[0] = curr_theta.cos() * radius;
-        pt_coords[1] = curr_theta.sin() * radius;
+        pt_coords[0] = ComplexField::cos(curr_theta) * radius;
+        pt_coords[1] = ComplexField::sin(curr_theta) * radius;
         out.push(Point::from(pt_coords));
 
         curr_theta = curr_theta + dtheta;

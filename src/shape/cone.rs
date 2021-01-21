@@ -34,7 +34,7 @@ impl SupportMap for Cone {
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         let mut vres = *dir;
 
-        vres[1] = na::zero::<Real>();
+        vres[1] = 0.0;
 
         if vres.normalize_mut().is_zero() {
             vres = na::zero();

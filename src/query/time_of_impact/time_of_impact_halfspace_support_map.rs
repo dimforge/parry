@@ -29,7 +29,7 @@ where
         let witness2 = support_point;
         let mut witness1 = ray.point_at(toi);
 
-        if support_point.coords.dot(&halfspace.normal) < na::zero::<Real>() {
+        if support_point.coords.dot(&halfspace.normal) < 0.0 {
             status = TOIStatus::Penetrating
         } else {
             // Project the witness point to the halfspace.

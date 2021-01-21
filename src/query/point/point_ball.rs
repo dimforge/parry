@@ -1,4 +1,4 @@
-use na;
+use na::{self, ComplexField};
 
 use crate::math::{Point, Real};
 use crate::query::{PointProjection, PointQuery};
@@ -14,7 +14,8 @@ impl PointQuery for Ball {
         if inside && solid {
             PointProjection::new(true, *pt)
         } else {
-            let proj = Point::from(pt.coords * (self.radius / distance_squared.sqrt()));
+            let proj =
+                Point::from(pt.coords * (self.radius / ComplexField::sqrt(distance_squared)));
             PointProjection::new(inside, proj)
         }
     }
@@ -31,8 +32,8 @@ impl PointQuery for Ball {
     fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
         let dist = pt.coords.norm() - self.radius;
 
-        if solid && dist < na::zero::<Real>() {
-            na::zero::<Real>()
+        if solid && dist < 0.0 {
+            0.0
         } else {
             dist
         }

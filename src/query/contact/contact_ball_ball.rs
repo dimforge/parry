@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::Contact;
 use crate::shape::Ball;
-use na::{self, Unit};
+use na::{self, ComplexField, Unit};
 use num::Zero;
 
 /// Contact between balls.
@@ -34,7 +34,7 @@ pub fn contact_ball_ball(
             point2,
             normal1,
             normal2,
-            distance_squared.sqrt() - sum_radius,
+            ComplexField::sqrt(distance_squared) - sum_radius,
         ))
     } else {
         None

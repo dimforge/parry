@@ -57,8 +57,8 @@ where
     let e = d2.norm_squared();
     let f = d2.dot(&r);
 
-    let _0: Real = na::zero::<Real>();
-    let _1: Real = na::one::<Real>();
+    let _0: Real = 0.0;
+    let _1: Real = 1.0;
 
     let mut s;
     let mut t;

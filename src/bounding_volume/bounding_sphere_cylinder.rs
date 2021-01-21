@@ -1,6 +1,7 @@
 use crate::bounding_volume::BoundingSphere;
 use crate::math::{Isometry, Point, Real};
 use crate::shape::Cylinder;
+use na::ComplexField;
 
 impl Cylinder {
     #[inline]
@@ -11,7 +12,8 @@ impl Cylinder {
 
     #[inline]
     pub fn local_bounding_sphere(&self) -> BoundingSphere {
-        let radius = (self.radius * self.radius + self.half_height * self.half_height).sqrt();
+        let radius =
+            ComplexField::sqrt(self.radius * self.radius + self.half_height * self.half_height);
 
         BoundingSphere::new(Point::origin(), radius)
     }

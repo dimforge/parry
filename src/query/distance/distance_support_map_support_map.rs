@@ -47,9 +47,9 @@ where
     }
 
     match gjk::closest_points(pos12, g1, g2, Real::max_value(), true, simplex) {
-        GJKResult::Intersection => na::zero::<Real>(),
+        GJKResult::Intersection => 0.0,
         GJKResult::ClosestPoints(p1, p2, _) => na::distance(&p1, &p2),
         GJKResult::Proximity(_) => unreachable!(),
-        GJKResult::NoIntersection(_) => na::zero::<Real>(), // FIXME: GJK did not converge.
+        GJKResult::NoIntersection(_) => 0.0, // FIXME: GJK did not converge.
     }
 }

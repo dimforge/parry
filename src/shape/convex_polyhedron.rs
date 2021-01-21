@@ -2,7 +2,7 @@ use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::{self, SortedPair};
-use na::{self, Point2, Unit};
+use na::{self, ComplexField, Point2, Unit};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::f64;
@@ -103,7 +103,7 @@ impl ConvexPolyhedron {
         points: Vec<Point<Real>>,
         indices: &[[u32; DIM]],
     ) -> Option<ConvexPolyhedron> {
-        let eps = crate::math::DEFAULT_EPSILON.sqrt();
+        let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
 
         let mut vertices = Vec::new();
         let mut edges = Vec::<Edge>::new();
@@ -401,7 +401,7 @@ impl ConvexPolyhedron {
         local_dir: &Unit<Vector<Real>>,
         eps: Real,
     ) -> FeatureId {
-        let (seps, ceps) = eps.sin_cos();
+        let (seps, ceps) = ComplexField::sin_cos(eps);
         let support_pt_id = utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points);
         let vertex = &self.vertices[support_pt_id];
 

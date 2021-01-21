@@ -259,10 +259,10 @@ impl ConvexPolyhedron for Cuboid {
 
         if i < DIM {
             i1 = i;
-            sign = na::one::<Real>();
+            sign = 1.0;
         } else {
             i1 = i - DIM;
-            sign = -na::one::<Real>();
+            sign = -1.0;
         }
 
         #[cfg(feature = "dim2")]
@@ -277,13 +277,13 @@ impl ConvexPolyhedron for Cuboid {
             vertex[i2] = -vertex[i2];
             let p2 = Point::from(vertex);
 
-            let mut vertex_id1 = if sign < na::zero::<Real>() {
+            let mut vertex_id1 = if sign < 0.0 {
                 1 << i1
             } else {
                 0
             };
             let mut vertex_id2 = vertex_id1;
-            if p1[i2] < na::zero::<Real>() {
+            if p1[i2] < 0.0 {
                 vertex_id1 |= 1 << i2;
             } else {
                 vertex_id2 |= 1 << i2;
@@ -301,7 +301,7 @@ impl ConvexPolyhedron for Cuboid {
         {
             let i2 = (i1 + 1) % 3;
             let i3 = (i1 + 2) % 3;
-            let (edge_i2, edge_i3) = if sign > na::zero::<Real>() {
+            let (edge_i2, edge_i3) = if sign > 0.0 {
                 (i2, i3)
             } else {
                 (i3, i2)
@@ -311,7 +311,7 @@ impl ConvexPolyhedron for Cuboid {
             let mut vertex = self.half_extents;
             vertex[i1] *= sign;
 
-            let (sbit, msbit) = if sign < na::zero::<Real>() {
+            let (sbit, msbit) = if sign < 0.0 {
                 (1, 0)
             } else {
                 (0, 1)
@@ -350,7 +350,7 @@ impl ConvexPolyhedron for Cuboid {
             normal[i1] = sign;
             out.set_normal(Unit::new_unchecked(normal));
 
-            if sign > na::zero::<Real>() {
+            if sign > 0.0 {
                 out.set_feature_id(FeatureId::Face(i1 as u32));
             } else {
                 out.set_feature_id(FeatureId::Face(i1 as u32 + 3));
@@ -381,7 +381,7 @@ impl ConvexPolyhedron for Cuboid {
             }
         }
 
-        if local_dir[iamax] > na::zero::<Real>() {
+        if local_dir[iamax] > 0.0 {
             self.face(FeatureId::Face(iamax as u32), out);
             out.transform_by(m);
         } else {
@@ -398,7 +398,7 @@ impl ConvexPolyhedron for Cuboid {
         out: &mut ConvexPolygonalFeature,
     ) {
         let local_dir = m.inverse_transform_vector(dir);
-        let cang = angle.cos();
+        let cang = ComplexField::cos(angle);
         let mut support_point = self.half_extents;
 
         out.clear();
@@ -409,7 +409,7 @@ impl ConvexPolyhedron for Cuboid {
             for i1 in 0..2 {
                 let sign = local_dir[i1].signum();
                 if sign * local_dir[i1] >= cang {
-                    if sign > na::zero::<Real>() {
+                    if sign > 0.0 {
                         self.face(FeatureId::Face(i1 as u32), out);
                         out.transform_by(m);
                     } else {
@@ -418,7 +418,7 @@ impl ConvexPolyhedron for Cuboid {
                     }
                     return;
                 } else {
-                    if sign < na::zero::<Real>() {
+                    if sign < 0.0 {
                         support_point_id |= 1 << i1;
                     }
                     support_point[i1] *= sign;
@@ -435,14 +435,14 @@ impl ConvexPolyhedron for Cuboid {
 
         #[cfg(feature = "dim3")]
         {
-            let sang = angle.sin();
+            let sang = ComplexField::sin(angle);
             let mut support_point_id = 0;
 
             // Check faces.
             for i1 in 0..3 {
                 let sign = local_dir[i1].signum();
                 if sign * local_dir[i1] >= cang {
-                    if sign > na::zero::<Real>() {
+                    if sign > 0.0 {
                         self.face(FeatureId::Face(i1 as u32), out);
                         out.transform_by(m);
                     } else {
@@ -451,7 +451,7 @@ impl ConvexPolyhedron for Cuboid {
                     }
                     return;
                 } else {
-                    if sign < na::zero::<Real>() {
+                    if sign < 0.0 {
                         support_point[i1] *= sign;
                         support_point_id |= 1 << i1;
                     }
@@ -490,7 +490,7 @@ impl ConvexPolyhedron for Cuboid {
 
     fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let one_degree: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-        let cang = one_degree.cos();
+        let cang = ComplexField::cos(one_degree);
 
         #[cfg(feature = "dim2")]
         {
@@ -498,13 +498,13 @@ impl ConvexPolyhedron for Cuboid {
             for i1 in 0..2 {
                 let sign = local_dir[i1].signum();
                 if sign * local_dir[i1] >= cang {
-                    if sign > na::zero::<Real>() {
+                    if sign > 0.0 {
                         return FeatureId::Face(i1 as u32);
                     } else {
                         return FeatureId::Face(i1 as u32 + 2);
                     }
                 } else {
-                    if sign < na::zero::<Real>() {
+                    if sign < 0.0 {
                         support_point_id |= 1 << i1;
                     }
                 }
@@ -516,20 +516,20 @@ impl ConvexPolyhedron for Cuboid {
 
         #[cfg(feature = "dim3")]
         {
-            let sang = one_degree.sin();
+            let sang = ComplexField::sin(one_degree);
             let mut support_point_id = 0;
 
             // Check faces.
             for i1 in 0..3 {
                 let sign = local_dir[i1].signum();
                 if sign * local_dir[i1] >= cang {
-                    if sign > na::zero::<Real>() {
+                    if sign > 0.0 {
                         return FeatureId::Face(i1 as u32);
                     } else {
                         return FeatureId::Face(i1 as u32 + 3);
                     }
                 } else {
-                    if sign < na::zero::<Real>() {
+                    if sign < 0.0 {
                         support_point_id |= 1 << i1;
                     }
                 }
@@ -557,9 +557,9 @@ impl ConvexPolyhedron for Cuboid {
                 let mut dir: Vector<Real> = na::zero();
 
                 if id < 2 {
-                    dir[id as usize] = na::one::<Real>();
+                    dir[id as usize] = 1.0;
                 } else {
-                    dir[id as usize - 2] = -na::one::<Real>();
+                    dir[id as usize - 2] = -1.0;
                 }
                 Unit::new_unchecked(dir)
             }
@@ -568,20 +568,20 @@ impl ConvexPolyhedron for Cuboid {
 
                 match id {
                     0b00 => {
-                        dir[0] = na::one::<Real>();
-                        dir[1] = na::one::<Real>();
+                        dir[0] = 1.0;
+                        dir[1] = 1.0;
                     }
                     0b01 => {
-                        dir[1] = na::one::<Real>();
-                        dir[0] = -na::one::<Real>();
+                        dir[1] = 1.0;
+                        dir[0] = -1.0;
                     }
                     0b11 => {
-                        dir[0] = -na::one::<Real>();
-                        dir[1] = -na::one::<Real>();
+                        dir[0] = -1.0;
+                        dir[1] = -1.0;
                     }
                     0b10 => {
-                        dir[1] = -na::one::<Real>();
-                        dir[0] = na::one::<Real>();
+                        dir[1] = -1.0;
+                        dir[0] = 1.0;
                     }
                     _ => panic!("Invalid feature ID: {:?}", feature),
                 }
@@ -599,9 +599,9 @@ impl ConvexPolyhedron for Cuboid {
                 let mut dir: Vector<Real> = na::zero();
 
                 if id < 3 {
-                    dir[id as usize] = na::one::<Real>();
+                    dir[id as usize] = 1.0;
                 } else {
-                    dir[id as usize - 3] = -na::one::<Real>();
+                    dir[id as usize - 3] = -1.0;
                 }
                 Unit::new_unchecked(dir)
             }

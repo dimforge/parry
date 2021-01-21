@@ -1,6 +1,6 @@
 use crate::math::{Point, Real};
 use crate::shape::Ball;
-use na;
+use na::{self, ComplexField};
 
 /// Distance between balls.
 #[inline]
@@ -11,8 +11,8 @@ pub fn distance_ball_ball(b1: &Ball, center2: &Point<Real>, b2: &Ball) -> Real {
     let sum_radius = r1 + r2;
 
     if distance_squared <= sum_radius * sum_radius {
-        na::zero::<Real>()
+        0.0
     } else {
-        distance_squared.sqrt() - sum_radius
+        ComplexField::sqrt(distance_squared) - sum_radius
     }
 }

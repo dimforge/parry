@@ -66,7 +66,7 @@ impl Face {
             (Self::new_with_proj(vertices, proj, bcoords, pts), true)
         } else {
             (
-                Self::new_with_proj(vertices, Point::origin(), [na::zero::<Real>(); 2], pts),
+                Self::new_with_proj(vertices, Point::origin(), [0.0; 2], pts),
                 false,
             )
         }
@@ -224,7 +224,7 @@ impl EPA {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
 
-            if dp1.perp(&dp2) < na::zero::<Real>() {
+            if dp1.perp(&dp2) < 0.0 {
                 self.vertices.swap(1, 2)
             }
 
@@ -261,13 +261,13 @@ impl EPA {
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
                 Point::origin(),
-                [na::one::<Real>(), na::zero::<Real>()],
+                [1.0, 0.0],
                 pts1,
             ));
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
                 Point::origin(),
-                [na::one::<Real>(), na::zero::<Real>()],
+                [1.0, 0.0],
                 pts2,
             ));
 
@@ -356,7 +356,7 @@ fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Rea
     let ab_ap = ab.dot(&ap);
     let sqnab = ab.norm_squared();
 
-    if sqnab == na::zero::<Real>() {
+    if sqnab == 0.0 {
         return None;
     }
 
@@ -373,9 +373,6 @@ fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Rea
 
         let res = *a + ab * position_on_segment;
 
-        Some((
-            res,
-            [na::one::<Real>() - position_on_segment, position_on_segment],
-        ))
+        Some((res, [1.0 - position_on_segment, position_on_segment]))
     }
 }

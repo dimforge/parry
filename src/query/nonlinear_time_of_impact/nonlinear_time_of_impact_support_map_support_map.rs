@@ -1,4 +1,4 @@
-use na::Unit;
+use na::{ComplexField, Unit};
 
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::motion::RigidMotion;
@@ -49,12 +49,12 @@ where
     G2: SupportMap,
 {
     let _0_5: Real = 0.5;
-    let mut min_t = na::zero::<Real>();
+    let mut min_t = 0.0;
     let mut prev_min_t = min_t;
     let abs_tol: Real = query::gjk::eps_tol();
-    let rel_tol = abs_tol.sqrt();
+    let rel_tol = ComplexField::sqrt(abs_tol);
     let mut result = TOI {
-        toi: na::zero::<Real>(),
+        toi: 0.0,
         normal1: Vector::<Real>::x_axis(),
         normal2: Vector::<Real>::x_axis(),
         witness1: Point::<Real>::origin(),
@@ -68,7 +68,7 @@ where
         // FIXME: use the _with_params version of the closest points query.
         match closest_points(&pos12, g1, g2, Real::max_value()) {
             ClosestPoints::Intersecting => {
-                if result.toi == na::zero::<Real>() {
+                if result.toi == 0.0 {
                     result.status = TOIStatus::Penetrating
                 } else {
                     result.status = TOIStatus::Failed;
@@ -89,7 +89,7 @@ where
                     let mut niter = 0;
                     min_t = result.toi;
                     let mut max_t = max_toi;
-                    let min_target_distance = (target_distance - rel_tol).max(na::zero::<Real>());
+                    let min_target_distance = (target_distance - rel_tol).max(0.0);
                     let max_target_distance = target_distance + rel_tol;
 
                     loop {

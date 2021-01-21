@@ -1,7 +1,7 @@
 use crate::math::{Point, Real, Vector};
 use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
-use na::{self, RealField, Unit};
+use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -28,7 +28,7 @@ impl ConvexPolygon {
     /// Convexity of the input polyline is not checked.
     /// Returns `None` if all points form an almost flat line.
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
-        let eps = crate::math::DEFAULT_EPSILON.sqrt();
+        let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
         let mut normals = Vec::with_capacity(points.len());
 
         // First, compute all normals.
@@ -39,7 +39,7 @@ impl ConvexPolygon {
 
         let mut nremoved = 0;
         // See if the first vertex must be removed.
-        if normals[0].dot(&*normals[normals.len() - 1]) > na::one::<Real>() - eps {
+        if normals[0].dot(&*normals[normals.len() - 1]) > 1.0 - eps {
             nremoved = 1;
         }
 
@@ -47,7 +47,7 @@ impl ConvexPolygon {
         // of collinearity of adjascent faces.
         for i2 in 1..points.len() {
             let i1 = i2 - 1;
-            if normals[i1].dot(&*normals[i2]) > na::one::<Real>() - eps {
+            if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
                 // Remove
                 nremoved += 1;
             } else {
@@ -81,7 +81,7 @@ impl ConvexPolygon {
 
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
-        let ceps = eps.cos();
+        let ceps = ComplexField::cos(eps);
 
         // Check faces.
         for i in 0..self.normals.len() {
@@ -203,7 +203,7 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-        let ceps = eps.cos();
+        let ceps = ComplexField::cos(eps);
 
         // Check faces.
         for i in 0..self.normals.len() {

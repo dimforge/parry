@@ -48,10 +48,10 @@ impl AABB {
                 let t0 = clip.0;
                 let t1 = clip.1;
 
-                if t1 < na::zero::<Real>() {
+                if t1 < 0.0 {
                     None
                 } else {
-                    Some((t0.max(na::zero::<Real>()), t1))
+                    Some((t0.max(0.0), t1))
                 }
             })
     }
@@ -123,7 +123,7 @@ pub fn clip_aabb_line(
                 far_diag = true;
             }
 
-            if tmax < na::zero::<Real>() || tmin > tmax {
+            if tmax < 0.0 || tmin > tmax {
                 return None;
             }
         }
@@ -135,9 +135,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::zeros();
 
         if near_side < 0 {
-            normal[(-near_side - 1) as usize] = na::one::<Real>();
+            normal[(-near_side - 1) as usize] = 1.0;
         } else {
-            normal[(near_side - 1) as usize] = -na::one::<Real>();
+            normal[(near_side - 1) as usize] = -1.0;
         }
 
         (tmin, normal, near_side)
@@ -149,9 +149,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::zeros();
 
         if far_side < 0 {
-            normal[(-far_side - 1) as usize] = -na::one::<Real>();
+            normal[(-far_side - 1) as usize] = -1.0;
         } else {
-            normal[(far_side - 1) as usize] = na::one::<Real>();
+            normal[(far_side - 1) as usize] = 1.0;
         }
 
         (tmax, normal, far_side)

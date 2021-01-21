@@ -10,7 +10,7 @@ use num::Zero;
 
 impl RayCast for AABB {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
-        let mut tmin: Real = na::zero::<Real>();
+        let mut tmin: Real = 0.0;
         let mut tmax: Real = max_toi;
 
         for i in 0usize..DIM {
@@ -75,9 +75,9 @@ fn ray_aabb(
 ) -> Option<(Real, Vector<Real>, isize)> {
     use crate::query::clip;
     clip::clip_aabb_line(aabb, &ray.origin, &ray.dir).and_then(|(near, far)| {
-        if near.0 < na::zero::<Real>() {
+        if near.0 < 0.0 {
             if solid {
-                Some((na::zero::<Real>(), na::zero(), far.2))
+                Some((0.0, na::zero(), far.2))
             } else if far.0 <= max_toi {
                 Some(far)
             } else {
