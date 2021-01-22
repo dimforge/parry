@@ -5,7 +5,7 @@
 use crate::bounding_volume::{BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
 use crate::partitioning::SimdQuadTree;
-use crate::shape::{Shape, SimdCompositeShape, TypedSimdCompositeShape};
+use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 use std::sync::Arc;
 
 /// A compound shape with an aabb bounding volume.
@@ -13,8 +13,10 @@ use std::sync::Arc;
 /// A compound shape is a shape composed of the union of several simpler shape. This is
 /// the main way of creating a concave shape from convex parts. Each parts can have its own
 /// delta transformation to shift or rotate it with regard to the other shapes.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone)]
 pub struct Compound {
-    shapes: Vec<(Isometry<Real>, Arc<dyn Shape>)>,
+    shapes: Vec<(Isometry<Real>, SharedShape)>,
     quadtree: SimdQuadTree<u32>,
     aabbs: Vec<AABB>,
     aabb: AABB,
@@ -25,7 +27,7 @@ impl Compound {
     ///
     /// Panics if the input vector is empty, of if some of the provided shapes
     /// are also composite shapes (nested composite shapes are not allowed).
-    pub fn new(shapes: Vec<(Isometry<Real>, Arc<dyn Shape>)>) -> Compound {
+    pub fn new(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Compound {
         assert!(
             !shapes.is_empty(),
             "A compound shape must contain at least one shape."
@@ -63,7 +65,7 @@ impl Compound {
 impl Compound {
     /// The shapes of this compound shape.
     #[inline]
-    pub fn shapes(&self) -> &[(Isometry<Real>, Arc<dyn Shape>)] {
+    pub fn shapes(&self) -> &[(Isometry<Real>, SharedShape)] {
         &self.shapes[..]
     }
 

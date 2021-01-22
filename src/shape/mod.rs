@@ -14,6 +14,7 @@ pub use self::round_shape::RoundShape;
 pub use self::segment::{Segment, SegmentPointLocation};
 #[doc(inline)]
 pub use self::shape::{Shape, ShapeType};
+pub use self::shared_shape::SharedShape;
 #[doc(inline)]
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TrianglePointLocation};
@@ -89,3 +90,4 @@ mod trimesh;
 mod feature_id;
 #[cfg(feature = "dim2")]
 mod polygonal_feature2d;
+mod shared_shape;
