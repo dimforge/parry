@@ -454,8 +454,7 @@ impl Shape for Segment {
 impl Shape for Compound {
     #[cfg(feature = "serde-serialize")]
     fn as_serialize(&self) -> Option<&dyn Serialize> {
-        // TODO.
-        None
+        Some(self as &dyn Serialize)
     }
 
     fn compute_local_aabb(&self) -> AABB {
