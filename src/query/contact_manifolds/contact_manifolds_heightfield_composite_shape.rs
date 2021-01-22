@@ -7,10 +7,10 @@ use crate::query::ContactManifold;
 #[cfg(feature = "dim2")]
 use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape, SimdCompositeShape};
+use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{IsometryOpt, MaybeSerializableData};
 #[cfg(feature = "serde-serialize")]
 use erased_serde::Serialize;
-use std::collections::{hash_map::Entry, HashMap};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone)]

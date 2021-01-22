@@ -1,10 +1,9 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
+use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{self, SortedPair};
 use na::{self, ComplexField, Point2, Unit};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use std::f64;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -109,7 +108,7 @@ impl ConvexPolyhedron {
         let mut edges = Vec::<Edge>::new();
         let mut faces = Vec::<Face>::new();
         let mut triangles = Vec::new();
-        let mut edge_map = HashMap::<SortedPair<u32>, u32>::new();
+        let mut edge_map = HashMap::default();
 
         let mut faces_adj_to_vertex = Vec::new();
         let mut edges_adj_to_vertex = Vec::new();

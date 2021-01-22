@@ -5,10 +5,10 @@ use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
 use crate::shape::SimdCompositeShape;
+use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{IsometryOpt, MaybeSerializableData};
 #[cfg(feature = "serde-serialize")]
 use erased_serde::Serialize;
-use std::collections::{hash_map::Entry, HashMap};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone)]
