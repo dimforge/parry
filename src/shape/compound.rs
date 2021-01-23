@@ -6,7 +6,6 @@ use crate::bounding_volume::{BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
 use crate::partitioning::SimdQuadTree;
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
-use std::sync::Arc;
 
 /// A compound shape with an aabb bounding volume.
 ///

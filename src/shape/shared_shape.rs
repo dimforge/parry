@@ -1,14 +1,13 @@
 use crate::math::{Isometry, Point, Real, Vector, DIM};
+#[cfg(feature = "dim2")]
+use crate::shape::ConvexPolygon;
+#[cfg(feature = "serde-serialize")]
+use crate::shape::{self, ShapeType};
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, RoundCuboid, RoundShape,
-    RoundTriangle, Segment, Shape, ShapeType, TriMesh, Triangle,
+    Ball, Capsule, Compound, Cuboid, HeightField, RoundShape, Segment, Shape, TriMesh, Triangle,
 };
 #[cfg(feature = "dim3")]
-use crate::shape::{
-    Cone, ConvexPolyhedron, Cylinder, RoundCone, RoundConvexPolyhedron, RoundCylinder,
-};
-#[cfg(feature = "dim2")]
-use crate::shape::{ConvexPolygon, RoundConvexPolygon};
+use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -337,14 +336,14 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
                     Some(ShapeType::Segment) => deser::<A, Segment>(&mut seq)?,
                     Some(ShapeType::TriMesh) => deser::<A, TriMesh>(&mut seq)?,
                     Some(ShapeType::HeightField) => deser::<A, HeightField>(&mut seq)?,
-                    Some(ShapeType::HalfSpace) => deser::<A, HalfSpace>(&mut seq)?,
-                    Some(ShapeType::RoundCuboid) => deser::<A, RoundCuboid>(&mut seq)?,
-                    Some(ShapeType::RoundTriangle) => deser::<A, RoundTriangle>(&mut seq)?,
+                    Some(ShapeType::HalfSpace) => deser::<A, shape::HalfSpace>(&mut seq)?,
+                    Some(ShapeType::RoundCuboid) => deser::<A, shape::RoundCuboid>(&mut seq)?,
+                    Some(ShapeType::RoundTriangle) => deser::<A, shape::RoundTriangle>(&mut seq)?,
                     #[cfg(feature = "dim2")]
                     Some(ShapeType::ConvexPolygon) => deser::<A, ConvexPolygon>(&mut seq)?,
                     #[cfg(feature = "dim2")]
                     Some(ShapeType::RoundConvexPolygon) => {
-                        deser::<A, RoundConvexPolygon>(&mut seq)?
+                        deser::<A, shape::RoundConvexPolygon>(&mut seq)?
                     }
                     #[cfg(feature = "dim3")]
                     Some(ShapeType::Cylinder) => deser::<A, Cylinder>(&mut seq)?,
@@ -353,12 +352,12 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
                     #[cfg(feature = "dim3")]
                     Some(ShapeType::Cone) => deser::<A, Cone>(&mut seq)?,
                     #[cfg(feature = "dim3")]
-                    Some(ShapeType::RoundCylinder) => deser::<A, RoundCylinder>(&mut seq)?,
+                    Some(ShapeType::RoundCylinder) => deser::<A, shape::RoundCylinder>(&mut seq)?,
                     #[cfg(feature = "dim3")]
-                    Some(ShapeType::RoundCone) => deser::<A, RoundCone>(&mut seq)?,
+                    Some(ShapeType::RoundCone) => deser::<A, shape::RoundCone>(&mut seq)?,
                     #[cfg(feature = "dim3")]
                     Some(ShapeType::RoundConvexPolyhedron) => {
-                        deser::<A, RoundConvexPolyhedron>(&mut seq)?
+                        deser::<A, shape::RoundConvexPolyhedron>(&mut seq)?
                     }
                     Some(ShapeType::Compound) => {
                         return Err(serde::de::Error::custom(
