@@ -5,7 +5,7 @@ use crate::geometry::{sat, Contact, ContactData, ContactManifold, ContactManifol
 use crate::math::{Isometry, Point, Real};
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
-use cdl::query;
+use parry::query;
 
 pub fn generate_contacts_polygon_polygon(_ctxt: &mut PrimitiveContactGenerationContext) {
     unimplemented!()

@@ -2,30 +2,30 @@
     <a href="https://discord.gg/vt9DJSW">
         <img src="https://img.shields.io/discord/507548572338880513.svg?logo=discord&colorB=7289DA">
     </a>
-    <a href="https://crates.io/crates/cdl2d">
-         <img src="http://meritbadge.herokuapp.com/cdl2d?style=flat-square" alt="crates.io">
+    <a href="https://crates.io/crates/parry2d">
+         <img src="http://meritbadge.herokuapp.com/parry2d?style=flat-square" alt="crates.io">
     </a>
-    <a href="https://crates.io/crates/cdl3d">
-         <img src="http://meritbadge.herokuapp.com/cdl3d?style=flat-square" alt="crates.io">
+    <a href="https://crates.io/crates/parry3d">
+         <img src="http://meritbadge.herokuapp.com/parry3d?style=flat-square" alt="crates.io">
     </a>
-    <a href="https://circleci.com/gh/dimforge/cdl">
-        <img src="https://circleci.com/gh/dimforge/cdl.svg?style=svg" alt="Build status">
+    <a href="https://circleci.com/gh/dimforge/parry">
+        <img src="https://circleci.com/gh/dimforge/parry.svg?style=svg" alt="Build status">
     </a>
 </p>
 <p align = "center">
     <strong>
-        <a href="http://cdl.org/rustdoc/cdl2d">2D Documentation</a> | <a href="http://cdl.org/rustdoc/cdl3d">3D Documentation</a> | <a href="http://cdl.org">User Guide</a> | <a href="https://discourse.nphysics.org">Forum</a>
+        <a href="http://parry.org/rustdoc/parry2d">2D Documentation</a> | <a href="http://parry.org/rustdoc/parry3d">3D Documentation</a> | <a href="http://parry.org">User Guide</a> | <a href="https://discourse.nphysics.org">Forum</a>
     </strong>
 </p>
 
-cdl
+parry
 ========
 
-**cdl** is a 2 and 3-dimensional collision detection library written with
+**parry** is a 2 and 3-dimensional collision detection library written with
 the rust programming language.
 
-The official user guide is available [here](http://cdl.org).
-The rustdoc documentation is available [for 3D](http://cdl.org/rustdoc/cdl3d) and [for 2D](http://cdl.org/rustdoc/cdl2d).
+The official user guide is available [here](http://parry.org).
+The rustdoc documentation is available [for 3D](http://parry.org/rustdoc/parry3d) and [for 2D](http://parry.org/rustdoc/parry2d).
 
 ## Compilation
 You will need the last stable build of the [rust compiler](http://www.rust-lang.org)
@@ -35,8 +35,8 @@ Simply add one the following (or both) to your `Cargo.toml` file:
 
 ```
 [dependencies]
-cdl2d = "0.23" # For 2D collision detection.
-cdl3d = "0.23" # For 3D collision detection.
+parry2d = "0.23" # For 2D collision detection.
+parry3d = "0.23" # For 3D collision detection.
 ```
 
 

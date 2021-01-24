@@ -95,7 +95,7 @@ impl Segment {
         Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
     }
 
-    /// Returns `None`. Exists only for API similarity with the 2D cdl.
+    /// Returns `None`. Exists only for API similarity with the 2D parry.
     #[cfg(feature = "dim3")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
         None

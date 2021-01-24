@@ -1,4 +1,4 @@
-//! Shapes supported by cdl.
+//! Shapes supported by parry.
 
 pub use self::ball::Ball;
 pub use self::capsule::Capsule;

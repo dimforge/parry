@@ -1,8 +1,8 @@
 /*!
-cdl
+parry
 ========
 
-**cdl** is a 2 and 3-dimensional geometric library written with
+**parry** is a 2 and 3-dimensional geometric library written with
 the rust programming language.
 
 ## Features
@@ -25,7 +25,7 @@ And various traits for collision detectors and broad phase collision detection.
 #![deny(unused_results)]
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
-#![doc(html_root_url = "http://cdl.org/rustdoc")]
+#![doc(html_root_url = "http://parry.org/rustdoc")]
 
 #[cfg(all(
     feature = "simd-is-enabled",
