@@ -116,6 +116,18 @@ impl SharedShape {
     pub fn triangle(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Self {
         SharedShape(Arc::new(Triangle::new(a, b, c)))
     }
+    /// Initializes a triangle shape with round corners.
+    pub fn round_triangle(
+        a: Point<Real>,
+        b: Point<Real>,
+        c: Point<Real>,
+        border_radius: Real,
+    ) -> Self {
+        SharedShape(Arc::new(RoundShape {
+            base_shape: Triangle::new(a, b, c),
+            border_radius,
+        }))
+    }
 
     /// Initializes a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
