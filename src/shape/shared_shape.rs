@@ -348,6 +348,7 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
                     Some(ShapeType::Segment) => deser::<A, Segment>(&mut seq)?,
                     Some(ShapeType::TriMesh) => deser::<A, TriMesh>(&mut seq)?,
                     Some(ShapeType::HeightField) => deser::<A, HeightField>(&mut seq)?,
+                    Some(ShapeType::Compound) => deser::<A, Compound>(&mut seq)?,
                     Some(ShapeType::HalfSpace) => deser::<A, shape::HalfSpace>(&mut seq)?,
                     Some(ShapeType::RoundCuboid) => deser::<A, shape::RoundCuboid>(&mut seq)?,
                     Some(ShapeType::RoundTriangle) => deser::<A, shape::RoundTriangle>(&mut seq)?,
@@ -370,11 +371,6 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
                     #[cfg(feature = "dim3")]
                     Some(ShapeType::RoundConvexPolyhedron) => {
                         deser::<A, shape::RoundConvexPolyhedron>(&mut seq)?
-                    }
-                    Some(ShapeType::Compound) => {
-                        return Err(serde::de::Error::custom(
-                            "found invalid shape type to deserialize",
-                        ))
                     }
                     None => {
                         return Err(serde::de::Error::custom(
