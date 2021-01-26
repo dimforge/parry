@@ -3,7 +3,6 @@ use crate::math::{Isometry, Point, Real};
 use crate::partitioning::SimdQuadTree;
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
-use na::Point2;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -11,17 +10,14 @@ use na::Point2;
 pub struct Polyline {
     quadtree: SimdQuadTree<u32>,
     vertices: Vec<Point<Real>>,
-    indices: Vec<Point2<u32>>,
+    indices: Vec<[u32; 2]>,
 }
 
 impl Polyline {
     /// Creates a new polyline from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<Point2<u32>>>) -> Self {
-        let indices = indices.unwrap_or_else(|| {
-            (0..vertices.len() as u32 - 2)
-                .map(|i| Point2::new(i, i + 1))
-                .collect()
-        });
+    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+        let indices =
+            indices.unwrap_or_else(|| (0..vertices.len() as u32 - 1).map(|i| [i, i + 1]).collect());
         let data = indices.iter().enumerate().map(|(i, idx)| {
             let aabb =
                 Segment::new(vertices[idx[0] as usize], vertices[idx[1] as usize]).local_aabb();
@@ -62,14 +58,20 @@ impl Polyline {
     /// An iterator through all the segments of this mesh.
     pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
         self.indices.iter().map(move |ids| {
-            Segment::new(self.vertices[ids.x as usize], self.vertices[ids.y as usize])
+            Segment::new(
+                self.vertices[ids[0] as usize],
+                self.vertices[ids[1] as usize],
+            )
         })
     }
 
     /// Get the `i`-th segment of this mesh.
     pub fn segment(&self, i: u32) -> Segment {
         let idx = self.indices[i as usize];
-        Segment::new(self.vertices[idx.x as usize], self.vertices[idx.y as usize])
+        Segment::new(
+            self.vertices[idx[0] as usize],
+            self.vertices[idx[1] as usize],
+        )
     }
 
     pub fn segment_feature_to_polyline_feature(
@@ -90,7 +92,7 @@ impl Polyline {
     }
 
     /// The index buffer of this mesh.
-    pub fn indices(&self) -> &[Point2<u32>] {
+    pub fn indices(&self) -> &[[u32; 2]] {
         &self.indices
     }
 

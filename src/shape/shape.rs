@@ -5,7 +5,7 @@ use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, PolygonalFeatureMap,
-    RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
+    Polyline, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{
@@ -35,6 +35,8 @@ pub enum ShapeType {
     Triangle,
     /// A triangle mesh shape.
     TriMesh,
+    /// A set of segments.
+    Polyline,
     /// A shape representing a full half-space.
     HalfSpace,
     /// A heightfield shape.
@@ -172,6 +174,11 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a triangle mesh, if it is one.
     pub fn as_trimesh(&self) -> Option<&TriMesh> {
+        self.downcast_ref()
+    }
+
+    /// Converts this abstract shape to a polyline, if it is one.
+    pub fn as_polyline(&self) -> Option<&Polyline> {
         self.downcast_ref()
     }
 
@@ -477,6 +484,37 @@ impl Shape for Compound {
         self.shapes()
             .iter()
             .fold(Real::MAX, |curr, (_, s)| curr.min(s.ccd_thickness()))
+    }
+
+    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
+        Some(self as &dyn SimdCompositeShape)
+    }
+}
+
+impl Shape for Polyline {
+    #[cfg(feature = "serde-serialize")]
+    fn as_serialize(&self) -> Option<&dyn Serialize> {
+        Some(self as &dyn Serialize)
+    }
+
+    fn compute_local_aabb(&self) -> AABB {
+        *self.local_aabb()
+    }
+
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+        self.aabb(position)
+    }
+
+    fn mass_properties(&self, _density: Real) -> MassProperties {
+        MassProperties::zero()
+    }
+
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::Polyline
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        0.0
     }
 
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {

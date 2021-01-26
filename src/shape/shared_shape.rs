@@ -4,7 +4,8 @@ use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
 use crate::shape::{self, ShapeType};
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, HeightField, RoundShape, Segment, Shape, TriMesh, Triangle,
+    Ball, Capsule, Compound, Cuboid, HeightField, Polyline, RoundShape, Segment, Shape, TriMesh,
+    Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
@@ -127,6 +128,13 @@ impl SharedShape {
             base_shape: Triangle::new(a, b, c),
             border_radius,
         }))
+    }
+
+    /// Initializes a polyline shape defined by its vertex and index buffers.
+    ///
+    /// If no index buffer is provided, the polyline is assumed to describe a line strip.
+    pub fn polyline(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+        SharedShape(Arc::new(Polyline::new(vertices, indices)))
     }
 
     /// Initializes a triangle mesh shape defined by its vertex and index buffers.
@@ -347,6 +355,7 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
                     Some(ShapeType::Triangle) => deser::<A, Triangle>(&mut seq)?,
                     Some(ShapeType::Segment) => deser::<A, Segment>(&mut seq)?,
                     Some(ShapeType::TriMesh) => deser::<A, TriMesh>(&mut seq)?,
+                    Some(ShapeType::Polyline) => deser::<A, Polyline>(&mut seq)?,
                     Some(ShapeType::HeightField) => deser::<A, HeightField>(&mut seq)?,
                     Some(ShapeType::Compound) => deser::<A, Compound>(&mut seq)?,
                     Some(ShapeType::HalfSpace) => deser::<A, shape::HalfSpace>(&mut seq)?,
