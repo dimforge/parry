@@ -365,31 +365,37 @@ impl ConvexPolyhedron {
         &self.points[..]
     }
 
+    /// The topology of the vertices of this convex polyhedron.
     #[inline]
     pub fn vertices(&self) -> &[Vertex] {
         &self.vertices[..]
     }
 
+    /// The topology of the edges of this convex polyhedron.
     #[inline]
     pub fn edges(&self) -> &[Edge] {
         &self.edges[..]
     }
 
+    /// The topology of the faces of this convex polyhedron.
     #[inline]
     pub fn faces(&self) -> &[Face] {
         &self.faces[..]
     }
 
+    /// The array containing the indices of the vertices adjacent to each face.
     #[inline]
     pub fn vertices_adj_to_face(&self) -> &[u32] {
         &self.vertices_adj_to_face[..]
     }
 
+    /// The array containing the indices of the edges adjacent to each face.
     #[inline]
     pub fn edges_adj_to_face(&self) -> &[u32] {
         &self.edges_adj_to_face[..]
     }
 
+    /// The array containing the indices of the faces adjacent to each vertex.
     #[inline]
     pub fn faces_adj_to_vertex(&self) -> &[u32] {
         &self.faces_adj_to_vertex[..]
@@ -428,6 +434,7 @@ impl ConvexPolyhedron {
         FeatureId::Vertex(support_pt_id as u32)
     }
 
+    /// Computes the ID of the features with a normal that maximize the dot-product with `local_dir`.
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
         self.support_feature_id_toward_eps(local_dir, eps)

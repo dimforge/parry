@@ -3,6 +3,8 @@ use crate::shape::{Cuboid, SupportMap};
 
 use na::Unit;
 
+/// Computes the separation between a cuboid an a convex shape implementing the `SupportMap` trait,
+/// along the given axis.
 #[cfg(feature = "dim3")]
 pub fn cuboid_support_map_compute_separation_wrt_local_line<S: SupportMap>(
     cube1: &Cuboid,
@@ -20,6 +22,9 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line<S: SupportMap>(
     (separation, axis1)
 }
 
+/// Finds the best separating edge between a cuboid and a convex shape implementing the `Supportmap` trait.
+///
+/// Only the axes given by `axes` are tested.
 #[cfg(feature = "dim3")]
 pub fn cuboid_support_map_find_local_separating_edge_twoway(
     cube1: &Cuboid,
@@ -46,6 +51,9 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
     (best_separation, best_dir)
 }
 
+/// Finds the best separating normal between a cuboid and a convex shape implementing the `SupportMap` trait.
+///
+/// Only the normals of `cube1` are tested.
 pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
     cube1: &Cuboid,
     shape2: &S,

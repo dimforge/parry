@@ -3,6 +3,7 @@ use crate::math::{Point, Real};
 use crate::shape::Triangle;
 
 impl MassProperties {
+    /// Computes the mass properties of a triangle-mesh.
     pub fn from_trimesh(
         density: Real,
         vertices: &[Point<Real>],
@@ -33,6 +34,7 @@ impl MassProperties {
     }
 }
 
+/// Computes the area and center-of-mass of a triangle-mesh.
 pub fn trimesh_area_and_center_of_mass(
     vertices: &[Point<Real>],
     indices: &[[u32; 3]],

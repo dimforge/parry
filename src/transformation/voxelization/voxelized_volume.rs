@@ -22,11 +22,20 @@ use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
 use std::sync::Arc;
 
+/// Controls how the voxelization determines which voxel needs
+/// to be considered empty, and which ones will be considered full.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FillMode {
+    /// Only consider full the voxels intersecting the surface of the
+    /// shape being voxelized.
     SurfaceOnly,
+    /// Use a flood-fill technique to consider fill the voxels intersecting
+    /// the surface of the shape being voxelized, as well as all the voxels
+    /// bounded of them.
     FloodFill {
+        /// Detects holes inside of a solid contour.
         detect_cavities: bool,
+        /// Attempts to properly handle self-intersections.
         #[cfg(feature = "dim2")]
         detect_self_intersections: bool,
     },
@@ -34,7 +43,8 @@ pub enum FillMode {
 }
 
 impl FillMode {
-    pub fn detect_cavities(self) -> bool {
+    #[cfg(feature = "dim2")]
+    pub(crate) fn detect_cavities(self) -> bool {
         match self {
             FillMode::FloodFill {
                 detect_cavities, ..
@@ -44,7 +54,7 @@ impl FillMode {
     }
 
     #[cfg(feature = "dim2")]
-    pub fn detect_self_intersections(self) -> bool {
+    pub(crate) fn detect_self_intersections(self) -> bool {
         match self {
             FillMode::FloodFill {
                 detect_self_intersections,
@@ -55,21 +65,36 @@ impl FillMode {
     }
 
     #[cfg(feature = "dim3")]
-    pub fn detect_self_intersections(self) -> bool {
+    pub(crate) fn detect_self_intersections(self) -> bool {
         false
     }
 }
 
+/// The values of a voxel.
+///
+/// Most values are only intermediate value set during the
+/// voxelization process. The only values output after the
+/// voxelization is complete are `PrimitiveOutsideSurface`,
+/// `PrimitiveInsideSurface`, and `PrimitiveOnSurface`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VoxelValue {
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveUndefined,
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveOutsideSurfaceToWalk,
-    PrimitiveOutsideSurface,
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveInsideSurfaceToWalk,
-    PrimitiveInsideSurface,
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveOnSurfaceNoWalk,
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveOnSurfaceToWalk1,
+    /// Intermediate value, should be ignored by end-user code.
     PrimitiveOnSurfaceToWalk2,
+    /// A voxel that is outside of the voxelized shape.
+    PrimitiveOutsideSurface,
+    /// A voxel that is on the interior of the voxelized shape.
+    PrimitiveInsideSurface,
+    /// Voxel that intersects the surface of the voxelized shape.
     PrimitiveOnSurface,
 }
 
@@ -80,6 +105,7 @@ struct VoxelData {
     num_primitive_intersections: u32,
 }
 
+/// A cubic volume filled with voxels.
 pub struct VoxelizedVolume {
     origin: Point<Real>,
     scale: Real,
@@ -90,6 +116,19 @@ pub struct VoxelizedVolume {
 }
 
 impl VoxelizedVolume {
+    /// Voxelizes the given shape described by its boundary:
+    /// a triangle mesh (in 3D) or polyline (in 2D).
+    ///
+    /// # Parameters
+    /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
+    /// * `indices` - The index buffer of the boundary of the shape to voxelize.
+    /// * `resolution` - Controls the number of subdivision done along each axis. This number
+    ///    is the number of subdivisions along the axis where the input shape has the largest extent.
+    ///    The other dimensions will have a different automatically-determined resolution (in order to
+    ///    keep the voxels cubic).
+    /// * `fill_mode` - Controls what is being voxelized.
+    /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
+    ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
     pub fn voxelize(
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
@@ -430,10 +469,13 @@ impl VoxelizedVolume {
         result
     }
 
+    /// The number of voxel subdivisions along each coordinate axis.
     pub fn resolution(&self) -> [u32; DIM] {
         self.resolution
     }
 
+    /// The scale factor that needs to be applied to the voxels of `self`
+    /// in order to give them the size matching the original model's size.
     pub fn scale(&self) -> Real {
         self.scale
     }
@@ -467,6 +509,9 @@ impl VoxelizedVolume {
         &mut self.values[idx as usize]
     }
 
+    /// The value of the given voxel.
+    ///
+    /// In 2D`, the `k` argument is ignored.
     pub fn voxel(&self, i: u32, j: u32, k: u32) -> VoxelValue {
         let idx = self.voxel_index(i, j, k);
         self.values[idx as usize]
@@ -699,6 +744,10 @@ impl VoxelizedVolume {
         }
     }
 
+    /// Naive conversion of all the voxels with the given `value` to a triangle-mesh.
+    ///
+    /// This conversion is extremely naive: it will simply collect all the 12 triangles forming
+    /// the faces of each voxel. No actual boundary extraction is done.
     #[cfg(feature = "dim3")]
     pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();

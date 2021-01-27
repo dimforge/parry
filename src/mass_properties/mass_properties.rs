@@ -76,6 +76,10 @@ impl MassProperties {
         }
     }
 
+    /// Initialize a new `MassProperties` from a given center-of-mass, mass, and angular inertia matrix.
+    ///
+    /// The angular inertia matrix will be diagonalized in order to extract the principal inertia
+    /// values and principal inertia frame.
     #[cfg(feature = "dim3")]
     pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
         let eigen = inertia.symmetric_eigen();

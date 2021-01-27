@@ -55,6 +55,7 @@ impl TriMesh {
         self.quadtree.root_aabb()
     }
 
+    /// The acceleration structure used by this triangle-mesh.
     pub fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree
     }

@@ -25,6 +25,7 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
     }
 }
 
+/// Checks if a convex-hull is properly formed.
 pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
     use crate::utils::hashmap::{Entry, HashMap};
     use crate::utils::SortedPair;

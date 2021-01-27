@@ -151,6 +151,8 @@ pub trait RigidMotionComposition: RigidMotion {
         Inverse { motion: self }
     }
 
+    /// Returns the motion that returns `self.position_at_time(t).inverse() * rhs.position_at_time(t)`
+    /// for all `t`.
     fn inv_mul<'a>(&'a self, rhs: &'a dyn RigidMotion) -> InvMul<'a, Self, dyn RigidMotion + 'a> {
         InvMul {
             motion1: self,

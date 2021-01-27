@@ -15,14 +15,24 @@ impl IsometryOps for Isometry<Real> {
     }
 }
 
+/// Various operations usable with `Option<Isometry>` and `Option<&Isometry>`
+/// where `None` is assumed to be equivalent to the identity.
 pub trait IsometryOpt {
+    /// Computes `self.inverse() * rhs`.
     fn inv_mul(self, rhs: &Isometry<Real>) -> Isometry<Real>;
+    /// Computes `rhs * self`.
     fn prepend_to(self, rhs: &Isometry<Real>) -> Isometry<Real>;
+    /// Computes `self * p`.
     fn transform_point(self, p: &Point<Real>) -> Point<Real>;
-    fn transform_vector(self, p: &Vector<Real>) -> Vector<Real>;
-    fn transform_unit_vector(self, p: &Unit<Vector<Real>>) -> Unit<Vector<Real>>;
+    /// Computes `self * v`.
+    fn transform_vector(self, v: &Vector<Real>) -> Vector<Real>;
+    /// Computes `self * v`.
+    fn transform_unit_vector(self, v: &Unit<Vector<Real>>) -> Unit<Vector<Real>>;
+    /// Computes `self.inverse() * p`.
     fn inverse_transform_point(self, p: &Point<Real>) -> Point<Real>;
+    /// Computes `self.inverse() * v`.
     fn inverse_transform_vector(self, v: &Vector<Real>) -> Vector<Real>;
+    /// Computes `self.inverse() * v`.
     fn inverse_transform_unit_vector(self, v: &Unit<Vector<Real>>) -> Unit<Vector<Real>>;
 }
 

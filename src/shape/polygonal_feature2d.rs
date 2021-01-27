@@ -2,11 +2,17 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, ContactManifold, TrackedContact};
 use crate::shape::Segment;
 
+/// A polygonal feature representing the local polygonal approximation of
+/// a vertex, or face, of a convex shape.
 #[derive(Debug)]
 pub struct PolygonalFeature {
+    /// Up to two vertices forming this polygonal feature.
     pub vertices: [Point<Real>; 2],
+    /// The feature IDs of this polygon's vertices.
     pub vids: [u32; 2],
+    /// The feature ID of this polygonal feature.
     pub fid: u32,
+    /// The number of vertices on this polygon (must be <= 4).
     pub num_vertices: usize,
 }
 
@@ -33,11 +39,13 @@ impl From<Segment> for PolygonalFeature {
 }
 
 impl PolygonalFeature {
-    pub fn transform_by(&mut self, iso: &Isometry<Real>) {
-        self.vertices[0] = iso * self.vertices[0];
-        self.vertices[1] = iso * self.vertices[1];
+    /// Transforms the vertices of `self` by the given position `pos`.
+    pub fn transform_by(&mut self, pos: &Isometry<Real>) {
+        self.vertices[0] = pos * self.vertices[0];
+        self.vertices[1] = pos * self.vertices[1];
     }
 
+    /// Computes the contacts between two polygonal features.
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         pos21: &Isometry<Real>,
@@ -95,6 +103,7 @@ impl PolygonalFeature {
         manifold.points.push(contact);
     }
 
+    /// Computes the contacts between two polygonal faces.
     pub fn face_face_contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         face1: &Self,

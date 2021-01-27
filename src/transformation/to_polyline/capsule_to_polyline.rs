@@ -4,6 +4,7 @@ use crate::transformation::utils;
 use na::{self, Point2, RealField, Vector2};
 
 impl Capsule {
+    /// Discretize the boundary of this capsule as a polygonal line.
     pub fn to_polyline(&self, nsubdiv: u32) -> Vec<Point2<Real>> {
         let pi = Real::pi();
         let dtheta = pi / (nsubdiv as Real);

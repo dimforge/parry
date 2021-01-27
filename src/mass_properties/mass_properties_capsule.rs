@@ -4,6 +4,7 @@ use crate::math::{Point, Real};
 use crate::shape::Capsule;
 
 impl MassProperties {
+    /// Computes the mass properties of a capsule.
     pub fn from_capsule(density: Real, a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
         let half_height = (b - a).norm() / 2.0;
         let (cyl_vol, cyl_unit_i) = Self::cylinder_y_volume_unit_inertia(half_height, radius);

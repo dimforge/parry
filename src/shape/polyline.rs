@@ -74,6 +74,7 @@ impl Polyline {
         )
     }
 
+    /// Transforms  the feature-id of a segment to the feature-id of this polyline.
     pub fn segment_feature_to_polyline_feature(
         &self,
         segment: u32,

@@ -6,6 +6,7 @@ use crate::shape::{Capsule, Shape};
 use approx::AbsDiffEq;
 use na::Unit;
 
+/// Computes the contact manifold between two capsules given as `Shape` trait-objects.
 pub fn contact_manifold_capsule_capsule_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
@@ -20,6 +21,7 @@ pub fn contact_manifold_capsule_capsule_shapes<ManifoldData, ContactData>(
     }
 }
 
+/// Computes the contact manifold between two capsules.
 #[cfg(feature = "dim2")]
 pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
@@ -121,6 +123,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     manifold.match_contacts(&old_manifold_points);
 }
 
+/// Computes the contact manifold between two capsules.
 #[cfg(feature = "dim3")]
 pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     pos12: &Isometry<Real>,

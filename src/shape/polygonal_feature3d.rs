@@ -5,12 +5,19 @@ use crate::shape::{Segment, Triangle};
 use crate::utils::WBasis;
 use na::Point2;
 
+/// A polygonal feature representing the local polygonal approximation of
+/// a vertex, face, or edge of a convex shape.
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
+    /// Up to four vertices forming this polygonal feature.
     pub vertices: [Point<Real>; 4],
-    pub vids: [u32; 4], // Feature ID of the vertices.
-    pub eids: [u32; 4], // Feature ID of the edges.
-    pub fid: u32,       // Feature ID of the face.
+    /// The feature IDs of this polygon's vertices.
+    pub vids: [u32; 4],
+    /// The feature IDs of this polygon's edges.
+    pub eids: [u32; 4],
+    /// The feature ID of this polygonal feature.
+    pub fid: u32,
+    /// The number of vertices on this polygon (must be <= 4).
     pub num_vertices: usize,
 }
 
@@ -53,6 +60,7 @@ impl From<Segment> for PolygonalFeature {
 }
 
 impl PolygonalFeature {
+    /// Creates a new empty polygonal feature.
     pub fn new() -> Self {
         Self {
             vertices: [Point::origin(); 4],
@@ -63,12 +71,14 @@ impl PolygonalFeature {
         }
     }
 
-    pub fn transform_by(&mut self, iso: &Isometry<Real>) {
+    /// Transform each vertex of this polygonal feature by the given position `pos`.
+    pub fn transform_by(&mut self, pos: &Isometry<Real>) {
         for p in &mut self.vertices[0..self.num_vertices] {
-            *p = iso * *p;
+            *p = pos * *p;
         }
     }
 
+    /// Computes all the contacts between two polygonal features.
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         _pos21: &Isometry<Real>,

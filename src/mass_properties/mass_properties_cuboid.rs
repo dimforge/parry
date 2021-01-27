@@ -25,6 +25,7 @@ impl MassProperties {
         }
     }
 
+    /// Computes the mass properties of a cuboid.
     pub fn from_cuboid(density: Real, half_extents: Vector<Real>) -> Self {
         let (vol, unit_i) = Self::cuboid_volume_unit_inertia(half_extents);
         let mass = vol * density;

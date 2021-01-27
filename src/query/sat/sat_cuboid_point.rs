@@ -5,6 +5,7 @@ use na::Unit;
 
 // NOTE: this only works with cuboid on the rhs because it has its symmetry origin at zero
 // (therefore we can check only one normal direction).
+/// Computes the separation between a point and a cuboid, along the given direction `normal1`.
 pub fn point_cuboid_find_local_separating_normal_oneway(
     point1: Point<Real>,
     normal1: Option<Unit<Vector<Real>>>,

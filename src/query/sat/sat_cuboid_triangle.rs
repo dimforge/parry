@@ -5,6 +5,10 @@ use crate::shape::{Cuboid, Triangle};
 #[cfg(feature = "dim2")]
 use crate::{query::sat::support_map_support_map_compute_separation, shape::SupportMap};
 
+/// Finds the best separating edge between a cuboid and a triangle.
+///
+/// All combinations of edges from the cuboid and the triangle are taken into
+/// account.
 #[cfg(feature = "dim3")]
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
     cube1: &Cuboid,
@@ -34,6 +38,9 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
     sat::cuboid_support_map_find_local_separating_edge_twoway(cube1, triangle2, &axes, pos12)
 }
 
+/// Finds the best separating normal between a triangle and a convex shape implementing the `SupportMap` trait.
+///
+/// Only the normals of `triangle1` are tested.
 #[cfg(feature = "dim2")]
 pub fn triangle_support_map_find_local_separating_normal_oneway(
     triangle1: &Triangle,
@@ -57,6 +64,9 @@ pub fn triangle_support_map_find_local_separating_normal_oneway(
     (best_sep, best_normal)
 }
 
+/// Finds the best separating normal between a triangle and a cuboid.
+///
+/// Only the normals of `triangle1` are tested.
 #[cfg(feature = "dim2")]
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
@@ -66,6 +76,9 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle_support_map_find_local_separating_normal_oneway(triangle1, shape2, pos12)
 }
 
+/// Finds the best separating normal a triangle and a cuboid.
+///
+/// Only the normals of `triangle1` are tested.
 #[cfg(feature = "dim3")]
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,

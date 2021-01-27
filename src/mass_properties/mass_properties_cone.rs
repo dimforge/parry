@@ -16,6 +16,7 @@ impl MassProperties {
         (volume, Vector::new(off_principal, principal, off_principal))
     }
 
+    /// Computes the mass properties of a cone.
     pub fn from_cone(density: Real, half_height: Real, radius: Real) -> Self {
         let (cyl_vol, cyl_unit_i) = Self::cone_y_volume_unit_inertia(half_height, radius);
         let cyl_mass = cyl_vol * density;

@@ -1,3 +1,5 @@
+//! Mass properties (mass, inertia, center-of-mass) of shapes.
+
 pub use self::mass_properties::MassProperties;
 
 mod mass_properties;
@@ -19,6 +21,7 @@ mod mass_properties_triangle;
 #[cfg(feature = "dim2")]
 mod mass_properties_trimesh;
 
+/// Free functions for some special-cases of mass-properties computation.
 pub mod details {
     #[cfg(feature = "dim2")]
     pub use super::mass_properties_convex_polygon::convex_polygon_area_and_center_of_mass;

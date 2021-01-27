@@ -6,6 +6,7 @@ use simba::scalar::RealField;
 
 /// Trait that transforms thing to a slice of u8.
 pub trait AsBytes {
+    /// Converts `self` to a slice of bytes.
     fn as_bytes(&self) -> &[u8];
 }
 

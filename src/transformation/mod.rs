@@ -12,7 +12,9 @@ mod convex_hull2;
 mod convex_hull3;
 pub(crate) mod convex_hull_utils;
 
+/// Approximate convex decomposition using the VHACD algorithm.
 pub mod vhacd;
+/// Voxelization of a 2D polyline or 3D triangle mesh.
 pub mod voxelization;
 
 #[cfg(feature = "dim2")]

@@ -14,6 +14,7 @@ pub(super) enum WorkspaceSerializationTag {
 }
 
 // Note we have this newtype because it simplifies the serialization/deserialization code.
+/// A serializable workspace used by some contact-manifolds computation algorithms.
 pub struct ContactManifoldsWorkspace(pub Box<dyn MaybeSerializableData>);
 
 impl Clone for ContactManifoldsWorkspace {

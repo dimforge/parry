@@ -7,6 +7,8 @@ use crate::query::{
 use crate::shape::{PolygonalFeature, PolygonalFeatureMap, Shape};
 use na::Unit;
 
+/// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap`
+/// trait, both represented as `Shape` trait-objects.
 pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
@@ -33,6 +35,7 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     }
 }
 
+/// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap` trait.
 pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     pos12: &Isometry<Real>,
     pfm1: &'a S1,

@@ -61,6 +61,8 @@ impl Contact {
         self
     }
 
+    /// Transform the points and normals from this contact by
+    /// the given transformations.
     #[inline]
     pub fn transform_by_mut(&mut self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) {
         self.point1 = pos1 * self.point1;
@@ -69,6 +71,7 @@ impl Contact {
         self.normal2 = pos2 * self.normal2;
     }
 
+    /// Transform `self.point1` and `self.normal1` by the `pos`.
     pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {
         self.point1 = pos * self.point1;
         self.normal1 = pos * self.normal1;

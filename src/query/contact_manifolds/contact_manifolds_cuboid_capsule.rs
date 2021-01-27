@@ -6,6 +6,7 @@ use crate::shape::{Capsule, Cuboid, Shape};
 #[cfg(feature = "dim2")]
 use crate::shape::{CuboidFeature, CuboidFeatureFace};
 
+/// Computes the contact manifold between a cuboid and a capsule, both represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_capsule_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
@@ -38,6 +39,7 @@ pub fn contact_manifold_cuboid_capsule_shapes<ManifoldData, ContactData>(
     }
 }
 
+/// Computes the contact manifold between a cuboid and a capsule.
 pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     pos21: &Isometry<Real>,

@@ -27,13 +27,14 @@ type ConvexHull = Vec<Point<Real>>;
 type ConvexHull = (Vec<Point<Real>>, Vec<[u32; 3]>);
 
 #[derive(Copy, Clone, Debug)]
-pub struct CutPlane {
+pub(crate) struct CutPlane {
     pub abc: Vector<Real>,
     pub d: Real,
     pub axis: u8,
     pub index: u32,
 }
 
+/// Approximate convex decomposition using the VHACD algorithm.
 pub struct VHACD {
     // raycast_mesh: Option<RaycastMesh>,
     voxel_parts: Vec<VoxelSet>,
@@ -42,6 +43,17 @@ pub struct VHACD {
 }
 
 impl VHACD {
+    /// Decompose the given polyline (in 2D) or triangle mesh (in 3D).
+    ///
+    /// # Parameters
+    /// * `params` - The parameters for the VHACD algorithm execution.
+    /// * `points` - The vertex buffer of the polyline (in 2D) or triangle mesh (in 3D).
+    /// * `indices` - The index buffer of the polyline (in 2D) or triangle mesh (in 3D).
+    /// * `keep_voxel_to_primitives_map` - If set to `true` then a map between the voxels
+    ///   computed during the decomposition, and the primitives (triangle or segment) they
+    ///   intersect will be computed. This is required in order to compute the convex-hulls
+    ///   using the original polyline/trimesh primitives afterwards (otherwise the convex
+    ///   hulls resulting from the convex decomposition will use the voxels vertices).
     pub fn decompose(
         params: &VHACDParameters,
         points: &[Point<Real>],
@@ -72,6 +84,7 @@ impl VHACD {
         result
     }
 
+    /// Perform an approximate convex decomposition of a set of voxels.
     pub fn from_voxels(params: &VHACDParameters, voxels: VoxelSet) -> Self {
         let mut result = Self {
             // raycast_mesh: None,
@@ -84,6 +97,7 @@ impl VHACD {
         result
     }
 
+    /// The almost-convex voxelized parts computed by the VHACD algorithm.
     pub fn voxel_parts(&self) -> &[VoxelSet] {
         &self.voxel_parts
     }
@@ -472,6 +486,11 @@ impl VHACD {
         primitive_classes
     }
 
+    /// Compute the intersections between the voxelized convex part of this decomposition,
+    /// and all the primitives from the original decomposed polyline/trimesh,
+    ///
+    /// This will panic if `keep_voxel_to_primitives_map` was set to `false` when initializing
+    /// `self`.
     pub fn compute_primitive_intersections(
         &self,
         points: &[Point<Real>],
@@ -483,6 +502,11 @@ impl VHACD {
             .collect()
     }
 
+    /// Compute the convex-hulls of the parts computed by this approximate convex-decomposition,
+    /// taking into account the primitives from the original polyline/trimesh being decomposed.
+    ///
+    /// This will panic if `keep_voxel_to_primitives_map` was set to `false` when initializing
+    /// `self`.
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hulls(
         &self,
@@ -495,6 +519,11 @@ impl VHACD {
             .collect()
     }
 
+    /// Compute the convex-hulls of the parts computed by this approximate convex-decomposition,
+    /// taking into account the primitives from the original polyline/trimesh being decomposed.
+    ///
+    /// This will panic if `keep_voxel_to_primitives_map` was set to `false` when initializing
+    /// `self`.
     #[cfg(feature = "dim3")]
     pub fn compute_exact_convex_hulls(
         &self,
@@ -507,6 +536,11 @@ impl VHACD {
             .collect()
     }
 
+    /// Compute the convex hulls of the voxelized approximately-convex parts
+    /// computed by `self` on the voxelized model.
+    ///
+    /// Use `compute_exact_convex_hulls` instead if the original polyline/trimesh geometry
+    /// needs to be taken into account.
     #[cfg(feature = "dim2")]
     pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<Vec<Point<Real>>> {
         let downsampling = downsampling.max(1);
@@ -516,6 +550,11 @@ impl VHACD {
             .collect()
     }
 
+    /// Compute the convex hulls of the voxelized approximately-convex parts
+    /// computed by `self` on the voxelized model.
+    ///
+    /// Use `compute_exact_convex_hulls` instead if the original polyline/trimesh geometry
+    /// needs to be taken into account.
     #[cfg(feature = "dim3")]
     pub fn compute_convex_hulls(
         &self,

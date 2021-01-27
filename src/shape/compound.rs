@@ -80,6 +80,7 @@ impl Compound {
         &self.aabbs[..]
     }
 
+    /// The acceleration structure used by this compound shape.
     #[inline]
     pub fn quadtree(&self) -> &SimdQuadTree<u32> {
         &self.quadtree

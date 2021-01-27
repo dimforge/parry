@@ -5,7 +5,6 @@ use crate::math::{Point, Real};
 use crate::partitioning::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdVisitStatus, SimdVisitor,
 };
-use crate::query::{Ray, SimdRay};
 use crate::simd::{SimdReal, SIMD_WIDTH};
 use crate::utils::WeightedValue;
 use num::Bounded;
@@ -13,8 +12,11 @@ use simba::simd::{SimdBool, SimdValue};
 use std::collections::{BinaryHeap, VecDeque};
 use std::ops::Range;
 
+/// A data to which an index is associated.
 pub trait IndexedData: Copy {
+    /// Creates a new default instance of `Self`.
     fn default() -> Self;
+    /// Gets the index associated to `self`.
     fn index(&self) -> usize;
 }
 
@@ -47,6 +49,7 @@ impl IndexedData for u64 {
     }
 }
 
+/// The index of a node part of a SimdQuadTree.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct NodeIndex {
@@ -67,16 +70,22 @@ impl NodeIndex {
     }
 }
 
+/// A SIMD node of an SIMD quad tree.
+///
+/// This groups four nodes of the quad-tree.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 struct SimdQuadTreeNode {
+    /// The AABBs of the quadtree nodes represented by this node.
     pub simd_aabb: SimdAABB,
-    // Index of the nodes of the 4 nodes represented by self.
-    // If this is a leaf, it contains the proxy ids instead.
+    /// Index of the nodes of the 4 nodes represented by `self`.
+    /// If this is a leaf, it contains the proxy ids instead.
     pub children: [u32; 4],
+    /// The index of the node parent to the 4 nodes represented by `self`.
     pub parent: NodeIndex,
+    /// Are the four nodes represneted by `self` leaves of the `SimdQuadTree`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
-    dirty: bool,    // TODO: move this to a separate bitvec?
+    dirty: bool, // TODO: move this to a separate bitvec?
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -95,6 +104,7 @@ impl<T: IndexedData> SimdQuadTreeProxy<T> {
     }
 }
 
+/// A quad-tree with SIMD acceleration.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct SimdQuadTree<T> {
@@ -105,6 +115,7 @@ pub struct SimdQuadTree<T> {
 }
 
 impl<T: IndexedData> SimdQuadTree<T> {
+    /// Initialize an empty quad-tree.
     pub fn new() -> Self {
         SimdQuadTree {
             root_aabb: AABB::new_invalid(),
@@ -135,6 +146,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         Some(proxy.data)
     }
 
+    /// Clears this quad-tree and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
         data: impl ExactSizeIterator<Item = (T, AABB)>,
@@ -181,6 +193,8 @@ impl<T: IndexedData> SimdQuadTree<T> {
         ]);
     }
 
+    /// Marks a piece of data as dirty so it can be updated during the next
+    /// call to `self.update`.
     pub fn pre_update(&mut self, data: T) {
         let id = data.index();
         let node_id = self.proxies[id].node.index;
@@ -191,6 +205,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         }
     }
 
+    /// Update all the nodes that have been marked as dirty by `self.pre_update`.
     pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: Real)
     where
         F: Fn(&T) -> AABB,
@@ -346,6 +361,8 @@ impl<T: IndexedData> SimdQuadTree<T> {
         (id, my_aabb)
     }
 
+    /// Retrieve all the data of the nodes with AABBs intersecting
+    /// the given AABB:
     // FIXME: implement a visitor pattern to merge intersect_aabb
     // and intersect_ray into a single method.
     pub fn intersect_aabb(&self, aabb: &AABB, out: &mut Vec<T>) {
@@ -504,41 +521,6 @@ impl<T: IndexedData> SimdQuadTree<T> {
         }
 
         best_result
-    }
-
-    pub fn cast_ray(&self, ray: &Ray, max_toi: Real, out: &mut Vec<T>) {
-        if self.nodes.is_empty() {
-            return;
-        }
-
-        // Special case for the root.
-        let mut stack = vec![0u32];
-        let simd_ray = SimdRay::splat(*ray);
-        let wmax_toi = SimdReal::splat(max_toi);
-        while let Some(inode) = stack.pop() {
-            let node = self.nodes[inode as usize];
-            let hits = node.simd_aabb.cast_local_ray(&simd_ray, wmax_toi).0;
-            let bitmask = hits.bitmask();
-
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 {
-                    if node.leaf {
-                        // We found a leaf!
-                        // Unfortunately, invalid AABBs return a hit as well.
-                        if let Some(proxy) = self.proxies.get(node.children[ii] as usize) {
-                            out.push(proxy.data);
-                        }
-                    } else {
-                        // Internal node, visit the child.
-                        // Un fortunately, we have this check because invalid AABBs
-                        // return a hit as well.
-                        if (node.children[ii] as usize) < self.nodes.len() {
-                            stack.push(node.children[ii]);
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -2,6 +2,10 @@ use crate::math::{Isometry, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Cuboid, Segment};
 
+/// Finds the best separating edge between a cuboid and a segment.
+///
+/// All combinations of edges from the cuboid and the segment are taken into
+/// account.
 #[cfg(feature = "dim3")]
 pub fn cuboid_segment_find_local_separating_edge_twoway(
     cube1: &Cuboid,
@@ -20,6 +24,9 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
     sat::cuboid_support_map_find_local_separating_edge_twoway(cube1, segment2, &axes, pos12)
 }
 
+/// Finds the best separating normal between a cuboid and a segment.
+///
+/// Only the normals of `segment1` are tested.
 #[cfg(feature = "dim2")]
 pub fn segment_cuboid_find_local_separating_normal_oneway(
     segment1: &Segment,

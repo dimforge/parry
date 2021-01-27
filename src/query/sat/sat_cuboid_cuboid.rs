@@ -1,6 +1,7 @@
 use crate::math::{Isometry, Real, Vector, DIM};
 use crate::shape::{Cuboid, SupportMap};
 
+/// Computes the separation of two cuboids along `axis1`.
 #[cfg(feature = "dim3")]
 pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     cuboid1: &Cuboid,
@@ -18,6 +19,10 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     (separation, axis1)
 }
 
+/// Finds the best separating edge between two cuboids.
+///
+/// All combinations of edges from both cuboids are taken into
+/// account.
 #[cfg(feature = "dim3")]
 pub fn cuboid_cuboid_find_local_separating_edge_twoway(
     cuboid1: &Cuboid,
@@ -68,6 +73,9 @@ pub fn cuboid_cuboid_find_local_separating_edge_twoway(
     (best_separation, best_dir)
 }
 
+/// Finds the best separating normal between two cuboids.
+///
+/// Only the normals from `cuboid1` are tested.
 pub fn cuboid_cuboid_find_local_separating_normal_oneway(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,

@@ -20,11 +20,15 @@ impl Cuboid {
         Cuboid { half_extents }
     }
 
+    /// Return the id of the vertex of this cuboid with a normal that maximizes
+    /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
         ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
     }
 
+    /// Return the feature of this cuboid with a normal that maximizes
+    /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn support_feature(&self, local_dir: Vector<Real>) -> PolygonalFeature {
         // In 2D, it is best for stability to always return a face.
@@ -32,6 +36,8 @@ impl Cuboid {
         self.support_face(local_dir)
     }
 
+    /// Return the face of this cuboid with a normal that maximizes
+    /// the dot product with `local_dir`.
     #[cfg(feature = "dim2")]
     pub fn support_face(&self, local_dir: Vector<Real>) -> PolygonalFeature {
         let he = self.half_extents;
@@ -56,6 +62,8 @@ impl Cuboid {
         }
     }
 
+    /// Return the face of this cuboid with a normal that maximizes
+    /// the dot product with `local_dir`.
     #[cfg(feature = "dim3")]
     pub fn support_feature(&self, local_dir: Vector<Real>) -> PolygonalFeature {
         // FIXME: this should actually return the feature.
@@ -115,6 +123,7 @@ impl Cuboid {
     //     }
     // }
 
+    /// Computes the face with a normal that maximizes the dot-product with `local_dir`.
     #[cfg(feature = "dim3")]
     pub fn support_face(&self, local_dir: Vector<Real>) -> PolygonalFeature {
         // NOTE: can we use the orthonormal basis of local_dir

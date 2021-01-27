@@ -50,6 +50,7 @@ mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
 mod simd_aabb;
 
+/// Free functions for some special cases of bounding-volume computation.
 pub mod details {
     #[cfg(feature = "dim3")]
     pub use super::aabb_utils::support_map_aabb;

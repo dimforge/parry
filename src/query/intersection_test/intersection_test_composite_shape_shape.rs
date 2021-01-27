@@ -40,6 +40,7 @@ where
     intersection_test_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
 
+/// A visitor for checking if a composite-shape and a shape intersect.
 pub struct IntersectionCompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     msum_shift: Vector<SimdReal>,
     msum_margin: Vector<SimdReal>,
@@ -55,6 +56,7 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
+    /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
         dispatcher: &'a D,
         pos12: &'a Isometry<Real>,

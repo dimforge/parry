@@ -56,6 +56,7 @@ where
     )
 }
 
+/// A visitor used to determine the non-linear time of impact between a composite shape and another shape.
 pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     sphere2: BoundingSphere,
     max_toi: Real,
@@ -72,6 +73,8 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
+    /// Initializes visitor used to determine the non-linear time of impact between
+    /// a composite shape and another shape.
     pub fn new(
         dispatcher: &'a D,
         motion12: &'a dyn RigidMotion,

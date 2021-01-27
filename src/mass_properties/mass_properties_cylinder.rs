@@ -28,6 +28,7 @@ impl MassProperties {
         }
     }
 
+    /// Computes the mass properties of a cylinder.
     #[cfg(feature = "dim3")]
     pub fn from_cylinder(density: Real, half_height: Real, radius: Real) -> Self {
         let (cyl_vol, cyl_unit_i) = Self::cylinder_y_volume_unit_inertia(half_height, radius);

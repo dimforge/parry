@@ -132,6 +132,7 @@ impl PointQueryWithLocation for TriMesh {
  */
 macro_rules! gen_visitor(
     ($Visitor: ident, $project_local_point: ident, $project_point: ident $(, $Location: ty, $extra_info: ident)* $(| $args: ident)* $(where $PartShapeBound: ident)*) => {
+        /// A visitor for the projection of a point on a composite shape.
         pub struct $Visitor<'a, S> {
             shape: &'a S,
             point: &'a Point<Real>,
@@ -141,6 +142,7 @@ macro_rules! gen_visitor(
         }
 
         impl<'a, S> $Visitor<'a, S> {
+            /// Initialize a visitor for the projection of a point on a composite shape.
             pub fn new(shape: &'a S, point: &'a Point<Real>, solid: bool) -> Self {
                 Self {
                     shape,

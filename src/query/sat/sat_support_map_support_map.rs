@@ -2,6 +2,8 @@ use crate::math::{Isometry, Real, Vector};
 use crate::shape::SupportMap;
 use na::Unit;
 
+/// Computes the separation along the given direction,
+/// between two convex shapes implementing the `SupportMap` trait.
 #[allow(dead_code)]
 pub fn support_map_support_map_compute_separation(
     sm1: &impl SupportMap,

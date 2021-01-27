@@ -5,6 +5,7 @@ use na::{self, ComplexField, Point3, RealField};
 use num_traits::One;
 
 impl Ball {
+    /// Discretize the boundary of this ball as a triangle-mesh.
     pub fn to_trimesh(
         &self,
         ntheta_subdiv: u32,
@@ -52,7 +53,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
 }
 
 /// Creates an hemisphere with a diameter of 1.
-pub fn unit_hemisphere(
+pub(crate) fn unit_hemisphere(
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
 ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {

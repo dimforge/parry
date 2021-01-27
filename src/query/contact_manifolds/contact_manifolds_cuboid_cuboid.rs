@@ -4,6 +4,7 @@ use crate::math::{Isometry, Real};
 use crate::query::{sat, ContactManifold};
 use crate::shape::{Cuboid, PolygonalFeature, Shape};
 
+/// Computes the contact manifold between two cuboids represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
     g1: &dyn Shape,
@@ -16,6 +17,7 @@ pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default 
     }
 }
 
+/// Computes the contact manifold between two cuboids.
 pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
     cuboid1: &'a Cuboid,

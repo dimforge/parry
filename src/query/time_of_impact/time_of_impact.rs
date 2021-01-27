@@ -57,6 +57,7 @@ impl TOI {
         }
     }
 
+    /// Transform `self.witness1` and `self.normal1` by `pos`.
     pub fn transform1_by(&self, pos: &Isometry<Real>) -> Self {
         Self {
             toi: self.toi,

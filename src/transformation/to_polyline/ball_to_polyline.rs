@@ -4,6 +4,7 @@ use crate::transformation::utils;
 use na::{self, Point2, RealField};
 
 impl Ball {
+    /// Discretize the boundary of this ball as a polygonal line.
     pub fn to_polyline(&self, nsubdivs: u32) -> Vec<Point2<Real>> {
         let diameter = self.radius * 2.0;
         let two_pi = Real::two_pi();

@@ -144,11 +144,15 @@ impl Triangle {
         [self.b - self.a, self.c - self.b, self.a - self.c]
     }
 
+    /// Return the face of this triangle with a normal that maximizes
+    /// the dot product with `dir`.
     #[cfg(feature = "dim3")]
     pub fn support_face(&self, _dir: Vector<Real>) -> PolygonalFeature {
         PolygonalFeature::from(*self)
     }
 
+    /// Return the face of this triangle with a normal that maximizes
+    /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn support_face(&self, dir: Vector<Real>) -> PolygonalFeature {
         let mut best = 0;
@@ -292,6 +296,7 @@ impl Triangle {
         ComplexField::sqrt(sqr.max(0.0)) * 0.25
     }
 
+    /// Computes the unit angular inertia of this triangle.
     #[cfg(feature = "dim2")]
     pub fn unit_angular_inertia(&self) -> Real {
         let factor = 1.0 / 6.0;

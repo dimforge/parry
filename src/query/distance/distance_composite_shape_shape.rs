@@ -39,6 +39,7 @@ where
     distance_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
 
+/// A visitor for computing the distance between a composite shape and a shape.
 pub struct CompositeShapeAgainstAnyDistanceVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     msum_shift: Vector<SimdReal>,
     msum_margin: Vector<SimdReal>,
@@ -50,6 +51,7 @@ pub struct CompositeShapeAgainstAnyDistanceVisitor<'a, D: ?Sized, G1: ?Sized + '
 }
 
 impl<'a, D: ?Sized, G1: ?Sized + 'a> CompositeShapeAgainstAnyDistanceVisitor<'a, D, G1> {
+    /// Initialize a visitor for computing the distance between a composite shape and a shape.
     pub fn new(
         dispatcher: &'a D,
         pos12: &'a Isometry<Real>,

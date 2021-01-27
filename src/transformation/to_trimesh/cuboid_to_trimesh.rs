@@ -4,6 +4,7 @@ use crate::transformation::utils;
 use na::{self, Point3};
 
 impl Cuboid {
+    /// Discretize the boundary of this cuboid as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let (vtx, idx) = unit_cuboid();
         (utils::scaled(vtx, self.half_extents * 2.0), idx)

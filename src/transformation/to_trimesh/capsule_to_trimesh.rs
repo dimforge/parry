@@ -4,6 +4,7 @@ use crate::transformation::utils;
 use na::{self, Point3};
 
 impl Capsule {
+    /// Discretize the boundary of this capsule as a triangle-mesh.
     pub fn to_trimesh(
         &self,
         ntheta_subdiv: u32,
@@ -17,7 +18,7 @@ impl Capsule {
 }
 
 /// Generates a capsule.
-pub fn canonical_capsule(
+pub(crate) fn canonical_capsule(
     caps_diameter: Real,
     cylinder_height: Real,
     ntheta_subdiv: u32,

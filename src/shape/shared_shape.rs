@@ -218,6 +218,7 @@ impl SharedShape {
         Self::compound(parts)
     }
 
+    /// Creates a new shared shape that is the convex-hull of the given points.
     pub fn convex_hull(points: &[Point<Real>]) -> Option<Self> {
         #[cfg(feature = "dim2")]
         return ConvexPolygon::from_convex_hull(points).map(|ch| SharedShape(Arc::new(ch)));
@@ -225,16 +226,24 @@ impl SharedShape {
         return ConvexPolyhedron::from_convex_hull(points).map(|ch| SharedShape(Arc::new(ch)));
     }
 
+    /// Creates a new shared shape that is a convex polygon formed by the
+    /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
+    /// computed).
     #[cfg(feature = "dim2")]
     pub fn convex_polyline(points: Vec<Point<Real>>) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| SharedShape(Arc::new(ch)))
     }
 
+    /// Creates a new shared shape that is a convex polyhedron formed by the
+    /// given set of points assumed to form a convex mesh (no convex-hull will be automatically
+    /// computed).
     #[cfg(feature = "dim3")]
     pub fn convex_mesh(points: Vec<Point<Real>>, indices: &[[u32; 3]]) -> Option<Self> {
         ConvexPolyhedron::from_convex_mesh(points, indices).map(|ch| SharedShape(Arc::new(ch)))
     }
 
+    /// Creates a new shared shape with rounded corners that is the
+    /// convex-hull of the given points, dilated by `border_radius`.
     pub fn round_convex_hull(points: &[Point<Real>], border_radius: Real) -> Option<Self> {
         #[cfg(feature = "dim2")]
         return ConvexPolygon::from_convex_hull(points).map(|ch| {
@@ -252,6 +261,9 @@ impl SharedShape {
         });
     }
 
+    /// Creates a new shared shape with round corners that is a convex polygon formed by the
+    /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
+    /// computed).
     #[cfg(feature = "dim2")]
     pub fn round_convex_polyline(points: Vec<Point<Real>>, border_radius: Real) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| {
@@ -262,6 +274,9 @@ impl SharedShape {
         })
     }
 
+    /// Creates a new shared shape with round corners that is a convex polyhedron formed by the
+    /// given set of points assumed to form a convex mesh (no convex-hull will be automatically
+    /// computed).
     #[cfg(feature = "dim3")]
     pub fn round_convex_mesh(
         points: Vec<Point<Real>>,

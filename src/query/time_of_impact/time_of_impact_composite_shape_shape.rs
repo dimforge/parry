@@ -59,6 +59,7 @@ where
     .map(|toi| toi.swapped())
 }
 
+/// A visitor used to find the time-of-impact between a composite shape and a shape.
 pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     msum_shift: Vector<SimdReal>,
     msum_margin: Vector<SimdReal>,
@@ -78,6 +79,7 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
+    /// Creates a new visitor used to find the time-of-impact between a composite shape and a shape.
     pub fn new(
         dispatcher: &'a D,
         pos12: &'a Isometry<Real>,

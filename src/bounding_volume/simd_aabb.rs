@@ -5,9 +5,12 @@ use crate::utils;
 use num::{One, Zero};
 use simba::simd::{SimdPartialOrd, SimdValue};
 
+/// Four AABB represented as a single SoA AABB with SIMD components.
 #[derive(Debug, Copy, Clone)]
 pub struct SimdAABB {
+    /// The min coordinates of the AABBs.
     pub mins: Point<SimdReal>,
+    /// The max coordinates the AABBs.
     pub maxs: Point<SimdReal>,
 }
 
@@ -75,10 +78,12 @@ impl<'de> serde::Deserialize<'de> for SimdAABB {
 }
 
 impl SimdAABB {
+    /// An invalid AABB.
     pub fn new_invalid() -> Self {
         Self::splat(AABB::new_invalid())
     }
 
+    /// Builds an SIMD aabb composed of four identical aabbs.
     pub fn splat(aabb: AABB) -> Self {
         Self {
             mins: Point::splat(aabb.mins),
@@ -86,14 +91,18 @@ impl SimdAABB {
         }
     }
 
+    /// The center of all the AABBs represented by `self``.
     pub fn center(&self) -> Point<SimdReal> {
         na::center(&self.mins, &self.maxs)
     }
 
+    /// The radius of all the AABBs represented by `self``.
     pub fn radius(&self) -> SimdReal {
         (self.maxs - self.mins).norm()
     }
 
+    /// Dilate all the AABBs represented by `self`` by their extents multiplied
+    /// by the given scale `factor`.
     pub fn dilate_by_factor(&mut self, factor: SimdReal) {
         // If some of the AABBs on this SimdAABB are invalid,
         // don't, dilate them.
@@ -109,11 +118,13 @@ impl SimdAABB {
         self.maxs += dilation;
     }
 
+    /// Replace the `i-th` AABB of this SIMD AAAB by the given value.
     pub fn replace(&mut self, i: usize, aabb: AABB) {
         self.mins.replace(i, aabb.mins);
         self.maxs.replace(i, aabb.maxs);
     }
 
+    /// Casts a ray on all the AABBs represented by `self`.
     pub fn cast_local_ray(&self, ray: &SimdRay, max_toi: SimdReal) -> (SimdBool, SimdReal) {
         let zero = SimdReal::zero();
         let one = SimdReal::one();
@@ -150,6 +161,7 @@ impl SimdAABB {
         (hit, tmin)
     }
 
+    /// Computes the distances between a point and all the AABBs represented by `self`.
     pub fn distance_to_local_point(&self, point: &Point<SimdReal>) -> SimdReal {
         let mins_point = self.mins - point;
         let point_maxs = point - self.maxs;
@@ -157,6 +169,7 @@ impl SimdAABB {
         shift.norm()
     }
 
+    /// Computes the distances between the origin and all the AABBs represented by `self`.
     pub fn distance_to_origin(&self) -> SimdReal {
         self.mins
             .coords
@@ -165,6 +178,7 @@ impl SimdAABB {
             .norm()
     }
 
+    /// Check which AABB represented by `self` contains the given `point`.
     pub fn contains_local_point(&self, point: &Point<SimdReal>) -> SimdBool {
         #[cfg(feature = "dim2")]
         return self.mins.x.simd_le(point.x)
@@ -181,6 +195,8 @@ impl SimdAABB {
             & self.maxs.z.simd_ge(point.z);
     }
 
+    /// Lanewise check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// The check is performed lane-wise.
     #[cfg(feature = "dim2")]
     pub fn contains(&self, other: &SimdAABB) -> SimdBool {
         self.mins.x.simd_le(other.mins.x)
@@ -189,6 +205,8 @@ impl SimdAABB {
             & self.maxs.y.simd_ge(other.maxs.y)
     }
 
+    /// Lanewise check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// The check is performed lane-wise.
     #[cfg(feature = "dim3")]
     pub fn contains(&self, other: &SimdAABB) -> SimdBool {
         self.mins.x.simd_le(other.mins.x)
@@ -199,6 +217,8 @@ impl SimdAABB {
             & self.maxs.z.simd_ge(other.maxs.z)
     }
 
+    /// Lanewise check which AABB represented by `self` intersects the given set of `other` aabbs.
+    /// The check is performed lane-wise.
     #[cfg(feature = "dim2")]
     pub fn intersects(&self, other: &SimdAABB) -> SimdBool {
         self.mins.x.simd_le(other.maxs.x)
@@ -207,6 +227,8 @@ impl SimdAABB {
             & other.mins.y.simd_le(self.maxs.y)
     }
 
+    /// Check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// The check is performed lane-wise.
     #[cfg(feature = "dim3")]
     pub fn intersects(&self, other: &SimdAABB) -> SimdBool {
         self.mins.x.simd_le(other.maxs.x)
@@ -217,6 +239,7 @@ impl SimdAABB {
             & other.mins.z.simd_le(self.maxs.z)
     }
 
+    /// Merge all the AABB represented by `self` into a single one.
     pub fn to_merged_aabb(&self) -> AABB {
         AABB::new(
             self.mins.coords.map(|e| e.simd_horizontal_min()).into(),

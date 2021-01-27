@@ -51,6 +51,7 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
     )));
 }
 
+/// Computes the contact manifold between an heightfield and a composite shape.
 pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,

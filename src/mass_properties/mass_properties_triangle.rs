@@ -3,6 +3,7 @@ use crate::math::{Point, Real};
 use crate::shape::Triangle;
 
 impl MassProperties {
+    /// Computes the mass properties of a triangle.
     pub fn from_triangle(
         density: Real,
         a: &Point<Real>,

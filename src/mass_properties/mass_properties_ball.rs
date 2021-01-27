@@ -23,6 +23,7 @@ impl MassProperties {
         }
     }
 
+    /// Computes the mass properties of a ball.
     pub fn from_ball(density: Real, radius: Real) -> Self {
         let (vol, unit_i) = Self::ball_volume_unit_angular_inertia(radius);
         let mass = vol * density;

@@ -44,6 +44,7 @@ where
     closest_points_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, margin).flipped()
 }
 
+/// A visitor for computing the closest points between a composite-shape and a shape.
 pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     msum_shift: Vector<SimdReal>,
     msum_margin: Vector<SimdReal>,
@@ -60,6 +61,7 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
+    /// Initializes a visitor for computing the closest points between a composite-shape and a shape.
     pub fn new(
         dispatcher: &'a D,
         pos12: &'a Isometry<Real>,

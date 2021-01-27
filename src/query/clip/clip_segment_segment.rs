@@ -8,6 +8,8 @@ use crate::{math::Vector, utils};
 // 2 = Second vertex.
 pub type ClippingPoints = (Point<Real>, Point<Real>, usize, usize);
 
+/// Projects two segments on one another towards the direction `normal`,
+/// and compute their intersection.
 #[cfg(feature = "dim2")]
 pub fn clip_segment_segment_with_normal(
     mut seg1: (Point<Real>, Point<Real>),
@@ -70,6 +72,7 @@ pub fn clip_segment_segment_with_normal(
     Some((ca, cb))
 }
 
+/// Projects two segments on one another and compute their intersection.
 pub fn clip_segment_segment(
     mut seg1: (Point<Real>, Point<Real>),
     mut seg2: (Point<Real>, Point<Real>),

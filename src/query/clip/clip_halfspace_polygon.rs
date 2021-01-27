@@ -1,6 +1,12 @@
 use crate::math::{Point, Real, Vector};
 use crate::query::{self, Ray};
 
+/// Cuts a polygon with the given half-space.
+///
+/// Given the half-space `center` and outward `normal`,
+/// this computes the intersecting between the half-space and
+/// the polygon. (Note that a point `pt` is considered as inside of
+/// the half-space if `normal.dot(&(pt - center)) <= 0.0`.
 pub fn clip_halfspace_polygon(
     center: &Point<Real>,
     normal: &Vector<Real>,

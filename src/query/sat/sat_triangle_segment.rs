@@ -3,6 +3,9 @@ use crate::query::sat;
 use crate::shape::{Segment, SupportMap, Triangle};
 use na::Unit;
 
+/// Finds the best separating normal a triangle and a segment.
+///
+/// Only the normals of `triangle1` are tested.
 pub fn triangle_segment_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     segment2: &Segment,
@@ -24,7 +27,11 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
     }
 }
 
-pub fn segment_triangle_find_local_separating_edge(
+/// Finds the best separating edge between a segment and a triangle.
+///
+/// All combinations of edges from the segment and the triangle are taken into
+/// account.
+pub fn segment_triangle_find_local_separating_edge_twoway(
     segment1: &Segment,
     triangle2: &Triangle,
     pos12: &Isometry<Real>,

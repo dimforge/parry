@@ -5,6 +5,7 @@ use crate::utils;
 use num::Zero;
 
 impl MassProperties {
+    /// Computes the mass properties of a convex polyhedron.
     pub fn from_convex_polyhedron(
         density: Real,
         vertices: &[Point<Real>],
@@ -33,6 +34,7 @@ impl MassProperties {
     }
 }
 
+/// Computes the unit inertia tensor of a tetrahedron, with regard to the given `point`.
 pub fn tetrahedron_unit_inertia_tensor_wrt_point(
     point: &Point<Real>,
     p1: &Point<Real>,
@@ -149,6 +151,7 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
     Matrix::new(a0, -b1, -c1, -b1, b0, -a1, -c1, -a1, c0)
 }
 
+/// Computes the volume and conter-of-mass of a mesh assumed to be convex.
 pub fn convex_mesh_volume_and_center_of_mass_unchecked(
     vertices: &[Point<Real>],
     indices: &[[u32; DIM]],

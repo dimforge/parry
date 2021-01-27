@@ -2,9 +2,14 @@ use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 
 /// The next action to be taken by a BVH traversal algorithm after having visited a node with some data.
 pub enum SimdBestFirstVisitStatus<Res> {
+    /// The traversal can continue.
     MaybeContinue {
+        /// The weight associated to each child of the node being traversed.
         weights: SimdReal,
+        /// Each lane indicates if the corresponding child of the node being traversed
+        /// should be traversed too.
         mask: SimdBool,
+        /// Optional results associated to each child of the node being traversed.
         results: [Option<Res>; SIMD_WIDTH],
     },
     /// The traversal aborts.

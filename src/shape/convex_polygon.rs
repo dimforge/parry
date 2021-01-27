@@ -79,6 +79,7 @@ impl ConvexPolygon {
         &self.normals
     }
 
+    /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
         let ceps = ComplexField::cos(eps);

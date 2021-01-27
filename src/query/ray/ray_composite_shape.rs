@@ -89,6 +89,7 @@ impl RayCast for Compound {
 /*
  * Visitors
  */
+/// A visitor for casting a ray on a composite shape.
 pub struct RayCompositeShapeToiBestFirstVisitor<'a, S> {
     shape: &'a S,
     ray: &'a Ray,
@@ -98,6 +99,7 @@ pub struct RayCompositeShapeToiBestFirstVisitor<'a, S> {
 }
 
 impl<'a, S> RayCompositeShapeToiBestFirstVisitor<'a, S> {
+    /// Initialize a visitor for casting a ray on a composite shape.
     pub fn new(shape: &'a S, ray: &'a Ray, max_toi: Real, solid: bool) -> Self {
         Self {
             shape,
@@ -167,6 +169,7 @@ where
     }
 }
 
+/// A visitor for casting a ray on a composite shape.
 pub struct RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
     shape: &'a S,
     ray: &'a Ray,
@@ -176,6 +179,7 @@ pub struct RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
 }
 
 impl<'a, S> RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
+    /// Initialize a visitor for casting a ray on a composite shape.
     pub fn new(shape: &'a S, ray: &'a Ray, max_toi: Real, solid: bool) -> Self {
         Self {
             shape,

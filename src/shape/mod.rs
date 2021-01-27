@@ -40,14 +40,20 @@ pub use self::polygonal_feature3d::PolygonalFeature;
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
 pub use self::trimesh::TriMesh;
 
+/// A cylinder dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
 pub type RoundCylinder = RoundShape<Cylinder>;
+/// A cone dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
 pub type RoundCone = RoundShape<Cone>;
+/// A cuboid dilated by a sphere (so it has round corners).
 pub type RoundCuboid = RoundShape<Cuboid>;
+/// A triangle dilated by a sphere (so it has round corners).
 pub type RoundTriangle = RoundShape<Triangle>;
+/// A convex polyhedron dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
 pub type RoundConvexPolyhedron = RoundShape<ConvexPolyhedron>;
+/// A convex polygon dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim2")]
 pub type RoundConvexPolygon = RoundShape<ConvexPolygon>;
 

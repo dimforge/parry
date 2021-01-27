@@ -3,6 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::shape::SharedShape;
 
 impl MassProperties {
+    /// Computes the mass properties of a compound shape.
     pub fn from_compound(density: Real, shapes: &[(Isometry<Real>, SharedShape)]) -> Self {
         shapes
             .iter()

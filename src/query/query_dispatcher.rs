@@ -4,6 +4,7 @@ use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::{ClosestPoints, Contact, ContactManifold, Unsupported, TOI};
 use crate::shape::Shape;
 
+/// A query dispatcher for queries relying on spatial coherence, including contact-manifold computation.
 pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher {
     /// Compute all the contacts between two shapes.
     ///
@@ -22,6 +23,7 @@ pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher 
         workspace: &mut Option<ContactManifoldsWorkspace>,
     ) -> Result<(), Unsupported>;
 
+    /// Computes the contact-manifold between two convex shapes.
     fn contact_manifold_convex_convex(
         &self,
         pos12: &Isometry<Real>,

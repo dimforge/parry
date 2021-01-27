@@ -2,6 +2,7 @@ use crate::math::{Isometry, Real, Vector};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, Shape};
 
+/// Computes the contact manifold between two balls given as `Shape` trait-objects.
 pub fn contact_manifold_ball_ball_shapes<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
@@ -14,6 +15,7 @@ pub fn contact_manifold_ball_ball_shapes<ManifoldData, ContactData: Default + Co
     }
 }
 
+/// Computes the contact manifold between two balls.
 pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
     pos12: &Isometry<Real>,
     ball1: &Ball,

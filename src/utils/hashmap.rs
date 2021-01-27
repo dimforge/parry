@@ -58,8 +58,8 @@ pub use {rustc_hash::FxHashMap as HashMap, std::collections::hash_map::Entry};
 
 const K: u32 = 0x9e3779b9;
 
-// Same as FxHasher, but with the guarantee that the internal hash is
-// an u32 instead of something that depends on the platform.
+/// This is the same as FxHasher, but with the guarantee that the internal hash is
+/// an u32 instead of something that depends on the platform.
 pub struct FxHasher32 {
     hash: u32,
 }

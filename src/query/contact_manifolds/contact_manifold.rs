@@ -20,6 +20,7 @@ pub struct TrackedContact<Data> {
 }
 
 impl<Data: Default + Copy> TrackedContact<Data> {
+    /// Creates a new tracked contact.
     pub fn new(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
@@ -37,6 +38,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
         }
     }
 
+    /// Creates a new tracked contact where its input may need to be flipped.
     pub fn flipped(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
@@ -52,6 +54,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
         }
     }
 
+    /// Copy to `self` the geometric information from `contact`.
     pub fn copy_geometry_from(&mut self, contact: Self) {
         self.local_p1 = contact.local_p1;
         self.local_p2 = contact.local_p2;
@@ -70,16 +73,23 @@ impl<Data: Default + Copy> TrackedContact<Data> {
 pub struct ContactManifold<ManifoldData, ContactData> {
     // NOTE: use a SmallVec instead?
     // And for 2D use an ArrayVec since there will never be more than 2 contacts anyways.
+    /// The contacts points.
     #[cfg(feature = "dim2")]
     pub points: arrayvec::ArrayVec<[TrackedContact<ContactData>; 2]>,
+    /// The contacts points.
     #[cfg(feature = "dim3")]
     pub points: Vec<TrackedContact<ContactData>>,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the first shape.
     pub local_n1: Vector<Real>,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
     pub local_n2: Vector<Real>,
-    /// The pair of subshapes involved in this contact manifold.
+    /// The first subshape involved in this contact manifold.
+    ///
+    /// This is zero if the first shape is not a composite shape.
     pub subshape1: u32,
+    /// The second subshape involved in this contact manifold.
+    ///
+    /// This is zero if the second shape is not a composite shape.
     pub subshape2: u32,
     /// If the first shape involved is a composite shape, this contains the position of its subshape
     /// involved in this contact.
@@ -92,6 +102,7 @@ pub struct ContactManifold<ManifoldData, ContactData> {
 }
 
 impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, ContactData> {
+    /// Create a new empty contact-manifold.
     pub fn new() -> Self
     where
         ManifoldData: Default,
@@ -99,6 +110,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         Self::with_data(0, 0, ManifoldData::default())
     }
 
+    /// Create a new empty contact-manifold with the given associated data.
     pub fn with_data(subshape1: u32, subshape2: u32, data: ManifoldData) -> Self {
         Self {
             #[cfg(feature = "dim2")]
@@ -115,15 +127,19 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
     }
 
+    /// Clones `self` and then remove all contact points from `self`.
     pub fn take(&mut self) -> Self
     where
         ManifoldData: Clone,
     {
+        #[cfg(feature = "dim2")]
+        let points = self.points.clone();
+        #[cfg(feature = "dim3")]
+        let points = std::mem::replace(&mut self.points, Vec::new());
+        self.points.clear();
+
         ContactManifold {
-            #[cfg(feature = "dim2")]
-            points: self.points.clone(),
-            #[cfg(feature = "dim3")]
-            points: std::mem::replace(&mut self.points, Vec::new()),
+            points,
             local_n1: self.local_n1,
             local_n2: self.local_n2,
             subshape1: self.subshape1,
@@ -154,6 +170,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         &self.points
     }
 
+    /// Attempts to use spatial coherence to update contacts points.
     #[inline]
     pub fn try_update_contacts(&mut self, pos12: &Isometry<Real>) -> bool {
         //        const DOT_THRESHOLD: Real = 0.crate::COS_10_DEGREES;
@@ -162,6 +179,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         self.try_update_contacts_eps(pos12, DOT_THRESHOLD, DIST_SQ_THRESHOLD)
     }
 
+    /// Attempts to use spatial coherence to update contacts points, using user-defined tolerances.
     #[inline]
     pub fn try_update_contacts_eps(
         &mut self,
@@ -202,6 +220,8 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         true
     }
 
+    /// Copy data associated to contacts from `old_contacts` to the new contacts in `self`
+    /// based on matching their feature-ids.
     pub fn match_contacts(&mut self, old_contacts: &[TrackedContact<ContactData>]) {
         for contact in &mut self.points {
             for old_contact in old_contacts {
@@ -213,6 +233,8 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
     }
 
+    /// Copy data associated to contacts from `old_contacts` to the new contacts in `self`
+    /// based on matching the contact positions.
     pub fn match_contacts_using_positions(
         &mut self,
         old_contacts: &[TrackedContact<ContactData>],
@@ -231,10 +253,12 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
     }
 
+    /// Removes all the contacts from `self`.
     pub fn clear(&mut self) {
         self.points.clear();
     }
 
+    /// Returns the contact with the smallest distance (i.e. the largest penetration depth).
     pub fn find_deepest_contact(&self) -> Option<&TrackedContact<ContactData>> {
         let mut deepest = self.points.get(0)?;
 

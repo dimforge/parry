@@ -66,6 +66,7 @@ impl AABB {
     }
 }
 
+/// Computes the segment given by the intersection of a line and an AABB.
 pub fn clip_aabb_line(
     aabb: &AABB,
     origin: &Point<Real>,

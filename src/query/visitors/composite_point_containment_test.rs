@@ -16,6 +16,8 @@ pub struct CompositePointContainmentTest<'a, S: 'a> {
 }
 
 impl<'a, S> CompositePointContainmentTest<'a, S> {
+    /// Creates a new visitor for the testing containment of the given `point`
+    /// into the given `shape`.
     pub fn new(shape: &'a S, point: &'a Point<Real>) -> Self {
         Self {
             shape,

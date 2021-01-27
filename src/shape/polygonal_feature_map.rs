@@ -12,6 +12,7 @@ use {
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
+    /// Compute the support polygonal face of `self` towards the `dir`.
     fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature);
 }
 
