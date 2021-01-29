@@ -1,4 +1,4 @@
-// https://github.com/rustsim/parry/issues/242
+// https://github.com/dimforge/parry/issues/242
 
 use na::{Isometry3, Point3, Translation3, UnitQuaternion, Vector3};
 use parry3d::query::Ray;

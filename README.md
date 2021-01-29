@@ -14,7 +14,7 @@
 </p>
 <p align = "center">
     <strong>
-        <a href="http://parry.org/rustdoc/parry2d">2D Documentation</a> | <a href="http://parry.org/rustdoc/parry3d">3D Documentation</a> | <a href="http://parry.org">User Guide</a> | <a href="https://discourse.nphysics.org">Forum</a>
+        <a href="http://parry.rs/rustdoc/parry2d">2D Documentation</a> | <a href="http://parry.rs/rustdoc/parry3d">3D Documentation</a> | <a href="http://parry.rs">User Guide</a> | <a href="https://discourse.nphysics.org">Forum</a>
     </strong>
 </p>
 
@@ -24,8 +24,8 @@ parry
 **parry** is a 2 and 3-dimensional collision detection library written with
 the rust programming language.
 
-The official user guide is available [here](http://parry.org).
-The rustdoc documentation is available [for 3D](http://parry.org/rustdoc/parry3d) and [for 2D](http://parry.org/rustdoc/parry2d).
+The official user guide is available [here](http://parry.rs).
+The rustdoc documentation is available [for 3D](http://parry.rs/rustdoc/parry3d) and [for 2D](http://parry.rs/rustdoc/parry2d).
 
 ## Compilation
 You will need the last stable build of the [rust compiler](http://www.rust-lang.org)

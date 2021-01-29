@@ -25,7 +25,7 @@ And various traits for collision detectors and broad phase collision detection.
 #![warn(missing_docs)]
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
-#![doc(html_root_url = "http://parry.org/rustdoc")]
+#![doc(html_root_url = "http://parry.rs/rustdoc")]
 
 #[cfg(all(
     feature = "simd-is-enabled",

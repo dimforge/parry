@@ -3,14 +3,18 @@ name    = "parry2d"
 version = "0.1.0"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
-description = "2 and 3-dimensional collision detection library in Rust."
-documentation = "http://parry.org/rustdoc/parry"
-homepage = "http://parry.org"
-repository = "https://github.com/rustsim/parry"
+description = "2 dimensional collision detection library in Rust."
+documentation = "http://parry.rs/docs"
+homepage = "http://parry.rs"
+repository = "https://github.com/dimforge/parry"
 readme = "README.md"
 keywords = [ "collision", "geometry", "distance", "ray", "convex" ]
+categories = [ "science", "game-development", "mathematics", "wasm"]
 license = "Apache-2.0"
 edition = "2018"
+
+[badges]
+maintenance = { status = "actively-developed" }
 
 [features]
 default = [ "dim2", "f32" ]
