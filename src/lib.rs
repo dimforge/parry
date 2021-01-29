@@ -15,7 +15,7 @@ the rust programming language.
 #![warn(missing_docs)]
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
-#![doc(html_root_url = "http://parry.rs/rustdoc")]
+#![doc(html_root_url = "http://docs.rs/parry.rs")]
 
 #[cfg(all(
     feature = "simd-is-enabled",
