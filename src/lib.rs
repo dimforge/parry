@@ -5,16 +5,6 @@ parry
 **parry** is a 2 and 3-dimensional geometric library written with
 the rust programming language.
 
-## Features
-- dynamic bounding volume tree based broad phase,
-- ball vs. ball collision detection,
-- halfspace vs. any convex object collision detection,
-- collision detection between arbitrary convex objects,
-- compound shapes,
-- ray-casting,
-- time of impact computation  for objects without rotational movement.
-
-And various traits for collision detectors and broad phase collision detection.
 */
 
 #![deny(non_camel_case_types)]

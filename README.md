@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="https://parry.rs/img/logo_parry.svg" alt="crates.io">
+</p>
+<p align="center">
     <a href="https://discord.gg/vt9DJSW">
         <img src="https://img.shields.io/discord/507548572338880513.svg?logo=discord&colorB=7289DA">
     </a>
@@ -14,7 +17,7 @@
 </p>
 <p align = "center">
     <strong>
-        <a href="http://parry.rs/rustdoc/parry2d">2D Documentation</a> | <a href="http://parry.rs/rustdoc/parry3d">3D Documentation</a> | <a href="http://parry.rs">User Guide</a> | <a href="https://discourse.nphysics.org">Forum</a>
+        <a href="http://docs.rs/parry2d">2D Documentation</a> | <a href="http://docs.rs/parry3d">3D Documentation</a> | <a href="http://parry.rs">User Guide</a>
     </strong>
 </p>
 
