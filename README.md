@@ -18,8 +18,8 @@
     </strong>
 </p>
 
-parry
+Parry
 ========
 
-**parry** is a 2 and 3-dimensional collision detection library written with
+**Parry** is a 2 and 3-dimensional collision detection library written with
 the rust programming language.
