@@ -11,9 +11,6 @@
     <a href="https://crates.io/crates/parry3d">
          <img src="http://meritbadge.herokuapp.com/parry3d?style=flat-square" alt="crates.io">
     </a>
-    <a href="https://circleci.com/gh/dimforge/parry">
-        <img src="https://circleci.com/gh/dimforge/parry.svg?style=svg" alt="Build status">
-    </a>
 </p>
 <p align = "center">
     <strong>
