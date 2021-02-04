@@ -168,7 +168,7 @@ pub trait RigidMotionComposition: RigidMotion {
         }
     }
 
-    /// Prepend a translation to the rigid motion `self`.
+    /// Append a translation to the rigid motion `self`.
     fn append_translation(&self, translation: Vector<Real>) -> AppendTranslation<Self> {
         AppendTranslation {
             motion: self,
