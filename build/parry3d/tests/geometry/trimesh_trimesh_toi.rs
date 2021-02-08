@@ -13,11 +13,7 @@ fn build_pyramid() -> TriMesh {
         Point3::new(1.0, -0.5, 0.0),
     ];
 
-    let indices = vec![
-        Point3::new(0u32, 1, 2),
-        Point3::new(0, 2, 3),
-        Point3::new(0, 3, 1),
-    ];
+    let indices = vec![[0u32, 1, 2], [0, 2, 3], [0, 3, 1]];
 
     TriMesh::new(points, indices)
 }

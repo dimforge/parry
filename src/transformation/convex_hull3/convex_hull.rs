@@ -414,7 +414,6 @@ fn attach_and_push_facets(
 #[cfg(test)]
 mod test {
     use crate::transformation;
-    use crate::transformation::convex_hull3::check_convex_hull;
     #[cfg(feature = "dim2")]
     use na::Point2;
 
