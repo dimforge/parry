@@ -161,13 +161,13 @@ fn compute_silhouette(
 ) {
     if triangles[facet].valid {
         if !triangles[facet].order_independent_can_be_seen_by_point(point, points) {
-            out_facets_and_idx.push((facet, indirect_id));
             // println!("triangles: {}, valid: true, keep: true", facet);
             // println!(
             //     "Taking edge: [{}, {}]",
             //     triangles[facet].second_point_from_edge(indirect_id),
             //     triangles[facet].first_point_from_edge(indirect_id)
             // );
+            out_facets_and_idx.push((facet, indirect_id));
         } else {
             triangles[facet].valid = false; // The facet must be removed from the convex hull.
             removed_facets.push(facet);

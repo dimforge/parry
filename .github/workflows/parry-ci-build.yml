@@ -41,6 +41,6 @@ jobs:
       - uses: actions/checkout@v2
       - run: rustup target add wasm32-unknown-unknown
       - name: build parry2d
-        run: cd build/parry2d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
+        run: cd build/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
       - name: build parry3d
-        run: cd build/parry3d && cargo build --verbose --features wasm-bindgen --target wasm32-unknown-unknown;
+        run: cd build/parry3d && cargo build --verbose --target wasm32-unknown-unknown;
