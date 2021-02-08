@@ -1,0 +1,46 @@
+name: parry CI build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check formatting
+      run: cargo fmt -- --check
+  build-native:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+    - uses: actions/checkout@v2
+    - run: sudo apt-get install -y cmake libxcb-composite0-dev
+    - name: Build parry2d
+      run: cargo build --verbose -p parry2d;
+    - name: Build parry3d
+      run: cargo build --verbose -p parry3d;
+    - name: Build parry2d SIMD
+      run: cd build/parry2d; cargo build --verbose --features simd-stable;
+    - name: Build parry3d SIMD
+      run: cd build/parry3d; cargo build --verbose --features simd-stable;
+    - name: Run tests
+      run: cargo test
+  build-wasm:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup target add wasm32-unknown-unknown
+      - name: build parry2d
+        run: cd build/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
+      - name: build parry3d
+        run: cd build/parry3d && cargo build --verbose --target wasm32-unknown-unknown;

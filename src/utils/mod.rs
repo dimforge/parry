@@ -8,7 +8,6 @@ pub use self::deterministic_state::DeterministicState;
 pub use self::cleanup::remove_unused_points;
 pub(crate) use self::inv::inv;
 pub use self::isometry_ops::{IsometryOps, IsometryOpt};
-pub use self::maybe_serializable_data::MaybeSerializableData;
 pub use self::median::median;
 pub use self::point_cloud_support_point::{
     point_cloud_support_point, point_cloud_support_point_id,
@@ -37,7 +36,6 @@ mod hashable_partial_eq;
 pub mod hashmap;
 mod inv;
 mod isometry_ops;
-mod maybe_serializable_data;
 mod median;
 mod point_cloud_support_point;
 mod point_in_poly2d;

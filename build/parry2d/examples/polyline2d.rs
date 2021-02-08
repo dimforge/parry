@@ -12,10 +12,10 @@ fn main() {
     ];
 
     let indices = vec![
-        Point2::new(0, 1),
-        Point2::new(1, 2),
-        Point2::new(2, 3),
-        Point2::new(3, 0), // This forms a loop.
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 0], // This forms a loop.
     ];
 
     // Build the polyline.

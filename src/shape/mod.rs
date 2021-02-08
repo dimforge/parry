@@ -12,8 +12,10 @@ pub use self::polygonal_feature_map::PolygonalFeatureMap;
 pub use self::polyline::Polyline;
 pub use self::round_shape::RoundShape;
 pub use self::segment::{Segment, SegmentPointLocation};
+#[cfg(feature = "serde-serialize")]
+pub(crate) use self::shape::DeserializableTypedShape;
 #[doc(inline)]
-pub use self::shape::{Shape, ShapeType};
+pub use self::shape::{Shape, ShapeType, TypedShape};
 pub use self::shared_shape::SharedShape;
 #[doc(inline)]
 pub use self::support_map::SupportMap;

@@ -1,12 +1,12 @@
 use crate::bounding_volume::{BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::contact_manifolds_workspace::{
+    TypedWorkspaceData, WorkspaceData,
+};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
-use crate::utils::MaybeSerializableData;
-#[cfg(feature = "serde-serialize")]
-use erased_serde::Serialize;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone)]
@@ -190,16 +190,12 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     }
 }
 
-impl MaybeSerializableData for TriMeshShapeContactManifoldsWorkspace {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<(u32, &dyn Serialize)> {
-        Some((
-            super::WorkspaceSerializationTag::TriMeshShapeContactManifoldsWorkspace as u32,
-            self,
-        ))
+impl WorkspaceData for TriMeshShapeContactManifoldsWorkspace {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+        TypedWorkspaceData::TriMeshShapeContactManifoldsWorkspace(self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn MaybeSerializableData> {
+    fn clone_dyn(&self) -> Box<dyn WorkspaceData> {
         Box::new(self.clone())
     }
 }

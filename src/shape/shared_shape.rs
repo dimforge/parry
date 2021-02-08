@@ -2,7 +2,7 @@ use crate::math::{Isometry, Point, Real, Vector, DIM};
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
-use crate::shape::{self, ShapeType};
+use crate::shape::DeserializableTypedShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HeightField, Polyline, RoundShape, Segment, Shape, TriMesh,
     Triangle,
@@ -25,6 +25,11 @@ impl Deref for SharedShape {
 }
 
 impl SharedShape {
+    /// Wraps the given shape as a shared shape.
+    pub fn new(shape: impl Shape) -> Self {
+        Self(Arc::new(shape))
+    }
+
     /// Initialize a compound shape defined by its subshapes.
     pub fn compound(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Self {
         let raw_shapes = shapes.into_iter().map(|s| (s.0, s.1)).collect();
@@ -312,19 +317,7 @@ impl serde::Serialize for SharedShape {
     where
         S: serde::Serializer,
     {
-        use crate::serde::ser::SerializeStruct;
-
-        if let Some(ser) = self.0.as_serialize() {
-            let typ = self.0.shape_type();
-            let mut state = serializer.serialize_struct("SharedShape", 2)?;
-            state.serialize_field("tag", &(typ as i32))?;
-            state.serialize_field("inner", ser)?;
-            state.end()
-        } else {
-            Err(serde::ser::Error::custom(
-                "Found a non-serializable custom shape.",
-            ))
-        }
+        self.0.as_typed_shape().serialize(serializer)
     }
 }
 
@@ -334,79 +327,9 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
     where
         D: serde::Deserializer<'de>,
     {
-        struct Visitor {};
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = SharedShape;
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "one shape type tag and the inner shape data")
-            }
-
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-            where
-                A: serde::de::SeqAccess<'de>,
-            {
-                use num::cast::FromPrimitive;
-
-                let tag: i32 = seq
-                    .next_element()?
-                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-
-                fn deser<'de, A, S: Shape + serde::Deserialize<'de>>(
-                    seq: &mut A,
-                ) -> Result<Arc<dyn Shape>, A::Error>
-                where
-                    A: serde::de::SeqAccess<'de>,
-                {
-                    let shape: S = seq.next_element()?.ok_or_else(|| {
-                        serde::de::Error::custom("Failed to deserialize builtin shape.")
-                    })?;
-                    Ok(Arc::new(shape) as Arc<dyn Shape>)
-                }
-
-                let shape = match ShapeType::from_i32(tag) {
-                    Some(ShapeType::Ball) => deser::<A, Ball>(&mut seq)?,
-                    Some(ShapeType::Cuboid) => deser::<A, Cuboid>(&mut seq)?,
-                    Some(ShapeType::Capsule) => deser::<A, Capsule>(&mut seq)?,
-                    Some(ShapeType::Triangle) => deser::<A, Triangle>(&mut seq)?,
-                    Some(ShapeType::Segment) => deser::<A, Segment>(&mut seq)?,
-                    Some(ShapeType::TriMesh) => deser::<A, TriMesh>(&mut seq)?,
-                    Some(ShapeType::Polyline) => deser::<A, Polyline>(&mut seq)?,
-                    Some(ShapeType::HeightField) => deser::<A, HeightField>(&mut seq)?,
-                    Some(ShapeType::Compound) => deser::<A, Compound>(&mut seq)?,
-                    Some(ShapeType::HalfSpace) => deser::<A, shape::HalfSpace>(&mut seq)?,
-                    Some(ShapeType::RoundCuboid) => deser::<A, shape::RoundCuboid>(&mut seq)?,
-                    Some(ShapeType::RoundTriangle) => deser::<A, shape::RoundTriangle>(&mut seq)?,
-                    #[cfg(feature = "dim2")]
-                    Some(ShapeType::ConvexPolygon) => deser::<A, ConvexPolygon>(&mut seq)?,
-                    #[cfg(feature = "dim2")]
-                    Some(ShapeType::RoundConvexPolygon) => {
-                        deser::<A, shape::RoundConvexPolygon>(&mut seq)?
-                    }
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::Cylinder) => deser::<A, Cylinder>(&mut seq)?,
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::ConvexPolyhedron) => deser::<A, ConvexPolyhedron>(&mut seq)?,
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::Cone) => deser::<A, Cone>(&mut seq)?,
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::RoundCylinder) => deser::<A, shape::RoundCylinder>(&mut seq)?,
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::RoundCone) => deser::<A, shape::RoundCone>(&mut seq)?,
-                    #[cfg(feature = "dim3")]
-                    Some(ShapeType::RoundConvexPolyhedron) => {
-                        deser::<A, shape::RoundConvexPolyhedron>(&mut seq)?
-                    }
-                    None => {
-                        return Err(serde::de::Error::custom(
-                            "found invalid shape type to deserialize",
-                        ))
-                    }
-                };
-
-                Ok(SharedShape(shape))
-            }
-        }
-
-        deserializer.deserialize_struct("SharedShape", &["tag", "inner"], Visitor {})
+        use crate::serde::de::Error;
+        DeserializableTypedShape::deserialize(deserializer)?
+            .into_shared_shape()
+            .ok_or(D::Error::custom("Cannot deserialize custom shape."))
     }
 }
