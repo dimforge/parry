@@ -31,14 +31,12 @@ pub use self::contact_manifolds_trimesh_shape::{
 };
 pub use self::contact_manifolds_workspace::ContactManifoldsWorkspace;
 
-#[cfg(feature = "serde-serialize")]
 pub(self) use {
     self::contact_manifolds_composite_shape_composite_shape::CompositeShapeCompositeShapeContactManifoldsWorkspace,
     self::contact_manifolds_composite_shape_shape::CompositeShapeShapeContactManifoldsWorkspace,
     self::contact_manifolds_heightfield_composite_shape::HeightFieldCompositeShapeContactManifoldsWorkspace,
     self::contact_manifolds_heightfield_shape::HeightFieldShapeContactManifoldsWorkspace,
     self::contact_manifolds_trimesh_shape::TriMeshShapeContactManifoldsWorkspace,
-    self::contact_manifolds_workspace::WorkspaceSerializationTag,
 };
 
 mod contact_manifold;

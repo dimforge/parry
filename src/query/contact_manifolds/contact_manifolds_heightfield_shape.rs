@@ -1,5 +1,8 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::contact_manifolds_workspace::{
+    TypedWorkspaceData, WorkspaceData,
+};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
@@ -7,9 +10,6 @@ use crate::query::ContactManifold;
 use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::MaybeSerializableData;
-#[cfg(feature = "serde-serialize")]
-use erased_serde::Serialize;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone)]
@@ -173,16 +173,12 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
         .retain(|_, detector| detector.timestamp == new_timestamp)
 }
 
-impl MaybeSerializableData for HeightFieldShapeContactManifoldsWorkspace {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<(u32, &dyn Serialize)> {
-        Some((
-            super::WorkspaceSerializationTag::HeightfieldShapeContactManifoldsWorkspace as u32,
-            self,
-        ))
+impl WorkspaceData for HeightFieldShapeContactManifoldsWorkspace {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+        TypedWorkspaceData::HeightfieldShapeContactManifoldsWorkspace(self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn MaybeSerializableData> {
+    fn clone_dyn(&self) -> Box<dyn WorkspaceData> {
         Box::new(self.clone())
     }
 }

@@ -3,6 +3,8 @@ use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
 use crate::shape::composite_shape::SimdCompositeShape;
+#[cfg(feature = "serde-serialize")]
+use crate::shape::SharedShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, PolygonalFeatureMap,
     Polyline, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
@@ -14,8 +16,6 @@ use crate::shape::{
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
-#[cfg(feature = "serde-serialize")]
-use erased_serde::Serialize;
 use na::Unit;
 use num::Zero;
 use num_derive::FromPrimitive;
@@ -76,16 +76,173 @@ pub enum ShapeType {
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
     RoundConvexPolygon,
+    /// A custom user-defined shape.
+    Custom,
+}
+
+#[derive(Copy, Clone)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize))]
+/// Enum representing the shape with its actual type
+pub enum TypedShape<'a> {
+    /// A ball shape.
+    Ball(&'a Ball),
+    /// A cuboid shape.
+    Cuboid(&'a Cuboid),
+    /// A capsule shape.
+    Capsule(&'a Capsule),
+    /// A segment shape.
+    Segment(&'a Segment),
+    /// A triangle shape.
+    Triangle(&'a Triangle),
+    /// A triangle mesh shape.
+    TriMesh(&'a TriMesh),
+    /// A set of segments.
+    Polyline(&'a Polyline),
+    /// A shape representing a full half-space.
+    HalfSpace(&'a HalfSpace),
+    /// A heightfield shape.
+    HeightField(&'a HeightField),
+    /// A Compound shape.
+    Compound(&'a Compound),
+    #[cfg(feature = "dim2")]
+    ConvexPolygon(&'a ConvexPolygon),
+    #[cfg(feature = "dim3")]
+    /// A convex polyhedron.
+    ConvexPolyhedron(&'a ConvexPolyhedron),
+    #[cfg(feature = "dim3")]
+    /// A cylindrical shape.
+    Cylinder(&'a Cylinder),
+    #[cfg(feature = "dim3")]
+    /// A cylindrical shape.
+    Cone(&'a Cone),
+    // /// A custom shape type.
+    // Custom(u8),
+    /// A cuboid with rounded corners.
+    RoundCuboid(&'a RoundCuboid),
+    /// A triangle with rounded corners.
+    RoundTriangle(&'a RoundTriangle),
+    // /// A triangle-mesh with rounded corners.
+    // RoundedTriMesh,
+    // /// An heightfield with rounded corners.
+    // RoundedHeightField,
+    /// A cylinder with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundCylinder(&'a RoundCylinder),
+    /// A cone with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundCone(&'a RoundCone),
+    /// A convex polyhedron with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundConvexPolyhedron(&'a RoundConvexPolyhedron),
+    /// A convex polygon with rounded corners.
+    #[cfg(feature = "dim2")]
+    RoundConvexPolygon(&'a RoundConvexPolygon),
+    /// A custom user-defined shape identified by a number.
+    Custom(u32),
+}
+
+#[cfg(feature = "serde-serialize")]
+#[derive(Deserialize)]
+// NOTE: tha this enum MUST match the `TypedShape` enum.
+/// Enum representing the shape with its actual type
+pub(crate) enum DeserializableTypedShape {
+    /// A ball shape.
+    Ball(Ball),
+    /// A cuboid shape.
+    Cuboid(Cuboid),
+    /// A capsule shape.
+    Capsule(Capsule),
+    /// A segment shape.
+    Segment(Segment),
+    /// A triangle shape.
+    Triangle(Triangle),
+    /// A triangle mesh shape.
+    TriMesh(TriMesh),
+    /// A set of segments.
+    Polyline(Polyline),
+    /// A shape representing a full half-space.
+    HalfSpace(HalfSpace),
+    /// A heightfield shape.
+    HeightField(HeightField),
+    /// A Compound shape.
+    Compound(Compound),
+    #[cfg(feature = "dim2")]
+    ConvexPolygon(ConvexPolygon),
+    #[cfg(feature = "dim3")]
+    /// A convex polyhedron.
+    ConvexPolyhedron(ConvexPolyhedron),
+    #[cfg(feature = "dim3")]
+    /// A cylindrical shape.
+    Cylinder(Cylinder),
+    #[cfg(feature = "dim3")]
+    /// A cylindrical shape.
+    Cone(Cone),
+    // /// A custom shape type.
+    // Custom(u8),
+    /// A cuboid with rounded corners.
+    RoundCuboid(RoundCuboid),
+    /// A triangle with rounded corners.
+    RoundTriangle(RoundTriangle),
+    // /// A triangle-mesh with rounded corners.
+    // RoundedTriMesh,
+    // /// An heightfield with rounded corners.
+    // RoundedHeightField,
+    /// A cylinder with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundCylinder(RoundCylinder),
+    /// A cone with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundCone(RoundCone),
+    /// A convex polyhedron with rounded corners.
+    #[cfg(feature = "dim3")]
+    RoundConvexPolyhedron(RoundConvexPolyhedron),
+    /// A convex polygon with rounded corners.
+    #[cfg(feature = "dim2")]
+    RoundConvexPolygon(RoundConvexPolygon),
+    /// A custom user-defined shape identified by a number.
+    Custom(u32),
+}
+
+#[cfg(feature = "serde-serialize")]
+impl DeserializableTypedShape {
+    /// Converts `self` to a `SharedShape` if `self` isn't `Custom`.
+    pub fn into_shared_shape(self) -> Option<SharedShape> {
+        match self {
+            DeserializableTypedShape::Ball(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Cuboid(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Capsule(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Segment(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Triangle(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::TriMesh(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Polyline(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::HalfSpace(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::HeightField(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Compound(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim2")]
+            DeserializableTypedShape::ConvexPolygon(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::ConvexPolyhedron(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::Cylinder(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::Cone(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::RoundCuboid(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::RoundTriangle(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::RoundCylinder(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::RoundCone(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim3")]
+            DeserializableTypedShape::RoundConvexPolyhedron(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "dim2")]
+            DeserializableTypedShape::RoundConvexPolygon(s) => Some(SharedShape::new(s)),
+            DeserializableTypedShape::Custom(_) => None,
+        }
+    }
 }
 
 /// Trait implemented by shapes usable by Rapier.
 pub trait Shape: RayCast + PointQuery + DowncastSync {
-    /// Convert this shape as a serializable entity.
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        None
-    }
-
     /// Computes the AABB of this shape.
     fn compute_local_aabb(&self) -> AABB;
 
@@ -99,6 +256,9 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
 
     /// Gets the type tag of this shape.
     fn shape_type(&self) -> ShapeType;
+
+    /// Gets the underlying shape as an enum.
+    fn as_typed_shape(&self) -> TypedShape;
 
     fn ccd_thickness(&self) -> Real;
 
@@ -245,11 +405,6 @@ impl dyn Shape {
 }
 
 impl Shape for Ball {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -274,36 +429,16 @@ impl Shape for Ball {
         ShapeType::Ball
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Ball(self)
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
 }
 
-// impl Shape for Polygon {
-//     #[cfg(feature = "serde-serialize")]
-//     fn as_serialize(&self) -> Option<&dyn Serialize> {
-//         Some(self as &dyn Serialize)
-//     }
-//
-//     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
-//         self.aabb(position)
-//     }
-//
-//     fn mass_properties(&self, _density: Real) -> MassProperties {
-//         unimplemented!()
-//     }
-//
-//     fn shape_type(&self) -> ShapeType {
-//         ShapeType::Polygon
-//     }
-// }
-
 impl Shape for Cuboid {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -324,6 +459,10 @@ impl Shape for Cuboid {
         ShapeType::Cuboid
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Cuboid(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         self.half_extents.min()
     }
@@ -338,11 +477,6 @@ impl Shape for Cuboid {
 }
 
 impl Shape for Capsule {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -363,6 +497,10 @@ impl Shape for Capsule {
         ShapeType::Capsule
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Capsule(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         self.radius
     }
@@ -377,11 +515,6 @@ impl Shape for Capsule {
 }
 
 impl Shape for Triangle {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -405,6 +538,10 @@ impl Shape for Triangle {
         ShapeType::Triangle
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Triangle(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         // TODO: in 2D use the smallest height of the triangle.
         0.0
@@ -420,11 +557,6 @@ impl Shape for Triangle {
 }
 
 impl Shape for Segment {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -449,6 +581,10 @@ impl Shape for Segment {
         ShapeType::Segment
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Segment(self)
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -459,11 +595,6 @@ impl Shape for Segment {
 }
 
 impl Shape for Compound {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -480,6 +611,10 @@ impl Shape for Compound {
         ShapeType::Compound
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Compound(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         self.shapes()
             .iter()
@@ -492,11 +627,6 @@ impl Shape for Compound {
 }
 
 impl Shape for Polyline {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -513,6 +643,10 @@ impl Shape for Polyline {
         ShapeType::Polyline
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Polyline(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         0.0
     }
@@ -523,11 +657,6 @@ impl Shape for Polyline {
 }
 
 impl Shape for TriMesh {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -547,6 +676,10 @@ impl Shape for TriMesh {
         ShapeType::TriMesh
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::TriMesh(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         // TODO: in 2D, return the smallest CCD thickness among triangles?
         0.0
@@ -558,11 +691,6 @@ impl Shape for TriMesh {
 }
 
 impl Shape for HeightField {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -579,6 +707,10 @@ impl Shape for HeightField {
         ShapeType::HeightField
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::HeightField(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         0.0
     }
@@ -586,11 +718,6 @@ impl Shape for HeightField {
 
 #[cfg(feature = "dim2")]
 impl Shape for ConvexPolygon {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -611,6 +738,10 @@ impl Shape for ConvexPolygon {
         ShapeType::ConvexPolygon
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::ConvexPolygon(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         // TODO: we should use the OBB instead.
         self.compute_local_aabb().half_extents().min()
@@ -627,11 +758,6 @@ impl Shape for ConvexPolygon {
 
 #[cfg(feature = "dim3")]
 impl Shape for ConvexPolyhedron {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -653,6 +779,10 @@ impl Shape for ConvexPolyhedron {
         ShapeType::ConvexPolyhedron
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::ConvexPolyhedron(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         // TODO: we should use the OBB instead.
         self.compute_local_aabb().half_extents().min()
@@ -669,11 +799,6 @@ impl Shape for ConvexPolyhedron {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cylinder {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -694,6 +819,10 @@ impl Shape for Cylinder {
         ShapeType::Cylinder
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Cylinder(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         self.radius
     }
@@ -709,11 +838,6 @@ impl Shape for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cone {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -734,6 +858,10 @@ impl Shape for Cone {
         ShapeType::Cone
     }
 
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::Cone(self)
+    }
+
     fn ccd_thickness(&self) -> Real {
         self.radius
     }
@@ -748,11 +876,6 @@ impl Shape for Cone {
 }
 
 impl Shape for HalfSpace {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<&dyn Serialize> {
-        Some(self as &dyn Serialize)
-    }
-
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -776,16 +899,15 @@ impl Shape for HalfSpace {
     fn shape_type(&self) -> ShapeType {
         ShapeType::HalfSpace
     }
+
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::HalfSpace(self)
+    }
 }
 
 macro_rules! impl_shape_for_round_shape(
-    ($($S: ty, $Tag: expr);*) => {$(
+    ($($S: ty, $Tag: ident);*) => {$(
         impl Shape for RoundShape<$S> {
-            #[cfg(feature = "serde-serialize")]
-            fn as_serialize(&self) -> Option<&dyn Serialize> {
-                Some(self as &dyn Serialize)
-            }
-
             fn compute_local_aabb(&self) -> AABB {
                 self.base_shape.local_aabb().loosened(self.border_radius)
             }
@@ -803,7 +925,11 @@ macro_rules! impl_shape_for_round_shape(
             }
 
             fn shape_type(&self) -> ShapeType {
-                $Tag
+                ShapeType::$Tag
+            }
+
+            fn as_typed_shape(&self) -> TypedShape {
+                TypedShape::$Tag(self)
             }
 
             fn ccd_thickness(&self) -> Real {
@@ -822,14 +948,14 @@ macro_rules! impl_shape_for_round_shape(
 );
 
 impl_shape_for_round_shape!(
-    Cuboid, ShapeType::RoundCuboid;
-    Triangle, ShapeType::RoundTriangle
+    Cuboid, RoundCuboid;
+    Triangle, RoundTriangle
 );
 #[cfg(feature = "dim2")]
-impl_shape_for_round_shape!(ConvexPolygon, ShapeType::RoundConvexPolygon);
+impl_shape_for_round_shape!(ConvexPolygon, RoundConvexPolygon);
 #[cfg(feature = "dim3")]
 impl_shape_for_round_shape!(
-    Cylinder, ShapeType::RoundCylinder;
-    Cone, ShapeType::RoundCone;
-    ConvexPolyhedron, ShapeType::RoundConvexPolyhedron
+    Cylinder, RoundCylinder;
+    Cone, RoundCone;
+    ConvexPolyhedron, RoundConvexPolyhedron
 );

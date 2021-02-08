@@ -1,14 +1,15 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::contact_manifolds_workspace::{
+    TypedWorkspaceData, WorkspaceData,
+};
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, SimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::{IsometryOpt, MaybeSerializableData};
-#[cfg(feature = "serde-serialize")]
-use erased_serde::Serialize;
+use crate::utils::IsometryOpt;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone)]
@@ -146,16 +147,12 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
         .retain(|_, detector| detector.timestamp == new_timestamp)
 }
 
-impl MaybeSerializableData for CompositeShapeShapeContactManifoldsWorkspace {
-    #[cfg(feature = "serde-serialize")]
-    fn as_serialize(&self) -> Option<(u32, &dyn Serialize)> {
-        Some((
-            super::WorkspaceSerializationTag::CompositeShapeShapeContactManifoldsWorkspace as u32,
-            self,
-        ))
+impl WorkspaceData for CompositeShapeShapeContactManifoldsWorkspace {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+        TypedWorkspaceData::CompositeShapeShapeContactManifoldsWorkspace(self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn MaybeSerializableData> {
+    fn clone_dyn(&self) -> Box<dyn WorkspaceData> {
         Box::new(self.clone())
     }
 }
