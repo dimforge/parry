@@ -137,7 +137,7 @@ pub enum TypedShape<'a> {
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
     RoundConvexPolygon(&'a RoundConvexPolygon),
-    /// A custom user-defined shape identified by a number.
+    /// A custom user-defined shape with a type identified by a number.
     Custom(u32),
 }
 
