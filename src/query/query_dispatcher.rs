@@ -169,3 +169,27 @@ where
         target_distance: Real,
     ) -> Option<TOI>);
 }
+
+impl<ManifoldData, ContactData, T, U> PersistentQueryDispatcher<ManifoldData, ContactData>
+    for QueryDispatcherChain<T, U>
+where
+    T: PersistentQueryDispatcher<ManifoldData, ContactData>,
+    U: PersistentQueryDispatcher<ManifoldData, ContactData>,
+{
+    chain_method!(contact_manifolds(
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+        manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+        workspace: &mut Option<ContactManifoldsWorkspace>,
+    ) -> ());
+
+    chain_method!(contact_manifold_convex_convex(
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+        manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    ) -> ());
+}
