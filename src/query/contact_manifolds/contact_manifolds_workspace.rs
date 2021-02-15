@@ -9,16 +9,23 @@ use crate::query::contact_manifolds::{
 
 #[derive(Copy, Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize))]
+/// Enum representing workspace data of a specific type.
 pub enum TypedWorkspaceData<'a> {
+    /// A trimesh workspace.
     TriMeshShapeContactManifoldsWorkspace(&'a TriMeshShapeContactManifoldsWorkspace),
+    /// A heightfield vs. shape workspace.
     HeightfieldShapeContactManifoldsWorkspace(&'a HeightFieldShapeContactManifoldsWorkspace),
+    /// A heightfield vs. composite shape workspace.
     HeightfieldCompositeShapeContactManifoldsWorkspace(
         &'a HeightFieldCompositeShapeContactManifoldsWorkspace,
     ),
+    /// A composite shape vs. composite shape workspace.
     CompositeShapeCompositeShapeContactManifoldsWorkspace(
         &'a CompositeShapeCompositeShapeContactManifoldsWorkspace,
     ),
+    /// A composite shape vs. shape workspace.
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
+    /// A custom workspace.
     Custom(u32),
 }
 
@@ -62,8 +69,12 @@ impl DeserializableWorkspaceData {
     }
 }
 
+/// Data from a [`ContactManifoldsWorkspace`].
 pub trait WorkspaceData: DowncastSync {
+    /// Gets the underlying workspace as an enum.
     fn as_typed_workspace_data(&self) -> TypedWorkspaceData;
+
+    /// Clones `self`.
     fn clone_dyn(&self) -> Box<dyn WorkspaceData>;
 }
 
