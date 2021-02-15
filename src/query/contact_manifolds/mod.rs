@@ -29,7 +29,9 @@ pub use self::contact_manifolds_pfm_pfm::{
 pub use self::contact_manifolds_trimesh_shape::{
     contact_manifolds_trimesh_shape, contact_manifolds_trimesh_shape_shapes,
 };
-pub use self::contact_manifolds_workspace::ContactManifoldsWorkspace;
+pub use self::contact_manifolds_workspace::{
+    ContactManifoldsWorkspace, TypedWorkspaceData, WorkspaceData,
+};
 
 pub(self) use {
     self::contact_manifolds_composite_shape_composite_shape::CompositeShapeCompositeShapeContactManifoldsWorkspace,
