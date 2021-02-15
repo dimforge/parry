@@ -11,7 +11,7 @@ pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher 
     /// The output is written into `manifolds` and `context`. Both can persist
     /// between multiple calls to `contacts` by re-using the result of the previous
     /// call to `contacts`. This persistence can significantly improve collision
-    /// detection performances by allowing the underlying algorithms to exploid
+    /// detection performances by allowing the underlying algorithms to exploit
     /// spatial and temporal coherence.
     fn contact_manifolds(
         &self,
