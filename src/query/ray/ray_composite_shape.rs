@@ -28,7 +28,13 @@ impl RayCast for TriMesh {
         self.quadtree()
             .traverse_best_first(&mut visitor)
             .map(|(_, (best, mut res))| {
-                res.feature = FeatureId::Face(best);
+                // We hit a backface.
+                // NOTE: we need this for `TriMesh::is_backface` to work properly.
+                if res.feature == FeatureId::Face(1) {
+                    res.feature = FeatureId::Face(best + self.indices().len() as u32)
+                } else {
+                    res.feature = FeatureId::Face(best);
+                }
                 res
             })
     }

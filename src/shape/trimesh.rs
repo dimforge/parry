@@ -4,7 +4,7 @@ use crate::partitioning::SimdQuadTree;
 use crate::shape::composite_shape::SimdCompositeShape;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cuboid, HeightField};
-use crate::shape::{Shape, Triangle, TypedSimdCompositeShape};
+use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -63,6 +63,15 @@ impl TriMesh {
     /// The number of triangles forming this mesh.
     pub fn num_triangles(&self) -> usize {
         self.indices.len()
+    }
+
+    /// Does the given feature ID identify a backface of this trimesh?
+    pub fn is_backface(&self, feature: FeatureId) -> bool {
+        if let FeatureId::Face(i) = feature {
+            i >= self.indices.len() as u32
+        } else {
+            false
+        }
     }
 
     /// An iterator through all the triangles of this mesh.
