@@ -38,6 +38,9 @@ pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher 
 ///
 /// Custom implementations allow crates that support an abstract `QueryDispatcher` to handle custom
 /// shapes.
+///
+/// The `pos12` argument to most queries is the transform from the local space of `g2` to that of
+/// `g1`.
 pub trait QueryDispatcher: Send + Sync {
     /// Tests whether two shapes are intersecting.
     fn intersection_test(
