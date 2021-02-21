@@ -543,8 +543,16 @@ impl Shape for Triangle {
     }
 
     fn ccd_thickness(&self) -> Real {
-        // TODO: in 2D use the smallest height of the triangle.
-        0.0
+        #[cfg(feature = "dim2")]
+        return std::cmp::min(
+            na::distance_squared(&self.a, &self.b),
+            std::cmp::min(
+                na::distance_squared(&self.b, &self.c),
+                na::distance_squared(&self.c, &self.a)
+            )
+        ).sqrt();
+        #[cfg(feature = "dim3")]
+        return 0.0;
     }
 
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
