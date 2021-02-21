@@ -544,13 +544,10 @@ impl Shape for Triangle {
 
     fn ccd_thickness(&self) -> Real {
         #[cfg(feature = "dim2")]
-        return std::cmp::min(
-            na::distance_squared(&self.a, &self.b),
-            std::cmp::min(
-                na::distance_squared(&self.b, &self.c),
-                na::distance_squared(&self.c, &self.a)
-            )
-        ).sqrt();
+        return na::distance_squared(&self.a, &self.b)
+            .min(na::distance_squared(&self.b, &self.c))
+            .min(na::distance_squared(&self.c, &self.a))
+            .sqrt();
         #[cfg(feature = "dim3")]
         return 0.0;
     }
