@@ -96,6 +96,11 @@ impl SimdAABB {
         na::center(&self.mins, &self.maxs)
     }
 
+    /// The half-extents of all the AABBs represented by `self``.
+    pub fn half_extents(&self) -> Vector<SimdReal> {
+        (self.maxs - self.mins) * SimdReal::splat(0.5)
+    }
+
     /// The radius of all the AABBs represented by `self``.
     pub fn radius(&self) -> SimdReal {
         (self.maxs - self.mins).norm()
