@@ -95,6 +95,14 @@ impl<N: SimdRealField> Mul<Vector2<N>> for SdpMatrix2<N> {
     }
 }
 
+impl Mul<Real> for SdpMatrix2<Real> {
+    type Output = SdpMatrix2<Real>;
+
+    fn mul(self, rhs: Real) -> Self::Output {
+        SdpMatrix2::new(self.m11 * rhs, self.m12 * rhs, self.m22 * rhs)
+    }
+}
+
 /// A 3x3 symmetric-definite-positive matrix.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -269,6 +277,21 @@ impl<N: Add<N>> Add<SdpMatrix3<N>> for SdpMatrix3<N> {
             m22: self.m22 + rhs.m22,
             m23: self.m23 + rhs.m23,
             m33: self.m33 + rhs.m33,
+        }
+    }
+}
+
+impl Mul<Real> for SdpMatrix3<Real> {
+    type Output = SdpMatrix3<Real>;
+
+    fn mul(self, rhs: Real) -> Self::Output {
+        SdpMatrix3 {
+            m11: self.m11 * rhs,
+            m12: self.m12 * rhs,
+            m13: self.m13 * rhs,
+            m22: self.m22 * rhs,
+            m23: self.m23 * rhs,
+            m33: self.m33 * rhs,
         }
     }
 }
