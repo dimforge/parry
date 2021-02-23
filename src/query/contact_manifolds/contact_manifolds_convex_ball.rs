@@ -33,12 +33,10 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     ContactData: Default + Copy,
 {
     let local_p2_1 = Point::from(pos12.translation.vector);
-    let proj = shape1.project_local_point(&local_p2_1, cfg!(feature = "dim3"));
+    let proj = shape1.project_local_point(&local_p2_1, false);
     let dpos = local_p2_1 - proj.point;
 
-    #[allow(unused_mut)] // Because `mut local_n1, mut dist` is needed in 2D but not in 3D.
     if let Some((mut local_n1, mut dist)) = Unit::try_new_and_get(dpos, 0.0) {
-        #[cfg(feature = "dim2")]
         if proj.is_inside {
             local_n1 = -local_n1;
             dist = -dist;
