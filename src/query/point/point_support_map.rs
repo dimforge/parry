@@ -49,38 +49,6 @@ where
 }
 
 #[cfg(feature = "dim3")]
-impl PointQuery for Cylinder {
-    #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
-    }
-
-    #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
-        (self.project_local_point(point, false), FeatureId::Unknown)
-    }
-}
-
-#[cfg(feature = "dim3")]
-impl PointQuery for Cone {
-    #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
-    }
-
-    #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
-        (self.project_local_point(point, false), FeatureId::Unknown)
-    }
-}
-
-#[cfg(feature = "dim3")]
 impl PointQuery for ConvexPolyhedron {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {

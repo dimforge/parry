@@ -13,7 +13,11 @@ mod point_ball;
 mod point_bounding_sphere;
 mod point_capsule;
 mod point_composite_shape;
+#[cfg(feature = "dim3")]
+mod point_cone;
 mod point_cuboid;
+#[cfg(feature = "dim3")]
+mod point_cylinder;
 mod point_halfspace;
 mod point_heightfield;
 #[doc(hidden)]
