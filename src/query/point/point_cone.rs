@@ -1,9 +1,7 @@
-use crate::approx::AbsDiffEq;
 use crate::math::{Point, Real, Vector};
-use crate::query::gjk::GJKResult::Proximity;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cone, FeatureId, Segment};
-use na::{self, Unit};
+use na;
 
 impl PointQuery for Cone {
     #[inline]

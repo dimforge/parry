@@ -7,7 +7,7 @@ use crate::query::{PointProjection, PointQuery};
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "dim3")]
-use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
+use crate::shape::ConvexPolyhedron;
 use crate::shape::{FeatureId, SupportMap};
 
 /// Projects a point on a shape using the GJK algorithm.

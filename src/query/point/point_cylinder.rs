@@ -1,9 +1,7 @@
-use crate::approx::AbsDiffEq;
-use crate::math::{Point, Real, Vector};
-use crate::query::gjk::GJKResult::Proximity;
+use crate::math::{Point, Real};
 use crate::query::{PointProjection, PointQuery};
-use crate::shape::{Cylinder, FeatureId, Segment};
-use na::{self, Unit};
+use crate::shape::{Cylinder, FeatureId};
+use na;
 
 impl PointQuery for Cylinder {
     #[inline]

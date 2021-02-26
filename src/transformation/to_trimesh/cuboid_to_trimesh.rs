@@ -1,7 +1,19 @@
+use crate::bounding_volume::AABB;
 use crate::math::Real;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 use na::{self, Point3};
+
+impl AABB {
+    /// Discretize the boundary of this AABB as a triangle-mesh.
+    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+        let center = self.center();
+        let half_extents = self.half_extents();
+        let mut cube_mesh = Cuboid::new(half_extents).to_trimesh();
+        cube_mesh.0.iter_mut().for_each(|p| *p += center.coords);
+        cube_mesh
+    }
+}
 
 impl Cuboid {
     /// Discretize the boundary of this cuboid as a triangle-mesh.

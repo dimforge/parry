@@ -105,6 +105,96 @@ impl AABB {
 
         true
     }
+
+    /// Computes the vertices of this AABB.
+    #[inline]
+    #[cfg(feature = "dim2")]
+    pub fn vertices(&self) -> [Point<Real>; 4] {
+        [
+            Point::new(self.mins.x, self.mins.y),
+            Point::new(self.mins.x, self.maxs.y),
+            Point::new(self.maxs.x, self.mins.y),
+            Point::new(self.maxs.x, self.maxs.y),
+        ]
+    }
+
+    /// Computes the vertices of this AABB.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn vertices(&self) -> [Point<Real>; 8] {
+        [
+            Point::new(self.mins.x, self.mins.y, self.mins.z),
+            Point::new(self.mins.x, self.mins.y, self.maxs.z),
+            Point::new(self.mins.x, self.maxs.y, self.mins.z),
+            Point::new(self.mins.x, self.maxs.y, self.maxs.z),
+            Point::new(self.maxs.x, self.mins.y, self.mins.z),
+            Point::new(self.maxs.x, self.mins.y, self.maxs.z),
+            Point::new(self.maxs.x, self.maxs.y, self.mins.z),
+            Point::new(self.maxs.x, self.maxs.y, self.maxs.z),
+        ]
+    }
+
+    /// Splits this AABB at its center, into four parts (as in a quad-tree).
+    #[inline]
+    #[cfg(feature = "dim2")]
+    pub fn split_at_center(&self) -> [AABB; 4] {
+        let center = self.center();
+
+        [
+            AABB::new(self.mins, center),
+            AABB::new(
+                Point::new(center.x, self.mins.y),
+                Point::new(self.maxs.x, center.y),
+            ),
+            AABB::new(center, self.maxs),
+            AABB::new(
+                Point::new(self.mins.x, center.y),
+                Point::new(center.x, self.maxs.y),
+            ),
+        ]
+    }
+
+    /// Splits this AABB at its center, into height parts (as in an octree).
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn split_at_center(&self) -> [AABB; 8] {
+        let center = self.center();
+
+        [
+            AABB::new(
+                Point::new(self.mins.x, self.mins.y, self.mins.z),
+                Point::new(center.x, center.y, center.z),
+            ),
+            AABB::new(
+                Point::new(center.x, self.mins.y, self.mins.z),
+                Point::new(self.maxs.x, center.y, center.z),
+            ),
+            AABB::new(
+                Point::new(center.x, center.y, self.mins.z),
+                Point::new(self.maxs.x, self.maxs.y, center.z),
+            ),
+            AABB::new(
+                Point::new(self.mins.x, center.y, self.mins.z),
+                Point::new(center.x, self.maxs.y, center.z),
+            ),
+            AABB::new(
+                Point::new(self.mins.x, self.mins.y, center.z),
+                Point::new(center.x, center.y, self.maxs.z),
+            ),
+            AABB::new(
+                Point::new(center.x, self.mins.y, center.z),
+                Point::new(self.maxs.x, center.y, self.maxs.z),
+            ),
+            AABB::new(
+                Point::new(center.x, center.y, center.z),
+                Point::new(self.maxs.x, self.maxs.y, self.maxs.z),
+            ),
+            AABB::new(
+                Point::new(self.mins.x, center.y, center.z),
+                Point::new(center.x, self.maxs.y, self.maxs.z),
+            ),
+        ]
+    }
 }
 
 impl BoundingVolume for AABB {
