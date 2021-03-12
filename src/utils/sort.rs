@@ -1,5 +1,15 @@
 use crate::math::Real;
 
+#[inline]
+/// Sorts a set of three values in increasing order.
+pub fn sort2(a: Real, b: Real) -> (Real, Real) {
+    if a > b {
+        (b, a)
+    } else {
+        (a, b)
+    }
+}
+
 /// Sorts a set of three values in increasing order.
 #[inline]
 pub fn sort3<'a>(a: &'a Real, b: &'a Real, c: &'a Real) -> (&'a Real, &'a Real, &'a Real) {

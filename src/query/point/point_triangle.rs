@@ -11,7 +11,7 @@ fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
 
     #[cfg(feature = "dim3")]
     {
-        // FIXME: is this acceptable to assume the point is inside of the
+        // TODO: is this acceptable to assume the point is inside of the
         // triangle if it is close enough?
         PointProjection::new(relative_eq!(proj, *pt), proj)
     }
@@ -246,8 +246,8 @@ impl PointQueryWithLocation for Triangle {
         } else {
             // We have to project on the closest edge.
 
-            // FIXME: this might be optimizable.
-            // FIXME: be careful with numerical errors.
+            // TODO: this might be optimizable.
+            // TODO: be careful with numerical errors.
             let v = ab_ap / (ab_ap - ab_bp); // proj on ab = a + ab * v
             let w = ac_ap / (ac_ap - ac_cp); // proj on ac = a + ac * w
             let u = (ac_bp - ab_bp) / (ac_bp - ab_bp + ab_cp - ac_cp); // proj on bc = b + bc * u

@@ -19,7 +19,7 @@ pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::cov::cov;
 pub use self::hashable_partial_eq::HashablePartialEq;
-pub(crate) use self::sort::sort3;
+pub(crate) use self::sort::{sort2, sort3};
 pub use self::sorted_pair::SortedPair;
 pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WSign};
