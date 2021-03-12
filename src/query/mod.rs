@@ -82,8 +82,9 @@ pub mod details {
     };
 
     pub use super::distance::{
-        distance_ball_ball, distance_composite_shape_shape, distance_halfspace_support_map,
-        distance_shape_composite_shape, distance_support_map_halfspace,
+        distance_ball_ball, distance_ball_convex_polyhedron, distance_composite_shape_shape,
+        distance_convex_polyhedron_ball, distance_cuboid_cuboid, distance_halfspace_support_map,
+        distance_segment_segment, distance_shape_composite_shape, distance_support_map_halfspace,
         distance_support_map_support_map, distance_support_map_support_map_with_params,
         CompositeShapeAgainstAnyDistanceVisitor,
     };

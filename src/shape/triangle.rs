@@ -144,6 +144,22 @@ impl Triangle {
         [self.b - self.a, self.c - self.b, self.a - self.c]
     }
 
+    /// Return the edge segment of this cuboid with a normal cone containing
+    /// a direction that that maximizes the dot product with `local_dir`.
+    pub fn local_support_edge_segment(&self, dir: Vector<Real>) -> Segment {
+        let dots = na::Vector3::new(
+            dir.dot(&self.a.coords),
+            dir.dot(&self.b.coords),
+            dir.dot(&self.c.coords),
+        );
+
+        match dots.imin() {
+            0 => Segment::new(self.b, self.c),
+            1 => Segment::new(self.c, self.a),
+            _ => Segment::new(self.a, self.b),
+        }
+    }
+
     /// Return the face of this triangle with a normal that maximizes
     /// the dot product with `dir`.
     #[cfg(feature = "dim3")]

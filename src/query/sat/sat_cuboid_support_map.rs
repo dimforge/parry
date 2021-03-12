@@ -6,9 +6,9 @@ use na::Unit;
 /// Computes the separation between a cuboid an a convex shape implementing the `SupportMap` trait,
 /// along the given axis.
 #[cfg(feature = "dim3")]
-pub fn cuboid_support_map_compute_separation_wrt_local_line<S: SupportMap>(
+pub fn cuboid_support_map_compute_separation_wrt_local_line(
     cube1: &Cuboid,
-    shape2: &S,
+    shape2: &impl SupportMap,
     pos12: &Isometry<Real>,
     axis1: &Unit<Vector<Real>>,
 ) -> (Real, Unit<Vector<Real>>) {

@@ -1,6 +1,8 @@
 //! Support mapping based Cuboid shape.
 
 use crate::math::{Point, Real, Vector};
+#[cfg(feature = "dim3")]
+use crate::shape::Segment;
 use crate::shape::{PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 
@@ -98,30 +100,24 @@ impl Cuboid {
     //     CuboidFeatureVertex { vertex, vid }
     // }
 
-    // #[cfg(feature = "dim3")
-    // pub(crate) fn support_edge(&self, local_dir: Vector<Real>) -> CuboidFeatureEdge {
-    //     let he = self.half_extents;
-    //     let i = local_dir.iamin();
-    //     let j = (i + 1) % 3;
-    //     let k = (i + 2) % 3;
-    //     let mut a = Point::origin();
-    //     a[i] = he[i];
-    //     a[j] = he[j].copysign(local_dir[j]);
-    //     a[k] = he[k].copysign(local_dir[k]);
-    //
-    //     let mut b = a;
-    //     b[i] = -he[i];
-    //
-    //     let vid1 = vertex_feature_id(a);
-    //     let vid2 = vertex_feature_id(b);
-    //     let eid = (vid1.max(vid2) << 3) | vid1.min(vid2) | 0b11_000_000;
-    //
-    //     CuboidFeatureEdge {
-    //         vertices: [a, b],
-    //         vids: [vid1, vid2],
-    //         eid,
-    //     }
-    // }
+    /// Return the edge segment of this cuboid with a normal cone containing
+    /// a direction that that maximizes the dot product with `local_dir`.
+    #[cfg(feature = "dim3")]
+    pub fn local_support_edge_segment(&self, local_dir: Vector<Real>) -> Segment {
+        let he = self.half_extents;
+        let i = local_dir.iamin();
+        let j = (i + 1) % 3;
+        let k = (i + 2) % 3;
+        let mut a = Point::origin();
+        a[i] = he[i];
+        a[j] = he[j].copysign(local_dir[j]);
+        a[k] = he[k].copysign(local_dir[k]);
+
+        let mut b = a;
+        b[i] = -he[i];
+
+        Segment::new(a, b)
+    }
 
     /// Computes the face with a normal that maximizes the dot-product with `local_dir`.
     #[cfg(feature = "dim3")]
