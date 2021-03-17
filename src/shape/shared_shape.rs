@@ -1,12 +1,11 @@
 use crate::math::{Isometry, Point, Real, Vector, DIM};
-use crate::shape::shape::ShapeType::HalfSpace;
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
 use crate::shape::DeserializableTypedShape;
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, HeightField, Polyline, RoundShape, Segment, Shape, TriMesh,
-    Triangle,
+    Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
+    TriMesh, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
@@ -45,7 +44,7 @@ impl SharedShape {
     }
 
     /// Initialize a plane shape defined by its outward normal.
-    pub fn halfspace(outward_normal: &Unit<Vector<Real>>) -> Self {
+    pub fn halfspace(outward_normal: Unit<Vector<Real>>) -> Self {
         SharedShape(Arc::new(HalfSpace::new(outward_normal)))
     }
 

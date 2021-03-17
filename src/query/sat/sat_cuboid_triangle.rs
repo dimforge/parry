@@ -1,3 +1,4 @@
+#[cfg(feature = "dim3")]
 use crate::approx::AbsDiffEq;
 use crate::math::{Isometry, Real, Vector};
 #[cfg(feature = "dim3")]

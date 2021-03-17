@@ -1,5 +1,6 @@
 use crate::math::Real;
 
+#[cfg(feature = "dim3")]
 #[inline]
 /// Sorts a set of three values in increasing order.
 pub fn sort2(a: Real, b: Real) -> (Real, Real) {
