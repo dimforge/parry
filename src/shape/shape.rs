@@ -317,6 +317,11 @@ impl dyn Shape {
         self.downcast_ref()
     }
 
+    /// Converts this abstract shape to a halfspace, if it is one.
+    pub fn as_halfspace(&self) -> Option<&HalfSpace> {
+        self.downcast_ref()
+    }
+
     /// Converts this abstract shape to a cuboid, if it is one.
     pub fn as_segment(&self) -> Option<&Segment> {
         self.downcast_ref()

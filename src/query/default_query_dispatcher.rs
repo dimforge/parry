@@ -513,6 +513,36 @@ where
             (ShapeType::Triangle, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Triangle) => {
                 contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, prediction, manifold)
             }
+            (ShapeType::HalfSpace, _) => {
+                if let Some((pfm2, border_radius2)) = shape2.as_polygonal_feature_map() {
+                    contact_manifold_halfspace_pfm(
+                        pos12,
+                        shape1.as_halfspace().unwrap(),
+                        pfm2,
+                        border_radius2,
+                        prediction,
+                        manifold,
+                        false
+                    )
+                } else {
+                    return Err(Unsupported)
+                }
+            }
+            (_, ShapeType::HalfSpace) => {
+                if let Some((pfm1, border_radius1)) = shape1.as_polygonal_feature_map() {
+                    contact_manifold_halfspace_pfm(
+                        &pos12.inverse(),
+                        shape2.as_halfspace().unwrap(),
+                        pfm1,
+                        border_radius1,
+                        prediction,
+                        manifold,
+                        true
+                    )
+                } else {
+                    return Err(Unsupported)
+                }
+            }
             _ => {
                 if let (Some(pfm1), Some(pfm2)) = (
                     shape1.as_polygonal_feature_map(),

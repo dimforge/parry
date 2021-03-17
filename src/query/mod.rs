@@ -76,6 +76,7 @@ pub mod details {
         contact_manifold_convex_ball, contact_manifold_convex_ball_shapes,
         contact_manifold_cuboid_cuboid, contact_manifold_cuboid_cuboid_shapes,
         contact_manifold_cuboid_triangle, contact_manifold_cuboid_triangle_shapes,
+        contact_manifold_halfspace_pfm, contact_manifold_halfspace_pfm_shapes,
         contact_manifold_pfm_pfm, contact_manifold_pfm_pfm_shapes,
         contact_manifolds_heightfield_shape, contact_manifolds_heightfield_shape_shapes,
         contact_manifolds_trimesh_shape_shapes,
