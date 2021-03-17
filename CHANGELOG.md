@@ -1,4 +1,14 @@
 # Change Log
+
+## v0.2.1 - WIP
+### Added
+- Add a special case for the triangle/cuboid edge-edge case in the SAT implementation.
+- Add contact manifold computation between a convex shape and a HalfSpace.
+- Add a special case (instead of GJK) for computing closest points between two cuboids.
+- Add a special case (instead of GJK) for computing closest points between a cuboid and a triangle.
+- Add a special case (instead of GJK) for computing the distance between a ball and a convex shape.
+- Fix the separation computation between a cuboid and a support-map shape in the SAT implementation.
+
 ## v0.2.0
 ### Added
 - Add the `Shape::as_typed_shape` method to convert the shape trait-object
