@@ -8,14 +8,25 @@ fn run_test<S>(name: &str, shape: S)
 where
     S: Shape,
 {
+    let mut rng = oorandom::Rand32::new(42);
+
     for _ in 0..1000 {
-        let ray_origin = Point3::from(rand::random::<Vector3<f32>>().normalize() * 5.0);
+        let ray_origin = Point3::from(Vector3::from_fn(|_, _| rng.rand_float()).normalize() * 5.0);
         let ray = Ray::new(ray_origin, Point3::origin() - ray_origin);
 
-        let rotation = if rand::random::<f32>() < 0.01 {
+        let rotation = if rng.rand_float() < 0.01 {
             UnitQuaternion::identity()
         } else {
-            rand::random::<UnitQuaternion<f32>>()
+            na::Unit::try_new(
+                na::Quaternion::new(
+                    rng.rand_float(),
+                    rng.rand_float(),
+                    rng.rand_float(),
+                    rng.rand_float(),
+                ),
+                1.0e-5,
+            )
+            .unwrap_or(UnitQuaternion::identity())
         };
         let position = Isometry3::from_parts(Translation3::identity(), rotation);
 

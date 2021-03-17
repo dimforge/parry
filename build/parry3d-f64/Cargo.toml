@@ -50,5 +50,4 @@ rustc-hash = "1"
 
 
 [dev-dependencies]
-rand_isaac = "0.3"
-rand       = { version = "0.8", default-features = false }
+oorandom = "11"

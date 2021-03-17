@@ -50,5 +50,5 @@ indexmap = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = "1"
 
 [dev-dependencies]
-rand  = { version = "0.8", default-features = false }
 simba = { version = "0.4", features = [ "partial_fixed_point_support" ] }
+oorandom = "11"
