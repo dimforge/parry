@@ -81,6 +81,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     // FIXME: find a more efficient way of doing this.
     let old_manifold_points = manifold.points.clone();
     manifold.clear();
+
     let local_n2 = pos21 * -best_sep.1;
 
     // Now the reference feature is from `cuboid1` and the best separation is `best_sep`.

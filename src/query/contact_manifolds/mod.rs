@@ -19,6 +19,9 @@ pub use self::contact_manifolds_cuboid_cuboid::{
 pub use self::contact_manifolds_cuboid_triangle::{
     contact_manifold_cuboid_triangle, contact_manifold_cuboid_triangle_shapes,
 };
+pub use self::contact_manifolds_halfspace_pfm::{
+    contact_manifold_halfspace_pfm, contact_manifold_halfspace_pfm_shapes,
+};
 pub use self::contact_manifolds_heightfield_composite_shape::contact_manifolds_heightfield_composite_shape;
 pub use self::contact_manifolds_heightfield_shape::{
     contact_manifolds_heightfield_shape, contact_manifolds_heightfield_shape_shapes,
@@ -48,6 +51,7 @@ mod contact_manifolds_composite_shape_composite_shape;
 mod contact_manifolds_composite_shape_shape;
 mod contact_manifolds_cuboid_cuboid;
 mod contact_manifolds_cuboid_triangle;
+mod contact_manifolds_halfspace_pfm;
 mod contact_manifolds_heightfield_composite_shape;
 mod contact_manifolds_heightfield_shape;
 mod contact_manifolds_pfm_pfm;

@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::shape::shape::ShapeType::HalfSpace;
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
@@ -10,6 +11,7 @@ use crate::shape::{
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
+use na::Unit;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -40,6 +42,11 @@ impl SharedShape {
     /// Initialize a ball shape defined by its radius.
     pub fn ball(radius: Real) -> Self {
         SharedShape(Arc::new(Ball::new(radius)))
+    }
+
+    /// Initialize a plane shape defined by its outward normal.
+    pub fn halfspace(outward_normal: &Unit<Vector<Real>>) -> Self {
+        SharedShape(Arc::new(HalfSpace::new(outward_normal)))
     }
 
     /// Initialize a cylindrical shape defined by its half-height
