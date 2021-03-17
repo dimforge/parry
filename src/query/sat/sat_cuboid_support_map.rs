@@ -5,6 +5,7 @@ use na::Unit;
 
 /// Computes the separation between a cuboid an a convex shape implementing the `SupportMap` trait,
 /// along the given axis.
+// TODO: this is a very slow approach. We should only do special-cases instead.
 #[cfg(feature = "dim3")]
 pub fn cuboid_support_map_compute_separation_wrt_local_line(
     cube1: &Cuboid,
@@ -12,14 +13,28 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
     pos12: &Isometry<Real>,
     axis1: &Unit<Vector<Real>>,
 ) -> (Real, Unit<Vector<Real>>) {
-    let signum = (1.0 as Real).copysign(pos12.translation.vector.dot(axis1));
-    let axis1 = Unit::new_unchecked(**axis1 * signum);
-    let axis2 = pos12.inverse_transform_unit_vector(&-axis1);
-    let local_pt1 = cube1.local_support_point_toward(&axis1);
-    let local_pt2 = shape2.local_support_point_toward(&axis2);
-    let pt2 = pos12 * local_pt2;
-    let separation = (pt2 - local_pt1).dot(&axis1);
-    (separation, axis1)
+    let axis1_2 = pos12.inverse_transform_unit_vector(&axis1);
+    let separation1 = {
+        let axis2 = -axis1_2;
+        let local_pt1 = cube1.local_support_point_toward(&axis1);
+        let local_pt2 = shape2.local_support_point_toward(&axis2);
+        let pt2 = pos12 * local_pt2;
+        (pt2 - local_pt1).dot(&axis1)
+    };
+
+    let separation2 = {
+        let axis2 = axis1_2;
+        let local_pt1 = cube1.local_support_point_toward(&-*axis1);
+        let local_pt2 = shape2.local_support_point_toward(&axis2);
+        let pt2 = pos12 * local_pt2;
+        (pt2 - local_pt1).dot(&-*axis1)
+    };
+
+    if separation1 > separation2 {
+        (separation1, *axis1)
+    } else {
+        (separation2, -*axis1)
+    }
 }
 
 /// Finds the best separating edge between a cuboid and a convex shape implementing the `Supportmap` trait.

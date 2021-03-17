@@ -78,12 +78,12 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 
             if separation_a > best_sep {
                 best_sep = separation_a;
-                best_axis = *axis;
+                best_axis = *axis / axis_norm;
             }
 
             if separation_b > best_sep {
                 best_sep = separation_b;
-                best_axis = -*axis;
+                best_axis = -*axis / axis_norm;
             }
         }
     }
