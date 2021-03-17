@@ -51,7 +51,7 @@ pub trait PointQuery {
 
     /// Tests if the given point is inside of `self`.
     fn contains_local_point(&self, pt: &Point<Real>) -> bool {
-        self.project_local_point(pt, false).is_inside
+        self.project_local_point(pt, true).is_inside
     }
 
     /// Projects a point on `self` transformed by `m`.

@@ -127,7 +127,7 @@ impl PointQueryWithLocation for Tetrahedron {
             let dabc = ap_x_ab.dot(nabc);
             let dabd = ap_x_ab.dot(nabd);
 
-            // FIXME: the case where ab_ab == _0 is not well defined.
+            // TODO: the case where ab_ab == _0 is not well defined.
             if ab_ab != _0 && dabc >= _0 && dabd >= _0 && ap_ab >= _0 && ap_ab <= ab_ab {
                 // Voronoi region of `ab`.
                 let u = ap_ab / ab_ab;
@@ -262,7 +262,7 @@ impl PointQueryWithLocation for Tetrahedron {
             let _1: Real = 1.0;
 
             if dabc < _0 && dbca < _0 && dacb < _0 {
-                let n = ab.cross(ac); // FIXME: is is possible to avoid this cross product?
+                let n = ab.cross(ac); // TODO: is is possible to avoid this cross product?
                 if n.dot(ad) * n.dot(ap) < _0 {
                     // Voronoï region of the face.
 
@@ -337,7 +337,9 @@ impl PointQueryWithLocation for Tetrahedron {
 
         if !solid {
             // XXX: implement the non-solid projection.
-            unimplemented!("Non-solid ray-cast on a tetrahedron is not yet implemented.")
+            unimplemented!(
+                "Non-solid ray-cast/point projection on a tetrahedron is not yet implemented."
+            )
         }
 
         let proj = PointProjection::new(true, *pt);
