@@ -45,7 +45,6 @@ mod bounding_sphere_heightfield;
 mod bounding_sphere_polyline;
 mod bounding_sphere_segment;
 mod bounding_sphere_triangle;
-#[cfg(feature = "dim3")]
 mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
 mod simd_aabb;
