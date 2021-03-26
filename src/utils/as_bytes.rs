@@ -25,7 +25,7 @@ macro_rules! generic_as_bytes_impl(
 
 generic_as_bytes_impl!(Vector2, 2);
 generic_as_bytes_impl!(Point2, 2);
-generic_as_bytes_impl!(Vector3, 2);
-generic_as_bytes_impl!(Point3, 2);
+generic_as_bytes_impl!(Vector3, 3);
+generic_as_bytes_impl!(Point3, 3);
 
-// FIXME: implement for all `T: Copy` insead?
+// FIXME: implement for all `T: Copy` instead?
