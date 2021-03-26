@@ -15,6 +15,56 @@ pub struct AABB {
 }
 
 impl AABB {
+    /// The vertex indices of each edge of this AABB.
+    ///
+    /// This gives, for each edge of this AABB, the indices of its
+    /// vertices when taken from the `self.vertices()` array.
+    /// Here is how the faces are numbered, assuming
+    /// a right-handed coordinate system:
+    ///
+    ///    y             3 - 2
+    ///    |           7 − 6 |
+    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
+    ///   /            4 - 5
+    ///  z
+    #[cfg(feature = "dim3")]
+    pub const EDGES_VERTEX_IDS: [(usize, usize); 12] = [
+        (0, 1),
+        (0, 3),
+        (0, 4),
+        (1, 2),
+        (1, 5),
+        (3, 2),
+        (2, 6),
+        (3, 7),
+        (4, 5),
+        (4, 7),
+        (5, 6),
+        (7, 6),
+    ];
+
+    /// The vertex indices of each face of this AABB.
+    ///
+    /// This gives, for each face of this AABB, the indices of its
+    /// vertices when taken from the `self.vertices()` array.
+    /// Here is how the faces are numbered, assuming
+    /// a right-handed coordinate system:
+    ///
+    ///    y             3 - 2
+    ///    |           7 − 6 |
+    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
+    ///   /            4 - 5
+    ///  z
+    #[cfg(feature = "dim3")]
+    pub const FACES_VERTEX_IDS: [(usize, usize, usize, usize); 6] = [
+        (1, 2, 6, 5),
+        (0, 3, 7, 4),
+        (2, 3, 7, 6),
+        (1, 0, 4, 5),
+        (4, 5, 6, 7),
+        (0, 1, 2, 3),
+    ];
+
     /// Creates a new AABB.
     ///
     /// # Arguments:
@@ -124,13 +174,13 @@ impl AABB {
     pub fn vertices(&self) -> [Point<Real>; 8] {
         [
             Point::new(self.mins.x, self.mins.y, self.mins.z),
-            Point::new(self.mins.x, self.mins.y, self.maxs.z),
-            Point::new(self.mins.x, self.maxs.y, self.mins.z),
-            Point::new(self.mins.x, self.maxs.y, self.maxs.z),
             Point::new(self.maxs.x, self.mins.y, self.mins.z),
-            Point::new(self.maxs.x, self.mins.y, self.maxs.z),
             Point::new(self.maxs.x, self.maxs.y, self.mins.z),
+            Point::new(self.mins.x, self.maxs.y, self.mins.z),
+            Point::new(self.mins.x, self.mins.y, self.maxs.z),
+            Point::new(self.maxs.x, self.mins.y, self.maxs.z),
             Point::new(self.maxs.x, self.maxs.y, self.maxs.z),
+            Point::new(self.mins.x, self.maxs.y, self.maxs.z),
         ]
     }
 
