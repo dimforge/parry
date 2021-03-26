@@ -9,8 +9,8 @@ use num::Zero;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct BoundingSphere {
-    center: Point<Real>,
-    radius: Real,
+    pub center: Point<Real>,
+    pub radius: Real,
 }
 
 impl BoundingSphere {
