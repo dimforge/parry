@@ -3,6 +3,31 @@ use na::Unit;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::SupportMap;
 
+/// A support mapping that is a single point.
+pub struct ConstantPoint(pub Point<Real>);
+
+impl SupportMap for ConstantPoint {
+    #[inline]
+    fn support_point(&self, m: &Isometry<Real>, _: &Vector<Real>) -> Point<Real> {
+        m * self.0
+    }
+
+    #[inline]
+    fn support_point_toward(&self, m: &Isometry<Real>, _: &Unit<Vector<Real>>) -> Point<Real> {
+        m * self.0
+    }
+
+    #[inline]
+    fn local_support_point(&self, _: &Vector<Real>) -> Point<Real> {
+        self.0
+    }
+
+    #[inline]
+    fn local_support_point_toward(&self, _: &Unit<Vector<Real>>) -> Point<Real> {
+        self.0
+    }
+}
+
 /// A support mapping that is the point at (0.0, 0.0, 0.0).
 pub struct ConstantOrigin;
 

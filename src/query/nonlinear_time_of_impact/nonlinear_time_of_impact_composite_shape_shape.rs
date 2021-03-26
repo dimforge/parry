@@ -1,19 +1,20 @@
 use crate::bounding_volume::{BoundingSphere, SimdAABB};
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
-use crate::motion::{RigidMotion, RigidMotionComposition};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
-use crate::query::{self, QueryDispatcher, TOI};
+use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
 use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
 use simba::simd::SimdValue;
 
 /// Time Of Impact of a composite shape with any other shape, under a rigid motion (translation + rotation).
 pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     dispatcher: &D,
-    motion12: &dyn RigidMotion,
+    motion1: &NonlinearRigidMotion,
     g1: &G1,
+    motion2: &NonlinearRigidMotion,
     g2: &dyn Shape,
-    max_toi: Real,
-    target_distance: Real,
+    start_time: Real,
+    end_time: Real,
+    stop_at_penetration: bool,
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
@@ -21,11 +22,13 @@ where
 {
     let mut visitor = NonlinearTOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
-        motion12,
+        motion1,
         g1,
+        motion2,
         g2,
-        max_toi,
-        target_distance,
+        start_time,
+        end_time,
+        stop_at_penetration,
     );
 
     g1.typed_quadtree()
@@ -36,11 +39,13 @@ where
 /// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
 pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     dispatcher: &D,
-    motion12: &dyn RigidMotion,
+    motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,
+    motion2: &NonlinearRigidMotion,
     g2: &G2,
-    max_toi: Real,
-    target_distance: Real,
+    start_time: Real,
+    end_time: Real,
+    stop_at_penetration: bool,
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
@@ -48,22 +53,27 @@ where
 {
     nonlinear_time_of_impact_composite_shape_shape(
         dispatcher,
-        &motion12.inverse(),
+        motion2,
         g2,
+        motion1,
         g1,
-        max_toi,
-        target_distance,
+        start_time,
+        end_time,
+        stop_at_penetration,
     )
+    .map(|toi| toi.swapped())
 }
 
 /// A visitor used to determine the non-linear time of impact between a composite shape and another shape.
 pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
     sphere2: BoundingSphere,
-    max_toi: Real,
-    target_distance: Real,
+    start_time: Real,
+    end_time: Real,
+    stop_at_penetration: bool,
 
     dispatcher: &'a D,
-    motion12: &'a dyn RigidMotion,
+    motion1: &'a NonlinearRigidMotion,
+    motion2: &'a NonlinearRigidMotion,
     g1: &'a G1,
     g2: &'a dyn Shape,
 }
@@ -77,18 +87,22 @@ where
     /// a composite shape and another shape.
     pub fn new(
         dispatcher: &'a D,
-        motion12: &'a dyn RigidMotion,
+        motion1: &'a NonlinearRigidMotion,
         g1: &'a G1,
+        motion2: &'a NonlinearRigidMotion,
         g2: &'a dyn Shape,
-        max_toi: Real,
-        target_distance: Real,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
     ) -> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1> {
         NonlinearTOICompositeShapeShapeBestFirstVisitor {
             dispatcher,
-            sphere2: g2.compute_local_aabb().bounding_sphere(),
-            max_toi,
-            target_distance,
-            motion12,
+            sphere2: g2.compute_local_bounding_sphere(),
+            start_time,
+            end_time,
+            stop_at_penetration,
+            motion1,
+            motion2,
             g1,
             g2,
         }
@@ -122,17 +136,20 @@ where
             let center1 = centers1.extract(ii);
             let ball1 = Ball::new(radius1[ii]);
             let ball2 = Ball::new(self.sphere2.radius());
-            let ball_motion12_part = self
-                .motion12
-                .prepend_translation(self.sphere2.center().coords);
-            let ball_motion12 = ball_motion12_part.append_translation(-center1.coords);
+            let ball_motion1 = self.motion1.prepend_translation(center1.coords);
+            let ball_motion2 = self.motion2.prepend_translation(self.sphere2.center.coords);
 
-            if let Some(toi) = query::details::nonlinear_time_of_impact_ball_ball(
-                &ball_motion12,
+            if let Some(toi) = query::details::nonlinear_time_of_impact_support_map_support_map(
+                self.dispatcher,
+                &ball_motion1,
                 &ball1,
+                &ball1,
+                &ball_motion2,
                 &ball2,
-                self.max_toi,
-                self.target_distance,
+                &ball2,
+                self.start_time,
+                self.end_time,
+                NonlinearTOIMode::StopAtPenetration,
             ) {
                 if let Some(data) = data {
                     if toi.toi < best && data[ii].is_some() {
@@ -141,25 +158,31 @@ where
                             let toi = if let Some(part_pos1) = part_pos1 {
                                 self.dispatcher
                                     .nonlinear_time_of_impact(
-                                        &self.motion12.append_transformation(part_pos1.inverse()),
+                                        &self.motion1.prepend(*part_pos1),
                                         g1,
+                                        self.motion2,
                                         self.g2,
-                                        self.max_toi,
-                                        self.target_distance,
+                                        self.start_time,
+                                        self.end_time,
+                                        self.stop_at_penetration,
                                     )
                                     .unwrap_or(None)
                                     .map(|toi| toi.transform1_by(part_pos1))
                             } else {
                                 self.dispatcher
                                     .nonlinear_time_of_impact(
-                                        self.motion12,
+                                        self.motion1,
                                         g1,
+                                        self.motion2,
                                         self.g2,
-                                        self.max_toi,
-                                        self.target_distance,
+                                        self.start_time,
+                                        self.end_time,
+                                        self.stop_at_penetration,
                                     )
                                     .unwrap_or(None)
                             };
+
+                            // println!("Found toi: {:?}", toi);
 
                             if let Some(toi) = toi {
                                 weights[ii] = toi.toi;

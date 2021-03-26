@@ -1,9 +1,9 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::motion::RigidMotion;
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::{
-    self, ClosestPoints, Contact, ContactManifold, QueryDispatcher, Unsupported, TOI,
+    self, details::NonlinearTOIMode, ClosestPoints, Contact, ContactManifold, NonlinearRigidMotion,
+    QueryDispatcher, Unsupported, TOI,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
@@ -138,6 +138,10 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
         if let (Some(b1), Some(b2)) = (ball1, ball2) {
             Ok(query::details::contact_ball_ball(pos12, b1, b2, prediction))
+        // } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
+        //     Ok(query::details::contact_cuboid_cuboid(
+        //         pos12, c1, c2, prediction,
+        //     ))
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
@@ -182,9 +186,20 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         shape2: &dyn Shape,
         max_dist: Real,
     ) -> Result<ClosestPoints, Unsupported> {
-        if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
+        let ball1 = shape1.as_ball();
+        let ball2 = shape2.as_ball();
+
+        if let (Some(b1), Some(b2)) = (ball1, ball2) {
             Ok(query::details::closest_points_ball_ball(
                 &pos12, b1, b2, max_dist,
+            ))
+        } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
+            Ok(query::details::closest_points_ball_convex_polyhedron(
+                pos12, b1, shape2, max_dist,
+            ))
+        } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
+            Ok(query::details::closest_points_convex_polyhedron_ball(
+                pos12, shape1, b2, max_dist,
             ))
         } else if let (Some(s1), Some(s2)) =
             (shape1.as_shape::<Segment>(), shape2.as_shape::<Segment>())
@@ -192,18 +207,18 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             Ok(query::details::closest_points_segment_segment(
                 &pos12, s1, s2, max_dist,
             ))
-        } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
-            Ok(query::details::closest_points_cuboid_cuboid(
-                pos12, c1, c2, max_dist,
-            ))
+        // } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
+        //     Ok(query::details::closest_points_cuboid_cuboid(
+        //         pos12, c1, c2, max_dist,
+        //     ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_segment(), shape2.as_segment()) {
             Ok(query::details::closest_points_segment_segment(
                 pos12, s1, s2, max_dist,
             ))
-        } else if let (Some(c1), Some(t2)) = (shape1.as_cuboid(), shape2.as_triangle()) {
-            Ok(query::details::closest_points_cuboid_triangle(
-                pos12, c1, t2, max_dist,
-            ))
+        // } else if let (Some(c1), Some(t2)) = (shape1.as_cuboid(), shape2.as_triangle()) {
+        //     Ok(query::details::closest_points_cuboid_triangle(
+        //         pos12, c1, t2, max_dist,
+        //     ))
         } else if let (Some(t1), Some(c2)) = (shape1.as_triangle(), shape2.as_cuboid()) {
             Ok(query::details::closest_points_triangle_cuboid(
                 pos12, t1, c2, max_dist,
@@ -313,50 +328,50 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn nonlinear_time_of_impact(
         &self,
-        motion12: &dyn RigidMotion,
+        motion1: &NonlinearRigidMotion,
         shape1: &dyn Shape,
+        motion2: &NonlinearRigidMotion,
         shape2: &dyn Shape,
-        max_toi: Real,
-        target_distance: Real,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
     ) -> Result<Option<TOI>, Unsupported> {
-        if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
-            Ok(query::details::nonlinear_time_of_impact_ball_ball(
-                motion12,
-                b1,
-                b2,
-                max_toi,
-                target_distance,
-            ))
-        } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
+        if let (Some(sm1), Some(sm2)) = (shape1.as_support_map(), shape2.as_support_map()) {
+            let mode = if stop_at_penetration {
+                NonlinearTOIMode::StopAtPenetration
+            } else {
+                NonlinearTOIMode::directional_toi(shape1, shape2)
+            };
+
             Ok(
                 query::details::nonlinear_time_of_impact_support_map_support_map(
-                    motion12,
-                    s1,
-                    s2,
-                    max_toi,
-                    target_distance,
+                    self, motion1, sm1, shape1, motion2, sm2, shape2, start_time, end_time, mode,
                 ),
             )
         } else if let Some(c1) = shape1.as_composite_shape() {
             Ok(
                 query::details::nonlinear_time_of_impact_composite_shape_shape(
                     self,
-                    motion12,
+                    motion1,
                     c1,
+                    motion2,
                     shape2,
-                    max_toi,
-                    target_distance,
+                    start_time,
+                    end_time,
+                    stop_at_penetration,
                 ),
             )
         } else if let Some(c2) = shape2.as_composite_shape() {
             Ok(
                 query::details::nonlinear_time_of_impact_shape_composite_shape(
                     self,
-                    motion12,
+                    motion1,
                     shape1,
+                    motion2,
                     c2,
-                    max_toi,
-                    target_distance,
+                    start_time,
+                    end_time,
+                    stop_at_penetration,
                 ),
             )
         /* } else if let (Some(p1), Some(s2)) = (shape1.as_shape::<HalfSpace>(), shape2.as_support_map()) {

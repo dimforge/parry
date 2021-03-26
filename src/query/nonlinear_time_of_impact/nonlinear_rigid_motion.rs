@@ -56,20 +56,27 @@ impl NonlinearRigidMotion {
         }
     }
 
-    /// Create a `RigidMotion` that always returns the identity matrix.
+    /// Create a `NonlinearRigidMotion` that always returns the identity matrix.
     pub fn identity() -> Self {
         Self::constant_position(Isometry::identity())
     }
 
-    /// Create a `RigidMotion` that always return `pos`.
+    /// Create a `NonlinearRigidMotion` that always return `pos`.
     pub fn constant_position(pos: Isometry<Real>) -> Self {
         Self {
             t0: 0.0,
             start: pos,
             linvel: na::zero(),
             angvel: na::zero(),
-            local_center: pos * Point::origin(),
+            local_center: Point::origin(),
         }
+    }
+
+    fn set_start(&mut self, new_start: Isometry<Real>) {
+        // NOTE: we need to adjust the local_center so that the angular
+        // velocity is still expressed wrt. the original center.
+        self.local_center = new_start.inverse_transform_point(&(self.start * self.local_center));
+        self.start = new_start;
     }
 
     /// Freezes this motion at the time `t`.
@@ -88,7 +95,7 @@ impl NonlinearRigidMotion {
     #[must_use]
     pub fn append_translation(&self, tra: Vector<Real>) -> Self {
         let mut result = self.clone();
-        result.start = Translation::from(tra) * result.start;
+        result.set_start(Translation::from(tra) * result.start);
         result
     }
 
@@ -96,7 +103,7 @@ impl NonlinearRigidMotion {
     #[must_use]
     pub fn prepend_translation(&self, tra: Vector<Real>) -> Self {
         let mut result = self.clone();
-        result.start = result.start * Translation::from(tra);
+        result.set_start(result.start * Translation::from(tra));
         result
     }
 
@@ -104,7 +111,7 @@ impl NonlinearRigidMotion {
     #[must_use]
     pub fn append(&self, iso: Isometry<Real>) -> Self {
         let mut result = self.clone();
-        result.start = iso * result.start;
+        result.set_start(iso * result.start);
         result
     }
 
@@ -112,7 +119,7 @@ impl NonlinearRigidMotion {
     #[must_use]
     pub fn prepend(&self, iso: Isometry<Real>) -> Self {
         let mut result = self.clone();
-        result.start = result.start * iso;
+        result.set_start(result.start * iso);
         result
     }
 

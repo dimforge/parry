@@ -1,11 +1,12 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::motion::RigidMotion;
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
-use crate::query::{ClosestPoints, Contact, ContactManifold, Unsupported, TOI};
+use crate::query::{
+    ClosestPoints, Contact, ContactManifold, NonlinearRigidMotion, Unsupported, TOI,
+};
 use crate::shape::Shape;
 
 /// A query dispatcher for queries relying on spatial coherence, including contact-manifold computation.
-pub trait PersistentQueryDispatcher<ManifoldData, ContactData>: QueryDispatcher {
+pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryDispatcher {
     /// Compute all the contacts between two shapes.
     ///
     /// The output is written into `manifolds` and `context`. Both can persist
@@ -104,11 +105,13 @@ pub trait QueryDispatcher: Send + Sync {
     /// Computes the smallest time of impact of two shapes under translational movement.
     fn nonlinear_time_of_impact(
         &self,
-        motion12: &dyn RigidMotion,
+        motion1: &NonlinearRigidMotion,
         g1: &dyn Shape,
+        motion2: &NonlinearRigidMotion,
         g2: &dyn Shape,
-        max_toi: Real,
-        target_distance: Real,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
     ) -> Result<Option<TOI>, Unsupported>;
 }
 
@@ -162,10 +165,12 @@ where
     ) -> Option<TOI>);
 
     chain_method!(nonlinear_time_of_impact(
-        motion12: &dyn RigidMotion,
+        motion1: &NonlinearRigidMotion,
         g1: &dyn Shape,
+        motion2: &NonlinearRigidMotion,
         g2: &dyn Shape,
-        max_toi: Real,
-        target_distance: Real,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
     ) -> Option<TOI>);
 }

@@ -8,6 +8,7 @@ pub use self::contact_ball_convex_polyhedron::{
 pub use self::contact_composite_shape_shape::{
     contact_composite_shape_shape, contact_shape_composite_shape,
 };
+pub use self::contact_cuboid_cuboid::contact_cuboid_cuboid;
 pub use self::contact_halfspace_support_map::{
     contact_halfspace_support_map, contact_support_map_halfspace,
 };
@@ -19,6 +20,7 @@ mod contact;
 mod contact_ball_ball;
 mod contact_ball_convex_polyhedron;
 mod contact_composite_shape_shape;
+mod contact_cuboid_cuboid;
 mod contact_halfspace_support_map;
 mod contact_shape_shape;
 mod contact_support_map_support_map;
