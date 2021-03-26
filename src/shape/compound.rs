@@ -2,7 +2,7 @@
 //! Shape composed from the union of primitives.
 //!
 
-use crate::bounding_volume::{BoundingVolume, AABB};
+use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
 use crate::partitioning::SimdQuadTree;
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
@@ -72,6 +72,12 @@ impl Compound {
     #[inline]
     pub fn local_aabb(&self) -> &AABB {
         &self.aabb
+    }
+
+    /// The bounding-sphere of this compound in its local-space.
+    #[inline]
+    pub fn local_bounding_sphere(&self) -> BoundingSphere {
+        self.aabb.bounding_sphere()
     }
 
     /// The shapes AABBs.

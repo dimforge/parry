@@ -1,60 +1,104 @@
-use na::{ComplexField, Unit};
+use na::{RealField, Unit};
 
-use crate::math::{Isometry, Point, Real, Vector};
-use crate::motion::RigidMotion;
-use crate::query::{self, ClosestPoints, TOIStatus, TOI};
-use crate::shape::SupportMap;
+use crate::math::{Point, Real, Vector};
+use crate::query::{self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, TOIStatus, TOI};
+use crate::shape::{Shape, SupportMap};
+use crate::utils::WCross;
 
+use crate::query::gjk::ConstantPoint;
 use num::Bounded;
 
-/// Time of impacts between two support-mapped shapes under a rigid motion.
-pub fn nonlinear_time_of_impact_support_map_support_map<G1: ?Sized, G2: ?Sized>(
-    motion12: &(impl RigidMotion + ?Sized),
-    g1: &G1,
-    g2: &G2,
-    max_toi: Real,
-    target_distance: Real,
+/// Enum specifying the behavior of TOI computation when there is a penetration at the starting time.
+#[derive(Copy, Clone, Debug)]
+pub enum NonlinearTOIMode {
+    /// Stop TOI computation as soon as there is a penetration.
+    StopAtPenetration,
+    /// When there is a penetration, don't stop the TOI search if the relative velocity
+    /// at the penetration points is negative (i.e. if the points are separating).
+    DirectionalTOI {
+        sum_linear_thickness: Real,
+        max_angular_thickness: Real,
+    },
+}
+
+impl NonlinearTOIMode {
+    pub fn directional_toi<S1, S2>(shape1: &S1, shape2: &S2) -> Self
+    where
+        S1: ?Sized + Shape,
+        S2: ?Sized + Shape,
+    {
+        let sum_linear_thickness = shape1.ccd_thickness() + shape2.ccd_thickness();
+        let max_angular_thickness = shape1
+            .ccd_angular_thickness()
+            .max(shape2.ccd_angular_thickness());
+
+        NonlinearTOIMode::DirectionalTOI {
+            sum_linear_thickness,
+            max_angular_thickness,
+        }
+    }
+}
+
+pub fn nonlinear_time_of_impact_support_map_support_map<D, SM1, SM2>(
+    dispatcher: &D,
+    motion1: &NonlinearRigidMotion,
+    sm1: &SM1,
+    g1: &dyn Shape,
+    motion2: &NonlinearRigidMotion,
+    sm2: &SM2,
+    g2: &dyn Shape,
+    start_time: Real,
+    end_time: Real,
+    mode: NonlinearTOIMode,
 ) -> Option<TOI>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    D: ?Sized + QueryDispatcher,
+    SM1: ?Sized + SupportMap,
+    SM2: ?Sized + SupportMap,
 {
-    nonlinear_time_of_impact_support_map_support_map_with_closest_points_function(
-        motion12,
-        g1,
-        g2,
-        max_toi,
-        target_distance,
-        query::details::closest_points_support_map_support_map,
-    )
+    // dbg!(mode);
+    let sphere1 = g1.compute_local_bounding_sphere();
+    let sphere2 = g2.compute_local_bounding_sphere();
+
+    // Use the shape with the largest radius as the first shape.
+    // This will give better convergence because everything will
+    // be expressed in the local-space as that first shape (including
+    // the separating axes used in the bisection).
+    if sphere1.radius >= sphere2.radius {
+        compute_toi(
+            dispatcher, motion1, sm1, g1, motion2, sm2, g2, start_time, end_time, mode,
+        )
+    } else {
+        compute_toi(
+            dispatcher, motion2, sm2, g2, motion1, sm1, g1, start_time, end_time, mode,
+        )
+        .map(|toi| toi.swapped())
+    }
 }
 
 /// Time of impacts between two support-mapped shapes under a rigid motion.
-///
-/// You probably want to use `query::details::nonlinear_time_of_impact_support_map_support_map` instead of this one.
-/// The distance function between the two shapes must be given.
-pub fn nonlinear_time_of_impact_support_map_support_map_with_closest_points_function<
-    G1: ?Sized,
-    G2: ?Sized,
->(
-    motion12: &(impl RigidMotion + ?Sized),
-    g1: &G1,
-    g2: &G2,
-    max_toi: Real,
-    target_distance: Real,
-    closest_points: impl Fn(&Isometry<Real>, &G1, &G2, Real) -> ClosestPoints,
+pub fn compute_toi<D, SM1, SM2>(
+    dispatcher: &D,
+    motion1: &NonlinearRigidMotion,
+    sm1: &SM1,
+    g1: &dyn Shape,
+    motion2: &NonlinearRigidMotion,
+    sm2: &SM2,
+    g2: &dyn Shape,
+    start_time: Real,
+    end_time: Real,
+    mode: NonlinearTOIMode,
 ) -> Option<TOI>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    D: ?Sized + QueryDispatcher,
+    SM1: ?Sized + SupportMap,
+    SM2: ?Sized + SupportMap,
 {
-    let _0_5: Real = 0.5;
-    let mut min_t = 0.0;
-    let mut prev_min_t = min_t;
+    let mut prev_min_t = start_time;
     let abs_tol: Real = query::gjk::eps_tol();
-    let rel_tol = ComplexField::sqrt(abs_tol);
+
     let mut result = TOI {
-        toi: 0.0,
+        toi: start_time,
         normal1: Vector::<Real>::x_axis(),
         normal2: Vector::<Real>::x_axis(),
         witness1: Point::<Real>::origin(),
@@ -63,12 +107,18 @@ where
     };
 
     loop {
-        let pos12 = motion12.position_at_time(result.toi);
+        let pos1 = motion1.position_at_time(result.toi);
+        let pos2 = motion2.position_at_time(result.toi);
+        let pos12 = pos1.inv_mul(&pos2);
 
         // FIXME: use the _with_params version of the closest points query.
-        match closest_points(&pos12, g1, g2, Real::max_value()) {
+        match dispatcher
+            .closest_points(&pos12, g1, g2, Real::max_value())
+            .ok()?
+        {
             ClosestPoints::Intersecting => {
-                if result.toi == 0.0 {
+                // println!(">> Intersecting.");
+                if result.toi == start_time {
                     result.status = TOIStatus::Penetrating
                 } else {
                     result.status = TOIStatus::Failed;
@@ -76,62 +126,45 @@ where
                 break;
             }
             ClosestPoints::WithinMargin(p1, p2) => {
+                // println!(">> Within margin.");
                 result.witness1 = p1;
                 result.witness2 = p2;
 
-                if let Some((dir, mut dist)) =
+                if let Some((normal1, dist)) =
                     Unit::try_new_and_get(pos12 * p2 - p1, crate::math::DEFAULT_EPSILON)
                 {
                     // FIXME: do the "inverse transform unit vector" only when we are about to return.
-                    result.normal1 = dir;
-                    result.normal2 = pos12.inverse_transform_unit_vector(&-dir);
+                    result.normal1 = normal1;
+                    result.normal2 = pos12.inverse_transform_unit_vector(&-normal1);
 
-                    let mut niter = 0;
-                    min_t = result.toi;
-                    let mut max_t = max_toi;
-                    let min_target_distance = (target_distance - rel_tol).max(0.0);
-                    let max_target_distance = target_distance + rel_tol;
+                    let curr_range = BisectionRange {
+                        min_t: result.toi,
+                        max_t: end_time,
+                        curr_t: result.toi,
+                    };
 
-                    loop {
-                        // FIXME: use the secant method too for finding the next iterate.
-                        if dist < min_target_distance {
-                            // Too close or penetration, go back in time.
-                            max_t = result.toi;
-                            result.toi = (min_t + result.toi) * _0_5;
-                        } else if dist > max_target_distance {
-                            // Too far apart, go forward in time.
-                            min_t = result.toi;
-                            result.toi = (result.toi + max_t) * _0_5;
-                        } else {
-                            // Reached tolerance, break.
-                            break;
-                        }
+                    let (new_range, niter) =
+                        bisect(dist, motion1, sm1, motion2, sm2, &normal1, curr_range);
+                    // println!(
+                    //     "Bisection result: {:?}, normal1: {:?}, normal2: {:?}",
+                    //     new_range, result.normal1, result.normal2
+                    // );
+                    result.toi = new_range.curr_t;
 
-                        if max_t - min_t < abs_tol {
-                            result.toi = min_t;
-                            break;
-                        }
-
-                        let pos12 = motion12.position_at_time(result.toi);
-                        let pt1 = g1.local_support_point_toward(&dir);
-                        let pt2 = g2.support_point_toward(&pos12, &-dir);
-
-                        dist = (pt2 - pt1).dot(&dir);
-
-                        niter += 1;
-                    }
-
-                    if min_t - prev_min_t < abs_tol {
-                        if max_t == max_toi {
-                            let pos12 = motion12.position_at_time(max_t);
-
+                    if new_range.min_t - prev_min_t < abs_tol {
+                        if new_range.max_t == end_time {
                             // Check the configuration at max_t to see if the object are not disjoint.
                             // NOTE: could we do this earlier, before the above loop?
                             // It feels like this could prevent catching some corner-cases like
                             // if one object is rotated by almost 180 degrees while the other is immobile.
-                            let pt1 = g1.local_support_point_toward(&dir);
-                            let pt2 = g2.support_point_toward(&pos12, &-dir);
-                            if (pt2 - pt1).dot(&dir) > target_distance {
+                            let pos1 = motion1.position_at_time(new_range.max_t);
+                            let pos2 = motion2.position_at_time(new_range.max_t);
+                            let pos12 = pos1.inv_mul(&pos2);
+
+                            let pt1 = sm1.local_support_point_toward(&normal1);
+                            let pt2 = sm2.support_point_toward(&pos12, &-normal1);
+
+                            if (pt2 - pt1).dot(&normal1) > 0.0 {
                                 // We found an axis that separate both objects at the end configuration.
                                 return None;
                             }
@@ -141,7 +174,7 @@ where
                         break;
                     }
 
-                    prev_min_t = min_t;
+                    prev_min_t = new_range.min_t;
 
                     if niter == 0 {
                         result.status = TOIStatus::Converged;
@@ -156,5 +189,294 @@ where
         }
     }
 
-    Some(result)
+    // In we started with a penetration, we need to compute a full contact manifold and
+    // see if any of these contact points may result in tunnelling. If the is one, return
+    // that TOI instead. That way, object moving tangentially on a surface (always keeping
+    // a contact with it) won't report an useless impact.
+    //
+    // Note that this must be done here instead of outside of the `nonlinear_time_of_impact`
+    // function so that this works properly with composite shapes.
+    match mode {
+        NonlinearTOIMode::DirectionalTOI {
+            sum_linear_thickness,
+            max_angular_thickness,
+        } => {
+            if (result.toi - start_time).abs() < 1.0e-5 {
+                handle_penetration_at_start_time(
+                    dispatcher,
+                    motion1,
+                    sm1,
+                    g1,
+                    motion2,
+                    sm2,
+                    g2,
+                    start_time,
+                    end_time,
+                    sum_linear_thickness,
+                    max_angular_thickness,
+                )
+            } else {
+                Some(result)
+            }
+        }
+        NonlinearTOIMode::StopAtPenetration => Some(result),
+    }
+}
+
+fn handle_penetration_at_start_time<D, SM1, SM2>(
+    dispatcher: &D,
+    motion1: &NonlinearRigidMotion,
+    sm1: &SM1,
+    g1: &dyn Shape,
+    motion2: &NonlinearRigidMotion,
+    sm2: &SM2,
+    g2: &dyn Shape,
+    start_time: Real,
+    end_time: Real,
+    sum_linear_thickness: Real,
+    max_angular_thickness: Real,
+) -> Option<TOI>
+where
+    D: ?Sized + QueryDispatcher,
+    SM1: ?Sized + SupportMap,
+    SM2: ?Sized + SupportMap,
+{
+    // Because we are doing non-linear CCD, we need an iterative methode here.
+    // First we need to check if the `toi = start_time` is legitimate, i.e.,
+    // if tunnelling will happen if we don't clamp the motion.
+    //
+    // If the contact isn't "legitimate" (i.e. if we have a separating velocity),
+    // then we need to check by how much the bodies can move without tunnelling.
+    // With linear CCD it's easy: any linear movement is OK because we have
+    // a separating velocity.
+    //
+    // With non-linear CCD it's more complicated because we need to take the
+    // angular velocity into account, which will result in new contact points
+    // that could tunnel (imagine for example 2D cuboid touching the ground at one
+    // point. By rotating, its second end point will end up touching the ground too,
+    // and we need to detect that so we don't permit a rotation larger than what's
+    // needed for this second contact to happen).
+    //
+    // The iterative method here will iteratively check multiple rotation angles to
+    // find new future contact points after some rotation; and check the relative
+    // velocity at these future contact points.
+    #[cfg(feature = "dim2")]
+    let dangvel = (motion2.angvel - motion1.angvel).abs();
+    #[cfg(feature = "dim3")]
+    let dangvel = (motion2.angvel - motion1.angvel).norm();
+    let inv_dangvel = crate::utils::inv(dangvel);
+    let linear_increment = sum_linear_thickness;
+    let angular_increment = Real::pi() - max_angular_thickness;
+
+    let linear_time_increment =
+        linear_increment * crate::utils::inv((motion2.linvel - motion1.linvel).norm());
+    let angular_time_increment = angular_increment * inv_dangvel;
+    let mut time_increment = angular_time_increment
+        .min(linear_time_increment)
+        .min((end_time - start_time) / 100.0);
+    // println!(
+    //     "Lin time incr: {}, ang time incr: {}",
+    //     linear_time_increment, angular_time_increment
+    // );
+
+    if time_increment == 0.0 {
+        time_increment = end_time;
+    }
+
+    let mut next_time = start_time;
+
+    // TODO: looping until we reach π sounds enough for most purposes.
+    //       Is there a practical case where we need to loop until we reach 2π ?
+    while next_time < end_time {
+        // dbg!("A");
+        let pos1_at_next_time = motion1.position_at_time(next_time);
+        let pos2_at_next_time = motion2.position_at_time(next_time);
+        let pos12_at_next_time = pos1_at_next_time.inv_mul(&pos2_at_next_time);
+        let contact = dispatcher
+            .contact(&pos12_at_next_time, g1, g2, Real::MAX)
+            .ok()??;
+        {
+            // dbg!("C");
+
+            // 1. Compute the relative velocity at that contact point.
+            // 2. Check if this results in a potential tunnelling.
+            // 3. Use bisection to adjust the TOI to the time where a pair
+            //    of contact points potentially causing tunneling hit for the first time.
+            let r1 = contact.point1 - motion1.local_center;
+            let r2 = contact.point2 - motion2.local_center;
+            let vel1 = motion1.linvel + motion1.angvel.gcross(pos1_at_next_time * r1);
+            let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time * r2);
+            let vel12 = vel2 - vel1;
+            let normal_vel = -vel12.dot(&(pos1_at_next_time * contact.normal1));
+            let ccd_threshold = if contact.dist <= 0.0 {
+                sum_linear_thickness
+            } else {
+                contact.dist + sum_linear_thickness
+            };
+
+            // println!(
+            //     "linvel: {:?}, angvel: {:?}, r2: {:?}, angpart: {:?}, vel2: {:?}",
+            //     motion2.linvel,
+            //     motion2.angvel,
+            //     r2,
+            //     motion2.angvel.gcross(pos2_at_next_time * r2),
+            //     vel2,
+            // );
+            //
+            // println!(
+            //     "Found normal vel: {}, dist: {}, threshold: {}, if_value: {}, time: {}",
+            //     normal_vel,
+            //     contact.dist,
+            //     ccd_threshold,
+            //     normal_vel * (end_time - next_time),
+            //     next_time
+            // );
+
+            if normal_vel * (end_time - next_time) > ccd_threshold {
+                // dbg!("D1");
+
+                let mut result = TOI {
+                    toi: next_time,
+                    witness1: contact.point1,
+                    witness2: contact.point2,
+                    normal1: contact.normal1,
+                    normal2: contact.normal2,
+                    status: TOIStatus::Converged,
+                };
+
+                if contact.dist > 0.0 {
+                    // This is an acceptable impact. Now determine when
+                    // the impacts happens exactly.
+                    let curr_range = BisectionRange {
+                        min_t: next_time,
+                        max_t: end_time,
+                        curr_t: next_time,
+                    };
+                    let (new_range, _) = bisect(
+                        contact.dist,
+                        motion1,
+                        sm1,
+                        motion2,
+                        sm2,
+                        &contact.normal1,
+                        curr_range,
+                    );
+
+                    // TODO: the bisection isn't always enough here. We should check that we
+                    //       still have a contact now. If not, we should run the loop from
+                    //       nonlinear_time_of_impact_support_map_support_map again from this
+                    //       point forward.
+                    result.toi = new_range.curr_t;
+                } else {
+                    // dbg!("Bissecting points");
+                    // This is an acceptable impact. Now determine when
+                    // the impacts happens exactly.
+                    let curr_range = BisectionRange {
+                        min_t: start_time,
+                        max_t: next_time,
+                        curr_t: next_time,
+                    };
+                    let (new_range, _) = bisect(
+                        contact.dist,
+                        motion1,
+                        &ConstantPoint(contact.point1),
+                        motion2,
+                        &ConstantPoint(contact.point2),
+                        &contact.normal1,
+                        curr_range,
+                    );
+
+                    // TODO: the bisection isn't always enough here. We should check that we
+                    //       still have a contact now. If not, we should run the loop from
+                    //       nonlinear_time_of_impact_support_map_support_map again from this
+                    //       point forward.
+                    result.toi = new_range.curr_t;
+                }
+
+                // println!("Fount new toi: {}", result.toi);
+                return Some(result);
+            }
+
+            // dbg!("D2");
+        }
+
+        // If there is no angular velocity, we don't have to
+        // continue because we can't rotate the object.
+        if inv_dangvel == 0.0 {
+            return None;
+        }
+
+        // dbg!("E");
+        next_time += time_increment;
+    }
+
+    None
+}
+
+#[derive(Copy, Clone, Debug)]
+struct BisectionRange {
+    min_t: Real,
+    curr_t: Real,
+    max_t: Real,
+}
+
+fn bisect<SM1, SM2>(
+    mut dist: Real,
+    motion1: &NonlinearRigidMotion,
+    sm1: &SM1,
+    motion2: &NonlinearRigidMotion,
+    sm2: &SM2,
+    normal1: &Unit<Vector<Real>>,
+    mut range: BisectionRange,
+) -> (BisectionRange, usize)
+where
+    SM1: ?Sized + SupportMap,
+    SM2: ?Sized + SupportMap,
+{
+    let abs_tol: Real = query::gjk::eps_tol();
+    let rel_tol = abs_tol; // ComplexField::sqrt(abs_tol);
+    let mut niter = 0;
+
+    // Use the world-space normal so it doesn't move with the shapes.
+    // This is necessary to reduce the risk of extracting a root that
+    // is not the root happening at the smallest time.
+    let pos1 = motion1.position_at_time(range.curr_t);
+    let world_normal1 = pos1 * normal1;
+
+    loop {
+        // println!("Bisection dist: {}, range: {:?}", dist, range);
+        // TODO: use the secant method too for finding the next iterate and converge more quickly.
+        if dist < 0.0 {
+            // Too close or penetration, go back in time.
+            range.max_t = range.curr_t;
+            range.curr_t = (range.min_t + range.curr_t) * 0.5;
+        } else if dist > rel_tol {
+            // Too far apart, go forward in time.
+            range.min_t = range.curr_t;
+            range.curr_t = (range.curr_t + range.max_t) * 0.5;
+        } else {
+            // Reached tolerance, break.
+            // println!("Bisection, break on dist tolerance.");
+            break;
+        }
+
+        if range.max_t - range.min_t < abs_tol {
+            range.curr_t = range.max_t;
+            // println!("Bisection, break on tiny range.");
+            break;
+        }
+
+        let pos1 = motion1.position_at_time(range.curr_t);
+        let pos2 = motion2.position_at_time(range.curr_t);
+        let pos12 = pos1.inv_mul(&pos2);
+
+        let normal1 = pos1.inverse_transform_unit_vector(&world_normal1);
+        let pt1 = sm1.local_support_point_toward(&normal1);
+        let pt2 = sm2.support_point_toward(&pos12, &-normal1);
+        dist = pt2.coords.dot(&normal1) - pt1.coords.dot(&normal1);
+
+        niter += 1;
+    }
+
+    (range, niter)
 }

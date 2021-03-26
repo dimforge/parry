@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingVolume, AABB};
+use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
 use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
@@ -16,7 +16,7 @@ use crate::shape::{
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
-use na::Unit;
+use na::{RealField, Unit};
 use num::Zero;
 use num_derive::FromPrimitive;
 
@@ -245,10 +245,16 @@ impl DeserializableTypedShape {
 pub trait Shape: RayCast + PointQuery + DowncastSync {
     /// Computes the AABB of this shape.
     fn compute_local_aabb(&self) -> AABB;
+    /// Computes the bounding-sphere of this shape.
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere;
 
     /// Computes the AABB of this shape with the given position.
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.compute_local_aabb().transform_by(position)
+    }
+    /// Computes the bounding-sphere of this shape with the given position.
+    fn compute_bounding_sphere(&self, position: &Isometry<Real>) -> BoundingSphere {
+        self.compute_local_bounding_sphere().transform_by(position)
     }
 
     /// Compute the mass-properties of this shape given its uniform density.
@@ -261,6 +267,14 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn as_typed_shape(&self) -> TypedShape;
 
     fn ccd_thickness(&self) -> Real;
+
+    // TODO: document this.
+    // This should probably be the largest sharp edge angle (in radians) in [0; PI].
+    // Though this isn't a very good description considering this is PI / 2
+    // for capsule (which doesn't have any sharp angle). I guess a better way
+    // to phrase this is: "the smallest angle such that rotating the shape by
+    // that angle may result in different contact points".
+    fn ccd_angular_thickness(&self) -> Real;
 
     /// Is this shape known to be convex?
     ///
@@ -419,6 +433,10 @@ impl Shape for Ball {
         self.local_aabb()
     }
 
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
+    }
+
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
@@ -429,6 +447,10 @@ impl Shape for Ball {
 
     fn ccd_thickness(&self) -> Real {
         self.radius
+    }
+
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::pi()
     }
 
     fn is_convex(&self) -> bool {
@@ -451,6 +473,10 @@ impl Shape for Ball {
 impl Shape for Cuboid {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -477,6 +503,10 @@ impl Shape for Cuboid {
         self.half_extents.min()
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::frac_pi_2()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -489,6 +519,10 @@ impl Shape for Cuboid {
 impl Shape for Capsule {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -515,6 +549,10 @@ impl Shape for Capsule {
         self.radius
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::frac_pi_2()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -527,6 +565,10 @@ impl Shape for Capsule {
 impl Shape for Triangle {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -557,6 +599,10 @@ impl Shape for Triangle {
         0.0
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::frac_pi_2()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -569,6 +615,10 @@ impl Shape for Triangle {
 impl Shape for Segment {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -585,6 +635,10 @@ impl Shape for Segment {
 
     fn ccd_thickness(&self) -> Real {
         0.0
+    }
+
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::frac_pi_2()
     }
 
     fn shape_type(&self) -> ShapeType {
@@ -609,6 +663,10 @@ impl Shape for Compound {
         *self.local_aabb()
     }
 
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
+    }
+
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.local_aabb().transform_by(position)
     }
@@ -631,6 +689,12 @@ impl Shape for Compound {
             .fold(Real::MAX, |curr, (_, s)| curr.min(s.ccd_thickness()))
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        self.shapes().iter().fold(Real::MAX, |curr, (_, s)| {
+            curr.min(s.ccd_angular_thickness())
+        })
+    }
+
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
@@ -639,6 +703,10 @@ impl Shape for Compound {
 impl Shape for Polyline {
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -661,6 +729,12 @@ impl Shape for Polyline {
         0.0
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent segments of the polyline.
+        Real::frac_pi_4()
+    }
+
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
@@ -669,6 +743,10 @@ impl Shape for Polyline {
 impl Shape for TriMesh {
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -695,6 +773,12 @@ impl Shape for TriMesh {
         0.0
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent triangles of the trimesh.
+        Real::frac_pi_4()
+    }
+
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
@@ -703,6 +787,10 @@ impl Shape for TriMesh {
 impl Shape for HeightField {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -724,12 +812,22 @@ impl Shape for HeightField {
     fn ccd_thickness(&self) -> Real {
         0.0
     }
+
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent triangles of the heightfield.
+        Real::frac_pi_4()
+    }
 }
 
 #[cfg(feature = "dim2")]
 impl Shape for ConvexPolygon {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -757,6 +855,12 @@ impl Shape for ConvexPolygon {
         self.compute_local_aabb().half_extents().min()
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent segments of the convex polygon.
+        Real::frac_pi_4()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -770,6 +874,10 @@ impl Shape for ConvexPolygon {
 impl Shape for ConvexPolyhedron {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -798,6 +906,12 @@ impl Shape for ConvexPolyhedron {
         self.compute_local_aabb().half_extents().min()
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent segments of the convex polyhedron.
+        Real::frac_pi_4()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -811,6 +925,10 @@ impl Shape for ConvexPolyhedron {
 impl Shape for Cylinder {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -837,6 +955,10 @@ impl Shape for Cylinder {
         self.radius
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::frac_pi_2()
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -850,6 +972,10 @@ impl Shape for Cylinder {
 impl Shape for Cone {
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
     }
 
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -876,6 +1002,13 @@ impl Shape for Cone {
         self.radius
     }
 
+    fn ccd_angular_thickness(&self) -> Real {
+        let apex_half_angle = self.radius.atan2(self.half_height);
+        assert!(apex_half_angle >= 0.0);
+        let basis_angle = Real::frac_pi_2() - apex_half_angle;
+        basis_angle.min(apex_half_angle * 2.0)
+    }
+
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
@@ -890,6 +1023,10 @@ impl Shape for HalfSpace {
         self.local_aabb()
     }
 
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
+    }
+
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.aabb(position)
     }
@@ -900,6 +1037,10 @@ impl Shape for HalfSpace {
 
     fn ccd_thickness(&self) -> Real {
         f32::MAX as Real
+    }
+
+    fn ccd_angular_thickness(&self) -> Real {
+        Real::pi()
     }
 
     fn mass_properties(&self, _: Real) -> MassProperties {
@@ -920,6 +1061,10 @@ macro_rules! impl_shape_for_round_shape(
         impl Shape for RoundShape<$S> {
             fn compute_local_aabb(&self) -> AABB {
                 self.base_shape.local_aabb().loosened(self.border_radius)
+            }
+
+            fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+                self.base_shape.local_bounding_sphere().loosened(self.border_radius)
             }
 
             fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
@@ -944,6 +1089,12 @@ macro_rules! impl_shape_for_round_shape(
 
             fn ccd_thickness(&self) -> Real {
                 self.base_shape.ccd_thickness() + self.border_radius
+            }
+
+            fn ccd_angular_thickness(&self) -> Real {
+                // The fact that the shape is round doesn't change anything
+                // to the CCD angular thickness.
+                self.base_shape.ccd_angular_thickness()
             }
 
             fn as_support_map(&self) -> Option<&dyn SupportMap> {
