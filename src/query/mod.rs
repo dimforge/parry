@@ -32,7 +32,7 @@ pub use self::default_query_dispatcher::DefaultQueryDispatcher;
 pub use self::distance::distance;
 pub use self::error::Unsupported;
 pub use self::intersection_test::intersection_test;
-pub use self::nonlinear_time_of_impact::nonlinear_time_of_impact;
+pub use self::nonlinear_time_of_impact::{nonlinear_time_of_impact, NonlinearRigidMotion};
 pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
 pub use self::query_dispatcher::{
     PersistentQueryDispatcher, QueryDispatcher, QueryDispatcherChain,
@@ -64,7 +64,7 @@ pub mod details {
     pub use super::closest_points::*;
     pub use super::contact::{
         contact_ball_ball, contact_ball_convex_polyhedron, contact_composite_shape_shape,
-        contact_convex_polyhedron_ball, contact_halfspace_support_map,
+        contact_convex_polyhedron_ball, contact_cuboid_cuboid, contact_halfspace_support_map,
         contact_shape_composite_shape, contact_support_map_halfspace,
         contact_support_map_support_map, contact_support_map_support_map_with_params,
     };
@@ -89,11 +89,10 @@ pub mod details {
     };
     pub use super::intersection_test::*;
     pub use super::nonlinear_time_of_impact::{
-        nonlinear_time_of_impact_ball_ball, nonlinear_time_of_impact_composite_shape_shape,
+        nonlinear_time_of_impact_composite_shape_shape,
         nonlinear_time_of_impact_shape_composite_shape,
         nonlinear_time_of_impact_support_map_support_map,
-        nonlinear_time_of_impact_support_map_support_map_with_closest_points_function,
-        NonlinearTOICompositeShapeShapeBestFirstVisitor,
+        NonlinearTOICompositeShapeShapeBestFirstVisitor, NonlinearTOIMode,
     };
     pub use super::point::local_point_projection_on_support_map;
     pub use super::point::{
