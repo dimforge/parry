@@ -16,12 +16,22 @@ pub enum NonlinearTOIMode {
     /// When there is a penetration, don't stop the TOI search if the relative velocity
     /// at the penetration points is negative (i.e. if the points are separating).
     DirectionalTOI {
+        /// The sum of the `Shape::ccd_thickness` of both shapes involved in the TOI computation.
         sum_linear_thickness: Real,
+        /// The max of the `Shape::ccd_angular_thickness` of both shapes involved in the TOI computation.
         max_angular_thickness: Real,
     },
 }
 
 impl NonlinearTOIMode {
+    /// Initializes a directional TOI mode.
+    ///
+    /// With the "directional" TOI mode, the nonlinear TOI computation won't
+    /// immediately stop if the shapes are already intersecting at `t = 0`.
+    /// Instead, it will search for the first time where a contact between
+    /// the shapes would result in a deeper penetration (with risk of tunnelling).
+    /// This effectively checks the relative velocity of the shapes at their point
+    /// of impact.
     pub fn directional_toi<S1, S2>(shape1: &S1, shape2: &S2) -> Self
     where
         S1: ?Sized + Shape,
@@ -39,6 +49,8 @@ impl NonlinearTOIMode {
     }
 }
 
+/// Compute the time of first impact between two support-map shapes following
+/// a nonlinear (with translations and rotations) motion.
 pub fn nonlinear_time_of_impact_support_map_support_map<D, SM1, SM2>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,

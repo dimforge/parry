@@ -46,7 +46,8 @@ impl<'de> serde::Deserialize<'de> for SimdAABB {
     where
         D: serde::Deserializer<'de>,
     {
-        struct Visitor {};
+        struct Visitor {}
+
         impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = SimdAABB;
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
