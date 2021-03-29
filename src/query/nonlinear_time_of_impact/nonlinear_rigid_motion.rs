@@ -123,6 +123,7 @@ impl NonlinearRigidMotion {
         result
     }
 
+    /// Computes the position at time `t` of a rigid-body following the motion described by `self`.
     pub fn position_at_time(&self, t: Real) -> Isometry<Real> {
         let dt = t - self.t0;
         let center = self.start * self.local_center;
