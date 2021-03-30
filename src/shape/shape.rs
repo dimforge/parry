@@ -691,7 +691,7 @@ impl Shape for Compound {
 
     fn ccd_angular_thickness(&self) -> Real {
         self.shapes().iter().fold(Real::MAX, |curr, (_, s)| {
-            curr.min(s.ccd_angular_thickness())
+            curr.max(s.ccd_angular_thickness())
         })
     }
 
