@@ -68,6 +68,10 @@ where
     SM1: ?Sized + SupportMap,
     SM2: ?Sized + SupportMap,
 {
+    // println!(
+    //     ">>>>>>>> cube-cube: {}",
+    //     g1.as_cuboid().is_some() && g2.as_cuboid().is_some()
+    // );
     // dbg!(mode);
     let sphere1 = g1.compute_local_bounding_sphere();
     let sphere2 = g2.compute_local_bounding_sphere();
@@ -285,7 +289,10 @@ where
     let angular_time_increment = angular_increment * inv_dangvel;
     let mut time_increment = angular_time_increment
         .min(linear_time_increment)
-        .min((end_time - start_time) / 100.0);
+        // This is needed to avoid some tunnelling. But this is
+        // kind of "brute force" so we should find something better.
+        .min((end_time - start_time) / 10.0);
+
     // println!(
     //     "Lin time incr: {}, ang time incr: {}",
     //     linear_time_increment, angular_time_increment
