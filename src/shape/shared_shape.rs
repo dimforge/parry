@@ -31,6 +31,16 @@ impl SharedShape {
         Self(Arc::new(shape))
     }
 
+    /// If this shape is shared, then the content of `self` is cloned into a unique instance,
+    /// and a mutable reference to that instance is returned.
+    pub fn make_mut(&mut self) -> &mut dyn Shape {
+        if Arc::get_mut(&mut self.0).is_none() {
+            let unique_self = self.0.clone_box();
+            self.0 = unique_self.into();
+        }
+        Arc::get_mut(&mut self.0).unwrap()
+    }
+
     /// Initialize a compound shape defined by its subshapes.
     pub fn compound(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Self {
         let raw_shapes = shapes.into_iter().map(|s| (s.0, s.1)).collect();

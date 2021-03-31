@@ -248,6 +248,9 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     /// Computes the bounding-sphere of this shape.
     fn compute_local_bounding_sphere(&self) -> BoundingSphere;
 
+    /// Clones this shape into a boxed trait-object.
+    fn clone_box(&self) -> Box<dyn Shape>;
+
     /// Computes the AABB of this shape with the given position.
     fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
         self.compute_local_aabb().transform_by(position)
@@ -320,70 +323,128 @@ impl dyn Shape {
     pub fn as_shape<T: Shape>(&self) -> Option<&T> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to the given mutable shape, if it is one.
+    pub fn as_shape_mut<T: Shape>(&mut self) -> Option<&mut T> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a ball, if it is one.
     pub fn as_ball(&self) -> Option<&Ball> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable ball, if it is one.
+    pub fn as_ball_mut(&mut self) -> Option<&mut Ball> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a cuboid, if it is one.
     pub fn as_cuboid(&self) -> Option<&Cuboid> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable cuboid, if it is one.
+    pub fn as_cuboid_mut(&mut self) -> Option<&mut Cuboid> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a halfspace, if it is one.
     pub fn as_halfspace(&self) -> Option<&HalfSpace> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a halfspace, if it is one.
+    pub fn as_halfspace_mut(&mut self) -> Option<&mut HalfSpace> {
+        self.downcast_mut()
+    }
 
-    /// Converts this abstract shape to a cuboid, if it is one.
+    /// Converts this abstract shape to a segment, if it is one.
     pub fn as_segment(&self) -> Option<&Segment> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable segment, if it is one.
+    pub fn as_segment_mut(&mut self) -> Option<&mut Segment> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a capsule, if it is one.
     pub fn as_capsule(&self) -> Option<&Capsule> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable capsule, if it is one.
+    pub fn as_capsule_mut(&mut self) -> Option<&mut Capsule> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a triangle, if it is one.
     pub fn as_triangle(&self) -> Option<&Triangle> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable triangle, if it is one.
+    pub fn as_triangle_mut(&mut self) -> Option<&mut Triangle> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a compound shape, if it is one.
     pub fn as_compound(&self) -> Option<&Compound> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable compound shape, if it is one.
+    pub fn as_compound_mut(&mut self) -> Option<&mut Compound> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a triangle mesh, if it is one.
     pub fn as_trimesh(&self) -> Option<&TriMesh> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable triangle mesh, if it is one.
+    pub fn as_trimesh_mut(&mut self) -> Option<&mut TriMesh> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a polyline, if it is one.
     pub fn as_polyline(&self) -> Option<&Polyline> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable polyline, if it is one.
+    pub fn as_polyline_mut(&mut self) -> Option<&mut Polyline> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a heightfield, if it is one.
     pub fn as_heightfield(&self) -> Option<&HeightField> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable heightfield, if it is one.
+    pub fn as_heightfield_mut(&mut self) -> Option<&mut HeightField> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round cuboid, if it is one.
     pub fn as_round_cuboid(&self) -> Option<&RoundCuboid> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable round cuboid, if it is one.
+    pub fn as_round_cuboid_mut(&mut self) -> Option<&mut RoundCuboid> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a round triangle, if it is one.
     pub fn as_round_triangle(&self) -> Option<&RoundTriangle> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a round triangle, if it is one.
+    pub fn as_round_triangle_mut(&mut self) -> Option<&mut RoundTriangle> {
+        self.downcast_mut()
+    }
 
+    /// Converts this abstract shape to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable convex polygon, if it is one.
+    #[cfg(feature = "dim2")]
+    pub fn as_convex_polygon_mut(&mut self) -> Option<&mut ConvexPolygon> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round convex polygon, if it is one.
@@ -391,10 +452,19 @@ impl dyn Shape {
     pub fn as_round_convex_polygon(&self) -> Option<&RoundConvexPolygon> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable round convex polygon, if it is one.
+    #[cfg(feature = "dim2")]
+    pub fn as_round_convex_polygon_mut(&mut self) -> Option<&mut RoundConvexPolygon> {
+        self.downcast_mut()
+    }
 
     #[cfg(feature = "dim3")]
     pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
         self.downcast_ref()
+    }
+    #[cfg(feature = "dim3")]
+    pub fn as_convex_polyhedron_mut(&mut self) -> Option<&mut ConvexPolyhedron> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a cylinder, if it is one.
@@ -402,11 +472,21 @@ impl dyn Shape {
     pub fn as_cylinder(&self) -> Option<&Cylinder> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable cylinder, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_cylinder_mut(&mut self) -> Option<&mut Cylinder> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cone(&self) -> Option<&Cone> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable cone, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_cone_mut(&mut self) -> Option<&mut Cone> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round cylinder, if it is one.
@@ -414,11 +494,21 @@ impl dyn Shape {
     pub fn as_round_cylinder(&self) -> Option<&RoundCylinder> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable round cylinder, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_round_cylinder_mut(&mut self) -> Option<&mut RoundCylinder> {
+        self.downcast_mut()
+    }
 
     /// Converts this abstract shape to a round cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cone(&self) -> Option<&RoundCone> {
         self.downcast_ref()
+    }
+    /// Converts this abstract shape to a mutable round cone, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_round_cone_mut(&mut self) -> Option<&mut RoundCone> {
+        self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round convex polyhedron, if it is one.
@@ -426,9 +516,18 @@ impl dyn Shape {
     pub fn as_round_convex_polyhedron(&self) -> Option<&RoundConvexPolyhedron> {
         self.downcast_ref()
     }
+    /// Converts this abstract shape to a mutable round convex polyhedron, if it is one.
+    #[cfg(feature = "dim3")]
+    pub fn as_round_convex_polyhedron_mut(&mut self) -> Option<&mut RoundConvexPolyhedron> {
+        self.downcast_mut()
+    }
 }
 
 impl Shape for Ball {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -471,6 +570,10 @@ impl Shape for Ball {
 }
 
 impl Shape for Cuboid {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -517,6 +620,10 @@ impl Shape for Cuboid {
 }
 
 impl Shape for Capsule {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -563,6 +670,10 @@ impl Shape for Capsule {
 }
 
 impl Shape for Triangle {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -613,6 +724,10 @@ impl Shape for Triangle {
 }
 
 impl Shape for Segment {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -659,6 +774,10 @@ impl Shape for Segment {
 }
 
 impl Shape for Compound {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -701,6 +820,10 @@ impl Shape for Compound {
 }
 
 impl Shape for Polyline {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -741,6 +864,10 @@ impl Shape for Polyline {
 }
 
 impl Shape for TriMesh {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         *self.local_aabb()
     }
@@ -785,6 +912,10 @@ impl Shape for TriMesh {
 }
 
 impl Shape for HeightField {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -822,6 +953,10 @@ impl Shape for HeightField {
 
 #[cfg(feature = "dim2")]
 impl Shape for ConvexPolygon {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -872,6 +1007,10 @@ impl Shape for ConvexPolygon {
 
 #[cfg(feature = "dim3")]
 impl Shape for ConvexPolyhedron {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -923,6 +1062,10 @@ impl Shape for ConvexPolyhedron {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cylinder {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -970,6 +1113,10 @@ impl Shape for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cone {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -1019,6 +1166,10 @@ impl Shape for Cone {
 }
 
 impl Shape for HalfSpace {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
     fn compute_local_aabb(&self) -> AABB {
         self.local_aabb()
     }
@@ -1059,6 +1210,10 @@ impl Shape for HalfSpace {
 macro_rules! impl_shape_for_round_shape(
     ($($S: ty, $Tag: ident);*) => {$(
         impl Shape for RoundShape<$S> {
+            fn clone_box(&self) -> Box<dyn Shape> {
+                Box::new(self.clone())
+            }
+
             fn compute_local_aabb(&self) -> AABB {
                 self.base_shape.local_aabb().loosened(self.border_radius)
             }
