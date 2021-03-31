@@ -20,7 +20,7 @@ maintenance = { status = "actively-developed" }
 default = [ "dim2", "f32" ]
 dim2    = [ ]
 f32     = [ ]
-serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
+serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
