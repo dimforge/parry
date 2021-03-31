@@ -190,6 +190,25 @@ impl MassProperties {
             principal_inertia_local_frame: m.rotation * self.principal_inertia_local_frame,
         }
     }
+
+    /// Changes the mass on these mass-properties.
+    ///
+    /// The `adjust_angular_inertia` argument should always be `true`, unless
+    /// there are some specific reasons not to do so. Setting this to `true`
+    /// will automatically adjust the angular inertia of `self` to account
+    /// for the mass change (i.e. it will multiply the angular inertia by
+    /// `new_mass / prev_mass`). Setting it to `false` will not change the
+    /// current angular inertia.
+    pub fn set_mass(&mut self, new_mass: Real, adjust_angular_inertia: bool) {
+        let new_inv_mass = utils::inv(new_mass);
+
+        if adjust_angular_inertia {
+            let curr_mass = utils::inv(self.inv_mass);
+            self.inv_principal_inertia_sqrt *= new_inv_mass.sqrt() * curr_mass.sqrt();
+        }
+
+        self.inv_mass = new_inv_mass;
+    }
 }
 
 impl Zero for MassProperties {
