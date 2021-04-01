@@ -43,22 +43,18 @@ where
 
         assert!(
             shape.contains_point(&position, &point_nudged_in),
-            format!(
-                "Shape {} rotated with {:#?} does not contain point nudged in {:#?}",
-                name,
-                rotation.axis(),
-                point_nudged_in
-            ),
+            "Shape {} rotated with {:#?} does not contain point nudged in {:#?}",
+            name,
+            rotation.axis(),
+            point_nudged_in,
         );
 
         assert!(
             !shape.contains_point(&position, &point_nudged_out),
-            format!(
-                "Shape {} rotated with {:#?} does contains point nudged out {:#?}",
-                name,
-                rotation.axis(),
-                point_nudged_out
-            ),
+            "Shape {} rotated with {:#?} does contains point nudged out {:#?}",
+            name,
+            rotation.axis(),
+            point_nudged_out,
         );
 
         let new_ray = Ray::new(point_nudged_out, ray_origin - point_nudged_out);
@@ -67,16 +63,14 @@ where
             shape
                 .cast_ray_and_get_normal(&position, &new_ray, std::f32::MAX, true)
                 .is_none(),
-            format!(
-                "Ray {:#?} from outside Shape {} rotated with {:#?} did hit at t={}",
-                ray,
-                name,
-                rotation,
-                shape
-                    .cast_ray_and_get_normal(&position, &new_ray, std::f32::MAX, true)
-                    .expect("recurring ray cast produced a different answer")
-                    .toi
-            )
+            "Ray {:#?} from outside Shape {} rotated with {:#?} did hit at t={}",
+            ray,
+            name,
+            rotation,
+            shape
+                .cast_ray_and_get_normal(&position, &new_ray, std::f32::MAX, true)
+                .expect("recurring ray cast produced a different answer")
+                .toi
         );
     }
 }
