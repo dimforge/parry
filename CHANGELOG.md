@@ -1,13 +1,29 @@
 # Change Log
 
-## v0.2.1 - WIP
+## v0.3.0
 ### Added
 - Add a special case for the triangle/cuboid edge-edge case in the SAT implementation.
 - Add contact manifold computation between a convex shape and a HalfSpace.
-- Add a special case (instead of GJK) for computing closest points between two cuboids.
-- Add a special case (instead of GJK) for computing closest points between a cuboid and a triangle.
 - Add a special case (instead of GJK) for computing the distance between a ball and a convex shape.
+- Add a `Shape::clone_box` method to clone a shape trait-object.
+- Add a `Shape::make_mut` method to take a mutable reference to the shape trait-object.
+- Add methods like `Shape::as_shape_mut` to downcast a `&mut Shape` to a concrete mutable shape.
+- Add `MassProperties::set_mass` as a simple way to modify the mass while automatically adjusting
+  the angular inertia.
+- Make the fields of `BoundingSphere` public.
+- Add `AABB::EDGES_VERTEX_IDS` and `AABB::FACES_VERTEX_IDS` which are index tables describing
+  the vertices of a given edge, or of a given face, of the AABB.
+
+### Modified
+- Remove the `target_dist` argument from `query::time_of_impact`.
+- The `RigidBodyMotion` and all its implementors have been removed. Use the `NonlinearRigidMotion`
+  struct instead.
+- The `query::nonlinear_time_of_impact` function arguments changed completely to accommodate for
+  the new `NonlinearRigidMotion` struct. See the doc of `query::nonlinear_time_of_impact` for details.
+
+### Fixed
 - Fix the separation computation between a cuboid and a support-map shape in the SAT implementation.
+- Fix a bug causing invalid results with `query::time_of_impact` whenever the first shape was rotated.
 
 ## v0.2.0
 ### Added

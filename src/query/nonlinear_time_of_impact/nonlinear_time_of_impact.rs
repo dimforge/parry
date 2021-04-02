@@ -4,7 +4,22 @@ use crate::query::{
 };
 use crate::shape::Shape;
 
-/// Computes the smallest time of impact of two shapes under arbitrary smooth movement.
+/// Computes the smallest time of impact of two shapes under translational an rotational movements.
+///
+/// # Parameters
+/// * `motion1` - The motion of the first shape.
+/// * `g1` - The first shape involved in the query.
+/// * `motion2` - The motion of the second shape.
+/// * `g2` - The second shape involved in the query.
+/// * `start_time` - The starting time of the interval where the motion takes place.
+/// * `end_time` - The end time of the interval where the motion takes place.
+/// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
+///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
+///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
+///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
+///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
+///    that normal) then the nonlinear shape-casting will attempt to find another impact,
+///    at a time `> start_time` that could result in tunnelling.
 pub fn nonlinear_time_of_impact(
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,

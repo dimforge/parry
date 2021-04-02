@@ -75,7 +75,7 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     // And for 2D use an ArrayVec since there will never be more than 2 contacts anyways.
     /// The contacts points.
     #[cfg(feature = "dim2")]
-    pub points: arrayvec::ArrayVec<[TrackedContact<ContactData>; 2]>,
+    pub points: arrayvec::ArrayVec<TrackedContact<ContactData>, 2>,
     /// The contacts points.
     #[cfg(feature = "dim3")]
     pub points: Vec<TrackedContact<ContactData>>,

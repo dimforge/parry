@@ -1,6 +1,6 @@
 [package]
 name    = "parry2d"
-version = "0.2.0"
+version = "0.3.0"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
 description = "2 dimensional collision detection library in Rust."
@@ -40,7 +40,7 @@ downcast-rs     = "1"
 num-traits      = { version = "0.2", default-features = false }
 smallvec        = "1"
 slab            = "0.4"
-arrayvec        = "0.5"
+arrayvec        = "0.6"
 simba           = "0.4"
 nalgebra        = "0.25"
 approx          = { version = "0.4", default-features = false }
