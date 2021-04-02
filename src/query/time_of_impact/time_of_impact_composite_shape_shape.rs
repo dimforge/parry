@@ -50,7 +50,7 @@ where
     time_of_impact_composite_shape_shape(
         dispatcher,
         &pos12.inverse(),
-        &-vel12,
+        &-pos12.inverse_transform_vector(&vel12),
         g2,
         g1,
         max_toi,
@@ -148,7 +148,7 @@ where
                                 .dispatcher
                                 .time_of_impact(
                                     &part_pos1.inv_mul(&self.pos12),
-                                    self.vel12,
+                                    &part_pos1.inverse_transform_vector(self.vel12),
                                     g1,
                                     self.g2,
                                     self.max_toi,

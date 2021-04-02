@@ -63,8 +63,8 @@ impl TOI {
             toi: self.toi,
             witness1: pos * self.witness1,
             witness2: self.witness2,
-            normal1: self.normal1,
-            normal2: pos * self.normal2,
+            normal1: pos * self.normal1,
+            normal2: self.normal2,
             status: self.status,
         }
     }
@@ -85,6 +85,6 @@ pub fn time_of_impact(
     target_distance: Real,
 ) -> Result<Option<TOI>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    let vel12 = vel2 - vel1;
-    DefaultQueryDispatcher.time_of_impact(&pos12, &vel12, g1, g2, max_toi, target_distance)
+    let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));
+    DefaultQueryDispatcher.time_of_impact(&pos12, &vel12, g1, g2, max_toi)
 }
