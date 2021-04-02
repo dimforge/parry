@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingVolume, SimdAABB};
+use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{QueryDispatcher, Ray, SimdRay, TOI};
@@ -13,21 +13,13 @@ pub fn time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     g1: &G1,
     g2: &dyn Shape,
     max_toi: Real,
-    target_distance: Real,
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
-    let mut visitor = TOICompositeShapeShapeBestFirstVisitor::new(
-        dispatcher,
-        pos12,
-        vel12,
-        g1,
-        g2,
-        max_toi,
-        target_distance,
-    );
+    let mut visitor =
+        TOICompositeShapeShapeBestFirstVisitor::new(dispatcher, pos12, vel12, g1, g2, max_toi);
     g1.typed_quadtree()
         .traverse_best_first(&mut visitor)
         .map(|res| res.1 .1)
@@ -41,7 +33,6 @@ pub fn time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     g1: &dyn Shape,
     g2: &G2,
     max_toi: Real,
-    target_distance: Real,
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
@@ -54,7 +45,6 @@ where
         g2,
         g1,
         max_toi,
-        target_distance,
     )
     .map(|toi| toi.swapped())
 }
@@ -71,7 +61,6 @@ pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a
     g1: &'a G1,
     g2: &'a dyn Shape,
     max_toi: Real,
-    target_distance: Real,
 }
 
 impl<'a, D: ?Sized, G1: ?Sized> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
@@ -87,9 +76,8 @@ where
         g1: &'a G1,
         g2: &'a dyn Shape,
         max_toi: Real,
-        target_distance: Real,
     ) -> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1> {
-        let ls_aabb2 = g2.compute_aabb(pos12).loosened(target_distance);
+        let ls_aabb2 = g2.compute_aabb(pos12);
         let ray = Ray::new(Point::origin(), *vel12);
 
         TOICompositeShapeShapeBestFirstVisitor {
@@ -102,7 +90,6 @@ where
             g1,
             g2,
             max_toi,
-            target_distance,
         }
     }
 }
@@ -152,21 +139,13 @@ where
                                     g1,
                                     self.g2,
                                     self.max_toi,
-                                    self.target_distance,
                                 )
                                 .unwrap_or(None)
                                 .map(|toi| toi.transform1_by(part_pos1));
                         } else {
                             toi = self
                                 .dispatcher
-                                .time_of_impact(
-                                    &self.pos12,
-                                    self.vel12,
-                                    g1,
-                                    self.g2,
-                                    self.max_toi,
-                                    self.target_distance,
-                                )
+                                .time_of_impact(&self.pos12, self.vel12, g1, self.g2, self.max_toi)
                                 .unwrap_or(None);
                         }
                     });
