@@ -41,7 +41,6 @@ fn do_toi_test() -> Option<Real> {
         &vel_two,
         &shape_two,
         Real::MAX,
-        0.0,
     )
     .unwrap()
     .map(|toi| toi.toi)

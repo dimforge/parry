@@ -255,71 +255,64 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     fn time_of_impact(
         &self,
         pos12: &Isometry<Real>,
-        vel12: &Vector<Real>,
+        local_vel12: &Vector<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         max_toi: Real,
-        target_distance: Real,
     ) -> Result<Option<TOI>, Unsupported> {
         if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
             Ok(query::details::time_of_impact_ball_ball(
                 pos12,
-                vel12,
+                local_vel12,
                 b1,
                 b2,
                 max_toi,
-                target_distance,
             ))
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
             Ok(query::details::time_of_impact_halfspace_support_map(
                 pos12,
-                vel12,
+                local_vel12,
                 p1,
                 s2,
                 max_toi,
-                target_distance,
             ))
         } else if let (Some(s1), Some(p2)) =
             (shape1.as_support_map(), shape2.as_shape::<HalfSpace>())
         {
             Ok(query::details::time_of_impact_support_map_halfspace(
                 pos12,
-                vel12,
+                local_vel12,
                 s1,
                 p2,
                 max_toi,
-                target_distance,
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::time_of_impact_support_map_support_map(
                 pos12,
-                vel12,
+                local_vel12,
                 s1,
                 s2,
                 max_toi,
-                target_distance,
             ))
         } else if let Some(c1) = shape1.as_composite_shape() {
             Ok(query::details::time_of_impact_composite_shape_shape(
                 self,
                 pos12,
-                vel12,
+                local_vel12,
                 c1,
                 shape2,
                 max_toi,
-                target_distance,
             ))
         } else if let Some(c2) = shape2.as_composite_shape() {
             Ok(query::details::time_of_impact_shape_composite_shape(
                 self,
                 pos12,
-                vel12,
+                local_vel12,
                 shape1,
                 c2,
                 max_toi,
-                target_distance,
             ))
         } else {
             Err(Unsupported)

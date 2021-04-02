@@ -27,7 +27,6 @@ fn ball_cuboid_toi() {
         &cuboid_vel1,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap()
     .map(|toi| toi.toi);
@@ -39,7 +38,6 @@ fn ball_cuboid_toi() {
         &cuboid_vel2,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap()
     .map(|toi| toi.toi);
@@ -51,7 +49,6 @@ fn ball_cuboid_toi() {
         &cuboid_vel1,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap()
     .map(|toi| toi.toi);

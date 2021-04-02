@@ -82,7 +82,6 @@ pub fn time_of_impact(
     vel2: &Vector<Real>,
     g2: &dyn Shape,
     max_toi: Real,
-    target_distance: Real,
 ) -> Result<Option<TOI>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
     let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));

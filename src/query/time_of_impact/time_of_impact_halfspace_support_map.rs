@@ -9,7 +9,6 @@ pub fn time_of_impact_halfspace_support_map<G: ?Sized>(
     halfspace: &HalfSpace,
     other: &G,
     max_toi: Real,
-    target_distance: Real,
 ) -> Option<TOI>
 where
     G: SupportMap,
@@ -17,7 +16,7 @@ where
     // FIXME: add method to get only the local support point.
     // This would avoid the `inverse_transform_point` later.
     let support_point = other.support_point(pos12, &-halfspace.normal);
-    let closest_point = support_point - *halfspace.normal * target_distance;
+    let closest_point = support_point;
     let ray = Ray::new(closest_point, *vel12);
 
     if let Some(toi) = halfspace.cast_local_ray(&ray, max_toi, true) {
@@ -58,18 +57,16 @@ pub fn time_of_impact_support_map_halfspace<G: ?Sized>(
     other: &G,
     halfspace: &HalfSpace,
     max_toi: Real,
-    target_distance: Real,
 ) -> Option<TOI>
 where
     G: SupportMap,
 {
     time_of_impact_halfspace_support_map(
         &pos12.inverse(),
-        &-vel12,
+        &-pos12.inverse_transform_vector(&vel12),
         halfspace,
         other,
         max_toi,
-        target_distance,
     )
     .map(|toi| toi.swapped())
 }

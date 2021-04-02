@@ -28,7 +28,6 @@ fn main() {
         &box_vel1,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap();
     let toi_will_touch = query::time_of_impact(
@@ -39,7 +38,6 @@ fn main() {
         &box_vel2,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap();
     let toi_wont_touch = query::time_of_impact(
@@ -50,7 +48,6 @@ fn main() {
         &box_vel1,
         &cuboid,
         Real::MAX,
-        0.0,
     )
     .unwrap();
 

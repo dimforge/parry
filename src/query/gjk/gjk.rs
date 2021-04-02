@@ -200,6 +200,8 @@ where
 
 /// Compute the normal and the distance that can travel `g1` along the direction
 /// `dir` so that `g1` and `g2` just touch.
+///
+/// The `dir` vector must be expressed in the local-space of the first shape.
 pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
     pos12: &Isometry<Real>,
     g1: &G1,

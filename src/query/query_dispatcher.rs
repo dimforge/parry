@@ -87,14 +87,22 @@ pub trait QueryDispatcher: Send + Sync {
     /// distance smaller or equal to `distance`.
     ///
     /// Returns `0.0` if the objects are touching or penetrating.
+    ///
+    /// # Parameters
+    /// - `pos12`: the position of the second shape relative to the first shape.
+    /// - `local_vel12`: the relative velocity between the two shapes, expressed in the local-space
+    ///                  of the first shape. In other world: `pos1.inverse() * (vel2 - vel1)`.
+    /// - `g1`: the first shape involved in the TOI computation.
+    /// - `g2`: the second shape involved in the TOI computation.
+    /// - `max_toi`: the maximum allowed TOI. This method returns `None` if the time-of-impact
+    ///              detected is theater than this value.
     fn time_of_impact(
         &self,
         pos12: &Isometry<Real>,
-        vel12: &Vector<Real>,
+        local_vel12: &Vector<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_toi: Real,
-        target_distance: Real,
     ) -> Result<Option<TOI>, Unsupported>;
 
     /// Construct a `QueryDispatcher` that falls back on `other` for cases not handled by `self`
@@ -164,7 +172,6 @@ where
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_toi: Real,
-        target_distance: Real,
     ) -> Option<TOI>);
 
     chain_method!(nonlinear_time_of_impact(

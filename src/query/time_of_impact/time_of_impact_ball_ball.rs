@@ -13,10 +13,9 @@ pub fn time_of_impact_ball_ball(
     b1: &Ball,
     b2: &Ball,
     max_toi: Real,
-    target_distance: Real,
 ) -> Option<TOI> {
     let rsum = b1.radius + b2.radius;
-    let radius = rsum + target_distance;
+    let radius = rsum;
     let center = Point::from(-pos12.translation.vector);
     let ray = Ray::new(Point::origin(), *vel12);
 

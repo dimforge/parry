@@ -3,9 +3,7 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// A nonlinear motion from a starting isometry traveling at constant translational and rotational velocity.
 #[derive(Debug, Copy, Clone)]
 pub struct NonlinearRigidMotion {
-    /// The time at which this parametrization begins. Can be negative.
-    pub t0: Real,
-    /// The starting isometry at `t = self.t0`.
+    /// The starting isometry at `t = 0`.
     pub start: Isometry<Real>,
     /// The local-space point at which the rotational part of this motion is applied.
     pub local_center: Point<Real>,
@@ -23,14 +21,12 @@ impl NonlinearRigidMotion {
     /// Initialize a motion from a starting isometry and linear and angular velocities.
     #[cfg(feature = "dim2")]
     pub fn new(
-        t0: Real,
         start: Isometry<Real>,
         local_center: Point<Real>,
         linvel: Vector<Real>,
         angvel: Real,
     ) -> Self {
         NonlinearRigidMotion {
-            t0,
             start,
             local_center,
             linvel,
@@ -41,14 +37,12 @@ impl NonlinearRigidMotion {
     /// Initialize a motion from a starting isometry and linear and angular velocities.
     #[cfg(feature = "dim3")]
     pub fn new(
-        t0: Real,
         start: Isometry<Real>,
         local_center: Point<Real>,
         linvel: Vector<Real>,
         angvel: Vector<Real>,
     ) -> Self {
         NonlinearRigidMotion {
-            t0,
             start,
             local_center,
             linvel,
@@ -64,7 +58,6 @@ impl NonlinearRigidMotion {
     /// Create a `NonlinearRigidMotion` that always return `pos`.
     pub fn constant_position(pos: Isometry<Real>) -> Self {
         Self {
-            t0: 0.0,
             start: pos,
             linvel: na::zero(),
             angvel: na::zero(),
@@ -125,9 +118,8 @@ impl NonlinearRigidMotion {
 
     /// Computes the position at time `t` of a rigid-body following the motion described by `self`.
     pub fn position_at_time(&self, t: Real) -> Isometry<Real> {
-        let dt = t - self.t0;
         let center = self.start * self.local_center;
         let shift = Translation::from(center.coords);
-        (shift * Isometry::new(self.linvel * dt, self.angvel * dt)) * (shift.inverse() * self.start)
+        (shift * Isometry::new(self.linvel * t, self.angvel * t)) * (shift.inverse() * self.start)
     }
 }
