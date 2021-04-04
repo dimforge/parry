@@ -370,7 +370,9 @@ impl Sum<MassProperties> for MassProperties {
             all_props.push(props);
         }
 
-        total_com /= total_mass;
+        if total_mass > 0.0 {
+            total_com /= total_mass;
+        }
 
         for props in all_props {
             total_inertia += props.construct_shifted_inertia_matrix(total_com - props.local_com);
@@ -402,7 +404,9 @@ impl Sum<MassProperties> for MassProperties {
             all_props.push(props);
         }
 
-        total_com /= total_mass;
+        if total_mass > 0.0 {
+            total_com /= total_mass;
+        }
 
         for props in all_props {
             total_inertia += props.construct_shifted_inertia_matrix(total_com - props.local_com);
@@ -544,5 +548,13 @@ mod test {
             MassProperties::zero(),
             epsilon = 1.0e-6
         );
+    }
+
+    #[test]
+    fn mass_properties_sum_no_nan() {
+        let mp: MassProperties = [MassProperties::zero()].iter().map(|v| *v).sum();
+        assert!(!mp.local_com.x.is_nan() && !mp.local_com.y.is_nan());
+        #[cfg(feature = "dim3")]
+        assert!(!mp.local_com.z.is_nan());
     }
 }
