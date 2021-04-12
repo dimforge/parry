@@ -1,19 +1,14 @@
 use crate::math::Real;
 use crate::num::Bounded;
 use na;
-use na::allocator::Allocator;
-use na::base::{DefaultAllocator, DimName};
 #[cfg(feature = "dim3")]
 use {crate::bounding_volume, crate::math::Point};
 
 /// Returns the index of the support point of a list of points.
-pub fn support_point_id<D: DimName>(
-    direction: &na::VectorN<Real, D>,
+pub fn support_point_id<const D: usize>(
+    direction: &na::SVector<Real, D>,
     points: &[na::Point<Real, D>],
-) -> Option<usize>
-where
-    DefaultAllocator: Allocator<Real, D>,
-{
+) -> Option<usize> {
     let mut argmax = None;
     let _max: Real = Bounded::max_value();
     let mut max = -_max;
@@ -31,14 +26,13 @@ where
 }
 
 /// Returns the index of the support point of an indexed list of points.
-pub fn indexed_support_point_id<D: DimName, I>(
-    direction: &na::VectorN<Real, D>,
+pub fn indexed_support_point_id<I, const D: usize>(
+    direction: &na::SVector<Real, D>,
     points: &[na::Point<Real, D>],
     idx: I,
 ) -> Option<usize>
 where
     I: Iterator<Item = usize>,
-    DefaultAllocator: Allocator<Real, D>,
 {
     let mut argmax = None;
     let mut max = -Real::MAX;
@@ -57,14 +51,13 @@ where
 
 /// Returns the number `n` such that `points[idx.nth(n)]` is the support point.
 #[cfg(feature = "dim3")] // We only use this in 3D right now.
-pub fn indexed_support_point_nth<D: DimName, I>(
-    direction: &na::VectorN<Real, D>,
+pub fn indexed_support_point_nth<I, const D: usize>(
+    direction: &na::SVector<Real, D>,
     points: &[na::Point<Real, D>],
     idx: I,
 ) -> Option<usize>
 where
     I: Iterator<Item = usize>,
-    DefaultAllocator: Allocator<Real, D>,
 {
     let mut argmax = None;
     let mut max = -Real::MAX;

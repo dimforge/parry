@@ -1,8 +1,5 @@
 use crate::math::{Point, Real, Vector};
-use crate::na::{DimName, Point as PointN, VectorN};
-
-use na::allocator::Allocator;
-use na::{self, DefaultAllocator};
+use crate::na::{Point as SPoint, SVector};
 
 /// Closest points between two lines.
 ///
@@ -32,16 +29,13 @@ pub fn closest_points_line_line_parameters(
 /// then `res.2` is set to `true` and the returned closest points are `orig1` and
 /// its projection on the second line.
 #[inline]
-pub fn closest_points_line_line_parameters_eps<D: DimName>(
-    orig1: &PointN<Real, D>,
-    dir1: &VectorN<Real, D>,
-    orig2: &PointN<Real, D>,
-    dir2: &VectorN<Real, D>,
+pub fn closest_points_line_line_parameters_eps<const D: usize>(
+    orig1: &SPoint<Real, D>,
+    dir1: &SVector<Real, D>,
+    orig2: &SPoint<Real, D>,
+    dir2: &SVector<Real, D>,
     eps: Real,
-) -> (Real, Real, bool)
-where
-    DefaultAllocator: Allocator<Real, D>,
-{
+) -> (Real, Real, bool) {
     // Inspired by RealField-time collision detection by Christer Ericson.
     let r = orig1 - orig2;
 
