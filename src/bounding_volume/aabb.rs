@@ -30,17 +30,17 @@ impl AABB {
     #[cfg(feature = "dim3")]
     pub const EDGES_VERTEX_IDS: [(usize, usize); 12] = [
         (0, 1),
-        (0, 3),
-        (0, 4),
         (1, 2),
-        (1, 5),
         (3, 2),
-        (2, 6),
-        (3, 7),
+        (0, 3),
         (4, 5),
-        (4, 7),
         (5, 6),
         (7, 6),
+        (4, 7),
+        (0, 4),
+        (1, 5),
+        (2, 6),
+        (3, 7),
     ];
 
     /// The vertex indices of each face of this AABB.

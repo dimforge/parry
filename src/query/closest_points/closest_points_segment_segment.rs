@@ -2,8 +2,6 @@ use crate::math::{Isometry, Real};
 use crate::query::ClosestPoints;
 use crate::shape::{Segment, SegmentPointLocation};
 
-use na::allocator::Allocator;
-use na::base::{DefaultAllocator, DimName};
 use na::{self, Point};
 
 /// Closest points between segments.
@@ -40,14 +38,10 @@ pub fn closest_points_segment_segment_with_locations(
 /// Segment-segment closest points computation in an arbitrary dimension.
 #[allow(non_snake_case)]
 #[inline]
-pub fn closest_points_segment_segment_with_locations_nD<D>(
+pub fn closest_points_segment_segment_with_locations_nD<const D: usize>(
     seg1: (&Point<Real, D>, &Point<Real, D>),
     seg2: (&Point<Real, D>, &Point<Real, D>),
-) -> (SegmentPointLocation, SegmentPointLocation)
-where
-    D: DimName,
-    DefaultAllocator: Allocator<Real, D>,
-{
+) -> (SegmentPointLocation, SegmentPointLocation) {
     // Inspired by RealField-time collision detection by Christer Ericson.
     let d1 = seg1.1 - seg1.0;
     let d2 = seg2.1 - seg2.0;
