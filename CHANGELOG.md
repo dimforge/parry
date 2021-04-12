@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.0
+### Modified
+- Switch to `nalgebra` 0.26.
+
 ## v0.3.0
 ### Added
 - Add a special case for the triangle/cuboid edge-edge case in the SAT implementation.
