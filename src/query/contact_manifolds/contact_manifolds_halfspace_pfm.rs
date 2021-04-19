@@ -86,8 +86,6 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
         manifold.local_n2 = -*normal1_2;
     }
 
-    println!("Found contacts: {}", manifold.points.len());
-
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);
 }
