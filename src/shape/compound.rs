@@ -4,7 +4,7 @@
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
-use crate::partitioning::SimdQuadTree;
+use crate::partitioning::QBVH;
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 
 /// A compound shape with an aabb bounding volume.
@@ -16,7 +16,7 @@ use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeSha
 #[derive(Clone)]
 pub struct Compound {
     shapes: Vec<(Isometry<Real>, SharedShape)>,
-    quadtree: SimdQuadTree<u32>,
+    quadtree: QBVH<u32>,
     aabbs: Vec<AABB>,
     aabb: AABB,
 }
@@ -47,7 +47,7 @@ impl Compound {
             }
         }
 
-        let mut quadtree = SimdQuadTree::new();
+        let mut quadtree = QBVH::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         quadtree.clear_and_rebuild(leaves.into_iter(), 0.0);
@@ -88,7 +88,7 @@ impl Compound {
 
     /// The acceleration structure used by this compound shape.
     #[inline]
-    pub fn quadtree(&self) -> &SimdQuadTree<u32> {
+    pub fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
@@ -102,7 +102,7 @@ impl SimdCompositeShape for Compound {
     }
 
     #[inline]
-    fn quadtree(&self) -> &SimdQuadTree<u32> {
+    fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
@@ -134,7 +134,7 @@ impl TypedSimdCompositeShape for Compound {
     }
 
     #[inline]
-    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+    fn typed_quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }

@@ -49,7 +49,7 @@ impl IndexedData for u64 {
     }
 }
 
-/// The index of a node part of a SimdQuadTree.
+/// The index of a node part of a QBVH.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct NodeIndex {
@@ -75,7 +75,7 @@ impl NodeIndex {
 /// This groups four nodes of the quad-tree.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-struct SimdQuadTreeNode {
+struct QBVHNode {
     /// The AABBs of the quadtree nodes represented by this node.
     pub simd_aabb: SimdAABB,
     /// Index of the nodes of the 4 nodes represented by `self`.
@@ -83,19 +83,19 @@ struct SimdQuadTreeNode {
     pub children: [u32; 4],
     /// The index of the node parent to the 4 nodes represented by `self`.
     pub parent: NodeIndex,
-    /// Are the four nodes represneted by `self` leaves of the `SimdQuadTree`?
+    /// Are the four nodes represneted by `self` leaves of the `QBVH`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
     dirty: bool, // TODO: move this to a separate bitvec?
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-struct SimdQuadTreeProxy<T> {
+struct QBVHProxy<T> {
     node: NodeIndex,
     data: T, // The collider data. TODO: only set the collider generation here?
 }
 
-impl<T: IndexedData> SimdQuadTreeProxy<T> {
+impl<T: IndexedData> QBVHProxy<T> {
     fn invalid() -> Self {
         Self {
             node: NodeIndex::invalid(),
@@ -104,20 +104,22 @@ impl<T: IndexedData> SimdQuadTreeProxy<T> {
     }
 }
 
-/// A quad-tree with SIMD acceleration.
+/// A quaternary bounding-volume-hierarchy.
+///
+/// This is a bounding-volume-hierarchy where each node has either four children or none.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
-pub struct SimdQuadTree<T> {
+pub struct QBVH<T> {
     root_aabb: AABB,
-    nodes: Vec<SimdQuadTreeNode>,
+    nodes: Vec<QBVHNode>,
     dirty_nodes: VecDeque<u32>,
-    proxies: Vec<SimdQuadTreeProxy<T>>,
+    proxies: Vec<QBVHProxy<T>>,
 }
 
-impl<T: IndexedData> SimdQuadTree<T> {
+impl<T: IndexedData> QBVH<T> {
     /// Initialize an empty quad-tree.
     pub fn new() -> Self {
-        SimdQuadTree {
+        QBVH {
             root_aabb: AABB::new_invalid(),
             nodes: Vec::new(),
             dirty_nodes: VecDeque::new(),
@@ -149,7 +151,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
     /// Clears this quad-tree and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
-        mut data_gen: impl SimdQuadtreeDataGenerator<T>,
+        mut data_gen: impl QBVHDataGenerator<T>,
         dilation_factor: Real,
     ) {
         self.nodes.clear();
@@ -158,12 +160,12 @@ impl<T: IndexedData> SimdQuadTree<T> {
         // Create proxies.
         let mut indices = Vec::with_capacity(data_gen.size_hint());
         let mut aabbs = vec![AABB::new_invalid(); data_gen.size_hint()];
-        self.proxies = vec![SimdQuadTreeProxy::invalid(); data_gen.size_hint()];
+        self.proxies = vec![QBVHProxy::invalid(); data_gen.size_hint()];
 
         data_gen.for_each(|data, aabb| {
             let index = data.index();
             if index >= self.proxies.len() {
-                self.proxies.resize(index + 1, SimdQuadTreeProxy::invalid());
+                self.proxies.resize(index + 1, QBVHProxy::invalid());
                 aabbs.resize(index + 1, AABB::new_invalid());
             }
 
@@ -173,7 +175,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         });
 
         // Build the tree recursively.
-        let root_node = SimdQuadTreeNode {
+        let root_node = QBVHNode {
             simd_aabb: SimdAABB::new_invalid(),
             children: [1, u32::MAX, u32::MAX, u32::MAX],
             parent: NodeIndex::invalid(),
@@ -265,7 +267,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
                 self.proxies[*id].node = NodeIndex::new(my_id as u32, k as u8);
             }
 
-            let mut node = SimdQuadTreeNode {
+            let mut node = QBVHNode {
                 simd_aabb: SimdAABB::from(leaf_aabbs),
                 children: proxy_ids,
                 parent,
@@ -332,7 +334,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
         //     right_top.len()
         // );
 
-        let node = SimdQuadTreeNode {
+        let node = QBVHNode {
             simd_aabb: SimdAABB::new_invalid(),
             children: [0; 4], // Will be set after the recursive call
             parent,
@@ -524,12 +526,12 @@ impl<T: IndexedData> SimdQuadTree<T> {
     }
 }
 
-pub trait SimdQuadtreeDataGenerator<T> {
+pub trait QBVHDataGenerator<T> {
     fn size_hint(&self) -> usize;
     fn for_each(&mut self, f: impl FnMut(T, AABB));
 }
 
-impl<T, F> SimdQuadtreeDataGenerator<T> for F
+impl<T, F> QBVHDataGenerator<T> for F
 where
     F: ExactSizeIterator<Item = (T, AABB)>,
 {
@@ -546,24 +548,24 @@ where
 }
 
 #[allow(dead_code)]
-struct SimdQuadTreeIncrementalBuilderStep {
+struct QBVHIncrementalBuilderStep {
     range: Range<usize>,
     parent: NodeIndex,
 }
 
 #[allow(dead_code)]
-struct SimdQuadTreeIncrementalBuilder<T> {
-    quadtree: SimdQuadTree<T>,
-    to_insert: Vec<SimdQuadTreeIncrementalBuilderStep>,
+struct QBVHIncrementalBuilder<T> {
+    quadtree: QBVH<T>,
+    to_insert: Vec<QBVHIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
+impl<T: IndexedData> QBVHIncrementalBuilder<T> {
     pub fn new() -> Self {
         Self {
-            quadtree: SimdQuadTree::new(),
+            quadtree: QBVH::new(),
             to_insert: Vec::new(),
             aabbs: Vec::new(),
             indices: Vec::new(),
@@ -587,7 +589,7 @@ impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
                     proxy_ids[k] = *id as u32;
                 }
 
-                let node = SimdQuadTreeNode {
+                let node = QBVHNode {
                     simd_aabb: SimdAABB::from(leaf_aabbs),
                     children: proxy_ids,
                     parent: to_insert.parent,
@@ -653,7 +655,7 @@ impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
             let (right_bottom, right_top) =
                 split_indices_wrt_dim(right, &self.aabbs, &center, subdiv_dims[1]);
 
-            let node = SimdQuadTreeNode {
+            let node = QBVHNode {
                 simd_aabb: SimdAABB::new_invalid(),
                 children: [0; 4], // Will be set after the recursive call
                 parent: to_insert.parent,
@@ -669,19 +671,19 @@ impl<T: IndexedData> SimdQuadTreeIncrementalBuilder<T> {
             let b = a + left_top.len();
             let c = b + right_bottom.len();
             let d = c + right_top.len();
-            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
+            self.to_insert.push(QBVHIncrementalBuilderStep {
                 range: 0..a,
                 parent: NodeIndex::new(id, 0),
             });
-            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
+            self.to_insert.push(QBVHIncrementalBuilderStep {
                 range: a..b,
                 parent: NodeIndex::new(id, 1),
             });
-            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
+            self.to_insert.push(QBVHIncrementalBuilderStep {
                 range: b..c,
                 parent: NodeIndex::new(id, 2),
             });
-            self.to_insert.push(SimdQuadTreeIncrementalBuilderStep {
+            self.to_insert.push(QBVHIncrementalBuilderStep {
                 range: c..d,
                 parent: NodeIndex::new(id, 3),
             });
@@ -735,16 +737,16 @@ fn split_indices_wrt_dim<'a>(
 mod test {
     use crate::bounding_volume::AABB;
     use crate::math::{Point, Vector};
-    use crate::partitioning::SimdQuadTree;
+    use crate::partitioning::QBVH;
 
     #[test]
     fn multiple_identical_aabb_stack_overflow() {
         // A stack overflow was caused during the construction of the
-        // SimdQuadTree with more than four AABB with the same center.
+        // QBVH with more than four AABB with the same center.
         let aabb = AABB::new(Point::origin(), Vector::repeat(1.0).into());
 
         for k in 0u32..20 {
-            let mut tree = SimdQuadTree::new();
+            let mut tree = QBVH::new();
             tree.clear_and_rebuild((0..k).map(|i| (i, aabb)), 0.0);
         }
     }

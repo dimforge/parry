@@ -1,6 +1,6 @@
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
-use crate::partitioning::SimdQuadTree;
+use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
 
@@ -8,7 +8,7 @@ use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A polyline.
 pub struct Polyline {
-    quadtree: SimdQuadTree<u32>,
+    quadtree: QBVH<u32>,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 2]>,
 }
@@ -24,7 +24,7 @@ impl Polyline {
             (i as u32, aabb)
         });
 
-        let mut quadtree = SimdQuadTree::new();
+        let mut quadtree = QBVH::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         quadtree.clear_and_rebuild(data, 0.0);
@@ -46,7 +46,7 @@ impl Polyline {
         &self.quadtree.root_aabb()
     }
 
-    pub(crate) fn quadtree(&self) -> &SimdQuadTree<u32> {
+    pub(crate) fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 
@@ -113,7 +113,7 @@ impl SimdCompositeShape for Polyline {
         f(None, &tri)
     }
 
-    fn quadtree(&self) -> &SimdQuadTree<u32> {
+    fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
@@ -138,7 +138,7 @@ impl TypedSimdCompositeShape for Polyline {
         f(None, &seg)
     }
 
-    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+    fn typed_quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
