@@ -25,6 +25,12 @@ impl Deref for SharedShape {
     }
 }
 
+impl AsRef<dyn Shape> for SharedShape {
+    fn as_ref(&self) -> &dyn Shape {
+        &*self.0
+    }
+}
+
 impl SharedShape {
     /// Wraps the given shape as a shared shape.
     pub fn new(shape: impl Shape) -> Self {
