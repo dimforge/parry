@@ -1,14 +1,14 @@
 //! Spatial partitioning tools.
 
+pub use self::qbvh::{IndexedData, QBVHDataGenerator, QBVH};
 pub use self::visitor::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
     SimdVisitor,
 };
-pub use self::wquadtree::{IndexedData, QBVHDataGenerator, QBVH};
 
 /// A quaternary bounding-volume-hierarchy.
 #[deprecated(note = "Renamed to QBVH")]
 pub type SimdQuadTree<T> = QBVH<T>;
 
+mod qbvh;
 mod visitor;
-mod wquadtree;
