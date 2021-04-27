@@ -6,6 +6,7 @@ pub use self::visitor::{
 };
 pub use self::wquadtree::{IndexedData, QBVHDataGenerator, QBVH};
 
+/// A quaternary bounding-volume-hierarchy.
 #[deprecated(note = "Renamed to QBVH")]
 pub type SimdQuadTree<T> = QBVH<T>;
 
