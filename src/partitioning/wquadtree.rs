@@ -526,8 +526,13 @@ impl<T: IndexedData> QBVH<T> {
     }
 }
 
+/// Trait used for generating the content of the leaves of the QBVH acceleration structure.
 pub trait QBVHDataGenerator<T> {
+    /// Gives an idea of the number of elements this generator contains.
+    ///
+    /// This is primarily used for pre-allocating some arrays for better performances.
     fn size_hint(&self) -> usize;
+    /// Iterate through all the elements of this generator.
     fn for_each(&mut self, f: impl FnMut(T, AABB));
 }
 
