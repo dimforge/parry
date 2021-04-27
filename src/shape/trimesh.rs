@@ -1,6 +1,6 @@
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
-use crate::partitioning::SimdQuadTree;
+use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cuboid, HeightField};
@@ -10,7 +10,7 @@ use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A triangle mesh.
 pub struct TriMesh {
-    quadtree: SimdQuadTree<u32>,
+    quadtree: QBVH<u32>,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
 }
@@ -33,7 +33,7 @@ impl TriMesh {
             (i as u32, aabb)
         });
 
-        let mut quadtree = SimdQuadTree::new();
+        let mut quadtree = QBVH::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         quadtree.clear_and_rebuild(data, 0.0);
@@ -56,7 +56,7 @@ impl TriMesh {
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn quadtree(&self) -> &SimdQuadTree<u32> {
+    pub fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 
@@ -184,7 +184,7 @@ impl SimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn quadtree(&self) -> &SimdQuadTree<u32> {
+    fn quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
@@ -209,7 +209,7 @@ impl TypedSimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn typed_quadtree(&self) -> &SimdQuadTree<u32> {
+    fn typed_quadtree(&self) -> &QBVH<u32> {
         &self.quadtree
     }
 }
