@@ -314,6 +314,14 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     ) -> Option<Unit<Vector<Real>>> {
         None
     }
+
+    /// Computes the swept AABB of this shape, i.e., the space it would occupy by moving from
+    /// the given start position to the given end position.
+    fn compute_swept_aabb(&self, start_pos: &Isometry<Real>, end_pos: &Isometry<Real>) -> AABB {
+        let aabb1 = self.compute_aabb(start_pos);
+        let aabb2 = self.compute_aabb(end_pos);
+        aabb1.merged(&aabb2)
+    }
 }
 
 impl_downcast!(sync Shape);
