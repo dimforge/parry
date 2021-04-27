@@ -149,18 +149,18 @@ impl<T: IndexedData> SimdQuadTree<T> {
     /// Clears this quad-tree and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
-        data: impl ExactSizeIterator<Item = (T, AABB)>,
+        mut data_gen: impl SimdQuadtreeDataGenerator<T>,
         dilation_factor: Real,
     ) {
         self.nodes.clear();
         self.proxies.clear();
 
         // Create proxies.
-        let mut indices = Vec::with_capacity(data.len());
-        let mut aabbs = vec![AABB::new_invalid(); data.len()];
-        self.proxies = vec![SimdQuadTreeProxy::invalid(); data.len()];
+        let mut indices = Vec::with_capacity(data_gen.size_hint());
+        let mut aabbs = vec![AABB::new_invalid(); data_gen.size_hint()];
+        self.proxies = vec![SimdQuadTreeProxy::invalid(); data_gen.size_hint()];
 
-        for (data, aabb) in data {
+        data_gen.for_each(|data, aabb| {
             let index = data.index();
             if index >= self.proxies.len() {
                 self.proxies.resize(index + 1, SimdQuadTreeProxy::invalid());
@@ -170,7 +170,7 @@ impl<T: IndexedData> SimdQuadTree<T> {
             self.proxies[index].data = data;
             aabbs[index] = aabb;
             indices.push(index);
-        }
+        });
 
         // Build the tree recursively.
         let root_node = SimdQuadTreeNode {
@@ -521,6 +521,27 @@ impl<T: IndexedData> SimdQuadTree<T> {
         }
 
         best_result
+    }
+}
+
+pub trait SimdQuadtreeDataGenerator<T> {
+    fn size_hint(&self) -> usize;
+    fn for_each(&mut self, f: impl FnMut(T, AABB));
+}
+
+impl<T, F> SimdQuadtreeDataGenerator<T> for F
+where
+    F: ExactSizeIterator<Item = (T, AABB)>,
+{
+    fn size_hint(&self) -> usize {
+        self.len()
+    }
+
+    #[inline(always)]
+    fn for_each(&mut self, mut f: impl FnMut(T, AABB)) {
+        for (elt, aabb) in self {
+            f(elt, aabb)
+        }
     }
 }
 
