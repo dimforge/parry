@@ -1,5 +1,16 @@
 # Change Log
 
+## v0.4.1
+### Added
+- `SharedShape` now implements `AsRef<dyn Shape>`.
+- Add the optional method `Shape::compute_swept_aabb` to the `Shape` trait.
+
+### Modified
+- Renamed `SimdQuadTree` to `QBVH` (Quaternary Bounding Volume Hierarchy). The
+  incorrect name `SimdQuadTree` is now deprecated.
+- `QBVH::clear_and_rebuild` is now slightly more general.
+
+
 ## v0.4.0
 ### Modified
 - Switch to `nalgebra` 0.26.
