@@ -478,7 +478,7 @@ impl EPA {
                 continue;
             }
 
-            println!("checking {}-th face.", i);
+            // println!("checking {}-th face.", i);
             let adj1 = &self.faces[face.adj[0]];
             let adj2 = &self.faces[face.adj[1]];
             let adj3 = &self.faces[face.adj[2]];

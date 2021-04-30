@@ -36,7 +36,8 @@ pub fn closest_points_cuboid_cuboid(
 
     // The best separating axis is face-vertex.
     if sep1.0 >= sep2.0 && sep1.0 >= sep3.0 {
-        println!("AA: {:?}", sep1);
+        // println!("AA: {:?}", sep1);
+
         // To compute the closest points, we need to project the support point
         // from cuboid2 on the support-face of cuboid1. For simplicity, we just
         // project the support point from cuboid2 on cuboid1 itself (not just the face).
@@ -51,7 +52,7 @@ pub fn closest_points_cuboid_cuboid(
 
     // The best separating axis is vertex-face.
     if sep2.0 >= sep1.0 && sep2.0 >= sep3.0 {
-        println!("BB: {:?}", sep2);
+        // println!("BB: {:?}", sep2);
 
         // To compute the actual closest points, we need to project the support point
         // from cuboid1 on the support-face of cuboid2. For simplicity, we just
@@ -69,7 +70,7 @@ pub fn closest_points_cuboid_cuboid(
     // The best separating axis is edge-edge.
     #[cfg(feature = "dim3")]
     if sep3.0 >= sep2.0 && sep3.0 >= sep1.0 {
-        println!("AA: {:?}, BB: {:?}, CC: {:?}", sep1, sep2, sep3);
+        // println!("AA: {:?}, BB: {:?}, CC: {:?}", sep1, sep2, sep3);
 
         // To compute the actual distance, we need to compute the closest
         // points between the two edges that generated the separating axis.
