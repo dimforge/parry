@@ -20,7 +20,7 @@ use na::{RealField, Unit};
 use num::Zero;
 use num_derive::FromPrimitive;
 
-#[derive(Copy, Clone, Debug, FromPrimitive)]
+#[derive(Copy, Clone, Debug, FromPrimitive, PartialEq, Eq, Hash)]
 /// Enum representing the type of a shape.
 pub enum ShapeType {
     /// A ball shape.
