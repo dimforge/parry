@@ -13,9 +13,9 @@ impl Cuboid {
 /// The contour of a unit cuboid lying on the x-y plane.
 fn unit_rectangle() -> Vec<Point2<Real>> {
     vec![
-        Point2::new(-0.5, 0.5),
-        Point2::new(0.5, 0.5),
         Point2::new(-0.5, -0.5),
         Point2::new(0.5, -0.5),
+        Point2::new(0.5, 0.5),
+        Point2::new(-0.5, 0.5),
     ]
 }
