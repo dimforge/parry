@@ -1,5 +1,14 @@
 # Change Log
 
+## v0.4.2
+### Added
+- `ShapeType` now implements `PartialEq, Eq, Hash`.
+
+### Fixed
+- The order of vertices output by `Cuboid::to_polyline` has been modified
+  to actually represent the cuboid's boundary (instead of passing through
+  its diagonal).
+
 ## v0.4.1
 ### Added
 - `SharedShape` now implements `AsRef<dyn Shape>`.
