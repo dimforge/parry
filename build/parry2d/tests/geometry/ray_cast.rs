@@ -120,6 +120,21 @@ fn raycast_starting_inside_of_triangle() {
     assert_eq!(intersect.toi, 0.0);
 }
 
+#[test]
+fn raycast_starting_on_edge_of_triangle() {
+    let triangle = Triangle::new(
+        Point2::new(0.0f32, -10.0),
+        Point2::new(0.0, 10.0),
+        Point2::new(10.0, 0.0),
+    );
+    let ray = Ray::new(Point2::new(0.0, 0.0), Vector2::new(1.0, 0.0));
+    let intersect = triangle
+        .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
+        .expect("No intersection");
+
+    assert_eq!(intersect.toi, 0.0);
+}
+
 ///    Ray Target
 ///    +
 /// 3  |     Ray moved up each iteration
