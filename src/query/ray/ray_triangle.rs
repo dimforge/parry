@@ -18,11 +18,12 @@ impl RayCast for Triangle {
         let edges = self.edges();
 
         if solid {
-            let perp1 = edges[0].scaled_direction().perp(&(ray.origin - edges[0].a));
-            let perp2 = edges[1].scaled_direction().perp(&(ray.origin - edges[1].a));
-            let perp3 = edges[2].scaled_direction().perp(&(ray.origin - edges[2].a));
+            // Check if ray starts in triangle
+            let perp1 = edges[0].scaled_direction().perp(&(ray.origin - edges[0].a)) > 0.0;
+            let perp2 = edges[1].scaled_direction().perp(&(ray.origin - edges[1].a)) > 0.0;
+            let perp3 = edges[2].scaled_direction().perp(&(ray.origin - edges[2].a)) > 0.0;
 
-            if perp1 * perp2 <= 0.0 || perp1 * perp3 <= 0.0 {
+            if perp1 == perp2 && perp1 == perp3 {
                 return Some(RayIntersection::new(0.0, Vector::y(), FeatureId::Face(0)));
             }
         }
