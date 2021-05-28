@@ -1,7 +1,7 @@
 use na::{self, Isometry2, Point2, Vector2};
 use parry2d::math::Real;
 use parry2d::query::{Ray, RayCast};
-use parry2d::shape::{ConvexPolygon, Segment};
+use parry2d::shape::{ConvexPolygon, Segment, Triangle};
 
 #[test]
 fn issue_178_parallel_raycast() {
@@ -88,6 +88,36 @@ fn perpendicular_raycast_starting_bellow_segment() {
     let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
     let ray = Ray::new(Point2::new(0.0, -11.0), Vector2::new(1.0, 0.0));
     assert!(!segment.intersects_local_ray(&ray, std::f32::MAX));
+}
+
+#[test]
+fn raycast_starting_outside_of_triangle() {
+    let triangle = Triangle::new(
+        Point2::new(0.0f32, -10.0),
+        Point2::new(0.0, 10.0),
+        Point2::new(10.0, 0.0),
+    );
+    let ray = Ray::new(Point2::new(-10.0, 0.0), Vector2::new(1.0, 0.0));
+    let intersect = triangle
+        .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
+        .expect("No intersection");
+
+    assert_ne!(intersect.toi, 0.0);
+}
+
+#[test]
+fn raycast_starting_inside_of_triangle() {
+    let triangle = Triangle::new(
+        Point2::new(0.0f32, -10.0),
+        Point2::new(0.0, 10.0),
+        Point2::new(10.0, 0.0),
+    );
+    let ray = Ray::new(Point2::new(2.0, 0.0), Vector2::new(1.0, 0.0));
+    let intersect = triangle
+        .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
+        .expect("No intersection");
+
+    assert_eq!(intersect.toi, 0.0);
 }
 
 ///    Ray Target
