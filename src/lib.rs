@@ -82,7 +82,10 @@ mod real {
 pub mod math {
     pub use super::real::*;
     pub use super::simd::*;
-    use na::{Isometry3, Matrix3, Point3, Translation3, UnitQuaternion, Vector3, Vector6, U3, U6};
+    use na::{
+        Isometry3, Matrix3, Point3, Translation3, UnitQuaternion, UnitVector3, Vector3, Vector6,
+        U3, U6,
+    };
 
     /// The default tolerance used for geometric operations.
     pub const DEFAULT_EPSILON: Real = Real::EPSILON;
@@ -107,6 +110,9 @@ pub mod math {
 
     /// The vector type.
     pub type Vector<N> = Vector3<N>;
+
+    /// The unit vector type.
+    pub type UnitVector<N> = UnitVector3<N>;
 
     /// The matrix type.
     pub type Matrix<N> = Matrix3<N>;
@@ -148,7 +154,8 @@ pub mod math {
     pub use super::real::*;
     pub use super::simd::*;
     use na::{
-        Isometry2, Matrix2, Point2, Translation2, UnitComplex, Vector1, Vector2, Vector3, U2,
+        Isometry2, Matrix2, Point2, Translation2, UnitComplex, UnitVector2, Vector1, Vector2,
+        Vector3, U2,
     };
 
     /// The default tolerance used for geometric operations.
@@ -168,6 +175,9 @@ pub mod math {
 
     /// The vector type.
     pub type Vector<N> = Vector2<N>;
+
+    /// The unit vector type.
+    pub type UnitVector<N> = UnitVector2<N>;
 
     /// The matrix type.
     pub type Matrix<N> = Matrix2<N>;
