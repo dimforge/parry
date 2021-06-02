@@ -1,5 +1,14 @@
 # Change Log
 
+## v0.5.0
+
+### Modified
+- Updated all dependencies to their latest version.
+
+### Fixed
+- Fix ray-casting against solid triangles.
+- Fix NaN when adding mass-properties with a zero mass.
+
 ## v0.4.2
 ### Added
 - `ShapeType` now implements `PartialEq, Eq, Hash`.
