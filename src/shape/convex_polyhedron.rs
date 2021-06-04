@@ -439,6 +439,33 @@ impl ConvexPolyhedron {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
         self.support_feature_id_toward_eps(local_dir, eps)
     }
+
+    /// The normal of the given feature.
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(id) => Some(self.faces[id as usize].normal),
+            FeatureId::Edge(id) => {
+                let edge = &self.edges[id as usize];
+                Some(Unit::new_normalize(
+                    *self.faces[edge.faces[0] as usize].normal
+                        + *self.faces[edge.faces[1] as usize].normal,
+                ))
+            }
+            FeatureId::Vertex(id) => {
+                let vertex = &self.vertices[id as usize];
+                let first = vertex.first_adj_face_or_edge;
+                let last = vertex.first_adj_face_or_edge + vertex.num_adj_faces_or_edge;
+                let mut normal = Vector::zeros();
+
+                for face in &self.faces_adj_to_vertex[first as usize..last as usize] {
+                    normal += *self.faces[*face as usize].normal
+                }
+
+                Some(Unit::new_normalize(normal))
+            }
+            FeatureId::Unknown => None,
+        }
+    }
 }
 
 impl SupportMap for ConvexPolyhedron {
@@ -519,32 +546,6 @@ impl ConvexPolyhedron for ConvexPolyhedron {
         out.set_normal(face.normal);
         out.set_feature_id(id);
         out.recompute_edge_normals();
-    }
-
-    fn feature_normal(&self, feature: FeatureId) -> Unit<Vector<Real>> {
-        match feature {
-            FeatureId::Face(id) => self.faces[id as usize].normal,
-            FeatureId::Edge(id) => {
-                let edge = &self.edges[id as usize];
-                Unit::new_normalize(
-                    *self.faces[edge.faces[0] as usize].normal
-                        + *self.faces[edge.faces[1] as usize].normal,
-                )
-            }
-            FeatureId::Vertex(id) => {
-                let vertex = &self.vertices[id as usize];
-                let first = vertex.first_adj_face_or_edge;
-                let last = vertex.first_adj_face_or_edge + vertex.num_adj_faces_or_edge;
-                let mut normal = Vector::zeros();
-
-                for face in &self.faces_adj_to_vertex[first..last] {
-                    normal += *self.faces[*face].normal
-                }
-
-                Unit::new_normalize(normal)
-            }
-            FeatureId::Unknown => panic!("Invalid feature ID: {:?}", feature),
-        }
     }
 
     fn support_face_toward(

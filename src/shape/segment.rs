@@ -1,7 +1,7 @@
 //! Definition of the segment shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::SupportMap;
+use crate::shape::{FeatureId, SupportMap};
 
 use na::{self, Unit};
 use std::mem;
@@ -117,6 +117,43 @@ impl Segment {
             _ => panic!(),
         }
     }
+
+    /// The normal of the given feature of this shape.
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        if let Some(direction) = self.direction() {
+            match feature {
+                FeatureId::Vertex(id) => {
+                    if id == 0 {
+                        Some(direction)
+                    } else {
+                        Some(-direction)
+                    }
+                }
+                #[cfg(feature = "dim3")]
+                FeatureId::Edge(_) => {
+                    let iamin = direction.iamin();
+                    let mut normal = Vector::zeros();
+                    normal[iamin] = 1.0;
+                    normal -= *direction * direction[iamin];
+                    Some(Unit::new_normalize(normal))
+                }
+                FeatureId::Face(id) => {
+                    let mut dir = Vector::zeros();
+                    if id == 0 {
+                        dir[0] = direction[1];
+                        dir[1] = -direction[0];
+                    } else {
+                        dir[0] = -direction[1];
+                        dir[1] = direction[0];
+                    }
+                    Some(Unit::new_unchecked(dir))
+                }
+                _ => None,
+            }
+        } else {
+            Some(Vector::y_axis())
+        }
+    }
 }
 
 impl SupportMap for Segment {
@@ -179,42 +216,6 @@ impl ConvexPolyhedron for Segment {
         } else {
             face.push(self.a, FeatureId::Vertex(0));
             face.set_feature_id(FeatureId::Vertex(0));
-        }
-    }
-
-    fn feature_normal(&self, feature: FeatureId) -> Unit<Vector<Real>> {
-        if let Some(direction) = self.direction() {
-            match feature {
-                FeatureId::Vertex(id) => {
-                    if id == 0 {
-                        direction
-                    } else {
-                        -direction
-                    }
-                }
-                #[cfg(feature = "dim3")]
-                FeatureId::Edge(_) => {
-                    let iamin = direction.iamin();
-                    let mut normal = Vector::zeros();
-                    normal[iamin] = 1.0;
-                    normal -= *direction * direction[iamin];
-                    Unit::new_normalize(normal)
-                }
-                FeatureId::Face(id) => {
-                    let mut dir = Vector::zeros();
-                    if id == 0 {
-                        dir[0] = direction[1];
-                        dir[1] = -direction[0];
-                    } else {
-                        dir[0] = -direction[1];
-                        dir[1] = direction[0];
-                    }
-                    Unit::new_unchecked(dir)
-                }
-                _ => panic!("Invalid feature ID: {:?}", feature),
-            }
-        } else {
-            Vector::y_axis()
         }
     }
 

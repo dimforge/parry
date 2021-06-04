@@ -3,8 +3,9 @@
 use crate::math::{Point, Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::shape::Segment;
-use crate::shape::{PolygonalFeature, SupportMap};
+use crate::shape::{FeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
+use na::Unit;
 
 /// Shape of a box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -206,6 +207,104 @@ impl Cuboid {
             eids,
             fid: fid as u32,
             num_vertices: 4,
+        }
+    }
+
+    /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim2")]
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(id) => {
+                let mut dir: Vector<Real> = na::zero();
+
+                if id < 2 {
+                    dir[id as usize] = 1.0;
+                } else {
+                    dir[id as usize - 2] = -1.0;
+                }
+                Some(Unit::new_unchecked(dir))
+            }
+            FeatureId::Vertex(id) => {
+                let mut dir: Vector<Real> = na::zero();
+
+                match id {
+                    0b00 => {
+                        dir[0] = 1.0;
+                        dir[1] = 1.0;
+                    }
+                    0b01 => {
+                        dir[1] = 1.0;
+                        dir[0] = -1.0;
+                    }
+                    0b11 => {
+                        dir[0] = -1.0;
+                        dir[1] = -1.0;
+                    }
+                    0b10 => {
+                        dir[1] = -1.0;
+                        dir[0] = 1.0;
+                    }
+                    _ => return None,
+                }
+
+                Some(Unit::new_normalize(dir))
+            }
+            _ => None,
+        }
+    }
+
+    /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim3")]
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(id) => {
+                let mut dir: Vector<Real> = na::zero();
+
+                if id < 3 {
+                    dir[id as usize] = 1.0;
+                } else {
+                    dir[id as usize - 3] = -1.0;
+                }
+                Some(Unit::new_unchecked(dir))
+            }
+            FeatureId::Edge(id) => {
+                let edge = id & 0b011;
+                let face1 = (edge + 1) % 3;
+                let face2 = (edge + 2) % 3;
+                let signs = id >> 2;
+
+                let mut dir: Vector<Real> = na::zero();
+                let _1: Real = na::one();
+
+                if signs & (1 << face1) != 0 {
+                    dir[face1 as usize] = -_1
+                } else {
+                    dir[face1 as usize] = _1
+                }
+
+                if signs & (1 << face2) != 0 {
+                    dir[face2 as usize] = -_1
+                } else {
+                    dir[face2 as usize] = _1;
+                }
+
+                Some(Unit::new_normalize(dir))
+            }
+            FeatureId::Vertex(id) => {
+                let mut dir: Vector<Real> = na::zero();
+                for i in 0..3 {
+                    let _1: Real = na::one();
+
+                    if id & (1 << i) != 0 {
+                        dir[i] = -_1;
+                    } else {
+                        dir[i] = _1
+                    }
+                }
+
+                Some(Unit::new_normalize(dir))
+            }
+            _ => None,
         }
     }
 }
@@ -552,102 +651,6 @@ impl ConvexPolyhedron for Cuboid {
             }
 
             FeatureId::Vertex(support_point_id)
-        }
-    }
-
-    #[cfg(feature = "dim2")]
-    fn feature_normal(&self, feature: FeatureId) -> Unit<Vector<Real>> {
-        match feature {
-            FeatureId::Face(id) => {
-                let mut dir: Vector<Real> = na::zero();
-
-                if id < 2 {
-                    dir[id as usize] = 1.0;
-                } else {
-                    dir[id as usize - 2] = -1.0;
-                }
-                Unit::new_unchecked(dir)
-            }
-            FeatureId::Vertex(id) => {
-                let mut dir: Vector<Real> = na::zero();
-
-                match id {
-                    0b00 => {
-                        dir[0] = 1.0;
-                        dir[1] = 1.0;
-                    }
-                    0b01 => {
-                        dir[1] = 1.0;
-                        dir[0] = -1.0;
-                    }
-                    0b11 => {
-                        dir[0] = -1.0;
-                        dir[1] = -1.0;
-                    }
-                    0b10 => {
-                        dir[1] = -1.0;
-                        dir[0] = 1.0;
-                    }
-                    _ => panic!("Invalid feature ID: {:?}", feature),
-                }
-
-                Unit::new_normalize(dir)
-            }
-            _ => panic!("Invalid feature ID {:?}.", feature),
-        }
-    }
-
-    #[cfg(feature = "dim3")]
-    fn feature_normal(&self, feature: FeatureId) -> Unit<Vector<Real>> {
-        match feature {
-            FeatureId::Face(id) => {
-                let mut dir: Vector<Real> = na::zero();
-
-                if id < 3 {
-                    dir[id as usize] = 1.0;
-                } else {
-                    dir[id as usize - 3] = -1.0;
-                }
-                Unit::new_unchecked(dir)
-            }
-            FeatureId::Edge(id) => {
-                let edge = id & 0b011;
-                let face1 = (edge + 1) % 3;
-                let face2 = (edge + 2) % 3;
-                let signs = id >> 2;
-
-                let mut dir: Vector<Real> = na::zero();
-                let _1: Real = na::one();
-
-                if signs & (1 << face1) != 0 {
-                    dir[face1 as usize] = -_1
-                } else {
-                    dir[face1 as usize] = _1
-                }
-
-                if signs & (1 << face2) != 0 {
-                    dir[face2 as usize] = -_1
-                } else {
-                    dir[face2 as usize] = _1;
-                }
-
-                Unit::new_normalize(dir)
-            }
-            FeatureId::Vertex(id) => {
-                let mut dir: Vector<Real> = na::zero();
-                for i in 0..3 {
-                    let _1: Real = na::one();
-
-                    if id & (1 << i) != 0 {
-                        dir[i] = -_1;
-                    } else {
-                        dir[i] = _1
-                    }
-                }
-
-                Unit::new_normalize(dir)
-            }
-            _ => panic!("Invalid feature ID: {:?}", feature),
         }
     }
 }

@@ -98,6 +98,24 @@ impl ConvexPolygon {
             utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points) as u32,
         )
     }
+
+    /// The normal of the given feature.
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(id) => Some(self.normals[id as usize]),
+            FeatureId::Vertex(id2) => {
+                let id1 = if id2 == 0 {
+                    self.normals.len() - 1
+                } else {
+                    id2 as usize - 1
+                };
+                Some(Unit::new_normalize(
+                    *self.normals[id1] + *self.normals[id2 as usize],
+                ))
+            }
+            _ => None,
+        }
+    }
 }
 
 impl SupportMap for ConvexPolygon {
@@ -152,20 +170,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         out.set_feature_id(FeatureId::Face(ia as u32));
     }
 
-    fn feature_normal(&self, feature: FeatureId) -> Unit<Vector<Real>> {
-        match feature {
-            FeatureId::Face(id) => self.normals[id as usize],
-            FeatureId::Vertex(id2) => {
-                let id1 = if id2 == 0 {
-                    self.normals.len() - 1
-                } else {
-                    id2 as usize - 1
-                };
-                Unit::new_normalize(*self.normals[id1] + *self.normals[id2 as usize])
-            }
-            _ => panic!("Invalid feature ID: {:?}", feature),
-        }
-    }
+
 
     fn support_face_toward(
         &self,

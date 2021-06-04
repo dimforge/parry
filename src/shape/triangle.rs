@@ -1,7 +1,7 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::SupportMap;
+use crate::shape::{FeatureId, SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
@@ -425,6 +425,11 @@ impl Triangle {
             && d13 >= 0.0
             && d13 <= p3p1.norm_squared()
     }
+
+    /// The normal of the given feature of this shape.
+    pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
+        self.normal()
+    }
 }
 
 impl SupportMap for Triangle {
@@ -502,15 +507,6 @@ impl ConvexPolyhedron for Triangle {
         } else {
             face.push(self.a, FeatureId::Vertex(0));
             face.set_feature_id(FeatureId::Vertex(0));
-        }
-    }
-
-    fn feature_normal(&self, _: FeatureId) -> Unit<Vector<Real>> {
-        if let Some(normal) = self.normal() {
-            // FIXME: We should be able to do much better here.
-            normal
-        } else {
-            Vector::y_axis()
         }
     }
 
