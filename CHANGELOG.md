@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.5.1
+### Fixed
+- Fix a bug where `query::contact` would return `None` for a all intersecting a cuboid
+  in such a way that one of the cuboid's vertices coincides exactly with the ball's
+  center.
+
+
 ## v0.5.0
 
 ### Modified

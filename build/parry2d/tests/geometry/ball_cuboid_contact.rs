@@ -15,3 +15,18 @@ fn test_ball_cuboid_query_contact() {
     let ct = query::contact(&ball_pos, &ball, &cuboid_pos, &cuboid, 0.0).unwrap();
     assert!(ct.is_some());
 }
+
+#[test]
+fn test_false_negative() {
+    let contact = query::contact(
+        &Isometry2::translation(1.0, 1.0),
+        &Ball::new(1.0),
+        &Isometry2::identity(),
+        &Cuboid::new(Vector2::new(1.0, 1.0)),
+        1.0,
+    )
+    .unwrap()
+    .unwrap();
+
+    assert!(contact.dist < 0.0);
+}
