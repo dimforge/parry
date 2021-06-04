@@ -1,6 +1,6 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::Contact;
-use crate::shape::{Ball, FeatureId, Shape};
+use crate::shape::{Ball, Shape};
 
 use na::{self, Unit};
 
@@ -45,13 +45,11 @@ pub fn contact_convex_polyhedron_ball(
             normal1 = -dir1;
         }
     } else {
-        if f1 == FeatureId::Unknown {
-            // We cant do anything more at this point.
-            return None;
-        }
-
         dist = -ball2.radius;
-        normal1 = shape1.feature_normal_at_point(f1, &proj.point)?;
+        normal1 = shape1
+            .feature_normal_at_point(f1, &proj.point)
+            .or_else(|| Unit::try_new(proj.point.coords, crate::math::DEFAULT_EPSILON))
+            .unwrap_or_else(|| Vector::y_axis());
     }
 
     if dist <= prediction {

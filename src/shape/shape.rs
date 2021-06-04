@@ -575,6 +575,16 @@ impl Shape for Ball {
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         Some(self as &dyn SupportMap)
     }
+
+    /// The shape's normal at the given point located on a specific feature.
+    #[inline]
+    fn feature_normal_at_point(
+        &self,
+        _: FeatureId,
+        point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        Unit::try_new(point.coords, crate::math::DEFAULT_EPSILON)
+    }
 }
 
 impl Shape for Cuboid {
@@ -624,6 +634,14 @@ impl Shape for Cuboid {
 
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal(feature)
     }
 }
 
@@ -729,6 +747,14 @@ impl Shape for Triangle {
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
+
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal(feature)
+    }
 }
 
 impl Shape for Segment {
@@ -778,6 +804,14 @@ impl Shape for Segment {
 
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal(feature)
     }
 }
 
@@ -1011,6 +1045,14 @@ impl Shape for ConvexPolygon {
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
+
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal(feature)
+    }
 }
 
 #[cfg(feature = "dim3")]
@@ -1065,6 +1107,14 @@ impl Shape for ConvexPolyhedron {
 
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal(feature)
     }
 }
 
