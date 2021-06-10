@@ -38,6 +38,7 @@ pub use self::cylinder::Cylinder;
 pub use self::heightfield3::{HeightField, HeightFieldCellStatus};
 #[cfg(feature = "dim3")]
 pub use self::polygonal_feature3d::PolygonalFeature;
+pub use self::scaled_trimesh::ScaledTriMesh;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
 pub use self::trimesh::TriMesh;
@@ -91,6 +92,7 @@ mod heightfield3;
 #[cfg(feature = "dim3")]
 mod polygonal_feature3d;
 mod polygonal_feature_map;
+mod scaled_trimesh;
 #[cfg(feature = "dim3")]
 mod tetrahedron;
 mod trimesh;
