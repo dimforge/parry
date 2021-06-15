@@ -52,7 +52,7 @@ pub enum ShapeType {
     /// A cylindrical shape.
     Cylinder,
     #[cfg(feature = "dim3")]
-    /// A cylindrical shape.
+    /// A cone shape.
     Cone,
     // /// A custom shape type.
     // Custom(u8),
@@ -113,7 +113,7 @@ pub enum TypedShape<'a> {
     /// A cylindrical shape.
     Cylinder(&'a Cylinder),
     #[cfg(feature = "dim3")]
-    /// A cylindrical shape.
+    /// A cone shape.
     Cone(&'a Cone),
     // /// A custom shape type.
     // Custom(u8),
@@ -175,7 +175,7 @@ pub(crate) enum DeserializableTypedShape {
     /// A cylindrical shape.
     Cylinder(Cylinder),
     #[cfg(feature = "dim3")]
-    /// A cylindrical shape.
+    /// A cone shape.
     Cone(Cone),
     // /// A custom shape type.
     // Custom(u8),
