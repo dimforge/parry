@@ -9,19 +9,19 @@ use crate::shape::Shape;
 pub enum TOIStatus {
     /// The TOI algorithm ran out of iterations before achieving convergence.
     ///
-    /// If this happens, the content of the `NonlinearTOI` will still be a conservative approximation
-    /// of the actual result so it is often fine to interpret this case as a success.
+    /// The content of the `TOI` will still be a conservative approximation of the actual result so
+    /// it is often fine to interpret this case as a success.
     OutOfIterations,
     /// The TOI algorithm converged successfully.
     Converged,
     /// Something went wrong during the TOI computation, likely due to numerical instabilities.
     ///
-    /// If this happens, the content of the `NonlinearTOI` will still be a conservative approximation
-    /// of the actual result so it is often fine to interpret this case as a success.
+    /// The content of the `TOI` will still be a conservative approximation of the actual result so
+    /// it is often fine to interpret this case as a success.
     Failed,
     /// The two shape already overlap at the time 0.
     ///
-    /// If this happens, the witness points provided by the `NonlinearTOI` will be invalid.
+    /// The witness points and normals provided by the `TOI` will have undefined values.
     Penetrating,
 }
 
@@ -31,12 +31,20 @@ pub struct TOI {
     /// The time at which the objects touch.
     pub toi: Real,
     /// The local-space closest point on the first shape at the time of impact.
+    ///
+    /// Undefined if `status` is `Penetrating`.
     pub witness1: Point<Real>,
     /// The local-space closest point on the second shape at the time of impact.
+    ///
+    /// Undefined if `status` is `Penetrating`.
     pub witness2: Point<Real>,
     /// The local-space outward normal on the first shape at the time of impact.
+    ///
+    /// Undefined if `status` is `Penetrating`.
     pub normal1: Unit<Vector<Real>>,
     /// The local-space outward normal on the second shape at the time of impact.
+    ///
+    /// Undefined if `status` is `Penetrating`.
     pub normal2: Unit<Vector<Real>>,
     /// The way the time-of-impact computation algorithm terminated.
     pub status: TOIStatus,
