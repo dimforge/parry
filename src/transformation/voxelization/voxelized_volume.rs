@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 /// Controls how the voxelization determines which voxel needs
 /// to be considered empty, and which ones will be considered full.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FillMode {
     /// Only consider full the voxels intersecting the surface of the
     /// shape being voxelized.
