@@ -127,6 +127,16 @@ impl<T: IndexedData> QBVH<T> {
         }
     }
 
+    /// Iterates mutable through all the leaf data in this QBVH.
+    pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut T)> {
+        self.proxies.iter_mut().map(|p| (p.node, &mut p.data))
+    }
+
+    /// Iterate through all the leaf data in this QBVH.
+    pub fn iter_data(&self) -> impl Iterator<Item = (NodeIndex, &T)> {
+        self.proxies.iter().map(|p| (p.node, &p.data))
+    }
+
     /// The AABB of the root of this tree.
     pub fn root_aabb(&self) -> &AABB {
         &self.root_aabb
