@@ -5,6 +5,8 @@ use crate::shape::composite_shape::SimdCompositeShape;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cuboid, HeightField};
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
+use crate::utils::hashmap::{Entry, HashMap};
+use crate::utils::HashablePartialEq;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -112,6 +114,57 @@ impl TriMesh {
             let data = self.indices.as_ptr() as *const u32;
             std::slice::from_raw_parts(data, len)
         }
+    }
+
+    pub fn recover_topology(&mut self) {
+        let mut vtx_to_id = HashMap::default();
+        let mut new_vertices = Vec::with_capacity(self.vertices.len());
+        let mut new_indices = Vec::with_capacity(self.indices.len());
+
+        fn resolve_coord_id(
+            coord: &Point<Real>,
+            vtx_to_id: &mut HashMap<HashablePartialEq<Point<Real>>, u32>,
+            new_vertices: &mut Vec<Point<Real>>,
+        ) -> u32 {
+            let key = HashablePartialEq::new(coord.clone());
+            let id = match vtx_to_id.entry(key) {
+                Entry::Occupied(entry) => entry.into_mut(),
+                Entry::Vacant(entry) => entry.insert(new_vertices.len() as u32),
+            };
+
+            if *id == new_vertices.len() as u32 {
+                new_vertices.push(coord.clone());
+            }
+
+            *id
+        }
+
+        for t in self.indices.iter() {
+            let va = resolve_coord_id(
+                &self.vertices[t[0] as usize],
+                &mut vtx_to_id,
+                &mut new_vertices,
+            );
+
+            let vb = resolve_coord_id(
+                &self.vertices[t[1] as usize],
+                &mut vtx_to_id,
+                &mut new_vertices,
+            );
+
+            let vc = resolve_coord_id(
+                &self.vertices[t[2] as usize],
+                &mut vtx_to_id,
+                &mut new_vertices,
+            );
+
+            new_indices.push([va, vb, vc]);
+        }
+
+        new_vertices.shrink_to_fit();
+
+        self.vertices = new_vertices;
+        self.indices = new_indices;
     }
 }
 

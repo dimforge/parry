@@ -9,10 +9,10 @@ pub struct HashablePartialEq<T> {
 }
 
 impl<T> HashablePartialEq<T> {
-    /// Creates a new `HashablePartialEq`. This is unsafe because you must be sure that you really
+    /// Creates a new `HashablePartialEq`. Please make sure that you really
     /// want to transform the wrapped object's partial equality to an equivalence relation.
-    pub unsafe fn new(value: T) -> HashablePartialEq<T> {
-        HashablePartialEq { value: value }
+    pub fn new(value: T) -> HashablePartialEq<T> {
+        HashablePartialEq { value }
     }
 
     /// Gets the wrapped value.
