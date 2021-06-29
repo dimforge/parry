@@ -105,6 +105,22 @@ impl Polyline {
             std::slice::from_raw_parts(data, len)
         }
     }
+
+    /// Reverse the orientation of this polyline by swapping the indices of all
+    /// its segments and reverting its index buffer.
+    pub fn reverse(&mut self) {
+        for idx in &mut self.indices {
+            idx.swap(0, 1);
+        }
+
+        self.indices.reverse();
+
+        // Because we reversed the indices, we need to
+        // adjust the segment indices stored in the QBVH.
+        for (_, seg_id) in self.quadtree.iter_data_mut() {
+            *seg_id = self.indices.len() as u32 - *seg_id - 1;
+        }
+    }
 }
 
 impl SimdCompositeShape for Polyline {
