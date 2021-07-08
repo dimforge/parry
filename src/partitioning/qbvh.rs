@@ -415,6 +415,10 @@ impl<T: IndexedData> QBVH<T> {
         stack.clear();
         stack.push(0);
 
+        if self.nodes.is_empty() {
+            return;
+        }
+
         while let Some(entry) = stack.pop() {
             let node = self.nodes[entry as usize];
             let leaf_data = if node.leaf {
