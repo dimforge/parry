@@ -1,8 +1,9 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Point, Real, Vector, DIM};
-use crate::utils::IsometryOps;
+use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM};
+use crate::shape::{Cuboid, Segment, SupportMap};
+use crate::utils::{IntervalFunction, IsometryOps};
 use na;
 use num::Bounded;
 
@@ -244,6 +245,150 @@ impl AABB {
                 Point::new(center.x, self.maxs.y, self.maxs.z),
             ),
         ]
+    }
+
+    /// Projects every point of AABB on an arbitrary axis.
+    pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
+        let cuboid = Cuboid::new(self.half_extents());
+        let shift = cuboid
+            .local_support_point_toward(axis)
+            .coords
+            .dot(&axis)
+            .abs();
+        let center = self.center().coords.dot(&axis);
+        (center - shift, center + shift)
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn intersects_spiral(
+        &self,
+        point: &Point<Real>,
+        center: &Point<Real>,
+        axis: &UnitVector<Real>,
+        linvel: &Vector<Real>,
+        angvel: Real,
+    ) -> bool {
+        use crate::utils::WBasis;
+        use crate::utils::{Interval, IntervalFunction};
+
+        struct SpiralPlaneDistance {
+            center: Point<Real>,
+            axis: Vector<Real>,
+            tangents: [Vector<Real>; 2],
+            linvel: Vector<Real>,
+            angvel: Real,
+            point: na::Vector2<Real>,
+            plane: Vector<Real>,
+            bias: Real,
+        }
+
+        impl SpiralPlaneDistance {
+            fn spiral_pt_at(&self, t: Real) -> Point<Real> {
+                let angle = t * self.angvel;
+
+                // NOTE: we construct the rotation matrix explicitly here instead
+                //       of using `Rotation2::new()` because we will use similar
+                //       formulaes on the interval methods.
+                let (sin, cos) = angle.sin_cos();
+                let rotmat = na::Matrix2::new(cos, -sin, sin, cos);
+
+                let rotated_pt = rotmat * self.point;
+                let shift = self.tangents[0] * rotated_pt.x + self.tangents[1] * rotated_pt.y;
+                self.center + self.linvel * t + shift
+            }
+        }
+
+        impl IntervalFunction<Real> for SpiralPlaneDistance {
+            fn eval(&self, t: Real) -> Real {
+                let point_pos = self.spiral_pt_at(t);
+                point_pos.coords.dot(&self.plane) - self.bias
+            }
+
+            fn eval_interval(&self, t: Interval<Real>) -> Interval<Real> {
+                // This is the same as `self.eval` except that `t` is an interval.
+                let angle = t * self.angvel;
+                let (sin, cos) = angle.sin_cos();
+                let rotmat = na::Matrix2::new(cos, -sin, sin, cos);
+
+                let rotated_pt = rotmat * self.point.map(Interval::splat);
+                let shift = self.tangents[0].map(Interval::splat) * rotated_pt.x
+                    + self.tangents[1].map(Interval::splat) * rotated_pt.y;
+                let point_pos =
+                    self.center.map(Interval::splat) + self.linvel.map(Interval::splat) * t + shift;
+                point_pos.coords.dot(&self.plane.map(Interval::splat)) - Interval::splat(self.bias)
+            }
+
+            fn eval_interval_gradient(&self, t: Interval<Real>) -> Interval<Real> {
+                let angle = t * self.angvel;
+                let (sin, cos) = angle.sin_cos();
+                let rotmat = na::Matrix2::new(-sin, -cos, cos, -sin) * Interval::splat(self.angvel);
+
+                let rotated_pt = rotmat * self.point.map(Interval::splat);
+                let shift = self.tangents[0].map(Interval::splat) * rotated_pt.x
+                    + self.tangents[1].map(Interval::splat) * rotated_pt.y;
+                let point_vel = shift + self.linvel.map(Interval::splat);
+                point_vel.dot(&self.plane.map(Interval::splat))
+            }
+        }
+
+        let tangents = axis.orthonormal_basis();
+        let dpos = point - center;
+        let mut distance_fn = SpiralPlaneDistance {
+            center: *center,
+            axis: axis.into_inner(),
+            tangents,
+            linvel: *linvel,
+            angvel,
+            point: na::Vector2::new(dpos.dot(&tangents[0]), dpos.dot(&tangents[1])),
+            plane: Vector::x(),
+            bias: 0.0,
+        };
+
+        // Check the 8 planar faces of the AABB.
+        let mut roots = vec![];
+        let mut candidates = vec![];
+
+        let planes = [
+            (-self.mins[0], -Vector::x(), 0),
+            (self.maxs[0], Vector::x(), 0),
+            (-self.mins[1], -Vector::y(), 1),
+            (self.maxs[1], Vector::y(), 1),
+            (-self.mins[2], -Vector::z(), 2),
+            (self.maxs[2], Vector::z(), 2),
+        ];
+
+        let range = self.project_on_axis(&axis);
+        let range_bias = center.coords.dot(&axis);
+        let interval = Interval::sort(range.0, range.1) - range_bias;
+
+        for (bias, axis, i) in &planes {
+            distance_fn.plane = *axis;
+            distance_fn.bias = *bias;
+
+            crate::utils::find_root_intervals_to(
+                &distance_fn,
+                interval,
+                1.0e-5,
+                1.0e-5,
+                100,
+                &mut roots,
+                &mut candidates,
+            );
+
+            for root in roots.drain(..) {
+                let point = distance_fn.spiral_pt_at(root.midpoint());
+                let (j, k) = ((i + 1) % 3, (i + 2) % 3);
+                if point[j] >= self.mins[j]
+                    && point[j] <= self.maxs[j]
+                    && point[k] >= self.mins[k]
+                    && point[k] <= self.maxs[k]
+                {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 }
 
