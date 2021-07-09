@@ -68,11 +68,6 @@ where
     SM1: ?Sized + SupportMap,
     SM2: ?Sized + SupportMap,
 {
-    // println!(
-    //     ">>>>>>>> cube-cube: {}",
-    //     g1.as_cuboid().is_some() && g2.as_cuboid().is_some()
-    // );
-    // dbg!(mode);
     let sphere1 = g1.compute_local_bounding_sphere();
     let sphere2 = g2.compute_local_bounding_sphere();
 
@@ -127,7 +122,7 @@ where
         let pos2 = motion2.position_at_time(result.toi);
         let pos12 = pos1.inv_mul(&pos2);
 
-        // FIXME: use the _with_params version of the closest points query.
+        // TODO: use the _with_params version of the closest points query.
         match dispatcher
             .closest_points(&pos12, g1, g2, Real::max_value())
             .ok()?
