@@ -182,12 +182,11 @@ impl RayCast for Segment {
 
                     match (dist1 >= 0.0, dist2 >= 0.0) {
                         (true, true) => {
-                            if dist1 <= dist2 {
-                                Some(RayIntersection::new(
-                                    dist1 / ray.dir.norm_squared(),
-                                    normal,
-                                    FeatureId::Vertex(0),
-                                ))
+                            let toi = dist1.min(dist2) / ray.dir.norm_squared();
+                            if toi > max_toi {
+                                None
+                            } else if dist1 <= dist2 {
+                                Some(RayIntersection::new(toi, normal, FeatureId::Vertex(0)))
                             } else {
                                 Some(RayIntersection::new(
                                     dist2 / ray.dir.norm_squared(),
@@ -209,7 +208,7 @@ impl RayCast for Segment {
                     // The rays never intersect.
                     None
                 }
-            } else if s >= 0.0 && t >= 0.0 && t <= 1.0 {
+            } else if s >= 0.0 && s <= max_toi && t >= 0.0 && t <= 1.0 {
                 let normal = self.scaled_normal();
 
                 if normal.dot(&ray.dir) > 0.0 {
