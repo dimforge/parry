@@ -19,6 +19,7 @@ pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::cov::cov;
 pub use self::hashable_partial_eq::HashablePartialEq;
+pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
 #[cfg(feature = "dim3")]
 pub(crate) use self::sort::sort2;
 pub(crate) use self::sort::sort3;
@@ -36,6 +37,7 @@ mod cov;
 mod deterministic_state;
 mod hashable_partial_eq;
 pub mod hashmap;
+mod interval;
 mod inv;
 mod isometry_ops;
 mod median;
