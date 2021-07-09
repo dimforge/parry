@@ -413,12 +413,10 @@ impl<T: IndexedData> QBVH<T> {
         stack: &mut Vec<u32>,
     ) {
         stack.clear();
-        stack.push(0);
 
-        if self.nodes.is_empty() {
-            return;
+        if !self.nodes.is_empty() {
+            stack.push(0);
         }
-
         while let Some(entry) = stack.pop() {
             let node = self.nodes[entry as usize];
             let leaf_data = if node.leaf {
