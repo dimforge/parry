@@ -2,8 +2,8 @@
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
 use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM};
-use crate::shape::{Cuboid, Segment, SupportMap};
-use crate::utils::{IntervalFunction, IsometryOps};
+use crate::shape::{Cuboid, SupportMap};
+use crate::utils::IsometryOps;
 use na;
 use num::Bounded;
 
@@ -273,7 +273,6 @@ impl AABB {
 
         struct SpiralPlaneDistance {
             center: Point<Real>,
-            axis: Vector<Real>,
             tangents: [Vector<Real>; 2],
             linvel: Vector<Real>,
             angvel: Real,
@@ -335,7 +334,6 @@ impl AABB {
         let dpos = point - center;
         let mut distance_fn = SpiralPlaneDistance {
             center: *center,
-            axis: axis.into_inner(),
             tangents,
             linvel: *linvel,
             angvel,
