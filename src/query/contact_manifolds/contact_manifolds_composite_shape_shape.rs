@@ -77,7 +77,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     let pos12 = *pos12;
     let pos21 = pos12.inverse();
 
-    // Traverse quadtree1 first.
+    // Traverse qbvh1 first.
     let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
@@ -140,7 +140,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     };
 
     let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf1_fn);
-    composite1.quadtree().traverse_depth_first(&mut visitor1);
+    composite1.qbvh().traverse_depth_first(&mut visitor1);
 
     workspace
         .sub_detectors

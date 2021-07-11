@@ -10,7 +10,7 @@ impl RayCast for TriMesh {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
         let mut visitor = RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|res| res.1 .1)
     }
@@ -25,7 +25,7 @@ impl RayCast for TriMesh {
         let mut visitor =
             RayCompositeShapeToiAndNormalBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|(_, (best, mut res))| {
                 // We hit a backface.
@@ -45,7 +45,7 @@ impl RayCast for Polyline {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
         let mut visitor = RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|res| res.1 .1)
     }
@@ -60,7 +60,7 @@ impl RayCast for Polyline {
         let mut visitor =
             RayCompositeShapeToiAndNormalBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|(_, (_, res))| res)
     }
@@ -71,7 +71,7 @@ impl RayCast for Compound {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
         let mut visitor = RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|res| res.1 .1)
     }
@@ -86,7 +86,7 @@ impl RayCast for Compound {
         let mut visitor =
             RayCompositeShapeToiAndNormalBestFirstVisitor::new(self, ray, max_toi, solid);
 
-        self.quadtree()
+        self.qbvh()
             .traverse_best_first(&mut visitor)
             .map(|(_, (_, res))| res)
     }

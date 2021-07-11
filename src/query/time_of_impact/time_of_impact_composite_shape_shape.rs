@@ -20,7 +20,7 @@ where
 {
     let mut visitor =
         TOICompositeShapeShapeBestFirstVisitor::new(dispatcher, pos12, vel12, g1, g2, max_toi);
-    g1.typed_quadtree()
+    g1.typed_qbvh()
         .traverse_best_first(&mut visitor)
         .map(|res| res.1 .1)
 }

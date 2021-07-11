@@ -31,7 +31,7 @@ where
         stop_at_penetration,
     );
 
-    g1.typed_quadtree()
+    g1.typed_qbvh()
         .traverse_best_first(&mut visitor)
         .map(|res| res.1 .1)
 }

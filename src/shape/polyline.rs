@@ -8,7 +8,7 @@ use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A polyline.
 pub struct Polyline {
-    quadtree: QBVH<u32>,
+    qbvh: QBVH<u32>,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 2]>,
 }
@@ -24,13 +24,13 @@ impl Polyline {
             (i as u32, aabb)
         });
 
-        let mut quadtree = QBVH::new();
+        let mut qbvh = QBVH::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        quadtree.clear_and_rebuild(data, 0.0);
+        qbvh.clear_and_rebuild(data, 0.0);
 
         Self {
-            quadtree,
+            qbvh,
             vertices,
             indices,
         }
@@ -38,16 +38,16 @@ impl Polyline {
 
     /// Compute the axis-aligned bounding box of this polyline.
     pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
-        self.quadtree.root_aabb().transform_by(pos)
+        self.qbvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this polyline.
     pub fn local_aabb(&self) -> &AABB {
-        &self.quadtree.root_aabb()
+        &self.qbvh.root_aabb()
     }
 
-    pub(crate) fn quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    pub(crate) fn qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 
     /// The number of segments forming this polyline.
@@ -117,7 +117,7 @@ impl Polyline {
 
         // Because we reversed the indices, we need to
         // adjust the segment indices stored in the QBVH.
-        for (_, seg_id) in self.quadtree.iter_data_mut() {
+        for (_, seg_id) in self.qbvh.iter_data_mut() {
             *seg_id = self.indices.len() as u32 - *seg_id - 1;
         }
     }
@@ -129,8 +129,8 @@ impl SimdCompositeShape for Polyline {
         f(None, &tri)
     }
 
-    fn quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    fn qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 }
 
@@ -154,7 +154,7 @@ impl TypedSimdCompositeShape for Polyline {
         f(None, &seg)
     }
 
-    fn typed_quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    fn typed_qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 }

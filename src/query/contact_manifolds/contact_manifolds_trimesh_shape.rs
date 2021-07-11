@@ -124,7 +124,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 
         workspace.interferences.clear();
         trimesh1
-            .quadtree()
+            .qbvh()
             .intersect_aabb(&local_aabb2, &mut workspace.interferences);
         workspace.local_aabb2 = local_aabb2;
     }
