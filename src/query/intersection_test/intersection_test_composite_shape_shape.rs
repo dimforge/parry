@@ -20,7 +20,7 @@ where
     let mut visitor =
         IntersectionCompositeShapeShapeBestFirstVisitor::new(dispatcher, pos12, g1, g2);
 
-    g1.typed_quadtree()
+    g1.typed_qbvh()
         .traverse_best_first(&mut visitor)
         .map(|e| e.1 .1)
         .unwrap_or(false)

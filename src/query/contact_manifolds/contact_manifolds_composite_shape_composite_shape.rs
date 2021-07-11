@@ -73,25 +73,25 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
      * Compute interferences.
      */
 
-    let mut quadtree1 = composite1.quadtree();
-    let mut quadtree2 = composite2.quadtree();
+    let mut qbvh1 = composite1.qbvh();
+    let mut qbvh2 = composite2.qbvh();
 
     let mut pos12 = *pos12;
     let mut pos21 = pos12.inverse();
     let mut stack2 = Vec::new();
 
-    let mut ls_aabb1 = quadtree1.root_aabb();
-    let mut ls_aabb2 = quadtree2.root_aabb();
+    let mut ls_aabb1 = qbvh1.root_aabb();
+    let mut ls_aabb2 = qbvh2.root_aabb();
     let flipped = ls_aabb1.half_extents().norm_squared() < ls_aabb2.half_extents().norm_squared();
 
     if flipped {
         std::mem::swap(&mut composite1, &mut composite2);
-        std::mem::swap(&mut quadtree1, &mut quadtree2);
+        std::mem::swap(&mut qbvh1, &mut qbvh2);
         std::mem::swap(&mut pos12, &mut pos21);
         std::mem::swap(&mut ls_aabb1, &mut ls_aabb2);
     }
 
-    // Traverse quadtree1 first.
+    // Traverse qbvh1 first.
     let ls_aabb2_1 = ls_aabb2.transform_by(&pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
@@ -169,14 +169,14 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
             let mut visitor2 =
                 BoundingVolumeIntersectionsVisitor::new(&ls_part_aabb1_2, &mut leaf_fn2);
 
-            quadtree2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+            qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
         });
 
         true
     };
 
     let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf_fn1);
-    quadtree1.traverse_depth_first(&mut visitor1);
+    qbvh1.traverse_depth_first(&mut visitor1);
 
     workspace
         .sub_detectors

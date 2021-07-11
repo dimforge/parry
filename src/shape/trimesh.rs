@@ -12,7 +12,7 @@ use crate::utils::HashablePartialEq;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A triangle mesh.
 pub struct TriMesh {
-    quadtree: QBVH<u32>,
+    qbvh: QBVH<u32>,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
 }
@@ -35,13 +35,13 @@ impl TriMesh {
             (i as u32, aabb)
         });
 
-        let mut quadtree = QBVH::new();
+        let mut qbvh = QBVH::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        quadtree.clear_and_rebuild(data, 0.0);
+        qbvh.clear_and_rebuild(data, 0.0);
 
         Self {
-            quadtree,
+            qbvh,
             vertices,
             indices,
         }
@@ -49,17 +49,17 @@ impl TriMesh {
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
     pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
-        self.quadtree.root_aabb().transform_by(pos)
+        self.qbvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
     pub fn local_aabb(&self) -> &AABB {
-        self.quadtree.root_aabb()
+        self.qbvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    pub fn qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 
     /// The number of triangles forming this mesh.
@@ -179,7 +179,7 @@ impl RayCast for TriMesh {
     ) -> Option<RayIntersection> {
         // FIXME: do a best-first search.
         let mut intersections = Vec::new();
-        self.quadtree.cast_ray(&ray, max_toi, &mut intersections);
+        self.qbvh.cast_ray(&ray, max_toi, &mut intersections);
         let mut best: Option<RayIntersection> = None;
 
         for inter in intersections {
@@ -201,7 +201,7 @@ impl RayCast for TriMesh {
     fn intersects_local_ray(&self, ray: &Ray, max_toi: Real) -> bool {
         // FIXME: do a best-first search.
         let mut intersections = Vec::new();
-        self.quadtree.cast_ray(&ray, max_toi, &mut intersections);
+        self.qbvh.cast_ray(&ray, max_toi, &mut intersections);
 
         for inter in intersections {
             let tri = self.triangle(inter);
@@ -237,8 +237,8 @@ impl SimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    fn qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 }
 
@@ -262,7 +262,7 @@ impl TypedSimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn typed_quadtree(&self) -> &QBVH<u32> {
-        &self.quadtree
+    fn typed_qbvh(&self) -> &QBVH<u32> {
+        &self.qbvh
     }
 }

@@ -76,12 +76,9 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     /*
      * Compute interferences.
      */
-    let quadtree2 = composite2.quadtree();
+    let qbvh2 = composite2.qbvh();
     let mut stack2 = Vec::new();
-    let ls_aabb2_1 = quadtree2
-        .root_aabb()
-        .transform_by(pos12)
-        .loosened(prediction);
+    let ls_aabb2_1 = qbvh2.root_aabb().transform_by(pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2_1, &mut |leaf1, part1| {
@@ -150,7 +147,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
         };
 
         let mut visitor2 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb1_2, &mut leaf_fn2);
-        quadtree2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+        qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
     });
 
     workspace

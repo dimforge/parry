@@ -26,7 +26,7 @@ impl PointQuery for Polyline {
     ) -> (PointProjection, FeatureId) {
         let mut visitor =
             PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
-        let (proj, (id, feature)) = self.quadtree().traverse_best_first(&mut visitor).unwrap().1;
+        let (proj, (id, feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
         let polyline_feature = self.segment_feature_to_polyline_feature(id, feature);
 
         (proj, polyline_feature)
@@ -37,7 +37,7 @@ impl PointQuery for Polyline {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.quadtree().traverse_depth_first(&mut visitor);
+        self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -55,7 +55,7 @@ impl PointQuery for TriMesh {
     ) -> (PointProjection, FeatureId) {
         let mut visitor =
             PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
-        let (proj, (id, _feature)) = self.quadtree().traverse_best_first(&mut visitor).unwrap().1;
+        let (proj, (id, _feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
         let feature_id = FeatureId::Face(id);
         (proj, feature_id)
     }
@@ -65,7 +65,7 @@ impl PointQuery for TriMesh {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.quadtree().traverse_depth_first(&mut visitor);
+        self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -74,11 +74,7 @@ impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
         let mut visitor = PointCompositeShapeProjBestFirstVisitor::new(self, point, solid);
-        self.quadtree()
-            .traverse_best_first(&mut visitor)
-            .unwrap()
-            .1
-             .0
+        self.qbvh().traverse_best_first(&mut visitor).unwrap().1 .0
     }
 
     #[inline]
@@ -92,7 +88,7 @@ impl PointQuery for Compound {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.quadtree().traverse_depth_first(&mut visitor);
+        self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -108,7 +104,7 @@ impl PointQueryWithLocation for Polyline {
     ) -> (PointProjection, Self::Location) {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-        self.quadtree().traverse_best_first(&mut visitor).unwrap().1
+        self.qbvh().traverse_best_first(&mut visitor).unwrap().1
     }
 }
 
@@ -123,7 +119,7 @@ impl PointQueryWithLocation for TriMesh {
     ) -> (PointProjection, Self::Location) {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-        self.quadtree().traverse_best_first(&mut visitor).unwrap().1
+        self.qbvh().traverse_best_first(&mut visitor).unwrap().1
     }
 }
 

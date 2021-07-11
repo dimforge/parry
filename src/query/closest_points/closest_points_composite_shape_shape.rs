@@ -22,7 +22,7 @@ where
     let mut visitor =
         CompositeShapeAgainstShapeClosestPointsVisitor::new(dispatcher, pos12, g1, g2, margin);
 
-    g1.typed_quadtree()
+    g1.typed_qbvh()
         .traverse_best_first(&mut visitor)
         .expect("The composite shape must not be empty.")
         .1

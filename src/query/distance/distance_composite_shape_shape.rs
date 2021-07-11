@@ -18,7 +18,7 @@ where
     G1: TypedSimdCompositeShape,
 {
     let mut visitor = CompositeShapeAgainstAnyDistanceVisitor::new(dispatcher, pos12, g1, g2);
-    g1.typed_quadtree()
+    g1.typed_qbvh()
         .traverse_best_first(&mut visitor)
         .expect("The composite shape must not be empty.")
         .1

@@ -11,7 +11,7 @@ pub trait SimdCompositeShape {
     fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape));
 
     /// Gets the acceleration structure of the composite shape.
-    fn quadtree(&self) -> &QBVH<u32>;
+    fn qbvh(&self) -> &QBVH<u32>;
 }
 
 pub trait TypedSimdCompositeShape {
@@ -33,7 +33,7 @@ pub trait TypedSimdCompositeShape {
         f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape),
     );
 
-    fn typed_quadtree(&self) -> &QBVH<Self::PartId>;
+    fn typed_qbvh(&self) -> &QBVH<Self::PartId>;
 }
 
 impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
@@ -56,7 +56,7 @@ impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
         self.map_part_at(shape_id, &mut f)
     }
 
-    fn typed_quadtree(&self) -> &QBVH<Self::PartId> {
-        self.quadtree()
+    fn typed_qbvh(&self) -> &QBVH<Self::PartId> {
+        self.qbvh()
     }
 }

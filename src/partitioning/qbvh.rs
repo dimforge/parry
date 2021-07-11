@@ -76,7 +76,7 @@ impl NodeIndex {
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 struct QBVHNode {
-    /// The AABBs of the quadtree nodes represented by this node.
+    /// The AABBs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAABB,
     /// Index of the nodes of the 4 nodes represented by `self`.
     /// If this is a leaf, it contains the proxy ids instead.
@@ -570,7 +570,7 @@ struct QBVHIncrementalBuilderStep {
 
 #[allow(dead_code)]
 struct QBVHIncrementalBuilder<T> {
-    quadtree: QBVH<T>,
+    qbvh: QBVH<T>,
     to_insert: Vec<QBVHIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
@@ -580,7 +580,7 @@ struct QBVHIncrementalBuilder<T> {
 impl<T: IndexedData> QBVHIncrementalBuilder<T> {
     pub fn new() -> Self {
         Self {
-            quadtree: QBVH::new(),
+            qbvh: QBVH::new(),
             to_insert: Vec::new(),
             aabbs: Vec::new(),
             indices: Vec::new(),
@@ -593,7 +593,7 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
 
             // Leaf case.
             if indices.len() <= 4 {
-                let id = self.quadtree.nodes.len();
+                let id = self.qbvh.nodes.len();
                 let mut aabb = AABB::new_invalid();
                 let mut leaf_aabbs = [AABB::new_invalid(); 4];
                 let mut proxy_ids = [u32::MAX; 4];
@@ -612,12 +612,12 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
                     dirty: false,
                 };
 
-                self.quadtree.nodes[to_insert.parent.index as usize].children
+                self.qbvh.nodes[to_insert.parent.index as usize].children
                     [to_insert.parent.lane as usize] = id as u32;
-                self.quadtree.nodes[to_insert.parent.index as usize]
+                self.qbvh.nodes[to_insert.parent.index as usize]
                     .simd_aabb
                     .replace(to_insert.parent.lane as usize, aabb);
-                self.quadtree.nodes.push(node);
+                self.qbvh.nodes.push(node);
                 return;
             }
 
@@ -678,8 +678,8 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
                 dirty: false,
             };
 
-            let id = self.quadtree.nodes.len() as u32;
-            self.quadtree.nodes.push(node);
+            let id = self.qbvh.nodes.len() as u32;
+            self.qbvh.nodes.push(node);
 
             // Recurse!
             let a = left_bottom.len();
@@ -703,9 +703,9 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
                 parent: NodeIndex::new(id, 3),
             });
 
-            self.quadtree.nodes[to_insert.parent.index as usize].children
+            self.qbvh.nodes[to_insert.parent.index as usize].children
                 [to_insert.parent.lane as usize] = id as u32;
-            self.quadtree.nodes[to_insert.parent.index as usize]
+            self.qbvh.nodes[to_insert.parent.index as usize]
                 .simd_aabb
                 .replace(to_insert.parent.lane as usize, aabb);
         }
