@@ -116,6 +116,11 @@ impl TriMesh {
         }
     }
 
+    /// Remove all duplicate vertices and adjust the index buffer accordingly.
+    ///
+    /// This is typically used to recover a vertex buffer from which we can deduce
+    /// adjacency information. between triangles by observing how the vertices are
+    /// shared by triangles based on the index buffer.
     pub fn recover_topology(&mut self) {
         let mut vtx_to_id = HashMap::default();
         let mut new_vertices = Vec::with_capacity(self.vertices.len());

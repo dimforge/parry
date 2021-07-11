@@ -4,12 +4,20 @@ use na::{RealField, SimdPartialOrd};
 use num::{One, Zero};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
+/// A derivable valued function which can be bounded on intervals.
 pub trait IntervalFunction<T> {
+    /// Evaluate the function at `t`.
     fn eval(&self, t: T) -> T;
+    /// Bounds all the values of this function on the interval `t`.
     fn eval_interval(&self, t: Interval<T>) -> Interval<T>;
+    /// Bounds all the values of the gradient of this function on the interval `t`.
     fn eval_interval_gradient(&self, t: Interval<T>) -> Interval<T>;
 }
 
+/// Execute the Interval Newton Method to isolate all the roots of the given nonlinear function.
+///
+/// The results are stored in `results`. The `candidate` buffer is just a workspace buffer used
+/// to avoid allocations.
 pub fn find_root_intervals_to<T: RealField>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
@@ -85,12 +93,13 @@ pub fn find_root_intervals_to<T: RealField>(
     }
 }
 
+/// Execute the Interval Newton Method to isolate all the roots of the given nonlinear function.
 pub fn find_root_intervals<T: RealField>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
     min_interval_width: T,
     min_image_width: T,
-    mut max_recursions: usize,
+    max_recursions: usize,
 ) -> Vec<Interval<T>> {
     let mut results = vec![];
     let mut candidates = vec![];
@@ -111,6 +120,7 @@ pub fn find_root_intervals<T: RealField>(
 pub struct Interval<T>(pub T, pub T);
 
 impl<T> Interval<T> {
+    /// Create the interval `[min(a, b), max(a, b)]`.
     #[must_use]
     pub fn sort(a: T, b: T) -> Self
     where
@@ -123,6 +133,7 @@ impl<T> Interval<T> {
         }
     }
 
+    /// Create the interval `[e, e]` (single value).
     #[must_use]
     pub fn splat(e: T) -> Self
     where
@@ -140,6 +151,7 @@ impl<T> Interval<T> {
         self.0 <= t && self.1 >= t
     }
 
+    /// The width of this inverval.
     #[must_use]
     pub fn width(self) -> T::Output
     where
@@ -148,6 +160,7 @@ impl<T> Interval<T> {
         self.1 - self.0
     }
 
+    /// The average of the two interval endpoints.
     #[must_use]
     pub fn midpoint(self) -> T
     where
@@ -157,6 +170,7 @@ impl<T> Interval<T> {
         (self.0 + self.1) / two
     }
 
+    /// Splits this interval at its mitpoint.
     #[must_use]
     pub fn split(self) -> [Self; 2]
     where
@@ -166,6 +180,7 @@ impl<T> Interval<T> {
         [Interval(self.0, mid), Interval(mid, self.1)]
     }
 
+    /// Computes a new interval that contains both `self` and `t`.
     #[must_use]
     pub fn enclose(self, t: T) -> Self
     where
@@ -180,6 +195,9 @@ impl<T> Interval<T> {
         }
     }
 
+    /// Computes the intersection between two intervals.
+    ///
+    /// Returns `None` if the intervals are disjoint.
     #[must_use]
     pub fn intersect(self, rhs: Self) -> Option<Self>
     where
@@ -195,6 +213,7 @@ impl<T> Interval<T> {
         }
     }
 
+    /// Bounds the image of the`sin` and `cos` functions on this interval.
     #[must_use]
     pub fn sin_cos(self) -> (Self, Self)
     where
