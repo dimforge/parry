@@ -1,5 +1,17 @@
 # Change Log
 
+## v0.6.0
+### Added
+- Implement `Debug, Clone, PartialEq` for `VHACDParameters`.
+- Add a method to reverse the order of a polyline.
+- Add a method to remove duplicate vertices form a `TriMesh` (and adjusting the index buffer accordingly).
+- Add a method to iterate through all the lean data stored by a QBVH.
+- Implement the Interval Newton Method for computing all the roots of a non-linear scalar function.
+- Implement the intersection test between a spiral and an AABB.
+
+### Modified
+- Rename all occurrences of `quadtree` to `qbvh`. Using the term `quadtree` was not representative of the actual acceleration structure being used (which is a BVH).
+
 ## v0.5.1
 ### Fixed
 - Fix a bug where `query::contact` would return `None` for a all intersecting a cuboid
