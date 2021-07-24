@@ -159,6 +159,8 @@ impl RayCast for Segment {
     ) -> Option<RayIntersection> {
         #[cfg(feature = "dim2")]
         {
+            use crate::math::Vector;
+
             let seg_dir = self.scaled_direction();
             let (s, t, parallel) = query::details::closest_points_line_line_parameters_eps(
                 &ray.origin,
@@ -173,7 +175,7 @@ impl RayCast for Segment {
                 // the case where there is no intersection at all
                 // from the case where the line are collinear.
                 let dpos = self.a - ray.origin;
-                let normal = self.scaled_normal();
+                let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
                 if dpos.dot(&normal).abs() < crate::math::DEFAULT_EPSILON {
                     // The rays and the segment are collinear.
@@ -209,7 +211,7 @@ impl RayCast for Segment {
                     None
                 }
             } else if s >= 0.0 && s <= max_toi && t >= 0.0 && t <= 1.0 {
-                let normal = self.scaled_normal();
+                let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
                 if normal.dot(&ray.dir) > 0.0 {
                     Some(RayIntersection::new(s, -normal, FeatureId::Face(1)))
