@@ -22,7 +22,7 @@ mod ray_cuboid;
 mod ray_halfspace;
 mod ray_heightfield;
 mod ray_round_shape;
+mod ray_shared_shape;
 mod ray_support_map;
 mod ray_triangle;
-mod ray_shared_shape;
 mod simd_ray;
