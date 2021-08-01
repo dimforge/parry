@@ -51,3 +51,6 @@ rustc-hash = "1"
 
 [dev-dependencies]
 oorandom = "11"
+rand = "0.8.0"
+nalgebra   = { version = "0.28", features = ["rand"]}
+rand_isaac = "0.3.0"

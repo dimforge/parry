@@ -1,7 +1,7 @@
 use crate::common::{generate, unref};
 use na::{Isometry3, Vector3};
 use parry3d::shape::SupportMap;
-use parry3d::shape::{Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, Triangle};
+use parry3d::shape::{Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, Triangle};
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
 use test::Bencher;
@@ -62,7 +62,7 @@ bench_method!(
 bench_method!(
     bench_convex_support_map,
     support_point,
-    c: ConvexHull,
+    c: ConvexPolyhedron,
     m: Isometry3<f32>,
     dir: Vector3<f32>
 );
