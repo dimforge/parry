@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.7.0
+### Modified
+- Update the codebase to use `nalgebra v0.29`.
+
+### Fixed
+- Fix a bug where the normal returned by ray-casting on polylines would not be normalized.
+
 ## v0.6.0
 ### Added
 - Implement `Debug, Clone, PartialEq` for `VHACDParameters`.
