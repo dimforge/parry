@@ -18,7 +18,7 @@ pub trait IntervalFunction<T> {
 ///
 /// The results are stored in `results`. The `candidate` buffer is just a workspace buffer used
 /// to avoid allocations.
-pub fn find_root_intervals_to<T: RealField>(
+pub fn find_root_intervals_to<T: RealField + Copy>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
     min_interval_width: T,
@@ -94,7 +94,7 @@ pub fn find_root_intervals_to<T: RealField>(
 }
 
 /// Execute the Interval Newton Method to isolate all the roots of the given nonlinear function.
-pub fn find_root_intervals<T: RealField>(
+pub fn find_root_intervals<T: RealField + Copy>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
     min_interval_width: T,
@@ -164,7 +164,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn midpoint(self) -> T
     where
-        T: RealField,
+        T: RealField + Copy,
     {
         let two: T = na::convert(2.0);
         (self.0 + self.1) / two
@@ -174,7 +174,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn split(self) -> [Self; 2]
     where
-        T: RealField,
+        T: RealField + Copy,
     {
         let mid = self.midpoint();
         [Interval(self.0, mid), Interval(mid, self.1)]
@@ -217,7 +217,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn sin_cos(self) -> (Self, Self)
     where
-        T: RealField,
+        T: RealField + Copy,
     {
         (self.sin(), self.cos())
     }
@@ -226,7 +226,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn sin(self) -> Self
     where
-        T: RealField,
+        T: RealField + Copy,
     {
         if self.width() >= T::two_pi() {
             Interval(-T::one(), T::one())
@@ -253,7 +253,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn cos(self) -> Self
     where
-        T: RealField,
+        T: RealField + Copy,
     {
         if self.width() >= T::two_pi() {
             Interval(-T::one(), T::one())
@@ -373,7 +373,7 @@ where
 
 impl<T: Div<T>> Div<Interval<T>> for Interval<T>
 where
-    T: RealField,
+    T: RealField + Copy,
     <T as Div<T>>::Output: SimdPartialOrd,
 {
     type Output = (

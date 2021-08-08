@@ -18,8 +18,8 @@ impl Triangle {
         let b = self.b.coords;
         let c = self.c.coords;
 
-        let mut min = unsafe { Point::new_uninitialized() };
-        let mut max = unsafe { Point::new_uninitialized() };
+        let mut min = Point::origin();
+        let mut max = Point::origin();
 
         for d in 0..DIM {
             min.coords[d] = a[d].min(b[d]).min(c[d]);

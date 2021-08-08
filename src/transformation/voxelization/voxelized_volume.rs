@@ -227,7 +227,7 @@ impl VoxelizedVolume {
                 }
             }
 
-            ijk0.apply(|e| e.saturating_sub(1));
+            ijk0.apply(|e| *e = e.saturating_sub(1));
             ijk1 = ijk1
                 .map(|e| e + 1)
                 .inf(&Point::from(result.resolution).coords);
