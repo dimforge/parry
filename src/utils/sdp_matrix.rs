@@ -14,7 +14,7 @@ pub struct SdpMatrix2<N> {
     pub m22: N,
 }
 
-impl<N: SimdRealField> SdpMatrix2<N> {
+impl<N: SimdRealField + Copy> SdpMatrix2<N> {
     /// A new SDP 2x2 matrix with the given components.
     ///
     /// Because the matrix is symmetric, only the lower off-diagonal component is required.
@@ -76,7 +76,7 @@ impl<N: SimdRealField> SdpMatrix2<N> {
     }
 }
 
-impl<N: SimdRealField> Add<SdpMatrix2<N>> for SdpMatrix2<N> {
+impl<N: SimdRealField + Copy> Add<SdpMatrix2<N>> for SdpMatrix2<N> {
     type Output = Self;
 
     fn add(self, rhs: SdpMatrix2<N>) -> Self {
@@ -84,7 +84,7 @@ impl<N: SimdRealField> Add<SdpMatrix2<N>> for SdpMatrix2<N> {
     }
 }
 
-impl<N: SimdRealField> Mul<Vector2<N>> for SdpMatrix2<N> {
+impl<N: SimdRealField + Copy> Mul<Vector2<N>> for SdpMatrix2<N> {
     type Output = Vector2<N>;
 
     fn mul(self, rhs: Vector2<N>) -> Self::Output {
@@ -121,7 +121,7 @@ pub struct SdpMatrix3<N> {
     pub m33: N,
 }
 
-impl<N: SimdRealField> SdpMatrix3<N> {
+impl<N: SimdRealField + Copy> SdpMatrix3<N> {
     /// A new SDP 3x3 matrix with the given components.
     ///
     /// Because the matrix is symmetric, only the lower off-diagonal components is required.
@@ -296,7 +296,7 @@ impl Mul<Real> for SdpMatrix3<Real> {
     }
 }
 
-impl<N: SimdRealField> Mul<Vector3<N>> for SdpMatrix3<N> {
+impl<N: SimdRealField + Copy> Mul<Vector3<N>> for SdpMatrix3<N> {
     type Output = Vector3<N>;
 
     fn mul(self, rhs: Vector3<N>) -> Self::Output {
@@ -307,7 +307,7 @@ impl<N: SimdRealField> Mul<Vector3<N>> for SdpMatrix3<N> {
     }
 }
 
-impl<N: SimdRealField> Mul<Matrix3<N>> for SdpMatrix3<N> {
+impl<N: SimdRealField + Copy> Mul<Matrix3<N>> for SdpMatrix3<N> {
     type Output = Matrix3<N>;
 
     fn mul(self, rhs: Matrix3<N>) -> Self::Output {
@@ -327,7 +327,7 @@ impl<N: SimdRealField> Mul<Matrix3<N>> for SdpMatrix3<N> {
     }
 }
 
-impl<N: SimdRealField> Mul<Matrix3x2<N>> for SdpMatrix3<N> {
+impl<N: SimdRealField + Copy> Mul<Matrix3x2<N>> for SdpMatrix3<N> {
     type Output = Matrix3x2<N>;
 
     fn mul(self, rhs: Matrix3x2<N>) -> Self::Output {
