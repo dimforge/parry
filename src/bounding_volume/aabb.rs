@@ -115,6 +115,16 @@ impl AABB {
         (self.maxs - self.mins) * half
     }
 
+    /// The volume of this AABB.
+    #[inline]
+    pub fn volume(&self) -> Real {
+        let extents = self.extents();
+        #[cfg(feature = "dim2")]
+        return extents.x * extents.y;
+        #[cfg(feature = "dim3")]
+        return extents.x * extents.y * extents.z;
+    }
+
     /// The extents of this AABB.
     #[inline]
     pub fn extents(&self) -> Vector<Real> {
