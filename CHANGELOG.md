@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.7.1
+### Added
+- Add the method `AABB::volume` to compute the volume of an AABB.
+
 ## v0.7.0
 ### Modified
 - Update the codebase to use `nalgebra v0.29`.
