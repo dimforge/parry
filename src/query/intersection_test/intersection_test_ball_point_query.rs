@@ -18,6 +18,6 @@ pub fn intersection_test_point_query_ball<P: ?Sized + PointQuery>(
     ball2: &Ball,
 ) -> bool {
     let local_p2_1 = Point::from(pos12.translation.vector);
-    let proj = point_query1.project_local_point(&local_p2_1, cfg!(feature = "dim3"));
+    let proj = point_query1.project_local_point(&local_p2_1, true);
     proj.is_inside || (local_p2_1 - proj.point).norm_squared() <= ball2.radius * ball2.radius
 }
