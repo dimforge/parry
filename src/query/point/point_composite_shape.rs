@@ -133,7 +133,6 @@ macro_rules! gen_visitor(
             shape: &'a S,
             point: &'a Point<Real>,
             simd_point: Point<SimdReal>,
-            #[allow(dead_code)] // This won't be used for the projection with feature.
             solid: bool,
         }
 
@@ -172,6 +171,7 @@ macro_rules! gen_visitor(
 
                     for ii in 0..SIMD_WIDTH {
                         if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
+                            let mut is_inside = false;
                             let subshape_id = *data[ii].unwrap();
                             self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape| {
                                 let (proj $(, $extra_info)*) = if let Some(part_pos) = part_pos {
@@ -187,9 +187,14 @@ macro_rules! gen_visitor(
                                     )
                                 };
 
+                                is_inside = proj.is_inside;
                                 weights[ii] = na::distance(self.point, &proj.point);
                                 results[ii] = Some((proj, (subshape_id $(, $extra_info)*)));
                             });
+
+                            if self.solid && is_inside {
+                                return SimdBestFirstVisitStatus::ExitEarly(results[ii]);
+                            }
                         }
                     }
 
