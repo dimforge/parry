@@ -201,7 +201,8 @@ impl SharedShape {
         let decomp = VHACD::decompose(params, &vertices, &indices, true);
 
         #[cfg(feature = "dim2")]
-        for vertices in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+        for mut vertices in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+            vertices.reverse();
             if let Some(convex) = Self::convex_polyline(vertices) {
                 parts.push((Isometry::identity(), convex));
             }
