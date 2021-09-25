@@ -6,20 +6,20 @@ use na::{self, Point2, Vector2};
 use num_traits::Zero;
 
 /// Computes the convex hull of a set of 2d points.
+///
+/// The computed convex-hull have its points given in counter-clockwise order.
 #[cfg(feature = "dim2")]
 pub fn convex_hull2(points: &[Point2<Real>]) -> Vec<Point2<Real>> {
-    let idx = convex_hull2_idx(points);
-    let mut pts = Vec::new();
-
-    for id in idx.into_iter() {
-        pts.push(points[id].clone());
-    }
-
-    pts
+    convex_hull2_idx(points)
+        .into_iter()
+        .map(|id| points[id])
+        .collect()
 }
 
 /// Computes the convex hull of a set of 2d points and returns only the indices of the hull
 /// vertices.
+///
+/// The computed convex-hull have its points given in counter-clockwise order.
 pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
     let mut undecidable_points = Vec::new();
     let mut segments = get_initial_polyline(points, &mut undecidable_points);
@@ -91,7 +91,7 @@ fn get_initial_polyline(
     let p1 = support_point_id(&Vector2::x(), points).unwrap();
     let mut p2 = p1;
 
-    let direction = [-Vector2::x(), Vector2::y(), -Vector2::y()];
+    let direction = [-Vector2::x(), -Vector2::y(), Vector2::y()];
 
     for dir in direction.iter() {
         p2 = support_point_id(dir, points).unwrap();
@@ -206,7 +206,7 @@ impl SegmentFacet {
     ) -> SegmentFacet {
         let p1p2 = points[p2] - points[p1];
 
-        let mut normal = Vector2::new(-p1p2.y, p1p2.x);
+        let mut normal = Vector2::new(p1p2.y, -p1p2.x);
         let norm = normal.normalize_mut();
 
         SegmentFacet {

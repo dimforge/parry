@@ -202,7 +202,6 @@ impl SharedShape {
 
         #[cfg(feature = "dim2")]
         for mut vertices in decomp.compute_exact_convex_hulls(&vertices, &indices) {
-            vertices.reverse();
             if let Some(convex) = Self::convex_polyline(vertices) {
                 parts.push((Isometry::identity(), convex));
             }
