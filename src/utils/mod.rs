@@ -17,9 +17,10 @@ pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
 pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
-pub use self::cov::cov;
+pub use self::cov::{center_cov, cov};
 pub use self::hashable_partial_eq::HashablePartialEq;
 pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
+pub use self::obb::obb;
 #[cfg(feature = "dim3")]
 pub(crate) use self::sort::sort2;
 pub(crate) use self::sort::sort3;
@@ -41,6 +42,7 @@ mod interval;
 mod inv;
 mod isometry_ops;
 mod median;
+mod obb;
 mod point_cloud_support_point;
 mod point_in_poly2d;
 mod ref_with_cost;
