@@ -2,6 +2,9 @@ use crate::math::{Isometry, Point, Real, Rotation, Translation, Vector, DIM};
 use crate::shape::Cuboid;
 
 /// Computes an oriented bounding box for the given set of points.
+///
+/// The returned OBB is not guaranteed to be the smallest enclosing OBB.
+/// Though it should be a pretty good on for most purposes.
 pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
     let cov = crate::utils::cov(pts);
     let mut eigv = cov.symmetric_eigen().eigenvectors;

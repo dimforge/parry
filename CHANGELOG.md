@@ -8,7 +8,7 @@
   with orientation expected by, e.g., the `ConvexPolygon` type).
 
 ### Added
-- Add `parry::utils::obb` which computes the OBB of a set of points.
+- Add `parry::utils::obb` which computes a (possibly sub-optimal) OBB for a set of points.
 - Add `Polyline::project_local_point_assuming_solid_interior_ccw` which projects a point on the polyline contour, and
   is able to detect if that points is located inside of the polyline, assuming that the polyline is closed and oriented
   counter-clock-wise.
