@@ -89,6 +89,19 @@ impl Segment {
         Vector::new(dir.y, -dir.x)
     }
 
+    /// The not-normalized counterclockwise normal of this segment, assuming it lies on the plane
+    /// with the normal collinear to the given axis (0 = X, 1 = Y, 2 = Z).
+    #[cfg(feature = "dim3")]
+    pub fn scaled_planar_normal(&self, plane_axis: u8) -> Vector<Real> {
+        let dir = self.scaled_direction();
+        match plane_axis {
+            0 => Vector::new(0.0, dir.z, -dir.y),
+            1 => Vector::new(-dir.z, 0.0, dir.x),
+            2 => Vector::new(dir.y, -dir.x, 0.0),
+            _ => panic!("Invalid axis given: must be 0 (X axis), 1 (Y axis) or 2 (Z axis)"),
+        }
+    }
+
     /// In 2D, the normalized counterclockwise normal of this segment.
     #[cfg(feature = "dim2")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
@@ -99,6 +112,16 @@ impl Segment {
     #[cfg(feature = "dim3")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
         None
+    }
+
+    /// The normalized counterclockwise normal of this segment, assuming it lies on the plane
+    /// with the normal collinear to the given axis (0 = X, 1 = Y, 2 = Z).
+    #[cfg(feature = "dim3")]
+    pub fn planar_normal(&self, plane_axis: u8) -> Option<Unit<Vector<Real>>> {
+        Unit::try_new(
+            self.scaled_planar_normal(plane_axis),
+            crate::math::DEFAULT_EPSILON,
+        )
     }
 
     /// Applies the isometry `m` to the vertices of this segment and returns the resulting segment.

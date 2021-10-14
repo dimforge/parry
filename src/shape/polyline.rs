@@ -1,8 +1,9 @@
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
+use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
-use crate::shape::{FeatureId, Segment, Shape, TypedSimdCompositeShape};
+use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -120,6 +121,60 @@ impl Polyline {
         for (_, seg_id) in self.qbvh.iter_data_mut() {
             *seg_id = self.indices.len() as u32 - *seg_id - 1;
         }
+    }
+
+    /// Perform a point projection assuming a solid interior based on a counter-clock-wise orientation.
+    ///
+    /// This is similar to `self.project_local_point_and_get_location` except that the resulting
+    /// `PointProjection::is_inside` will be set to true if the point is inside of the area delimited
+    /// by this polyline, assuming that:
+    /// - This polyline isn’t self-crossing.
+    /// - This polyline is closed (i.e. either `self.indices[0] == self.indices.last()` or `self.vertices[0] == self.vertices.last()`).
+    /// - This polyline is oriented counter-clockwise.
+    /// These properties are not checked.
+    pub fn project_local_point_assuming_solid_interior_ccw(
+        &self,
+        point: Point<Real>,
+        #[cfg(feature = "dim3")] axis: u8,
+    ) -> (PointProjection, (u32, SegmentPointLocation)) {
+        let mut proj = self.project_local_point_and_get_location(&point, false);
+        let segment1 = self.segment((proj.1).0);
+
+        #[cfg(feature = "dim2")]
+        let normal = segment1.normal();
+        #[cfg(feature = "dim3")]
+        let normal = segment1.planar_normal(axis);
+
+        if let Some(normal1) = normal {
+            match proj.1 .1 {
+                SegmentPointLocation::OnVertex(i) => {
+                    let adj_seg = if i == 0 {
+                        if proj.1 .0 == 0 {
+                            self.indices().len() as u32 - 1
+                        } else {
+                            proj.1 .0 - 1
+                        }
+                    } else {
+                        assert_eq!(i, 1);
+                        (proj.1 .0 + 1) % self.indices().len() as u32
+                    };
+
+                    let segment2 = self.segment(adj_seg);
+                    let dir2 = if i == 0 {
+                        -segment2.scaled_direction()
+                    } else {
+                        segment2.scaled_direction()
+                    };
+
+                    proj.0.is_inside = normal1.dot(&dir2) >= 0.0;
+                }
+                SegmentPointLocation::OnEdge(_) => {
+                    proj.0.is_inside = (point - proj.0.point).dot(&normal1) <= 0.0;
+                }
+            }
+        }
+
+        proj
     }
 }
 
