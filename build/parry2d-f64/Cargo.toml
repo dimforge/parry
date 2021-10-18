@@ -27,6 +27,7 @@ enhanced-determinism = [ "simba/libm_force", "indexmap" ]
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
 simd-is-enabled = [ ]
+bevy-components = ["bevy"]
 
 [lib]
 name = "parry2d_f64"
@@ -48,6 +49,7 @@ serde           = { version = "1.0", optional = true, features = ["derive"]}
 num-derive      = "0.3"
 indexmap = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = "1"
+bevy            = { version = "0.5", default-features = false, optional = true }
 
 [dev-dependencies]
 simba = { version = "0.6", features = [ "partial_fixed_point_support" ] }

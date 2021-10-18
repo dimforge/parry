@@ -6,3 +6,4 @@ parry2d = { path = "build/parry2d" }
 parry3d = { path = "build/parry3d" }
 parry2d-f64 = { path = "build/parry2d-f64" }
 parry3d-f64 = { path = "build/parry3d-f64" }
+bevy = {path = "../bevy"}

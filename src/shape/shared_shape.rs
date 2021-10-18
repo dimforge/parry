@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 /// The shape of a collider.
 #[derive(Clone)]
+#[cfg_attr(feature = "bevy-components", derive(bevy::prelude::Component))]
 pub struct SharedShape(pub Arc<dyn Shape>);
 
 impl Deref for SharedShape {
