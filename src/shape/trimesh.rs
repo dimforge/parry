@@ -2,11 +2,33 @@ use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
-#[cfg(feature = "dim3")]
-use crate::shape::{Cuboid, HeightField};
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
+#[cfg(feature = "dim3")]
+use {
+    crate::math::Vector,
+    crate::shape::{Cuboid, HeightField},
+    crate::utils::SortedPair,
+};
+
+#[derive(Clone)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg(feature = "dim3")]
+pub(crate) struct PseudoNormals {
+    pub vertices_pseudo_normal: Vec<Vector<Real>>,
+    pub edges_pseudo_normal: HashMap<SortedPair<u32>, Vector<Real>>,
+}
+
+#[cfg(feature = "dim3")]
+impl Default for PseudoNormals {
+    fn default() -> Self {
+        Self {
+            vertices_pseudo_normal: vec![],
+            edges_pseudo_normal: Default::default(),
+        }
+    }
+}
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -15,6 +37,8 @@ pub struct TriMesh {
     qbvh: QBVH<u32>,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
+    #[cfg(feature = "dim3")]
+    pub(crate) pseudo_normals: PseudoNormals,
 }
 
 impl TriMesh {
@@ -44,6 +68,8 @@ impl TriMesh {
             qbvh,
             vertices,
             indices,
+            #[cfg(feature = "dim3")]
+            pseudo_normals: Default::default(),
         }
     }
 
@@ -170,6 +196,85 @@ impl TriMesh {
 
         self.vertices = new_vertices;
         self.indices = new_indices;
+
+        // Vertices and indices changed: the pseudo-normals are no longer valid.
+        #[cfg(feature = "dim3")]
+        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+            self.compute_pseudo_normals();
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    /// Computes the pseudo-normals used for solid point-projection.
+    ///
+    /// This computes the pseudo-normals needed by the point containment test described in
+    /// "Signed distance computation using the angle weighted pseudonormal", Baerentzen, et al.
+    /// DOI: 10.1109/TVCG.2005.49
+    ///
+    /// For the point-containment test to properly detect the inside of the trimesh (i.e. to return
+    /// `proj.is_inside = true`), the trimesh must:
+    /// - Be manifold (closed, no t-junctions, etc.)
+    /// - Be oriented with outward normals.
+    ///
+    /// If the the trimesh is correctly oriented, but is manifold everywhere except at its boundaries,
+    /// then the computed pseudo-normals will provide correct point-containment test results except
+    /// for points closest to the boundary of the mesh.
+    ///
+    /// It may be useful to call `self.recover_topology()` before this method, in order to fix the
+    /// index buffer if some of the vertices of this trimesh are duplicated.
+    pub fn compute_pseudo_normals(&mut self) {
+        use na::RealField;
+
+        let mut degenerate_triangles = vec![false; self.indices().len()];
+        let mut vertices_pseudo_normal = vec![Vector::zeros(); self.vertices().len()];
+        let mut edges_pseudo_normal = HashMap::default();
+        let mut edges_multiplicity = HashMap::default();
+
+        for (k, idx) in self.indices().iter().enumerate() {
+            let vtx = self.vertices();
+            let tri = Triangle::new(
+                vtx[idx[0] as usize],
+                vtx[idx[1] as usize],
+                vtx[idx[2] as usize],
+            );
+
+            if let Some(n) = tri.normal() {
+                let ang1 = (tri.b - tri.a).angle(&(tri.c - tri.a));
+                let ang2 = (tri.a - tri.b).angle(&(tri.c - tri.b));
+                let ang3 = (tri.b - tri.c).angle(&(tri.a - tri.c));
+
+                // NOTE: almost-degenerate triangles can result in a bad normal (due to
+                //       float errors, with a high weight (due to the large angle of one
+                //       of its vertices). We need to ignore these triangles.
+                degenerate_triangles[k] = ang1.max(ang2).max(ang3) > Real::pi() - Real::pi() / 10.0;
+
+                if degenerate_triangles[k] {
+                    continue;
+                }
+
+                vertices_pseudo_normal[idx[0] as usize] += *n * ang1;
+                vertices_pseudo_normal[idx[1] as usize] += *n * ang2;
+                vertices_pseudo_normal[idx[2] as usize] += *n * ang3;
+
+                let edges = [
+                    SortedPair::new(idx[0], idx[1]),
+                    SortedPair::new(idx[0], idx[2]),
+                    SortedPair::new(idx[1], idx[2]),
+                ];
+
+                for edge in &edges {
+                    let edge_n = edges_pseudo_normal
+                        .entry(*edge)
+                        .or_insert_with(Vector::zeros);
+                    *edge_n += *n; // NOTE: there is no need to multiply by the incident angle since it is always equal to PI for all the edges.
+                    let edge_mult = edges_multiplicity.entry(*edge).or_insert(0);
+                    *edge_mult += 1;
+                }
+            }
+        }
+
+        self.pseudo_normals.vertices_pseudo_normal = vertices_pseudo_normal;
+        self.pseudo_normals.edges_pseudo_normal = edges_pseudo_normal;
     }
 }
 

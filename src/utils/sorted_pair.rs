@@ -4,6 +4,7 @@ use std::ops::Deref;
 
 /// A pair of elements sorted in increasing order.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct SortedPair<T: PartialOrd>([T; 2]);
 
 impl<T: PartialOrd> SortedPair<T> {

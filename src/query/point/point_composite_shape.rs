@@ -10,6 +10,8 @@ use crate::shape::{
     Compound, FeatureId, Polyline, SegmentPointLocation, TriMesh, TrianglePointLocation,
     TypedSimdCompositeShape,
 };
+#[cfg(feature = "dim3")]
+use crate::utils::SortedPair;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
@@ -53,6 +55,14 @@ impl PointQuery for TriMesh {
         &self,
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
+        #[cfg(feature = "dim3")]
+        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+            // If we can, in 3D, take the pseudo-normals into account.
+            let (proj, (id, _feature)) = self.project_local_point_and_get_location(point, false);
+            let feature_id = FeatureId::Face(id);
+            return (proj, feature_id);
+        }
+
         let mut visitor =
             PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
         let (proj, (id, _feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
@@ -64,6 +74,15 @@ impl PointQuery for TriMesh {
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
+        #[cfg(feature = "dim3")]
+        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+            // If we can, in 3D, take the pseudo-normals into account.
+            return self
+                .project_local_point_and_get_location(point, true)
+                .0
+                .is_inside;
+        }
+
         let mut visitor = CompositePointContainmentTest::new(self, point);
         self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
@@ -112,6 +131,7 @@ impl PointQueryWithLocation for TriMesh {
     type Location = (u32, TrianglePointLocation);
 
     #[inline]
+    #[allow(unused_mut)] // Because we need mut in 3D but not in 2D.
     fn project_local_point_and_get_location(
         &self,
         point: &Point<Real>,
@@ -119,7 +139,38 @@ impl PointQueryWithLocation for TriMesh {
     ) -> (PointProjection, Self::Location) {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-        self.qbvh().traverse_best_first(&mut visitor).unwrap().1
+        let (mut proj, (part_id, location)) =
+            self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
+
+        #[cfg(feature = "dim3")]
+        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+            let pseudo_normal = match location {
+                TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
+                    Some(self.triangle(part_id).scaled_normal())
+                }
+                TrianglePointLocation::OnEdge(i, _) => {
+                    let idx = self.indices()[part_id as usize];
+                    self.pseudo_normals
+                        .edges_pseudo_normal
+                        .get(&SortedPair::new(idx[i as usize], idx[(i as usize + 1) % 3]))
+                        .copied()
+                }
+                TrianglePointLocation::OnVertex(i) => {
+                    let idx = self.indices()[part_id as usize];
+                    self.pseudo_normals
+                        .vertices_pseudo_normal
+                        .get(idx[i as usize] as usize)
+                        .copied()
+                }
+            };
+
+            if let Some(pseudo_normal) = pseudo_normal {
+                let dpt = point - proj.point;
+                proj.is_inside = dpt.dot(&pseudo_normal) <= 0.0;
+            }
+        }
+
+        (proj, (part_id, location))
     }
 }
 
