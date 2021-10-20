@@ -129,8 +129,10 @@ impl Polyline {
     /// `PointProjection::is_inside` will be set to true if the point is inside of the area delimited
     /// by this polyline, assuming that:
     /// - This polyline isn’t self-crossing.
-    /// - This polyline is closed (i.e. either `self.indices[0] == self.indices.last()` or `self.vertices[0] == self.vertices.last()`).
+    /// - This polyline is closed with `self.indices[i][1] == self.indices[(i + 1) % num_indices][0]` where
+    ///   `num_indices == self.indices.len()`.
     /// - This polyline is oriented counter-clockwise.
+    /// - In 3D, the polyline is assumed to be fully coplanar, on a plane with normal given by
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,
@@ -141,37 +143,49 @@ impl Polyline {
         let segment1 = self.segment((proj.1).0);
 
         #[cfg(feature = "dim2")]
-        let normal = segment1.normal();
+        let normal1 = segment1.normal();
         #[cfg(feature = "dim3")]
-        let normal = segment1.planar_normal(axis);
+        let normal1 = segment1.planar_normal(axis);
 
-        if let Some(normal1) = normal {
-            match proj.1 .1 {
+        if let Some(normal1) = normal1 {
+            proj.0.is_inside = match proj.1 .1 {
                 SegmentPointLocation::OnVertex(i) => {
-                    let adj_seg = if i == 0 {
-                        if proj.1 .0 == 0 {
+                    let dir2 = if i == 0 {
+                        let adj_seg = if proj.1 .0 == 0 {
                             self.indices().len() as u32 - 1
                         } else {
                             proj.1 .0 - 1
-                        }
+                        };
+
+                        assert_eq!(segment1.a, self.segment(adj_seg).b);
+                        -self.segment(adj_seg).scaled_direction()
                     } else {
                         assert_eq!(i, 1);
-                        (proj.1 .0 + 1) % self.indices().len() as u32
+                        let adj_seg = (proj.1 .0 + 1) % self.indices().len() as u32;
+                        assert_eq!(segment1.b, self.segment(adj_seg).a);
+
+                        self.segment(adj_seg).scaled_direction()
                     };
 
-                    let segment2 = self.segment(adj_seg);
-                    let dir2 = if i == 0 {
-                        -segment2.scaled_direction()
+                    let dot = normal1.dot(&dir2);
+                    // TODO: is this threshold too big? This corresponds to an angle equal to
+                    //       abs(acos(1.0e-3)) = (90 - 0.057) degrees.
+                    //       We did encounter some cases where this was needed, but perhaps the
+                    //       actual problem was an issue with the SegmentPointLocation (which should
+                    //       perhaps have been Edge instead of Vertex)?
+                    let threshold = 1.0e-3 * dir2.norm();
+                    if dot.abs() > threshold {
+                        // If the vertex is a reentrant vertex, then the point is
+                        // inside. Otherwise, it is outside.
+                        dot >= 0.0
                     } else {
-                        segment2.scaled_direction()
-                    };
-
-                    proj.0.is_inside = normal1.dot(&dir2) >= 0.0;
+                        // If the two edges are collinear, we can’t classify the vertex.
+                        // So check against the edge’s normal instead.
+                        (point - proj.0.point).dot(&normal1) <= 0.0
+                    }
                 }
-                SegmentPointLocation::OnEdge(_) => {
-                    proj.0.is_inside = (point - proj.0.point).dot(&normal1) <= 0.0;
-                }
-            }
+                SegmentPointLocation::OnEdge(_) => (point - proj.0.point).dot(&normal1) <= 0.0,
+            };
         }
 
         proj
