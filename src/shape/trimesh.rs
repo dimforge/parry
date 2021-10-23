@@ -2,6 +2,8 @@ use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
+#[cfg(feature = "dim2")]
+use crate::shape::ear_clipping::triangulate_ear_clipping;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
@@ -71,6 +73,13 @@ impl TriMesh {
             #[cfg(feature = "dim3")]
             pseudo_normals: Default::default(),
         }
+    }
+
+    /// Create a trimesh from a set of points assumed to describe a counter-clockwise non-convex polygon. This
+    /// operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
+    #[cfg(feature = "dim2")]
+    pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
+        triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
