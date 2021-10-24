@@ -1,6 +1,6 @@
 use crate::math::{Point, Real};
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum Direction {
     /// Counter-clockwise
     Ccw,
