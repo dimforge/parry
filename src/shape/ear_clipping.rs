@@ -25,7 +25,7 @@ pub enum Direction {
 ///   .     .
 ///  .        o p3
 /// o p1
-pub fn get_corner_direction(p1: &Point<Real>, p2: &Point<Real>, p3: &Point<Real>) -> Direction {
+pub fn corner_direction(p1: &Point<Real>, p2: &Point<Real>, p3: &Point<Real>) -> Direction {
     let v1 = p1 - p2;
     let v2 = p3 - p2;
     let cross: Real = v1.perp(&v2);
