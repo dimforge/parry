@@ -1,66 +1,7 @@
-use crate::math::{Point, Real};
-
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum Direction {
-    /// Counter-clockwise
-    Ccw,
-    /// Clockwise
-    Cw,
-    /// Neither (a straight line)
-    None,
-}
-
-/// Returns the direction of a line through `p1`, `p2` and `p3`.
-///
-/// Counter-clockwise example:
-/// o p1
-///  .        o p3
-///   .     .
-///    .  .
-///     o p2
-///
-/// Clockwise example:
-///     o p2
-///    .  .
-///   .     .
-///  .        o p3
-/// o p1
-pub fn corner_direction(p1: &Point<Real>, p2: &Point<Real>, p3: &Point<Real>) -> Direction {
-    let v1 = p1 - p2;
-    let v2 = p3 - p2;
-    let cross: Real = v1.perp(&v2);
-
-    match cross
-        .partial_cmp(&0.0)
-        .expect("Found NaN while computing corner direction.")
-    {
-        std::cmp::Ordering::Less => Direction::Ccw,
-        std::cmp::Ordering::Equal => Direction::None,
-        std::cmp::Ordering::Greater => Direction::Cw,
-    }
-}
-
-/// Returns `true` if point `p` is in triangle with corners `v1`, `v2` and `v3`.
-/// Returns `None` if the triangle is invalid i.e. all points are the same or on a straight line.
-pub fn is_point_in_triangle(
-    p: &Point<Real>,
-    v1: &Point<Real>,
-    v2: &Point<Real>,
-    v3: &Point<Real>,
-) -> Option<bool> {
-    let d1 = get_corner_direction(p, v1, v2);
-    let d2 = get_corner_direction(p, v2, v3);
-    let d3 = get_corner_direction(p, v3, v1);
-
-    let has_cw = d1 == Direction::Cw || d2 == Direction::Cw || d3 == Direction::Cw;
-    let has_ccw = d1 == Direction::Ccw || d2 == Direction::Ccw || d3 == Direction::Ccw;
-
-    if d1 == Direction::None && d2 == Direction::None && d3 == Direction::None {
-        None
-    } else {
-        Some(!(has_cw && has_ccw))
-    }
-}
+use crate::{
+    math::{Point, Real},
+    utils::point_in_triangle::{corner_direction, is_point_in_triangle, Orientation},
+};
 
 /// The information stored for each vertex in the ear clipping algorithm.
 #[derive(Clone, Default)]
@@ -95,7 +36,7 @@ fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>
     // A point is considered an ear when it is convex and no other points are
     // inside the triangle spanned by it and its two neighbors.
     let mut error = false;
-    vertex_info.is_ear = get_corner_direction(&p1, &p, &p3) == Direction::Ccw
+    vertex_info.is_ear = corner_direction(&p1, &p, &p3) == Orientation::Ccw
         && (0..points.len())
             .filter(|&i| i != vertex_info.p_prev && i != idx && i != vertex_info.p_next)
             .all(|i| {
