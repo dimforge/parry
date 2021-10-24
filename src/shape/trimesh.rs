@@ -75,8 +75,9 @@ impl TriMesh {
         }
     }
 
-    /// Create a trimesh from a set of points assumed to describe a counter-clockwise non-convex polygon. This
-    /// operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
+    /// Create a trimesh from a set of points assumed to describe a counter-clockwise non-convex polygon.
+    ///
+    /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
     pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
