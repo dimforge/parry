@@ -56,10 +56,10 @@ pub fn is_point_in_triangle(
     let has_ccw = d1 == Direction::Ccw || d2 == Direction::Ccw || d3 == Direction::Ccw;
 
     if d1 == Direction::None && d2 == Direction::None && d3 == Direction::None {
-        return None;
+        None
+    } else {
+        Some(!(has_cw && has_ccw))
     }
-
-    Some(!(has_cw && has_ccw))
 }
 
 /// The information stored for each vertex in the ear clipping algorithm.
