@@ -2,9 +2,9 @@ use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
-#[cfg(feature = "dim2")]
-use crate::shape::ear_clipping::triangulate_ear_clipping;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
+#[cfg(feature = "dim2")]
+use crate::transformation::ear_clipping::triangulate_ear_clipping;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
 #[cfg(feature = "dim3")]

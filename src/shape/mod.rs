@@ -65,8 +65,6 @@ mod capsule;
 pub mod composite_shape;
 mod compound;
 mod cuboid;
-#[cfg(feature = "dim2")]
-mod ear_clipping;
 mod half_space;
 mod polyline;
 mod round_shape;

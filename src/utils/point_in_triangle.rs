@@ -1,3 +1,5 @@
+//! Function to check if a point is inside a triangle and related functions.
+
 use crate::math::{Point, Real};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
