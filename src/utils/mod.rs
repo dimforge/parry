@@ -45,6 +45,8 @@ mod median;
 mod obb;
 mod point_cloud_support_point;
 mod point_in_poly2d;
+#[cfg(feature = "dim2")]
+pub mod point_in_triangle;
 mod ref_with_cost;
 mod sdp_matrix;
 mod sort;
