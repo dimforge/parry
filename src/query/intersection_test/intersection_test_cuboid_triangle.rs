@@ -40,8 +40,11 @@ pub fn intersection_test_cuboid_triangle(
     }
 
     #[cfg(feature = "dim2")]
-    let sep3 = -Real::MAX; // This case does not exist in 2D.
+    return true; // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
-    let sep3 = sat::cuboid_triangle_find_local_separating_edge_twoway(cube1, triangle2, &pos12).0;
-    sep3 <= 0.0
+    {
+        let sep3 =
+            sat::cuboid_triangle_find_local_separating_edge_twoway(cube1, triangle2, &pos12).0;
+        sep3 <= 0.0
+    }
 }
