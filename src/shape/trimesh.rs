@@ -2,9 +2,13 @@ use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
+#[cfg(feature = "dim2")]
+use crate::shape::{Compound, ConvexPolygon, SharedShape};
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::ear_clipping::triangulate_ear_clipping;
+#[cfg(feature = "dim2")]
+use crate::transformation::hertel_mehlhorn::hertel_mehlhorn;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
 #[cfg(feature = "dim3")]
@@ -75,12 +79,45 @@ impl TriMesh {
         }
     }
 
-    /// Create a trimesh from a set of points assumed to describe a counter-clockwise non-convex polygon.
+    /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
     ///
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
     pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
+    }
+
+    #[cfg(feature = "dim2")]
+    /// Create a compound shape from the `TriMesh`. This involves merging adjacent triangles into convex
+    /// polygons using the Hertel-Mehlhorn algorithm.
+    ///
+    /// Can fail and return `None` if any of the created shapes has close to zero or zero surface area.
+    pub fn to_compound(&self) -> Option<Compound> {
+        let indices = hertel_mehlhorn(self.vertices(), self.indices());
+        let shapes: Option<Vec<_>> = indices
+            .into_iter()
+            .map(|poly_indices| {
+                match poly_indices.as_slice() {
+                    [i0, i1, i2] => {
+                        let triangle = Triangle::new(
+                            self.vertices()[*i0 as usize],
+                            self.vertices()[*i1 as usize],
+                            self.vertices()[*i2 as usize],
+                        );
+                        Some(SharedShape::new(triangle))
+                    }
+                    i_polygon => {
+                        let vertices = i_polygon
+                            .iter()
+                            .map(|i| self.vertices()[*i as usize])
+                            .collect();
+                        ConvexPolygon::from_convex_polyline(vertices).map(SharedShape::new)
+                    }
+                }
+                .map(|shape| (Isometry::identity(), shape))
+            })
+            .collect();
+        Some(Compound::new(shapes?))
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
