@@ -20,6 +20,8 @@ pub mod voxelization;
 #[cfg(feature = "dim2")]
 pub(crate) mod ear_clipping;
 #[cfg(feature = "dim2")]
+pub(crate) mod hertel_mehlhorn;
+#[cfg(feature = "dim2")]
 mod to_polyline;
 #[cfg(feature = "dim3")]
 mod to_trimesh;
