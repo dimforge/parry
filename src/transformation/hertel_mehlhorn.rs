@@ -24,7 +24,20 @@ fn find_edge_index_in_polygon(p1: u32, p2: u32, indices: &[u32]) -> Option<(usiz
 /// partitioning.
 ///
 /// This algorithm is described in https://people.mpi-inf.mpg.de/~mehlhorn/ftp/FastTriangulation.pdf
-pub(crate) fn hertel_mehlhorn(vertices: &[Point<Real>], indices: &[[u32; 3]]) -> Vec<Vec<u32>> {
+pub fn hertel_mehlhorn(vertices: &[Point<Real>], indices: &[[u32; 3]]) -> Vec<Vec<Point<Real>>> {
+    hertel_mehlhorn_idx(vertices, indices)
+        .into_iter()
+        .map(|poly_indices| {
+            poly_indices
+                .into_iter()
+                .map(|idx| vertices[idx as usize])
+                .collect()
+        })
+        .collect()
+}
+
+/// Internal implementation of the Hertel-Mehlhorn algorithm that returns the polygon indices.
+pub fn hertel_mehlhorn_idx(vertices: &[Point<Real>], indices: &[[u32; 3]]) -> Vec<Vec<u32>> {
     let mut indices: Vec<Vec<u32>> = indices.iter().map(|indices| indices.to_vec()).collect();
     // Iterate over all polygons.
     let mut i_poly1 = 0;
@@ -110,7 +123,7 @@ pub(crate) fn hertel_mehlhorn(vertices: &[Point<Real>], indices: &[[u32; 3]]) ->
 // --- Unit tests ----------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use super::hertel_mehlhorn;
+    use super::hertel_mehlhorn_idx;
     use crate::math::Point;
 
     #[test]
@@ -143,7 +156,7 @@ mod tests {
             [2, 0, 1],
         ];
 
-        let indices = hertel_mehlhorn(&vertices, &triangles);
+        let indices = hertel_mehlhorn_idx(&vertices, &triangles);
 
         let expected_indices = vec![
             // (1)
