@@ -5,7 +5,11 @@
 use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
 use crate::math::{Isometry, Real};
 use crate::partitioning::QBVH;
+#[cfg(feature = "dim2")]
+use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
+#[cfg(feature = "dim2")]
+use crate::transformation::hertel_mehlhorn;
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -58,6 +62,29 @@ impl Compound {
             aabbs,
             aabb,
         }
+    }
+
+    #[cfg(feature = "dim2")]
+    /// Create a compound shape from the `TriMesh`. This involves merging adjacent triangles into convex
+    /// polygons using the Hertel-Mehlhorn algorithm.
+    ///
+    /// Can fail and return `None` if any of the created shapes has close to zero or zero surface area.
+    pub fn decompose_trimesh(&self, trimesh: &TriMesh) -> Option<Self> {
+        let polygons = hertel_mehlhorn(trimesh.vertices(), trimesh.indices());
+        let shapes: Option<Vec<_>> = polygons
+            .into_iter()
+            .map(|points| {
+                match points.len() {
+                    3 => {
+                        let triangle = Triangle::new(points[0], points[1], points[2]);
+                        Some(SharedShape::new(triangle))
+                    }
+                    _ => ConvexPolygon::from_convex_polyline(points).map(SharedShape::new),
+                }
+                .map(|shape| (Isometry::identity(), shape))
+            })
+            .collect();
+        Some(Self::new(shapes?))
     }
 }
 
