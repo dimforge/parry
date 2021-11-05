@@ -7,7 +7,8 @@ use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::SharedShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, PolygonalFeatureMap,
-    Polyline, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
+    Polyline, RoundCuboid, RoundShape, RoundTriangle, ScaledTriMesh, Segment, SupportMap, TriMesh,
+    Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{
@@ -35,6 +36,8 @@ pub enum ShapeType {
     Triangle,
     /// A triangle mesh shape.
     TriMesh,
+    /// A triangle mesh shape with scaling factors.
+    ScaledTriMesh,
     /// A set of segments.
     Polyline,
     /// A shape representing a full half-space.
@@ -96,6 +99,8 @@ pub enum TypedShape<'a> {
     Triangle(&'a Triangle),
     /// A triangle mesh shape.
     TriMesh(&'a TriMesh),
+    /// A triangle mesh shape with scaling factors.
+    ScaledTriMesh(&'a ScaledTriMesh),
     /// A set of segments.
     Polyline(&'a Polyline),
     /// A shape representing a full half-space.
@@ -935,6 +940,58 @@ impl Shape for TriMesh {
 
     fn as_typed_shape(&self) -> TypedShape {
         TypedShape::TriMesh(self)
+    }
+
+    fn ccd_thickness(&self) -> Real {
+        // TODO: in 2D, return the smallest CCD thickness among triangles?
+        0.0
+    }
+
+    fn ccd_angular_thickness(&self) -> Real {
+        // TODO: the value should depend on the angles between
+        // adjacent triangles of the trimesh.
+        Real::frac_pi_4()
+    }
+
+    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
+        Some(self as &dyn SimdCompositeShape)
+    }
+}
+
+impl Shape for ScaledTriMesh {
+    fn clone_box(&self) -> Box<dyn Shape> {
+        Box::new(self.clone())
+    }
+
+    fn compute_local_aabb(&self) -> AABB {
+        *self.local_aabb()
+    }
+
+    fn compute_local_bounding_sphere(&self) -> BoundingSphere {
+        self.local_bounding_sphere()
+    }
+
+    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+        self.aabb(position)
+    }
+
+    fn mass_properties(&self, _density: Real) -> MassProperties {
+        #[cfg(feature = "dim2")]
+        return MassProperties::from_trimesh(
+            _density * self.scaling_factors().iter().product::<Real>(),
+            self.trimesh().vertices(),
+            self.trimesh().indices(),
+        );
+        #[cfg(feature = "dim3")]
+        return MassProperties::zero();
+    }
+
+    fn shape_type(&self) -> ShapeType {
+        ShapeType::ScaledTriMesh
+    }
+
+    fn as_typed_shape(&self) -> TypedShape {
+        TypedShape::ScaledTriMesh(self)
     }
 
     fn ccd_thickness(&self) -> Real {

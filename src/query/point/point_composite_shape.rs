@@ -7,8 +7,8 @@ use crate::query::{
     visitors::CompositePointContainmentTest, PointProjection, PointQuery, PointQueryWithLocation,
 };
 use crate::shape::{
-    Compound, FeatureId, Polyline, SegmentPointLocation, TriMesh, TrianglePointLocation,
-    TypedSimdCompositeShape,
+    Compound, FeatureId, Polyline, ScaledTriMesh, SegmentPointLocation, TriMesh,
+    TrianglePointLocation, TypedSimdCompositeShape,
 };
 #[cfg(feature = "dim3")]
 use crate::utils::SortedPair;
@@ -85,6 +85,34 @@ impl PointQuery for TriMesh {
 
         let mut visitor = CompositePointContainmentTest::new(self, point);
         self.qbvh().traverse_depth_first(&mut visitor);
+        visitor.found
+    }
+}
+
+impl PointQuery for ScaledTriMesh {
+    #[inline]
+    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+        self.project_local_point_and_get_location(point, solid).0
+    }
+
+    #[inline]
+    fn project_local_point_and_get_feature(
+        &self,
+        point: &Point<Real>,
+    ) -> (PointProjection, FeatureId) {
+        let mut visitor =
+            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
+        let (proj, (id, _feature)) = self.quadtree().traverse_best_first(&mut visitor).unwrap().1;
+        let feature_id = FeatureId::Face(id);
+        (proj, feature_id)
+    }
+
+    // FIXME: implement distance_to_point too?
+
+    #[inline]
+    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+        let mut visitor = CompositePointContainmentTest::new(self, point);
+        self.quadtree().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -171,6 +199,21 @@ impl PointQueryWithLocation for TriMesh {
         }
 
         (proj, (part_id, location))
+    }
+}
+
+impl PointQueryWithLocation for ScaledTriMesh {
+    type Location = (u32, TrianglePointLocation);
+
+    #[inline]
+    fn project_local_point_and_get_location(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+    ) -> (PointProjection, Self::Location) {
+        let mut visitor =
+            PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
+        self.quadtree().traverse_best_first(&mut visitor).unwrap().1
     }
 }
 
