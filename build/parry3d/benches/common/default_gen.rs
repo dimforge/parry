@@ -1,3 +1,4 @@
+#![feature(trivial_bounds)]
 use na::{
     self, Isometry2, Isometry3, Matrix2, Matrix3, Matrix4, Point2, Point3, Point4, RealField,
     Vector2, Vector3, Vector4,
@@ -5,9 +6,10 @@ use na::{
 use parry3d::bounding_volume::{BoundingSphere, AABB};
 use parry3d::math::{Point, Real, Vector};
 use parry3d::query::Ray;
-use parry3d::shape::{Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, Triangle};
+use parry3d::shape::{Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, Triangle};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+
 
 pub trait DefaultGen {
     fn generate<R: Rng>(rng: &mut R) -> Self;
@@ -74,9 +76,10 @@ where
 impl DefaultGen for Capsule
 where
     Standard: Distribution<Real>,
+    Standard: Distribution<Point<Real>>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Capsule {
-        Capsule::new(rng.gen::<Real>().abs(), rng.gen::<Real>().abs())
+        Capsule::new(rng.gen::<Point<Real>>(), rng.gen::<Point<Real>>(), rng.gen::<Real>().abs())
     }
 }
 
@@ -116,15 +119,15 @@ where
     }
 }
 
-impl DefaultGen for ConvexHull
+impl DefaultGen for ConvexPolyhedron
 where
     Standard: Distribution<Point<Real>>,
 {
-    fn generate<R: Rng>(rng: &mut R) -> ConvexHull {
+    fn generate<R: Rng>(rng: &mut R) -> ConvexPolyhedron {
         // It is recommended to have at most 100 points.
         // Otherwise, a smarter structure like the DK hierarchy would be needed.
         // let pts: Vec<_> = (0..100).map(|_| rng.gen()).collect();
-        // ConvexHull::try_from_points(&pts).unwrap()
+        // ConvexPolyhedron::try_from_points(&pts).unwrap()
         unimplemented!()
     }
 }
