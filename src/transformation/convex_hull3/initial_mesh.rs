@@ -7,6 +7,26 @@ use crate::utils;
 use na::{Point2, Point3, Vector3};
 use std::cmp::Ordering;
 
+#[derive(Debug, PartialEq)]
+pub enum InitialMeshError {
+    AssertionFailed(&'static str),
+    MissingSupportPoint,
+    Unreachable,
+}
+
+impl std::fmt::Display for InitialMeshError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InitialMeshError::AssertionFailed(reason) => write!(f, "AssertionFailed({})", reason),
+            InitialMeshError::MissingSupportPoint => write!(f, "MissingSupportPoint"),
+            InitialMeshError::Unreachable => write!(f, "Unreachable"),
+        }
+    }
+}
+
+impl std::error::Error for InitialMeshError {}
+
+#[derive(Debug)]
 pub enum InitialMesh {
     Facets(Vec<TriangleFacet>),
     ResultMesh(Vec<Point3<Real>>, Vec<[u32; 3]>),
@@ -37,6 +57,14 @@ pub fn get_initial_mesh(
     normalized_points: &mut [Point3<Real>],
     undecidable: &mut Vec<usize>,
 ) -> InitialMesh {
+    try_get_initial_mesh(original_points, normalized_points, undecidable).unwrap()
+}
+
+pub fn try_get_initial_mesh(
+    original_points: &[Point3<Real>],
+    normalized_points: &mut [Point3<Real>],
+    undecidable: &mut Vec<usize>,
+) -> Result<InitialMesh, InitialMeshError> {
     /*
      * Compute the eigenvectors to see if the input data live on a subspace.
      */
@@ -92,12 +120,12 @@ pub fn get_initial_mesh(
         0 => {
             // The hull is a point.
             let (vtx, idx) = build_degenerate_mesh_point(original_points[0].clone());
-            InitialMesh::ResultMesh(vtx, idx)
+            Ok(InitialMesh::ResultMesh(vtx, idx))
         }
         1 => {
             // The hull is a segment.
             let (vtx, idx) = build_degenerate_mesh_segment(&eigpairs[0].0, original_points);
-            InitialMesh::ResultMesh(vtx, idx)
+            Ok(InitialMesh::ResultMesh(vtx, idx))
         }
         2 => {
             // The hull is a triangle.
@@ -137,7 +165,7 @@ pub fn get_initial_mesh(
                 triangles.push([a, id + 1, id]);
             }
 
-            InitialMesh::ResultMesh(coords, triangles)
+            Ok(InitialMesh::ResultMesh(coords, triangles))
         }
         3 => {
             // The hull is a polyhedron.
@@ -148,8 +176,10 @@ pub fn get_initial_mesh(
                 *point = Point3::from((*point - center) / eigval.amax());
             }
 
-            let p1 = support_point_id(&eigpairs[0].0, normalized_points).unwrap();
-            let p2 = support_point_id(&-eigpairs[0].0, normalized_points).unwrap();
+            let p1 = support_point_id(&eigpairs[0].0, normalized_points)
+                .ok_or(InitialMeshError::MissingSupportPoint)?;
+            let p2 = support_point_id(&-eigpairs[0].0, normalized_points)
+                .ok_or(InitialMeshError::MissingSupportPoint)?;
 
             let mut max_area = 0.0;
             let mut p3 = usize::max_value();
@@ -164,61 +194,88 @@ pub fn get_initial_mesh(
                 }
             }
 
-            assert!(
-                p3 != usize::max_value(),
-                "Internal convex hull error: no triangle found."
-            );
+            if p3 == usize::max_value() {
+                Err(InitialMeshError::AssertionFailed("Internal convex hull error: no triangle found."))
+            } else {
+                // Build two facets with opposite normals
+                let mut f1 = TriangleFacet::new(p1, p2, p3, normalized_points);
+                let mut f2 = TriangleFacet::new(p2, p1, p3, normalized_points);
 
-            // Build two facets with opposite normals
-            let mut f1 = TriangleFacet::new(p1, p2, p3, normalized_points);
-            let mut f2 = TriangleFacet::new(p2, p1, p3, normalized_points);
+                // Link the facets together
+                f1.set_facets_adjascency(1, 1, 1, 0, 2, 1);
+                f2.set_facets_adjascency(0, 0, 0, 0, 2, 1);
 
-            // Link the facets together
-            f1.set_facets_adjascency(1, 1, 1, 0, 2, 1);
-            f2.set_facets_adjascency(0, 0, 0, 0, 2, 1);
+                let mut facets = vec![f1, f2];
 
-            let mut facets = vec![f1, f2];
+                // … and attribute visible points to each one of them.
+                // FIXME: refactor this with the two others.
+                let mut ignored = 0usize;
+                for point in 0..normalized_points.len() {
+                    if normalized_points[point] == normalized_points[p1]
+                        || normalized_points[point] == normalized_points[p2]
+                        || normalized_points[point] == normalized_points[p3]
+                    {
+                        continue;
+                    }
 
-            // … and attribute visible points to each one of them.
-            // FIXME: refactor this with the two others.
-            let mut ignored = 0usize;
-            for point in 0..normalized_points.len() {
-                if normalized_points[point] == normalized_points[p1]
-                    || normalized_points[point] == normalized_points[p2]
-                    || normalized_points[point] == normalized_points[p3]
-                {
-                    continue;
-                }
+                    let mut furthest = usize::max_value();
+                    let mut furthest_dist = 0.0;
 
-                let mut furthest = usize::max_value();
-                let mut furthest_dist = 0.0;
+                    for (i, curr_facet) in facets.iter().enumerate() {
+                        if curr_facet.can_see_point(point, normalized_points) {
+                            let distance = curr_facet.distance_to_point(point, normalized_points);
 
-                for (i, curr_facet) in facets.iter().enumerate() {
-                    if curr_facet.can_see_point(point, normalized_points) {
-                        let distance = curr_facet.distance_to_point(point, normalized_points);
-
-                        if distance > furthest_dist {
-                            furthest = i;
-                            furthest_dist = distance;
+                            if distance > furthest_dist {
+                                furthest = i;
+                                furthest_dist = distance;
+                            }
                         }
                     }
+
+                    if furthest != usize::max_value() {
+                        facets[furthest].add_visible_point(point, normalized_points);
+                    } else {
+                        undecidable.push(point);
+                        ignored = ignored + 1;
+                    }
+
+                    // If none of the facet can be seen from the point, it is naturally deleted.
                 }
 
-                if furthest != usize::max_value() {
-                    facets[furthest].add_visible_point(point, normalized_points);
-                } else {
-                    undecidable.push(point);
-                    ignored = ignored + 1;
-                }
+                super::check_facet_links(0, &facets[..]);
+                super::check_facet_links(1, &facets[..]);
 
-                // If none of the facet can be seen from the point, it is naturally deleted.
+                Ok(InitialMesh::Facets(facets))
             }
-
-            super::check_facet_links(0, &facets[..]);
-            super::check_facet_links(1, &facets[..]);
-
-            InitialMesh::Facets(facets)
         }
-        _ => unreachable!(),
+        _ => Err(InitialMeshError::Unreachable),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[cfg(feature = "f32")]
+    fn try_get_initial_mesh_should_fail_for_missing_support_points() {
+        use na::Point3;
+        use super::*;
+        use crate::transformation::convex_hull_utils::normalize;
+
+        let point_cloud = vec![
+            Point3::new(103.05024, 303.44974, 106.125),
+            Point3::new(103.21692, 303.44974, 106.125015),
+            Point3::new(104.16538, 303.44974, 106.125),
+            Point3::new(106.55025, 303.44974, 106.125),
+            Point3::new(106.55043, 303.44974, 106.125),
+        ];
+
+        let mut normalized_points = point_cloud.to_vec();
+        let _ = normalize(&mut normalized_points[..]);
+
+        let mut undecidable_points = vec![];
+
+        let result = try_get_initial_mesh(&point_cloud, &mut normalized_points, &mut undecidable_points);
+
+        assert_eq!(InitialMeshError::MissingSupportPoint, result.unwrap_err());
     }
 }
