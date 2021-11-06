@@ -5,6 +5,6 @@ pub use convex_hull::convex_hull;
 pub use validation::check_convex_hull;
 
 mod convex_hull;
-mod initial_mesh;
+pub mod initial_mesh;
 mod triangle_facet;
 mod validation;

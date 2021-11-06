@@ -12,10 +12,10 @@ pub use self::polygon_intersection::{
     convex_polygons_intersection, convex_polygons_intersection_points,
 };
 
-mod convex_hull2;
+pub mod convex_hull2;
 #[cfg(feature = "dim3")]
-mod convex_hull3;
-pub(crate) mod convex_hull_utils;
+pub mod convex_hull3;
+pub mod convex_hull_utils;
 
 mod polygon_intersection;
 /// Approximate convex decomposition using the VHACD algorithm.
