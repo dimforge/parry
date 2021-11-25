@@ -1,10 +1,10 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::contact_manifolds::ContactManifoldsWorkspace;
-use crate::query::{
-    ClosestPoints, Contact, ContactManifold, NonlinearRigidMotion, Unsupported, TOI,
-};
+#[cfg(feature = "std")]
+use crate::query::{contact_manifolds::ContactManifoldsWorkspace, ContactManifold};
+use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, Unsupported, TOI};
 use crate::shape::Shape;
 
+#[cfg(feature = "std")]
 /// A query dispatcher for queries relying on spatial coherence, including contact-manifold computation.
 pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryDispatcher {
     /// Compute all the contacts between two shapes.
@@ -200,6 +200,7 @@ where
     ) -> Option<TOI>);
 }
 
+#[cfg(feature = "std")]
 impl<ManifoldData, ContactData, T, U> PersistentQueryDispatcher<ManifoldData, ContactData>
     for QueryDispatcherChain<T, U>
 where

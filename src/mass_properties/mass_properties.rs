@@ -2,7 +2,6 @@ use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Ve
 use crate::utils;
 use na::ComplexField;
 use num::Zero;
-use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "dim3")]
 use {na::Matrix3, std::ops::MulAssign};
@@ -350,7 +349,8 @@ impl AddAssign<MassProperties> for MassProperties {
     }
 }
 
-impl Sum<MassProperties> for MassProperties {
+#[cfg(feature = "std")]
+impl std::iter::Sum<MassProperties> for MassProperties {
     #[cfg(feature = "dim2")]
     fn sum<I>(iter: I) -> Self
     where

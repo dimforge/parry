@@ -26,7 +26,7 @@ impl HeightField {
 
         let max = heights.max();
         let min = heights.min();
-        let hscale = scale * na::convert::<_, Real>(0.5);
+        let hscale = scale * 0.5;
         let aabb = AABB::new(
             Point2::new(-hscale.x, min * scale.y),
             Point2::new(hscale.x, max * scale.y),

@@ -5,6 +5,7 @@ pub use self::closest_points_ball_ball::closest_points_ball_ball;
 pub use self::closest_points_ball_convex_polyhedron::{
     closest_points_ball_convex_polyhedron, closest_points_convex_polyhedron_ball,
 };
+#[cfg(feature = "std")]
 pub use self::closest_points_composite_shape_shape::{
     closest_points_composite_shape_shape, closest_points_shape_composite_shape,
     CompositeShapeAgainstShapeClosestPointsVisitor,
@@ -31,6 +32,7 @@ pub use self::closest_points_support_map_support_map::closest_points_support_map
 mod closest_points;
 mod closest_points_ball_ball;
 mod closest_points_ball_convex_polyhedron;
+#[cfg(feature = "std")]
 mod closest_points_composite_shape_shape;
 mod closest_points_cuboid_cuboid;
 mod closest_points_cuboid_triangle;

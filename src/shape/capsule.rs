@@ -4,6 +4,11 @@ use na::Unit;
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
+#[repr(C)]
 /// A capsule shape defined as a round segment.
 pub struct Capsule {
     /// The axis and endpoint of the capsule.

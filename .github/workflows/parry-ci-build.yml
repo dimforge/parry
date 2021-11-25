@@ -44,3 +44,32 @@ jobs:
         run: cd build/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
       - name: build parry3d
         run: cd build/parry3d && cargo build --verbose --target wasm32-unknown-unknown;
+  build-no-std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt
+      - name: install xargo
+        run: cp .github/Xargo.toml .; rustup component add rust-src; cargo install -f xargo;
+      - name: build x86_64-unknown-linux-gnu
+        run: xargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu;
+      - name: build thumbv7em-none-eabihf
+        run: xargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf;
+  build-cuda:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Jimver/cuda-toolkit@v0.2.4
+      - name: Install nightly-2021-10-17
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-10-17
+          override: true
+      - uses: actions/checkout@v2
+      - run: rustup target add nvptx64-nvidia-cuda
+      - run: cargo build --no-default-features --features required-features,cuda
+      - run: cargo build --no-default-features --features required-features,cuda --target=nvptx64-nvidia-cuda

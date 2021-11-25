@@ -2,18 +2,23 @@ use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
 use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
-use crate::shape::composite_shape::SimdCompositeShape;
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;
+#[cfg(feature = "std")]
+use crate::shape::{composite_shape::SimdCompositeShape, Compound, HeightField, Polyline, TriMesh};
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, FeatureId, HalfSpace, HeightField, PolygonalFeatureMap,
-    Polyline, RoundCuboid, RoundShape, RoundTriangle, Segment, SupportMap, TriMesh, Triangle,
+    Ball, Capsule, Cuboid, FeatureId, HalfSpace, PolygonalFeatureMap, RoundCuboid, RoundShape,
+    RoundTriangle, Segment, SupportMap, Triangle,
 };
 #[cfg(feature = "dim3")]
-use crate::shape::{
-    Cone, ConvexPolyhedron, Cylinder, RoundCone, RoundConvexPolyhedron, RoundCylinder,
-};
+use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
+
+#[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
+use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
+
 #[cfg(feature = "dim2")]
+#[cfg(feature = "std")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
 use na::{RealField, Unit};
@@ -95,18 +100,24 @@ pub enum TypedShape<'a> {
     /// A triangle shape.
     Triangle(&'a Triangle),
     /// A triangle mesh shape.
+    #[cfg(feature = "std")]
     TriMesh(&'a TriMesh),
     /// A set of segments.
+    #[cfg(feature = "std")]
     Polyline(&'a Polyline),
     /// A shape representing a full half-space.
     HalfSpace(&'a HalfSpace),
     /// A heightfield shape.
+    #[cfg(feature = "std")]
     HeightField(&'a HeightField),
     /// A Compound shape.
+    #[cfg(feature = "std")]
     Compound(&'a Compound),
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     ConvexPolygon(&'a ConvexPolygon),
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     /// A convex polyhedron.
     ConvexPolyhedron(&'a ConvexPolyhedron),
     #[cfg(feature = "dim3")]
@@ -133,9 +144,11 @@ pub enum TypedShape<'a> {
     RoundCone(&'a RoundCone),
     /// A convex polyhedron with rounded corners.
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     RoundConvexPolyhedron(&'a RoundConvexPolyhedron),
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     RoundConvexPolygon(&'a RoundConvexPolygon),
     /// A custom user-defined shape with a type identified by a number.
     Custom(u32),
@@ -157,18 +170,24 @@ pub(crate) enum DeserializableTypedShape {
     /// A triangle shape.
     Triangle(Triangle),
     /// A triangle mesh shape.
+    #[cfg(feature = "std")]
     TriMesh(TriMesh),
     /// A set of segments.
+    #[cfg(feature = "std")]
     Polyline(Polyline),
     /// A shape representing a full half-space.
     HalfSpace(HalfSpace),
     /// A heightfield shape.
+    #[cfg(feature = "std")]
     HeightField(HeightField),
     /// A Compound shape.
+    #[cfg(feature = "std")]
     Compound(Compound),
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     ConvexPolygon(ConvexPolygon),
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     /// A convex polyhedron.
     ConvexPolyhedron(ConvexPolyhedron),
     #[cfg(feature = "dim3")]
@@ -195,9 +214,11 @@ pub(crate) enum DeserializableTypedShape {
     RoundCone(RoundCone),
     /// A convex polyhedron with rounded corners.
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     RoundConvexPolyhedron(RoundConvexPolyhedron),
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     RoundConvexPolygon(RoundConvexPolygon),
     /// A custom user-defined shape identified by a number.
     Custom(u32),
@@ -213,14 +234,20 @@ impl DeserializableTypedShape {
             DeserializableTypedShape::Capsule(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Segment(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Triangle(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "std")]
             DeserializableTypedShape::TriMesh(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "std")]
             DeserializableTypedShape::Polyline(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::HalfSpace(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "std")]
             DeserializableTypedShape::HeightField(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "std")]
             DeserializableTypedShape::Compound(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim2")]
+            #[cfg(feature = "std")]
             DeserializableTypedShape::ConvexPolygon(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
+            #[cfg(feature = "std")]
             DeserializableTypedShape::ConvexPolyhedron(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
             DeserializableTypedShape::Cylinder(s) => Some(SharedShape::new(s)),
@@ -233,8 +260,10 @@ impl DeserializableTypedShape {
             #[cfg(feature = "dim3")]
             DeserializableTypedShape::RoundCone(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
+            #[cfg(feature = "std")]
             DeserializableTypedShape::RoundConvexPolyhedron(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim2")]
+            #[cfg(feature = "std")]
             DeserializableTypedShape::RoundConvexPolygon(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Custom(_) => None,
         }
@@ -249,6 +278,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn compute_local_bounding_sphere(&self) -> BoundingSphere;
 
     /// Clones this shape into a boxed trait-object.
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape>;
 
     /// Computes the AABB of this shape with the given position.
@@ -293,6 +323,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
         None
     }
 
+    #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         None
     }
@@ -391,37 +422,45 @@ impl dyn Shape {
     }
 
     /// Converts this abstract shape to a compound shape, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_compound(&self) -> Option<&Compound> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable compound shape, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_compound_mut(&mut self) -> Option<&mut Compound> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a triangle mesh, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_trimesh(&self) -> Option<&TriMesh> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable triangle mesh, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_trimesh_mut(&mut self) -> Option<&mut TriMesh> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a polyline, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_polyline(&self) -> Option<&Polyline> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable polyline, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_polyline_mut(&mut self) -> Option<&mut Polyline> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a heightfield, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_heightfield(&self) -> Option<&HeightField> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable heightfield, if it is one.
+    #[cfg(feature = "std")]
     pub fn as_heightfield_mut(&mut self) -> Option<&mut HeightField> {
         self.downcast_mut()
     }
@@ -446,31 +485,37 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable convex polygon, if it is one.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     pub fn as_convex_polygon_mut(&mut self) -> Option<&mut ConvexPolygon> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     pub fn as_round_convex_polygon(&self) -> Option<&RoundConvexPolygon> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
+    #[cfg(feature = "std")]
     pub fn as_round_convex_polygon_mut(&mut self) -> Option<&mut RoundConvexPolygon> {
         self.downcast_mut()
     }
 
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
         self.downcast_ref()
     }
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     pub fn as_convex_polyhedron_mut(&mut self) -> Option<&mut ConvexPolyhedron> {
         self.downcast_mut()
     }
@@ -521,17 +566,20 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     pub fn as_round_convex_polyhedron(&self) -> Option<&RoundConvexPolyhedron> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     pub fn as_round_convex_polyhedron_mut(&mut self) -> Option<&mut RoundConvexPolyhedron> {
         self.downcast_mut()
     }
 }
 
 impl Shape for Ball {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -588,6 +636,7 @@ impl Shape for Ball {
 }
 
 impl Shape for Cuboid {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -646,6 +695,7 @@ impl Shape for Cuboid {
 }
 
 impl Shape for Capsule {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -696,6 +746,7 @@ impl Shape for Capsule {
 }
 
 impl Shape for Triangle {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -758,6 +809,7 @@ impl Shape for Triangle {
 }
 
 impl Shape for Segment {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -815,6 +867,7 @@ impl Shape for Segment {
     }
 }
 
+#[cfg(feature = "std")]
 impl Shape for Compound {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -856,11 +909,13 @@ impl Shape for Compound {
         })
     }
 
+    #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
+#[cfg(feature = "std")]
 impl Shape for Polyline {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -900,11 +955,13 @@ impl Shape for Polyline {
         Real::frac_pi_4()
     }
 
+    #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
+#[cfg(feature = "std")]
 impl Shape for TriMesh {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -948,11 +1005,13 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
+    #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
+#[cfg(feature = "std")]
 impl Shape for HeightField {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -994,6 +1053,7 @@ impl Shape for HeightField {
 }
 
 #[cfg(feature = "dim2")]
+#[cfg(feature = "std")]
 impl Shape for ConvexPolygon {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1056,6 +1116,7 @@ impl Shape for ConvexPolygon {
 }
 
 #[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
 impl Shape for ConvexPolyhedron {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1120,6 +1181,7 @@ impl Shape for ConvexPolyhedron {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cylinder {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1171,6 +1233,7 @@ impl Shape for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cone {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1224,6 +1287,7 @@ impl Shape for Cone {
 }
 
 impl Shape for HalfSpace {
+    #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1268,6 +1332,7 @@ impl Shape for HalfSpace {
 macro_rules! impl_shape_for_round_shape(
     ($($S: ty, $Tag: ident);*) => {$(
         impl Shape for RoundShape<$S> {
+            #[cfg(feature = "std")]
             fn clone_box(&self) -> Box<dyn Shape> {
                 Box::new(self.clone())
             }
@@ -1326,10 +1391,14 @@ impl_shape_for_round_shape!(
     Triangle, RoundTriangle
 );
 #[cfg(feature = "dim2")]
+#[cfg(feature = "std")]
 impl_shape_for_round_shape!(ConvexPolygon, RoundConvexPolygon);
 #[cfg(feature = "dim3")]
 impl_shape_for_round_shape!(
     Cylinder, RoundCylinder;
-    Cone, RoundCone;
-    ConvexPolyhedron, RoundConvexPolyhedron
+    Cone, RoundCone
 );
+
+#[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
+impl_shape_for_round_shape!(ConvexPolyhedron, RoundConvexPolyhedron);

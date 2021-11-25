@@ -8,8 +8,12 @@ use std::mem;
 
 /// A segment shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[repr(C)]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(PartialEq, Debug, Copy, Clone)]
+#[repr(C)]
 pub struct Segment {
     /// The segment first point.
     pub a: Point<Real>,

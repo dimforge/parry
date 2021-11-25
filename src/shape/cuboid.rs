@@ -7,9 +7,17 @@ use crate::shape::{FeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 use na::Unit;
 
+#[cfg(not(feature = "std"))]
+use na::RealField; // for .copysign()
+
 /// Shape of a box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(PartialEq, Debug, Copy, Clone)]
+#[repr(C)]
 pub struct Cuboid {
     /// The half-extents of the cuboid.
     pub half_extents: Vector<Real>,

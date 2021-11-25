@@ -3,7 +3,12 @@ use crate::shape::SupportMap;
 use na::Unit;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(Copy, Clone, Debug)]
+#[repr(C)]
 /// A shape with rounded borders.
 pub struct RoundShape<S> {
     /// The shape being rounded.

@@ -6,10 +6,17 @@ use crate::utils;
 use na::Matrix3;
 use std::mem;
 
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
+
 /// A tetrahedron with 4 vertices.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[repr(C)]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(Copy, Clone, Debug)]
+#[repr(C)]
 pub struct Tetrahedron {
     /// The tetrahedron first point.
     pub a: Point<Real>,

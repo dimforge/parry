@@ -13,8 +13,12 @@ use std::mem;
 
 /// A triangle shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[repr(C)]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(PartialEq, Debug, Copy, Clone)]
+#[repr(C)]
 pub struct Triangle {
     /// The triangle first point.
     pub a: Point<Real>,

@@ -17,13 +17,17 @@ edition = "2018"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = [ "dim3", "f64" ]
+default = [ "required-features", "std" ]
+required-features = [ "dim3", "f64" ]
+std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std" ]
 dim3    = [ ]
 f64     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
+cuda   = [ "cust", "nalgebra/cuda" ]
+
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
 simd-is-enabled = [ ]
@@ -31,23 +35,25 @@ simd-is-enabled = [ ]
 [lib]
 name = "parry3d_f64"
 path = "../../src/lib.rs"
-required-features = [ "dim3", "f64" ]
+required-features = [ "required-features" ]
 
 [dependencies]
-either      = "1"
+either      = { version = "1", default-features = false }
 bitflags    = "1"
-downcast-rs = "1"
+downcast-rs = { version = "1", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 smallvec   = "1"
-slab       = "0.4"
-simba      = "0.6"
-nalgebra   = "0.29"
+slab       = { version = "0.4", optional = true }
+simba      = { version = "0.6", default-features = false }
+nalgebra   = { version = "0.29", default-features = false, features = [ "libm" ] }
 approx     = { version = "0.5", default-features = false }
 serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
-num-derive   = "0.3"
-indexmap = { version = "1", features = [ "serde-1" ], optional = true }
-rustc-hash = "1"
+num-derive = "0.3"
+indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
+rustc-hash = { version = "1", optional = true }
 
+[target.'cfg(not(target_os = "cuda"))'.dependencies]
+cust       = { version = "0.1", optional = true }
 
 [dev-dependencies]
 oorandom = "11"

@@ -6,6 +6,9 @@ use crate::utils::{self, SortedPair};
 use na::{self, ComplexField, Point2, Unit};
 use std::f64;
 
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vertex {
