@@ -10,6 +10,9 @@ use {
     approx::AbsDiffEq,
 };
 
+#[cfg(not(feature = "std"))]
+use na::{ComplexField, RealField}; // for .abs() and .copysign()
+
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
     /// Compute the support polygonal face of `self` towards the `dir`.

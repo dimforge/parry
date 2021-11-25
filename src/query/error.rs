@@ -10,4 +10,5 @@ impl fmt::Display for Unsupported {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Unsupported {}

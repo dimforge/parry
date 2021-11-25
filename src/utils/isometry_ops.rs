@@ -1,4 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
 use na::Unit;
 
 /// Extra operations with isometries.

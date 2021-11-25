@@ -7,6 +7,9 @@ use crate::utils::IsometryOps;
 use na;
 use num::Bounded;
 
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
+
 /// An Axis Aligned Bounding Box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -270,6 +273,7 @@ impl AABB {
     }
 
     #[cfg(feature = "dim3")]
+    #[cfg(feature = "std")]
     pub fn intersects_spiral(
         &self,
         point: &Point<Real>,

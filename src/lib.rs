@@ -16,6 +16,7 @@ the rust programming language.
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(all(
     feature = "simd-is-enabled",
@@ -46,6 +47,13 @@ macro_rules! array(
     }
 );
 
+#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg_attr(test, macro_use)]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+extern crate core as std;
+
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde;
@@ -61,9 +69,11 @@ pub extern crate simba;
 
 pub mod bounding_volume;
 pub mod mass_properties;
+#[cfg(feature = "std")]
 pub mod partitioning;
 pub mod query;
 pub mod shape;
+#[cfg(feature = "std")]
 pub mod transformation;
 pub mod utils;
 

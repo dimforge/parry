@@ -5,7 +5,12 @@ use crate::shape::SupportMap;
 
 /// A Ball shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(not(target_os = "cuda"), feature = "cuda"),
+    derive(cust::DeviceCopy)
+)]
 #[derive(PartialEq, Debug, Copy, Clone)]
+#[repr(C)]
 pub struct Ball {
     /// The radius of the ball.
     pub radius: Real,

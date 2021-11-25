@@ -1,8 +1,11 @@
 [workspace]
 members = ["build/parry2d", "build/parry3d", "build/parry2d-f64", "build/parry3d-f64"]
+resolver = "2"
 
 [patch.crates-io]
 parry2d = { path = "build/parry2d" }
 parry3d = { path = "build/parry3d" }
 parry2d-f64 = { path = "build/parry2d-f64" }
 parry3d-f64 = { path = "build/parry3d-f64" }
+simba = { git = "https://github.com/dimforge/simba" }
+nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "rust-cuda" }

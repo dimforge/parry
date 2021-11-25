@@ -8,12 +8,18 @@ use crate::shape::{FeatureId, RoundShape, SupportMap};
 impl<S: SupportMap> PointQuery for RoundShape<S> {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        crate::query::details::local_point_projection_on_support_map(
+        #[cfg(not(feature = "std"))] // FIXME: can’t be used without std because of EPA
+        return unimplemented!(
+            "The projection of points on a round shapes isn’t supported on no-std platforms yet."
+        );
+
+        #[cfg(feature = "std")] // FIXME: can’t be used without std because of EPA
+        return crate::query::details::local_point_projection_on_support_map(
             self,
             &mut VoronoiSimplex::new(),
             point,
             solid,
-        )
+        );
     }
 
     #[inline]

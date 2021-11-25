@@ -6,6 +6,9 @@ use crate::shape::{
     TrianglePointLocation,
 };
 
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
+
 /// A simplex of dimension up to 3 that uses Voronoï regions for computing point projections.
 #[derive(Clone, Debug)]
 pub struct VoronoiSimplex {

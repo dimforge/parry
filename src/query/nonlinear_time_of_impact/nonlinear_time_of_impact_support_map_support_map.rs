@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
 use na::{RealField, Unit};
 
 use crate::math::{Point, Real, Vector};
@@ -124,7 +126,7 @@ where
 
         // TODO: use the _with_params version of the closest points query.
         match dispatcher
-            .closest_points(&pos12, g1, g2, Real::max_value())
+            .closest_points(&pos12, g1, g2, Bounded::max_value())
             .ok()?
         {
             ClosestPoints::Intersecting => {
