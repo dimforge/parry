@@ -13,8 +13,7 @@ pub struct Ray {
 }
 
 impl Ray {
-    /// Creates a new ray starting from `origin` and with the direction `dir`. `dir` must be
-    /// normalized.
+    /// Creates a new ray starting from `origin` and with the direction `dir`.
     pub fn new(origin: Point<Real>, dir: Vector<Real>) -> Ray {
         Ray { origin, dir }
     }
