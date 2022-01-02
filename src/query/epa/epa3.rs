@@ -53,7 +53,6 @@ struct Face {
     pts: [usize; 3],
     adj: [usize; 3],
     normal: Unit<Vector<Real>>,
-    proj: Point<Real>,
     bcoords: [Real; 3],
     deleted: bool,
 }
@@ -61,7 +60,6 @@ struct Face {
 impl Face {
     pub fn new_with_proj(
         vertices: &[CSOPoint],
-        proj: Point<Real>,
         bcoords: [Real; 3],
         pts: [usize; 3],
         adj: [usize; 3],
@@ -84,7 +82,6 @@ impl Face {
 
         Face {
             pts,
-            proj,
             bcoords,
             adj,
             normal,
@@ -98,17 +95,13 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (proj, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
+        let (_, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
         match loc {
-            TrianglePointLocation::OnFace(_, bcoords) => (
-                Self::new_with_proj(vertices, proj.point, bcoords, pts, adj),
-                true,
-            ),
-            _ => (
-                Self::new_with_proj(vertices, proj.point, [0.0; 3], pts, adj),
-                false,
-            ),
+            TrianglePointLocation::OnFace(_, bcoords) => {
+                (Self::new_with_proj(vertices, bcoords, pts, adj), true)
+            }
+            _ => (Self::new_with_proj(vertices, [0.0; 3], pts, adj), false),
         }
     }
 
