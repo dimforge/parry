@@ -1,9 +1,9 @@
 [package]
-name    = "parry2d"
+name    = "parry2d-f64"
 version = "0.7.1"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
-description = "2 dimensional collision detection library in Rust."
+description = "2 dimensional collision detection library in Rust. 64-bit precision version."
 documentation = "http://parry.rs/docs"
 homepage = "http://parry.rs"
 repository = "https://github.com/dimforge/parry"
@@ -18,10 +18,10 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = [ "required-features", "std" ]
-required-features = [ "dim2", "f32" ]
+required-features = [ "dim2", "f64" ]
 std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec" ]
 dim2    = [ ]
-f32     = [ ]
+f64     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
@@ -33,7 +33,7 @@ cuda   = [ "cust", "nalgebra/cuda" ]
 simd-is-enabled = [ ]
 
 [lib]
-name = "parry2d"
+name = "parry2d_f64"
 path = "../../src/lib.rs"
 required-features = [ "required-features" ]
 
@@ -45,8 +45,8 @@ num-traits      = { version = "0.2", default-features = false }
 smallvec        = "1"
 slab            = { version = "0.4", optional = true }
 arrayvec        = { version = "0.7", optional = true }
-simba           = { version = "0.6", default-features = false }
-nalgebra        = { version = "0.29", default-features = false, features = [ "libm" ] }
+simba           = { version = "0.7", default-features = false }
+nalgebra        = { version = "0.30", default-features = false, features = [ "libm" ] }
 approx          = { version = "0.5", default-features = false }
 serde           = { version = "1.0", optional = true, features = ["derive"]}
 num-derive      = "0.3"
@@ -54,7 +54,7 @@ indexmap        = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash      = { version = "1", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
-cust = { version = "0.2", optional = true }
+cust       = { version = "0.2", optional = true }
 
 [dev-dependencies]
 simba = { version = "0.6", default-features = false, features = [ "partial_fixed_point_support" ] }

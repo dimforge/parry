@@ -165,7 +165,7 @@ pub mod math {
     pub use super::simd::*;
     use na::{
         Isometry2, Matrix2, Point2, Translation2, UnitComplex, UnitVector2, Vector1, Vector2,
-        Vector3, U2,
+        Vector3, U1, U2,
     };
 
     /// The default tolerance used for geometric operations.
@@ -176,6 +176,9 @@ pub mod math {
 
     /// The dimension of the ambient space.
     pub type Dim = U2;
+
+    /// The dimension of the rotations.
+    pub type AngDim = U1;
 
     /// The point type.
     pub type Point<N> = Point2<N>;

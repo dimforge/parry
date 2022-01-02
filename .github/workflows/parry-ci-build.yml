@@ -28,9 +28,9 @@ jobs:
     - name: Build parry3d
       run: cargo build --verbose -p parry3d;
     - name: Build parry2d SIMD
-      run: cd build/parry2d; cargo build --verbose --features simd-stable;
+      run: cd crates/parry2d; cargo build --verbose --features simd-stable;
     - name: Build parry3d SIMD
-      run: cd build/parry3d; cargo build --verbose --features simd-stable;
+      run: cd crates/parry3d; cargo build --verbose --features simd-stable;
     - name: Run tests
       run: cargo test
   build-wasm:
@@ -41,9 +41,9 @@ jobs:
       - uses: actions/checkout@v2
       - run: rustup target add wasm32-unknown-unknown
       - name: build parry2d
-        run: cd build/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
+        run: cd crates/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
       - name: build parry3d
-        run: cd build/parry3d && cargo build --verbose --target wasm32-unknown-unknown;
+        run: cd crates/parry3d && cargo build --verbose --target wasm32-unknown-unknown;
   build-no-std:
     runs-on: ubuntu-latest
     steps:
