@@ -6,7 +6,6 @@ use crate::query::sat;
 #[cfg(feature = "dim2")]
 use crate::query::sat::support_map_support_map_compute_separation;
 use crate::shape::{Cuboid, SupportMap, Triangle};
-use na::ComplexField;
 
 /// Finds the best separating edge between a cuboid and a triangle.
 ///
@@ -66,7 +65,7 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
         let axis_norm_squared = axis.norm_squared();
 
         if axis_norm_squared > Real::default_epsilon() {
-            let axis_norm = ComplexField::sqrt(axis_norm_squared);
+            let axis_norm = na::ComplexField::sqrt(axis_norm_squared);
 
             // NOTE: for both axis and -axis, the dot1 will have the same
             // value because of the cuboid's symmetry.
