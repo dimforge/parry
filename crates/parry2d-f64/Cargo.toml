@@ -57,5 +57,5 @@ rustc-hash      = { version = "1", optional = true }
 cust       = { version = "0.2", optional = true }
 
 [dev-dependencies]
-simba = { version = "0.6", default-features = false, features = [ "partial_fixed_point_support" ] }
+simba = { version = "0.7", default-features = false, features = [ "partial_fixed_point_support" ] }
 oorandom = "11"
