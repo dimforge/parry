@@ -11,7 +11,7 @@ readme = "README.md"
 keywords = [ "collision", "geometry", "distance", "ray", "convex" ]
 categories = [ "science", "game-development", "mathematics", "wasm"]
 license = "Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [badges]
 maintenance = { status = "actively-developed" }
