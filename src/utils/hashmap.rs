@@ -82,7 +82,6 @@ impl FxHasher32 {
 impl std::hash::Hasher for FxHasher32 {
     #[inline]
     fn write(&mut self, mut bytes: &[u8]) {
-        use std::convert::TryInto;
         let read_u32 = |bytes: &[u8]| u32::from_ne_bytes(bytes[..4].try_into().unwrap());
         let mut hash = FxHasher32 { hash: self.hash };
         assert!(std::mem::size_of::<u32>() <= 8);
