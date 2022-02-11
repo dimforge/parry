@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::{SimdAABB, AABB};
 use crate::math::Real;
 use crate::partitioning::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdVisitStatus, SimdVisitor,

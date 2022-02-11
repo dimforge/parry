@@ -1,9 +1,9 @@
 use crate::bounding_volume::{BoundingVolume, SimdAABB, AABB};
-#[cfg(feature = "dim3")]
 use crate::math::Vector;
 use crate::math::{Point, Real};
+use crate::query::{CanonicalSplit, SplitResult};
 use crate::simd::SimdReal;
-use either::Either;
+use na::coordinates::X;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;
@@ -15,24 +15,180 @@ pub struct BuilderProxies<'a, T> {
 }
 
 impl<'a, T> BuilderProxies<'a, T> {
-    #[must_use]
-    #[inline(always)]
-    fn get(&self, i: usize) -> (&T, &AABB) {
-        (&self.proxies[i].data, &self.aabbs[i])
+    fn insert(&mut self, data: T, aabb: AABB)
+    where
+        T: IndexedData,
+    {
+        let index = data.index();
+
+        if self.proxies.len() <= index {
+            self.proxies.resize(index + 1, QBVHProxy::invalid());
+            self.aabbs.resize(index + 1, AABB::new_invalid());
+        }
+
+        self.proxies[index] = QBVHProxy::detached(data);
+        self.aabbs[index] = aabb;
     }
 
-    fn insert(&mut self, data: T, aabb: AABB) {
-        self.proxies.push(QBVHProxy::detached(data));
-        self.aabbs.push(aabb);
+    fn aabbs(&self) -> &[AABB] {
+        &self.aabbs
     }
 }
 
 pub trait QBVHDataSplitter<T> {
-    fn split_dataset(
+    fn split_dataset<'idx>(
         &mut self,
-        indices: &mut [usize],
-        proxies: &mut BuilderProxies<T>,
-    ) -> Either<[&mut [usize]; 4], [Vec<usize>; 4]>;
+        subdiv_dims: [usize; 2],
+        center: Point<Real>,
+        indices: &'idx mut [usize],
+        indices_workspace: &'idx mut Vec<usize>,
+        proxies: BuilderProxies<T>,
+    ) -> [&'idx mut [usize]; 4];
+}
+
+struct CenterDataSplitter;
+
+impl<T> QBVHDataSplitter<T> for CenterDataSplitter {
+    fn split_dataset<'idx>(
+        &mut self,
+        subdiv_dims: [usize; 2],
+        center: Point<Real>,
+        indices: &'idx mut [usize],
+        _: &'idx mut Vec<usize>,
+        proxies: BuilderProxies<T>,
+    ) -> [&'idx mut [usize]; 4] {
+        self.split_dataset_wo_workspace(subdiv_dims, center, indices, proxies)
+    }
+}
+
+impl CenterDataSplitter {
+    fn split_dataset_wo_workspace<'idx, T>(
+        &mut self,
+        subdiv_dims: [usize; 2],
+        center: Point<Real>,
+        indices: &'idx mut [usize],
+        proxies: BuilderProxies<T>,
+    ) -> [&'idx mut [usize]; 4] {
+        // TODO: should we split wrt. the median instead of the average?
+        // TODO: we should ensure each subslice contains at least 4 elements each (or less if
+        // indices has less than 16 elements in the first place).
+        let (left, right) = split_indices_wrt_dim(indices, &proxies.aabbs, &center, subdiv_dims[0]);
+
+        let (left_bottom, left_top) =
+            split_indices_wrt_dim(left, &proxies.aabbs, &center, subdiv_dims[1]);
+        let (right_bottom, right_top) =
+            split_indices_wrt_dim(right, &proxies.aabbs, &center, subdiv_dims[1]);
+        [left_bottom, left_top, right_bottom, right_top]
+    }
+}
+
+pub struct QbvhNonOverlappingDataSplitter<F> {
+    pub canonical_split: F,
+    pub epsilon: Real,
+}
+
+impl<T, F> QBVHDataSplitter<T> for QbvhNonOverlappingDataSplitter<F>
+where
+    T: IndexedData,
+    F: FnMut(T, usize, Real, Real) -> SplitResult<(T, AABB)>,
+{
+    fn split_dataset<'idx>(
+        &mut self,
+        subdiv_dims: [usize; 2],
+        center: Point<Real>,
+        indices: &'idx mut [usize],
+        indices_workspace: &'idx mut Vec<usize>,
+        mut proxies: BuilderProxies<T>,
+    ) -> [&'idx mut [usize]; 4] {
+        // 1. Snap the spliting point to one fo the AABB min/max,
+        // such that at least one AABB isn’t split along each dimension.
+        let mut split_pt = Point::from(Vector::repeat(-Real::MAX));
+        let mut split_pt_right = Point::from(Vector::repeat(Real::MAX));
+
+        for dim in subdiv_dims {
+            for i in indices.iter().copied() {
+                let aabb = &proxies.aabbs[i];
+
+                if aabb.maxs[dim] <= center[dim] && aabb.maxs[dim] > split_pt[dim] {
+                    split_pt[dim] = aabb.maxs[dim];
+                }
+
+                if aabb.mins[dim] >= center[dim] && aabb.mins[dim] < split_pt_right[dim] {
+                    split_pt_right[dim] = aabb.mins[dim];
+                }
+            }
+
+            if (split_pt[dim] - center[dim]).abs() > (split_pt_right[dim] - center[dim]).abs() {
+                split_pt[dim] = split_pt_right[dim];
+            }
+
+            if split_pt[dim] == -Real::MAX || split_pt[dim] == Real::MAX {
+                // Try to at least find a splitting point that is aligned with any
+                // AABB side.
+                let mut candidate_min = proxies.aabbs[indices[0]].mins[dim];
+                let mut candidate_max = proxies.aabbs[indices[0]].maxs[dim];
+                for i in indices.iter().copied() {
+                    let aabb = &proxies.aabbs[i];
+                    if aabb.mins[dim] < candidate_min {
+                        split_pt[dim] = candidate_min;
+                        break;
+                    } else if aabb.mins[dim] > candidate_min {
+                        split_pt[dim] = aabb.mins[dim];
+                    }
+
+                    if aabb.maxs[dim] > candidate_max {
+                        split_pt[dim] = candidate_max;
+                        break;
+                    } else if aabb.maxs[dim] < candidate_max {
+                        split_pt[dim] = aabb.maxs[dim];
+                    }
+                }
+            }
+        }
+
+        // If we really can’t find any splitting point along both dimensions, meaning that all the
+        // aabb ranges along this dimension are equal, then split at the center.
+        if (split_pt[subdiv_dims[0]] == -Real::MAX || split_pt[subdiv_dims[0]] == Real::MAX)
+            && (split_pt[subdiv_dims[1]] == -Real::MAX || split_pt[subdiv_dims[1]] == Real::MAX)
+        {
+            split_pt = center;
+        }
+
+        // 2: Actually split the geometry.
+        indices_workspace.resize(indices.len(), 0);
+        indices_workspace.copy_from_slice(indices);
+
+        for dim in subdiv_dims {
+            for k in 0..indices_workspace.len() {
+                let i = indices_workspace[k];
+                if let SplitResult::Pair(_, _) =
+                    proxies.aabbs[i].canonical_split(dim, split_pt[dim], self.epsilon)
+                {
+                    // The AABB was split, so we need to split the geometry too.
+                    if let SplitResult::Pair((data_l, aabb_l), (data_r, aabb_r)) = (self
+                        .canonical_split)(
+                        proxies.proxies[i].data,
+                        dim,
+                        split_pt[dim],
+                        self.epsilon,
+                    ) {
+                        indices_workspace[k] = data_l.index();
+                        indices_workspace.push(data_r.index());
+                        proxies.insert(data_l, aabb_l);
+                        proxies.insert(data_r, aabb_r);
+                    }
+                }
+            }
+        }
+
+        // 3: Partition the indices.
+        CenterDataSplitter.split_dataset_wo_workspace(
+            subdiv_dims,
+            split_pt,
+            indices_workspace,
+            proxies,
+        )
+    }
 }
 
 /// Trait used for generating the content of the leaves of the QBVH acceleration structure.
@@ -62,10 +218,22 @@ where
 }
 
 impl<T: IndexedData> QBVH<T> {
-    /// Clears this quad-tree and rebuilds it from a new set of data and AABBs.
+    /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
         mut data_gen: impl QBVHDataGenerator<T>,
+        dilation_factor: Real,
+    ) {
+        self.clear_and_rebuild_with_splitter(data_gen, CenterDataSplitter, dilation_factor);
+    }
+}
+
+impl<T: IndexedData> QBVH<T> {
+    /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
+    pub fn clear_and_rebuild_with_splitter(
+        &mut self,
+        mut data_gen: impl QBVHDataGenerator<T>,
+        mut splitter: impl QBVHDataSplitter<T>,
         dilation_factor: Real,
     ) {
         self.nodes.clear();
@@ -99,7 +267,14 @@ impl<T: IndexedData> QBVH<T> {
 
         self.nodes.push(root_node);
         let root_id = NodeIndex::new(0, 0);
-        let (_, aabb) = self.do_recurse_build(&mut indices, &aabbs, root_id, dilation_factor);
+        let (_, aabb) = self.do_recurse_build_generic(
+            &mut splitter,
+            &mut indices,
+            &mut aabbs,
+            root_id,
+            dilation_factor,
+        );
+
         self.root_aabb = aabb;
         self.nodes[0].simd_aabb = SimdAABB::from([
             aabb,
@@ -109,12 +284,13 @@ impl<T: IndexedData> QBVH<T> {
         ]);
     }
 
-    fn do_recurse_build(
+    fn do_recurse_build_generic(
         &mut self,
+        splitter: &mut impl QBVHDataSplitter<T>,
         indices: &mut [usize],
-        aabbs: &[AABB],
+        aabbs: &mut Vec<AABB>,
         parent: NodeIndex,
-        dilation_factor: Real,
+        dilation: Real,
     ) -> (u32, AABB) {
         if indices.len() <= 4 {
             // Leaf case.
@@ -138,8 +314,7 @@ impl<T: IndexedData> QBVH<T> {
                 dirty: false,
             };
 
-            node.simd_aabb
-                .dilate_by_factor(SimdReal::splat(dilation_factor));
+            node.simd_aabb.dilate_by_factor(SimdReal::splat(dilation));
             self.nodes.push(node);
             return (my_id as u32, my_aabb);
         }
@@ -179,24 +354,6 @@ impl<T: IndexedData> QBVH<T> {
             subdiv_dims[1] = (min + 2) % 3;
         }
 
-        // Split the set along the two subdiv_dims dimensions.
-        // TODO: should we split wrt. the median instead of the average?
-        // TODO: we should ensure each subslice contains at least 4 elements each (or less if
-        // indices has less than 16 elements in the first place.
-        let (left, right) = split_indices_wrt_dim(indices, &aabbs, &center, subdiv_dims[0]);
-
-        let (left_bottom, left_top) = split_indices_wrt_dim(left, &aabbs, &center, subdiv_dims[1]);
-        let (right_bottom, right_top) =
-            split_indices_wrt_dim(right, &aabbs, &center, subdiv_dims[1]);
-
-        // println!(
-        //     "Recursing on children: {}, {}, {}, {}",
-        //     left_bottom.len(),
-        //     left_top.len(),
-        //     right_bottom.len(),
-        //     right_top.len()
-        // );
-
         let node = QBVHNode {
             simd_aabb: SimdAABB::new_invalid(),
             children: [0; 4], // Will be set after the recursive call
@@ -208,21 +365,44 @@ impl<T: IndexedData> QBVH<T> {
         let id = self.nodes.len() as u32;
         self.nodes.push(node);
 
-        // Recurse!
-        let a = self.do_recurse_build(left_bottom, aabbs, NodeIndex::new(id, 0), dilation_factor);
-        let b = self.do_recurse_build(left_top, aabbs, NodeIndex::new(id, 1), dilation_factor);
-        let c = self.do_recurse_build(right_bottom, aabbs, NodeIndex::new(id, 2), dilation_factor);
-        let d = self.do_recurse_build(right_top, aabbs, NodeIndex::new(id, 3), dilation_factor);
+        // Split the set along the two subdiv_dims dimensions.
+        let proxies = BuilderProxies {
+            proxies: &mut self.proxies,
+            aabbs: aabbs,
+        };
 
-        // Now we know the indices of the grand-nodes.
-        self.nodes[id as usize].children = [a.0, b.0, c.0, d.0];
-        self.nodes[id as usize].simd_aabb = SimdAABB::from([a.1, b.1, c.1, d.1]);
+        // Recurse!
+        let mut workspace = vec![]; // TODO: avoid repeated allocations?
+        let splits = splitter.split_dataset(subdiv_dims, center, indices, &mut workspace, proxies);
+        let n = [
+            NodeIndex::new(id, 0),
+            NodeIndex::new(id, 1),
+            NodeIndex::new(id, 2),
+            NodeIndex::new(id, 3),
+        ];
+
+        let children = [
+            self.do_recurse_build_generic(splitter, splits[0], aabbs, n[0], dilation),
+            self.do_recurse_build_generic(splitter, splits[1], aabbs, n[1], dilation),
+            self.do_recurse_build_generic(splitter, splits[2], aabbs, n[2], dilation),
+            self.do_recurse_build_generic(splitter, splits[3], aabbs, n[3], dilation),
+        ];
+
+        // Now we know the indices of the child nodes.
+        self.nodes[id as usize].children =
+            [children[0].0, children[1].0, children[2].0, children[3].0];
+        self.nodes[id as usize].simd_aabb =
+            SimdAABB::from([children[0].1, children[1].1, children[2].1, children[3].1]);
         self.nodes[id as usize]
             .simd_aabb
-            .dilate_by_factor(SimdReal::splat(dilation_factor));
+            .dilate_by_factor(SimdReal::splat(dilation));
 
         // TODO: will this chain of .merged be properly optimized?
-        let my_aabb = a.1.merged(&b.1).merged(&c.1).merged(&d.1);
+        let my_aabb = children[0]
+            .1
+            .merged(&children[1].1)
+            .merged(&children[2].1)
+            .merged(&children[3].1);
         (id, my_aabb)
     }
 }

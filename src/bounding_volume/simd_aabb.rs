@@ -252,6 +252,11 @@ impl SimdAABB {
             self.maxs.coords.map(|e| e.simd_horizontal_max()).into(),
         )
     }
+
+    /// Extracts the AABB stored in the given SIMD lane of the SIMD AABB:
+    pub fn extract(&self, lane: usize) -> AABB {
+        AABB::new(self.mins.extract(lane), self.maxs.extract(lane))
+    }
 }
 
 impl From<[AABB; SIMD_WIDTH]> for SimdAABB {

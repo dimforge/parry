@@ -1,4 +1,4 @@
-pub use self::build::{BuilderProxies, QBVHDataGenerator};
+pub use self::build::{BuilderProxies, QBVHDataGenerator, QbvhNonOverlappingDataSplitter};
 pub use self::qbvh::{IndexedData, QBVH};
 
 pub(self) use self::qbvh::*;

@@ -61,9 +61,9 @@ impl NodeIndex {
     }
 }
 
-/// A SIMD node of an SIMD quad tree.
+/// A SIMD node of an SIMD QBVH.
 ///
-/// This groups four nodes of the quad-tree.
+/// This groups four nodes of the QBVH.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct QBVHNode {
@@ -82,8 +82,8 @@ pub struct QBVHNode {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct QBVHProxy<T> {
-    pub(super) node: NodeIndex,
-    pub(super) data: T, // The collider data. TODO: only set the collider generation here?
+    pub node: NodeIndex,
+    pub data: T, // The collider data. TODO: only set the collider generation here?
 }
 
 impl<T> QBVHProxy<T> {
@@ -118,7 +118,7 @@ pub struct QBVH<T> {
 }
 
 impl<T: IndexedData> QBVH<T> {
-    /// Initialize an empty quad-tree.
+    /// Initialize an empty QBVH.
     pub fn new() -> Self {
         QBVH {
             root_aabb: AABB::new_invalid(),
@@ -128,7 +128,7 @@ impl<T: IndexedData> QBVH<T> {
         }
     }
 
-    /// Iterates mutable through all the leaf data in this QBVH.
+    /// Iterates mutably through all the leaf data in this QBVH.
     pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut T)> {
         self.proxies.iter_mut().map(|p| (p.node, &mut p.data))
     }
@@ -141,6 +141,13 @@ impl<T: IndexedData> QBVH<T> {
     /// The AABB of the root of this tree.
     pub fn root_aabb(&self) -> &AABB {
         &self.root_aabb
+    }
+
+    /// The AABB of the given node.
+    pub fn node_aabb(&self, node_id: NodeIndex) -> Option<AABB> {
+        self.nodes
+            .get(node_id.index as usize)
+            .map(|n| n.simd_aabb.extract(node_id.lane as usize))
     }
 
     /// Returns the data associated to a given leaf.
@@ -157,6 +164,24 @@ impl<T: IndexedData> QBVH<T> {
             .proxies
             .get(node.children[node_id.lane as usize] as usize)?;
         Some(proxy.data)
+    }
+
+    /// The raw nodes of this BVH.
+    ///
+    /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
+    /// tree. The other elements are not arranged in any particular order.
+    /// The more high-level traversal methods should be used instead of this.
+    pub fn raw_nodes(&self) -> &[QBVHNode] {
+        &self.nodes
+    }
+
+    /// The raw proxies of this BVH.
+    ///
+    /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
+    /// tree. The other elements are not arranged in any particular order.
+    /// The more high-level traversal methods should be used instead of this.
+    pub fn raw_proxies(&self) -> &[QBVHProxy<T>] {
+        &self.proxies
     }
 }
 
