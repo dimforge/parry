@@ -1,7 +1,9 @@
 use crate::bounding_volume::{SimdAABB, AABB};
 use crate::math::Real;
+use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
 use crate::partitioning::{
-    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdVisitStatus, SimdVisitor,
+    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
+    SimdVisitor,
 };
 use crate::simd::SIMD_WIDTH;
 use crate::utils::WeightedValue;
@@ -169,6 +171,102 @@ impl<T: IndexedData> QBVH<T> {
                         // return a intersection as well.
                         if node.children[ii] as usize <= self.nodes.len() {
                             stack.push(node.children[ii]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Performs a simultaneous traversal of two QBVH.
+    pub fn traverse_bvtt<T2: IndexedData>(
+        &self,
+        qbvh2: &QBVH<T2>,
+        visitor: &mut impl SimdSimultaneousVisitor<T, T2, SimdAABB>,
+    ) {
+        self.traverse_bvtt_with_stack(qbvh2, visitor, &mut Vec::new())
+    }
+
+    /// Performs a simultaneous traversal of two QBVH.
+    pub fn traverse_bvtt_with_stack<T2: IndexedData>(
+        &self,
+        qbvh2: &QBVH<T2>,
+        visitor: &mut impl SimdSimultaneousVisitor<T, T2, SimdAABB>,
+        stack: &mut Vec<(u32, u32)>,
+    ) {
+        let qbvh1 = self;
+        stack.clear();
+
+        if !qbvh1.nodes.is_empty() && !qbvh2.nodes.is_empty() {
+            stack.push((0, 0));
+        }
+
+        while let Some(entry) = stack.pop() {
+            let node1 = qbvh1.nodes[entry.0 as usize];
+            let node2 = qbvh2.nodes[entry.1 as usize];
+
+            let leaf_data1 = if node1.leaf {
+                Some(
+                    array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                )
+            } else {
+                None
+            };
+
+            let leaf_data2 = if node2.leaf {
+                Some(
+                    array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                )
+            } else {
+                None
+            };
+
+            match visitor.visit(&node1.simd_aabb, leaf_data1, &node2.simd_aabb, leaf_data2) {
+                SimdSimultaneousVisitStatus::ExitEarly => {
+                    return;
+                }
+                SimdSimultaneousVisitStatus::MaybeContinue(mask) => {
+                    match (node1.leaf, node2.leaf) {
+                        (true, true) => { /* Can’t go deeper. */ }
+                        (true, false) => {
+                            let mut bitmask = 0;
+                            for ii in 0..SIMD_WIDTH {
+                                bitmask |= mask[ii].bitmask();
+                            }
+
+                            for jj in 0..SIMD_WIDTH {
+                                if (bitmask & (1 << jj)) != 0 {
+                                    if node2.children[jj] as usize <= qbvh2.nodes.len() {
+                                        stack.push((entry.0, node2.children[jj]));
+                                    }
+                                }
+                            }
+                        }
+                        (false, true) => {
+                            for ii in 0..SIMD_WIDTH {
+                                let bitmask = mask[ii].bitmask();
+
+                                if bitmask != 0 {
+                                    if node1.children[ii] as usize <= qbvh1.nodes.len() {
+                                        stack.push((node1.children[ii], entry.1));
+                                    }
+                                }
+                            }
+                        }
+                        (false, false) => {
+                            for ii in 0..SIMD_WIDTH {
+                                let bitmask = mask[ii].bitmask();
+
+                                for jj in 0..SIMD_WIDTH {
+                                    if (bitmask & (1 << jj)) != 0 {
+                                        if node1.children[ii] as usize <= qbvh1.nodes.len()
+                                            && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                        {
+                                            stack.push((node1.children[ii], node2.children[jj]));
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

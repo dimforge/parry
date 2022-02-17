@@ -245,6 +245,21 @@ impl SimdAABB {
             & other.mins.z.simd_le(self.maxs.z)
     }
 
+    /// Checks intersections between all the lanes combination between `self` and `other`.
+    ///
+    /// The result is an array such that `result[i].extract(j)` contains the intersection
+    /// result between `self.extract(i)` and `other.extract(j)`.
+    pub fn intersects_permutations(&self, other: &SimdAABB) -> [SimdBool; SIMD_WIDTH] {
+        let mut result = [SimdBool::splat(false); SIMD_WIDTH];
+        for ii in 0..SIMD_WIDTH {
+            // TODO: use SIMD-accelerated shuffling?
+            let extracted = SimdAABB::splat(self.extract(ii));
+            result[ii] = extracted.intersects(other);
+        }
+
+        result
+    }
+
     /// Merge all the AABB represented by `self` into a single one.
     pub fn to_merged_aabb(&self) -> AABB {
         AABB::new(

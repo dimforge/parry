@@ -103,6 +103,9 @@ pub mod math {
     /// The dimension of the space.
     pub const DIM: usize = 3;
 
+    /// The dimension of the space multiplied by two.
+    pub const TWO_DIM: usize = DIM * 2;
+
     /// The dimension of the ambient space.
     pub type Dim = U3;
 
@@ -173,6 +176,9 @@ pub mod math {
 
     /// The dimension of the space.
     pub const DIM: usize = 2;
+
+    /// The dimension of the space multiplied by two.
+    pub const TWO_DIM: usize = DIM * 2;
 
     /// The dimension of the ambient space.
     pub type Dim = U2;

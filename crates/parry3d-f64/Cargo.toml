@@ -19,7 +19,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = [ "required-features", "std" ]
 required-features = [ "dim3", "f64" ]
-std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std" ]
+std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std" ]
 dim3    = [ ]
 f64     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
@@ -44,6 +44,7 @@ downcast-rs = { version = "1", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 smallvec   = "1"
 slab       = { version = "0.4", optional = true }
+arrayvec   = { version = "0.7", default-features = false }
 simba      = { version = "0.7", default-features = false }
 nalgebra   = { version = "0.30", default-features = false, features = [ "libm" ] }
 approx     = { version = "0.5", default-features = false }
