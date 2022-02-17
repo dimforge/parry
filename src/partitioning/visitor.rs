@@ -70,7 +70,7 @@ where
 }
 
 /// Trait implemented by visitor called during a simultaneous spatial partitioning data structure tarversal.
-pub trait SimdSimultaneousVisitor<T, SimdBV> {
+pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
     /// Execute an operation on the content of two nodes, one from each structure.
     ///
     /// Returns whether the traversal should continue on the nodes children, if it should not continue
@@ -78,8 +78,8 @@ pub trait SimdSimultaneousVisitor<T, SimdBV> {
     fn visit(
         &mut self,
         left_bv: &SimdBV,
-        left_data: Option<[Option<&T>; SIMD_WIDTH]>,
+        left_data: Option<[Option<&T1>; SIMD_WIDTH]>,
         right_bv: &SimdBV,
-        right_data: Option<[Option<&T>; SIMD_WIDTH]>,
+        right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus;
 }

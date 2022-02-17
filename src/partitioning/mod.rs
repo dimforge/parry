@@ -2,8 +2,8 @@
 
 pub use self::qbvh::{IndexedData, QBVHDataGenerator, QbvhNonOverlappingDataSplitter, QBVH};
 pub use self::visitor::{
-    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
-    SimdVisitor,
+    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitStatus,
+    SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
 };
 
 /// A quaternary bounding-volume-hierarchy.

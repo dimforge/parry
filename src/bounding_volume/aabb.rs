@@ -1,9 +1,10 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM};
+use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM, TWO_DIM};
 use crate::shape::{Cuboid, SupportMap};
 use crate::utils::IsometryOps;
+use arrayvec::ArrayVec;
 use na;
 use num::Bounded;
 
@@ -168,6 +169,56 @@ impl AABB {
         }
 
         true
+    }
+
+    /// Computes the intersection of this AABB and another one.
+    pub fn intersection(&self, other: &AABB) -> Option<AABB> {
+        let result = AABB {
+            mins: Point::from(self.mins.coords.sup(&other.mins.coords)),
+            maxs: Point::from(self.maxs.coords.inf(&other.maxs.coords)),
+        };
+
+        for i in 0..DIM {
+            if result.mins[i] > result.maxs[i] {
+                return None;
+            }
+        }
+
+        Some(result)
+    }
+
+    pub fn difference(&self, rhs: &AABB) -> ArrayVec<Self, TWO_DIM> {
+        let mut result = ArrayVec::new();
+
+        // NOTE: special case when the boxes are disjoint.
+        //       This isn’t exactly the same as `!self.intersects(rhs)`
+        //       because of the equality.
+        for i in 0..DIM {
+            if self.mins[i] >= rhs.maxs[i] || self.maxs[i] <= rhs.mins[i] {
+                result.push(*self);
+                return result;
+            }
+        }
+
+        let mut rest = *self;
+
+        for i in 0..DIM {
+            if rhs.mins[i] > rest.mins[i] {
+                let mut fragment = rest;
+                fragment.maxs[i] = rhs.mins[i];
+                rest.mins[i] = rhs.mins[i];
+                result.push(fragment)
+            }
+
+            if rhs.maxs[i] < rest.maxs[i] {
+                let mut fragment = rest;
+                fragment.mins[i] = rhs.maxs[i];
+                rest.maxs[i] = rhs.maxs[i];
+                result.push(fragment)
+            }
+        }
+
+        result
     }
 
     /// Computes the vertices of this AABB.
