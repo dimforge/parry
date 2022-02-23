@@ -5,19 +5,19 @@ use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
-pub struct BoundingVolumeIntersectionsVisitor<'a, T: 'a, F> {
+pub struct BoundingVolumeIntersectionsVisitor<T, F> {
     bv: SimdAABB,
-    callback: &'a mut F,
+    callback: F,
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T, F> BoundingVolumeIntersectionsVisitor<'a, T, F>
+impl<T, F> BoundingVolumeIntersectionsVisitor<T, F>
 where
     F: FnMut(&T) -> bool,
 {
     /// Creates a new `BoundingVolumeIntersectionsVisitor`.
     #[inline]
-    pub fn new(bv: &'a AABB, callback: &'a mut F) -> BoundingVolumeIntersectionsVisitor<'a, T, F> {
+    pub fn new(bv: &AABB, callback: F) -> BoundingVolumeIntersectionsVisitor<T, F> {
         BoundingVolumeIntersectionsVisitor {
             bv: SimdAABB::splat(*bv),
             callback,
@@ -26,7 +26,7 @@ where
     }
 }
 
-impl<'a, T, F> SimdVisitor<T, SimdAABB> for BoundingVolumeIntersectionsVisitor<'a, T, F>
+impl<T, F> SimdVisitor<T, SimdAABB> for BoundingVolumeIntersectionsVisitor<T, F>
 where
     F: FnMut(&T) -> bool,
 {
