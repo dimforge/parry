@@ -69,7 +69,7 @@ impl Compound {
     /// polygons using the Hertel-Mehlhorn algorithm.
     ///
     /// Can fail and return `None` if any of the created shapes has close to zero or zero surface area.
-    pub fn decompose_trimesh(&self, trimesh: &TriMesh) -> Option<Self> {
+    pub fn decompose_trimesh(trimesh: &TriMesh) -> Option<Self> {
         let polygons = hertel_mehlhorn(trimesh.vertices(), trimesh.indices());
         let shapes: Option<Vec<_>> = polygons
             .into_iter()
