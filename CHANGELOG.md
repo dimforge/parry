@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+- Remove `&self` argument from `Compound::decompose_trimesh`.
+
 ## v0.8.0 (2 Jan. 2022)
 ### Modified
 - Until now, the orientation of the polygon computed by 2D convex hull computation `parry2d::transformation::convex_hull` and
