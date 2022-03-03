@@ -1,3 +1,6 @@
+//! Hertel-Mehlhorn algorithm for convex partitioning.
+//! Based on https://github.com/ivanfratric/polypartition, contributed by embotech AG.
+
 use crate::math::{Point, Real};
 use crate::utils::point_in_triangle::{corner_direction, Orientation};
 

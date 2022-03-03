@@ -1,3 +1,6 @@
+//! Ear-clipping algorithm for creating a triangle mesh from a simple polygon.
+//! Based on https://github.com/ivanfratric/polypartition, contributed by embotech AG.
+
 use crate::{
     math::{Point, Real},
     utils::point_in_triangle::{corner_direction, is_point_in_triangle, Orientation},
