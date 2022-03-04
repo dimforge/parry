@@ -1,7 +1,7 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
+use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
 use crate::query::SimdRay;
-use crate::utils;
+use crate::utils::{self, IsometryOps};
 use num::{One, Zero};
 use simba::simd::{SimdPartialOrd, SimdValue};
 
@@ -105,6 +105,16 @@ impl SimdAABB {
     /// The radius of all the AABBs represented by `self``.
     pub fn radius(&self) -> SimdReal {
         (self.maxs - self.mins).norm()
+    }
+
+    pub fn transform_by(&self, transform: &Isometry<SimdReal>) -> Self {
+        let ls_center = self.center();
+        let center = transform * ls_center;
+        let ws_half_extents = transform.absolute_transform_vector(&self.half_extents());
+        Self {
+            mins: center + (-ws_half_extents),
+            maxs: center + ws_half_extents,
+        }
     }
 
     /// Dilate all the AABBs represented by `self`` by their extents multiplied

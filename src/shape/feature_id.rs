@@ -18,6 +18,12 @@ pub enum FeatureId {
     Unknown,
 }
 
+impl Default for FeatureId {
+    fn default() -> Self {
+        FeatureId::Unknown
+    }
+}
+
 impl FeatureId {
     /// Revries the value of the identifier if `self` is a vertex.
     pub fn unwrap_vertex(self) -> u32 {

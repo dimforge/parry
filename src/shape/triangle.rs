@@ -17,7 +17,7 @@ use std::mem;
     all(not(target_os = "cuda"), feature = "cuda"),
     derive(cust::DeviceCopy)
 )]
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Triangle {
     /// The triangle first point.

@@ -49,7 +49,7 @@ pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
 #[cfg(feature = "std")]
-pub use self::trimesh::TriMesh;
+pub use self::trimesh::{TriMesh, TriMeshTopology};
 
 /// A cylinder dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
@@ -112,7 +112,7 @@ mod polygonal_feature_map;
 #[cfg(feature = "dim3")]
 mod tetrahedron;
 #[cfg(feature = "std")]
-mod trimesh;
+pub(crate) mod trimesh;
 // TODO: move this elsewhere?
 mod feature_id;
 #[cfg(feature = "dim2")]
