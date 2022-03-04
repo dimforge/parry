@@ -1,19 +1,29 @@
-use crate::math::{Isometry, Point, Real, Vector};
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
+use crate::math::{Isometry, Point, Real, SimdReal, Vector};
 use na::Unit;
+use na::{ComplexField, SimdComplexField}; // for .abs()
 
 /// Extra operations with isometries.
-pub trait IsometryOps {
+pub trait IsometryOps<T> {
     /// Transform a vector by the absolute value of the homogeneous matrix
     /// equivalent to `self`.
-    fn absolute_transform_vector(&self, v: &Vector<Real>) -> Vector<Real>;
+    fn absolute_transform_vector(&self, v: &Vector<T>) -> Vector<T>;
 }
 
-impl IsometryOps for Isometry<Real> {
+impl IsometryOps<Real> for Isometry<Real> {
     #[inline]
     fn absolute_transform_vector(&self, v: &Vector<Real>) -> Vector<Real> {
         self.rotation.to_rotation_matrix().into_inner().abs() * *v
+    }
+}
+
+impl IsometryOps<SimdReal> for Isometry<SimdReal> {
+    #[inline]
+    fn absolute_transform_vector(&self, v: &Vector<SimdReal>) -> Vector<SimdReal> {
+        self.rotation
+            .to_rotation_matrix()
+            .into_inner()
+            .map(|e| e.simd_abs())
+            * *v
     }
 }
 

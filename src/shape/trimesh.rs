@@ -14,12 +14,71 @@ use {
     crate::utils::SortedPair,
 };
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TopologyError {
+    /// Found a triangle with two or three identical vertices.
+    BadTriangle(u32),
+    /// At least two adjascent triangles have opposite orientations.
+    BadAdjascentTrianglesOrientation {
+        triangle1: u32,
+        triangle2: u32,
+        edge: (u32, u32),
+    },
+}
+
+impl std::fmt::Display for TopologyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BadTriangle(fid) => {
+                f.pad(&format!("the triangle {fid} has at least two identical"))
+            }
+            Self::BadAdjascentTrianglesOrientation {
+                triangle1,
+                triangle2,
+                edge,
+            } => f.pad(&format!("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations", edge)),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for TopologyError {}
+
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg(feature = "dim3")]
 pub(crate) struct PseudoNormals {
     pub vertices_pseudo_normal: Vec<Vector<Real>>,
     pub edges_pseudo_normal: HashMap<SortedPair<u32>, Vector<Real>>,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct TopoVertex {
+    pub half_edge: u32,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct TopoFace {
+    pub half_edge: u32,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct TopoHalfEdge {
+    pub next: u32,
+    pub twin: u32,
+    pub vertex: u32,
+    pub face: u32,
+}
+
+#[derive(Clone, Default)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct TriMeshTopology {
+    pub vertices: Vec<TopoVertex>,
+    pub faces: Vec<TopoFace>,
+    pub half_edges: Vec<TopoHalfEdge>,
 }
 
 #[cfg(feature = "dim3")]
@@ -41,6 +100,7 @@ pub struct TriMesh {
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
     pub(crate) pseudo_normals: PseudoNormals,
+    topology: TriMeshTopology,
 }
 
 impl TriMesh {
@@ -72,6 +132,7 @@ impl TriMesh {
             indices,
             #[cfg(feature = "dim3")]
             pseudo_normals: Default::default(),
+            topology: Default::default(),
         }
     }
 
@@ -152,12 +213,17 @@ impl TriMesh {
         }
     }
 
+    /// Returns the topology information of this trimesh, if it has been computed.
+    pub fn topology(&self) -> &TriMeshTopology {
+        &self.topology
+    }
+
     /// Remove all duplicate vertices and adjust the index buffer accordingly.
     ///
     /// This is typically used to recover a vertex buffer from which we can deduce
     /// adjacency information. between triangles by observing how the vertices are
     /// shared by triangles based on the index buffer.
-    pub fn recover_topology(&mut self) {
+    pub fn remove_duplicate_vertices(&mut self) {
         let mut vtx_to_id = HashMap::default();
         let mut new_vertices = Vec::with_capacity(self.vertices.len());
         let mut new_indices = Vec::with_capacity(self.indices.len());
@@ -230,7 +296,7 @@ impl TriMesh {
     /// then the computed pseudo-normals will provide correct point-containment test results except
     /// for points closest to the boundary of the mesh.
     ///
-    /// It may be useful to call `self.recover_topology()` before this method, in order to fix the
+    /// It may be useful to call `self.remove_duplicate_vertices()` before this method, in order to fix the
     /// index buffer if some of the vertices of this trimesh are duplicated.
     pub fn compute_pseudo_normals(&mut self) {
         use na::RealField;
@@ -285,6 +351,105 @@ impl TriMesh {
 
         self.pseudo_normals.vertices_pseudo_normal = vertices_pseudo_normal;
         self.pseudo_normals.edges_pseudo_normal = edges_pseudo_normal;
+    }
+
+    /// Computes half-edge topological information for this triangle mesh, based on its index buffer only.
+    ///
+    /// This computes the half-edge representation of this triangle mesh’s topology. This is useful for advanced
+    /// geometric operations like trimesh-trimesh intersection geometry computation.
+    ///
+    /// It may be useful to call `self.remove_duplicate_vertices()` before this method, in order to fix the
+    /// index buffer if some of the vertices of this trimesh are duplicated.
+    ///
+    /// # Return
+    /// Returns `true` if the computation succeeded. Returns `false` if this mesh can’t have an half-edge representation
+    /// because at least three faces share the same edge.
+    #[cfg(feature = "dim3")]
+    pub fn compute_topology(&mut self) -> Result<(), TopologyError> {
+        self.topology.vertices.clear();
+        self.topology.faces.clear();
+        self.topology.half_edges.clear();
+
+        let mut half_edge_map = HashMap::default();
+        self.topology.vertices.resize(
+            self.vertices.len(),
+            TopoVertex {
+                half_edge: u32::MAX,
+            },
+        );
+
+        // First, create three half-edges for each face.
+        for (fid, idx) in self.indices.iter().enumerate() {
+            let half_edge_base_id = self.topology.half_edges.len() as u32;
+
+            if idx[0] == idx[1] || idx[0] == idx[2] || idx[1] == idx[2] {
+                return Err(TopologyError::BadTriangle(fid as u32));
+            }
+
+            for k in 0u32..3 {
+                let half_edge = TopoHalfEdge {
+                    next: half_edge_base_id + (k + 1) % 3,
+                    twin: u32::MAX, // We don’t know which one it is yet.
+                    vertex: idx[k as usize],
+                    face: fid as u32,
+                };
+                self.topology.half_edges.push(half_edge);
+
+                let edge_key = (idx[k as usize], idx[(k as usize + 1) % 3]);
+                if let Some(existing) = half_edge_map.insert(edge_key, half_edge_base_id + k) {
+                    // If the same edge already exists (with the same vertex order) then
+                    // we have two triangles sharing the same but with opposite incompatible orientations.
+                    return Err(TopologyError::BadAdjascentTrianglesOrientation {
+                        edge: edge_key,
+                        triangle1: self.topology.half_edges[existing as usize].face,
+                        triangle2: fid as u32,
+                    });
+                }
+
+                self.topology.vertices[idx[k as usize] as usize].half_edge = half_edge_base_id + k;
+            }
+
+            self.topology.faces.push(TopoFace {
+                half_edge: half_edge_base_id,
+            })
+        }
+
+        // Second, identify twins.
+        for (key, he1) in &half_edge_map {
+            if key.0 < key.1 {
+                // Test, to avoid checking the same pair twice.
+                if let Some(he2) = half_edge_map.get(&(key.1, key.0)) {
+                    self.topology.half_edges[*he1 as usize].twin = *he2;
+                    self.topology.half_edges[*he2 as usize].twin = *he1;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn assert_half_edge_topology_is_valid(&self) {
+        let topo = &self.topology;
+        assert_eq!(self.vertices.len(), topo.vertices.len());
+        assert_eq!(self.indices.len(), topo.faces.len());
+
+        for (face_id, (face, idx)) in topo.faces.iter().zip(self.indices.iter()).enumerate() {
+            let he0 = topo.half_edges[face.half_edge as usize];
+            assert_eq!(he0.face, face_id as u32);
+            assert_eq!(he0.vertex, idx[0]);
+            let he1 = topo.half_edges[he0.next as usize];
+            assert_eq!(he1.face, face_id as u32);
+            assert_eq!(he1.vertex, idx[1]);
+            let he2 = topo.half_edges[he1.next as usize];
+            assert_eq!(he2.face, face_id as u32);
+            assert_eq!(he2.vertex, idx[2]);
+            assert_eq!(he2.next, face.half_edge);
+        }
+
+        for he in &topo.half_edges {
+            let idx = &self.indices[he.face as usize];
+            assert!(he.vertex == idx[0] || he.vertex == idx[1] || he.vertex == idx[2]);
+        }
     }
 }
 

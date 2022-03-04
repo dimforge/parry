@@ -6,6 +6,8 @@ pub(crate) use self::convex_hull2::convex_hull2_idx;
 pub use self::convex_hull2::{convex_hull2 as convex_hull, convex_hull2_idx as convex_hull_idx};
 #[cfg(feature = "dim3")]
 pub use self::convex_hull3::{check_convex_hull, convex_hull};
+#[cfg(feature = "dim3")]
+pub use self::mesh_intersection::intersect_meshes;
 
 mod convex_hull2;
 #[cfg(feature = "dim3")]
@@ -23,6 +25,8 @@ pub(crate) mod ear_clipping;
 pub(crate) mod hertel_mehlhorn;
 #[cfg(feature = "dim2")]
 pub use hertel_mehlhorn::{hertel_mehlhorn, hertel_mehlhorn_idx};
+#[cfg(feature = "dim3")]
+mod mesh_intersection;
 #[cfg(feature = "dim2")]
 mod to_polyline;
 #[cfg(feature = "dim3")]

@@ -1,11 +1,13 @@
 use crate::bounding_volume::{SimdAABB, AABB};
-use crate::math::SIMD_WIDTH;
+use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
+use na::SimdValue;
 use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
+    pos12: Option<Isometry<SimdReal>>,
     callback: F,
     _phantom: PhantomData<(T1, T2)>,
 }
@@ -18,6 +20,20 @@ where
     #[inline]
     pub fn new(callback: F) -> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
         BoundingVolumeIntersectionsSimultaneousVisitor {
+            pos12: None,
+            callback,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Creates a new `BoundingVolumeIntersectionsSimultaneousVisitor`.
+    #[inline]
+    pub fn with_relative_pos(
+        pos12: Isometry<Real>,
+        callback: F,
+    ) -> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
+        BoundingVolumeIntersectionsSimultaneousVisitor {
+            pos12: Some(Isometry::splat(pos12)),
             callback,
             _phantom: PhantomData,
         }
@@ -37,7 +53,12 @@ where
         right_bv: &SimdAABB,
         right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus {
-        let mask = left_bv.intersects_permutations(right_bv);
+        let mask = if let Some(pos12) = &self.pos12 {
+            let transformed_right_bv = right_bv.transform_by(pos12);
+            left_bv.intersects_permutations(&transformed_right_bv)
+        } else {
+            left_bv.intersects_permutations(right_bv)
+        };
 
         if let (Some(data1), Some(data2)) = (left_data, right_data) {
             for ii in 0..SIMD_WIDTH {
