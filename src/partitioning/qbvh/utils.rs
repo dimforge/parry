@@ -6,6 +6,7 @@ pub fn split_indices_wrt_dim<'a>(
     aabbs: &[AABB],
     split_point: &Point<Real>,
     dim: usize,
+    enable_fallback_split: bool,
 ) -> (&'a mut [usize], &'a mut [usize]) {
     let mut icurr = 0;
     let mut ilast = indices.len();
@@ -25,7 +26,7 @@ pub fn split_indices_wrt_dim<'a>(
         }
     }
 
-    if icurr == 0 || icurr == indices.len() {
+    if enable_fallback_split && (icurr == 0 || icurr == indices.len()) {
         // We don't want to return one empty set. But
         // this can happen if all the coordinates along the
         // given dimension are equal.

@@ -109,12 +109,12 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
             // TODO: we should ensure each subslice contains at least 4 elements each (or less if
             // indices has less than 16 elements in the first place.
             let (left, right) =
-                split_indices_wrt_dim(indices, &self.aabbs, &center, subdiv_dims[0]);
+                split_indices_wrt_dim(indices, &self.aabbs, &center, subdiv_dims[0], true);
 
             let (left_bottom, left_top) =
-                split_indices_wrt_dim(left, &self.aabbs, &center, subdiv_dims[1]);
+                split_indices_wrt_dim(left, &self.aabbs, &center, subdiv_dims[1], true);
             let (right_bottom, right_top) =
-                split_indices_wrt_dim(right, &self.aabbs, &center, subdiv_dims[1]);
+                split_indices_wrt_dim(right, &self.aabbs, &center, subdiv_dims[1], true);
 
             let node = QBVHNode {
                 simd_aabb: SimdAABB::new_invalid(),

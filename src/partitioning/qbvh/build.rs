@@ -46,7 +46,17 @@ pub trait QBVHDataSplitter<T> {
     ) -> [&'idx mut [usize]; 4];
 }
 
-struct CenterDataSplitter;
+struct CenterDataSplitter {
+    pub enable_fallback_split: bool,
+}
+
+impl Default for CenterDataSplitter {
+    fn default() -> Self {
+        Self {
+            enable_fallback_split: true,
+        }
+    }
+}
 
 impl<T> QBVHDataSplitter<T> for CenterDataSplitter {
     fn split_dataset<'idx>(
@@ -72,12 +82,28 @@ impl CenterDataSplitter {
         // TODO: should we split wrt. the median instead of the average?
         // TODO: we should ensure each subslice contains at least 4 elements each (or less if
         // indices has less than 16 elements in the first place).
-        let (left, right) = split_indices_wrt_dim(indices, &proxies.aabbs, &center, subdiv_dims[0]);
+        let (left, right) = split_indices_wrt_dim(
+            indices,
+            &proxies.aabbs,
+            &center,
+            subdiv_dims[0],
+            self.enable_fallback_split,
+        );
 
-        let (left_bottom, left_top) =
-            split_indices_wrt_dim(left, &proxies.aabbs, &center, subdiv_dims[1]);
-        let (right_bottom, right_top) =
-            split_indices_wrt_dim(right, &proxies.aabbs, &center, subdiv_dims[1]);
+        let (left_bottom, left_top) = split_indices_wrt_dim(
+            left,
+            &proxies.aabbs,
+            &center,
+            subdiv_dims[1],
+            self.enable_fallback_split,
+        );
+        let (right_bottom, right_top) = split_indices_wrt_dim(
+            right,
+            &proxies.aabbs,
+            &center,
+            subdiv_dims[1],
+            self.enable_fallback_split,
+        );
         [left_bottom, left_top, right_bottom, right_top]
     }
 }
@@ -182,7 +208,11 @@ where
         }
 
         // 3: Partition the indices.
-        CenterDataSplitter.split_dataset_wo_workspace(
+        let mut center_splitter = CenterDataSplitter {
+            enable_fallback_split: false,
+        };
+
+        center_splitter.split_dataset_wo_workspace(
             subdiv_dims,
             split_pt,
             indices_workspace,
@@ -224,7 +254,11 @@ impl<T: IndexedData> QBVH<T> {
         mut data_gen: impl QBVHDataGenerator<T>,
         dilation_factor: Real,
     ) {
-        self.clear_and_rebuild_with_splitter(data_gen, CenterDataSplitter, dilation_factor);
+        self.clear_and_rebuild_with_splitter(
+            data_gen,
+            CenterDataSplitter::default(),
+            dilation_factor,
+        );
     }
 }
 
