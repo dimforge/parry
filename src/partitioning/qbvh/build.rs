@@ -361,20 +361,20 @@ impl<T: IndexedData> QBVH<T> {
         #[cfg(feature = "dim3")]
         let mut variance = Vector::zeros();
 
-        let denom = 1.0 / (indices.len() as Real);
+        let center_denom = 1.0 / (indices.len() as Real);
 
         for i in &*indices {
             let coords = aabbs[*i].center().coords;
-            center += coords * denom;
-            #[cfg(feature = "dim3")]
-            {
-                variance += coords.component_mul(&coords) * denom;
-            }
+            center += coords * center_denom;
         }
 
         #[cfg(feature = "dim3")]
         {
-            variance = variance - center.coords.component_mul(&center.coords);
+            let variance_denom = 1.0 / ((indices.len() - 1) as Real);
+            for i in &*indices {
+                let dir_to_center = aabbs[*i].center() - center;
+                variance += dir_to_center.component_mul(&dir_to_center) * variance_denom;
+            }
         }
 
         // Find the axis with minimum variance. This is the axis along
