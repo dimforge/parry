@@ -12,7 +12,7 @@ the rust programming language.
 #![deny(non_upper_case_globals)]
 #![deny(unused_qualifications)]
 #![deny(unused_results)]
-#![warn(missing_docs)]
+// #![warn(missing_docs)] // TODO: deny this
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
