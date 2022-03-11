@@ -7,3 +7,5 @@ parry2d = { path = "crates/parry2d" }
 parry3d = { path = "crates/parry3d" }
 parry2d-f64 = { path = "crates/parry2d-f64" }
 parry3d-f64 = { path = "crates/parry3d-f64" }
+
+nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "cust-0.3" }

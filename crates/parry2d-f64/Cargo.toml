@@ -54,7 +54,7 @@ indexmap        = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash      = { version = "1", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
-cust       = { version = "0.2", optional = true }
+cust       = { version = "0.3", optional = true }
 
 [dev-dependencies]
 simba = { version = "0.7", default-features = false, features = [ "partial_fixed_point_support" ] }
