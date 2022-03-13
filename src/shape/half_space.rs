@@ -11,7 +11,7 @@ use na::Unit;
 )]
 #[repr(C)]
 pub struct HalfSpace {
-    /// The halfspace planar boundary outward normal.
+    /// The halfspace planar boundary's outward normal.
     pub normal: Unit<Vector<Real>>,
 }
 

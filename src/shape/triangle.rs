@@ -142,6 +142,7 @@ impl Triangle {
     pub fn transformed(&self, m: &Isometry<Real>) -> Self {
         Triangle::new(m * self.a, m * self.b, m * self.c)
     }
+
     /// The three edges scaled directions of this triangle: [B - A, C - B, A - C].
     #[inline]
     pub fn edges_scaled_directions(&self) -> [Vector<Real>; 3] {
