@@ -60,7 +60,7 @@ impl Polyline {
     }
 
     /// An iterator through all the segments of this mesh.
-    pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
+    pub fn segments(&self) -> impl ExactSizeIterator<Item = Segment> + '_ {
         self.indices.iter().map(move |ids| {
             Segment::new(
                 self.vertices[ids[0] as usize],

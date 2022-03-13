@@ -174,7 +174,7 @@ impl TriMesh {
     }
 
     /// An iterator through all the triangles of this mesh.
-    pub fn triangles(&self) -> impl Iterator<Item = Triangle> + '_ {
+    pub fn triangles(&self) -> impl ExactSizeIterator<Item = Triangle> + '_ {
         self.indices.iter().map(move |ids| {
             Triangle::new(
                 self.vertices[ids[0] as usize],
