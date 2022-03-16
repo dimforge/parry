@@ -1,4 +1,9 @@
-use na::{DVector, Point2};
+#[cfg(feature = "std")]
+use na::DVector;
+#[cfg(all(feature = "std", feature = "cuda"))]
+use {crate::utils::CudaArray1, cust::error::CudaResult};
+
+use na::{ComplexField, Point2, Scalar};
 use std::iter;
 
 use crate::bounding_volume::AABB;
@@ -6,16 +11,61 @@ use crate::math::{Real, Vector};
 
 use crate::shape::Segment;
 
+pub type HeightFieldCellStatus = bool;
+
+pub trait HeightFieldStorage {
+    type Item;
+    fn len(&self) -> usize;
+    fn get(&self, i: usize) -> Self::Item;
+    fn set(&mut self, i: usize, val: Self::Item);
+}
+
+#[cfg(feature = "std")]
+impl<T: Scalar> HeightFieldStorage for DVector<T> {
+    type Item = T;
+
+    #[inline]
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn get(&self, i: usize) -> Self::Item {
+        self[i].clone()
+    }
+
+    #[inline]
+    fn set(&mut self, i: usize, val: Self::Item) {
+        self[i] = val
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+#[derive(Copy, Clone, Debug)]
+#[repr(C)] // Needed for Cuda.
 /// A 2D heightfield.
-pub struct HeightField {
-    heights: DVector<Real>,
+pub struct GenericHeightField<Heights, Status> {
+    heights: Heights,
+    status: Status,
+
     scale: Vector<Real>,
-    removed: Vec<bool>,
     aabb: AABB,
 }
 
+#[cfg(feature = "std")]
+pub type HeightField = GenericHeightField<DVector<Real>, DVector<HeightFieldCellStatus>>;
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+pub type CudaHeightField = GenericHeightField<CudaArray1<Real>, CudaArray1<HeightFieldCellStatus>>;
+
+#[cfg(feature = "cuda")]
+pub type CudaHeightFieldPointer = GenericHeightField<
+    crate::utils::CudaArrayPointer1<Real>,
+    crate::utils::CudaArrayPointer1<HeightFieldCellStatus>,
+>;
+
+#[cfg(feature = "std")]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
     pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {
@@ -31,22 +81,51 @@ impl HeightField {
             Point2::new(-hscale.x, min * scale.y),
             Point2::new(hscale.x, max * scale.y),
         );
+        let num_segments = heights.len() - 1;
 
         HeightField {
             heights,
+            status: DVector::repeat(num_segments, true),
             scale,
             aabb,
-            removed: Vec::new(),
         }
     }
 
+    #[cfg(all(feature = "cuda"))]
+    pub fn to_cuda(&self) -> CudaResult<CudaHeightField> {
+        Ok(CudaHeightField {
+            heights: CudaArray1::from_vector(&self.heights)?,
+            status: CudaArray1::from_vector(&self.status)?,
+            scale: self.scale,
+            aabb: self.aabb,
+        })
+    }
+}
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl CudaHeightField {
+    pub fn as_device_ptr(&self) -> CudaHeightFieldPointer {
+        CudaHeightFieldPointer {
+            heights: self.heights.as_device_ptr(),
+            status: self.status.as_device_ptr(),
+            aabb: self.aabb,
+            scale: self.scale,
+        }
+    }
+}
+
+impl<Heights, Status> GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
     /// The number of cells of this heightfield.
     pub fn num_cells(&self) -> usize {
         self.heights.len() - 1
     }
 
     /// The height at each cell endpoint.
-    pub fn heights(&self) -> &DVector<Real> {
+    pub fn heights(&self) -> &Heights {
         &self.heights
     }
 
@@ -109,6 +188,19 @@ impl HeightField {
         }
     }
 
+    /// Height of the heightfield a the given point after vertical projection on the heightfield surface.
+    pub fn height_at_point(&self, pt: &Point2<Real>) -> Option<Real> {
+        let cell = self.cell_at_point(pt)?;
+        let seg = self.segment_at(cell)?;
+        let inter = crate::query::details::closest_points_line_line_parameters(
+            &seg.a,
+            &seg.scaled_direction(),
+            &pt,
+            &Vector::y(),
+        );
+        Some(seg.a.y + inter.1)
+    }
+
     /// Iterator through all the segments of this heightfield.
     pub fn segments<'a>(&'a self) -> impl Iterator<Item = Segment> + 'a {
         // FIXME: this is not very efficient since this wil
@@ -128,8 +220,8 @@ impl HeightField {
         let x0 = -_0_5 + seg_length * na::convert::<f64, Real>(i as f64);
         let x1 = x0 + seg_length;
 
-        let y0 = self.heights[i + 0];
-        let y1 = self.heights[i + 1];
+        let y0 = self.heights.get(i + 0);
+        let y1 = self.heights.get(i + 1);
 
         let mut p0 = Point2::new(x0, y0);
         let mut p1 = Point2::new(x1, y1);
@@ -143,16 +235,12 @@ impl HeightField {
 
     /// Mark the i-th segment of this heightfield as removed or not.
     pub fn set_segment_removed(&mut self, i: usize, removed: bool) {
-        if self.removed.len() == 0 {
-            self.removed = iter::repeat(false).take(self.num_cells()).collect()
-        }
-
-        self.removed[i] = removed
+        self.status.set(i, !removed)
     }
 
     /// Checks if the i-th segment has been removed.
     pub fn is_segment_removed(&self, i: usize) -> bool {
-        self.removed.len() != 0 && self.removed[i]
+        !self.status.get(i)
     }
 
     /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
@@ -180,8 +268,8 @@ impl HeightField {
             let x0 = -_0_5 + seg_length * na::convert::<f64, Real>(i as f64);
             let x1 = x0 + seg_length;
 
-            let y0 = self.heights[i + 0];
-            let y1 = self.heights[i + 1];
+            let y0 = self.heights.get(i + 0);
+            let y1 = self.heights.get(i + 1);
 
             if (y0 > ref_maxs.y && y1 > ref_maxs.y) || (y0 < ref_mins.y && y1 < ref_mins.y) {
                 continue;

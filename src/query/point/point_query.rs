@@ -29,14 +29,45 @@ impl PointProjection {
 
 /// Trait of objects that can be tested for point inclusion and projection.
 pub trait PointQuery {
+    /// Projects a point on `self`, unless the projection lies further than the given max distance.
+    ///
+    /// The point is assumed to be expressed in the local-space of `self`.
+    fn project_local_point_with_max_dist(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<PointProjection> {
+        let proj = self.project_local_point(pt, solid);
+        if na::distance(&proj.point, pt) > max_dist {
+            None
+        } else {
+            Some(proj)
+        }
+    }
+
+    /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
+    fn project_point_with_max_dist(
+        &self,
+        m: &Isometry<Real>,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<PointProjection> {
+        self.project_local_point_with_max_dist(&m.inverse_transform_point(pt), solid, max_dist)
+            .map(|proj| proj.transform_by(m))
+    }
+
     /// Projects a point on `self`.
     ///
     /// The point is assumed to be expressed in the local-space of `self`.
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection;
+
     /// Projects a point on the boundary of `self` and returns the id of the
     /// feature the point was projected on.
     fn project_local_point_and_get_feature(&self, pt: &Point<Real>)
         -> (PointProjection, FeatureId);
+
     /// Computes the minimal distance between a point and `self`.
     fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
         let proj = self.project_local_point(pt, solid);

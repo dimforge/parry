@@ -4,10 +4,14 @@ use crate::query;
 use crate::query::{Ray, RayCast, RayIntersection};
 #[cfg(feature = "dim2")]
 use crate::shape::FeatureId;
-use crate::shape::HeightField;
+use crate::shape::{GenericHeightField, HeightFieldCellStatus, HeightFieldStorage};
 
 #[cfg(feature = "dim2")]
-impl RayCast for HeightField {
+impl<Heights, Status> RayCast for GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
@@ -119,7 +123,11 @@ impl RayCast for HeightField {
 }
 
 #[cfg(feature = "dim3")]
-impl RayCast for HeightField {
+impl<Heights, Status> RayCast for GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,

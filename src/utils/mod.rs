@@ -31,6 +31,13 @@ pub use self::sorted_pair::SortedPair;
 pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
 
+#[cfg(all(feature = "cuda", feature = "std"))]
+pub use self::cuda_array::{CudaArray1, CudaArray2};
+#[cfg(feature = "cuda")]
+pub use self::cuda_array::{CudaArrayPointer1, CudaArrayPointer2};
+#[cfg(feature = "cuda")]
+pub use self::cuda_device_pointer::DevicePointer;
+
 mod as_bytes;
 mod ccw_face_normal;
 mod center;
@@ -39,6 +46,10 @@ mod center;
 mod cleanup;
 mod consts;
 mod cov;
+#[cfg(feature = "cuda")]
+mod cuda_array;
+#[cfg(feature = "cuda")]
+mod cuda_device_pointer;
 #[cfg(feature = "std")]
 mod deterministic_state;
 mod hashable_partial_eq;
