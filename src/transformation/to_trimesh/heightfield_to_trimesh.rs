@@ -1,8 +1,12 @@
 use crate::math::Real;
-use crate::shape::HeightField;
+use crate::shape::{GenericHeightField, HeightFieldCellStatus, HeightFieldStorage};
 use na::Point3;
 
-impl HeightField {
+impl<Heights, Status> GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
     /// Discretize the boundary of this ball as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let mut vertices = Vec::new();

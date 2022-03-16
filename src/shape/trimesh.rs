@@ -501,8 +501,12 @@ impl RayCast for TriMesh {
 */
 
 #[cfg(feature = "dim3")]
-impl From<HeightField> for TriMesh {
-    fn from(heightfield: HeightField) -> Self {
+impl<Heights, Status> From<crate::shape::GenericHeightField<Heights, Status>> for TriMesh
+where
+    Heights: crate::shape::HeightFieldStorage<Item = Real>,
+    Status: crate::shape::HeightFieldStorage<Item = crate::shape::HeightFieldCellStatus>,
+{
+    fn from(heightfield: crate::shape::GenericHeightField<Heights, Status>) -> Self {
         let (vtx, idx) = heightfield.to_trimesh();
         TriMesh::new(vtx, idx)
     }

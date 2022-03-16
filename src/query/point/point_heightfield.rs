@@ -1,13 +1,46 @@
-use crate::math::{Point, Real};
+use crate::bounding_volume::AABB;
+use crate::math::{Point, Real, Vector};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
-use crate::shape::{FeatureId, HeightField, TrianglePointLocation};
-use na;
-use num::Bounded;
+use crate::shape::{
+    FeatureId, GenericHeightField, HeightFieldCellStatus, HeightFieldStorage, TrianglePointLocation,
+};
+#[cfg(feature = "cuda")]
+use na::ComplexField;
 
-impl PointQuery for HeightField {
+impl<Heights, Status> PointQuery for GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
+    fn project_local_point_with_max_dist(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<PointProjection> {
+        let aabb = AABB::new(pt - Vector::repeat(max_dist), pt + Vector::repeat(max_dist));
+        let mut sq_smallest_dist = Real::MAX;
+        let mut best_proj = None;
+
+        self.map_elements_in_local_aabb(&aabb, &mut |_, triangle| {
+            let proj = triangle.project_local_point(pt, solid);
+            let sq_dist = na::distance_squared(pt, &proj.point);
+
+            if sq_dist < sq_smallest_dist {
+                sq_smallest_dist = sq_dist;
+
+                if sq_dist.sqrt() <= max_dist {
+                    best_proj = Some(proj);
+                }
+            }
+        });
+
+        best_proj
+    }
+
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, _: bool) -> PointProjection {
-        let mut smallest_dist = Real::max_value();
+        let mut smallest_dist = Real::MAX;
         let mut best_proj = PointProjection::new(false, *point);
 
         #[cfg(feature = "dim2")]
@@ -44,7 +77,11 @@ impl PointQuery for HeightField {
     }
 }
 
-impl PointQueryWithLocation for HeightField {
+impl<Heights, Status> PointQueryWithLocation for GenericHeightField<Heights, Status>
+where
+    Heights: HeightFieldStorage<Item = Real>,
+    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
+{
     type Location = (usize, TrianglePointLocation);
 
     #[inline]

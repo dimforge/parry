@@ -6,10 +6,7 @@ use crate::shape::FeatureId;
 /// A Ray.
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(
-    all(not(target_os = "cuda"), feature = "cuda"),
-    derive(cust::DeviceCopy)
-)]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
 pub struct Ray {
     /// Starting point of the ray.

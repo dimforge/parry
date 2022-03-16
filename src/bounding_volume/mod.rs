@@ -23,7 +23,6 @@ mod aabb_convex_polygon;
 mod aabb_convex_polyhedron;
 mod aabb_cuboid;
 mod aabb_halfspace;
-#[cfg(feature = "std")]
 mod aabb_heightfield;
 mod aabb_support_map;
 mod aabb_triangle;
@@ -46,7 +45,6 @@ mod bounding_sphere_cuboid;
 #[cfg(feature = "dim3")]
 mod bounding_sphere_cylinder;
 mod bounding_sphere_halfspace;
-#[cfg(feature = "std")]
 mod bounding_sphere_heightfield;
 #[cfg(feature = "std")]
 mod bounding_sphere_polyline;

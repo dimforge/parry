@@ -29,8 +29,7 @@ pub use self::triangle::{Triangle, TrianglePointLocation};
 #[cfg(feature = "std")]
 pub use self::convex_polygon::ConvexPolygon;
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
-pub use self::heightfield2::HeightField;
+pub use self::heightfield2::*;
 #[cfg(feature = "dim2")]
 pub use self::polygonal_feature2d::PolygonalFeature;
 
@@ -42,12 +41,13 @@ pub use self::convex_polyhedron::ConvexPolyhedron;
 #[cfg(feature = "dim3")]
 pub use self::cylinder::Cylinder;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
-pub use self::heightfield3::{HeightField, HeightFieldCellStatus};
+pub use self::heightfield3::*;
 #[cfg(feature = "dim3")]
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
+#[cfg(all(feature = "std", feature = "dim3"))]
+pub use self::trimesh::TopologyError;
 #[cfg(feature = "std")]
 pub use self::trimesh::{TriMesh, TriMeshTopology};
 
@@ -93,7 +93,6 @@ mod triangle;
 #[cfg(feature = "std")]
 mod convex_polygon;
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
 mod heightfield2;
 
 #[cfg(feature = "dim3")]
@@ -104,7 +103,6 @@ mod convex_polyhedron;
 #[cfg(feature = "dim3")]
 mod cylinder;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
 mod heightfield3;
 #[cfg(feature = "dim3")]
 mod polygonal_feature3d;

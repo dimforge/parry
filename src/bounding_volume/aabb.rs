@@ -13,6 +13,7 @@ use na::ComplexField; // for .abs()
 
 /// An Axis Aligned Bounding Box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct AABB {
     pub mins: Point<Real>,
