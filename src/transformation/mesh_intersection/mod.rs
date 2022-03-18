@@ -1,0 +1,13 @@
+pub use self::mesh_intersection::intersect_meshes;
+pub use self::mesh_intersection_error::MeshIntersectionError;
+pub(self) use modified_trimesh::*;
+pub(self) use triangle_triangle_intersection::*;
+
+use crate::math::Real;
+
+mod mesh_intersection;
+mod mesh_intersection_error;
+mod modified_trimesh;
+mod triangle_triangle_intersection;
+
+pub(self) const EPS: Real = 1.0e-7;
