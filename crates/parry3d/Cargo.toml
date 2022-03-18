@@ -53,6 +53,7 @@ num-derive = "0.3"
 indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = { version = "1", optional = true }
 cust_core  = { version = "0.1", optional = true }
+spade      = { version = "2" } # Make this optional?
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust_core  = { version = "0.1", optional = true }
