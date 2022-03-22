@@ -3,6 +3,7 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
+use na::{point, vector, Point2};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::{HashMap, HashSet};
 
@@ -162,7 +163,7 @@ fn extract_connected_components(
             if !deleted_faces1.contains(&twin.face) {
                 let tri1 = mesh1.triangle(twin.face as u32);
 
-                if mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.a)) {
+                if mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center())) {
                     to_visit.push(twin.face);
                 }
             }
@@ -204,6 +205,7 @@ struct Triangulation {
     vtx_handles: [FixedVertexHandle; 3],
     ref_pt: Point<Real>,
     normal: Vector<Real>,
+    ref_proj: [Point2<Real>; 3],
 }
 
 impl Triangulation {
@@ -215,13 +217,21 @@ impl Triangulation {
         let ab = triangle.b - triangle.a;
         let ac = triangle.c - triangle.a;
 
+        let ref_proj = [
+            Point2::origin(),
+            point![ab.dot(&basis[0]), ab.dot(&basis[1])],
+            point![ac.dot(&basis[0]), ac.dot(&basis[1])],
+        ];
+
         let vtx_handles = [
-            delaunay.insert(spade::Point2::new(0.0, 0.0)).unwrap(),
             delaunay
-                .insert(spade::Point2::new(ab.dot(&basis[0]), ab.dot(&basis[1])))
+                .insert(spade::Point2::new(ref_proj[0].x, ref_proj[0].y))
                 .unwrap(),
             delaunay
-                .insert(spade::Point2::new(ac.dot(&basis[0]), ac.dot(&basis[1])))
+                .insert(spade::Point2::new(ref_proj[1].x, ref_proj[1].y))
+                .unwrap(),
+            delaunay
+                .insert(spade::Point2::new(ref_proj[2].x, ref_proj[2].y))
                 .unwrap(),
         ];
 
@@ -231,12 +241,36 @@ impl Triangulation {
             vtx_handles,
             ref_pt: triangle.a,
             normal: normal.into_inner(),
+            ref_proj,
         }
     }
 
-    fn project(&self, pt: Point<Real>) -> spade::Point2<Real> {
+    fn project(&self, pt: Point<Real>, orig_fid: FeatureId) -> spade::Point2<Real> {
         let dpt = pt - self.ref_pt;
-        spade::Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]))
+        let mut proj = point![dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1])];
+
+        match orig_fid {
+            FeatureId::Edge(i) => {
+                // println!("Before: {:?}", proj);
+                let a = self.ref_proj[i as usize];
+                let b = self.ref_proj[(i as usize + 1) % 3];
+                let ab = b - a;
+                let ap = proj - a;
+                let param = ab.dot(&ap) / ab.norm_squared();
+                // let before = proj;
+                let shift = vector![ab.y, -ab.x];
+                proj = a + ab * param + shift * EPS;
+                // println!(
+                //     "After: {:?}, param: {}, diff: {:?}",
+                //     proj,
+                //     param,
+                //     proj - before
+                // );
+            }
+            _ => {}
+        }
+
+        spade::Point2::new(proj.x, proj.y)
     }
 }
 
@@ -252,6 +286,8 @@ fn cut_and_triangulate_intersections(
     new_indices2: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
 ) {
+    // println!("");
+    // dbg!("Compute intersection");
     // let mut intersection_curve = vec![];
     let mut triangulations1 = HashMap::new();
     let mut triangulations2 = HashMap::new();
@@ -259,6 +295,7 @@ fn cut_and_triangulate_intersections(
 
     let mut spade_infos = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_vertex = [HashMap::new(), HashMap::new()];
+    let mut spade_handle_to_intersection = [HashMap::new(), HashMap::new()];
     let mut num_constraints_added = 0;
     let mut num_constraints_failed = 0;
 
@@ -301,30 +338,46 @@ fn cut_and_triangulate_intersections(
             let fb_1 = convert_fid(mesh1, i1, inter.b.f1);
             let fb_2 = convert_fid(mesh2, i2, inter.b.f2);
 
+            let orig_fid_a = [inter.a.f1, inter.a.f2];
+            let orig_fid_b = [inter.b.f1, inter.b.f2];
             let key_a = (fa_1, fa_2);
             let key_b = (fb_1, fb_2);
 
-            let mut insert_point = |pt, key: (FeatureId, FeatureId), i: usize| {
+            let mut insert_point = |pt: [_; 2],
+                                    key: (FeatureId, FeatureId),
+                                    orig_fid: [FeatureId; 2],
+                                    i: usize| {
                 let spade_key = (tri_ids[i], key);
 
                 spade_infos[i]
                     .entry(spade_key)
                     .or_insert_with(|| {
-                        let point2d = triangulations[i].project(pt);
+                        let point2d = triangulations[i].project(pt[i], orig_fid[i]);
                         let handle = triangulations[i].delaunay.insert(point2d).unwrap();
                         let _ = spade_handle_to_vertex[i]
                             .insert((tri_ids[i], handle), base_vtx_id[i] + new_vertices[i].len());
-                        new_vertices[i].push(pt);
+                        let _ = spade_handle_to_intersection[i].insert((tri_ids[i], handle), key);
+                        new_vertices[i].push(pt[i]);
                         SpadeInfo { point2d, handle }
                     })
                     .handle
             };
 
-            let ins_a = *intersection_points.entry(key_a).or_insert(inter.a.pt);
-            let ins_b = *intersection_points.entry(key_b).or_insert(inter.b.pt);
+            let ins_a = *intersection_points
+                .entry(key_a)
+                .or_insert([inter.a.p1, inter.a.p2]);
+            let ins_b = *intersection_points
+                .entry(key_b)
+                .or_insert([inter.b.p1, inter.b.p2]);
 
-            let handles_a = [insert_point(ins_a, key_a, 0), insert_point(ins_a, key_a, 1)];
-            let handles_b = [insert_point(ins_b, key_b, 0), insert_point(ins_b, key_b, 1)];
+            let handles_a = [
+                insert_point(ins_a, key_a, orig_fid_a, 0),
+                insert_point(ins_a, key_a, orig_fid_a, 1),
+            ];
+            let handles_b = [
+                insert_point(ins_b, key_b, orig_fid_b, 0),
+                insert_point(ins_b, key_b, orig_fid_b, 1),
+            ];
 
             for i in 0..2 {
                 // NOTE: the naming of the `ConstrainedDelaunayTriangulation::can_add_constraint` method is misleading.
@@ -351,6 +404,7 @@ fn cut_and_triangulate_intersections(
         &mesh2,
         &intersection_points,
         &spade_handle_to_vertex,
+        &spade_handle_to_intersection,
         &triangulations1,
         &triangulations2,
         new_vertices1,
@@ -363,7 +417,9 @@ fn cut_and_triangulate_intersections(
 fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
     match fid {
         FeatureId::Edge(eid) => {
-            FeatureId::Edge(mesh.topology().face_half_edges_ids(tri)[eid as usize])
+            let half_edge_id = mesh.topology().face_half_edges_ids(tri)[eid as usize];
+            let half_edge = &mesh.topology().half_edges[half_edge_id as usize];
+            FeatureId::Edge(half_edge_id.min(half_edge.twin))
         }
         FeatureId::Vertex(vid) => FeatureId::Vertex(mesh.indices()[tri as usize][vid as usize]),
         FeatureId::Face(_) => FeatureId::Face(tri),
@@ -375,8 +431,9 @@ fn extract_result(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    intersections: &HashMap<(FeatureId, FeatureId), Point<Real>>,
+    intersections: &HashMap<(FeatureId, FeatureId), [Point<Real>; 2]>,
     spade_handle_to_vertex: &[HashMap<(u32, FixedVertexHandle), usize>; 2],
+    spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
     triangulations1: &HashMap<u32, Triangulation>,
     triangulations2: &HashMap<u32, Triangulation>,
     new_vertices1: &mut Vec<Point<Real>>,
@@ -390,6 +447,7 @@ fn extract_result(
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
             let mut tri = [Point::origin(); 3];
+            let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
             let mut idx = [0; 3];
             for k in 0..3 {
                 let vid = spade_handle_to_vertex[0][&(*tri_id, vtx[k].fix())];
@@ -397,21 +455,38 @@ fn extract_result(
 
                 if vid < mesh1.vertices().len() {
                     tri[k] = mesh1.vertices()[vid];
+                    tri_feat[k] = (FeatureId::Vertex(vid as u32), FeatureId::Unknown);
                 } else {
                     tri[k] = new_vertices1[vid - mesh1.vertices().len()];
+                }
+
+                if let Some(feat) = spade_handle_to_intersection[0].get(&(*tri_id, vtx[k].fix())) {
+                    tri_feat[k] = *feat;
                 }
             }
 
             let tri = Triangle::from(tri);
+
+            // if tri.is_affinely_dependent() {
+            //     println!("aff1: {:?}", tri);
+            //     println!("feat1: {:?}", tri_feat);
+            // }
             if !tri.is_affinely_dependent() && mesh2.contains_point(&pos12, &tri.center()) {
+                // if tri_feat.iter().any(|f| matches!(f.0, FeatureId::Vertex(_))) {
+                //     println!("Tri id1: {}", *tri_id);
+                //     println!("Chull size: {}", triangulation.delaunay.convex_hull_size());
+                //     println!(
+                //         "Num inner faces: {}",
+                //         triangulation.delaunay.num_inner_faces()
+                //     );
+                //     for vtx in triangulation.delaunay.vertices() {
+                //         println!("vertex: {:?}", vtx.position());
+                //     }
+                //     println!("Bogus tri1: {:?}", tri);
+                //     println!("Bogus feat1: {:?}", tri_feat);
+                // }
+
                 new_indices1.push(idx);
-
-                // let start = new_vertices1.len() as u32;
-                // new_indices1.push([start, start + 1, start + 2]);
-
-                // new_vertices1.push(tri.a);
-                // new_vertices1.push(tri.b);
-                // new_vertices1.push(tri.c);
             }
         }
     }
@@ -420,6 +495,7 @@ fn extract_result(
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
             let mut tri = [Point::origin(); 3];
+            let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
             let mut idx = [0; 3];
             for k in 0..3 {
                 let vid = spade_handle_to_vertex[1][&(*tri_id, vtx[k].fix())];
@@ -427,21 +503,28 @@ fn extract_result(
 
                 if vid < mesh2.vertices().len() {
                     tri[k] = pos12 * mesh2.vertices()[vid];
+                    tri_feat[k] = (FeatureId::Unknown, FeatureId::Vertex(vid as u32));
                 } else {
                     tri[k] = new_vertices2[vid - mesh2.vertices().len()];
+                }
+
+                if let Some(feat) = spade_handle_to_intersection[1].get(&(*tri_id, vtx[k].fix())) {
+                    tri_feat[k] = *feat;
                 }
             }
 
             let tri = Triangle::from(tri);
+            // if tri.is_affinely_dependent() {
+            //     println!("aff2: {:?}", tri);
+            //     println!("feat2: {:?}", tri_feat);
+            // }
+
             if !tri.is_affinely_dependent() && mesh1.contains_local_point(&tri.center()) {
+                // if tri_feat.iter().any(|f| matches!(f.1, FeatureId::Vertex(_))) {
+                //     println!("Bogus tri2: {:?}", tri);
+                //     println!("Bogus feat2: {:?}", tri_feat);
+                // }
                 new_indices2.push(idx);
-
-                // let start = new_vertices1.len() as u32;
-                // new_indices1.push([start, start + 1, start + 2]);
-
-                // new_vertices1.push(tri.a);
-                // new_vertices1.push(tri.b);
-                // new_vertices1.push(tri.c);
             }
         }
     }
