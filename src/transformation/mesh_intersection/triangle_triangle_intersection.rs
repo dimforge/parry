@@ -5,7 +5,8 @@ use crate::shape::{FeatureId, Segment, Triangle};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct TriangleTriangleIntersectionPoint {
-    pub pt: Point<Real>,
+    pub p1: Point<Real>,
+    pub p2: Point<Real>,
     pub f1: FeatureId,
     pub f2: FeatureId,
 }
@@ -121,19 +122,22 @@ pub fn triangle_triangle_intersection(
 
     let a = if range2[0].0 > range1[0].0 + EPS {
         TriangleTriangleIntersectionPoint {
-            pt: range2[0].1,
+            p1: range2[0].1,
+            p2: range2[0].1,
             f1: inter_f1,
             f2: range2[0].2,
         }
     } else if range2[0].0 < range1[0].0 - EPS {
         TriangleTriangleIntersectionPoint {
-            pt: range1[0].1,
+            p1: range1[0].1,
+            p2: range1[0].1,
             f1: range1[0].2,
             f2: inter_f2,
         }
     } else {
         TriangleTriangleIntersectionPoint {
-            pt: range1[0].1,
+            p1: range1[0].1,
+            p2: range2[0].1,
             f1: range1[0].2,
             f2: range2[0].2,
         }
@@ -141,19 +145,22 @@ pub fn triangle_triangle_intersection(
 
     let b = if range2[1].0 < range1[1].0 - EPS {
         TriangleTriangleIntersectionPoint {
-            pt: range2[1].1,
+            p1: range2[1].1,
+            p2: range2[1].1,
             f1: inter_f1,
             f2: range2[1].2,
         }
     } else if range2[1].0 > range1[1].0 + EPS {
         TriangleTriangleIntersectionPoint {
-            pt: range1[1].1,
+            p1: range1[1].1,
+            p2: range1[1].1,
             f1: range1[1].2,
             f2: inter_f2,
         }
     } else {
         TriangleTriangleIntersectionPoint {
-            pt: range1[1].1,
+            p1: range1[1].1,
+            p2: range2[1].1,
             f1: range1[1].2,
             f2: range2[1].2,
         }
