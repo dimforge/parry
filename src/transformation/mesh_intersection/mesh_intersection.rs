@@ -1,4 +1,4 @@
-use super::{IntersectionHalfEdge, MeshIntersectionError, ModifiedTriMesh, EPS};
+use super::{MeshIntersectionError, EPS};
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
@@ -59,30 +59,11 @@ pub fn intersect_meshes(
         &mut new_indices2,
     );
 
-    // println!(
-    //     "indices1: {}, indices2: {}",
-    //     new_indices1.len(),
-    //     new_indices2.len()
-    // );
-
-    // new_indices1.extend(
-    //     deleted_faces1
-    //         .iter()
-    //         .map(|fid| mesh1.indices()[*fid as usize]),
-    // );
-    // new_indices2.extend(
-    //     deleted_faces2
-    //         .iter()
-    //         .map(|fid| mesh2.indices()[*fid as usize]),
-    // );
-
     let mut new_vertices1 = vec![];
     let mut new_vertices2 = vec![];
 
     cut_and_triangulate_intersections(
         &pos12,
-        &deleted_faces1,
-        &deleted_faces2,
         &mesh1,
         &mesh2,
         &mut new_vertices1,
@@ -251,21 +232,22 @@ impl Triangulation {
 
         match orig_fid {
             FeatureId::Edge(i) => {
-                // println!("Before: {:?}", proj);
                 let a = self.ref_proj[i as usize];
                 let b = self.ref_proj[(i as usize + 1) % 3];
                 let ab = b - a;
                 let ap = proj - a;
                 let param = ab.dot(&ap) / ab.norm_squared();
-                // let before = proj;
                 let shift = vector![ab.y, -ab.x];
+
+                // NOTE: if we have intersections exactly on the edge, we nudge
+                //       their projection slightly outside of the triangle. That
+                //       way, the triangle’s edge gets split automatically by
+                //       the triangulation (or, rather, it will be split when we
+                //       add the contsraint involving that point).
+                // NOTE: this is not ideal though, so we should find a way to simply
+                //       delete spurious triangles that are outside of the intersection
+                //       curve.
                 proj = a + ab * param + shift * EPS;
-                // println!(
-                //     "After: {:?}, param: {}, diff: {:?}",
-                //     proj,
-                //     param,
-                //     proj - before
-                // );
             }
             _ => {}
         }
@@ -276,8 +258,6 @@ impl Triangulation {
 
 fn cut_and_triangulate_intersections(
     pos12: &Isometry<Real>,
-    deleted_faces1: &HashSet<u32>,
-    deleted_faces2: &HashSet<u32>,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     new_vertices1: &mut Vec<Point<Real>>,
@@ -286,9 +266,6 @@ fn cut_and_triangulate_intersections(
     new_indices2: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
 ) {
-    // println!("");
-    // dbg!("Compute intersection");
-    // let mut intersection_curve = vec![];
     let mut triangulations1 = HashMap::new();
     let mut triangulations2 = HashMap::new();
     let mut intersection_points = HashMap::new();
@@ -296,8 +273,6 @@ fn cut_and_triangulate_intersections(
     let mut spade_infos = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_vertex = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_intersection = [HashMap::new(), HashMap::new()];
-    let mut num_constraints_added = 0;
-    let mut num_constraints_failed = 0;
 
     let new_vertices = [&mut *new_vertices1, &mut *new_vertices2];
     let base_vtx_id = [mesh1.vertices().len(), mesh2.vertices().len()];
@@ -388,21 +363,15 @@ fn cut_and_triangulate_intersections(
                     let _ = triangulations[i]
                         .delaunay
                         .add_constraint(handles_a[i], handles_b[i]);
-                    num_constraints_added += 1;
-                } else {
-                    num_constraints_failed += 1;
                 }
             }
         }
     }
 
-    // dbg!(num_constraints_added, num_constraints_failed);
-
     extract_result(
         &pos12,
         &mesh1,
         &mesh2,
-        &intersection_points,
         &spade_handle_to_vertex,
         &spade_handle_to_intersection,
         &triangulations1,
@@ -431,7 +400,6 @@ fn extract_result(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    intersections: &HashMap<(FeatureId, FeatureId), [Point<Real>; 2]>,
     spade_handle_to_vertex: &[HashMap<(u32, FixedVertexHandle), usize>; 2],
     spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
     triangulations1: &HashMap<u32, Triangulation>,
@@ -441,8 +409,6 @@ fn extract_result(
     new_indices1: &mut Vec<[u32; 3]>,
     new_indices2: &mut Vec<[u32; 3]>,
 ) {
-    // let mut handle_to_index2 = HashMap::new();
-
     for (tri_id, triangulation) in triangulations1.iter() {
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
@@ -467,25 +433,7 @@ fn extract_result(
 
             let tri = Triangle::from(tri);
 
-            // if tri.is_affinely_dependent() {
-            //     println!("aff1: {:?}", tri);
-            //     println!("feat1: {:?}", tri_feat);
-            // }
             if !tri.is_affinely_dependent() && mesh2.contains_point(&pos12, &tri.center()) {
-                // if tri_feat.iter().any(|f| matches!(f.0, FeatureId::Vertex(_))) {
-                //     println!("Tri id1: {}", *tri_id);
-                //     println!("Chull size: {}", triangulation.delaunay.convex_hull_size());
-                //     println!(
-                //         "Num inner faces: {}",
-                //         triangulation.delaunay.num_inner_faces()
-                //     );
-                //     for vtx in triangulation.delaunay.vertices() {
-                //         println!("vertex: {:?}", vtx.position());
-                //     }
-                //     println!("Bogus tri1: {:?}", tri);
-                //     println!("Bogus feat1: {:?}", tri_feat);
-                // }
-
                 new_indices1.push(idx);
             }
         }
@@ -514,91 +462,10 @@ fn extract_result(
             }
 
             let tri = Triangle::from(tri);
-            // if tri.is_affinely_dependent() {
-            //     println!("aff2: {:?}", tri);
-            //     println!("feat2: {:?}", tri_feat);
-            // }
 
             if !tri.is_affinely_dependent() && mesh1.contains_local_point(&tri.center()) {
-                // if tri_feat.iter().any(|f| matches!(f.1, FeatureId::Vertex(_))) {
-                //     println!("Bogus tri2: {:?}", tri);
-                //     println!("Bogus feat2: {:?}", tri_feat);
-                // }
                 new_indices2.push(idx);
             }
         }
-    }
-
-    /*
-    for (fid, added) in mesh1.added_faces.iter().enumerate() {
-        if added[0] != u32::MAX {
-            let tri = Triangle::new(
-                mesh1.vertex(added[0], &Isometry::identity()),
-                mesh1.vertex(added[1], &Isometry::identity()),
-                mesh1.vertex(added[2], &Isometry::identity()),
-            )
-            .transformed(&pos12.inverse());
-
-            let base_len = mesh1.trimesh.vertices().len() as u32;
-
-            if (added[0] >= base_len && added[1] >= base_len && added[1] >= base_len)
-                || (added[0] < base_len && added[2] < base_len && added[2] < base_len)
-            {
-                if mesh2.trimesh.contains_local_point(&tri.center()) {
-                    new_indices1.push(*added);
-                }
-            } else if (added[0] >= base_len || mesh2.trimesh.contains_local_point(&tri.a))
-                && (added[1] >= base_len || mesh2.trimesh.contains_local_point(&tri.b))
-                && (added[2] >= base_len || mesh2.trimesh.contains_local_point(&tri.c))
-            {
-                new_indices1.push(*added);
-            }
-        }
-    }
-
-    for (fid, added) in mesh2.added_faces.iter().enumerate() {
-        if mesh2.face_splits.contains_key(&(fid as u32)) {
-            continue;
-        }
-
-        if added[0] != u32::MAX {
-            let tri = Triangle::new(
-                mesh2.vertex(added[0], pos12),
-                mesh2.vertex(added[1], pos12),
-                mesh2.vertex(added[2], pos12),
-            );
-
-            let base_len = mesh2.trimesh.vertices().len() as u32;
-
-            if (added[0] >= base_len && added[1] >= base_len && added[1] >= base_len)
-                || (added[0] < base_len && added[2] < base_len && added[2] < base_len)
-            {
-                if mesh1.trimesh.contains_local_point(&tri.center()) {
-                    new_indices2.push(*added);
-                }
-            } else if (added[0] >= base_len || mesh1.trimesh.contains_local_point(&tri.a))
-                && (added[1] >= base_len || mesh1.trimesh.contains_local_point(&tri.b))
-                && (added[2] >= base_len || mesh1.trimesh.contains_local_point(&tri.c))
-            {
-                new_indices2.push(*added);
-            }
-        }
-    }
-    */
-}
-
-#[cfg(test)]
-mod test {
-    use crate::math::{Isometry, Vector};
-    use crate::shape::{Cuboid, TriMesh};
-
-    #[test]
-    fn cube_cube_trimesh_intersection() {
-        let (vtx, idx) = Cuboid::new(Vector::new(1.0, 1.0, 1.0)).to_trimesh();
-        let mut trimesh = TriMesh::new(vtx, idx);
-        trimesh.compute_topology().unwrap();
-        let pos1 = Isometry::identity();
-        let pos2 = Isometry::translation(1.0 - 0.51364326, 1.0 - 0.77000046, 0.73529434);
-        let _ = super::intersect_meshes(&pos1, &trimesh, &pos2, &trimesh).unwrap();
     }
 }
