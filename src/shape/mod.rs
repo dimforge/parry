@@ -46,10 +46,7 @@ pub use self::heightfield3::*;
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
-#[cfg(all(feature = "std", feature = "dim3"))]
-pub use self::trimesh::TopologyError;
-#[cfg(feature = "std")]
-pub use self::trimesh::{TriMesh, TriMeshTopology};
+pub use self::trimesh::*;
 
 /// A cylinder dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]

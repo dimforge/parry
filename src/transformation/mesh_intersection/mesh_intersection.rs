@@ -17,7 +17,7 @@ pub fn intersect_meshes(
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
-    if mesh1.topology().faces.is_empty() || mesh2.topology().faces.is_empty() {
+    if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
     }
 
@@ -37,6 +37,7 @@ pub fn intersect_meshes(
 
     let mut deleted_faces1: HashSet<u32> = HashSet::default();
     let mut deleted_faces2: HashSet<u32> = HashSet::default();
+    let mut shared_vertices2_to_1 = HashMap::new();
     let mut new_indices1 = vec![];
     let mut new_indices2 = vec![];
 
@@ -71,7 +72,10 @@ pub fn intersect_meshes(
         &mut new_indices1,
         &mut new_indices2,
         &mut intersections,
+        &mut shared_vertices2_to_1,
     );
+
+    assert_eq!(new_vertices1.len(), new_vertices2.len());
 
     let old_vertices1 = mesh1.vertices();
     let old_vertices2 = mesh2.vertices();
@@ -100,6 +104,13 @@ pub fn intersect_meshes(
 
     for idx2 in &mut new_indices2 {
         for k in 0..3 {
+            if let Some(new_vid) = shared_vertices2_to_1
+                .get(&idx2[k])
+                .and_then(|i| index_map1.get(i))
+            {
+                // This vertex already exists on the first mesh, re-use the index.
+                idx2[k] = *new_vid as u32;
+            }
             let new_id = *index_map2.entry(idx2[k]).or_insert_with(|| {
                 let vtx = old_vertices2
                     .get(idx2[k] as usize)
@@ -128,11 +139,20 @@ fn extract_connected_components(
     deleted_faces1: &HashSet<u32>,
     new_indices1: &mut Vec<[u32; 3]>,
 ) {
-    let topo1 = mesh1.topology();
+    let topo1 = mesh1.topology().unwrap();
     let mut visited: HashSet<u32> = HashSet::default();
     let mut to_visit = vec![];
+    let mut visited_conn_comp = if let Some(cc) = mesh1.connected_components() {
+        vec![false; cc.ranges.len()] // TODO: use a Vob instead?
+    } else {
+        vec![]
+    };
 
     for face in deleted_faces1 {
+        if let Some(cc) = mesh1.connected_components() {
+            visited_conn_comp[cc.face_colors[*face as usize] as usize] = true;
+        }
+
         let eid = topo1.faces[*face as usize].half_edge;
         let edge_a = &topo1.half_edges[eid as usize];
         let edge_b = &topo1.half_edges[edge_a.next as usize];
@@ -140,12 +160,13 @@ fn extract_connected_components(
         let edges = [edge_a, edge_b, edge_c];
 
         for edge in edges {
-            let twin = &topo1.half_edges[edge.twin as usize];
-            if !deleted_faces1.contains(&twin.face) {
-                let tri1 = mesh1.triangle(twin.face as u32);
+            if let Some(twin) = topo1.half_edges.get(edge.twin as usize) {
+                if !deleted_faces1.contains(&twin.face) {
+                    let tri1 = mesh1.triangle(twin.face as u32);
 
-                if mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center())) {
-                    to_visit.push(twin.face);
+                    if mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center())) {
+                        to_visit.push(twin.face);
+                    }
                 }
             }
         }
@@ -166,10 +187,43 @@ fn extract_connected_components(
         let edges = [edge_a, edge_b, edge_c];
 
         for edge in edges {
-            let twin = &topo1.half_edges[edge.twin as usize];
-            if !deleted_faces1.contains(&twin.face) {
-                to_visit.push(twin.face);
+            if let Some(twin) = topo1.half_edges.get(edge.twin as usize) {
+                if !deleted_faces1.contains(&twin.face) {
+                    to_visit.push(twin.face);
+                }
             }
+        }
+    }
+
+    /*
+     * Deal with connected components that don’t intersect the other mesh.
+     */
+    if let Some(cc) = mesh1.connected_components() {
+        for (i, range) in cc.ranges.windows(2).enumerate() {
+            if !visited_conn_comp[i] {
+                // This connected component doesn’t intersect the second mesh.
+                // Classify one of its face (the "representative face", can be any
+                // face of the connected copmonent) to determine
+                // if the whole thing is inside or outside.
+                let repr_face = cc.grouped_faces[range[0]];
+                let repr_pt = mesh1.triangle(repr_face).center();
+                let indices = mesh1.indices();
+
+                if mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+                    new_indices1.extend(
+                        cc.grouped_faces[range[0]..range[1]]
+                            .iter()
+                            .map(|fid| indices[*fid as usize]),
+                    )
+                }
+            }
+        }
+    } else if deleted_faces1.is_empty() {
+        // Deal with the case where there is no intersection between the meshes.
+        let repr_pt = mesh1.triangle(0).center();
+
+        if mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+            new_indices1.extend_from_slice(mesh1.indices());
         }
     }
 }
@@ -265,6 +319,7 @@ fn cut_and_triangulate_intersections(
     new_indices1: &mut Vec<[u32; 3]>,
     new_indices2: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
+    shared_vertices2_to_1: &mut HashMap<u32, u32>,
 ) {
     let mut triangulations1 = HashMap::new();
     let mut triangulations2 = HashMap::new();
@@ -349,6 +404,7 @@ fn cut_and_triangulate_intersections(
                 insert_point(ins_a, key_a, orig_fid_a, 0),
                 insert_point(ins_a, key_a, orig_fid_a, 1),
             ];
+
             let handles_b = [
                 insert_point(ins_b, key_b, orig_fid_b, 0),
                 insert_point(ins_b, key_b, orig_fid_b, 1),
@@ -386,8 +442,11 @@ fn cut_and_triangulate_intersections(
 fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
     match fid {
         FeatureId::Edge(eid) => {
-            let half_edge_id = mesh.topology().face_half_edges_ids(tri)[eid as usize];
-            let half_edge = &mesh.topology().half_edges[half_edge_id as usize];
+            let topology = mesh.topology().unwrap();
+            let half_edge_id = topology.face_half_edges_ids(tri)[eid as usize];
+            let half_edge = &topology.half_edges[half_edge_id as usize];
+            // NOTE: if the twin doesn’t exist, it’s equal to u32::MAX. So the `min` will
+            //       automatically filter it out.
             FeatureId::Edge(half_edge_id.min(half_edge.twin))
         }
         FeatureId::Vertex(vid) => FeatureId::Vertex(mesh.indices()[tri as usize][vid as usize]),
