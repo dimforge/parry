@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
 use crate::partitioning::QBVH;
@@ -47,9 +49,38 @@ impl std::error::Error for TopologyError {}
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg(feature = "dim3")]
-pub(crate) struct PseudoNormals {
+pub struct TriMeshPseudoNormals {
     pub vertices_pseudo_normal: Vec<Vector<Real>>,
     pub edges_pseudo_normal: HashMap<SortedPair<u32>, Vector<Real>>,
+}
+
+#[cfg(feature = "dim3")]
+impl Default for TriMeshPseudoNormals {
+    fn default() -> Self {
+        Self {
+            vertices_pseudo_normal: vec![],
+            edges_pseudo_normal: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct TriMeshConnectedComponents {
+    // The `face_colors[i]` gives the connecte-component index
+    // of the i-th face.
+    pub face_colors: Vec<u32>,
+    /// The set of faces grouped by connected components.
+    pub grouped_faces: Vec<u32>,
+    /// The range of connected components. `self.grouped_faces[self.ranges[i]..self.ranges[i + 1]]`
+    /// contains the indices of all the faces part of the i-th connected component.
+    pub ranges: Vec<usize>,
+}
+
+impl TriMeshConnectedComponents {
+    pub fn num_connected_components(&self) -> usize {
+        self.ranges.len() - 1
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -95,16 +126,6 @@ impl TriMeshTopology {
     }
 }
 
-#[cfg(feature = "dim3")]
-impl Default for PseudoNormals {
-    fn default() -> Self {
-        Self {
-            vertices_pseudo_normal: vec![],
-            edges_pseudo_normal: Default::default(),
-        }
-    }
-}
-
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A triangle mesh.
@@ -113,8 +134,9 @@ pub struct TriMesh {
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
-    pub(crate) pseudo_normals: PseudoNormals,
-    topology: TriMeshTopology,
+    pub(crate) pseudo_normals: Option<TriMeshPseudoNormals>,
+    topology: Option<TriMeshTopology>,
+    connected_components: Option<TriMeshConnectedComponents>,
 }
 
 impl TriMesh {
@@ -145,8 +167,9 @@ impl TriMesh {
             vertices,
             indices,
             #[cfg(feature = "dim3")]
-            pseudo_normals: Default::default(),
-            topology: Default::default(),
+            pseudo_normals: None,
+            topology: None,
+            connected_components: None,
         }
     }
 
@@ -228,8 +251,18 @@ impl TriMesh {
     }
 
     /// Returns the topology information of this trimesh, if it has been computed.
-    pub fn topology(&self) -> &TriMeshTopology {
-        &self.topology
+    pub fn topology(&self) -> Option<&TriMeshTopology> {
+        self.topology.as_ref()
+    }
+
+    /// Returns the connected-component information of this trimesh, if it has been computed.
+    pub fn connected_components(&self) -> Option<&TriMeshConnectedComponents> {
+        self.connected_components.as_ref()
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
+        self.pseudo_normals.as_ref()
     }
 
     /// Merge all duplicate vertices and adjust the index buffer accordingly.
@@ -289,8 +322,14 @@ impl TriMesh {
 
         // Vertices and indices changed: the pseudo-normals are no longer valid.
         #[cfg(feature = "dim3")]
-        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+        if self.pseudo_normals.is_some() {
             self.compute_pseudo_normals();
+        }
+
+        // Vertices and indices changed: the topology no longer valid.
+        #[cfg(feature = "dim3")]
+        if self.topology.is_some() {
+            self.compute_topology(self.connected_components.is_some());
         }
     }
 
@@ -363,8 +402,10 @@ impl TriMesh {
             }
         }
 
-        self.pseudo_normals.vertices_pseudo_normal = vertices_pseudo_normal;
-        self.pseudo_normals.edges_pseudo_normal = edges_pseudo_normal;
+        self.pseudo_normals = Some(TriMeshPseudoNormals {
+            vertices_pseudo_normal,
+            edges_pseudo_normal,
+        })
     }
 
     /// Computes half-edge topological information for this triangle mesh, based on its index buffer only.
@@ -379,13 +420,14 @@ impl TriMesh {
     /// Returns `true` if the computation succeeded. Returns `false` if this mesh can’t have an half-edge representation
     /// because at least three faces share the same edge.
     #[cfg(feature = "dim3")]
-    pub fn compute_topology(&mut self) -> Result<(), TopologyError> {
-        self.topology.vertices.clear();
-        self.topology.faces.clear();
-        self.topology.half_edges.clear();
+    pub fn compute_topology(
+        &mut self,
+        compute_connected_components: bool,
+    ) -> Result<(), TopologyError> {
+        let mut topology = TriMeshTopology::default();
 
         let mut half_edge_map = HashMap::default();
-        self.topology.vertices.resize(
+        topology.vertices.resize(
             self.vertices.len(),
             TopoVertex {
                 half_edge: u32::MAX,
@@ -394,7 +436,7 @@ impl TriMesh {
 
         // First, create three half-edges for each face.
         for (fid, idx) in self.indices.iter().enumerate() {
-            let half_edge_base_id = self.topology.half_edges.len() as u32;
+            let half_edge_base_id = topology.half_edges.len() as u32;
 
             if idx[0] == idx[1] || idx[0] == idx[2] || idx[1] == idx[2] {
                 return Err(TopologyError::BadTriangle(fid as u32));
@@ -403,11 +445,15 @@ impl TriMesh {
             for k in 0u32..3 {
                 let half_edge = TopoHalfEdge {
                     next: half_edge_base_id + (k + 1) % 3,
-                    twin: u32::MAX, // We don’t know which one it is yet.
+                    // We don’t know which one it is yet.
+                    // If the twin doesn’t exist, we use `u32::MAX` as
+                    // it’s (invalid) index. This value can be relied on
+                    // by other algorithms.
+                    twin: u32::MAX,
                     vertex: idx[k as usize],
                     face: fid as u32,
                 };
-                self.topology.half_edges.push(half_edge);
+                topology.half_edges.push(half_edge);
 
                 let edge_key = (idx[k as usize], idx[(k as usize + 1) % 3]);
                 if let Some(existing) = half_edge_map.insert(edge_key, half_edge_base_id + k) {
@@ -415,15 +461,15 @@ impl TriMesh {
                     // we have two triangles sharing the same but with opposite incompatible orientations.
                     return Err(TopologyError::BadAdjascentTrianglesOrientation {
                         edge: edge_key,
-                        triangle1: self.topology.half_edges[existing as usize].face,
+                        triangle1: topology.half_edges[existing as usize].face,
                         triangle2: fid as u32,
                     });
                 }
 
-                self.topology.vertices[idx[k as usize] as usize].half_edge = half_edge_base_id + k;
+                topology.vertices[idx[k as usize] as usize].half_edge = half_edge_base_id + k;
             }
 
-            self.topology.faces.push(TopoFace {
+            topology.faces.push(TopoFace {
                 half_edge: half_edge_base_id,
             })
         }
@@ -433,17 +479,71 @@ impl TriMesh {
             if key.0 < key.1 {
                 // Test, to avoid checking the same pair twice.
                 if let Some(he2) = half_edge_map.get(&(key.1, key.0)) {
-                    self.topology.half_edges[*he1 as usize].twin = *he2;
-                    self.topology.half_edges[*he2 as usize].twin = *he1;
+                    topology.half_edges[*he1 as usize].twin = *he2;
+                    topology.half_edges[*he2 as usize].twin = *he1;
                 }
             }
+        }
+
+        self.topology = Some(topology);
+
+        if compute_connected_components {
+            self.compute_connected_components();
         }
 
         Ok(())
     }
 
+    // NOTE: we can only compute connected components if the topology
+    //       has been computed too. So instead of making this method
+    //       public, the `.compute_topology` method has a boolean to
+    //       compute the connected componets too.
+    fn compute_connected_components(&mut self) {
+        let topo = self.topology.as_ref().unwrap();
+        let mut face_colors = vec![u32::MAX; topo.faces.len()];
+        let mut grouped_faces = Vec::new();
+        let mut ranges = vec![0];
+
+        for i in 0..topo.faces.len() {
+            if face_colors[i] == u32::MAX {
+                let mut stack = vec![i as u32];
+                let color = ranges.len() as u32 - 1;
+
+                while let Some(tri_id) = stack.pop() {
+                    grouped_faces.push(tri_id);
+                    let eid = topo.faces[tri_id as usize].half_edge;
+                    let edge_a = &topo.half_edges[eid as usize];
+                    let edge_b = &topo.half_edges[edge_a.next as usize];
+                    let edge_c = &topo.half_edges[edge_b.next as usize];
+                    let edges = [edge_a, edge_b, edge_c];
+
+                    for edge in edges {
+                        if let Some(twin) = topo.half_edges.get(edge.twin as usize) {
+                            if face_colors[twin.face as usize] == u32::MAX {
+                                face_colors[twin.face as usize] = color;
+                                grouped_faces.push(twin.face);
+                                stack.push(twin.face);
+                            }
+                        }
+                    }
+                }
+
+                ranges.push(grouped_faces.len());
+            }
+        }
+
+        self.connected_components = Some(TriMeshConnectedComponents {
+            face_colors,
+            grouped_faces,
+            ranges,
+        });
+    }
+
     pub(crate) fn assert_half_edge_topology_is_valid(&self) {
-        let topo = &self.topology;
+        let topo = self
+            .topology
+            .as_ref()
+            .expect("No topology information found.");
         assert_eq!(self.vertices.len(), topo.vertices.len());
         assert_eq!(self.indices.len(), topo.faces.len());
 

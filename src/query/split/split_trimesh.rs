@@ -1,13 +1,61 @@
-use crate::math::{Isometry, Real, UnitVector, Vector};
+use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
-use crate::query::{CanonicalSplit, Split, SplitResult};
-use crate::shape::{Cuboid, Segment, Shape, TriMesh};
-use crate::utils::{hashmap::HashMap, SortedPair};
+use crate::query::{CanonicalSplit, PointQuery, Split, SplitResult};
+use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, Triangle};
+use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
+use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 
 impl CanonicalSplit for TriMesh {
     fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
         // TODO optimize this.
         self.local_split(&Vector::ith_axis(axis), bias, epsilon)
+    }
+}
+
+struct Triangulation {
+    delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
+    basis: [Vector<Real>; 2],
+    basis_origin: Point<Real>,
+    spade2index: HashMap<FixedVertexHandle, u32>,
+    index2spade: HashMap<u32, FixedVertexHandle>,
+}
+
+impl Triangulation {
+    fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
+        Triangulation {
+            delaunay: ConstrainedDelaunayTriangulation::new(),
+            basis: axis.orthonormal_basis(),
+            basis_origin,
+            spade2index: HashMap::default(),
+            index2spade: HashMap::default(),
+        }
+    }
+
+    fn project(&self, pt: Point<Real>) -> spade::Point2<Real> {
+        let dpt = pt - self.basis_origin;
+        spade::Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]))
+    }
+
+    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point<Real>]) {
+        let proj1 = self.project(points[id1 as usize]);
+        let proj2 = self.project(points[id2 as usize]);
+
+        let handle1 = *self.index2spade.entry(id1).or_insert_with(|| {
+            let h = self.delaunay.insert(proj1).unwrap();
+            let _ = self.spade2index.insert(h, id1);
+            h
+        });
+
+        let handle2 = *self.index2spade.entry(id2).or_insert_with(|| {
+            let h = self.delaunay.insert(proj2).unwrap();
+            let _ = self.spade2index.insert(h, id2);
+            h
+        });
+
+        // NOTE: the naming of the `ConstrainedDelaunayTriangulation::can_add_constraint` method is misleading.
+        if !self.delaunay.can_add_constraint(handle1, handle2) {
+            let _ = self.delaunay.add_constraint(handle1, handle2);
+        }
     }
 }
 
@@ -18,6 +66,12 @@ impl Split for TriMesh {
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
+        let mut triangulation = if self.pseudo_normals().is_some() {
+            Some(Triangulation::new(*local_axis, self.vertices()[0]))
+        } else {
+            None
+        };
+
         // 1. Partition the vertices.
         let vertices = self.vertices();
         let indices = self.indices();
@@ -49,62 +103,133 @@ impl Split for TriMesh {
         }
 
         // 2. Split the triangles.
-        const CROSSING_EDGE: u8 = 3;
         let mut intersections_found = HashMap::default();
         let mut new_indices = indices.to_vec();
         let mut new_vertices = vertices.to_vec();
-        let mut k = 0;
 
-        while k != new_indices.len() {
-            let mut ic = 0;
-            while ic < 3 {
-                let idx = new_indices[k];
-                let ia = (ic + 1) % 3;
-                let ib = (ic + 2) % 3;
-                let idx_a = idx[ia];
-                let idx_b = idx[ib];
-                let idx_c = idx[ic];
+        for (tri_id, idx) in indices.iter().enumerate() {
+            let mut idx = *idx;
+            let mut intersection_features = (FeatureId::Unknown, FeatureId::Unknown);
 
-                if colors[idx_a as usize] + colors[idx_b as usize] == CROSSING_EDGE {
-                    let intersection_idx = *intersections_found
-                        .entry(SortedPair::new(idx_a, idx_b))
-                        .or_insert_with(|| {
-                            let segment = Segment::new(
-                                new_vertices[idx_a as usize],
-                                new_vertices[idx_b as usize],
-                            );
-                            // Intersect the segment with the plane.
-                            if let Some((intersection, _)) = segment
-                                .local_split_and_get_intersection(local_axis, bias, epsilon)
-                                .1
-                            {
-                                new_vertices.push(intersection);
-                                colors.push(0);
-                                new_vertices.len() - 1
-                            } else {
-                                unreachable!()
-                            }
-                        });
+            // First, find where the plane intersects the triangle.
+            for ia in 0..3 {
+                let ib = (ia + 1) % 3;
+                let idx_a = idx[ia as usize];
+                let idx_b = idx[ib as usize];
+
+                let fid = match (colors[idx_a as usize], colors[idx_b as usize]) {
+                    (1, 2) | (2, 1) => FeatureId::Edge(ia),
+                    // NOTE: the case (_, 0) will be dealt with in the next loop iteration.
+                    (0, _) => FeatureId::Vertex(ia),
+                    _ => continue,
+                };
+
+                if intersection_features.0 == FeatureId::Unknown {
+                    intersection_features.0 = fid;
+                } else {
+                    assert_eq!(intersection_features.1, FeatureId::Unknown);
+                    intersection_features.1 = fid;
+                }
+            }
+
+            // Helper that intersects an edge with the plane.
+            let mut intersect_edge = |idx_a, idx_b| {
+                *intersections_found
+                    .entry(SortedPair::new(idx_a, idx_b))
+                    .or_insert_with(|| {
+                        let segment = Segment::new(
+                            new_vertices[idx_a as usize],
+                            new_vertices[idx_b as usize],
+                        );
+                        // Intersect the segment with the plane.
+                        if let Some((intersection, _)) = segment
+                            .local_split_and_get_intersection(local_axis, bias, epsilon)
+                            .1
+                        {
+                            new_vertices.push(intersection);
+                            colors.push(0);
+                            (new_vertices.len() - 1) as u32
+                        } else {
+                            unreachable!()
+                        }
+                    })
+            };
+
+            // Perform the intersection, push new triangles, and update
+            // triangulation constraints if needed.
+            match intersection_features {
+                (_, FeatureId::Unknown) => {
+                    // The plane doesn’t intersect the triangle, or intersects it at
+                    // a single vertex, so we don’t have anything to do.
+                    assert!(
+                        matches!(intersection_features.0, FeatureId::Unknown)
+                            || matches!(intersection_features.0, FeatureId::Vertex(_))
+                    );
+                }
+                (FeatureId::Vertex(v1), FeatureId::Vertex(v2)) => {
+                    // The plane intersects the triangle along one of its edge.
+                    // We don’t have to split the triangle, but we need to add
+                    // a constraint to the triangulation.
+                    if let Some(triangulation) = &mut triangulation {
+                        let id1 = idx[v1 as usize];
+                        let id2 = idx[v2 as usize];
+                        triangulation.add_edge(id1, id2, &new_vertices);
+                    }
+                }
+                (FeatureId::Vertex(iv), FeatureId::Edge(ie))
+                | (FeatureId::Edge(ie), FeatureId::Vertex(iv)) => {
+                    // The plane splits the triangle into exactly two triangles.
+                    let ia = ie;
+                    let ib = (ie + 1) % 3;
+                    let ic = (ie + 2) % 3;
+                    let idx_a = idx[ia as usize];
+                    let idx_b = idx[ib as usize];
+                    let idx_c = idx[ic as usize];
+                    assert_eq!(iv, ic);
+
+                    let intersection_idx = intersect_edge(idx_a, idx_b);
 
                     // Compute the indices of the two triangles.
                     let new_tri_a = [idx_c, idx_a, intersection_idx as u32];
                     let new_tri_b = [idx_b, idx_c, intersection_idx as u32];
-                    // Replace the current triangle, and push the new one.
-                    new_indices[k] = new_tri_a;
+
+                    new_indices[tri_id] = new_tri_a;
                     new_indices.push(new_tri_b);
-                    // NOTE: we arranged the new triangle’s vertices such that, if
-                    //       there is another intersection with `new_indices[k]`,
-                    //       then that intersection can only happen with `ic == 2`
-                    //       because we already know that the point at `idx[2]` lies
-                    //       on the cutting plane.
-                    ic = 2;
-                    continue;
+
+                    if let Some(triangulation) = &mut triangulation {
+                        triangulation.add_edge(intersection_idx, idx_c, &new_vertices);
+                    }
                 }
+                (FeatureId::Edge(mut e1), FeatureId::Edge(mut e2)) => {
+                    // The plane splits the triangle into 1 + 2 triangles.
+                    // First, make sure the edge indices are consecutive.
+                    if e2 != (e1 + 1) % 3 {
+                        std::mem::swap(&mut e1, &mut e2);
+                    }
 
-                ic += 1;
+                    let ia = e2; // The first point of the second edge is the vertex shared by both edges.
+                    let ib = (e2 + 1) % 3;
+                    let ic = (e2 + 2) % 3;
+                    let idx_a = idx[ia as usize];
+                    let idx_b = idx[ib as usize];
+                    let idx_c = idx[ic as usize];
+
+                    let intersection1 = intersect_edge(idx_c, idx_a);
+                    let intersection2 = intersect_edge(idx_a, idx_b);
+
+                    let new_tri1 = [idx_a, intersection2, intersection1];
+                    let new_tri2 = [intersection2, idx_b, idx_c];
+                    let new_tri3 = [intersection2, idx_c, intersection1];
+                    new_indices[tri_id] = new_tri1;
+                    new_indices.push(new_tri2);
+                    new_indices.push(new_tri3);
+
+                    if let Some(triangulation) = &mut triangulation {
+                        triangulation.add_edge(intersection1, intersection2, &new_vertices);
+                    }
+                }
+                _ => unreachable!(),
             }
-
-            k += 1;
         }
 
         // 3. Partition the new triangles into two trimeshes.
@@ -148,6 +273,34 @@ impl Split for TriMesh {
                 // The colors are all 0, so push into both trimeshes.
                 indices_lhs.push([remap[0].0, remap[1].0, remap[2].0]);
                 indices_rhs.push([remap[0].1, remap[1].1, remap[2].1]);
+            }
+        }
+
+        // Push the triangulation if there is one.
+        if let Some(triangulation) = triangulation {
+            for face in triangulation.delaunay.inner_faces() {
+                let vtx = face.vertices();
+                let mut idx1 = [0; 3];
+                let mut idx2 = [0; 3];
+                for k in 0..3 {
+                    let vid = triangulation.spade2index[&vtx[k].fix()];
+                    assert_eq!(colors[vid as usize], 0);
+                    idx1[k] = remap[vid as usize].0;
+                    idx2[k] = remap[vid as usize].1;
+                }
+
+                let tri = Triangle::new(
+                    vertices_lhs[idx1[0] as usize],
+                    vertices_lhs[idx1[1] as usize],
+                    vertices_lhs[idx1[2] as usize],
+                );
+
+                if self.contains_local_point(&tri.center()) {
+                    indices_lhs.push(idx1);
+
+                    idx2.swap(1, 2); // Flip orientation for the second half of the split.
+                    indices_rhs.push(idx2);
+                }
             }
         }
 

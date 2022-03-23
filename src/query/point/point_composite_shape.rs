@@ -56,7 +56,7 @@ impl PointQuery for TriMesh {
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
-        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+        if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             let (proj, (id, _feature)) = self.project_local_point_and_get_location(point, false);
             let feature_id = FeatureId::Face(id);
@@ -75,7 +75,7 @@ impl PointQuery for TriMesh {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         #[cfg(feature = "dim3")]
-        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+        if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             return self
                 .project_local_point_and_get_location(point, true)
@@ -143,21 +143,21 @@ impl PointQueryWithLocation for TriMesh {
             self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
 
         #[cfg(feature = "dim3")]
-        if !self.pseudo_normals.vertices_pseudo_normal.is_empty() {
+        if let Some(pseudo_normals) = self.pseudo_normals() {
             let pseudo_normal = match location {
                 TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
                     Some(self.triangle(part_id).scaled_normal())
                 }
                 TrianglePointLocation::OnEdge(i, _) => {
                     let idx = self.indices()[part_id as usize];
-                    self.pseudo_normals
+                    pseudo_normals
                         .edges_pseudo_normal
                         .get(&SortedPair::new(idx[i as usize], idx[(i as usize + 1) % 3]))
                         .copied()
                 }
                 TrianglePointLocation::OnVertex(i) => {
                     let idx = self.indices()[part_id as usize];
-                    self.pseudo_normals
+                    pseudo_normals
                         .vertices_pseudo_normal
                         .get(idx[i as usize] as usize)
                         .copied()
