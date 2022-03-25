@@ -23,7 +23,7 @@ pub use self::shape::{Shape, ShapeType, TypedShape};
 pub use self::shared_shape::SharedShape;
 #[doc(inline)]
 pub use self::support_map::SupportMap;
-pub use self::triangle::{Triangle, TrianglePointLocation};
+pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 
 #[cfg(feature = "dim2")]
 #[cfg(feature = "std")]

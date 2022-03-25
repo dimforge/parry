@@ -24,6 +24,7 @@ pub use self::hashable_partial_eq::HashablePartialEq;
 #[cfg(feature = "std")]
 pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
 pub use self::obb::obb;
+pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
 pub(crate) use self::sort::sort2;
 pub(crate) use self::sort::sort3;
@@ -67,6 +68,7 @@ mod point_in_poly2d;
 pub mod point_in_triangle;
 mod ref_with_cost;
 mod sdp_matrix;
+mod segments_intersection;
 mod sort;
 mod sorted_pair;
 mod weighted_value;

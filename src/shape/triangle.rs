@@ -91,6 +91,17 @@ impl TrianglePointLocation {
     }
 }
 
+/// Orientation of a triangle.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TriangleOrientation {
+    /// Orientation with a clockwise orientaiton, i.e., with a positive signed area.
+    Clockwise,
+    /// Orientation with a clockwise orientaiton, i.e., with a negative signed area.
+    CounterClockwise,
+    /// Degenerate triangle.
+    Degenerate,
+}
+
 impl From<[Point<Real>; 3]> for Triangle {
     fn from(arr: [Point<Real>; 3]) -> Self {
         *Self::from_array(&arr)
@@ -431,6 +442,44 @@ impl Triangle {
     /// The normal of the given feature of this shape.
     pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
         self.normal()
+    }
+
+    /// The orientation of the triangle, based on its signed area.
+    ///
+    /// Returns `TriangleOrientation::Degenerate` if the triangle’s area is
+    /// smaller than `epsilon`.
+    #[cfg(feature = "dim2")]
+    pub fn orientation(&self, epsilon: Real) -> TriangleOrientation {
+        let area2 = (self.b - self.a).perp(&(self.c - self.a));
+        // println!("area2: {}", area2);
+        if area2 > epsilon {
+            TriangleOrientation::CounterClockwise
+        } else if area2 < -epsilon {
+            TriangleOrientation::Clockwise
+        } else {
+            TriangleOrientation::Degenerate
+        }
+    }
+
+    /// The orientation of the 2D triangle, based on its signed area.
+    ///
+    /// Returns `TriangleOrientation::Degenerate` if the triangle’s area is
+    /// smaller than `epsilon`.
+    pub fn orientation2d(
+        a: &na::Point2<Real>,
+        b: &na::Point2<Real>,
+        c: &na::Point2<Real>,
+        epsilon: Real,
+    ) -> TriangleOrientation {
+        let area2 = (b - a).perp(&(c - a));
+        // println!("area2: {}", area2);
+        if area2 > epsilon {
+            TriangleOrientation::CounterClockwise
+        } else if area2 < -epsilon {
+            TriangleOrientation::Clockwise
+        } else {
+            TriangleOrientation::Degenerate
+        }
     }
 }
 

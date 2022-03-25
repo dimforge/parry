@@ -7,5 +7,5 @@ mod split_convex_polyhedron;
 mod split_polyline;
 mod split_segment;
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "dim3"))]
 mod split_trimesh;

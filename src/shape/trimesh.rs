@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::Range;
 
 use crate::bounding_volume::AABB;
@@ -32,13 +33,13 @@ impl std::fmt::Display for TopologyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BadTriangle(fid) => {
-                f.pad(&format!("the triangle {fid} has at least two identical"))
+                f.pad(&format!("the triangle {fid} has at least two identical vertices."))
             }
             Self::BadAdjascentTrianglesOrientation {
                 triangle1,
                 triangle2,
                 edge,
-            } => f.pad(&format!("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations", edge)),
+            } => f.pad(&format!("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations.", edge)),
         }
     }
 }
@@ -147,30 +148,17 @@ impl TriMesh {
             "A triangle mesh must contain at least one triangle."
         );
 
-        let data = indices.iter().enumerate().map(|(i, idx)| {
-            let aabb = Triangle::new(
-                vertices[idx[0] as usize],
-                vertices[idx[1] as usize],
-                vertices[idx[2] as usize],
-            )
-            .local_aabb();
-            (i as u32, aabb)
-        });
-
-        let mut qbvh = QBVH::new();
-        // NOTE: we apply no dilation factor because we won't
-        // update this tree dynamically.
-        qbvh.clear_and_rebuild(data, 0.0);
-
-        Self {
-            qbvh,
+        let mut result = Self {
+            qbvh: QBVH::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
             pseudo_normals: None,
             topology: None,
             connected_components: None,
-        }
+        };
+        result.rebuild_qbvh();
+        result
     }
 
     /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
@@ -265,15 +253,39 @@ impl TriMesh {
         self.pseudo_normals.as_ref()
     }
 
+    fn rebuild_qbvh(&mut self) {
+        let data = self.indices.iter().enumerate().map(|(i, idx)| {
+            let aabb = Triangle::new(
+                self.vertices[idx[0] as usize],
+                self.vertices[idx[1] as usize],
+                self.vertices[idx[2] as usize],
+            )
+            .local_aabb();
+            (i as u32, aabb)
+        });
+
+        // NOTE: we apply no dilation factor because we won't
+        // update this tree dynamically.
+        self.qbvh.clear_and_rebuild(data, 0.0);
+    }
+
     /// Merge all duplicate vertices and adjust the index buffer accordingly.
+    ///
+    /// If `delete_degenerate_triangles` is set to true, any triangle with two
+    /// identical vertices will be removed.
     ///
     /// This is typically used to recover a vertex buffer from which we can deduce
     /// adjacency information. between triangles by observing how the vertices are
     /// shared by triangles based on the index buffer.
-    pub fn merge_duplicate_vertices(&mut self) {
+    pub fn merge_duplicate_vertices(
+        &mut self,
+        delete_degenerate_triangles: bool,
+        delete_duplicate_triangles: bool,
+    ) {
         let mut vtx_to_id = HashMap::default();
         let mut new_vertices = Vec::with_capacity(self.vertices.len());
         let mut new_indices = Vec::with_capacity(self.indices.len());
+        let mut triangle_set = HashSet::new();
 
         fn resolve_coord_id(
             coord: &Point<Real>,
@@ -312,10 +324,27 @@ impl TriMesh {
                 &mut new_vertices,
             );
 
-            new_indices.push([va, vb, vc]);
+            let is_degenerate = va == vb || va == vc || vb == vc;
+
+            if !is_degenerate || !delete_degenerate_triangles {
+                if delete_duplicate_triangles {
+                    let (c, b, a) = crate::utils::sort3(&va, &vb, &vc);
+                    if triangle_set.insert((*a, *b, *c)) {
+                        new_indices.push([va, vb, vc])
+                    }
+                } else {
+                    new_indices.push([va, vb, vc]);
+                }
+            }
         }
 
         new_vertices.shrink_to_fit();
+
+        if new_indices.len() != self.indices.len() {
+            // We deleted some duplicate or invalid triangles.
+            // This invalidates the QBVH that needs to be reconstructed.
+            self.rebuild_qbvh();
+        }
 
         self.vertices = new_vertices;
         self.indices = new_indices;
@@ -329,7 +358,7 @@ impl TriMesh {
         // Vertices and indices changed: the topology no longer valid.
         #[cfg(feature = "dim3")]
         if self.topology.is_some() {
-            self.compute_topology(self.connected_components.is_some());
+            self.compute_topology(self.connected_components.is_some(), false);
         }
     }
 
@@ -408,12 +437,44 @@ impl TriMesh {
         })
     }
 
+    fn delete_bad_topology_triangles(&mut self) {
+        let mut half_edge_set = HashSet::new();
+        let mut deleted_any = false;
+
+        // First, create three half-edges for each face.
+        self.indices.retain(|idx| {
+            if idx[0] == idx[1] || idx[0] == idx[2] || idx[1] == idx[2] {
+                deleted_any = true;
+                return false;
+            }
+
+            for k in 0..3 {
+                let edge_key = (idx[k as usize], idx[(k as usize + 1) % 3]);
+                if half_edge_set.contains(&edge_key) {
+                    deleted_any = true;
+                    return false;
+                }
+            }
+
+            for k in 0..3 {
+                let edge_key = (idx[k as usize], idx[(k as usize + 1) % 3]);
+                let _ = half_edge_set.insert(edge_key);
+            }
+
+            true
+        });
+
+        if deleted_any {
+            self.rebuild_qbvh();
+        }
+    }
+
     /// Computes half-edge topological information for this triangle mesh, based on its index buffer only.
     ///
     /// This computes the half-edge representation of this triangle mesh’s topology. This is useful for advanced
     /// geometric operations like trimesh-trimesh intersection geometry computation.
     ///
-    /// It may be useful to call `self.remove_duplicate_vertices()` before this method, in order to fix the
+    /// It may be useful to call `self.merge_duplicate_vertices(true, true)` before this method, in order to fix the
     /// index buffer if some of the vertices of this trimesh are duplicated.
     ///
     /// # Return
@@ -423,10 +484,15 @@ impl TriMesh {
     pub fn compute_topology(
         &mut self,
         compute_connected_components: bool,
+        delete_bad_triangles: bool,
     ) -> Result<(), TopologyError> {
-        let mut topology = TriMeshTopology::default();
+        if delete_bad_triangles {
+            self.delete_bad_topology_triangles();
+        }
 
+        let mut topology = TriMeshTopology::default();
         let mut half_edge_map = HashMap::default();
+
         topology.vertices.resize(
             self.vertices.len(),
             TopoVertex {
@@ -456,6 +522,7 @@ impl TriMesh {
                 topology.half_edges.push(half_edge);
 
                 let edge_key = (idx[k as usize], idx[(k as usize + 1) % 3]);
+
                 if let Some(existing) = half_edge_map.insert(edge_key, half_edge_base_id + k) {
                     // If the same edge already exists (with the same vertex order) then
                     // we have two triangles sharing the same but with opposite incompatible orientations.
