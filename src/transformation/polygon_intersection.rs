@@ -1,7 +1,8 @@
-use na::{Point2, Real};
+use na::Point2;
 
-use shape::SegmentPointLocation;
-use utils::{self, SegmentsIntersection, TriangleOrientation};
+use crate::math::Real;
+use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
+use crate::utils::{self, SegmentsIntersection};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum InFlag {
@@ -11,16 +12,16 @@ enum InFlag {
 }
 
 /// Location of a point on a polyline.
-pub enum PolylinePointLocation<N> {
+pub enum PolylinePointLocation {
     /// Point on a vertex.
     OnVertex(usize),
     /// Point on an edge.
-    OnEdge(usize, usize, [N; 2]),
+    OnEdge(usize, usize, [Real; 2]),
 }
 
-impl<N: Real> PolylinePointLocation<N> {
+impl PolylinePointLocation {
     /// Computes the point corresponding to this location.
-    pub fn to_point(&self, pts: &[Point2<N>]) -> Point2<N> {
+    pub fn to_point(&self, pts: &[Point2<Real>]) -> Point2<Real> {
         match self {
             PolylinePointLocation::OnVertex(i) => pts[*i],
             PolylinePointLocation::OnEdge(i1, i2, bcoords) => {
@@ -29,7 +30,7 @@ impl<N: Real> PolylinePointLocation<N> {
         }
     }
 
-    fn from_segment_point_location(a: usize, b: usize, loc: SegmentPointLocation<N>) -> Self {
+    fn from_segment_point_location(a: usize, b: usize, loc: SegmentPointLocation) -> Self {
         match loc {
             SegmentPointLocation::OnVertex(0) => PolylinePointLocation::OnVertex(a),
             SegmentPointLocation::OnVertex(1) => PolylinePointLocation::OnVertex(b),
@@ -42,10 +43,10 @@ impl<N: Real> PolylinePointLocation<N> {
 /// Computes the intersection points of two convex polygons.
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
-pub fn convex_polygons_intersection_points<N: Real>(
-    poly1: &[Point2<N>],
-    poly2: &[Point2<N>],
-    out: &mut Vec<Point2<N>>,
+pub fn convex_polygons_intersection_points(
+    poly1: &[Point2<Real>],
+    poly2: &[Point2<Real>],
+    out: &mut Vec<Point2<Real>>,
 ) {
     convex_polygons_intersection(poly1, poly2, |loc1, loc2| {
         if let Some(loc1) = loc1 {
@@ -59,18 +60,20 @@ pub fn convex_polygons_intersection_points<N: Real>(
 /// Computes the intersection of two convex polygons.
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
-pub fn convex_polygons_intersection<N: Real>(
-    poly1: &[Point2<N>],
-    poly2: &[Point2<N>],
-    mut out: impl FnMut(Option<PolylinePointLocation<N>>, Option<PolylinePointLocation<N>>),
+pub fn convex_polygons_intersection(
+    poly1: &[Point2<Real>],
+    poly2: &[Point2<Real>],
+    mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
+    const EPS: Real = Real::EPSILON * 100.0;
+
     // FIXME: this does not handle correctly the case where the
     // first triangle of the polygon is degenerate.
     let rev1 = poly1.len() > 2
-        && utils::triangle_orientation(&poly1[0], &poly1[1], &poly1[2])
+        && Triangle::orientation2d(&poly1[0], &poly1[1], &poly1[2], EPS)
             == TriangleOrientation::Clockwise;
     let rev2 = poly2.len() > 2
-        && utils::triangle_orientation(&poly2[0], &poly2[1], &poly2[2])
+        && Triangle::orientation2d(&poly2[0], &poly2[1], &poly2[2], EPS)
             == TriangleOrientation::Clockwise;
 
     // println!("rev1: {}, rev2: {}", rev1, rev2);
@@ -104,17 +107,18 @@ pub fn convex_polygons_intersection<N: Real>(
         let dir_edge1 = poly1[a2] - poly1[a1];
         let dir_edge2 = poly2[b2] - poly2[b1];
 
-        let cross = utils::triangle_orientation(
+        let cross = Triangle::orientation2d(
             &Point2::origin(),
-            &Point2::from_coordinates(dir_edge1),
-            &Point2::from_coordinates(dir_edge2),
+            &Point2::from(dir_edge1),
+            &Point2::from(dir_edge2),
+            EPS,
         );
-        let aHB = utils::triangle_orientation(&poly2[b1], &poly2[b2], &poly1[a2]);
-        let bHA = utils::triangle_orientation(&poly1[a1], &poly1[a2], &poly2[b2]);
+        let a_hb = Triangle::orientation2d(&poly2[b1], &poly2[b2], &poly1[a2], EPS);
+        let b_ha = Triangle::orientation2d(&poly1[a1], &poly1[a2], &poly2[b2], EPS);
 
         // If edge1 & edge2 intersect, update inflag.
         if let Some(inter) =
-            utils::segments_intersection(&poly1[a1], &poly1[a2], &poly2[b1], &poly2[b2])
+            utils::segments_intersection2d(&poly1[a1], &poly1[a2], &poly2[b1], &poly2[b2], EPS)
         {
             match inter {
                 SegmentsIntersection::Point { loc1, loc2 } => {
@@ -130,9 +134,9 @@ pub fn convex_polygons_intersection<N: Real>(
                     }
 
                     // Update inflag.
-                    if aHB == TriangleOrientation::Counterclockwise {
+                    if a_hb == TriangleOrientation::CounterClockwise {
                         inflag = InFlag::PIn;
-                    } else if bHA == TriangleOrientation::Counterclockwise {
+                    } else if b_ha == TriangleOrientation::CounterClockwise {
                         inflag = InFlag::QIn;
                     }
                 }
@@ -143,7 +147,7 @@ pub fn convex_polygons_intersection<N: Real>(
                     second_loc2,
                 } => {
                     // Special case: edge1 & edge2 overlap and oppositely oriented.
-                    if dir_edge1.dot(&dir_edge2) < N::zero() {
+                    if dir_edge1.dot(&dir_edge2) < 0.0 {
                         let loc1 =
                             PolylinePointLocation::from_segment_point_location(a1, a2, first_loc1);
                         let loc2 =
@@ -164,15 +168,15 @@ pub fn convex_polygons_intersection<N: Real>(
 
         // Special case: edge1 & edge2 parallel and separated.
         if cross == TriangleOrientation::Degenerate
-            && aHB == TriangleOrientation::Clockwise
-            && bHA == TriangleOrientation::Clockwise
+            && a_hb == TriangleOrientation::Clockwise
+            && b_ha == TriangleOrientation::Clockwise
         {
             return;
         }
         // Special case: edge1 & edge2 collinear.
         else if cross == TriangleOrientation::Degenerate
-            && aHB == TriangleOrientation::Degenerate
-            && bHA == TriangleOrientation::Degenerate
+            && a_hb == TriangleOrientation::Degenerate
+            && b_ha == TriangleOrientation::Degenerate
         {
             // Advance but do not output point.
             if inflag == InFlag::PIn {
@@ -182,8 +186,8 @@ pub fn convex_polygons_intersection<N: Real>(
             }
         }
         // Generic cases.
-        else if cross == TriangleOrientation::Counterclockwise {
-            if bHA == TriangleOrientation::Counterclockwise {
+        else if cross == TriangleOrientation::CounterClockwise {
+            if b_ha == TriangleOrientation::CounterClockwise {
                 if inflag == InFlag::PIn {
                     out(Some(PolylinePointLocation::OnVertex(a2)), None)
                 }
@@ -196,7 +200,7 @@ pub fn convex_polygons_intersection<N: Real>(
             }
         } else {
             // We have cross == TriangleOrientation::Clockwise.
-            if aHB == TriangleOrientation::Counterclockwise {
+            if a_hb == TriangleOrientation::CounterClockwise {
                 if inflag == InFlag::QIn {
                     out(None, Some(PolylinePointLocation::OnVertex(b2)))
                 }
@@ -217,7 +221,7 @@ pub fn convex_polygons_intersection<N: Real>(
 
         for a in 0..n {
             let a1 = (a + n - 1) % n; // a - 1
-            let new_orient = utils::triangle_orientation(&poly1[a1], &poly1[a], &poly2[0]);
+            let new_orient = Triangle::orientation2d(&poly1[a1], &poly1[a], &poly2[0], EPS);
 
             if orient == TriangleOrientation::Degenerate {
                 orient = new_orient
@@ -238,7 +242,7 @@ pub fn convex_polygons_intersection<N: Real>(
 
         for b in 0..m {
             let b1 = (b + m - 1) % m; // b - 1
-            let new_orient = utils::triangle_orientation(&poly2[b1], &poly2[b], &poly1[0]);
+            let new_orient = Triangle::orientation2d(&poly2[b1], &poly2[b], &poly1[0], EPS);
 
             if orient == TriangleOrientation::Degenerate {
                 orient = new_orient

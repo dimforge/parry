@@ -3,7 +3,7 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
-use na::{point, vector, Point2};
+use na::{Point2, Vector2};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::{HashMap, HashSet};
 
@@ -14,11 +14,17 @@ use std::collections::{HashMap, HashSet};
 pub fn intersect_meshes(
     pos1: &Isometry<Real>,
     mesh1: &TriMesh,
+    flip1: bool,
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
+    flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
     if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
+    }
+
+    if mesh1.pseudo_normals().is_none() || mesh2.pseudo_normals().is_none() {
+        return Err(MeshIntersectionError::MissingPseudoNormals);
     }
 
     // NOTE: remove this, used for debugging only.
@@ -26,6 +32,7 @@ pub fn intersect_meshes(
     mesh2.assert_half_edge_topology_is_valid();
 
     let pos12 = pos1.inv_mul(pos2);
+
     // 1: collect all the potential triangle-triangle intersections.
     let mut intersections = vec![];
     let mut visitor =
@@ -33,6 +40,7 @@ pub fn intersect_meshes(
             intersections.push((*tri1, *tri2));
             true
         });
+
     mesh1.qbvh().traverse_bvtt(mesh2.qbvh(), &mut visitor);
 
     let mut deleted_faces1: HashSet<u32> = HashSet::default();
@@ -51,11 +59,19 @@ pub fn intersect_meshes(
         }
     }
 
-    extract_connected_components(&pos12, &mesh1, &mesh2, &deleted_faces1, &mut new_indices1);
+    extract_connected_components(
+        &pos12,
+        &mesh1,
+        &mesh2,
+        flip2,
+        &deleted_faces1,
+        &mut new_indices1,
+    );
     extract_connected_components(
         &pos12.inverse(),
         &mesh2,
         &mesh1,
+        flip1,
         &deleted_faces2,
         &mut new_indices2,
     );
@@ -66,7 +82,9 @@ pub fn intersect_meshes(
     cut_and_triangulate_intersections(
         &pos12,
         &mesh1,
+        flip1,
         &mesh2,
+        flip2,
         &mut new_vertices1,
         &mut new_vertices2,
         &mut new_indices1,
@@ -74,8 +92,6 @@ pub fn intersect_meshes(
         &mut intersections,
         &mut shared_vertices2_to_1,
     );
-
-    assert_eq!(new_vertices1.len(), new_vertices2.len());
 
     let old_vertices1 = mesh1.vertices();
     let old_vertices2 = mesh2.vertices();
@@ -123,6 +139,14 @@ pub fn intersect_meshes(
         }
     }
 
+    if flip1 {
+        new_indices1.iter_mut().for_each(|idx| idx.swap(1, 2));
+    }
+
+    if flip2 {
+        new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
+    }
+
     new_indices1.append(&mut new_indices2);
 
     if !new_indices1.is_empty() {
@@ -136,6 +160,7 @@ fn extract_connected_components(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
+    flip2: bool,
     deleted_faces1: &HashSet<u32>,
     new_indices1: &mut Vec<[u32; 3]>,
 ) {
@@ -164,7 +189,9 @@ fn extract_connected_components(
                 if !deleted_faces1.contains(&twin.face) {
                     let tri1 = mesh1.triangle(twin.face as u32);
 
-                    if mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center())) {
+                    if flip2
+                        ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center()))
+                    {
                         to_visit.push(twin.face);
                     }
                 }
@@ -209,7 +236,7 @@ fn extract_connected_components(
                 let repr_pt = mesh1.triangle(repr_face).center();
                 let indices = mesh1.indices();
 
-                if mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+                if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
                     new_indices1.extend(
                         cc.grouped_faces[range[0]..range[1]]
                             .iter()
@@ -222,7 +249,7 @@ fn extract_connected_components(
         // Deal with the case where there is no intersection between the meshes.
         let repr_pt = mesh1.triangle(0).center();
 
-        if mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+        if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
             new_indices1.extend_from_slice(mesh1.indices());
         }
     }
@@ -254,8 +281,8 @@ impl Triangulation {
 
         let ref_proj = [
             Point2::origin(),
-            point![ab.dot(&basis[0]), ab.dot(&basis[1])],
-            point![ac.dot(&basis[0]), ac.dot(&basis[1])],
+            Point2::new(ab.dot(&basis[0]), ab.dot(&basis[1])),
+            Point2::new(ac.dot(&basis[0]), ac.dot(&basis[1])),
         ];
 
         let vtx_handles = [
@@ -282,7 +309,7 @@ impl Triangulation {
 
     fn project(&self, pt: Point<Real>, orig_fid: FeatureId) -> spade::Point2<Real> {
         let dpt = pt - self.ref_pt;
-        let mut proj = point![dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1])];
+        let mut proj = Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]));
 
         match orig_fid {
             FeatureId::Edge(i) => {
@@ -291,7 +318,7 @@ impl Triangulation {
                 let ab = b - a;
                 let ap = proj - a;
                 let param = ab.dot(&ap) / ab.norm_squared();
-                let shift = vector![ab.y, -ab.x];
+                let shift = Vector2::new(ab.y, -ab.x);
 
                 // NOTE: if we have intersections exactly on the edge, we nudge
                 //       their projection slightly outside of the triangle. That
@@ -313,7 +340,9 @@ impl Triangulation {
 fn cut_and_triangulate_intersections(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
+    flip1: bool,
     mesh2: &TriMesh,
+    flip2: bool,
     new_vertices1: &mut Vec<Point<Real>>,
     new_vertices2: &mut Vec<Point<Real>>,
     new_indices1: &mut Vec<[u32; 3]>,
@@ -427,7 +456,9 @@ fn cut_and_triangulate_intersections(
     extract_result(
         &pos12,
         &mesh1,
+        flip1,
         &mesh2,
+        flip2,
         &spade_handle_to_vertex,
         &spade_handle_to_intersection,
         &triangulations1,
@@ -458,7 +489,9 @@ fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
 fn extract_result(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
+    flip1: bool,
     mesh2: &TriMesh,
+    flip2: bool,
     spade_handle_to_vertex: &[HashMap<(u32, FixedVertexHandle), usize>; 2],
     spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
     triangulations1: &HashMap<u32, Triangulation>,
@@ -492,7 +525,8 @@ fn extract_result(
 
             let tri = Triangle::from(tri);
 
-            if !tri.is_affinely_dependent() && mesh2.contains_point(&pos12, &tri.center()) {
+            if !tri.is_affinely_dependent() && (flip2 ^ mesh2.contains_point(&pos12, &tri.center()))
+            {
                 new_indices1.push(idx);
             }
         }
@@ -522,7 +556,7 @@ fn extract_result(
 
             let tri = Triangle::from(tri);
 
-            if !tri.is_affinely_dependent() && mesh1.contains_local_point(&tri.center()) {
+            if !tri.is_affinely_dependent() && (flip1 ^ mesh1.contains_local_point(&tri.center())) {
                 new_indices2.push(idx);
             }
         }

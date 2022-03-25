@@ -1,9 +1,7 @@
-use crate::math::Real;
-
 #[cfg(feature = "dim3")]
 #[inline]
 /// Sorts a set of three values in increasing order.
-pub fn sort2(a: Real, b: Real) -> (Real, Real) {
+pub fn sort2<T: PartialOrd + Copy>(a: T, b: T) -> (T, T) {
     if a > b {
         (b, a)
     } else {
@@ -13,7 +11,7 @@ pub fn sort2(a: Real, b: Real) -> (Real, Real) {
 
 /// Sorts a set of three values in increasing order.
 #[inline]
-pub fn sort3<'a>(a: &'a Real, b: &'a Real, c: &'a Real) -> (&'a Real, &'a Real, &'a Real) {
+pub fn sort3<'a, T: PartialOrd + Copy>(a: &'a T, b: &'a T, c: &'a T) -> (&'a T, &'a T, &'a T) {
     let a_b = *a > *b;
     let a_c = *a > *c;
     let b_c = *b > *c;

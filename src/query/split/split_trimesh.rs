@@ -2,6 +2,7 @@ use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{CanonicalSplit, PointQuery, Split, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, Triangle};
+use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 
@@ -127,7 +128,8 @@ impl Split for TriMesh {
                 if intersection_features.0 == FeatureId::Unknown {
                     intersection_features.0 = fid;
                 } else {
-                    assert_eq!(intersection_features.1, FeatureId::Unknown);
+                    // FIXME: this assertion may fire if the triangle is coplanar with the edge?
+                    // assert_eq!(intersection_features.1, FeatureId::Unknown);
                     intersection_features.1 = fid;
                 }
             }
@@ -304,9 +306,18 @@ impl Split for TriMesh {
             }
         }
 
-        let mesh_lhs = TriMesh::new(vertices_lhs, indices_lhs);
-        let mesh_rhs = TriMesh::new(vertices_rhs, indices_rhs);
-        SplitResult::Pair(mesh_lhs, mesh_rhs)
+        // TODO: none of the index buffers should be empty at this point unless perhaps
+        //       because of some rounding errors?
+        //       Should we just panic if they are empty?
+        if indices_rhs.is_empty() {
+            SplitResult::Negative
+        } else if indices_lhs.is_empty() {
+            SplitResult::Positive
+        } else {
+            let mesh_lhs = TriMesh::new(vertices_lhs, indices_lhs);
+            let mesh_rhs = TriMesh::new(vertices_rhs, indices_rhs);
+            SplitResult::Pair(mesh_lhs, mesh_rhs)
+        }
     }
 
     fn intersection_with_local_cuboid(
@@ -315,6 +326,24 @@ impl Split for TriMesh {
         cuboid_position: &Isometry<Real>,
         epsilon: Real,
     ) -> Option<Self> {
+        if self.topology().is_some() && self.pseudo_normals().is_some() {
+            let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
+            let mut cuboid_trimesh = TriMesh::new(cuboid_vtx, cuboid_idx);
+            cuboid_trimesh.compute_pseudo_normals();
+            cuboid_trimesh.compute_topology(false, false);
+
+            return transformation::intersect_meshes(
+                &Isometry::identity(),
+                self,
+                true,
+                cuboid_position,
+                &cuboid_trimesh,
+                false,
+            )
+            .ok()
+            .flatten();
+        }
+
         let cuboid_aabb = cuboid.compute_aabb(cuboid_position);
         let mut intersecting_tris = vec![];
         let mut visitor = BoundingVolumeIntersectionsVisitor::new(&cuboid_aabb, |id| {
