@@ -10,7 +10,7 @@ impl MassProperties {
         let volume = radius * radius * Real::pi() * half_height * 2.0 / 3.0;
         let sq_radius = radius * radius;
         let sq_height = half_height * half_height * 4.0;
-        let off_principal = sq_radius * 3.0 / 20.0 + sq_height * 3.0 / 5.0;
+        let off_principal = sq_radius * 3.0 / 20.0 + sq_height * 3.0 / 80.0;
         let principal = sq_radius * 3.0 / 10.0;
 
         (volume, Vector::new(off_principal, principal, off_principal))
