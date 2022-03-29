@@ -979,11 +979,8 @@ impl Shape for TriMesh {
         self.aabb(position)
     }
 
-    fn mass_properties(&self, _density: Real) -> MassProperties {
-        #[cfg(feature = "dim2")]
-        return MassProperties::from_trimesh(_density, self.vertices(), self.indices());
-        #[cfg(feature = "dim3")]
-        return MassProperties::zero();
+    fn mass_properties(&self, density: Real) -> MassProperties {
+        MassProperties::from_trimesh(density, self.vertices(), self.indices())
     }
 
     fn shape_type(&self) -> ShapeType {

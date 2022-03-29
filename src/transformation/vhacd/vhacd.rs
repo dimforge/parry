@@ -622,10 +622,8 @@ fn compute_volume(polygon: &[Point<Real>]) -> Real {
 #[cfg(feature = "dim3")]
 fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<[u32; DIM]>)) -> Real {
     if !mesh.0.is_empty() {
-        crate::mass_properties::details::convex_mesh_volume_and_center_of_mass_unchecked(
-            &mesh.0, &mesh.1,
-        )
-        .0
+        crate::mass_properties::details::trimesh_signed_volume_and_center_of_mass(&mesh.0, &mesh.1)
+            .0
     } else {
         0.0
     }

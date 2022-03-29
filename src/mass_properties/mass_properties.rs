@@ -8,7 +8,7 @@ use {na::Matrix3, std::ops::MulAssign};
 
 const EPSILON: Real = f32::EPSILON as Real;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
@@ -81,9 +81,17 @@ impl MassProperties {
     /// values and principal inertia frame.
     #[cfg(feature = "dim3")]
     pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
-        let eigen = inertia.symmetric_eigen();
-        let principal_inertia_local_frame =
-            Rotation::from_matrix_eps(&eigen.eigenvectors, 1.0e-6, 10, na::one());
+        let mut eigen = inertia.symmetric_eigen();
+
+        if eigen.eigenvectors.determinant() < 0.0 {
+            eigen.eigenvectors.swap_columns(1, 2);
+            eigen.eigenvalues.swap_rows(1, 2);
+        }
+        let mut principal_inertia_local_frame = Rotation::from_rotation_matrix(
+            &na::Rotation3::from_matrix_unchecked(eigen.eigenvectors),
+        );
+        let _ = principal_inertia_local_frame.renormalize();
+
         // Drop negative eigenvalues.
         let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { 0.0 } else { e });
 
@@ -93,6 +101,19 @@ impl MassProperties {
             principal_inertia,
             principal_inertia_local_frame,
         )
+    }
+
+    /// The mass.
+    pub fn mass(&self) -> Real {
+        utils::inv(self.inv_mass)
+    }
+
+    /// The angular inertia along the principal inertia axes of the rigid-body.
+    pub fn principal_inertia(&self) -> AngVector<Real> {
+        #[cfg(feature = "dim2")]
+        return utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
+        #[cfg(feature = "dim3")]
+        return self.inv_principal_inertia_sqrt.map(|e| utils::inv(e * e));
     }
 
     /// The world-space center of mass of the rigid-body.
@@ -526,7 +547,7 @@ mod test {
         // Check that addition and subtraction of mass properties behave as expected.
         let c1 = Capsule::new_x(1.0, 2.0);
         let c2 = Capsule::new_y(3.0, 4.0);
-        let c3 = Ball::new(5.0);
+        let c3 = Ball::new(2.0);
 
         let m1 = c1.mass_properties(1.0);
         let m2 = c2.mass_properties(1.0);
@@ -543,8 +564,9 @@ mod test {
         assert_relative_eq!(m1m2m3 - m1 - m2, m3, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = 1.0e-6);
+
         assert_relative_eq!(
-            m1m2m3 - m1 - m2 - m3,
+            ((m1m2m3 - m1) - m2) - m3,
             MassProperties::zero(),
             epsilon = 1.0e-6
         );
