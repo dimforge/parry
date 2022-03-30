@@ -1,4 +1,6 @@
-use super::{MeshIntersectionError, EPS};
+use super::{
+    MeshIntersectionError, TriangleTriangleIntersection, TriangleTriangleIntersectionPoint, EPS,
+};
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
@@ -76,17 +78,13 @@ pub fn intersect_meshes(
         &mut new_indices2,
     );
 
-    let mut new_vertices1 = vec![];
-    let mut new_vertices2 = vec![];
-
     cut_and_triangulate_intersections(
         &pos12,
         &mesh1,
         flip1,
         &mesh2,
         flip2,
-        &mut new_vertices1,
-        &mut new_vertices2,
+        &mut new_vertices12,
         &mut new_indices1,
         &mut new_indices2,
         &mut intersections,
@@ -268,6 +266,7 @@ struct Triangulation {
     ref_pt: Point<Real>,
     normal: Vector<Real>,
     ref_proj: [Point2<Real>; 3],
+    normalization: na::Matrix2<Real>,
 }
 
 impl Triangulation {
@@ -279,11 +278,21 @@ impl Triangulation {
         let ab = triangle.b - triangle.a;
         let ac = triangle.c - triangle.a;
 
-        let ref_proj = [
+        let mut ref_proj = [
             Point2::origin(),
             Point2::new(ab.dot(&basis[0]), ab.dot(&basis[1])),
             Point2::new(ac.dot(&basis[0]), ac.dot(&basis[1])),
         ];
+
+        let normalization_inv =
+            na::Matrix2::from_columns(&[ref_proj[1].coords, ref_proj[2].coords]);
+        let normalization = normalization_inv
+            .try_inverse()
+            .unwrap_or(na::Matrix2::identity());
+
+        for k in 0..3 {
+            ref_proj[k] = normalization * ref_proj[k];
+        }
 
         let vtx_handles = [
             delaunay
@@ -304,12 +313,14 @@ impl Triangulation {
             ref_pt: triangle.a,
             normal: normal.into_inner(),
             ref_proj,
+            normalization,
         }
     }
 
     fn project(&self, pt: Point<Real>, orig_fid: FeatureId) -> spade::Point2<Real> {
         let dpt = pt - self.ref_pt;
-        let mut proj = Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]));
+        let mut proj =
+            self.normalization * Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]));
 
         match orig_fid {
             FeatureId::Edge(i) => {
@@ -328,7 +339,7 @@ impl Triangulation {
                 // NOTE: this is not ideal though, so we should find a way to simply
                 //       delete spurious triangles that are outside of the intersection
                 //       curve.
-                proj = a + ab * param + shift * EPS;
+                proj = a + ab * param + shift * EPS * 10.0;
             }
             _ => {}
         }
@@ -343,8 +354,7 @@ fn cut_and_triangulate_intersections(
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
-    new_vertices1: &mut Vec<Point<Real>>,
-    new_vertices2: &mut Vec<Point<Real>>,
+    new_vertices12: &mut Vec<Point<Real>>,
     new_indices1: &mut Vec<[u32; 3]>,
     new_indices2: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
@@ -353,19 +363,19 @@ fn cut_and_triangulate_intersections(
     let mut triangulations1 = HashMap::new();
     let mut triangulations2 = HashMap::new();
     let mut intersection_points = HashMap::new();
+    let mut segments_to_keep = HashSet::new();
 
     let mut spade_infos = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_vertex = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_intersection = [HashMap::new(), HashMap::new()];
 
-    let new_vertices = [&mut *new_vertices1, &mut *new_vertices2];
     let base_vtx_id = [mesh1.vertices().len(), mesh2.vertices().len()];
 
     for (i1, i2) in intersections.drain(..) {
         let tris = [mesh1.triangle(i1), mesh2.triangle(i2).transformed(pos12)];
         let vids = [mesh1.indices()[i1 as usize], mesh2.indices()[i2 as usize]];
 
-        if let Some(inter) = super::triangle_triangle_intersection(&tris[0], &tris[1]) {
+        if let Some(intersection) = super::triangle_triangle_intersection(&tris[0], &tris[1]) {
             let tri_ids = [i1, i2];
 
             let triangulation1 = triangulations1.entry(tri_ids[0]).or_insert_with(|| {
@@ -392,16 +402,6 @@ fn cut_and_triangulate_intersections(
 
             let triangulations = [triangulation1, triangulation2];
 
-            let fa_1 = convert_fid(mesh1, i1, inter.a.f1);
-            let fa_2 = convert_fid(mesh2, i2, inter.a.f2);
-            let fb_1 = convert_fid(mesh1, i1, inter.b.f1);
-            let fb_2 = convert_fid(mesh2, i2, inter.b.f2);
-
-            let orig_fid_a = [inter.a.f1, inter.a.f2];
-            let orig_fid_b = [inter.b.f1, inter.b.f2];
-            let key_a = (fa_1, fa_2);
-            let key_b = (fb_1, fb_2);
-
             let mut insert_point = |pt: [_; 2],
                                     key: (FeatureId, FeatureId),
                                     orig_fid: [FeatureId; 2],
@@ -416,38 +416,70 @@ fn cut_and_triangulate_intersections(
                         let _ = spade_handle_to_vertex[i]
                             .insert((tri_ids[i], handle), base_vtx_id[i] + new_vertices[i].len());
                         let _ = spade_handle_to_intersection[i].insert((tri_ids[i], handle), key);
-                        new_vertices[i].push(pt[i]);
                         SpadeInfo { point2d, handle }
                     })
                     .handle
             };
 
-            let ins_a = *intersection_points
-                .entry(key_a)
-                .or_insert([inter.a.p1, inter.a.p2]);
-            let ins_b = *intersection_points
-                .entry(key_b)
-                .or_insert([inter.b.p1, inter.b.p2]);
+            match intersection {
+                TriangleTriangleIntersection::Segment {
+                    a: inter_a,
+                    b: inter_b,
+                } => {
+                    let fa_1 = convert_fid(mesh1, i1, inter_a.f1);
+                    let fa_2 = convert_fid(mesh2, i2, inter_a.f2);
+                    let fb_1 = convert_fid(mesh1, i1, inter_b.f1);
+                    let fb_2 = convert_fid(mesh2, i2, inter_b.f2);
 
-            let handles_a = [
-                insert_point(ins_a, key_a, orig_fid_a, 0),
-                insert_point(ins_a, key_a, orig_fid_a, 1),
-            ];
+                    let orig_fid_a = [inter_a.f1, inter_a.f2];
+                    let orig_fid_b = [inter_b.f1, inter_b.f2];
+                    let key_a = (fa_1, fa_2);
+                    let key_b = (fb_1, fb_2);
 
-            let handles_b = [
-                insert_point(ins_b, key_b, orig_fid_b, 0),
-                insert_point(ins_b, key_b, orig_fid_b, 1),
-            ];
+                    let ins_a = *intersection_points
+                        .entry(key_a)
+                        .or_insert([inter_a.p1, inter_a.p2]);
+                    let ins_b = *intersection_points
+                        .entry(key_b)
+                        .or_insert([inter_b.p1, inter_b.p2]);
 
-            for i in 0..2 {
-                // NOTE: the naming of the `ConstrainedDelaunayTriangulation::can_add_constraint` method is misleading.
-                if !triangulations[i]
-                    .delaunay
-                    .can_add_constraint(handles_a[i], handles_b[i])
-                {
-                    let _ = triangulations[i]
-                        .delaunay
-                        .add_constraint(handles_a[i], handles_b[i]);
+                    let handles_a = [
+                        insert_point(ins_a, key_a, orig_fid_a, 0),
+                        insert_point(ins_a, key_a, orig_fid_a, 1),
+                    ];
+
+                    let handles_b = [
+                        insert_point(ins_b, key_b, orig_fid_b, 0),
+                        insert_point(ins_b, key_b, orig_fid_b, 1),
+                    ];
+
+                    let _ = segments_to_keep.insert((i1, (key_a, key_b)));
+                    let _ = segments_to_keep.insert((i2, (key_a, key_b)));
+                    for i in 0..2 {
+                        // NOTE: the naming of the `ConstrainedDelaunayTriangulation::can_add_constraint` method is misleading.
+                        if !triangulations[i]
+                            .delaunay
+                            .can_add_constraint(handles_a[i], handles_b[i])
+                        {
+                            let _ = triangulations[i]
+                                .delaunay
+                                .add_constraint(handles_a[i], handles_b[i]);
+                        }
+                    }
+                }
+                TriangleTriangleIntersection::Polygon(intersections) => {
+                    for inter in intersections {
+                        let f1 = convert_fid(mesh1, i1, inter.f1);
+                        let f2 = convert_fid(mesh2, i2, inter.f2);
+                        let orig_fid = [inter.f1, inter.f2];
+                        let key = (f1, f2);
+                        let ins = *intersection_points
+                            .entry(key)
+                            .or_insert([inter.p1, inter.p2]);
+
+                        let _ = insert_point(ins, key, orig_fid, 0);
+                        let _ = insert_point(ins, key, orig_fid, 1);
+                    }
                 }
             }
         }
@@ -459,6 +491,7 @@ fn cut_and_triangulate_intersections(
         flip1,
         &mesh2,
         flip2,
+        &mut segments_to_keep,
         &spade_handle_to_vertex,
         &spade_handle_to_intersection,
         &triangulations1,
@@ -492,15 +525,17 @@ fn extract_result(
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
+    segments_to_keep: &mut HashSet<(u32, ((FeatureId, FeatureId), (FeatureId, FeatureId)))>,
     spade_handle_to_vertex: &[HashMap<(u32, FixedVertexHandle), usize>; 2],
     spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
     triangulations1: &HashMap<u32, Triangulation>,
     triangulations2: &HashMap<u32, Triangulation>,
-    new_vertices1: &mut Vec<Point<Real>>,
-    new_vertices2: &mut Vec<Point<Real>>,
+    new_vertices12: &mut Vec<Point<Real>>,
     new_indices1: &mut Vec<[u32; 3]>,
     new_indices2: &mut Vec<[u32; 3]>,
 ) {
+    let mut added_vertices = HashMap::new();
+
     for (tri_id, triangulation) in triangulations1.iter() {
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
@@ -524,8 +559,12 @@ fn extract_result(
             }
 
             let tri = Triangle::from(tri);
+            let center = tri.center();
+            let projection = mesh2.project_point(&pos12, &tri.center(), false);
 
-            if !tri.is_affinely_dependent() && (flip2 ^ mesh2.contains_point(&pos12, &tri.center()))
+            if !tri.is_affinely_dependent_eps(EPS * 10.0)
+                && ((flip2 ^ projection.is_inside)
+                    || (projection.point - center).norm() <= EPS * 10.0)
             {
                 new_indices1.push(idx);
             }
@@ -555,10 +594,177 @@ fn extract_result(
             }
 
             let tri = Triangle::from(tri);
+            let center = tri.center();
 
-            if !tri.is_affinely_dependent() && (flip1 ^ mesh1.contains_local_point(&tri.center())) {
+            // TODO: when two faces are coplanar, they will be present in both `triangulation1` and
+            //       `triangulation2`. So we need to only pick one of them. Here we already picked the
+            //       face from `triangulation1`. So now we need to ignore the duplicate face. Such face
+            //       is detected by looking at the distance from the triangle’s center to the other mesh.
+            //       If the center lies on the other mesh, then that we have a duplicate face that was already
+            //       added in the previous loop.
+            let projection = mesh1.project_local_point(&center, false);
+            if !tri.is_affinely_dependent_eps(EPS * 10.0)
+                && ((flip1 ^ projection.is_inside)
+                    && (projection.point - center).norm() > EPS * 10.0)
+            {
                 new_indices2.push(idx);
             }
         }
     }
+
+    /*
+    let mut inserted = vec![];
+
+    for (tri_id, triangulation) in triangulations1.iter() {
+        let mut added_any = true;
+        inserted.clear();
+        inserted.resize(triangulation.delaunay.num_inner_faces(), false);
+        let mut segments_to_keep = segments_to_keep.clone();
+
+        while added_any {
+            added_any = false;
+            for (i, face) in triangulation.delaunay.inner_faces().enumerate() {
+                if inserted[i] {
+                    continue;
+                }
+
+                let vtx = face.vertices();
+                let mut tri = [Point::origin(); 3];
+                let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
+                let mut idx = [0; 3];
+                for k in 0..3 {
+                    let vid = spade_handle_to_vertex[0][&(*tri_id, vtx[k].fix())];
+                    idx[k] = vid as u32;
+
+                    if vid < mesh1.vertices().len() {
+                        tri[k] = mesh1.vertices()[vid];
+                        tri_feat[k] = (FeatureId::Vertex(vid as u32), FeatureId::Unknown);
+                    } else {
+                        tri[k] = new_vertices1[vid - mesh1.vertices().len()];
+                    }
+
+                    if let Some(feat) =
+                        spade_handle_to_intersection[0].get(&(*tri_id, vtx[k].fix()))
+                    {
+                        tri_feat[k] = *feat;
+                    }
+                }
+
+                let mut keep_tri = false;
+                for k in 0..3 {
+                    let key = (*tri_id, (tri_feat[k], tri_feat[(k + 1) % 3]));
+                    keep_tri = keep_tri || segments_to_keep.contains(&key);
+                }
+
+                if keep_tri {
+                    inserted[i] = true;
+                    new_indices1.push(idx);
+                    added_any = true;
+
+                    for k in 0..3 {
+                        let key = (*tri_id, (tri_feat[k], tri_feat[(k + 1) % 3]));
+                        if !segments_to_keep.contains(&key) {
+                            let _ = segments_to_keep.insert(key);
+                            let _ = segments_to_keep.insert((*tri_id, (key.1 .1, key.1 .0)));
+                        }
+                    }
+                }
+
+                /*
+                let tri = Triangle::from(tri);
+                let center = tri.center();
+                let projection = mesh2.project_point(&pos12, &tri.center(), false);
+
+                if !tri.is_affinely_dependent_eps(EPS * 10.0)
+                    && ((flip2 ^ projection.is_inside)
+                        || (projection.point - center).norm() <= EPS * 10.0)
+                {
+                    new_indices1.push(idx);
+                } else if !tri.is_affinely_dependent_eps(EPS * 10.0) {
+                    println!("Proj1: {}", (projection.point - center).norm());
+                }
+                */
+            }
+        }
+    }
+
+    for (tri_id, triangulation) in triangulations2.iter() {
+        let mut added_any = true;
+        inserted.clear();
+        inserted.resize(triangulation.delaunay.num_inner_faces(), false);
+        let mut segments_to_keep = segments_to_keep.clone();
+
+        while added_any {
+            added_any = false;
+            for (i, face) in triangulation.delaunay.inner_faces().enumerate() {
+                if inserted[i] {
+                    continue;
+                }
+
+                let vtx = face.vertices();
+                let mut tri = [Point::origin(); 3];
+                let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
+                let mut idx = [0; 3];
+                for k in 0..3 {
+                    let vid = spade_handle_to_vertex[1][&(*tri_id, vtx[k].fix())];
+                    idx[k] = vid as u32;
+
+                    if vid < mesh2.vertices().len() {
+                        tri[k] = pos12 * mesh2.vertices()[vid];
+                        tri_feat[k] = (FeatureId::Unknown, FeatureId::Vertex(vid as u32));
+                    } else {
+                        tri[k] = new_vertices2[vid - mesh2.vertices().len()];
+                    }
+
+                    if let Some(feat) =
+                        spade_handle_to_intersection[1].get(&(*tri_id, vtx[k].fix()))
+                    {
+                        tri_feat[k] = *feat;
+                    }
+                }
+
+                let mut keep_tri = false;
+                for k in 0..3 {
+                    let key = (*tri_id, (tri_feat[(k + 1) % 3], tri_feat[k]));
+                    keep_tri = keep_tri || segments_to_keep.contains(&key);
+                }
+
+                if keep_tri {
+                    inserted[i] = true;
+                    new_indices2.push(idx);
+                    added_any = true;
+
+                    for k in 0..3 {
+                        let key = (*tri_id, (tri_feat[(k + 1) % 3], tri_feat[k]));
+                        if !segments_to_keep.contains(&key) {
+                            let _ = segments_to_keep.insert(key);
+                            let _ = segments_to_keep.insert((*tri_id, (key.1 .1, key.1 .0)));
+                        }
+                    }
+                }
+
+                /*
+                let tri = Triangle::from(tri);
+                let center = tri.center();
+
+                // TODO: when two faces are coplanar, they will be present in both `triangulation1` and
+                //       `triangulation2`. So we need to only pick one of them. Here we already picked the
+                //       face from `triangulation1`. So now we need to ignore the duplicate face. Such face
+                //       is detected by looking at the distance from the triangle’s center to the other mesh.
+                //       If the center lies on the other mesh, then that we have a duplicate face that was already
+                //       added in the previous loop.
+                let projection = mesh1.project_local_point(&center, false);
+                if !tri.is_affinely_dependent_eps(EPS * 10.0)
+                    && ((flip1 ^ projection.is_inside)
+                        && (projection.point - center).norm() > EPS * 10.0)
+                {
+                    new_indices2.push(idx);
+                } else if !tri.is_affinely_dependent_eps(EPS * 10.0) {
+                    println!("Proj2: {}", (projection.point - center).norm());
+                }
+                */
+            }
+        }
+    }
+    */
 }
