@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::ops::Range;
 
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real};
@@ -11,11 +10,7 @@ use crate::transformation::ear_clipping::triangulate_ear_clipping;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
 #[cfg(feature = "dim3")]
-use {
-    crate::math::Vector,
-    crate::shape::{Cuboid, HeightField},
-    crate::utils::SortedPair,
-};
+use {crate::math::Vector, crate::shape::Cuboid, crate::utils::SortedPair};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
@@ -114,6 +109,7 @@ pub struct TriMeshTopology {
 }
 
 impl TriMeshTopology {
+    #[cfg(feature = "dim3")]
     pub(crate) fn face_half_edges_ids(&self, fid: u32) -> [u32; 3] {
         let first_half_edge = self.faces[fid as usize].half_edge;
 
@@ -358,7 +354,7 @@ impl TriMesh {
         // Vertices and indices changed: the topology no longer valid.
         #[cfg(feature = "dim3")]
         if self.topology.is_some() {
-            self.compute_topology(self.connected_components.is_some(), false);
+            let _ = self.compute_topology(self.connected_components.is_some(), false);
         }
     }
 
@@ -437,6 +433,7 @@ impl TriMesh {
         })
     }
 
+    #[cfg(feature = "dim3")]
     fn delete_bad_topology_triangles(&mut self) {
         let mut half_edge_set = HashSet::new();
         let mut deleted_any = false;
@@ -565,6 +562,7 @@ impl TriMesh {
     //       has been computed too. So instead of making this method
     //       public, the `.compute_topology` method has a boolean to
     //       compute the connected componets too.
+    #[cfg(feature = "dim3")]
     fn compute_connected_components(&mut self) {
         let topo = self.topology.as_ref().unwrap();
         let mut face_colors = vec![u32::MAX; topo.faces.len()];
@@ -606,6 +604,7 @@ impl TriMesh {
         });
     }
 
+    #[allow(dead_code)] // Useful for testing.
     pub(crate) fn assert_half_edge_topology_is_valid(&self) {
         let topo = self
             .topology

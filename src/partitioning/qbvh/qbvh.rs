@@ -1,6 +1,4 @@
 use crate::bounding_volume::{SimdAABB, AABB};
-use crate::simd::SIMD_WIDTH;
-use simba::simd::SimdBool;
 use std::collections::VecDeque;
 
 /// A data to which an index is associated.

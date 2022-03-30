@@ -1,10 +1,11 @@
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 #[cfg(feature = "std")]
 use na::DVector;
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray1, cust::error::CudaResult};
 
-use na::{ComplexField, Point2, Scalar};
-use std::iter;
+use na::{Point2, Scalar};
 
 use crate::bounding_volume::AABB;
 use crate::math::{Real, Vector};

@@ -1,4 +1,4 @@
-use crate::bounding_volume::{SimdAABB, AABB};
+use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
 use na::SimdValue;

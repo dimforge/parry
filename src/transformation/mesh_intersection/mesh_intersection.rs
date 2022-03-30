@@ -1,8 +1,6 @@
-use super::{
-    MeshIntersectionError, TriangleTriangleIntersection, TriangleTriangleIntersectionPoint, EPS,
-};
+use super::{MeshIntersectionError, TriangleTriangleIntersection, EPS};
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
+use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
 use na::{Point2, Vector2};
@@ -47,7 +45,6 @@ pub fn intersect_meshes(
 
     let mut deleted_faces1: HashSet<u32> = HashSet::default();
     let mut deleted_faces2: HashSet<u32> = HashSet::default();
-    let mut shared_vertices2_to_1 = HashMap::new();
     let mut new_indices1 = vec![];
     let mut new_indices2 = vec![];
 
@@ -78,6 +75,9 @@ pub fn intersect_meshes(
         &mut new_indices2,
     );
 
+    let mut new_vertices12 = vec![];
+    let mut new_indices12 = vec![];
+
     cut_and_triangulate_intersections(
         &pos12,
         &mesh1,
@@ -85,10 +85,8 @@ pub fn intersect_meshes(
         &mesh2,
         flip2,
         &mut new_vertices12,
-        &mut new_indices1,
-        &mut new_indices2,
+        &mut new_indices12,
         &mut intersections,
-        &mut shared_vertices2_to_1,
     );
 
     let old_vertices1 = mesh1.vertices();
@@ -99,16 +97,15 @@ pub fn intersect_meshes(
     // vertex buffer and adjust the indices accordingly.
     let mut new_vertices = vec![];
 
-    // TODO: use Vec instead?
-    let mut index_map1 = HashMap::new();
-    let mut index_map2 = HashMap::new();
+    // Maps from unified index to the final vertex index.
+    let mut index_map = HashMap::new();
+    let base_id2 = mesh1.vertices().len() as u32;
+
+    // Grab all the triangles from the connected component extracted from the first mesh.
     for idx1 in &mut new_indices1 {
         for k in 0..3 {
-            let new_id = *index_map1.entry(idx1[k]).or_insert_with(|| {
-                let vtx = old_vertices1
-                    .get(idx1[k] as usize)
-                    .copied()
-                    .unwrap_or_else(|| new_vertices1[idx1[k] as usize - old_vertices1.len()]);
+            let new_id = *index_map.entry(idx1[k]).or_insert_with(|| {
+                let vtx = old_vertices1[idx1[k] as usize];
                 new_vertices.push(vtx);
                 new_vertices.len() - 1
             });
@@ -116,24 +113,27 @@ pub fn intersect_meshes(
         }
     }
 
+    // Grab all the triangles from the connected component extracted from the second mesh.
     for idx2 in &mut new_indices2 {
         for k in 0..3 {
-            if let Some(new_vid) = shared_vertices2_to_1
-                .get(&idx2[k])
-                .and_then(|i| index_map1.get(i))
-            {
-                // This vertex already exists on the first mesh, re-use the index.
-                idx2[k] = *new_vid as u32;
-            }
-            let new_id = *index_map2.entry(idx2[k]).or_insert_with(|| {
-                let vtx = old_vertices2
-                    .get(idx2[k] as usize)
-                    .map(|pt| pos12 * pt)
-                    .unwrap_or_else(|| new_vertices2[idx2[k] as usize - old_vertices2.len()]);
+            let new_id = *index_map.entry(base_id2 + idx2[k]).or_insert_with(|| {
+                let vtx = pos12 * old_vertices2[idx2[k] as usize];
                 new_vertices.push(vtx);
                 new_vertices.len() - 1
             });
             idx2[k] = new_id as u32;
+        }
+    }
+
+    // Grab all the trinangles from the intersections.
+    for idx12 in &mut new_indices12 {
+        for k in 0..3 {
+            let new_id = *index_map.entry(idx12[k]).or_insert_with(|| {
+                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, idx12[k]);
+                new_vertices.push(vtx);
+                new_vertices.len() - 1
+            });
+            idx12[k] = new_id as u32;
         }
     }
 
@@ -146,6 +146,7 @@ pub fn intersect_meshes(
     }
 
     new_indices1.append(&mut new_indices2);
+    new_indices1.append(&mut new_indices12);
 
     if !new_indices1.is_empty() {
         Ok(Some(TriMesh::new(new_vertices, new_indices1)))
@@ -255,7 +256,6 @@ fn extract_connected_components(
 
 #[derive(Copy, Clone, Debug)]
 struct SpadeInfo {
-    point2d: spade::Point2<Real>,
     handle: FixedVertexHandle,
 }
 
@@ -264,7 +264,6 @@ struct Triangulation {
     basis: [Vector<Real>; 2],
     vtx_handles: [FixedVertexHandle; 3],
     ref_pt: Point<Real>,
-    normal: Vector<Real>,
     ref_proj: [Point2<Real>; 3],
     normalization: na::Matrix2<Real>,
 }
@@ -311,7 +310,6 @@ impl Triangulation {
             basis,
             vtx_handles,
             ref_pt: triangle.a,
-            normal: normal.into_inner(),
             ref_proj,
             normalization,
         }
@@ -355,21 +353,15 @@ fn cut_and_triangulate_intersections(
     mesh2: &TriMesh,
     flip2: bool,
     new_vertices12: &mut Vec<Point<Real>>,
-    new_indices1: &mut Vec<[u32; 3]>,
-    new_indices2: &mut Vec<[u32; 3]>,
+    new_indices12: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
-    shared_vertices2_to_1: &mut HashMap<u32, u32>,
 ) {
     let mut triangulations1 = HashMap::new();
     let mut triangulations2 = HashMap::new();
     let mut intersection_points = HashMap::new();
-    let mut segments_to_keep = HashSet::new();
 
     let mut spade_infos = [HashMap::new(), HashMap::new()];
-    let mut spade_handle_to_vertex = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_intersection = [HashMap::new(), HashMap::new()];
-
-    let base_vtx_id = [mesh1.vertices().len(), mesh2.vertices().len()];
 
     for (i1, i2) in intersections.drain(..) {
         let tris = [mesh1.triangle(i1), mesh2.triangle(i2).transformed(pos12)];
@@ -381,9 +373,9 @@ fn cut_and_triangulate_intersections(
             let triangulation1 = triangulations1.entry(tri_ids[0]).or_insert_with(|| {
                 let triangulation = Triangulation::new(tris[0]);
                 for k in 0..3 {
-                    let _ = spade_handle_to_vertex[0].insert(
+                    let _ = spade_handle_to_intersection[0].insert(
                         (tri_ids[0], triangulation.vtx_handles[k]),
-                        vids[0][k] as usize,
+                        (FeatureId::Vertex(vids[0][k]), FeatureId::Unknown),
                     );
                 }
                 triangulation
@@ -392,9 +384,9 @@ fn cut_and_triangulate_intersections(
             let triangulation2 = triangulations2.entry(tri_ids[1]).or_insert_with(|| {
                 let triangulation = Triangulation::new(tris[1]);
                 for k in 0..3 {
-                    let _ = spade_handle_to_vertex[1].insert(
+                    let _ = spade_handle_to_intersection[1].insert(
                         (tri_ids[1], triangulation.vtx_handles[k]),
-                        vids[1][k] as usize,
+                        (FeatureId::Unknown, FeatureId::Vertex(vids[1][k])),
                     );
                 }
                 triangulation
@@ -402,24 +394,21 @@ fn cut_and_triangulate_intersections(
 
             let triangulations = [triangulation1, triangulation2];
 
-            let mut insert_point = |pt: [_; 2],
-                                    key: (FeatureId, FeatureId),
-                                    orig_fid: [FeatureId; 2],
-                                    i: usize| {
-                let spade_key = (tri_ids[i], key);
+            let mut insert_point =
+                |pt: [_; 2], key: (FeatureId, FeatureId), orig_fid: [FeatureId; 2], i: usize| {
+                    let spade_key = (tri_ids[i], key);
 
-                spade_infos[i]
-                    .entry(spade_key)
-                    .or_insert_with(|| {
-                        let point2d = triangulations[i].project(pt[i], orig_fid[i]);
-                        let handle = triangulations[i].delaunay.insert(point2d).unwrap();
-                        let _ = spade_handle_to_vertex[i]
-                            .insert((tri_ids[i], handle), base_vtx_id[i] + new_vertices[i].len());
-                        let _ = spade_handle_to_intersection[i].insert((tri_ids[i], handle), key);
-                        SpadeInfo { point2d, handle }
-                    })
-                    .handle
-            };
+                    spade_infos[i]
+                        .entry(spade_key)
+                        .or_insert_with(|| {
+                            let point2d = triangulations[i].project(pt[i], orig_fid[i]);
+                            let handle = triangulations[i].delaunay.insert(point2d).unwrap();
+                            let _ =
+                                spade_handle_to_intersection[i].insert((tri_ids[i], handle), key);
+                            SpadeInfo { handle }
+                        })
+                        .handle
+                };
 
             match intersection {
                 TriangleTriangleIntersection::Segment {
@@ -453,8 +442,6 @@ fn cut_and_triangulate_intersections(
                         insert_point(ins_b, key_b, orig_fid_b, 1),
                     ];
 
-                    let _ = segments_to_keep.insert((i1, (key_a, key_b)));
-                    let _ = segments_to_keep.insert((i2, (key_a, key_b)));
                     for i in 0..2 {
                         // NOTE: the naming of the `ConstrainedDelaunayTriangulation::can_add_constraint` method is misleading.
                         if !triangulations[i]
@@ -491,15 +478,12 @@ fn cut_and_triangulate_intersections(
         flip1,
         &mesh2,
         flip2,
-        &mut segments_to_keep,
-        &spade_handle_to_vertex,
         &spade_handle_to_intersection,
+        &intersection_points,
         &triangulations1,
         &triangulations2,
-        new_vertices1,
-        new_vertices2,
-        new_indices1,
-        new_indices2,
+        new_vertices12,
+        new_indices12,
     );
 }
 
@@ -519,43 +503,84 @@ fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
     }
 }
 
+fn unified_vertex(
+    mesh1: &TriMesh,
+    mesh2: &TriMesh,
+    new_vertices12: &[Point<Real>],
+    pos12: &Isometry<Real>,
+    vid: u32,
+) -> Point<Real> {
+    let base_id2 = mesh1.vertices().len() as u32;
+    let base_id12 = (mesh1.vertices().len() + mesh2.vertices().len()) as u32;
+
+    if vid < base_id2 {
+        mesh1.vertices()[vid as usize]
+    } else if vid < base_id12 {
+        pos12 * mesh2.vertices()[(vid - base_id2) as usize]
+    } else {
+        new_vertices12[(vid - base_id12) as usize]
+    }
+}
+
 fn extract_result(
     pos12: &Isometry<Real>,
     mesh1: &TriMesh,
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
-    segments_to_keep: &mut HashSet<(u32, ((FeatureId, FeatureId), (FeatureId, FeatureId)))>,
-    spade_handle_to_vertex: &[HashMap<(u32, FixedVertexHandle), usize>; 2],
     spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
+    intersection_points: &HashMap<(FeatureId, FeatureId), [Point<Real>; 2]>,
     triangulations1: &HashMap<u32, Triangulation>,
     triangulations2: &HashMap<u32, Triangulation>,
     new_vertices12: &mut Vec<Point<Real>>,
-    new_indices1: &mut Vec<[u32; 3]>,
-    new_indices2: &mut Vec<[u32; 3]>,
+    new_indices12: &mut Vec<[u32; 3]>,
 ) {
+    // Base ids for indexing in the first mesh vertices, second mesh vertices, and new vertices, as if they
+    // are part of a single big array.
+    let base_id2 = mesh1.vertices().len() as u32;
+    let base_id12 = (mesh1.vertices().len() + mesh2.vertices().len()) as u32;
+
     let mut added_vertices = HashMap::new();
+    let mut vertex_remaping = HashMap::new();
+
+    // Generate the new points and setup the mapping between indices from
+    // the second mesh, to vertices from the first mash (for cases of vertex/vertex intersections).
+    for (fids, pts) in intersection_points.iter() {
+        match *fids {
+            (FeatureId::Vertex(vid1), FeatureId::Vertex(vid2)) => {
+                let _ = vertex_remaping.insert(vid2, vid1);
+            }
+            (FeatureId::Vertex(_), _) | (_, FeatureId::Vertex(_)) => {}
+            _ => {
+                let _ = added_vertices.entry(fids).or_insert_with(|| {
+                    new_vertices12.push(pts[0]);
+                    new_vertices12.len() as u32 - 1
+                });
+            }
+        }
+    }
+
+    let fids_to_unified_index = |fids| match fids {
+        (FeatureId::Vertex(vid1), _) => vid1,
+        (_, FeatureId::Vertex(vid2)) => vertex_remaping
+            .get(&vid2)
+            .copied()
+            .unwrap_or(base_id2 + vid2),
+        _ => base_id12 + added_vertices[&fids],
+    };
 
     for (tri_id, triangulation) in triangulations1.iter() {
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
             let mut tri = [Point::origin(); 3];
-            let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
             let mut idx = [0; 3];
             for k in 0..3 {
-                let vid = spade_handle_to_vertex[0][&(*tri_id, vtx[k].fix())];
+                let fids = spade_handle_to_intersection[0][&(*tri_id, vtx[k].fix())];
+                let vid = fids_to_unified_index(fids);
+                let vertex = unified_vertex(mesh1, mesh2, &new_vertices12, pos12, vid);
+
                 idx[k] = vid as u32;
-
-                if vid < mesh1.vertices().len() {
-                    tri[k] = mesh1.vertices()[vid];
-                    tri_feat[k] = (FeatureId::Vertex(vid as u32), FeatureId::Unknown);
-                } else {
-                    tri[k] = new_vertices1[vid - mesh1.vertices().len()];
-                }
-
-                if let Some(feat) = spade_handle_to_intersection[0].get(&(*tri_id, vtx[k].fix())) {
-                    tri_feat[k] = *feat;
-                }
+                tri[k] = vertex;
             }
 
             let tri = Triangle::from(tri);
@@ -566,7 +591,10 @@ fn extract_result(
                 && ((flip2 ^ projection.is_inside)
                     || (projection.point - center).norm() <= EPS * 10.0)
             {
-                new_indices1.push(idx);
+                if flip1 {
+                    idx.swap(1, 2);
+                }
+                new_indices12.push(idx);
             }
         }
     }
@@ -575,22 +603,14 @@ fn extract_result(
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
             let mut tri = [Point::origin(); 3];
-            let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
             let mut idx = [0; 3];
             for k in 0..3 {
-                let vid = spade_handle_to_vertex[1][&(*tri_id, vtx[k].fix())];
+                let fids = spade_handle_to_intersection[1][&(*tri_id, vtx[k].fix())];
+                let vid = fids_to_unified_index(fids);
+                let vertex = unified_vertex(mesh1, mesh2, &new_vertices12, pos12, vid);
+
                 idx[k] = vid as u32;
-
-                if vid < mesh2.vertices().len() {
-                    tri[k] = pos12 * mesh2.vertices()[vid];
-                    tri_feat[k] = (FeatureId::Unknown, FeatureId::Vertex(vid as u32));
-                } else {
-                    tri[k] = new_vertices2[vid - mesh2.vertices().len()];
-                }
-
-                if let Some(feat) = spade_handle_to_intersection[1].get(&(*tri_id, vtx[k].fix())) {
-                    tri_feat[k] = *feat;
-                }
+                tri[k] = vertex;
             }
 
             let tri = Triangle::from(tri);
@@ -607,164 +627,11 @@ fn extract_result(
                 && ((flip1 ^ projection.is_inside)
                     && (projection.point - center).norm() > EPS * 10.0)
             {
-                new_indices2.push(idx);
+                if flip2 {
+                    idx.swap(1, 2);
+                }
+                new_indices12.push(idx);
             }
         }
     }
-
-    /*
-    let mut inserted = vec![];
-
-    for (tri_id, triangulation) in triangulations1.iter() {
-        let mut added_any = true;
-        inserted.clear();
-        inserted.resize(triangulation.delaunay.num_inner_faces(), false);
-        let mut segments_to_keep = segments_to_keep.clone();
-
-        while added_any {
-            added_any = false;
-            for (i, face) in triangulation.delaunay.inner_faces().enumerate() {
-                if inserted[i] {
-                    continue;
-                }
-
-                let vtx = face.vertices();
-                let mut tri = [Point::origin(); 3];
-                let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
-                let mut idx = [0; 3];
-                for k in 0..3 {
-                    let vid = spade_handle_to_vertex[0][&(*tri_id, vtx[k].fix())];
-                    idx[k] = vid as u32;
-
-                    if vid < mesh1.vertices().len() {
-                        tri[k] = mesh1.vertices()[vid];
-                        tri_feat[k] = (FeatureId::Vertex(vid as u32), FeatureId::Unknown);
-                    } else {
-                        tri[k] = new_vertices1[vid - mesh1.vertices().len()];
-                    }
-
-                    if let Some(feat) =
-                        spade_handle_to_intersection[0].get(&(*tri_id, vtx[k].fix()))
-                    {
-                        tri_feat[k] = *feat;
-                    }
-                }
-
-                let mut keep_tri = false;
-                for k in 0..3 {
-                    let key = (*tri_id, (tri_feat[k], tri_feat[(k + 1) % 3]));
-                    keep_tri = keep_tri || segments_to_keep.contains(&key);
-                }
-
-                if keep_tri {
-                    inserted[i] = true;
-                    new_indices1.push(idx);
-                    added_any = true;
-
-                    for k in 0..3 {
-                        let key = (*tri_id, (tri_feat[k], tri_feat[(k + 1) % 3]));
-                        if !segments_to_keep.contains(&key) {
-                            let _ = segments_to_keep.insert(key);
-                            let _ = segments_to_keep.insert((*tri_id, (key.1 .1, key.1 .0)));
-                        }
-                    }
-                }
-
-                /*
-                let tri = Triangle::from(tri);
-                let center = tri.center();
-                let projection = mesh2.project_point(&pos12, &tri.center(), false);
-
-                if !tri.is_affinely_dependent_eps(EPS * 10.0)
-                    && ((flip2 ^ projection.is_inside)
-                        || (projection.point - center).norm() <= EPS * 10.0)
-                {
-                    new_indices1.push(idx);
-                } else if !tri.is_affinely_dependent_eps(EPS * 10.0) {
-                    println!("Proj1: {}", (projection.point - center).norm());
-                }
-                */
-            }
-        }
-    }
-
-    for (tri_id, triangulation) in triangulations2.iter() {
-        let mut added_any = true;
-        inserted.clear();
-        inserted.resize(triangulation.delaunay.num_inner_faces(), false);
-        let mut segments_to_keep = segments_to_keep.clone();
-
-        while added_any {
-            added_any = false;
-            for (i, face) in triangulation.delaunay.inner_faces().enumerate() {
-                if inserted[i] {
-                    continue;
-                }
-
-                let vtx = face.vertices();
-                let mut tri = [Point::origin(); 3];
-                let mut tri_feat = [(FeatureId::Unknown, FeatureId::Unknown); 3];
-                let mut idx = [0; 3];
-                for k in 0..3 {
-                    let vid = spade_handle_to_vertex[1][&(*tri_id, vtx[k].fix())];
-                    idx[k] = vid as u32;
-
-                    if vid < mesh2.vertices().len() {
-                        tri[k] = pos12 * mesh2.vertices()[vid];
-                        tri_feat[k] = (FeatureId::Unknown, FeatureId::Vertex(vid as u32));
-                    } else {
-                        tri[k] = new_vertices2[vid - mesh2.vertices().len()];
-                    }
-
-                    if let Some(feat) =
-                        spade_handle_to_intersection[1].get(&(*tri_id, vtx[k].fix()))
-                    {
-                        tri_feat[k] = *feat;
-                    }
-                }
-
-                let mut keep_tri = false;
-                for k in 0..3 {
-                    let key = (*tri_id, (tri_feat[(k + 1) % 3], tri_feat[k]));
-                    keep_tri = keep_tri || segments_to_keep.contains(&key);
-                }
-
-                if keep_tri {
-                    inserted[i] = true;
-                    new_indices2.push(idx);
-                    added_any = true;
-
-                    for k in 0..3 {
-                        let key = (*tri_id, (tri_feat[(k + 1) % 3], tri_feat[k]));
-                        if !segments_to_keep.contains(&key) {
-                            let _ = segments_to_keep.insert(key);
-                            let _ = segments_to_keep.insert((*tri_id, (key.1 .1, key.1 .0)));
-                        }
-                    }
-                }
-
-                /*
-                let tri = Triangle::from(tri);
-                let center = tri.center();
-
-                // TODO: when two faces are coplanar, they will be present in both `triangulation1` and
-                //       `triangulation2`. So we need to only pick one of them. Here we already picked the
-                //       face from `triangulation1`. So now we need to ignore the duplicate face. Such face
-                //       is detected by looking at the distance from the triangle’s center to the other mesh.
-                //       If the center lies on the other mesh, then that we have a duplicate face that was already
-                //       added in the previous loop.
-                let projection = mesh1.project_local_point(&center, false);
-                if !tri.is_affinely_dependent_eps(EPS * 10.0)
-                    && ((flip1 ^ projection.is_inside)
-                        && (projection.point - center).norm() > EPS * 10.0)
-                {
-                    new_indices2.push(idx);
-                } else if !tri.is_affinely_dependent_eps(EPS * 10.0) {
-                    println!("Proj2: {}", (projection.point - center).norm());
-                }
-                */
-            }
-        }
-    }
-    */
 }

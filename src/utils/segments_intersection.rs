@@ -2,7 +2,6 @@ use na::Point2;
 
 use crate::math::Real;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
-use crate::utils;
 
 /// Intersection between two segments.
 pub enum SegmentsIntersection {

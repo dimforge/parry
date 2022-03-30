@@ -109,7 +109,6 @@ impl Split for TriMesh {
         let mut new_vertices = vertices.to_vec();
 
         for (tri_id, idx) in indices.iter().enumerate() {
-            let mut idx = *idx;
             let mut intersection_features = (FeatureId::Unknown, FeatureId::Unknown);
 
             // First, find where the plane intersects the triangle.
@@ -324,13 +323,13 @@ impl Split for TriMesh {
         &self,
         cuboid: &Cuboid,
         cuboid_position: &Isometry<Real>,
-        epsilon: Real,
+        _epsilon: Real,
     ) -> Option<Self> {
         if self.topology().is_some() && self.pseudo_normals().is_some() {
             let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
             let mut cuboid_trimesh = TriMesh::new(cuboid_vtx, cuboid_idx);
             cuboid_trimesh.compute_pseudo_normals();
-            cuboid_trimesh.compute_topology(false, false);
+            let _ = cuboid_trimesh.compute_topology(false, false);
 
             return transformation::intersect_meshes(
                 &Isometry::identity(),
