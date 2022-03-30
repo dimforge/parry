@@ -417,6 +417,23 @@ impl Triangle {
         // )
     }
 
+    #[cfg(feature = "dim3")]
+    pub fn is_affinely_dependent_eps(&self, eps: Real) -> bool {
+        let p1p2 = self.b - self.a;
+        let p1p3 = self.c - self.a;
+        relative_eq!(
+            p1p2.cross(&p1p3).norm(),
+            0.0,
+            epsilon = eps * p1p2.norm().max(p1p3.norm())
+        )
+
+        // relative_eq!(
+        //     self.area(),
+        //     0.0,
+        //     epsilon = EPS * self.perimeter()
+        // )
+    }
+
     /// Tests if a point is inside of this triangle.
     pub fn contains_point(&self, p: &Point<Real>) -> bool {
         let p1p2 = self.b - self.a;
