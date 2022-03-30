@@ -1,8 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Matrix, Point, Real, DIM};
-use crate::shape::Tetrahedron;
-use crate::utils;
-use num::Zero;
+use crate::math::{Point, Real, DIM};
 
 impl MassProperties {
     /// Computes the mass properties of a convex polyhedron.

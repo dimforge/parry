@@ -5,9 +5,11 @@ use {crate::utils::CudaArray2, cust::error::CudaResult};
 
 use crate::bounding_volume::AABB;
 use crate::math::{Real, Vector};
-use crate::query::{Ray, RayCast};
 use crate::shape::{FeatureId, Triangle};
-use na::{ComplexField, Point3, Scalar};
+use na::{Point3, Scalar};
+
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 
 bitflags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

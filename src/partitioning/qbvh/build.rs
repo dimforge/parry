@@ -3,7 +3,6 @@ use crate::math::Vector;
 use crate::math::{Point, Real};
 use crate::query::{CanonicalSplit, SplitResult};
 use crate::simd::SimdReal;
-use na::coordinates::X;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;
@@ -28,10 +27,6 @@ impl<'a, T> BuilderProxies<'a, T> {
 
         self.proxies[index] = QBVHProxy::detached(data);
         self.aabbs[index] = aabb;
-    }
-
-    fn aabbs(&self) -> &[AABB] {
-        &self.aabbs
     }
 }
 
@@ -151,8 +146,8 @@ where
             if split_pt[dim] == -Real::MAX || split_pt[dim] == Real::MAX {
                 // Try to at least find a splitting point that is aligned with any
                 // AABB side.
-                let mut candidate_min = proxies.aabbs[indices[0]].mins[dim];
-                let mut candidate_max = proxies.aabbs[indices[0]].maxs[dim];
+                let candidate_min = proxies.aabbs[indices[0]].mins[dim];
+                let candidate_max = proxies.aabbs[indices[0]].maxs[dim];
                 for i in indices.iter().copied() {
                     let aabb = &proxies.aabbs[i];
                     if aabb.mins[dim] < candidate_min {
@@ -251,7 +246,7 @@ impl<T: IndexedData> QBVH<T> {
     /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
-        mut data_gen: impl QBVHDataGenerator<T>,
+        data_gen: impl QBVHDataGenerator<T>,
         dilation_factor: Real,
     ) {
         self.clear_and_rebuild_with_splitter(

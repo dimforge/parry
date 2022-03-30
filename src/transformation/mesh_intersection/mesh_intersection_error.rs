@@ -1,9 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::{self, visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
-use crate::shape::trimesh::{TopoFace, TopoHalfEdge, TopoVertex, TriMeshTopology};
-use crate::shape::{FeatureId, Segment, TriMesh, Triangle};
 use core::fmt;
-use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Error indicating that a query is not supported between certain shapes
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

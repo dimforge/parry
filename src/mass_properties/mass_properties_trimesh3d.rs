@@ -1,7 +1,6 @@
 use crate::mass_properties::MassProperties;
 use crate::math::{Matrix, Point, Real, DIM};
 use crate::shape::Tetrahedron;
-use crate::utils;
 use num::Zero;
 
 impl MassProperties {
@@ -258,7 +257,7 @@ mod test {
             &primitives.4 as &dyn Shape,
         ];
 
-        for (i, (shape, mesh)) in shapes.iter().zip(meshes.iter_mut()).enumerate() {
+        for (shape, mesh) in shapes.iter().zip(meshes.iter_mut()) {
             let shape_mprops = shape.mass_properties(2.0);
             let mesh_mprops = MassProperties::from_trimesh(2.0, &mesh.0, &mesh.1);
             assert_relative_eq!(shape_mprops.mass(), mesh_mprops.mass(), epsilon = 1.0e-1);

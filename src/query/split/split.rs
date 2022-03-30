@@ -1,6 +1,6 @@
 use crate::{
     bounding_volume::AABB,
-    math::{Isometry, Point, Real, UnitVector},
+    math::{Isometry, Real, UnitVector},
     shape::Cuboid,
 };
 
@@ -24,7 +24,7 @@ pub trait CanonicalSplit: Sized {
     fn canonical_split(&self, axis: usize, bias: Real, eps: Real) -> SplitResult<Self>;
 
     /// Compute the intersection volume between `self` and the given AABB.
-    fn intersection_with_aabb(&self, aabb: AABB, eps: Real) -> Option<Self> {
+    fn intersection_with_aabb(&self, _aabb: AABB, _eps: Real) -> Option<Self> {
         todo!()
     }
 }
@@ -61,9 +61,9 @@ pub trait Split: Sized + CanonicalSplit {
 
     fn intersection_with_local_cuboid(
         &self,
-        cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
-        epsilon: Real,
+        _cuboid: &Cuboid,
+        _cuboid_position: &Isometry<Real>,
+        _epsilon: Real,
     ) -> Option<Self> {
         todo!()
     }
