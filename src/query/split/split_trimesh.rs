@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{CanonicalSplit, PointQuery, Split, SplitResult};
-use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, Triangle};
+use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
@@ -327,9 +327,11 @@ impl Split for TriMesh {
     ) -> Option<Self> {
         if self.topology().is_some() && self.pseudo_normals().is_some() {
             let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
-            let mut cuboid_trimesh = TriMesh::new(cuboid_vtx, cuboid_idx);
-            cuboid_trimesh.compute_pseudo_normals();
-            let _ = cuboid_trimesh.compute_topology(false, false);
+            let cuboid_trimesh = TriMesh::with_flags(
+                cuboid_vtx,
+                cuboid_idx,
+                TriMeshFlags::HALF_EDGE_TOPOLOGY | TriMeshFlags::ORIENTED,
+            );
 
             return transformation::intersect_meshes(
                 &Isometry::identity(),

@@ -123,6 +123,46 @@ impl TriMeshTopology {
     }
 }
 
+bitflags::bitflags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+    #[derive(Default)]
+    /// The status of the cell of an heightfield.
+    pub struct TriMeshFlags: u8 {
+        /// If set, the half-edge topology of the trimesh will be computed if possible.
+        const HALF_EDGE_TOPOLOGY = 0b0000_0001;
+        /// If set, the half-edge topology and connected components of the trimesh will be computed if possible.
+        ///
+        /// Because of the way it is currently implemented, connected components can only be computed on
+        /// a mesh where the half-edge topology computation succeeds. It will no longer be the case in the
+        /// future once we decouple the computations.
+        const CONNECTED_COMPONENTS = 0b0000_0010;
+        /// If set, any triangle that results in a failing half-hedge topology computation will be deleted.
+        const DELETE_BAD_TOPOLOGY_TRIANGLES = 0b0000_0100;
+        /// If set, the trimesh will be assumed to be oriented (with outward normals).
+        ///
+        /// The pseudo-normals of its vertices and edges will be computed.
+        const ORIENTED = 0b0000_1000;
+        /// If set, the duplicate vertices of the trimesh will be merged.
+        ///
+        /// Two vertices with the exact same coordinates will share the same entry on the
+        /// vertex buffer and the index buffer is adjusted accordingly.
+        const MERGE_DUPLICATE_VERTICES = 0b0001_0000;
+        /// If set, the triangles sharing two vertices with identical index values will be removed.
+        ///
+        /// Because of the way it is currently implemented, this methods implies that duplicate
+        /// vertices will be merged. It will no longer be the case in the future once we decouple
+        /// the computations.
+        const DELETE_DEGENERATE_TRIANGLES = 0b0010_0000;
+        /// If set, two triangles sharing three vertices with identical index values (in any order) will be removed.
+        ///
+        /// Because of the way it is currently implemented, this methods implies that duplicate
+        /// vertices will be merged. It will no longer be the case in the future once we decouple
+        /// the computations.
+        const DELETE_DUPLICATE_TRIANGLES = 0b0100_0000;
+    }
+}
+
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A triangle mesh.
@@ -134,11 +174,21 @@ pub struct TriMesh {
     pub(crate) pseudo_normals: Option<TriMeshPseudoNormals>,
     topology: Option<TriMeshTopology>,
     connected_components: Option<TriMeshConnectedComponents>,
+    flags: TriMeshFlags,
 }
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
     pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
+        Self::with_flags(vertices, indices, TriMeshFlags::empty())
+    }
+
+    /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
+    pub fn with_flags(
+        vertices: Vec<Point<Real>>,
+        indices: Vec<[u32; 3]>,
+        flags: TriMeshFlags,
+    ) -> Self {
         assert!(
             indices.len() > 0,
             "A triangle mesh must contain at least one triangle."
@@ -152,9 +202,109 @@ impl TriMesh {
             pseudo_normals: None,
             topology: None,
             connected_components: None,
+            flags: TriMeshFlags::empty(),
         };
-        result.rebuild_qbvh();
+
+        let _ = result.set_flags(flags);
+
+        if result.qbvh.raw_nodes().is_empty() {
+            // The QBVH hasn’t been computed by `.set_flags`.
+            result.rebuild_qbvh();
+        }
+
         result
+    }
+
+    pub fn flags(&self) -> TriMeshFlags {
+        self.flags
+    }
+
+    pub fn set_flags(&mut self, flags: TriMeshFlags) -> Result<(), TopologyError> {
+        let mut result = Ok(());
+        let prev_indices_len = self.indices.len();
+
+        if !flags.contains(TriMeshFlags::HALF_EDGE_TOPOLOGY) {
+            self.topology = None;
+        }
+
+        #[cfg(feature = "dim3")]
+        if !flags.contains(TriMeshFlags::ORIENTED) {
+            self.pseudo_normals = None;
+        }
+
+        if !flags.contains(TriMeshFlags::CONNECTED_COMPONENTS) {
+            self.connected_components = None;
+        }
+
+        let difference = flags & !self.flags;
+
+        if difference.intersects(
+            TriMeshFlags::MERGE_DUPLICATE_VERTICES
+                | TriMeshFlags::DELETE_DEGENERATE_TRIANGLES
+                | TriMeshFlags::DELETE_DUPLICATE_TRIANGLES,
+        ) {
+            self.merge_duplicate_vertices(
+                flags.contains(TriMeshFlags::DELETE_DEGENERATE_TRIANGLES),
+                flags.contains(TriMeshFlags::DELETE_DUPLICATE_TRIANGLES),
+            )
+        }
+
+        if difference.intersects(
+            TriMeshFlags::HALF_EDGE_TOPOLOGY
+                | TriMeshFlags::CONNECTED_COMPONENTS
+                | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
+        ) {
+            result = self.compute_topology(
+                flags.contains(TriMeshFlags::CONNECTED_COMPONENTS),
+                flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES),
+            );
+        }
+
+        #[cfg(feature = "dim3")]
+        if difference.contains(TriMeshFlags::ORIENTED) {
+            self.compute_pseudo_normals();
+        }
+
+        if prev_indices_len != self.indices.len() {
+            self.rebuild_qbvh();
+        }
+
+        self.flags = flags;
+        result
+    }
+
+    pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
+        self.vertices
+            .iter_mut()
+            .for_each(|pt| *pt = transform * *pt);
+        self.rebuild_qbvh();
+
+        // The pseudo-normals must be rotated too.
+        #[cfg(feature = "dim3")]
+        if let Some(pseudo_normals) = &mut self.pseudo_normals {
+            pseudo_normals
+                .vertices_pseudo_normal
+                .iter_mut()
+                .for_each(|n| *n = transform * *n);
+            pseudo_normals
+                .edges_pseudo_normal
+                .values_mut()
+                .for_each(|n| *n = transform * *n);
+        }
+    }
+
+    pub fn append(&mut self, rhs: &TriMesh) {
+        let base_id = self.vertices.len() as u32;
+        self.vertices.extend_from_slice(rhs.vertices());
+        self.indices.extend(
+            rhs.indices()
+                .iter()
+                .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
+        );
+
+        let vertices = std::mem::replace(&mut self.vertices, Vec::new());
+        let indices = std::mem::replace(&mut self.indices, Vec::new());
+        *self = TriMesh::with_flags(vertices, indices, self.flags);
     }
 
     /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
@@ -336,12 +486,6 @@ impl TriMesh {
 
         new_vertices.shrink_to_fit();
 
-        if new_indices.len() != self.indices.len() {
-            // We deleted some duplicate or invalid triangles.
-            // This invalidates the QBVH that needs to be reconstructed.
-            self.rebuild_qbvh();
-        }
-
         self.vertices = new_vertices;
         self.indices = new_indices;
 
@@ -376,7 +520,7 @@ impl TriMesh {
     ///
     /// It may be useful to call `self.remove_duplicate_vertices()` before this method, in order to fix the
     /// index buffer if some of the vertices of this trimesh are duplicated.
-    pub fn compute_pseudo_normals(&mut self) {
+    fn compute_pseudo_normals(&mut self) {
         use na::RealField;
 
         let mut degenerate_triangles = vec![false; self.indices().len()];
@@ -433,7 +577,6 @@ impl TriMesh {
         })
     }
 
-    #[cfg(feature = "dim3")]
     fn delete_bad_topology_triangles(&mut self) {
         let mut half_edge_set = HashSet::new();
         let mut deleted_any = false;
@@ -460,10 +603,6 @@ impl TriMesh {
 
             true
         });
-
-        if deleted_any {
-            self.rebuild_qbvh();
-        }
     }
 
     /// Computes half-edge topological information for this triangle mesh, based on its index buffer only.
@@ -477,8 +616,7 @@ impl TriMesh {
     /// # Return
     /// Returns `true` if the computation succeeded. Returns `false` if this mesh can’t have an half-edge representation
     /// because at least three faces share the same edge.
-    #[cfg(feature = "dim3")]
-    pub fn compute_topology(
+    fn compute_topology(
         &mut self,
         compute_connected_components: bool,
         delete_bad_triangles: bool,
@@ -562,7 +700,6 @@ impl TriMesh {
     //       has been computed too. So instead of making this method
     //       public, the `.compute_topology` method has a boolean to
     //       compute the connected componets too.
-    #[cfg(feature = "dim3")]
     fn compute_connected_components(&mut self) {
         let topo = self.topology.as_ref().unwrap();
         let mut face_colors = vec![u32::MAX; topo.faces.len()];
