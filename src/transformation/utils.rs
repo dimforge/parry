@@ -150,7 +150,5 @@ pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<
 #[cfg(feature = "dim3")]
 #[inline]
 pub fn reverse_clockwising(indices: &mut [[u32; DIM]]) {
-    for i in indices.iter_mut() {
-        i.swap(0, 1);
-    }
+    indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 }
