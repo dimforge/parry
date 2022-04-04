@@ -1,6 +1,7 @@
+use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
-use crate::query::{CanonicalSplit, PointQuery, Split, SplitResult};
+use crate::query::{CanonicalSplit, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
@@ -60,8 +61,20 @@ impl Triangulation {
     }
 }
 
-impl Split for TriMesh {
-    fn local_split(
+impl TriMesh {
+    pub fn split(
+        &self,
+        position: &Isometry<Real>,
+        axis: &UnitVector<Real>,
+        bias: Real,
+        epsilon: Real,
+    ) -> SplitResult<Self> {
+        let local_axis = position.inverse_transform_unit_vector(axis);
+        let added_bias = -position.translation.vector.dot(&axis);
+        self.local_split(&local_axis, bias + added_bias, epsilon)
+    }
+
+    pub fn local_split(
         &self,
         local_axis: &UnitVector<Real>,
         bias: Real,
@@ -319,10 +332,50 @@ impl Split for TriMesh {
         }
     }
 
-    fn intersection_with_local_cuboid(
+    pub fn intersection_with_aabb(
         &self,
+        position: &Isometry<Real>,
+        flip_mesh: bool,
+        aabb: &AABB,
+        flip_cuboid: bool,
+        epsilon: Real,
+    ) -> Option<Self> {
+        let cuboid = Cuboid::new(aabb.half_extents());
+        let cuboid_pos = Isometry::from(aabb.center());
+        self.intersection_with_cuboid(
+            position,
+            flip_mesh,
+            &cuboid,
+            &cuboid_pos,
+            flip_cuboid,
+            epsilon,
+        )
+    }
+
+    pub fn intersection_with_cuboid(
+        &self,
+        position: &Isometry<Real>,
+        flip_mesh: bool,
         cuboid: &Cuboid,
         cuboid_position: &Isometry<Real>,
+        flip_cuboid: bool,
+        epsilon: Real,
+    ) -> Option<Self> {
+        self.intersection_with_local_cuboid(
+            flip_mesh,
+            cuboid,
+            &position.inv_mul(cuboid_position),
+            flip_cuboid,
+            epsilon,
+        )
+    }
+
+    pub fn intersection_with_local_cuboid(
+        &self,
+        flip_mesh: bool,
+        cuboid: &Cuboid,
+        cuboid_position: &Isometry<Real>,
+        flip_cuboid: bool,
         _epsilon: Real,
     ) -> Option<Self> {
         if self.topology().is_some() && self.pseudo_normals().is_some() {
@@ -336,10 +389,10 @@ impl Split for TriMesh {
             return transformation::intersect_meshes(
                 &Isometry::identity(),
                 self,
-                true,
+                flip_mesh,
                 cuboid_position,
                 &cuboid_trimesh,
-                false,
+                flip_cuboid,
             )
             .ok()
             .flatten();
