@@ -35,4 +35,4 @@ mod mesh_intersection;
 mod to_polyline;
 #[cfg(feature = "dim3")]
 mod to_trimesh;
-mod utils;
+pub mod utils;
