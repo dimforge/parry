@@ -415,6 +415,31 @@ impl TriMesh {
         self.qbvh.clear_and_rebuild(data, 0.0);
     }
 
+    /// Reverse the orientation of the triangle mesh.
+    pub fn reverse(&mut self) {
+        self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
+
+        // NOTE: the QBVH, and connected components are not changed by this operation.
+        //       The pseudo-normals just have to be flipped.
+        //       The topology must be recomputed.
+
+        #[cfg(feature = "dim3")]
+        if let Some(pseudo_normals) = &mut self.pseudo_normals {
+            for n in &mut pseudo_normals.vertices_pseudo_normal {
+                *n = -*n;
+            }
+
+            for n in pseudo_normals.edges_pseudo_normal.values_mut() {
+                *n = -*n;
+            }
+        }
+
+        if self.flags.contains(TriMeshFlags::HALF_EDGE_TOPOLOGY) {
+            // TODO: this could be done more efficiently.
+            let _ = self.compute_topology(false, false);
+        }
+    }
+
     /// Merge all duplicate vertices and adjust the index buffer accordingly.
     ///
     /// If `delete_degenerate_triangles` is set to true, any triangle with two
