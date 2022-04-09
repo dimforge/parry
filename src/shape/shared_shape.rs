@@ -135,6 +135,25 @@ impl SharedShape {
         SharedShape(Arc::new(Capsule::new(a, b, radius)))
     }
 
+    /// Initialize a capsule shape aligned with the `x` axis.
+    pub fn capsule_x(half_height: Real, radius: Real) -> Self {
+        let p = Point::from(Vector::x() * half_height);
+        Self::capsule(-p, p, radius)
+    }
+
+    /// Initialize a capsule shape aligned with the `y` axis.
+    pub fn capsule_y(half_height: Real, radius: Real) -> Self {
+        let p = Point::from(Vector::y() * half_height);
+        Self::capsule(-p, p, radius)
+    }
+
+    /// Initialize a capsule shape aligned with the `z` axis.
+    #[cfg(feature = "dim3")]
+    pub fn capsule_z(half_height: Real, radius: Real) -> Self {
+        let p = Point::from(Vector::z() * half_height);
+        Self::capsule(-p, p, radius)
+    }
+
     /// Initialize a segment shape from its endpoints.
     pub fn segment(a: Point<Real>, b: Point<Real>) -> Self {
         SharedShape(Arc::new(Segment::new(a, b)))
