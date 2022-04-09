@@ -19,7 +19,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = [ "required-features", "std" ]
 required-features = [ "dim3", "f64" ]
-std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std" ]
+std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
 dim3    = [ ]
 f64     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
@@ -52,7 +52,7 @@ serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
 num-derive = "0.3"
 indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = { version = "1", optional = true }
-spade      = { version = "2" } # Make this optional?
+spade      = { version = "2", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust       = { version = "0.3", optional = true }

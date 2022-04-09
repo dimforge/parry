@@ -3,6 +3,9 @@ use na::Point2;
 use crate::math::Real;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
+
 /// Intersection between two segments.
 pub enum SegmentsIntersection {
     /// Single point of intersection.

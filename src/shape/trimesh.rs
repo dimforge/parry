@@ -448,7 +448,7 @@ impl TriMesh {
     /// This is typically used to recover a vertex buffer from which we can deduce
     /// adjacency information. between triangles by observing how the vertices are
     /// shared by triangles based on the index buffer.
-    pub fn merge_duplicate_vertices(
+    fn merge_duplicate_vertices(
         &mut self,
         delete_degenerate_triangles: bool,
         delete_duplicate_triangles: bool,
