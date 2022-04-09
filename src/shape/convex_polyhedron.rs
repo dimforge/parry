@@ -125,18 +125,18 @@ impl ConvexPolyhedron {
         /*
          *  Initialize triangles and edges adjacency information.
          */
-        for vtx in indices {
+        for idx in indices {
             let mut edges_id = [u32::MAX; DIM];
             let face_id = triangles.len();
 
-            assert!(vtx[0] != vtx[1]);
-            assert!(vtx[0] != vtx[2]);
-            assert!(vtx[2] != vtx[1]);
+            if idx[0] == idx[1] || idx[0] == idx[2] || idx[1] == idx[2] {
+                return None;
+            }
 
             for i1 in 0..3 {
                 // Deal with edges.
                 let i2 = (i1 + 1) % 3;
-                let key = SortedPair::new(vtx[i1], vtx[i2]);
+                let key = SortedPair::new(idx[i1], idx[i2]);
 
                 match edge_map.entry(key) {
                     Entry::Occupied(e) => {
@@ -155,12 +155,12 @@ impl ConvexPolyhedron {
                         edges_id[i1] = *e.insert(edges.len() as u32);
 
                         let dir = Unit::try_new(
-                            points[vtx[i2] as usize] - points[vtx[i1] as usize],
+                            points[idx[i2] as usize] - points[idx[i1] as usize],
                             crate::math::DEFAULT_EPSILON,
                         );
 
                         edges.push(Edge {
-                            vertices: Point2::new(vtx[i1], vtx[i2]),
+                            vertices: Point2::new(idx[i1], idx[i2]),
                             faces: Point2::new(face_id as u32, u32::MAX),
                             dir: dir.unwrap_or(Vector::x_axis()),
                             deleted: dir.is_none(),
@@ -170,12 +170,12 @@ impl ConvexPolyhedron {
             }
 
             let normal = utils::ccw_face_normal([
-                &points[vtx[0] as usize],
-                &points[vtx[1] as usize],
-                &points[vtx[2] as usize],
+                &points[idx[0] as usize],
+                &points[idx[1] as usize],
+                &points[idx[2] as usize],
             ]);
             let triangle = Triangle {
-                vertices: *vtx,
+                vertices: *idx,
                 edges: edges_id,
                 normal: normal.map(|n| *n).unwrap_or(Vector::zeros()),
                 parent_face: None,

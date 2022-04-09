@@ -4,8 +4,8 @@ use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     FeatureId, GenericHeightField, HeightFieldCellStatus, HeightFieldStorage, TrianglePointLocation,
 };
-#[cfg(feature = "cuda")]
-use na::ComplexField;
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // For sqrt.
 
 impl<Heights, Status> PointQuery for GenericHeightField<Heights, Status>
 where

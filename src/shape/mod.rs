@@ -46,6 +46,7 @@ pub use self::heightfield3::*;
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
+#[cfg(feature = "std")]
 pub use self::trimesh::*;
 
 /// A cylinder dilated by a sphere (so it has round corners).

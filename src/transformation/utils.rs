@@ -5,8 +5,11 @@ use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
 
-pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
+pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
     points.iter_mut().for_each(|p| *p = m * *p);
+}
+pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
+    transform(&mut points, m);
     points
 }
 
@@ -151,4 +154,17 @@ pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<
 #[inline]
 pub fn reverse_clockwising(indices: &mut [[u32; DIM]]) {
     indices.iter_mut().for_each(|idx| idx.swap(0, 1));
+}
+
+#[cfg(feature = "dim3")]
+#[inline]
+pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
+    indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
+    indices.push([range.end - 1, range.start]);
+}
+
+#[cfg(feature = "dim3")]
+#[inline]
+pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
+    indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
 }

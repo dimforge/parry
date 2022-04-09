@@ -31,6 +31,8 @@ pub(crate) mod hertel_mehlhorn;
 pub use hertel_mehlhorn::{hertel_mehlhorn, hertel_mehlhorn_idx};
 #[cfg(feature = "dim3")]
 mod mesh_intersection;
+#[cfg(feature = "dim3")]
+mod to_outline;
 #[cfg(feature = "dim2")]
 mod to_polyline;
 #[cfg(feature = "dim3")]
