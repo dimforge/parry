@@ -24,7 +24,7 @@ pub(crate) fn canonical_capsule(
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
 ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
-    let (coords, indices) = super::ball_to_trimesh::unit_hemisphere(ntheta_subdiv, nphi_subdiv);
+    let (coords, indices) = super::ball_to_trimesh::unit_hemisphere(ntheta_subdiv, nphi_subdiv / 2);
     let mut bottom_coords = coords.clone();
     let mut bottom_indices = indices.clone();
     utils::reverse_clockwising(&mut bottom_indices[..]);
