@@ -1,3 +1,4 @@
+#[cfg(target_os = "cuda")]
 use crate::shape::HeightFieldStorage;
 use crate::utils::DevicePointer;
 

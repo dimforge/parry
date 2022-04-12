@@ -1,7 +1,10 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::Ball;
 use crate::transformation::utils;
-use na::{self, ComplexField, Point3, RealField};
+use na::{self, Point3, RealField};
+
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 
 impl Ball {
     /// Outlines this ball’s shape using polylines.
