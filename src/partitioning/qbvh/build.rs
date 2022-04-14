@@ -111,7 +111,7 @@ pub struct QbvhNonOverlappingDataSplitter<F> {
 impl<T, F> QBVHDataSplitter<T> for QbvhNonOverlappingDataSplitter<F>
 where
     T: IndexedData,
-    F: FnMut(T, usize, Real, Real) -> SplitResult<(T, AABB)>,
+    F: FnMut(T, usize, Real, Real, AABB, AABB) -> SplitResult<(T, AABB)>,
 {
     fn split_dataset<'idx>(
         &mut self,
@@ -182,7 +182,7 @@ where
         for dim in subdiv_dims {
             for k in 0..indices_workspace.len() {
                 let i = indices_workspace[k];
-                if let SplitResult::Pair(_, _) =
+                if let SplitResult::Pair(aabb_l, aabb_r) =
                     proxies.aabbs[i].canonical_split(dim, split_pt[dim], self.epsilon)
                 {
                     // The AABB was split, so we need to split the geometry too.
@@ -192,6 +192,8 @@ where
                         dim,
                         split_pt[dim],
                         self.epsilon,
+                        aabb_l,
+                        aabb_r,
                     ) {
                         indices_workspace[k] = data_l.index();
                         indices_workspace.push(data_r.index());
