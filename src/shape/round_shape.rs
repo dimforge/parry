@@ -9,7 +9,7 @@ use na::Unit;
 /// A shape with rounded borders.
 pub struct RoundShape<S> {
     /// The shape being rounded.
-    pub base_shape: S,
+    pub inner_shape: S,
     /// The radius of the rounded border.
     pub border_radius: Real,
 }
@@ -20,6 +20,6 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     }
 
     fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        self.base_shape.local_support_point_toward(dir) + **dir * self.border_radius
+        self.inner_shape.local_support_point_toward(dir) + **dir * self.border_radius
     }
 }

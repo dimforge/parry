@@ -77,7 +77,7 @@ impl SharedShape {
     #[cfg(feature = "dim3")]
     pub fn round_cylinder(half_height: Real, radius: Real, border_radius: Real) -> Self {
         SharedShape(Arc::new(RoundShape {
-            base_shape: Cylinder::new(half_height, radius),
+            inner_shape: Cylinder::new(half_height, radius),
             border_radius,
         }))
     }
@@ -88,7 +88,7 @@ impl SharedShape {
     #[cfg(feature = "dim3")]
     pub fn round_cone(half_height: Real, radius: Real, border_radius: Real) -> Self {
         SharedShape(Arc::new(RoundShape {
-            base_shape: Cone::new(half_height, radius),
+            inner_shape: Cone::new(half_height, radius),
             border_radius,
         }))
     }
@@ -110,7 +110,7 @@ impl SharedShape {
     #[cfg(feature = "dim2")]
     pub fn round_cuboid(hx: Real, hy: Real, border_radius: Real) -> Self {
         SharedShape(Arc::new(RoundShape {
-            base_shape: Cuboid::new(Vector::new(hx, hy)),
+            inner_shape: Cuboid::new(Vector::new(hx, hy)),
             border_radius,
         }))
     }
@@ -125,7 +125,7 @@ impl SharedShape {
     #[cfg(feature = "dim3")]
     pub fn round_cuboid(hx: Real, hy: Real, hz: Real, border_radius: Real) -> Self {
         SharedShape(Arc::new(RoundShape {
-            base_shape: Cuboid::new(Vector::new(hx, hy, hz)),
+            inner_shape: Cuboid::new(Vector::new(hx, hy, hz)),
             border_radius,
         }))
     }
@@ -171,7 +171,7 @@ impl SharedShape {
         border_radius: Real,
     ) -> Self {
         SharedShape(Arc::new(RoundShape {
-            base_shape: Triangle::new(a, b, c),
+            inner_shape: Triangle::new(a, b, c),
             border_radius,
         }))
     }
@@ -294,14 +294,14 @@ impl SharedShape {
         #[cfg(feature = "dim2")]
         return ConvexPolygon::from_convex_hull(points).map(|ch| {
             SharedShape(Arc::new(RoundShape {
-                base_shape: ch,
+                inner_shape: ch,
                 border_radius,
             }))
         });
         #[cfg(feature = "dim3")]
         return ConvexPolyhedron::from_convex_hull(points).map(|ch| {
             SharedShape(Arc::new(RoundShape {
-                base_shape: ch,
+                inner_shape: ch,
                 border_radius,
             }))
         });
@@ -314,7 +314,7 @@ impl SharedShape {
     pub fn round_convex_polyline(points: Vec<Point<Real>>, border_radius: Real) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| {
             SharedShape(Arc::new(RoundShape {
-                base_shape: ch,
+                inner_shape: ch,
                 border_radius,
             }))
         })
@@ -331,7 +331,7 @@ impl SharedShape {
     ) -> Option<Self> {
         ConvexPolyhedron::from_convex_mesh(points, indices).map(|ch| {
             SharedShape(Arc::new(RoundShape {
-                base_shape: ch,
+                inner_shape: ch,
                 border_radius,
             }))
         })
