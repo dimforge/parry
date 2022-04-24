@@ -135,6 +135,14 @@ where
         &self.scale
     }
 
+    /// Sets the scale factor applied to this heightfield.
+    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
+        let ratio = new_scale.component_div(&self.scale);
+        self.aabb.mins.coords.component_mul_assign(&ratio);
+        self.aabb.maxs.coords.component_mul_assign(&ratio);
+        self.scale = new_scale;
+    }
+
     /// The AABB of this heightfield.
     pub fn root_aabb(&self) -> &AABB {
         &self.aabb
