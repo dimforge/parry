@@ -1335,23 +1335,23 @@ macro_rules! impl_shape_for_round_shape(
             }
 
             fn compute_local_aabb(&self) -> AABB {
-                self.base_shape.local_aabb().loosened(self.border_radius)
+                self.inner_shape.local_aabb().loosened(self.border_radius)
             }
 
             fn compute_local_bounding_sphere(&self) -> BoundingSphere {
-                self.base_shape.local_bounding_sphere().loosened(self.border_radius)
+                self.inner_shape.local_bounding_sphere().loosened(self.border_radius)
             }
 
             fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
-                self.base_shape.aabb(position).loosened(self.border_radius)
+                self.inner_shape.aabb(position).loosened(self.border_radius)
             }
 
             fn mass_properties(&self, density: Real) -> MassProperties {
-                self.base_shape.mass_properties(density)
+                self.inner_shape.mass_properties(density)
             }
 
             fn is_convex(&self) -> bool {
-                self.base_shape.is_convex()
+                self.inner_shape.is_convex()
             }
 
             fn shape_type(&self) -> ShapeType {
@@ -1363,13 +1363,13 @@ macro_rules! impl_shape_for_round_shape(
             }
 
             fn ccd_thickness(&self) -> Real {
-                self.base_shape.ccd_thickness() + self.border_radius
+                self.inner_shape.ccd_thickness() + self.border_radius
             }
 
             fn ccd_angular_thickness(&self) -> Real {
                 // The fact that the shape is round doesn't change anything
                 // to the CCD angular thickness.
-                self.base_shape.ccd_angular_thickness()
+                self.inner_shape.ccd_angular_thickness()
             }
 
             fn as_support_map(&self) -> Option<&dyn SupportMap> {
@@ -1377,7 +1377,7 @@ macro_rules! impl_shape_for_round_shape(
             }
 
             fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
-                Some((&self.base_shape as &dyn PolygonalFeatureMap, self.border_radius))
+                Some((&self.inner_shape as &dyn PolygonalFeatureMap, self.border_radius))
             }
         }
     )*}
