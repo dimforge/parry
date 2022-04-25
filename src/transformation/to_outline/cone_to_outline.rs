@@ -16,25 +16,8 @@ impl Cone {
 
 /// Generates a cone with unit height and diameter.
 fn unit_cone_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
-    let two_pi = Real::two_pi();
-    let dtheta = two_pi / (nsubdiv as Real);
-    let mut coords = Vec::new();
-    let mut indices = Vec::new();
-
-    utils::push_circle(
-        na::convert(0.5),
-        nsubdiv,
-        dtheta,
-        na::convert(-0.5),
-        &mut coords,
-    );
-    coords.push(Point3::new(0.0, 0.5, 0.0));
-
-    utils::push_circle_outline_indices(&mut indices, 0..nsubdiv);
-    indices.push([0, nsubdiv]);
-    indices.push([nsubdiv / 4, nsubdiv]);
-    indices.push([nsubdiv / 2, nsubdiv]);
-    indices.push([(nsubdiv * 3) / 4, nsubdiv]);
-
-    (coords, indices)
+    let mut out_vtx = vec![Point3::new(-0.5, -0.5, 0.0), Point3::new(0.0, 0.5, 0.0)];
+    let mut out_ptx = vec![];
+    utils::apply_revolution(false, true, &[0..1], nsubdiv, &mut out_vtx, &mut out_ptx);
+    (out_vtx, out_ptx)
 }

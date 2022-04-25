@@ -4,7 +4,7 @@ use crate::shape::Cuboid;
 use crate::transformation::utils;
 
 impl AABB {
-    /// Discretize the boundary of this AABB as a triangle-mesh.
+    /// Outlines this AABB’s shape using polylines.
     pub fn to_outline(&self) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
         let center = self.center();
         let half_extents = self.half_extents();
@@ -15,7 +15,7 @@ impl AABB {
 }
 
 impl Cuboid {
-    /// Discretize the boundary of this cuboid as a triangle-mesh.
+    /// Outlines this cuboid’s shape using polylines.
     pub fn to_outline(&self) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
         let (vtx, idx) = unit_cuboid_outline();
         (utils::scaled(vtx, self.half_extents * 2.0), idx)
