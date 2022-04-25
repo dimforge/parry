@@ -373,6 +373,11 @@ where
         self.scale = new_scale;
     }
 
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+        self.set_scale(*scale);
+        self
+    }
+
     /// The width (extent along its local `x` axis) of each cell of this heightmap, including the scale factor.
     pub fn cell_width(&self) -> Real {
         self.unit_cell_width() * self.scale.x

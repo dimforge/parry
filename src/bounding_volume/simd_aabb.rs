@@ -117,6 +117,16 @@ impl SimdAABB {
         }
     }
 
+    #[inline]
+    pub fn scaled(self, scale: &Vector<SimdReal>) -> Self {
+        let a = self.mins.coords.component_mul(&scale);
+        let b = self.maxs.coords.component_mul(&scale);
+        Self {
+            mins: a.inf(&b).into(),
+            maxs: a.sup(&b).into(),
+        }
+    }
+
     /// Dilate all the AABBs represented by `self`` by their extents multiplied
     /// by the given scale `factor`.
     pub fn dilate_by_factor(&mut self, factor: SimdReal) {

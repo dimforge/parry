@@ -2,6 +2,7 @@
 
 use crate::math::{Point, Real, Vector};
 use crate::shape::SupportMap;
+use either::Either;
 use na;
 use num::Zero;
 
@@ -32,6 +33,28 @@ impl Cylinder {
         Cylinder {
             half_height,
             radius,
+        }
+    }
+
+    #[inline]
+    pub fn scaled(
+        self,
+        scale: &Vector<Real>,
+        nsubdivs: u32,
+    ) -> Option<Either<Self, super::ConvexPolyhedron>> {
+        if scale.x != scale.z {
+            // The scaled shape isn’t a cylinder.
+            let (mut vtx, idx) = self.to_trimesh(nsubdivs);
+            vtx.iter_mut()
+                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+            Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
+                vtx, &idx,
+            )?))
+        } else {
+            Some(Either::Left(Self::new(
+                self.half_height * scale.y,
+                self.radius * scale.x,
+            )))
         }
     }
 }

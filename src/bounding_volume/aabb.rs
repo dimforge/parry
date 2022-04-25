@@ -152,6 +152,16 @@ impl AABB {
         AABB::new(center + (-ws_half_extents), center + ws_half_extents)
     }
 
+    #[inline]
+    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+        let a = self.mins.coords.component_mul(&scale);
+        let b = self.maxs.coords.component_mul(&scale);
+        Self {
+            mins: a.inf(&b).into(),
+            maxs: a.sup(&b).into(),
+        }
+    }
+
     /// The smallest bounding sphere containing this AABB.
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {

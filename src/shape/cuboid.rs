@@ -28,6 +28,13 @@ impl Cuboid {
         Cuboid { half_extents }
     }
 
+    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+        let new_hext = self.half_extents.component_mul(scale);
+        Self {
+            half_extents: new_hext,
+        }
+    }
+
     /// Return the id of the vertex of this cuboid with a normal that maximizes
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]

@@ -2,6 +2,7 @@
 
 use crate::math::{Point, Real, Vector};
 use crate::shape::SupportMap;
+use either::Either;
 use na;
 use num::Zero;
 
@@ -30,6 +31,30 @@ impl Cone {
         Cone {
             half_height,
             radius,
+        }
+    }
+
+    #[inline]
+    pub fn scaled(
+        self,
+        scale: &Vector<Real>,
+        nsubdivs: u32,
+    ) -> Option<Either<Self, super::ConvexPolyhedron>> {
+        // NOTE: if the y scale is negative, the result cone points downwards,
+        //       which can’t be represented with this Cone (without a transform).
+        if scale.x != scale.z || scale.y < 0.0 {
+            // The scaled shape isn’t a cone.
+            let (mut vtx, idx) = self.to_trimesh(nsubdivs);
+            vtx.iter_mut()
+                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+            Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
+                vtx, &idx,
+            )?))
+        } else {
+            Some(Either::Left(Self::new(
+                self.half_height * scale.y,
+                self.radius * scale.x,
+            )))
         }
     }
 }

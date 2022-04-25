@@ -18,4 +18,8 @@ impl HalfSpace {
     pub fn new(normal: Unit<Vector<Real>>) -> HalfSpace {
         HalfSpace { normal }
     }
+
+    pub fn scaled(self, scale: &Vector<Real>) -> Option<Self> {
+        Unit::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
+    }
 }

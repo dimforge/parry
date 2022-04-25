@@ -1,5 +1,5 @@
 use crate::bounding_volume::AABB;
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::QBVH;
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
@@ -107,6 +107,17 @@ impl Polyline {
             let len = self.indices.len() * 3;
             let data = self.indices.as_ptr() as *const u32;
             std::slice::from_raw_parts(data, len)
+        }
+    }
+
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+        self.vertices
+            .iter_mut()
+            .for_each(|pt| pt.coords.component_mul_assign(scale));
+        Self {
+            qbvh: self.qbvh.scaled(scale),
+            vertices: self.vertices,
+            indices: self.indices,
         }
     }
 

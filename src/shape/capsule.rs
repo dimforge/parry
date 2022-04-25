@@ -1,5 +1,6 @@
 use crate::math::{Isometry, Point, Real, Rotation, Vector};
 use crate::shape::{Segment, SupportMap};
+use either::Either;
 use na::Unit;
 
 #[derive(Copy, Clone, Debug)]
@@ -90,6 +91,54 @@ impl Capsule {
     pub fn transform_wrt_y(&self) -> Isometry<Real> {
         let rot = self.rotation_wrt_y();
         Isometry::from_parts(self.center().coords.into(), rot)
+    }
+
+    #[cfg(feature = "dim2")]
+    pub fn scaled(
+        self,
+        scale: &Vector<Real>,
+        nsubdivs: u32,
+    ) -> Option<Either<Self, super::ConvexPolygon>> {
+        if scale.x != scale.y {
+            // The scaled shape is not a capsule.
+            let mut vtx = self.to_polyline(nsubdivs);
+            vtx.iter_mut()
+                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+            Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
+                vtx,
+            )?))
+        } else {
+            let uniform_scale = scale.x;
+            Some(Either::Left(Self::new(
+                self.segment.a * uniform_scale,
+                self.segment.b * uniform_scale,
+                self.radius * uniform_scale.abs(),
+            )))
+        }
+    }
+
+    #[cfg(feature = "dim3")]
+    pub fn scaled(
+        self,
+        scale: &Vector<Real>,
+        nsubdivs: u32,
+    ) -> Option<Either<Self, super::ConvexPolyhedron>> {
+        if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
+            // The scaled shape is not a capsule.
+            let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
+            vtx.iter_mut()
+                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+            Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
+                vtx, &idx,
+            )?))
+        } else {
+            let uniform_scale = scale.x;
+            Some(Either::Left(Self::new(
+                self.segment.a * uniform_scale,
+                self.segment.b * uniform_scale,
+                self.radius * uniform_scale.abs(),
+            )))
+        }
     }
 }
 

@@ -77,6 +77,18 @@ impl ConvexPolygon {
         &self.normals
     }
 
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+        self.points
+            .iter_mut()
+            .for_each(|pt| pt.coords.component_mul_assign(scale));
+
+        for n in &mut self.normals {
+            *n = Unit::try_new(n.component_mul(&scale), 0.0)?;
+        }
+
+        Some(self)
+    }
+
     /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;

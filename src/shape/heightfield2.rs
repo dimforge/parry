@@ -143,6 +143,11 @@ where
         self.scale = new_scale;
     }
 
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+        self.set_scale(*scale);
+        self
+    }
+
     /// The AABB of this heightfield.
     pub fn root_aabb(&self) -> &AABB {
         &self.aabb

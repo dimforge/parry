@@ -145,6 +145,14 @@ impl Triangle {
         ]
     }
 
+    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+        Self::new(
+            na::Scale::from(*scale) * self.a,
+            na::Scale::from(*scale) * self.b,
+            na::Scale::from(*scale) * self.c,
+        )
+    }
+
     /// Returns a new triangle with vertices transformed by `m`.
     #[inline]
     pub fn transformed(&self, m: &Isometry<Real>) -> Self {
