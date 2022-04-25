@@ -404,6 +404,22 @@ impl ConvexPolyhedron {
         &self.faces_adj_to_vertex[..]
     }
 
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+        self.points
+            .iter_mut()
+            .for_each(|pt| pt.coords.component_mul_assign(scale));
+
+        for f in &mut self.faces {
+            f.normal = Unit::try_new(f.normal.component_mul(&scale), 0.0)?;
+        }
+
+        for e in &mut self.edges {
+            e.dir = Unit::try_new(e.dir.component_mul(&scale), 0.0)?;
+        }
+
+        Some(self)
+    }
+
     fn support_feature_id_toward_eps(
         &self,
         local_dir: &Unit<Vector<Real>>,

@@ -64,6 +64,7 @@ extern crate approx;
 extern crate bitflags;
 extern crate num_traits as num;
 
+pub extern crate either;
 pub extern crate nalgebra as na;
 pub extern crate simba;
 

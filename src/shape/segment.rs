@@ -55,9 +55,14 @@ impl Segment {
     pub fn from_array(arr: &[Point<Real>; 2]) -> &Segment {
         unsafe { mem::transmute(arr) }
     }
-}
 
-impl Segment {
+    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+        Self::new(
+            na::Scale::from(*scale) * self.a,
+            na::Scale::from(*scale) * self.b,
+        )
+    }
+
     /// The direction of this segment scaled by its length.
     ///
     /// Points from `self.a` toward `self.b`.

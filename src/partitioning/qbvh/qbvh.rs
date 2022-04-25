@@ -1,4 +1,6 @@
 use crate::bounding_volume::{SimdAABB, AABB};
+use crate::math::{Real, Vector};
+use na::SimdValue;
 use std::collections::VecDeque;
 
 /// A data to which an index is associated.
@@ -180,6 +182,14 @@ impl<T: IndexedData> QBVH<T> {
     /// The more high-level traversal methods should be used instead of this.
     pub fn raw_proxies(&self) -> &[QBVHProxy<T>] {
         &self.proxies
+    }
+
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+        self.root_aabb = self.root_aabb.scaled(scale);
+        for node in &mut self.nodes {
+            node.simd_aabb = node.simd_aabb.scaled(&Vector::splat(*scale));
+        }
+        self
     }
 }
 

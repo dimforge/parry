@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::bounding_volume::AABB;
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::QBVH;
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
@@ -10,7 +10,7 @@ use crate::transformation::ear_clipping::triangulate_ear_clipping;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::HashablePartialEq;
 #[cfg(feature = "dim3")]
-use {crate::math::Vector, crate::shape::Cuboid, crate::utils::SortedPair};
+use {crate::shape::Cuboid, crate::utils::SortedPair};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
@@ -290,6 +290,35 @@ impl TriMesh {
                 .edges_pseudo_normal
                 .values_mut()
                 .for_each(|n| *n = transform * *n);
+        }
+    }
+
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+        self.vertices
+            .iter_mut()
+            .for_each(|pt| pt.coords.component_mul_assign(scale));
+
+        #[cfg(feature = "dim3")]
+        if let Some(pn) = &mut self.pseudo_normals {
+            pn.vertices_pseudo_normal.iter_mut().for_each(|n| {
+                n.component_mul_assign(scale);
+                let _ = n.try_normalize_mut(0.0);
+            });
+            pn.edges_pseudo_normal.values_mut().for_each(|n| {
+                n.component_mul_assign(scale);
+                let _ = n.try_normalize_mut(0.0);
+            });
+        }
+
+        Self {
+            qbvh: self.qbvh.scaled(scale),
+            vertices: self.vertices,
+            indices: self.indices,
+            #[cfg(feature = "dim3")]
+            pseudo_normals: self.pseudo_normals,
+            topology: self.topology,
+            connected_components: self.connected_components,
+            flags: self.flags,
         }
     }
 
