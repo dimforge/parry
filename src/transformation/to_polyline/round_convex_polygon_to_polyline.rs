@@ -1,42 +1,33 @@
 use crate::math::Real;
-use crate::shape::RoundCuboid;
+use crate::shape::RoundConvexPolygon;
 use crate::transformation::utils;
 use na::{self, Point2};
 
-impl RoundCuboid {
-    /// Discretize the boundary of this round cuboid as a polygonal line.
+impl RoundConvexPolygon {
+    /// Discretize the boundary of this round convex polygon as a polygonal line.
     pub fn to_polyline(&self, border_subdivs: u32) -> Vec<Point2<Real>> {
         let mut out_vtx = vec![];
-        let he = self.inner_shape.half_extents;
+        let pts = self.inner_shape.points();
+        let ns = self.inner_shape.normals();
         let br = self.border_radius;
 
-        let arc_centers = [
-            Point2::new(-he.x, -he.y),
-            Point2::new(he.x, -he.y),
-            Point2::new(he.x, he.y),
-            Point2::new(-he.x, he.y),
-        ];
-        let arc_vertices = [
-            (
-                Point2::new(-he.x - br, -he.y),
-                Point2::new(-he.x, -he.y - br),
-            ),
-            (Point2::new(he.x, -he.y - br), Point2::new(he.x + br, -he.y)),
-            (Point2::new(he.x + br, he.y), Point2::new(he.x, he.y + br)),
-            (Point2::new(-he.x, he.y + br), Point2::new(-he.x - br, he.y)),
-        ];
+        out_vtx.push(pts[0] + **ns.last().unwrap() * br);
 
-        for i in 0..4 {
-            out_vtx.push(arc_vertices[i].0);
-            utils::push_arc(
-                arc_centers[i],
-                arc_vertices[i].0,
-                arc_vertices[i].1,
-                border_subdivs,
-                &mut out_vtx,
-            );
-            out_vtx.push(arc_vertices[i].1);
+        for ia in 0..pts.len() - 1 {
+            let ib = ia + 1;
+
+            let arc_start = *out_vtx.last().unwrap();
+            let arc_end = pts[ia] + *ns[ia] * br;
+            utils::push_arc(pts[ia], arc_start, arc_end, border_subdivs, &mut out_vtx);
+            out_vtx.push(arc_end);
+            out_vtx.push(pts[ib] + *ns[ia] * br);
         }
+
+        let arc_center = *pts.last().unwrap();
+        let arc_start = *out_vtx.last().unwrap();
+        let arc_end = arc_center + **ns.last().unwrap() * br;
+        utils::push_arc(arc_center, arc_start, arc_end, border_subdivs, &mut out_vtx);
+        out_vtx.push(arc_end);
 
         out_vtx
     }

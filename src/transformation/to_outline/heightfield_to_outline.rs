@@ -7,7 +7,7 @@ where
     Heights: HeightFieldStorage<Item = Real>,
     Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
 {
-    /// Discretize the boundary of this ball as a triangle-mesh.
+    /// Outlines this heightfield’s shape using polylines.
     pub fn to_outline(&self) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
         todo!()
     }

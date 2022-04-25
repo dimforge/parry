@@ -168,3 +168,151 @@ pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops:
 pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
     indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
 }
+
+#[cfg(feature = "dim3")]
+pub fn push_arc_and_idx(
+    center: Point<Real>,
+    start: u32,
+    end: u32,
+    nsubdivs: u32,
+    out_vtx: &mut Vec<Point<Real>>,
+    out_idx: &mut Vec<[u32; 2]>,
+) {
+    let base = out_vtx.len() as u32;
+    push_arc(
+        center,
+        out_vtx[start as usize],
+        out_vtx[end as usize],
+        nsubdivs,
+        out_vtx,
+    );
+    push_arc_idx(start, base..base + nsubdivs - 1, end, out_idx);
+}
+
+pub fn push_arc(
+    center: Point<Real>,
+    start: Point<Real>,
+    end: Point<Real>,
+    nsubdivs: u32,
+    out: &mut Vec<Point<Real>>,
+) {
+    assert!(nsubdivs > 0);
+    if let (Some((start_dir, start_len)), Some((end_dir, end_len))) = (
+        na::Unit::try_new_and_get(start - center, 0.0),
+        na::Unit::try_new_and_get(end - center, 0.0),
+    ) {
+        let len_inc = (end_len - start_len) / nsubdivs as Real;
+
+        #[cfg(feature = "dim2")]
+        let rot = Some(na::UnitComplex::scaled_rotation_between_axis(
+            &start_dir,
+            &end_dir,
+            1.0 / nsubdivs as Real,
+        ));
+
+        #[cfg(feature = "dim3")]
+        let rot = na::UnitQuaternion::scaled_rotation_between_axis(
+            &start_dir,
+            &end_dir,
+            1.0 / nsubdivs as Real,
+        );
+
+        if let Some(rot) = rot {
+            let mut curr_dir = start_dir;
+            let mut curr_len = start_len;
+
+            for _ in 0..nsubdivs - 1 {
+                curr_dir = rot * curr_dir;
+                curr_len += len_inc;
+
+                out.push(center + *curr_dir * curr_len);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "dim3")]
+pub fn push_arc_idx(start: u32, arc: std::ops::Range<u32>, end: u32, out: &mut Vec<[u32; 2]>) {
+    if arc.is_empty() {
+        out.push([start, end]);
+    } else {
+        out.push([start, arc.start]);
+        for i in arc.start..arc.end - 1 {
+            out.push([i, i + 1])
+        }
+        out.push([arc.end - 1, end])
+    }
+}
+
+#[cfg(feature = "dim3")]
+pub fn apply_revolution(
+    collapse_bottom: bool,
+    collapse_top: bool,
+    circle_ranges: &[std::ops::Range<u32>],
+    nsubdivs: u32,
+    out_vtx: &mut Vec<Point<Real>>, // Must be set to the half-profile.
+    out_idx: &mut Vec<[u32; 2]>,
+) {
+    use na::RealField;
+    let ang_increment = Real::two_pi() / (nsubdivs as Real);
+    let angs = [
+        ang_increment * (nsubdivs / 4) as Real,
+        ang_increment * (nsubdivs / 2) as Real,
+        ang_increment * ((3 * nsubdivs) / 4) as Real,
+    ];
+
+    let half_profile_len = out_vtx.len();
+
+    for k in 0..half_profile_len as u32 - 1 {
+        out_idx.push([k, k + 1]);
+    }
+
+    let mut range = 0..half_profile_len;
+
+    if collapse_bottom {
+        range.start += 1;
+    }
+    if collapse_top {
+        range.end -= 1;
+    }
+
+    // Push rotated profiles.
+    for i in 0..3 {
+        let base = out_vtx.len() as u32;
+        let rot = na::UnitQuaternion::new(Vector::y() * angs[i]);
+
+        if collapse_bottom {
+            out_idx.push([0, base]);
+        }
+
+        for k in range.clone() {
+            out_vtx.push(rot * out_vtx[k]);
+        }
+
+        for k in 0..range.len() as u32 - 1 {
+            out_idx.push([base + k, base + k + 1]);
+        }
+
+        if collapse_top {
+            out_idx.push([base + range.len() as u32 - 1, half_profile_len as u32 - 1]);
+        }
+    }
+
+    // Push circles.
+    // TODO: right now, this duplicates some points, to simplify the index
+    //       buffer construction.
+    for circle_range in circle_ranges {
+        for i in circle_range.clone() {
+            let pt = out_vtx[i as usize];
+            let base = out_vtx.len() as u32;
+            push_circle(
+                pt.coords.xz().norm(),
+                nsubdivs,
+                ang_increment,
+                pt.y,
+                out_vtx,
+            );
+            push_circle_outline_indices(out_idx, base..base + nsubdivs)
+        }
+    }
+}
