@@ -26,7 +26,7 @@ serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
-cuda   = [ "cust", "nalgebra/cuda" ]
+cuda   = [ "cust_core", "cust", "nalgebra/cuda" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -52,6 +52,7 @@ serde           = { version = "1.0", optional = true, features = ["derive"]}
 num-derive      = "0.3"
 indexmap        = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash      = { version = "1", optional = true }
+cust_core       = { version = "0.1", optional = true }
 spade           = { version = "2", optional = true } # Make this optional?
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
