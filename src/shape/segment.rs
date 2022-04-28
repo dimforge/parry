@@ -56,6 +56,7 @@ impl Segment {
         unsafe { mem::transmute(arr) }
     }
 
+    /// Computes a scaled version of this segment.
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         Self::new(
             na::Scale::from(*scale) * self.a,

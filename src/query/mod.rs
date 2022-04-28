@@ -41,7 +41,7 @@ pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
 pub use self::query_dispatcher::PersistentQueryDispatcher;
 pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
-pub use self::split::{CanonicalSplit, Split, SplitResult};
+pub use self::split::SplitResult;
 pub use self::time_of_impact::{time_of_impact, TOIStatus, TOI};
 
 mod clip;

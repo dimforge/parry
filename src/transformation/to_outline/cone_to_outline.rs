@@ -1,7 +1,7 @@
 use crate::math::Real;
 use crate::shape::Cone;
 use crate::transformation::utils;
-use na::{self, Point3, RealField, Vector3};
+use na::{self, Point3, Vector3};
 
 impl Cone {
     /// Outlines this cone’s shape using polylines.

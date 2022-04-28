@@ -12,12 +12,19 @@ use crate::math::{Real, Vector};
 
 use crate::shape::Segment;
 
+/// Indicates if a cell of an heightfield is removed or not. Set this to `false` for
+/// a removed cell.
 pub type HeightFieldCellStatus = bool;
 
+/// Abstraction over the storage type of an heightfield’s heights.
 pub trait HeightFieldStorage {
+    /// The type of heights.
     type Item;
+    /// The number of heights on this storage.
     fn len(&self) -> usize;
+    /// Gets the `i`-th height of the heightfield.
     fn get(&self, i: usize) -> Self::Item;
+    /// Sets the `i`-th height of the heightfield.
     fn set(&mut self, i: usize, val: Self::Item);
 }
 
@@ -45,7 +52,7 @@ impl<T: Scalar> HeightFieldStorage for DVector<T> {
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)] // Needed for Cuda.
-/// A 2D heightfield.
+/// A 2D heightfield with a generic storage buffer for its heights.
 pub struct GenericHeightField<Heights, Status> {
     heights: Heights,
     status: Status,
@@ -54,12 +61,15 @@ pub struct GenericHeightField<Heights, Status> {
     aabb: AABB,
 }
 
+/// A 2D heightfield.
 #[cfg(feature = "std")]
 pub type HeightField = GenericHeightField<DVector<Real>, DVector<HeightFieldCellStatus>>;
 
+/// A 2D heightfield stored in the CUDA memory, initializable from the host.
 #[cfg(all(feature = "std", feature = "cuda"))]
 pub type CudaHeightField = GenericHeightField<CudaArray1<Real>, CudaArray1<HeightFieldCellStatus>>;
 
+/// A 3D heightfield stored in the CUDA memory, accessible from within a Cuda kernel.
 #[cfg(feature = "cuda")]
 pub type CudaHeightFieldPointer = GenericHeightField<
     crate::utils::CudaArrayPointer1<Real>,
@@ -92,6 +102,7 @@ impl HeightField {
         }
     }
 
+    /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
     #[cfg(all(feature = "cuda"))]
     pub fn to_cuda(&self) -> CudaResult<CudaHeightField> {
         Ok(CudaHeightField {
@@ -105,6 +116,7 @@ impl HeightField {
 
 #[cfg(all(feature = "std", feature = "cuda"))]
 impl CudaHeightField {
+    /// Returns the heightfield usable from within a CUDA kernel.
     pub fn as_device_ptr(&self) -> CudaHeightFieldPointer {
         CudaHeightFieldPointer {
             heights: self.heights.as_device_ptr(),
@@ -143,8 +155,9 @@ where
         self.scale = new_scale;
     }
 
+    /// Returns a scaled version of this heightfield.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.set_scale(*scale);
+        self.set_scale(self.scale.component_mul(&scale));
         self
     }
 

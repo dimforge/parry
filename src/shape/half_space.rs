@@ -19,6 +19,10 @@ impl HalfSpace {
         HalfSpace { normal }
     }
 
+    /// Computes a scaled version of this half-space.
+    ///
+    /// Returns `None` if `self.normal` scaled by `scale` is zero (the scaled half-space
+    /// degenerates to a single point).
     pub fn scaled(self, scale: &Vector<Real>) -> Option<Self> {
         Unit::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
     }

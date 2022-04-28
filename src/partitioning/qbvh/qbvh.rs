@@ -184,6 +184,9 @@ impl<T: IndexedData> QBVH<T> {
         &self.proxies
     }
 
+    /// Computes a scaled version of this QBVH.
+    ///
+    /// This will apply the scale to each AABB on this BVH.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.root_aabb = self.root_aabb.scaled(scale);
         for node in &mut self.nodes {

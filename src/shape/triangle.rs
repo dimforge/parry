@@ -145,6 +145,7 @@ impl Triangle {
         ]
     }
 
+    /// Computes a scaled version of this triangle.
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         Self::new(
             na::Scale::from(*scale) * self.a,
@@ -425,6 +426,7 @@ impl Triangle {
         // )
     }
 
+    /// Is this triangle degenerate or almost degenerate?
     #[cfg(feature = "dim3")]
     pub fn is_affinely_dependent_eps(&self, eps: Real) -> bool {
         let p1p2 = self.b - self.a;

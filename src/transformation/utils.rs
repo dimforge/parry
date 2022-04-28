@@ -5,14 +5,18 @@ use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
 
+/// Applies in-place a transformation to an array of points.
 pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
     points.iter_mut().for_each(|p| *p = m * *p);
 }
+
+/// Returns the transformed version of a vector of points.
 pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
     transform(&mut points, m);
     points
 }
 
+/// Returns the transformed version of a vector of points.
 pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Real>> {
     points
         .iter_mut()
@@ -156,6 +160,7 @@ pub fn reverse_clockwising(indices: &mut [[u32; DIM]]) {
     indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 }
 
+/// Pushes the index buffer of a closed loop.
 #[cfg(feature = "dim3")]
 #[inline]
 pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
@@ -163,12 +168,19 @@ pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops:
     indices.push([range.end - 1, range.start]);
 }
 
+/// Pushes the index buffer of an open chain.
 #[cfg(feature = "dim3")]
 #[inline]
 pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
     indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
 }
 
+/// Pushes to `out_vtx` a set of points forming an arc starting at `start`, ending at `end` with
+/// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
+/// The `start` and `end` point are not pushed to `out_vtx`.
+///
+/// ALso pushes to `out_idx` the appropriate index buffer to form the arc (including attaches to
+/// the `start` and `end` points).
 #[cfg(feature = "dim3")]
 pub fn push_arc_and_idx(
     center: Point<Real>,
@@ -189,6 +201,9 @@ pub fn push_arc_and_idx(
     push_arc_idx(start, base..base + nsubdivs - 1, end, out_idx);
 }
 
+/// Pushes to `out` a set of points forming an arc starting at `start`, ending at `end` with
+/// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
+/// The `start` and `end` point are not pushed to `out`.
 pub fn push_arc(
     center: Point<Real>,
     start: Point<Real>,
@@ -231,6 +246,8 @@ pub fn push_arc(
     }
 }
 
+/// Pushes the index buffer for an arc between `start` and `end` and intermediate points in the
+/// range `arc`.
 #[cfg(feature = "dim3")]
 pub fn push_arc_idx(start: u32, arc: std::ops::Range<u32>, end: u32, out: &mut Vec<[u32; 2]>) {
     if arc.is_empty() {
@@ -244,6 +261,7 @@ pub fn push_arc_idx(start: u32, arc: std::ops::Range<u32>, end: u32, out: &mut V
     }
 }
 
+/// Applies a revolution, using the Y symmetry axis passing through the origin.
 #[cfg(feature = "dim3")]
 pub fn apply_revolution(
     collapse_bottom: bool,

@@ -1,7 +1,7 @@
 use crate::math::Real;
 use crate::shape::RoundCylinder;
 use crate::transformation::utils;
-use na::{self, Point3, RealField, Vector3};
+use na::{self, Point3};
 
 impl RoundCylinder {
     /// Outlines this round cylinder’s shape using polylines.

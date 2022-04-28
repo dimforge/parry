@@ -12,14 +12,18 @@ use crate::utils::HashablePartialEq;
 #[cfg(feature = "dim3")]
 use {crate::shape::Cuboid, crate::utils::SortedPair};
 
+/// Indicated an inconsistency in the topology of a triangle mesh.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
     /// Found a triangle with two or three identical vertices.
     BadTriangle(u32),
-    /// At least two adjascent triangles have opposite orientations.
+    /// At least two adjacent triangles have opposite orientations.
     BadAdjascentTrianglesOrientation {
+        /// The first triangle, with an orientation opposite to the second triangle.
         triangle1: u32,
+        /// The second triangle, with an orientation opposite to the first triangle.
         triangle2: u32,
+        /// The edge shared between the two triangles.
         edge: (u32, u32),
     },
 }
@@ -42,11 +46,19 @@ impl std::fmt::Display for TopologyError {
 #[cfg(feature = "std")]
 impl std::error::Error for TopologyError {}
 
+/// The set of pseudo-normals of a triangle mesh.
+///
+/// These pseudo-normals are used for the inside-outside test of a
+/// point on the triangle, as described in the paper:
+/// "Signed distance computation using the angle weighted pseudonormal", Baerentzen, et al.
+/// DOI: 10.1109/TVCG.2005.49
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg(feature = "dim3")]
 pub struct TriMeshPseudoNormals {
+    /// The pseudo-normals of the vertices.
     pub vertices_pseudo_normal: Vec<Vector<Real>>,
+    /// The pseudo-normals of the edges.
     pub edges_pseudo_normal: HashMap<SortedPair<u32>, Vector<Real>>,
 }
 
@@ -60,11 +72,12 @@ impl Default for TriMeshPseudoNormals {
     }
 }
 
+/// The connected-components of a triangle mesh.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct TriMeshConnectedComponents {
-    // The `face_colors[i]` gives the connecte-component index
-    // of the i-th face.
+    /// The `face_colors[i]` gives the connected-component index
+    /// of the i-th face.
     pub face_colors: Vec<u32>,
     /// The set of faces grouped by connected components.
     pub grouped_faces: Vec<u32>,
@@ -74,37 +87,54 @@ pub struct TriMeshConnectedComponents {
 }
 
 impl TriMeshConnectedComponents {
+    /// The total number of connected components.
     pub fn num_connected_components(&self) -> usize {
         self.ranges.len() - 1
     }
 }
 
+/// A vertex of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct TopoVertex {
+    /// One of the half-edge with this vertex as endpoint.
     pub half_edge: u32,
 }
 
+/// A face of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct TopoFace {
+    /// The half-edge adjascent to this face, whith a starting point equal
+    /// to the first point of this face.
     pub half_edge: u32,
 }
 
+/// A half-edge of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct TopoHalfEdge {
+    /// The next half-edge.
     pub next: u32,
+    /// This half-edge twin on the adjascent triangle.
+    ///
+    /// This is `u32::MAX` if there is no twin.
     pub twin: u32,
+    /// The first vertex of this edge.
     pub vertex: u32,
+    /// The face associated to this half-edge.
     pub face: u32,
 }
 
+/// The half-edge topology information of a triangle mesh.
 #[derive(Clone, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct TriMeshTopology {
+    /// The vertices of this half-edge representation.
     pub vertices: Vec<TopoVertex>,
+    /// The faces of this half-edge representation.
     pub faces: Vec<TopoFace>,
+    /// The half-edges of this half-edge representation.
     pub half_edges: Vec<TopoHalfEdge>,
 }
 
@@ -215,10 +245,12 @@ impl TriMesh {
         result
     }
 
+    /// The flags of this triangle mesh.
     pub fn flags(&self) -> TriMeshFlags {
         self.flags
     }
 
+    /// Sets the flags of this triangle mesh, controlling its optional associated data.
     pub fn set_flags(&mut self, flags: TriMeshFlags) -> Result<(), TopologyError> {
         let mut result = Ok(());
         let prev_indices_len = self.indices.len();
@@ -273,6 +305,7 @@ impl TriMesh {
         result
     }
 
+    /// Transforms in-place the vertices of this triangle mesh.
     pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
         self.vertices
             .iter_mut()
@@ -293,6 +326,7 @@ impl TriMesh {
         }
     }
 
+    /// Returns a scaled version of this triangle mesh.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.vertices
             .iter_mut()
@@ -322,6 +356,7 @@ impl TriMesh {
         }
     }
 
+    /// Appends a second triangle mesh to this triangle mesh.
     pub fn append(&mut self, rhs: &TriMesh) {
         let base_id = self.vertices.len() as u32;
         self.vertices.extend_from_slice(rhs.vertices());
@@ -423,6 +458,7 @@ impl TriMesh {
         self.connected_components.as_ref()
     }
 
+    /// The pseudo-normals of this triangle mesh, if they have been computed.
     #[cfg(feature = "dim3")]
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
         self.pseudo_normals.as_ref()

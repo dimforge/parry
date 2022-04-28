@@ -36,6 +36,12 @@ impl Cylinder {
         }
     }
 
+    /// Computes a scaled version of this cylinder.
+    ///
+    /// If the scaling factor is non-uniform, then it can’t be represented as
+    /// cylinder. Instead, a convex polyhedral approximation (with `nsubdivs`
+    /// subdivisions) is returned. Returns `None` if that approximation had degenerate
+    /// normals (for example if the scaling factor along one axis is zero).
     #[inline]
     pub fn scaled(
         self,
