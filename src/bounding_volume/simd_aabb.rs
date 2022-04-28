@@ -107,6 +107,7 @@ impl SimdAABB {
         (self.maxs - self.mins).norm()
     }
 
+    /// Return the AABB of the `self` transformed by the given isometry.
     pub fn transform_by(&self, transform: &Isometry<SimdReal>) -> Self {
         let ls_center = self.center();
         let center = transform * ls_center;
@@ -117,6 +118,7 @@ impl SimdAABB {
         }
     }
 
+    /// Returns a scaled version of this AABB.
     #[inline]
     pub fn scaled(self, scale: &Vector<SimdReal>) -> Self {
         let a = self.mins.coords.component_mul(&scale);

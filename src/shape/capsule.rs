@@ -93,6 +93,12 @@ impl Capsule {
         Isometry::from_parts(self.center().coords.into(), rot)
     }
 
+    /// Computes a scaled version of this capsule.
+    ///
+    /// If the scaling factor is non-uniform, then it can’t be represented as
+    /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
+    /// subdivisions) is returned. Returns `None` if that approximation had degenerate
+    /// normals (for example if the scaling factor along one axis is zero).
     #[cfg(feature = "dim2")]
     pub fn scaled(
         self,
@@ -117,6 +123,12 @@ impl Capsule {
         }
     }
 
+    /// Computes a scaled version of this capsule.
+    ///
+    /// If the scaling factor is non-uniform, then it can’t be represented as
+    /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
+    /// subdivisions) is returned. Returns `None` if that approximation had degenerate
+    /// normals (for example if the scaling factor along one axis is zero).
     #[cfg(feature = "dim3")]
     pub fn scaled(
         self,

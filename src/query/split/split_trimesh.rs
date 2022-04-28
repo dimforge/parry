@@ -1,18 +1,11 @@
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
-use crate::query::{CanonicalSplit, PointQuery, SplitResult};
+use crate::query::{PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
-
-impl CanonicalSplit for TriMesh {
-    fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
-        // TODO optimize this.
-        self.local_split(&Vector::ith_axis(axis), bias, epsilon)
-    }
-}
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
@@ -62,6 +55,23 @@ impl Triangulation {
 }
 
 impl TriMesh {
+    /// Splits this `TriMesh` along the given canonical axis.
+    ///
+    /// This will split the AABB by a plane with a normal with it’s `axis`-th component set to 1.
+    /// The splitting plane is shifted wrt. the origin by the `bias` (i.e. it passes through the point
+    /// equal to `normal * bias`).
+    ///
+    /// # Result
+    /// Returns the result of the split. The first mesh returned is the piece lying on the negative
+    /// half-space delimited by the splitting plane. The second mesh returned is the piece lying on the
+    /// positive half-space delimited by the splitting plane.
+    pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
+        // TODO: optimize this.
+        self.local_split(&Vector::ith_axis(axis), bias, epsilon)
+    }
+
+    /// Splits this mesh, transformed by `position` by a plane identified by its normal `local_axis`
+    /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn split(
         &self,
         position: &Isometry<Real>,
@@ -74,6 +84,8 @@ impl TriMesh {
         self.local_split(&local_axis, bias + added_bias, epsilon)
     }
 
+    /// Splits this mesh by a plane identified by its normal `local_axis`
+    /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn local_split(
         &self,
         local_axis: &UnitVector<Real>,
@@ -332,6 +344,7 @@ impl TriMesh {
         }
     }
 
+    /// Computes the intersection mesh between an AABB and this mesh.
     pub fn intersection_with_aabb(
         &self,
         position: &Isometry<Real>,
@@ -352,6 +365,7 @@ impl TriMesh {
         )
     }
 
+    /// Computes the intersection mesh between a cuboid and this mesh transformed by `position`.
     pub fn intersection_with_cuboid(
         &self,
         position: &Isometry<Real>,
@@ -370,6 +384,7 @@ impl TriMesh {
         )
     }
 
+    /// Computes the intersection mesh between a cuboid and this mesh.
     pub fn intersection_with_local_cuboid(
         &self,
         flip_mesh: bool,

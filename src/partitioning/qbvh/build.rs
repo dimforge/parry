@@ -1,7 +1,7 @@
 use crate::bounding_volume::{BoundingVolume, SimdAABB, AABB};
 use crate::math::Vector;
 use crate::math::{Point, Real};
-use crate::query::{CanonicalSplit, SplitResult};
+use crate::query::SplitResult;
 use crate::simd::SimdReal;
 use simba::simd::SimdValue;
 
@@ -103,8 +103,17 @@ impl CenterDataSplitter {
     }
 }
 
+/// Data splitter for QBVH construction that generates non-overlapping AABBs at each
+/// level of the tree.
+///
+/// This splitter assumes that no pairs of the input set of AABB overlap (though they
+/// can intersect slightly at their boundaries with an error of `epsilon`). Given this set,
+/// the QBVH constructed using this splitter will be such that no pair of intermediate nodes
+/// with the same depth have overlapping AABBs.
 pub struct QbvhNonOverlappingDataSplitter<F> {
+    /// The leaf data-splitting function.
     pub canonical_split: F,
+    /// Allowed overlap between two leaf AABBs.
     pub epsilon: Real,
 }
 

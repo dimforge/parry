@@ -21,6 +21,12 @@ impl Ball {
         Ball { radius }
     }
 
+    /// Computes a scaled version of this ball.
+    ///
+    /// If the scaling factor is non-uniform, then it can’t be represented as
+    /// ball. Instead, a convex polygon approximation (with `nsubdivs`
+    /// subdivisions) is returned. Returns `None` if that approximation had degenerate
+    /// normals (for example if the scaling factor along one axis is zero).
     #[cfg(feature = "dim2")]
     #[inline]
     pub fn scaled(
@@ -42,6 +48,12 @@ impl Ball {
         }
     }
 
+    /// Computes a scaled version of this ball.
+    ///
+    /// If the scaling factor is non-uniform, then it can’t be represented as
+    /// ball. Instead, a convex polygon approximation (with `nsubdivs`
+    /// subdivisions) is returned. Returns `None` if that approximation had degenerate
+    /// normals (for example if the scaling factor along one axis is zero).
     #[cfg(feature = "dim3")]
     #[inline]
     pub fn scaled(

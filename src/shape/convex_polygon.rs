@@ -77,6 +77,10 @@ impl ConvexPolygon {
         &self.normals
     }
 
+    /// Computes a scaled version of this convex polygon.
+    ///
+    /// Returns `None` if the result had degenerate normals (for example if
+    /// the scaling factor along one axis is zero).
     pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
         self.points
             .iter_mut()

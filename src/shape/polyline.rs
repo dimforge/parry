@@ -110,6 +110,7 @@ impl Polyline {
         }
     }
 
+    /// Computes a scaled version of this polyline.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.vertices
             .iter_mut()

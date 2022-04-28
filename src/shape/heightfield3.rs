@@ -28,11 +28,17 @@ bitflags! {
     }
 }
 
+/// Abstraction over the storage type of an heightfield’s heights grid.
 pub trait HeightFieldStorage {
+    /// The type of heights.
     type Item;
+    /// The number of rows of the heights grid.
     fn nrows(&self) -> usize;
+    /// The number of columns of the heights grid.
     fn ncols(&self) -> usize;
+    /// Gets the height on the `(i, j)`-th cell of the height grid.
     fn get(&self, i: usize, j: usize) -> Self::Item;
+    /// Sets the height on the `(i, j)`-th cell of the height grid.
     fn set(&mut self, i: usize, j: usize, val: Self::Item);
 }
 
@@ -65,6 +71,7 @@ impl<T: Scalar> HeightFieldStorage for DMatrix<T> {
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)] // Needed for Cuda.
+/// A 3D heightfield with a generic storage buffer for its height grid.
 pub struct GenericHeightField<Heights, Status> {
     heights: Heights,
     status: Status,
@@ -74,12 +81,15 @@ pub struct GenericHeightField<Heights, Status> {
     num_triangles: usize,
 }
 
+/// A 3D heightfield.
 #[cfg(feature = "std")]
 pub type HeightField = GenericHeightField<DMatrix<Real>, DMatrix<HeightFieldCellStatus>>;
 
+/// A 3D heightfield stored in the CUDA memory, initializable from the host.
 #[cfg(all(feature = "std", feature = "cuda"))]
 pub type CudaHeightField = GenericHeightField<CudaArray2<Real>, CudaArray2<HeightFieldCellStatus>>;
 
+/// A 3D heightfield stored in the CUDA memory, accessible from within a Cuda kernel.
 #[cfg(feature = "cuda")]
 pub type CudaHeightFieldPointer = GenericHeightField<
     crate::utils::CudaArrayPointer2<Real>,
@@ -117,6 +127,7 @@ impl HeightField {
         }
     }
 
+    /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
     #[cfg(feature = "cuda")]
     pub fn to_cuda(&self) -> CudaResult<CudaHeightField> {
         Ok(CudaHeightField {
@@ -131,6 +142,7 @@ impl HeightField {
 
 #[cfg(all(feature = "std", feature = "cuda"))]
 impl CudaHeightField {
+    /// Returns the heightfield usable from within a CUDA kernel.
     pub fn as_device_ptr(&self) -> CudaHeightFieldPointer {
         CudaHeightFieldPointer {
             heights: self.heights.as_device_ptr(),
@@ -249,7 +261,7 @@ where
         }
     }
 
-    /// An iterator through all the triangles around the given point, after vertical projection on the heightfield
+    /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
     pub fn triangles_around_point<'a>(
         &'a self,
         point: &Point3<Real>,
@@ -373,8 +385,9 @@ where
         self.scale = new_scale;
     }
 
+    /// Returns a scaled version of this heightfield.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.set_scale(*scale);
+        self.set_scale(self.scale.component_mul(&scale));
         self
     }
 
@@ -624,6 +637,7 @@ where
     }
 }
 
+/// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
 pub struct HeightFieldRadialTriangles<'a, Heights, Status> {
     heightfield: &'a GenericHeightField<Heights, Status>,
     center: (usize, usize),
@@ -637,6 +651,11 @@ where
     Heights: HeightFieldStorage<Item = Real>,
     Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
 {
+    /// Returns the next triangle in this iterator.
+    ///
+    /// Returns `None` no triangle closest than `max_dist` remain
+    /// to be yielded. The `max_dist` can be modified at each iteration
+    /// as long as the the new value is smaller or equal to the previous value.
     pub fn next(&mut self, max_dist: Real) -> Option<Triangle> {
         let max_rad = if max_dist == Real::MAX {
             usize::MAX

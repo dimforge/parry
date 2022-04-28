@@ -1,16 +1,26 @@
 use crate::math::{Point, Real, UnitVector, Vector};
-use crate::query::{CanonicalSplit, Split, SplitResult};
+use crate::query::SplitResult;
 use crate::shape::Segment;
 
-impl CanonicalSplit for Segment {
-    fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
-        // TODO optimize this.
+impl Segment {
+    /// Splits this segment along the given canonical axis.
+    ///
+    /// This will split the segment by a plane with a normal with it’s `axis`-th component set to 1.
+    /// The splitting plane is shifted wrt. the origin by the `bias` (i.e. it passes through the point
+    /// equal to `normal * bias`).
+    ///
+    /// # Result
+    /// Returns the result of the split. The first shape returned is the piece lying on the negative
+    /// half-space delimited by the splitting plane. The second shape returned is the piece lying on the
+    /// positive half-space delimited by the splitting plane.
+    pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
+        // TODO: optimize this.
         self.local_split(&Vector::ith_axis(axis), bias, epsilon)
     }
-}
 
-impl Split for Segment {
-    fn local_split(
+    /// Splits this segment by a plane identified by its normal `local_axis` and
+    /// the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
+    pub fn local_split(
         &self,
         local_axis: &UnitVector<Real>,
         bias: Real,
@@ -19,9 +29,13 @@ impl Split for Segment {
         self.local_split_and_get_intersection(local_axis, bias, epsilon)
             .0
     }
-}
 
-impl Segment {
+    /// Split a segment with a plane.
+    ///
+    /// This returns the result of the splitting operation, as well as
+    /// the intersection point (and barycentric coordinate of this point)
+    /// with the plane. The intersection point is `None` if the plane is
+    /// parallel or near-parallel to the segment.
     pub fn local_split_and_get_intersection(
         &self,
         local_axis: &UnitVector<Real>,

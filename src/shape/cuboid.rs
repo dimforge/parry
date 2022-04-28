@@ -28,6 +28,7 @@ impl Cuboid {
         Cuboid { half_extents }
     }
 
+    /// Computes a scaled version of this cuboid.
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         let new_hext = self.half_extents.component_mul(scale);
         Self {
