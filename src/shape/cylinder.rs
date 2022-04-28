@@ -2,9 +2,11 @@
 
 use crate::math::{Point, Real, Vector};
 use crate::shape::SupportMap;
-use either::Either;
 use na;
 use num::Zero;
+
+#[cfg(feature = "std")]
+use either::Either;
 
 #[cfg(not(feature = "std"))]
 use na::RealField; // for .copysign()
@@ -42,6 +44,7 @@ impl Cylinder {
     /// cylinder. Instead, a convex polyhedral approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
+    #[cfg(feature = "std")]
     #[inline]
     pub fn scaled(
         self,
