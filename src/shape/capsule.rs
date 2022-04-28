@@ -1,7 +1,9 @@
 use crate::math::{Isometry, Point, Real, Rotation, Vector};
 use crate::shape::{Segment, SupportMap};
-use either::Either;
 use na::Unit;
+
+#[cfg(feature = "std")]
+use either::Either;
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -99,7 +101,7 @@ impl Capsule {
     /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(feature = "dim2")]
+    #[cfg(all(feature = "dim2", feature = "std"))]
     pub fn scaled(
         self,
         scale: &Vector<Real>,
@@ -129,7 +131,7 @@ impl Capsule {
     /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(feature = "dim3")]
+    #[cfg(all(feature = "dim3", feature = "std"))]
     pub fn scaled(
         self,
         scale: &Vector<Real>,
