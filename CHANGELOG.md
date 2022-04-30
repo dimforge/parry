@@ -1,7 +1,23 @@
 # Change Log
 
-## Unreleased
+## v0.9.0 (30 Apr. 2022)
+
+### Modified
 - Remove `&self` argument from `Compound::decompose_trimesh`.
+- Switch to `cust` 0.3 (for partial CUDA support).
+- Rename `RoundShape::base_shape` to `RoundShape::inner_shape`.
+
+### Added
+- Allow custom balancing strategies for the QBVH construction. Some strategies are allowed to generate
+  new leaves during the splitting process.
+- Allow using point projection on heightfields from a CUDA kernel.
+- Add the simultaneous traversal of two QBVHs.
+- Add computation of `MassProperties` for a `TriMesh`.
+- Add `.to_outline` methods to compute the outline of a 3D shape (useful for debug-rendering).
+- Add method to apply a scaling factor to some shapes. Shapes not supporting non-uniform scaling (like balls)
+  will return a convex approximation of the scaled result.
+- Add methods to split (into up to two parts) a Cuboid, Segment, or TriMesh with an axis-aligned plane.
+- Add the computation of the intersection mesh between two TriMesh, or between a Cuboid and a TriMesh.
 
 ## v0.8.0 (2 Jan. 2022)
 ### Modified
