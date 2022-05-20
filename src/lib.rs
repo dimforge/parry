@@ -24,10 +24,10 @@ the rust programming language.
     not(feature = "simd-nightly")
 ))]
 std::compile_error!("The `simd-is-enabled` feature should not be enabled explicitly. Please enable the `simd-stable` or the `simd-nightly` feature instead.");
-// #[cfg(all(feature = "simd-is-enabled", feature = "enhanced-determinism"))]
-// std::compile_error!(
-//     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
-// );
+#[cfg(all(feature = "simd-is-enabled", feature = "enhanced-determinism"))]
+ std::compile_error!(
+     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
+);
 #[cfg(all(feature = "f64", feature="simd-stable"))]
 std::compile_error!(
      "Explicit SIMD optimizations on stable are not yet supported when the f64 feature is enabled."
