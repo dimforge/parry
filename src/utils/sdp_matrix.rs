@@ -359,7 +359,7 @@ where
     }
 }
 
-#[cfg(feature = "simd-nightly")]
+#[cfg(all(feature = "simd-nightly", feature="f32"))]
 impl From<[SdpMatrix3<Real>; 8]> for SdpMatrix3<simba::simd::f32x8> {
     fn from(data: [SdpMatrix3<Real>; 8]) -> Self {
         SdpMatrix3 {
@@ -427,7 +427,7 @@ impl From<[SdpMatrix3<Real>; 8]> for SdpMatrix3<simba::simd::f32x8> {
     }
 }
 
-#[cfg(feature = "simd-nightly")]
+#[cfg(all(feature = "simd-nightly", feature="f32"))]
 impl From<[SdpMatrix3<Real>; 16]> for SdpMatrix3<simba::simd::f32x16> {
     fn from(data: [SdpMatrix3<Real>; 16]) -> Self {
         SdpMatrix3 {
@@ -542,3 +542,74 @@ impl From<[SdpMatrix3<Real>; 16]> for SdpMatrix3<simba::simd::f32x16> {
         }
     }
 }
+
+
+#[cfg(all(feature = "simd-nightly", feature="f64", not(feature="f32")))]
+impl From<[SdpMatrix3<Real>; 8]> for SdpMatrix3<simba::simd::f64x8> {
+    fn from(data: [SdpMatrix3<Real>; 8]) -> Self {
+        SdpMatrix3 {
+            m11: simba::simd::f64x8::from([
+                data[0].m11,
+                data[1].m11,
+                data[2].m11,
+                data[3].m11,
+                data[4].m11,
+                data[5].m11,
+                data[6].m11,
+                data[7].m11,
+            ]),
+            m12: simba::simd::f64x8::from([
+                data[0].m12,
+                data[1].m12,
+                data[2].m12,
+                data[3].m12,
+                data[4].m12,
+                data[5].m12,
+                data[6].m12,
+                data[7].m12,
+            ]),
+            m13: simba::simd::f64x8::from([
+                data[0].m13,
+                data[1].m13,
+                data[2].m13,
+                data[3].m13,
+                data[4].m13,
+                data[5].m13,
+                data[6].m13,
+                data[7].m13,
+            ]),
+            m22: simba::simd::f64x8::from([
+                data[0].m22,
+                data[1].m22,
+                data[2].m22,
+                data[3].m22,
+                data[4].m22,
+                data[5].m22,
+                data[6].m22,
+                data[7].m22,
+            ]),
+            m23: simba::simd::f64x8::from([
+                data[0].m23,
+                data[1].m23,
+                data[2].m23,
+                data[3].m23,
+                data[4].m23,
+                data[5].m23,
+                data[6].m23,
+                data[7].m23,
+            ]),
+            m33: simba::simd::f64x8::from([
+                data[0].m33,
+                data[1].m33,
+                data[2].m33,
+                data[3].m33,
+                data[4].m33,
+                data[5].m33,
+                data[6].m33,
+                data[7].m33,
+            ]),
+        }
+    }
+}
+
+
