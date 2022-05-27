@@ -14,7 +14,7 @@ pub struct ConvexPolygon {
 impl ConvexPolygon {
     /// Creates a new 2D convex polygon from an arbitrary set of points.
     ///
-    /// This explicitly computes the convex hull of the given set of points. Use
+    /// This explicitly computes the convex hull of the given set of points.
     /// Returns `None` if the convex hull computation failed.
     pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
         let vertices = crate::transformation::convex_hull(points);
