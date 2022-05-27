@@ -21,7 +21,8 @@ impl ConvexPolygon {
         Self::from_convex_polyline(vertices)
     }
 
-    /// Creates a new 2D convex polygon from a set of points assumed to describe a counter-clockwise convex polyline.
+    /// Creates a new 2D convex polygon from a set of points assumed to
+    /// describe a counter-clockwise convex polyline.
     ///
     /// Convexity of the input polyline is not checked.
     /// Returns `None` if all points form an almost flat line.
