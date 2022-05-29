@@ -93,6 +93,41 @@ impl ConvexPolygon {
         Some(self)
     }
 
+    /// Returns a mitered offset of the polygon.
+    ///
+    /// # Arguments
+    ///
+    /// * `amount` - size of the inflation. Each edge is moved outwards by this
+    ///   amount.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `amount` is not a non-negative finite number.
+    pub fn offsetted(&self, amount: Real) -> Self {
+        if !amount.is_finite() || amount < 0. {
+            panic!(
+                "Offset amount must be a non-negative finite number, got {}.",
+                amount
+            );
+        }
+
+        let mut points = Vec::with_capacity(self.points.len());
+        let normals = self.normals.clone();
+
+        for i2 in 0..self.points.len() {
+            let i1 = if i2 == 0 {
+                self.points.len() - 1
+            } else {
+                i2 - 1
+            };
+            let normal_a = normals[i1];
+            let direction = normal_a.into_inner() + normals[i2].into_inner();
+            points.push(self.points[i2] + (amount / direction.dot(&normal_a)) * direction);
+        }
+
+        ConvexPolygon { points, normals }
+    }
+
     /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
@@ -241,3 +276,33 @@ impl ConvexPolyhedron for ConvexPolygon {
     }
 }
 */
+
+#[cfg(feature = "dim2")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dilation() {
+        let polygon = ConvexPolygon::from_convex_polyline(vec![
+            Point::new(1., 0.),
+            Point::new(-1., 0.),
+            Point::new(0., -1.),
+        ])
+        .unwrap();
+
+        let offseted = polygon.offseted(0.5);
+        let expected = vec![
+            Point::new(2.207, 0.5),
+            Point::new(-2.207, 0.5),
+            Point::new(0., -1.707),
+        ];
+
+        assert_eq!(offseted.points().len(), 3);
+        assert!(offseted
+            .points()
+            .iter()
+            .zip(expected.iter())
+            .all(|(a, b)| (a.coords - b.coords).magnitude() < 0.001));
+    }
+}
