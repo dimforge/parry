@@ -180,7 +180,7 @@ impl<T: IndexedData> QBVH<T> {
         let dilation_factor = SimdReal::splat(dilation_factor);
 
         while let Some(id) = self.dirty_nodes.pop_front() {
-            // NOTE: this will data the case where we reach the root of the tree.
+            // NOTE: this will deal with the case where we reach the root of the tree.
             if let Some(node) = self.nodes.get(id as usize) {
                 // Compute the new aabb.
                 let mut new_aabbs = [AABB::new_invalid(); SIMD_WIDTH];

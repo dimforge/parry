@@ -74,7 +74,7 @@ pub struct QBVHNode {
     pub children: [u32; 4],
     /// The index of the node parent to the 4 nodes represented by `self`.
     pub parent: NodeIndex,
-    /// Are the four nodes represneted by `self` leaves of the `QBVH`?
+    /// Are the four nodes represented by `self` leaves of the `QBVH`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
     pub(super) dirty: bool, // TODO: move this to a separate bitvec?
 }
