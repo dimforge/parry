@@ -43,6 +43,10 @@ impl IndexedData for u64 {
 /// The index of a node part of a QBVH.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct NodeIndex {
     pub(super) index: u32, // Index of the addressed node in the `nodes` array.
     pub(super) lane: u8,   // SIMD lane of the addressed node.
@@ -66,6 +70,10 @@ impl NodeIndex {
 /// This groups four nodes of the QBVH.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct QBVHNode {
     /// The AABBs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAABB,
@@ -81,6 +89,10 @@ pub struct QBVHNode {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct QBVHProxy<T> {
     pub node: NodeIndex,
     pub data: T, // The collider data. TODO: only set the collider generation here?
@@ -109,11 +121,15 @@ impl<T> QBVHProxy<T> {
 ///
 /// This is a bounding-volume-hierarchy where each node has either four children or none.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Clone, Debug)]
 pub struct QBVH<T> {
     pub(super) root_aabb: AABB,
     pub(super) nodes: Vec<QBVHNode>,
-    pub(super) dirty_nodes: VecDeque<u32>,
+    pub(super) dirty_nodes: Vec<u32>,
     pub(super) proxies: Vec<QBVHProxy<T>>,
 }
 
@@ -123,7 +139,7 @@ impl<T: IndexedData> QBVH<T> {
         QBVH {
             root_aabb: AABB::new_invalid(),
             nodes: Vec::new(),
-            dirty_nodes: VecDeque::new(),
+            dirty_nodes: Vec::new(),
             proxies: Vec::new(),
         }
     }

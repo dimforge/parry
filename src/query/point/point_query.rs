@@ -5,6 +5,10 @@ use na;
 /// Description of the projection of a point on a shape.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct PointProjection {
     /// Whether or not the point to project was inside of the shape.
     pub is_inside: bool,

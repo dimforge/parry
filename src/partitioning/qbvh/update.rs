@@ -167,7 +167,7 @@ impl<T: IndexedData> QBVH<T> {
         let node = &mut self.nodes[node_id as usize];
         if !node.dirty {
             node.dirty = true;
-            self.dirty_nodes.push_back(node_id);
+            self.dirty_nodes.push(node_id);
         }
     }
 
@@ -179,8 +179,8 @@ impl<T: IndexedData> QBVH<T> {
         // Loop on the dirty leaves.
         let dilation_factor = SimdReal::splat(dilation_factor);
 
-        while let Some(id) = self.dirty_nodes.pop_front() {
-            // NOTE: this will deal with the case where we reach the root of the tree.
+        while let Some(id) = self.dirty_nodes.pop() {
+            // NOTE: this will data the case where we reach the root of the tree.
             if let Some(node) = self.nodes.get(id as usize) {
                 // Compute the new aabb.
                 let mut new_aabbs = [AABB::new_invalid(); SIMD_WIDTH];
@@ -203,7 +203,7 @@ impl<T: IndexedData> QBVH<T> {
                 if !node.simd_aabb.contains(&new_simd_aabb).all() {
                     node.simd_aabb = new_simd_aabb;
                     node.simd_aabb.dilate_by_factor(dilation_factor);
-                    self.dirty_nodes.push_back(node.parent.index);
+                    self.dirty_nodes.push(node.parent.index);
                 }
                 node.dirty = false;
             }

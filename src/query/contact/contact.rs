@@ -5,6 +5,10 @@ use std::mem;
 /// Geometric description of a contact.
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct Contact {
     /// Position of the contact on the first object.
     pub point1: Point<Real>,

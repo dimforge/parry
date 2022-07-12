@@ -7,6 +7,10 @@ use simba::simd::{SimdPartialOrd, SimdValue};
 
 /// Four AABB represented as a single SoA AABB with SIMD components.
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct SimdAABB {
     /// The min coordinates of the AABBs.
     pub mins: Point<SimdReal>,

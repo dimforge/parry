@@ -23,6 +23,7 @@ std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "
 dim3    = [ ]
 f64     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
+rkyv-serialize = [ "rkyv", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
@@ -49,11 +50,13 @@ simba      = { version = "0.7", default-features = false }
 nalgebra   = { version = "0.31", default-features = false, features = [ "libm" ] }
 approx     = { version = "0.5", default-features = false }
 serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
+rkyv       = { version = "0.7", optional = true }
 num-derive = "0.3"
 indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = { version = "1", optional = true }
 cust_core  = { version = "0.1", optional = true }
 spade      = { version = "2", optional = true } # Make this optional?
+rayon      = { version = "1", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust       = { version = "0.3", optional = true }

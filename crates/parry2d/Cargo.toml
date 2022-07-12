@@ -23,10 +23,11 @@ std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "
 dim2    = [ ]
 f32     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
+rkyv-serialize = [ "rkyv", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
-cuda   = [ "cust_core", "cust", "nalgebra/cuda" ]
+cuda = [ "cust_core", "cust", "nalgebra/cuda" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -48,12 +49,14 @@ arrayvec        = { version = "0.7", default-features = false }
 simba           = { version = "0.7", default-features = false }
 nalgebra        = { version = "0.31", default-features = false, features = [ "libm" ] }
 approx          = { version = "0.5", default-features = false }
-serde           = { version = "1.0", optional = true, features = ["derive"]}
+serde           = { version = "1.0", optional = true, features = ["derive"] }
+rkyv            = { version = "0.7", optional = true }
 num-derive      = "0.3"
 indexmap        = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash      = { version = "1", optional = true }
 cust_core       = { version = "0.1", optional = true }
-spade           = { version = "2", optional = true } # Make this optional?
+spade           = { version = "2", optional = true }
+rayon           = { version = "1", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust = { version = "0.3", optional = true }

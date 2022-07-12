@@ -7,6 +7,10 @@ use crate::shape::SupportMap;
 
 /// A Ball shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(
+//     feature = "rkyv",
+//     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+// )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]

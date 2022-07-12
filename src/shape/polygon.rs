@@ -5,6 +5,10 @@ use parry::bounding_volume::AABB;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 /// A convex planar polygon.
 pub struct Polygon {
     pub(crate) vertices: Vec<Point<Real>>,
