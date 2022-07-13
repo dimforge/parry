@@ -10,6 +10,13 @@ use crate::utils::WeightedValue;
 use num::Bounded;
 use simba::simd::SimdBool;
 use std::collections::BinaryHeap;
+#[cfg(feature = "parallel")]
+use {
+    crate::partitioning::ParallelSimdSimultaneousVisitor,
+    arrayvec::ArrayVec,
+    rayon::prelude::*,
+    std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
+};
 
 use super::{IndexedData, NodeIndex, QBVH};
 
@@ -272,5 +279,114 @@ impl<T: IndexedData> QBVH<T> {
                 }
             }
         }
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<T: IndexedData + Sync> QBVH<T> {
+    /// Performs a simultaneous traversal of two QBVH using
+    /// parallelism internally for better performances with large tree.
+    pub fn traverse_bvtt_parallel<T2: IndexedData + Sync>(
+        &self,
+        qbvh2: &QBVH<T2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<T, T2, SimdAABB>,
+    ) {
+        if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
+            let exit_early = AtomicBool::new(false);
+            self.traverse_node_parallel(qbvh2, visitor, &exit_early, (0, 0));
+        }
+    }
+
+    pub fn traverse_node_parallel<T2: IndexedData + Sync>(
+        &self,
+        qbvh2: &QBVH<T2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<T, T2, SimdAABB>,
+        exit_early: &AtomicBool,
+        entry: (u32, u32),
+    ) {
+        if exit_early.load(AtomicOrdering::Relaxed) {
+            return;
+        }
+
+        let qbvh1 = self;
+        let node1 = qbvh1.nodes[entry.0 as usize];
+        let node2 = qbvh2.nodes[entry.1 as usize];
+
+        const SQUARE_SIMD_WIDTH: usize = SIMD_WIDTH * SIMD_WIDTH;
+        let mut stack: ArrayVec<(u32, u32), SQUARE_SIMD_WIDTH> = ArrayVec::new();
+
+        let leaf_data1 = if node1.leaf {
+            Some(
+                array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+            )
+        } else {
+            None
+        };
+
+        let leaf_data2 = if node2.leaf {
+            Some(
+                array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+            )
+        } else {
+            None
+        };
+
+        match visitor.visit(&node1.simd_aabb, leaf_data1, &node2.simd_aabb, leaf_data2) {
+            SimdSimultaneousVisitStatus::ExitEarly => {
+                exit_early.store(true, AtomicOrdering::Relaxed);
+                return;
+            }
+            SimdSimultaneousVisitStatus::MaybeContinue(mask) => {
+                match (node1.leaf, node2.leaf) {
+                    (true, true) => { /* Can’t go deeper. */ }
+                    (true, false) => {
+                        let mut bitmask = 0;
+                        for ii in 0..SIMD_WIDTH {
+                            bitmask |= mask[ii].bitmask();
+                        }
+
+                        for jj in 0..SIMD_WIDTH {
+                            if (bitmask & (1 << jj)) != 0 {
+                                if node2.children[jj] as usize <= qbvh2.nodes.len() {
+                                    stack.push((entry.0, node2.children[jj]));
+                                }
+                            }
+                        }
+                    }
+                    (false, true) => {
+                        for ii in 0..SIMD_WIDTH {
+                            let bitmask = mask[ii].bitmask();
+
+                            if bitmask != 0 {
+                                if node1.children[ii] as usize <= qbvh1.nodes.len() {
+                                    stack.push((node1.children[ii], entry.1));
+                                }
+                            }
+                        }
+                    }
+                    (false, false) => {
+                        for ii in 0..SIMD_WIDTH {
+                            let bitmask = mask[ii].bitmask();
+
+                            for jj in 0..SIMD_WIDTH {
+                                if (bitmask & (1 << jj)) != 0 {
+                                    if node1.children[ii] as usize <= qbvh1.nodes.len()
+                                        && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                    {
+                                        stack.push((node1.children[ii], node2.children[jj]));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stack
+            .as_slice()
+            .par_iter()
+            .copied()
+            .for_each(|entry| self.traverse_node_parallel(qbvh2, visitor, exit_early, entry));
     }
 }

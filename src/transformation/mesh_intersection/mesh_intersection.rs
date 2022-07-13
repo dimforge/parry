@@ -35,11 +35,13 @@ pub fn intersect_meshes(
 
     // 1: collect all the potential triangle-triangle intersections.
     let mut intersections = vec![];
-    let mut visitor =
-        BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(pos12, |tri1, tri2| {
+    let mut visitor = BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(
+        pos12,
+        |tri1: &u32, tri2: &u32| {
             intersections.push((*tri1, *tri2));
             true
-        });
+        },
+    );
 
     mesh1.qbvh().traverse_bvtt(mesh2.qbvh(), &mut visitor);
 

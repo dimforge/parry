@@ -28,6 +28,7 @@ simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
 cuda   = [ "cust_core", "cust", "nalgebra/cuda" ]
+parallel = [ "rayon" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.

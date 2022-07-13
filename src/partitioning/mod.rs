@@ -3,6 +3,8 @@
 pub use self::qbvh::{
     IndexedData, NodeIndex, QBVHDataGenerator, QbvhNonOverlappingDataSplitter, QBVH,
 };
+#[cfg(feature = "parallel")]
+pub use self::visitor::ParallelSimdSimultaneousVisitor;
 pub use self::visitor::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitStatus,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,

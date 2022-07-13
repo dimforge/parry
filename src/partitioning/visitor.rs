@@ -83,3 +83,20 @@ pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
         right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus;
 }
+
+/// Trait implemented by visitor called during a parallel simultaneous spatial partitioning
+/// data structure traversal.
+#[cfg(feature = "parallel")]
+pub trait ParallelSimdSimultaneousVisitor<T1, T2, SimdBV>: Sync {
+    /// Execute an operation on the content of two nodes, one from each structure.
+    ///
+    /// Returns whether the traversal should continue on the nodes children, if it should not continue
+    /// on those children, or if the whole traversal should be exited early.
+    fn visit(
+        &self,
+        left_bv: &SimdBV,
+        left_data: Option<[Option<&T1>; SIMD_WIDTH]>,
+        right_bv: &SimdBV,
+        right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
+    ) -> SimdSimultaneousVisitStatus;
+}

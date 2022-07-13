@@ -8,4 +8,6 @@ parry3d = { path = "crates/parry3d" }
 parry2d-f64 = { path = "crates/parry2d-f64" }
 parry3d-f64 = { path = "crates/parry3d-f64" }
 
+#simba = { path = "../simba" }
+simba = { git = "https://github.com/dimforge/simba", rev = "b1392df62a0f4cf91e397bbb6bd41b7731afb6ab" }
 # nalgebra = { git = "https://github.com/dimforge/nalgebra" }
