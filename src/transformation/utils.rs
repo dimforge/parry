@@ -144,8 +144,8 @@ pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<
 /// # Arguments:
 /// * `ul` - the up-left point.
 /// * `dl` - the down-left point.
-/// * `dr` - the down-left point.
-/// * `ur` - the up-left point.
+/// * `dr` - the down-right point.
+/// * `ur` - the up-right point.
 #[cfg(feature = "dim3")]
 #[inline]
 pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<[u32; DIM]>) {
