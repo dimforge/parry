@@ -37,7 +37,7 @@ impl Ball {
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
             // The scaled shape isn’t a ball.
-            let mut vtx = Self::new(0.5).to_polyline(nsubdivs);
+            let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut()
                 .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
