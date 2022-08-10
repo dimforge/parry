@@ -1,6 +1,8 @@
 use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
-use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
+use crate::partitioning::{
+    QBVHNode, SimdNodeIndex, SimdSimultaneousVisitStatus, SimdSimultaneousVisitor, QBVH,
+};
 use na::SimdValue;
 use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
@@ -76,24 +78,29 @@ where
 }
 
 #[cfg(feature = "parallel")]
-impl<T1: Sync, T2: Sync, F> crate::partitioning::ParallelSimdSimultaneousVisitor<T1, T2, SimdAABB>
-    for BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F>
+impl<LeafData1: Sync, NodeData1: Sync, LeafData2: Sync, NodeData2: Sync, F>
+    crate::partitioning::ParallelSimdSimultaneousVisitor<LeafData1, NodeData1, LeafData2, NodeData2>
+    for BoundingVolumeIntersectionsSimultaneousVisitor<LeafData1, LeafData2, F>
 where
-    F: Sync + Fn(&T1, &T2) -> bool,
+    F: Sync + Fn(&LeafData1, &LeafData2) -> bool,
 {
     #[inline]
     fn visit(
         &self,
-        left_bv: &SimdAABB,
-        left_data: Option<[Option<&T1>; SIMD_WIDTH]>,
-        right_bv: &SimdAABB,
-        right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
+        left_node: &QBVHNode<NodeData1>,
+        left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
+        right_node: &QBVHNode<NodeData2>,
+        right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus {
         let mask = if let Some(pos12) = &self.pos12 {
-            let transformed_right_bv = right_bv.transform_by(pos12);
-            left_bv.intersects_permutations(&transformed_right_bv)
+            let transformed_right_bv = right_node.simd_aabb.transform_by(pos12);
+            left_node
+                .simd_aabb
+                .intersects_permutations(&transformed_right_bv)
         } else {
-            left_bv.intersects_permutations(right_bv)
+            left_node
+                .simd_aabb
+                .intersects_permutations(&right_node.simd_aabb)
         };
 
         if let (Some(data1), Some(data2)) = (left_data, right_data) {

@@ -8,15 +8,15 @@ use simba::simd::SimdValue;
 use super::utils::split_indices_wrt_dim;
 use super::{IndexedData, NodeIndex, QBVHNode, QBVHProxy, QBVH};
 
-pub struct BuilderProxies<'a, T> {
-    proxies: &'a mut Vec<QBVHProxy<T>>,
+pub struct BuilderProxies<'a, LeafData> {
+    proxies: &'a mut Vec<QBVHProxy<LeafData>>,
     aabbs: &'a mut Vec<AABB>,
 }
 
-impl<'a, T> BuilderProxies<'a, T> {
-    fn insert(&mut self, data: T, aabb: AABB)
+impl<'a, LeafData> BuilderProxies<'a, LeafData> {
+    fn insert(&mut self, data: LeafData, aabb: AABB)
     where
-        T: IndexedData,
+        LeafData: IndexedData,
     {
         let index = data.index();
 
@@ -30,18 +30,38 @@ impl<'a, T> BuilderProxies<'a, T> {
     }
 }
 
-pub trait QBVHDataSplitter<T> {
+pub trait QBVHNodeDataGenerator<LeafData, NodeData> {
+    fn data_from_array(&self, indices: &[usize], proxies: &[QBVHProxy<LeafData>]) -> NodeData;
+    fn data_from_leaf(&self, leaf: &LeafData) -> NodeData;
+    fn merge_data(&self, data: &[NodeData; 4]) -> NodeData;
+}
+
+impl<LeafData> QBVHNodeDataGenerator<LeafData, ()> for () {
+    fn data_from_array(&self, _: &[usize], _: &[QBVHProxy<LeafData>]) -> () {
+        ()
+    }
+
+    fn data_from_leaf(&self, _: &LeafData) -> () {
+        ()
+    }
+
+    fn merge_data(&self, data: &[(); 4]) -> () {
+        ()
+    }
+}
+
+pub trait QBVHDataSplitter<LeafData> {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4];
 }
 
-struct CenterDataSplitter {
+pub struct CenterDataSplitter {
     pub enable_fallback_split: bool,
 }
 
@@ -53,26 +73,26 @@ impl Default for CenterDataSplitter {
     }
 }
 
-impl<T> QBVHDataSplitter<T> for CenterDataSplitter {
+impl<LeafData> QBVHDataSplitter<LeafData> for CenterDataSplitter {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
         _: &'idx mut Vec<usize>,
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         self.split_dataset_wo_workspace(subdiv_dims, center, indices, proxies)
     }
 }
 
 impl CenterDataSplitter {
-    fn split_dataset_wo_workspace<'idx, T>(
+    fn split_dataset_wo_workspace<'idx, LeafData>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         // TODO: should we split wrt. the median instead of the average?
         // TODO: we should ensure each subslice contains at least 4 elements each (or less if
@@ -117,10 +137,10 @@ pub struct QbvhNonOverlappingDataSplitter<F> {
     pub epsilon: Real,
 }
 
-impl<T, F> QBVHDataSplitter<T> for QbvhNonOverlappingDataSplitter<F>
+impl<LeafData, F> QBVHDataSplitter<LeafData> for QbvhNonOverlappingDataSplitter<F>
 where
-    T: IndexedData,
-    F: FnMut(T, usize, Real, Real, AABB, AABB) -> SplitResult<(T, AABB)>,
+    LeafData: IndexedData,
+    F: FnMut(LeafData, usize, Real, Real, AABB, AABB) -> SplitResult<(LeafData, AABB)>,
 {
     fn split_dataset<'idx>(
         &mut self,
@@ -128,7 +148,7 @@ where
         center: Point<Real>,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
-        mut proxies: BuilderProxies<T>,
+        mut proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         // 1. Snap the spliting point to one fo the AABB min/max,
         // such that at least one AABB isn’t split along each dimension.
@@ -228,52 +248,54 @@ where
 }
 
 /// Trait used for generating the content of the leaves of the QBVH acceleration structure.
-pub trait QBVHDataGenerator<T> {
+pub trait QBVHDataGenerator<LeafData> {
     /// Gives an idea of the number of elements this generator contains.
     ///
     /// This is primarily used for pre-allocating some arrays for better performances.
     fn size_hint(&self) -> usize;
     /// Iterate through all the elements of this generator.
-    fn for_each(&mut self, f: impl FnMut(T, AABB));
+    fn for_each(&mut self, f: impl FnMut(LeafData, AABB));
 }
 
-impl<T, F> QBVHDataGenerator<T> for F
+impl<LeafData, F> QBVHDataGenerator<LeafData> for F
 where
-    F: ExactSizeIterator<Item = (T, AABB)>,
+    F: ExactSizeIterator<Item = (LeafData, AABB)>,
 {
     fn size_hint(&self) -> usize {
         self.len()
     }
 
     #[inline(always)]
-    fn for_each(&mut self, mut f: impl FnMut(T, AABB)) {
+    fn for_each(&mut self, mut f: impl FnMut(LeafData, AABB)) {
         for (elt, aabb) in self {
             f(elt, aabb)
         }
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
-        data_gen: impl QBVHDataGenerator<T>,
+        data_gen: impl QBVHDataGenerator<LeafData>,
         dilation_factor: Real,
     ) {
         self.clear_and_rebuild_with_splitter(
             data_gen,
             CenterDataSplitter::default(),
+            (),
             dilation_factor,
         );
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData, NodeData: Default> QBVH<LeafData, NodeData> {
     /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild_with_splitter(
         &mut self,
-        mut data_gen: impl QBVHDataGenerator<T>,
-        mut splitter: impl QBVHDataSplitter<T>,
+        mut data_gen: impl QBVHDataGenerator<LeafData>,
+        mut splitter: impl QBVHDataSplitter<LeafData>,
+        mut node_data: impl QBVHNodeDataGenerator<LeafData, NodeData>,
         dilation_factor: Real,
     ) {
         self.nodes.clear();
@@ -301,6 +323,12 @@ impl<T: IndexedData> QBVH<T> {
             simd_aabb: SimdAABB::new_invalid(),
             children: [1, u32::MAX, u32::MAX, u32::MAX],
             parent: NodeIndex::invalid(),
+            data: [
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+            ],
             leaf: false,
             dirty: false,
         };
@@ -309,6 +337,7 @@ impl<T: IndexedData> QBVH<T> {
         let root_id = NodeIndex::new(0, 0);
         let (_, aabb) = self.do_recurse_build_generic(
             &mut splitter,
+            &node_data,
             &mut indices,
             &mut aabbs,
             root_id,
@@ -326,7 +355,8 @@ impl<T: IndexedData> QBVH<T> {
 
     fn do_recurse_build_generic(
         &mut self,
-        splitter: &mut impl QBVHDataSplitter<T>,
+        splitter: &mut impl QBVHDataSplitter<LeafData>,
+        node_data: &impl QBVHNodeDataGenerator<LeafData, NodeData>,
         indices: &mut [usize],
         aabbs: &mut Vec<AABB>,
         parent: NodeIndex,
@@ -338,18 +368,26 @@ impl<T: IndexedData> QBVH<T> {
             let mut my_aabb = AABB::new_invalid();
             let mut leaf_aabbs = [AABB::new_invalid(); 4];
             let mut proxy_ids = [u32::MAX; 4];
+            let mut data = [
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+            ];
 
             for (k, id) in indices.iter().enumerate() {
                 my_aabb.merge(&aabbs[*id]);
                 leaf_aabbs[k] = aabbs[*id];
                 proxy_ids[k] = *id as u32;
                 self.proxies[*id].node = NodeIndex::new(my_id as u32, k as u8);
+                data[k] = node_data.data_from_leaf(&self.proxies[*id].data);
             }
 
             let mut node = QBVHNode {
                 simd_aabb: SimdAABB::from(leaf_aabbs),
                 children: proxy_ids,
                 parent,
+                data,
                 leaf: true,
                 dirty: false,
             };
@@ -398,6 +436,12 @@ impl<T: IndexedData> QBVH<T> {
             simd_aabb: SimdAABB::new_invalid(),
             children: [0; 4], // Will be set after the recursive call
             parent,
+            data: [
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+                NodeData::default(),
+            ],
             leaf: false,
             dirty: false,
         };
@@ -408,7 +452,7 @@ impl<T: IndexedData> QBVH<T> {
         // Split the set along the two subdiv_dims dimensions.
         let proxies = BuilderProxies {
             proxies: &mut self.proxies,
-            aabbs: aabbs,
+            aabbs,
         };
 
         // Recurse!
@@ -421,16 +465,24 @@ impl<T: IndexedData> QBVH<T> {
             NodeIndex::new(id, 3),
         ];
 
+        let data = [
+            node_data.data_from_array(splits[0], &self.proxies),
+            node_data.data_from_array(splits[1], &self.proxies),
+            node_data.data_from_array(splits[2], &self.proxies),
+            node_data.data_from_array(splits[3], &self.proxies),
+        ];
+
         let children = [
-            self.do_recurse_build_generic(splitter, splits[0], aabbs, n[0], dilation),
-            self.do_recurse_build_generic(splitter, splits[1], aabbs, n[1], dilation),
-            self.do_recurse_build_generic(splitter, splits[2], aabbs, n[2], dilation),
-            self.do_recurse_build_generic(splitter, splits[3], aabbs, n[3], dilation),
+            self.do_recurse_build_generic(splitter, node_data, splits[0], aabbs, n[0], dilation),
+            self.do_recurse_build_generic(splitter, node_data, splits[1], aabbs, n[1], dilation),
+            self.do_recurse_build_generic(splitter, node_data, splits[2], aabbs, n[2], dilation),
+            self.do_recurse_build_generic(splitter, node_data, splits[3], aabbs, n[3], dilation),
         ];
 
         // Now we know the indices of the child nodes.
         self.nodes[id as usize].children =
             [children[0].0, children[1].0, children[2].0, children[3].0];
+        self.nodes[id as usize].data = data;
         self.nodes[id as usize].simd_aabb =
             SimdAABB::from([children[0].1, children[1].1, children[2].1, children[3].1]);
         self.nodes[id as usize]

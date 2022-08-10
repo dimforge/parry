@@ -1,7 +1,6 @@
 use crate::bounding_volume::{SimdAABB, AABB};
 use crate::math::{Real, Vector};
 use na::SimdValue;
-use std::collections::VecDeque;
 
 /// A data to which an index is associated.
 pub trait IndexedData: Copy {
@@ -40,6 +39,8 @@ impl IndexedData for u64 {
     }
 }
 
+pub type SimdNodeIndex = u32;
+
 /// The index of a node part of a QBVH.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -48,8 +49,8 @@ impl IndexedData for u64 {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct NodeIndex {
-    pub(super) index: u32, // Index of the addressed node in the `nodes` array.
-    pub(super) lane: u8,   // SIMD lane of the addressed node.
+    pub index: SimdNodeIndex, // Index of the addressed node in the `nodes` array.
+    pub lane: u8,             // SIMD lane of the addressed node.
 }
 
 impl NodeIndex {
@@ -74,7 +75,7 @@ impl NodeIndex {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct QBVHNode {
+pub struct QBVHNode<NodeData> {
     /// The AABBs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAABB,
     /// Index of the nodes of the 4 nodes represented by `self`.
@@ -84,6 +85,7 @@ pub struct QBVHNode {
     pub parent: NodeIndex,
     /// Are the four nodes represented by `self` leaves of the `QBVH`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
+    pub data: [NodeData; 4],
     pub(super) dirty: bool, // TODO: move this to a separate bitvec?
 }
 
@@ -93,23 +95,23 @@ pub struct QBVHNode {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct QBVHProxy<T> {
+pub struct QBVHProxy<LeafData> {
     pub node: NodeIndex,
-    pub data: T, // The collider data. TODO: only set the collider generation here?
+    pub data: LeafData, // The collider data. TODO: only set the collider generation here?
 }
 
-impl<T> QBVHProxy<T> {
+impl<LeafData> QBVHProxy<LeafData> {
     pub(super) fn invalid() -> Self
     where
-        T: IndexedData,
+        LeafData: IndexedData,
     {
         Self {
             node: NodeIndex::invalid(),
-            data: T::default(),
+            data: LeafData::default(),
         }
     }
 
-    pub(super) fn detached(data: T) -> Self {
+    pub(super) fn detached(data: LeafData) -> Self {
         Self {
             node: NodeIndex::invalid(),
             data,
@@ -126,14 +128,14 @@ impl<T> QBVHProxy<T> {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Clone, Debug)]
-pub struct QBVH<T> {
+pub struct QBVH<LeafData, NodeData = ()> {
     pub(super) root_aabb: AABB,
-    pub(super) nodes: Vec<QBVHNode>,
+    pub(super) nodes: Vec<QBVHNode<NodeData>>,
     pub(super) dirty_nodes: Vec<u32>,
-    pub(super) proxies: Vec<QBVHProxy<T>>,
+    pub(super) proxies: Vec<QBVHProxy<LeafData>>,
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
     /// Initialize an empty QBVH.
     pub fn new() -> Self {
         QBVH {
@@ -145,12 +147,12 @@ impl<T: IndexedData> QBVH<T> {
     }
 
     /// Iterates mutably through all the leaf data in this QBVH.
-    pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut T)> {
+    pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut LeafData)> {
         self.proxies.iter_mut().map(|p| (p.node, &mut p.data))
     }
 
     /// Iterate through all the leaf data in this QBVH.
-    pub fn iter_data(&self) -> impl Iterator<Item = (NodeIndex, &T)> {
+    pub fn iter_data(&self) -> impl Iterator<Item = (NodeIndex, &LeafData)> {
         self.proxies.iter().map(|p| (p.node, &p.data))
     }
 
@@ -169,7 +171,7 @@ impl<T: IndexedData> QBVH<T> {
     /// Returns the data associated to a given leaf.
     ///
     /// Returns `None` if the provided node ID does not identify a leaf.
-    pub fn leaf_data(&mut self, node_id: NodeIndex) -> Option<T> {
+    pub fn leaf_data(&mut self, node_id: NodeIndex) -> Option<LeafData> {
         let node = self.nodes.get(node_id.index as usize)?;
 
         if !node.leaf {
@@ -187,7 +189,7 @@ impl<T: IndexedData> QBVH<T> {
     /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
     /// tree. The other elements are not arranged in any particular order.
     /// The more high-level traversal methods should be used instead of this.
-    pub fn raw_nodes(&self) -> &[QBVHNode] {
+    pub fn raw_nodes(&self) -> &[QBVHNode<NodeData>] {
         &self.nodes
     }
 
@@ -196,7 +198,7 @@ impl<T: IndexedData> QBVH<T> {
     /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
     /// tree. The other elements are not arranged in any particular order.
     /// The more high-level traversal methods should be used instead of this.
-    pub fn raw_proxies(&self) -> &[QBVHProxy<T>] {
+    pub fn raw_proxies(&self) -> &[QBVHProxy<LeafData>] {
         &self.proxies
     }
 

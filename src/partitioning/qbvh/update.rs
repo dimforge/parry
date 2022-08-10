@@ -15,15 +15,15 @@ struct QBVHIncrementalBuilderStep {
 }
 
 #[allow(dead_code)]
-struct QBVHIncrementalBuilder<T> {
-    qbvh: QBVH<T>,
+struct QBVHIncrementalBuilder<LeafData, NodeData> {
+    qbvh: QBVH<LeafData, NodeData>,
     to_insert: Vec<QBVHIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<T: IndexedData> QBVHIncrementalBuilder<T> {
+impl<LeafData: IndexedData, NodeData: Default + Copy> QBVHIncrementalBuilder<LeafData, NodeData> {
     pub fn new() -> Self {
         Self {
             qbvh: QBVH::new(),
@@ -54,6 +54,7 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
                     simd_aabb: SimdAABB::from(leaf_aabbs),
                     children: proxy_ids,
                     parent: to_insert.parent,
+                    data: [NodeData::default(); SIMD_WIDTH],
                     leaf: true,
                     dirty: false,
                 };
@@ -120,6 +121,12 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
                 simd_aabb: SimdAABB::new_invalid(),
                 children: [0; 4], // Will be set after the recursive call
                 parent: to_insert.parent,
+                data: [
+                    NodeData::default(),
+                    NodeData::default(),
+                    NodeData::default(),
+                    NodeData::default(),
+                ],
                 leaf: false,
                 dirty: false,
             };
@@ -158,10 +165,10 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
     /// Marks a piece of data as dirty so it can be updated during the next
     /// call to `self.update`.
-    pub fn pre_update(&mut self, data: T) {
+    pub fn pre_update(&mut self, data: LeafData) {
         let id = data.index();
         let node_id = self.proxies[id].node.index;
         let node = &mut self.nodes[node_id as usize];
@@ -174,7 +181,7 @@ impl<T: IndexedData> QBVH<T> {
     /// Update all the nodes that have been marked as dirty by `self.pre_update`.
     pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: Real)
     where
-        F: Fn(&T) -> AABB,
+        F: Fn(&LeafData) -> AABB,
     {
         // Loop on the dirty leaves.
         let dilation_factor = SimdReal::splat(dilation_factor);

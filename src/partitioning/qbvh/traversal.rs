@@ -12,7 +12,7 @@ use simba::simd::SimdBool;
 use std::collections::BinaryHeap;
 #[cfg(feature = "parallel")]
 use {
-    crate::partitioning::ParallelSimdSimultaneousVisitor,
+    crate::partitioning::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor},
     arrayvec::ArrayVec,
     rayon::prelude::*,
     std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
@@ -20,16 +20,16 @@ use {
 
 use super::{IndexedData, NodeIndex, QBVH};
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
     /// Performs a depth-first traversal on the BVH.
-    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<T, SimdAABB>) {
+    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) {
         self.traverse_depth_first_with_stack(visitor, &mut Vec::new())
     }
 
     /// Performs a depth-first traversal on the BVH.
     pub fn traverse_depth_first_with_stack(
         &self,
-        visitor: &mut impl SimdVisitor<T, SimdAABB>,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
         stack: &mut Vec<u32>,
     ) {
         stack.clear();
@@ -38,7 +38,7 @@ impl<T: IndexedData> QBVH<T> {
             stack.push(0);
         }
         while let Some(entry) = stack.pop() {
-            let node = self.nodes[entry as usize];
+            let node = &self.nodes[entry as usize];
             let leaf_data = if node.leaf {
                 Some(
                     array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
@@ -77,7 +77,7 @@ impl<T: IndexedData> QBVH<T> {
     /// user-defined type.
     pub fn traverse_best_first<BFS>(&self, visitor: &mut BFS) -> Option<(NodeIndex, BFS::Result)>
     where
-        BFS: SimdBestFirstVisitor<T, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
         if self.nodes.is_empty() {
@@ -96,7 +96,7 @@ impl<T: IndexedData> QBVH<T> {
                 break; // Solution found.
             }
 
-            let node = self.nodes[entry.value as usize];
+            let node = &self.nodes[entry.value as usize];
             let leaf_data = if node.leaf {
                 Some(
                     array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
@@ -151,7 +151,7 @@ impl<T: IndexedData> QBVH<T> {
     /// the given AABB:
     // FIXME: implement a visitor pattern to merge intersect_aabb
     // and intersect_ray into a single method.
-    pub fn intersect_aabb(&self, aabb: &AABB, out: &mut Vec<T>) {
+    pub fn intersect_aabb(&self, aabb: &AABB, out: &mut Vec<LeafData>) {
         if self.nodes.is_empty() {
             return;
         }
@@ -160,7 +160,7 @@ impl<T: IndexedData> QBVH<T> {
         let mut stack = vec![0u32];
         let simd_aabb = SimdAABB::splat(*aabb);
         while let Some(inode) = stack.pop() {
-            let node = self.nodes[inode as usize];
+            let node = &self.nodes[inode as usize];
             let intersections = node.simd_aabb.intersects(&simd_aabb);
             let bitmask = intersections.bitmask();
 
@@ -186,19 +186,19 @@ impl<T: IndexedData> QBVH<T> {
     }
 
     /// Performs a simultaneous traversal of two QBVH.
-    pub fn traverse_bvtt<T2: IndexedData>(
+    pub fn traverse_bvtt<LeafData2: IndexedData, NodeData2>(
         &self,
-        qbvh2: &QBVH<T2>,
-        visitor: &mut impl SimdSimultaneousVisitor<T, T2, SimdAABB>,
+        qbvh2: &QBVH<LeafData2, NodeData2>,
+        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
     ) {
         self.traverse_bvtt_with_stack(qbvh2, visitor, &mut Vec::new())
     }
 
     /// Performs a simultaneous traversal of two QBVH.
-    pub fn traverse_bvtt_with_stack<T2: IndexedData>(
+    pub fn traverse_bvtt_with_stack<LeafData2: IndexedData, NodeData2>(
         &self,
-        qbvh2: &QBVH<T2>,
-        visitor: &mut impl SimdSimultaneousVisitor<T, T2, SimdAABB>,
+        qbvh2: &QBVH<LeafData2, NodeData2>,
+        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
         stack: &mut Vec<(u32, u32)>,
     ) {
         let qbvh1 = self;
@@ -209,8 +209,8 @@ impl<T: IndexedData> QBVH<T> {
         }
 
         while let Some(entry) = stack.pop() {
-            let node1 = qbvh1.nodes[entry.0 as usize];
-            let node2 = qbvh2.nodes[entry.1 as usize];
+            let node1 = &qbvh1.nodes[entry.0 as usize];
+            let node2 = &qbvh2.nodes[entry.1 as usize];
 
             let leaf_data1 = if node1.leaf {
                 Some(
@@ -283,24 +283,84 @@ impl<T: IndexedData> QBVH<T> {
 }
 
 #[cfg(feature = "parallel")]
-impl<T: IndexedData + Sync> QBVH<T> {
-    /// Performs a simultaneous traversal of two QBVH using
+impl<LeafData: IndexedData + Sync, NodeData: Sync> QBVH<LeafData, NodeData> {
+    /// Performs a depth-first traversal of two QBVH using
     /// parallelism internally for better performances with large tree.
-    pub fn traverse_bvtt_parallel<T2: IndexedData + Sync>(
+    pub fn traverse_depth_first_parallel(
         &self,
-        qbvh2: &QBVH<T2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<T, T2, SimdAABB>,
+        visitor: &impl ParallelSimdVisitor<LeafData, NodeData>,
     ) {
-        if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
+        if !self.nodes.is_empty() {
             let exit_early = AtomicBool::new(false);
-            self.traverse_node_parallel(qbvh2, visitor, &exit_early, (0, 0));
+            self.traverse_depth_first_node_parallel(visitor, &exit_early, 0);
         }
     }
 
-    pub fn traverse_node_parallel<T2: IndexedData + Sync>(
+    pub fn traverse_depth_first_node_parallel(
         &self,
-        qbvh2: &QBVH<T2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<T, T2, SimdAABB>,
+        visitor: &impl ParallelSimdVisitor<LeafData, NodeData>,
+        exit_early: &AtomicBool,
+        entry: u32,
+    ) {
+        if exit_early.load(AtomicOrdering::Relaxed) {
+            return;
+        }
+
+        let mut stack: ArrayVec<u32, SIMD_WIDTH> = ArrayVec::new();
+        let node = &self.nodes[entry as usize];
+        let leaf_data = if node.leaf {
+            Some(array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH])
+        } else {
+            None
+        };
+
+        match visitor.visit(entry, node, leaf_data) {
+            SimdVisitStatus::ExitEarly => {
+                exit_early.store(true, AtomicOrdering::Relaxed);
+                return;
+            }
+            SimdVisitStatus::MaybeContinue(mask) => {
+                let bitmask = mask.bitmask();
+
+                for ii in 0..SIMD_WIDTH {
+                    if (bitmask & (1 << ii)) != 0 {
+                        if !node.leaf {
+                            // Internal node, visit the child.
+                            // Un fortunately, we have this check because invalid AABBs
+                            // return a hit as well.
+                            if node.children[ii] as usize <= self.nodes.len() {
+                                stack.push(node.children[ii]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stack
+            .as_slice()
+            .par_iter()
+            .copied()
+            .for_each(|entry| self.traverse_depth_first_node_parallel(visitor, exit_early, entry));
+    }
+
+    /// Performs a simultaneous traversal of two QBVH using
+    /// parallelism internally for better performances with large tree.
+    pub fn traverse_bvtt_parallel<LeafData2: IndexedData + Sync, NodeData2: Sync>(
+        &self,
+        qbvh2: &QBVH<LeafData2, NodeData2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, NodeData, LeafData2, NodeData2>,
+    ) {
+        if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
+            let exit_early = AtomicBool::new(false);
+            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, &exit_early, (0, 0));
+        }
+    }
+
+    pub fn traverse_bvtt_simd_node_parallel<LeafData2: IndexedData + Sync, NodeData2: Sync>(
+        &self,
+        qbvh2: &QBVH<LeafData2, NodeData2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, NodeData, LeafData2, NodeData2>,
         exit_early: &AtomicBool,
         entry: (u32, u32),
     ) {
@@ -309,8 +369,8 @@ impl<T: IndexedData + Sync> QBVH<T> {
         }
 
         let qbvh1 = self;
-        let node1 = qbvh1.nodes[entry.0 as usize];
-        let node2 = qbvh2.nodes[entry.1 as usize];
+        let node1 = &qbvh1.nodes[entry.0 as usize];
+        let node2 = &qbvh2.nodes[entry.1 as usize];
 
         const SQUARE_SIMD_WIDTH: usize = SIMD_WIDTH * SIMD_WIDTH;
         let mut stack: ArrayVec<(u32, u32), SQUARE_SIMD_WIDTH> = ArrayVec::new();
@@ -331,7 +391,7 @@ impl<T: IndexedData + Sync> QBVH<T> {
             None
         };
 
-        match visitor.visit(&node1.simd_aabb, leaf_data1, &node2.simd_aabb, leaf_data2) {
+        match visitor.visit(&node1, leaf_data1, &node2, leaf_data2) {
             SimdSimultaneousVisitStatus::ExitEarly => {
                 exit_early.store(true, AtomicOrdering::Relaxed);
                 return;
@@ -383,10 +443,8 @@ impl<T: IndexedData + Sync> QBVH<T> {
             }
         }
 
-        stack
-            .as_slice()
-            .par_iter()
-            .copied()
-            .for_each(|entry| self.traverse_node_parallel(qbvh2, visitor, exit_early, entry));
+        stack.as_slice().par_iter().copied().for_each(|entry| {
+            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, exit_early, entry)
+        });
     }
 }
