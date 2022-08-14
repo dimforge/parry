@@ -75,7 +75,7 @@ impl NodeIndex {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct QBVHNode<NodeData> {
+pub struct QBVHNode {
     /// The AABBs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAABB,
     /// Index of the nodes of the 4 nodes represented by `self`.
@@ -85,7 +85,6 @@ pub struct QBVHNode<NodeData> {
     pub parent: NodeIndex,
     /// Are the four nodes represented by `self` leaves of the `QBVH`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
-    pub data: [NodeData; 4],
     pub(super) dirty: bool, // TODO: move this to a separate bitvec?
 }
 
@@ -128,14 +127,14 @@ impl<LeafData> QBVHProxy<LeafData> {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Clone, Debug)]
-pub struct QBVH<LeafData, NodeData = ()> {
+pub struct QBVH<LeafData> {
     pub(super) root_aabb: AABB,
-    pub(super) nodes: Vec<QBVHNode<NodeData>>,
+    pub(super) nodes: Vec<QBVHNode>,
     pub(super) dirty_nodes: Vec<u32>,
     pub(super) proxies: Vec<QBVHProxy<LeafData>>,
 }
 
-impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Initialize an empty QBVH.
     pub fn new() -> Self {
         QBVH {
@@ -189,7 +188,7 @@ impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
     /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
     /// tree. The other elements are not arranged in any particular order.
     /// The more high-level traversal methods should be used instead of this.
-    pub fn raw_nodes(&self) -> &[QBVHNode<NodeData>] {
+    pub fn raw_nodes(&self) -> &[QBVHNode] {
         &self.nodes
     }
 

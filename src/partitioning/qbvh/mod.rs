@@ -1,8 +1,7 @@
 pub(self) use self::qbvh::*;
 
 pub use self::build::{
-    BuilderProxies, CenterDataSplitter, QBVHDataGenerator, QBVHNodeDataGenerator,
-    QbvhNonOverlappingDataSplitter,
+    BuilderProxies, CenterDataSplitter, QBVHDataGenerator, QbvhNonOverlappingDataSplitter,
 };
 pub use self::qbvh::{IndexedData, NodeIndex, QBVHNode, QBVHProxy, SimdNodeIndex, QBVH};
 

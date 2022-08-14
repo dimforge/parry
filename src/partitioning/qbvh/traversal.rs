@@ -20,7 +20,7 @@ use {
 
 use super::{IndexedData, NodeIndex, QBVH};
 
-impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Performs a depth-first traversal on the BVH.
     pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) {
         self.traverse_depth_first_with_stack(visitor, &mut Vec::new())
@@ -186,18 +186,18 @@ impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
     }
 
     /// Performs a simultaneous traversal of two QBVH.
-    pub fn traverse_bvtt<LeafData2: IndexedData, NodeData2>(
+    pub fn traverse_bvtt<LeafData2: IndexedData>(
         &self,
-        qbvh2: &QBVH<LeafData2, NodeData2>,
+        qbvh2: &QBVH<LeafData2>,
         visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
     ) {
         self.traverse_bvtt_with_stack(qbvh2, visitor, &mut Vec::new())
     }
 
     /// Performs a simultaneous traversal of two QBVH.
-    pub fn traverse_bvtt_with_stack<LeafData2: IndexedData, NodeData2>(
+    pub fn traverse_bvtt_with_stack<LeafData2: IndexedData>(
         &self,
-        qbvh2: &QBVH<LeafData2, NodeData2>,
+        qbvh2: &QBVH<LeafData2>,
         visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
         stack: &mut Vec<(u32, u32)>,
     ) {
@@ -283,13 +283,10 @@ impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
 }
 
 #[cfg(feature = "parallel")]
-impl<LeafData: IndexedData + Sync, NodeData: Sync> QBVH<LeafData, NodeData> {
+impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
     /// Performs a depth-first traversal of two QBVH using
     /// parallelism internally for better performances with large tree.
-    pub fn traverse_depth_first_parallel(
-        &self,
-        visitor: &impl ParallelSimdVisitor<LeafData, NodeData>,
-    ) {
+    pub fn traverse_depth_first_parallel(&self, visitor: &impl ParallelSimdVisitor<LeafData>) {
         if !self.nodes.is_empty() {
             let exit_early = AtomicBool::new(false);
             self.traverse_depth_first_node_parallel(visitor, &exit_early, 0);
@@ -298,7 +295,7 @@ impl<LeafData: IndexedData + Sync, NodeData: Sync> QBVH<LeafData, NodeData> {
 
     pub fn traverse_depth_first_node_parallel(
         &self,
-        visitor: &impl ParallelSimdVisitor<LeafData, NodeData>,
+        visitor: &impl ParallelSimdVisitor<LeafData>,
         exit_early: &AtomicBool,
         entry: u32,
     ) {
@@ -346,10 +343,10 @@ impl<LeafData: IndexedData + Sync, NodeData: Sync> QBVH<LeafData, NodeData> {
 
     /// Performs a simultaneous traversal of two QBVH using
     /// parallelism internally for better performances with large tree.
-    pub fn traverse_bvtt_parallel<LeafData2: IndexedData + Sync, NodeData2: Sync>(
+    pub fn traverse_bvtt_parallel<LeafData2: IndexedData + Sync>(
         &self,
-        qbvh2: &QBVH<LeafData2, NodeData2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, NodeData, LeafData2, NodeData2>,
+        qbvh2: &QBVH<LeafData2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
     ) {
         if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
             let exit_early = AtomicBool::new(false);
@@ -357,10 +354,10 @@ impl<LeafData: IndexedData + Sync, NodeData: Sync> QBVH<LeafData, NodeData> {
         }
     }
 
-    pub fn traverse_bvtt_simd_node_parallel<LeafData2: IndexedData + Sync, NodeData2: Sync>(
+    pub fn traverse_bvtt_simd_node_parallel<LeafData2: IndexedData + Sync>(
         &self,
-        qbvh2: &QBVH<LeafData2, NodeData2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, NodeData, LeafData2, NodeData2>,
+        qbvh2: &QBVH<LeafData2>,
+        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
         exit_early: &AtomicBool,
         entry: (u32, u32),
     ) {

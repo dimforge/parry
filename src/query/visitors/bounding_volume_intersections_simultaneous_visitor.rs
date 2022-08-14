@@ -78,8 +78,8 @@ where
 }
 
 #[cfg(feature = "parallel")]
-impl<LeafData1: Sync, NodeData1: Sync, LeafData2: Sync, NodeData2: Sync, F>
-    crate::partitioning::ParallelSimdSimultaneousVisitor<LeafData1, NodeData1, LeafData2, NodeData2>
+impl<LeafData1: Sync, LeafData2: Sync, F>
+    crate::partitioning::ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>
     for BoundingVolumeIntersectionsSimultaneousVisitor<LeafData1, LeafData2, F>
 where
     F: Sync + Fn(&LeafData1, &LeafData2) -> bool,
@@ -87,9 +87,9 @@ where
     #[inline]
     fn visit(
         &self,
-        left_node: &QBVHNode<NodeData1>,
+        left_node: &QBVHNode,
         left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
-        right_node: &QBVHNode<NodeData2>,
+        right_node: &QBVHNode,
         right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus {
         let mask = if let Some(pos12) = &self.pos12 {

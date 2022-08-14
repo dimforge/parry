@@ -15,15 +15,15 @@ struct QBVHIncrementalBuilderStep {
 }
 
 #[allow(dead_code)]
-struct QBVHIncrementalBuilder<LeafData, NodeData> {
-    qbvh: QBVH<LeafData, NodeData>,
+struct QBVHIncrementalBuilder<LeafData> {
+    qbvh: QBVH<LeafData>,
     to_insert: Vec<QBVHIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<LeafData: IndexedData, NodeData: Default + Copy> QBVHIncrementalBuilder<LeafData, NodeData> {
+impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
     pub fn new() -> Self {
         Self {
             qbvh: QBVH::new(),
@@ -54,7 +54,6 @@ impl<LeafData: IndexedData, NodeData: Default + Copy> QBVHIncrementalBuilder<Lea
                     simd_aabb: SimdAABB::from(leaf_aabbs),
                     children: proxy_ids,
                     parent: to_insert.parent,
-                    data: [NodeData::default(); SIMD_WIDTH],
                     leaf: true,
                     dirty: false,
                 };
@@ -121,12 +120,6 @@ impl<LeafData: IndexedData, NodeData: Default + Copy> QBVHIncrementalBuilder<Lea
                 simd_aabb: SimdAABB::new_invalid(),
                 children: [0; 4], // Will be set after the recursive call
                 parent: to_insert.parent,
-                data: [
-                    NodeData::default(),
-                    NodeData::default(),
-                    NodeData::default(),
-                    NodeData::default(),
-                ],
                 leaf: false,
                 dirty: false,
             };
@@ -165,7 +158,7 @@ impl<LeafData: IndexedData, NodeData: Default + Copy> QBVHIncrementalBuilder<Lea
     }
 }
 
-impl<LeafData: IndexedData, NodeData> QBVH<LeafData, NodeData> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Marks a piece of data as dirty so it can be updated during the next
     /// call to `self.update`.
     pub fn pre_update(&mut self, data: LeafData) {
