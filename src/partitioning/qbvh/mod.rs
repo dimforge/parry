@@ -1,5 +1,3 @@
-pub(self) use self::qbvh::*;
-
 pub use self::build::{
     BuilderProxies, CenterDataSplitter, QBVHDataGenerator, QbvhNonOverlappingDataSplitter,
 };

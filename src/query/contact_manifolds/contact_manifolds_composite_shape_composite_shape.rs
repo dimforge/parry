@@ -173,14 +173,14 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
             let mut visitor2 =
                 BoundingVolumeIntersectionsVisitor::new(&ls_part_aabb1_2, &mut leaf_fn2);
 
-            qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+            let _ = qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
         });
 
         true
     };
 
     let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf_fn1);
-    qbvh1.traverse_depth_first(&mut visitor1);
+    let _ = qbvh1.traverse_depth_first(&mut visitor1);
 
     workspace
         .sub_detectors

@@ -41,7 +41,12 @@ pub trait QBVHDataSplitter<LeafData> {
     ) -> [&'idx mut [usize]; 4];
 }
 
+/// A data splitter that arranges a set of AABBs in two sets based on their center’s coordinate
+/// along the split axis.
 pub struct CenterDataSplitter {
+    /// If all the AABB centers have the same coordinate values along the splitting axis
+    /// setting this to `true` will allow the spliter to split the AABB set into two
+    /// subsets arbitrarily.
     pub enable_fallback_split: bool,
 }
 

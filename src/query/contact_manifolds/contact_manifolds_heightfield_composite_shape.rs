@@ -151,7 +151,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
         };
 
         let mut visitor2 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb1_2, &mut leaf_fn2);
-        qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+        let _ = qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
     });
 
     workspace

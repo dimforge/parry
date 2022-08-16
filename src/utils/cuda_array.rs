@@ -12,6 +12,7 @@ use cust_core::DeviceCopy;
  *
 */
 #[cfg(feature = "std")]
+/// A 2D array residing on GPU memory.
 pub struct CudaArray2<T: ?Sized + DeviceCopy> {
     data: DeviceBuffer<T>,
     nrows: usize,
@@ -20,6 +21,7 @@ pub struct CudaArray2<T: ?Sized + DeviceCopy> {
 
 #[cfg(feature = "std")]
 impl<T: ?Sized + DeviceCopy> CudaArray2<T> {
+    /// Initialize a 2D cuda array on the GPU.
     pub fn new(data: &[T], nrows: usize, ncols: usize) -> CudaResult<Self> {
         assert_eq!(
             data.len(),
@@ -29,10 +31,12 @@ impl<T: ?Sized + DeviceCopy> CudaArray2<T> {
         DeviceBuffer::from_slice(data).map(|data| Self { data, nrows, ncols })
     }
 
+    /// Initialize, using a matrix, a 2D cuda array on the GPU.
     pub fn from_matrix(mat: &na::DMatrix<T>) -> CudaResult<Self> {
         Self::new(mat.as_slice(), mat.nrows(), mat.ncols())
     }
 
+    /// Gets the device pointer to the CUDA memory.
     pub fn as_device_ptr(&self) -> CudaArrayPointer2<T> {
         CudaArrayPointer2 {
             data: self.data.as_device_ptr(),
@@ -44,6 +48,7 @@ impl<T: ?Sized + DeviceCopy> CudaArray2<T> {
 
 #[repr(C)]
 #[derive(Copy, Clone, cust_core::DeviceCopy)]
+/// A pointer to a 2D CUDA array.
 pub struct CudaArrayPointer2<T: ?Sized + DeviceCopy> {
     data: DevicePointer<T>,
     nrows: usize,
@@ -83,20 +88,24 @@ impl<T: ?Sized + DeviceCopy> HeightFieldStorage for CudaArrayPointer2<T> {
  *
  */
 #[cfg(feature = "std")]
+/// A 1D array residing on GPU memory.
 pub struct CudaArray1<T: ?Sized + DeviceCopy> {
     data: DeviceBuffer<T>,
 }
 
 #[cfg(feature = "std")]
 impl<T: ?Sized + DeviceCopy> CudaArray1<T> {
+    /// Initialize a 1D cuda array on the GPU.
     pub fn new(data: &[T]) -> CudaResult<Self> {
         DeviceBuffer::from_slice(data).map(|data| Self { data })
     }
 
+    /// Initialize a 1D cuda array on the GPU using a dynamically-sized vector.
     pub fn from_vector(vect: &na::DVector<T>) -> CudaResult<Self> {
         Self::new(vect.as_slice())
     }
 
+    /// Gets the device pointer to the CUDA memory.
     pub fn as_device_ptr(&self) -> CudaArrayPointer1<T> {
         CudaArrayPointer1 {
             data: self.data.as_device_ptr(),
@@ -107,6 +116,7 @@ impl<T: ?Sized + DeviceCopy> CudaArray1<T> {
 
 #[repr(C)]
 #[derive(Copy, Clone, cust_core::DeviceCopy)]
+/// A pointer to a 2D CUDA array.
 pub struct CudaArrayPointer1<T: ?Sized + DeviceCopy> {
     data: DevicePointer<T>,
     len: usize,

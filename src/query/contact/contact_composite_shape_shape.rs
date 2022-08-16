@@ -41,7 +41,7 @@ where
     };
 
     let mut visitor = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2, &mut leaf_callback);
-    g1.qbvh().traverse_depth_first(&mut visitor);
+    let _ = g1.qbvh().traverse_depth_first(&mut visitor);
     res
 }
 

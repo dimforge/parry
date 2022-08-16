@@ -22,20 +22,55 @@ use super::{IndexedData, NodeIndex, QBVH};
 
 impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Performs a depth-first traversal on the BVH.
-    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) {
-        self.traverse_depth_first_with_stack(visitor, &mut Vec::new())
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) -> bool {
+        self.traverse_depth_first_node(visitor, 0)
+    }
+
+    /// Performs a depth-first traversal on the BVH, starting at the given node.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    pub fn traverse_depth_first_node(
+        &self,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        start_node: u32,
+    ) -> bool {
+        self.traverse_depth_first_node_with_stack(visitor, &mut Vec::new(), start_node)
     }
 
     /// Performs a depth-first traversal on the BVH.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_with_stack(
         &self,
         visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
         stack: &mut Vec<u32>,
-    ) {
+    ) -> bool {
+        self.traverse_depth_first_node_with_stack(visitor, stack, 0)
+    }
+
+    /// Performs a depth-first traversal on the BVH.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
+    pub fn traverse_depth_first_node_with_stack(
+        &self,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        stack: &mut Vec<u32>,
+        start_node: u32,
+    ) -> bool {
         stack.clear();
 
         if !self.nodes.is_empty() {
-            stack.push(0);
+            stack.push(start_node);
         }
         while let Some(entry) = stack.pop() {
             let node = &self.nodes[entry as usize];
@@ -49,7 +84,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
 
             match visitor.visit(&node.simd_aabb, leaf_data) {
                 SimdVisitStatus::ExitEarly => {
-                    return;
+                    return false;
                 }
                 SimdVisitStatus::MaybeContinue(mask) => {
                     let bitmask = mask.bitmask();
@@ -69,6 +104,8 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                 }
             }
         }
+
+        true
     }
 
     /// Performs a best-first-search on the BVH.
@@ -293,6 +330,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         }
     }
 
+    /// Runs a parallel depth-first traversal of the sub-tree starting at the given node.
     pub fn traverse_depth_first_node_parallel(
         &self,
         visitor: &impl ParallelSimdVisitor<LeafData>,
@@ -354,6 +392,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         }
     }
 
+    /// Runs a parallel simultaneous traversal of the sub-tree starting at the given nodes.
     pub fn traverse_bvtt_simd_node_parallel<LeafData2: IndexedData + Sync>(
         &self,
         qbvh2: &QBVH<LeafData2>,

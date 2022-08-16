@@ -1,11 +1,12 @@
 use crate::bounding_volume::SimdAABB;
 use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
-use crate::partitioning::{
-    QBVHNode, SimdNodeIndex, SimdSimultaneousVisitStatus, SimdSimultaneousVisitor, QBVH,
-};
+use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
 use na::SimdValue;
 use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
+
+#[cfg(feature = "parallel")]
+use crate::partitioning::QBVHNode;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {

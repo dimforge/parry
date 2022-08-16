@@ -39,6 +39,7 @@ impl IndexedData for u64 {
     }
 }
 
+/// The index of an internal SIMD node of a QBVH.
 pub type SimdNodeIndex = u32;
 
 /// The index of a node part of a QBVH.
@@ -48,9 +49,12 @@ pub type SimdNodeIndex = u32;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+/// The index of one specific node of a QBVH.
 pub struct NodeIndex {
+    /// The index of the SIMD node containing the addressed node.
     pub index: SimdNodeIndex, // Index of the addressed node in the `nodes` array.
-    pub lane: u8,             // SIMD lane of the addressed node.
+    /// The SIMD lane the addressed node is associated to.
+    pub lane: u8, // SIMD lane of the addressed node.
 }
 
 impl NodeIndex {
@@ -94,8 +98,11 @@ pub struct QBVHNode {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+/// Combination of a leaf data and its associated node’s index.
 pub struct QBVHProxy<LeafData> {
+    /// Index of the leaf node the leaf data is associated to.
     pub node: NodeIndex,
+    /// The data contained in this node.
     pub data: LeafData, // The collider data. TODO: only set the collider generation here?
 }
 

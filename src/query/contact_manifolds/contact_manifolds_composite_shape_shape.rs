@@ -144,7 +144,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     };
 
     let mut visitor1 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb2_1, &mut leaf1_fn);
-    composite1.qbvh().traverse_depth_first(&mut visitor1);
+    let _ = composite1.qbvh().traverse_depth_first(&mut visitor1);
 
     workspace
         .sub_detectors

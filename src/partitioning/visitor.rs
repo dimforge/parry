@@ -1,7 +1,6 @@
-use crate::bounding_volume::SimdAABB;
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::qbvh::QBVHNode;
-use crate::partitioning::{NodeIndex, SimdNodeIndex, QBVH};
+use crate::partitioning::SimdNodeIndex;
 
 /// The next action to be taken by a BVH traversal algorithm after having visited a node with some data.
 pub enum SimdBestFirstVisitStatus<Res> {
@@ -120,7 +119,7 @@ where
 {
     fn visit(
         &self,
-        node_id: SimdNodeIndex,
+        _node_id: SimdNodeIndex,
         node: &QBVHNode,
         data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
     ) -> SimdVisitStatus {
