@@ -25,12 +25,12 @@ the rust programming language.
 ))]
 std::compile_error!("The `simd-is-enabled` feature should not be enabled explicitly. Please enable the `simd-stable` or the `simd-nightly` feature instead.");
 #[cfg(all(feature = "simd-is-enabled", feature = "enhanced-determinism"))]
-std::compile_error!(
-    "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
+ std::compile_error!(
+     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
 );
-#[cfg(all(feature = "simd-is-enabled", feature = "f64"))]
+#[cfg(all(feature = "f64", feature="simd-stable"))]
 std::compile_error!(
-    "Explicit SIMD optimization are not yet supported when the f64 feature is enabled."
+     "Explicit SIMD optimizations on stable are not yet supported when the f64 feature is enabled."
 );
 
 macro_rules! array(
@@ -254,7 +254,7 @@ mod simd {
 mod simd {
     #[allow(unused_imports)]
     #[cfg(feature = "simd-nightly")]
-    use simba::simd::{f32x16, f32x4, f32x8, m32x16, m32x4, m32x8, u8x16, u8x4, u8x8};
+    use simba::simd::{f32x16, f32x4, f32x8, m32x16, m32x4, m32x8, u8x16, u8x4, u8x8, f64x4, m64x4};
     #[cfg(feature = "simd-stable")]
     use simba::simd::{WideBoolF32x4, WideF32x4};
 
@@ -268,12 +268,18 @@ mod simd {
     #[cfg(not(feature = "simd-nightly"))]
     /// A SIMD bool with SIMD_WIDTH lanes.
     pub type SimdBool = WideBoolF32x4;
-    #[cfg(feature = "simd-nightly")]
+    #[cfg(all(feature = "simd-nightly", feature="f32"))]
     /// A SIMD float with SIMD_WIDTH lanes.
     pub type SimdReal = f32x4;
-    #[cfg(feature = "simd-nightly")]
+    #[cfg(all(feature = "simd-nightly", feature="f64"))]
+    /// A SIMD float with SIMD_WIDTH lanes.
+    pub type SimdReal = f64x4;
+    #[cfg(all(feature = "simd-nightly", feature="f32"))]
     /// A bool float with SIMD_WIDTH lanes.
     pub type SimdBool = m32x4;
+    #[cfg(all(feature = "simd-nightly", feature="f64"))]
+    /// A bool float with SIMD_WIDTH lanes.
+    pub type SimdBool = m64x4;
 
     // pub const SIMD_WIDTH: usize = 8;
     // pub const SIMD_LAST_INDEX: usize = 7;
