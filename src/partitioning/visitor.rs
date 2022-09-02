@@ -131,15 +131,21 @@ where
 /// data structure traversal.
 #[cfg(feature = "parallel")]
 pub trait ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>: Sync {
+    /// Visitor state data that will be passed down the recursion.
+    type Data: Copy + Sync + Default;
+
     /// Execute an operation on the content of two nodes, one from each structure.
     ///
     /// Returns whether the traversal should continue on the nodes children, if it should not continue
     /// on those children, or if the whole traversal should be exited early.
     fn visit(
         &self,
+        left_node_id: SimdNodeIndex,
         left_node: &QBVHNode,
         left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
+        right_node_id: SimdNodeIndex,
         right_node: &QBVHNode,
         right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
-    ) -> SimdSimultaneousVisitStatus;
+        visitor_data: Self::Data,
+    ) -> (SimdSimultaneousVisitStatus, Self::Data);
 }

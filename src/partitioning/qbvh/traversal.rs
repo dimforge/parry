@@ -381,23 +381,36 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
 
     /// Performs a simultaneous traversal of two QBVH using
     /// parallelism internally for better performances with large tree.
-    pub fn traverse_bvtt_parallel<LeafData2: IndexedData + Sync>(
+    pub fn traverse_bvtt_parallel<
+        LeafData2: IndexedData + Sync,
+        Visitor: ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
+    >(
         &self,
         qbvh2: &QBVH<LeafData2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
+        visitor: &Visitor,
     ) {
         if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
             let exit_early = AtomicBool::new(false);
-            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, &exit_early, (0, 0));
+            self.traverse_bvtt_simd_node_parallel(
+                qbvh2,
+                visitor,
+                &exit_early,
+                Visitor::Data::default(),
+                (0, 0),
+            );
         }
     }
 
     /// Runs a parallel simultaneous traversal of the sub-tree starting at the given nodes.
-    pub fn traverse_bvtt_simd_node_parallel<LeafData2: IndexedData + Sync>(
+    pub fn traverse_bvtt_simd_node_parallel<
+        LeafData2: IndexedData + Sync,
+        Visitor: ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
+    >(
         &self,
         qbvh2: &QBVH<LeafData2>,
-        visitor: &impl ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
+        visitor: &Visitor,
         exit_early: &AtomicBool,
+        data: Visitor::Data,
         entry: (u32, u32),
     ) {
         if exit_early.load(AtomicOrdering::Relaxed) {
@@ -427,7 +440,11 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
             None
         };
 
-        match visitor.visit(&node1, leaf_data1, &node2, leaf_data2) {
+        let (status, data) = visitor.visit(
+            entry.0, &node1, leaf_data1, entry.1, &node2, leaf_data2, data,
+        );
+
+        match status {
             SimdSimultaneousVisitStatus::ExitEarly => {
                 exit_early.store(true, AtomicOrdering::Relaxed);
                 return;
@@ -480,7 +497,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         }
 
         stack.as_slice().par_iter().copied().for_each(|entry| {
-            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, exit_early, entry)
+            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, exit_early, data, entry)
         });
     }
 }

@@ -6,7 +6,7 @@ use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
 
 #[cfg(feature = "parallel")]
-use crate::partitioning::QBVHNode;
+use crate::partitioning::{QBVHNode, SimdNodeIndex};
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
@@ -85,14 +85,19 @@ impl<LeafData1: Sync, LeafData2: Sync, F>
 where
     F: Sync + Fn(&LeafData1, &LeafData2) -> bool,
 {
+    type Data = ();
+
     #[inline]
     fn visit(
         &self,
+        _: SimdNodeIndex,
         left_node: &QBVHNode,
         left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
+        _: SimdNodeIndex,
         right_node: &QBVHNode,
         right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
-    ) -> SimdSimultaneousVisitStatus {
+        _: (),
+    ) -> (SimdSimultaneousVisitStatus, ()) {
         let mask = if let Some(pos12) = &self.pos12 {
             let transformed_right_bv = right_node.simd_aabb.transform_by(pos12);
             left_node
@@ -111,13 +116,13 @@ where
                 for jj in 0..SIMD_WIDTH {
                     if (bitmask & (1 << jj)) != 0 && data1[ii].is_some() && data2[jj].is_some() {
                         if !(self.callback)(data1[ii].unwrap(), data2[jj].unwrap()) {
-                            return SimdSimultaneousVisitStatus::ExitEarly;
+                            return (SimdSimultaneousVisitStatus::ExitEarly, ());
                         }
                     }
                 }
             }
         }
 
-        SimdSimultaneousVisitStatus::MaybeContinue(mask)
+        (SimdSimultaneousVisitStatus::MaybeContinue(mask), ())
     }
 }
