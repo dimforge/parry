@@ -414,11 +414,11 @@ impl ConvexPolyhedron {
             .for_each(|pt| pt.coords.component_mul_assign(scale));
 
         for f in &mut self.faces {
-            f.normal = Unit::try_new(f.normal.component_mul(&scale), 0.0)?;
+            f.normal = Unit::try_new(f.normal.component_mul(&scale), 0.0).unwrap_or(f.normal);
         }
 
         for e in &mut self.edges {
-            e.dir = Unit::try_new(e.dir.component_mul(&scale), 0.0)?;
+            e.dir = Unit::try_new(e.dir.component_mul(&scale), 0.0).unwrap_or(e.dir);
         }
 
         Some(self)
