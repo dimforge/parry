@@ -121,11 +121,28 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
             return None;
         }
 
+        self.traverse_best_first_node(visitor, 0, Real::max_value())
+    }
+
+    /// Performs a best-first-search on the BVH, starting at the given node.
+    ///
+    /// Returns the content of the leaf with the smallest associated cost, and a result of
+    /// user-defined type.
+    pub fn traverse_best_first_node<BFS>(
+        &self,
+        visitor: &mut BFS,
+        start_node: u32,
+        init_cost: Real,
+    ) -> Option<(NodeIndex, BFS::Result)>
+    where
+        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS::Result: Clone, // Because we cannot move out of an array…
+    {
         let mut queue: BinaryHeap<WeightedValue<u32>> = BinaryHeap::new();
 
-        let mut best_cost = Real::max_value();
+        let mut best_cost = init_cost;
         let mut best_result = None;
-        queue.push(WeightedValue::new(0, -best_cost / 2.0));
+        queue.push(WeightedValue::new(start_node, -best_cost / 2.0));
 
         while let Some(entry) = queue.pop() {
             if -entry.cost >= best_cost {
