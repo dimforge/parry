@@ -118,6 +118,10 @@ impl ConvexPolyhedron {
         let mut edges_adj_to_face = Vec::new();
         let mut vertices_adj_to_face = Vec::new();
 
+        if points.len() + indices.len() <= 2 {
+            return None;
+        }
+
         //// Euler characteristic.
         let nedges = points.len() + indices.len() - 2;
         edges.reserve(nedges);
