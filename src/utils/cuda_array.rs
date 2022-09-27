@@ -122,6 +122,25 @@ pub struct CudaArrayPointer1<T: ?Sized + DeviceCopy> {
     len: usize,
 }
 
+#[cfg(target_os = "cuda")]
+impl<T: ?Sized + DeviceCopy> CudaArrayPointer1<T> {
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn get(&self, i: usize) -> T {
+        assert!(i < self.len);
+        unsafe { *self.data.as_ptr().add(i) }
+    }
+
+    pub fn set(&mut self, i: usize, val: T) {
+        assert!(i < self.len);
+        unsafe {
+            *self.data.as_mut_ptr().add(i) = val;
+        }
+    }
+}
+
 #[cfg(all(feature = "dim2", target_os = "cuda"))]
 impl<T: ?Sized + DeviceCopy> HeightFieldStorage for CudaArrayPointer1<T> {
     type Item = T;
