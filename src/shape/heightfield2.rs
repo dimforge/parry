@@ -2,6 +2,7 @@
 use na::ComplexField;
 #[cfg(feature = "std")]
 use na::DVector;
+use std::ops::Range;
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray1, cust::error::CudaResult};
 
@@ -173,41 +174,44 @@ where
 
     /// The width of a single cell of this heightfield, without taking the scale factor into account.
     pub fn unit_cell_width(&self) -> Real {
-        1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0)
+        1.0 / (self.heights.len() as Real - 1.0)
     }
 
     /// The left-most x-coordinate of this heightfield.
     pub fn start_x(&self) -> Real {
-        self.scale.x * na::convert::<f64, Real>(-0.5)
+        self.scale.x * -0.5
+    }
+
+    fn quantize_floor_unclamped(&self, val: Real, seg_length: Real) -> isize {
+        ((val + 0.5) / seg_length).floor() as isize
+    }
+
+    fn quantize_ceil_unclamped(&self, val: Real, seg_length: Real) -> isize {
+        ((val + 0.5) / seg_length).ceil() as isize
     }
 
     fn quantize_floor(&self, val: Real, seg_length: Real) -> usize {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let i = na::clamp(
-            ((val + _0_5) / seg_length).floor(),
+        na::clamp(
+            ((val + 0.5) / seg_length).floor(),
             0.0,
-            na::convert::<f64, Real>((self.num_cells() - 1) as f64),
-        );
-        na::convert_unchecked::<Real, f64>(i) as usize
+            (self.num_cells() - 1) as Real,
+        ) as usize
     }
 
     fn quantize_ceil(&self, val: Real, seg_length: Real) -> usize {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let i = na::clamp(
-            ((val + _0_5) / seg_length).ceil(),
+        na::clamp(
+            ((val + 0.5) / seg_length).ceil(),
             0.0,
-            na::convert::<f64, Real>(self.num_cells() as f64),
-        );
-        na::convert_unchecked::<Real, f64>(i) as usize
+            self.num_cells() as Real,
+        ) as usize
     }
 
     /// Index of the cell a point is on after vertical projection.
     pub fn cell_at_point(&self, pt: &Point2<Real>) -> Option<usize> {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
         let scaled_pt = pt.coords.component_div(&self.scale);
         let seg_length = self.unit_cell_width();
 
-        if scaled_pt.x < -_0_5 || scaled_pt.x > _0_5 {
+        if scaled_pt.x < -0.5 || scaled_pt.x > 0.5 {
             // Outside of the heightfield bounds.
             None
         } else {
@@ -241,10 +245,9 @@ where
             return None;
         }
 
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let seg_length = 1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
+        let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
 
-        let x0 = -_0_5 + seg_length * na::convert::<f64, Real>(i as f64);
+        let x0 = -0.5 + seg_length * (i as Real);
         let x1 = x0 + seg_length;
 
         let y0 = self.heights.get(i + 0);
@@ -270,14 +273,24 @@ where
         !self.status.get(i)
     }
 
-    /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
-    pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(u32, &Segment)) {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
+    /// The range of segment ids that may intersect the given local AABB.
+    pub fn unclamped_elements_range_in_local_aabb(&self, aabb: &AABB) -> Range<isize> {
         let ref_mins = aabb.mins.coords.component_div(&self.scale);
         let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
-        let seg_length = 1.0 / na::convert::<f64, Real>(self.heights.len() as f64 - 1.0);
+        let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
 
-        if ref_maxs.x < -_0_5 || ref_mins.x > _0_5 {
+        let min_x = self.quantize_floor_unclamped(ref_mins.x, seg_length);
+        let max_x = self.quantize_ceil_unclamped(ref_maxs.x, seg_length);
+        min_x..max_x
+    }
+
+    /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
+    pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(u32, &Segment)) {
+        let ref_mins = aabb.mins.coords.component_div(&self.scale);
+        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
+
+        if ref_maxs.x < -0.5 || ref_mins.x > 0.5 {
             // Outside of the heightfield bounds.
             return;
         }
@@ -292,7 +305,7 @@ where
                 continue;
             }
 
-            let x0 = -_0_5 + seg_length * na::convert::<f64, Real>(i as f64);
+            let x0 = -0.5 + seg_length * (i as Real);
             let x1 = x0 + seg_length;
 
             let y0 = self.heights.get(i + 0);
