@@ -1,5 +1,23 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+- Add to `query::time_of_impact` a boolean argument `stop_at_penetration`. If set to `false`
+  the linear shape-cast won’t immediately stop if the shape is penetrating another shape at its
+  starting point **and** its trajectory is such that it’s existing that penetration configuration.
+
+### Added
+- Add 2D `Heightfield::to_polyline` to get the explicit vertices/indices of a 2D heightfield
+  seen as a polyline.
+- Add the support for linear shape-cast (`query::time_of_impact`) for heightfields.
+- Make the convex polyhedron scaling more forgiving regarding normals to avoid frequent unjustified panics.
+- Fix panic happening when building a convex polyhedron with empty inputs.
+
+
+### Fixed
+- Fix the application of non-uniform scaling to balls.
+
 ## v0.9.0 (30 Apr. 2022)
 
 ### Modified
