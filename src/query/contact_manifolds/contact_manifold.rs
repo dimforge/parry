@@ -2,6 +2,10 @@ use crate::math::{Isometry, Point, Real, Vector};
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 /// A single contact between two shape.
 pub struct TrackedContact<Data> {
     /// The contact point in the local-space of the first shape.

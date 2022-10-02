@@ -419,7 +419,7 @@ impl TriMesh {
             intersecting_tris.push(*id);
             true
         });
-        self.qbvh().traverse_depth_first(&mut visitor);
+        let _ = self.qbvh().traverse_depth_first(&mut visitor);
 
         if intersecting_tris.is_empty() {
             return None;

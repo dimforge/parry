@@ -5,6 +5,10 @@ use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Clone, Debug)]
 pub struct ConvexPolygon {
     points: Vec<Point<Real>>,

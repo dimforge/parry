@@ -39,7 +39,7 @@ impl PointQuery for Polyline {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.qbvh().traverse_depth_first(&mut visitor);
+        let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -84,7 +84,7 @@ impl PointQuery for TriMesh {
         }
 
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.qbvh().traverse_depth_first(&mut visitor);
+        let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }
@@ -107,7 +107,7 @@ impl PointQuery for Compound {
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
-        self.qbvh().traverse_depth_first(&mut visitor);
+        let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
 }

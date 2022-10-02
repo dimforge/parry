@@ -9,6 +9,10 @@ use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Clone)]
 pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,

@@ -7,6 +7,10 @@ use num::Zero;
 
 /// A Bounding Sphere.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct BoundingSphere {
     pub center: Point<Real>,

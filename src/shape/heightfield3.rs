@@ -14,6 +14,10 @@ use na::ComplexField;
 
 bitflags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[cfg_attr(
+        feature = "rkyv",
+        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    )]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[derive(Default)]
     /// The status of the cell of an heightfield.
@@ -69,6 +73,10 @@ impl<T: Scalar> HeightFieldStorage for DMatrix<T> {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)] // Needed for Cuda.

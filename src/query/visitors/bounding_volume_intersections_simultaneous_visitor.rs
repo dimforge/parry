@@ -5,6 +5,9 @@ use na::SimdValue;
 use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
 
+#[cfg(feature = "parallel")]
+use crate::partitioning::{QBVHNode, SimdNodeIndex};
+
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
     pos12: Option<Isometry<SimdReal>>,
@@ -12,10 +15,7 @@ pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
     _phantom: PhantomData<(T1, T2)>,
 }
 
-impl<T1, T2, F> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F>
-where
-    F: FnMut(&T1, &T2) -> bool,
-{
+impl<T1, T2, F> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
     /// Creates a new `BoundingVolumeIntersectionsSimultaneousVisitor`.
     #[inline]
     pub fn new(callback: F) -> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
@@ -75,5 +75,54 @@ where
         }
 
         SimdSimultaneousVisitStatus::MaybeContinue(mask)
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<LeafData1: Sync, LeafData2: Sync, F>
+    crate::partitioning::ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>
+    for BoundingVolumeIntersectionsSimultaneousVisitor<LeafData1, LeafData2, F>
+where
+    F: Sync + Fn(&LeafData1, &LeafData2) -> bool,
+{
+    type Data = ();
+
+    #[inline]
+    fn visit(
+        &self,
+        _: SimdNodeIndex,
+        left_node: &QBVHNode,
+        left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
+        _: SimdNodeIndex,
+        right_node: &QBVHNode,
+        right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
+        _: (),
+    ) -> (SimdSimultaneousVisitStatus, ()) {
+        let mask = if let Some(pos12) = &self.pos12 {
+            let transformed_right_bv = right_node.simd_aabb.transform_by(pos12);
+            left_node
+                .simd_aabb
+                .intersects_permutations(&transformed_right_bv)
+        } else {
+            left_node
+                .simd_aabb
+                .intersects_permutations(&right_node.simd_aabb)
+        };
+
+        if let (Some(data1), Some(data2)) = (left_data, right_data) {
+            for ii in 0..SIMD_WIDTH {
+                let bitmask = mask[ii].bitmask();
+
+                for jj in 0..SIMD_WIDTH {
+                    if (bitmask & (1 << jj)) != 0 && data1[ii].is_some() && data2[jj].is_some() {
+                        if !(self.callback)(data1[ii].unwrap(), data2[jj].unwrap()) {
+                            return (SimdSimultaneousVisitStatus::ExitEarly, ());
+                        }
+                    }
+                }
+            }
+        }
+
+        (SimdSimultaneousVisitStatus::MaybeContinue(mask), ())
     }
 }

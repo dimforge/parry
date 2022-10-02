@@ -4,6 +4,10 @@
 /// allows an efficient retrieval of the geometric information of the
 /// feature.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum FeatureId {
     /// Shape-dependent identifier of a vertex.

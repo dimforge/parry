@@ -28,10 +28,6 @@ std::compile_error!("The `simd-is-enabled` feature should not be enabled explici
 std::compile_error!(
     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
 );
-#[cfg(all(feature = "simd-is-enabled", feature = "f64"))]
-std::compile_error!(
-    "Explicit SIMD optimization are not yet supported when the f64 feature is enabled."
-);
 
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
@@ -252,36 +248,18 @@ mod simd {
 
 #[cfg(feature = "simd-is-enabled")]
 mod simd {
-    #[allow(unused_imports)]
-    #[cfg(feature = "simd-nightly")]
-    use simba::simd::{f32x16, f32x4, f32x8, m32x16, m32x4, m32x8, u8x16, u8x4, u8x8};
-    #[cfg(feature = "simd-stable")]
-    use simba::simd::{WideBoolF32x4, WideF32x4};
+    #[cfg(all(feature = "simd-nightly", feature = "f32"))]
+    pub use simba::simd::{f32x4 as SimdReal, m32x4 as SimdBool};
+    #[cfg(all(feature = "simd-stable", feature = "f32"))]
+    pub use simba::simd::{WideBoolF32x4 as SimdBool, WideF32x4 as SimdReal};
+
+    #[cfg(all(feature = "simd-nightly", feature = "f64"))]
+    pub use simba::simd::{f64x4 as SimdReal, m64x4 as SimdBool};
+    #[cfg(all(feature = "simd-stable", feature = "f64"))]
+    pub use simba::simd::{WideBoolF64x4 as SimdBool, WideF64x4 as SimdReal};
 
     /// The number of lanes of a SIMD number.
     pub const SIMD_WIDTH: usize = 4;
     /// SIMD_WIDTH - 1
     pub const SIMD_LAST_INDEX: usize = 3;
-    #[cfg(not(feature = "simd-nightly"))]
-    /// A SIMD float with SIMD_WIDTH lanes.
-    pub type SimdReal = WideF32x4;
-    #[cfg(not(feature = "simd-nightly"))]
-    /// A SIMD bool with SIMD_WIDTH lanes.
-    pub type SimdBool = WideBoolF32x4;
-    #[cfg(feature = "simd-nightly")]
-    /// A SIMD float with SIMD_WIDTH lanes.
-    pub type SimdReal = f32x4;
-    #[cfg(feature = "simd-nightly")]
-    /// A bool float with SIMD_WIDTH lanes.
-    pub type SimdBool = m32x4;
-
-    // pub const SIMD_WIDTH: usize = 8;
-    // pub const SIMD_LAST_INDEX: usize = 7;
-    // pub type SimdReal = f32x8;
-    // pub type SimdBool = m32x8;
-
-    // pub const SIMD_WIDTH: usize = 16;
-    // pub const SIMD_LAST_INDEX: usize = 15;
-    // pub type SimdReal = f32x16;
-    // pub type SimdBool = m32x16;
 }

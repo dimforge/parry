@@ -10,6 +10,10 @@ use na::ComplexField; // for .abs()
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 /// A polyline.
 pub struct Polyline {
     qbvh: QBVH<u32>,

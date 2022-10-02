@@ -1,6 +1,11 @@
 //! Spatial partitioning tools.
 
-pub use self::qbvh::{IndexedData, QBVHDataGenerator, QbvhNonOverlappingDataSplitter, QBVH};
+pub use self::qbvh::{
+    CenterDataSplitter, IndexedData, NodeIndex, QBVHDataGenerator, QBVHNode, QBVHProxy,
+    QbvhNonOverlappingDataSplitter, SimdNodeIndex, QBVH,
+};
+#[cfg(feature = "parallel")]
+pub use self::visitor::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor};
 pub use self::visitor::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitStatus,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,

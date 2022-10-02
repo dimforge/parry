@@ -15,15 +15,15 @@ struct QBVHIncrementalBuilderStep {
 }
 
 #[allow(dead_code)]
-struct QBVHIncrementalBuilder<T> {
-    qbvh: QBVH<T>,
+struct QBVHIncrementalBuilder<LeafData> {
+    qbvh: QBVH<LeafData>,
     to_insert: Vec<QBVHIncrementalBuilderStep>,
     aabbs: Vec<AABB>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<T: IndexedData> QBVHIncrementalBuilder<T> {
+impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
     pub fn new() -> Self {
         Self {
             qbvh: QBVH::new(),
@@ -158,28 +158,28 @@ impl<T: IndexedData> QBVHIncrementalBuilder<T> {
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Marks a piece of data as dirty so it can be updated during the next
     /// call to `self.update`.
-    pub fn pre_update(&mut self, data: T) {
+    pub fn pre_update(&mut self, data: LeafData) {
         let id = data.index();
         let node_id = self.proxies[id].node.index;
         let node = &mut self.nodes[node_id as usize];
         if !node.dirty {
             node.dirty = true;
-            self.dirty_nodes.push_back(node_id);
+            self.dirty_nodes.push(node_id);
         }
     }
 
     /// Update all the nodes that have been marked as dirty by `self.pre_update`.
     pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: Real)
     where
-        F: Fn(&T) -> AABB,
+        F: Fn(&LeafData) -> AABB,
     {
         // Loop on the dirty leaves.
         let dilation_factor = SimdReal::splat(dilation_factor);
 
-        while let Some(id) = self.dirty_nodes.pop_front() {
+        while let Some(id) = self.dirty_nodes.pop() {
             // NOTE: this will data the case where we reach the root of the tree.
             if let Some(node) = self.nodes.get(id as usize) {
                 // Compute the new aabb.
@@ -203,7 +203,7 @@ impl<T: IndexedData> QBVH<T> {
                 if !node.simd_aabb.contains(&new_simd_aabb).all() {
                     node.simd_aabb = new_simd_aabb;
                     node.simd_aabb.dilate_by_factor(dilation_factor);
-                    self.dirty_nodes.push_back(node.parent.index);
+                    self.dirty_nodes.push(node.parent.index);
                 }
                 node.dirty = false;
             }

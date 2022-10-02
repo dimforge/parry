@@ -12,6 +12,10 @@ use crate::shape::{HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[derive(Clone)]
 struct SubDetector {
     manifold_id: usize,

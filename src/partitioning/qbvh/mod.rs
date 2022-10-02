@@ -1,7 +1,7 @@
-pub use self::build::{BuilderProxies, QBVHDataGenerator, QbvhNonOverlappingDataSplitter};
-pub use self::qbvh::{IndexedData, QBVH};
-
-pub(self) use self::qbvh::*;
+pub use self::build::{
+    BuilderProxies, CenterDataSplitter, QBVHDataGenerator, QbvhNonOverlappingDataSplitter,
+};
+pub use self::qbvh::{IndexedData, NodeIndex, QBVHNode, QBVHProxy, SimdNodeIndex, QBVH};
 
 mod build;
 mod qbvh;

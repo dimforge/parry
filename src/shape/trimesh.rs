@@ -54,6 +54,10 @@ impl std::error::Error for TopologyError {}
 /// DOI: 10.1109/TVCG.2005.49
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 #[cfg(feature = "dim3")]
 pub struct TriMeshPseudoNormals {
     /// The pseudo-normals of the vertices.
@@ -75,6 +79,10 @@ impl Default for TriMeshPseudoNormals {
 /// The connected-components of a triangle mesh.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct TriMeshConnectedComponents {
     /// The `face_colors[i]` gives the connected-component index
     /// of the i-th face.
@@ -96,6 +104,10 @@ impl TriMeshConnectedComponents {
 /// A vertex of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct TopoVertex {
     /// One of the half-edge with this vertex as endpoint.
     pub half_edge: u32,
@@ -104,6 +116,10 @@ pub struct TopoVertex {
 /// A face of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct TopoFace {
     /// The half-edge adjascent to this face, whith a starting point equal
     /// to the first point of this face.
@@ -113,6 +129,10 @@ pub struct TopoFace {
 /// A half-edge of a triangle-mesh’s half-edge topology.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct TopoHalfEdge {
     /// The next half-edge.
     pub next: u32,
@@ -129,6 +149,10 @@ pub struct TopoHalfEdge {
 /// The half-edge topology information of a triangle mesh.
 #[derive(Clone, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct TriMeshTopology {
     /// The vertices of this half-edge representation.
     pub vertices: Vec<TopoVertex>,
@@ -155,6 +179,10 @@ impl TriMeshTopology {
 
 bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[cfg_attr(
+        feature = "rkyv",
+        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    )]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[derive(Default)]
     /// The status of the cell of an heightfield.
@@ -195,6 +223,10 @@ bitflags::bitflags! {
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 /// A triangle mesh.
 pub struct TriMesh {
     qbvh: QBVH<u32>,

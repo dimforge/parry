@@ -5,6 +5,10 @@ use std::ops::{Add, Mul};
 /// A 2x2 symmetric-definite-positive matrix.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct SdpMatrix2<N> {
     /// The component at the first row and first column of this matrix.
     pub m11: N,
@@ -106,6 +110,10 @@ impl Mul<Real> for SdpMatrix2<Real> {
 /// A 3x3 symmetric-definite-positive matrix.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
 pub struct SdpMatrix3<N> {
     /// The component at the first row and first column of this matrix.
     pub m11: N,

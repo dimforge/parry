@@ -8,15 +8,15 @@ use simba::simd::SimdValue;
 use super::utils::split_indices_wrt_dim;
 use super::{IndexedData, NodeIndex, QBVHNode, QBVHProxy, QBVH};
 
-pub struct BuilderProxies<'a, T> {
-    proxies: &'a mut Vec<QBVHProxy<T>>,
+pub struct BuilderProxies<'a, LeafData> {
+    proxies: &'a mut Vec<QBVHProxy<LeafData>>,
     aabbs: &'a mut Vec<AABB>,
 }
 
-impl<'a, T> BuilderProxies<'a, T> {
-    fn insert(&mut self, data: T, aabb: AABB)
+impl<'a, LeafData> BuilderProxies<'a, LeafData> {
+    fn insert(&mut self, data: LeafData, aabb: AABB)
     where
-        T: IndexedData,
+        LeafData: IndexedData,
     {
         let index = data.index();
 
@@ -30,18 +30,23 @@ impl<'a, T> BuilderProxies<'a, T> {
     }
 }
 
-pub trait QBVHDataSplitter<T> {
+pub trait QBVHDataSplitter<LeafData> {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4];
 }
 
-struct CenterDataSplitter {
+/// A data splitter that arranges a set of AABBs in two sets based on their center’s coordinate
+/// along the split axis.
+pub struct CenterDataSplitter {
+    /// If all the AABB centers have the same coordinate values along the splitting axis
+    /// setting this to `true` will allow the spliter to split the AABB set into two
+    /// subsets arbitrarily.
     pub enable_fallback_split: bool,
 }
 
@@ -53,26 +58,26 @@ impl Default for CenterDataSplitter {
     }
 }
 
-impl<T> QBVHDataSplitter<T> for CenterDataSplitter {
+impl<LeafData> QBVHDataSplitter<LeafData> for CenterDataSplitter {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
         _: &'idx mut Vec<usize>,
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         self.split_dataset_wo_workspace(subdiv_dims, center, indices, proxies)
     }
 }
 
 impl CenterDataSplitter {
-    fn split_dataset_wo_workspace<'idx, T>(
+    fn split_dataset_wo_workspace<'idx, LeafData>(
         &mut self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
-        proxies: BuilderProxies<T>,
+        proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         // TODO: should we split wrt. the median instead of the average?
         // TODO: we should ensure each subslice contains at least 4 elements each (or less if
@@ -117,10 +122,10 @@ pub struct QbvhNonOverlappingDataSplitter<F> {
     pub epsilon: Real,
 }
 
-impl<T, F> QBVHDataSplitter<T> for QbvhNonOverlappingDataSplitter<F>
+impl<LeafData, F> QBVHDataSplitter<LeafData> for QbvhNonOverlappingDataSplitter<F>
 where
-    T: IndexedData,
-    F: FnMut(T, usize, Real, Real, AABB, AABB) -> SplitResult<(T, AABB)>,
+    LeafData: IndexedData,
+    F: FnMut(LeafData, usize, Real, Real, AABB, AABB) -> SplitResult<(LeafData, AABB)>,
 {
     fn split_dataset<'idx>(
         &mut self,
@@ -128,7 +133,7 @@ where
         center: Point<Real>,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
-        mut proxies: BuilderProxies<T>,
+        mut proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
         // 1. Snap the spliting point to one fo the AABB min/max,
         // such that at least one AABB isn’t split along each dimension.
@@ -228,36 +233,36 @@ where
 }
 
 /// Trait used for generating the content of the leaves of the QBVH acceleration structure.
-pub trait QBVHDataGenerator<T> {
+pub trait QBVHDataGenerator<LeafData> {
     /// Gives an idea of the number of elements this generator contains.
     ///
     /// This is primarily used for pre-allocating some arrays for better performances.
     fn size_hint(&self) -> usize;
     /// Iterate through all the elements of this generator.
-    fn for_each(&mut self, f: impl FnMut(T, AABB));
+    fn for_each(&mut self, f: impl FnMut(LeafData, AABB));
 }
 
-impl<T, F> QBVHDataGenerator<T> for F
+impl<LeafData, F> QBVHDataGenerator<LeafData> for F
 where
-    F: ExactSizeIterator<Item = (T, AABB)>,
+    F: ExactSizeIterator<Item = (LeafData, AABB)>,
 {
     fn size_hint(&self) -> usize {
         self.len()
     }
 
     #[inline(always)]
-    fn for_each(&mut self, mut f: impl FnMut(T, AABB)) {
+    fn for_each(&mut self, mut f: impl FnMut(LeafData, AABB)) {
         for (elt, aabb) in self {
             f(elt, aabb)
         }
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild(
         &mut self,
-        data_gen: impl QBVHDataGenerator<T>,
+        data_gen: impl QBVHDataGenerator<LeafData>,
         dilation_factor: Real,
     ) {
         self.clear_and_rebuild_with_splitter(
@@ -268,12 +273,12 @@ impl<T: IndexedData> QBVH<T> {
     }
 }
 
-impl<T: IndexedData> QBVH<T> {
+impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Clears this quaternary BVH and rebuilds it from a new set of data and AABBs.
     pub fn clear_and_rebuild_with_splitter(
         &mut self,
-        mut data_gen: impl QBVHDataGenerator<T>,
-        mut splitter: impl QBVHDataSplitter<T>,
+        mut data_gen: impl QBVHDataGenerator<LeafData>,
+        mut splitter: impl QBVHDataSplitter<LeafData>,
         dilation_factor: Real,
     ) {
         self.nodes.clear();
@@ -326,7 +331,7 @@ impl<T: IndexedData> QBVH<T> {
 
     fn do_recurse_build_generic(
         &mut self,
-        splitter: &mut impl QBVHDataSplitter<T>,
+        splitter: &mut impl QBVHDataSplitter<LeafData>,
         indices: &mut [usize],
         aabbs: &mut Vec<AABB>,
         parent: NodeIndex,
@@ -408,7 +413,7 @@ impl<T: IndexedData> QBVH<T> {
         // Split the set along the two subdiv_dims dimensions.
         let proxies = BuilderProxies {
             proxies: &mut self.proxies,
-            aabbs: aabbs,
+            aabbs,
         };
 
         // Recurse!
