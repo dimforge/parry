@@ -13,7 +13,11 @@
 - Add the support for linear shape-cast (`query::time_of_impact`) for heightfields.
 - Make the convex polyhedron scaling more forgiving regarding normals to avoid frequent unjustified panics.
 - Fix panic happening when building a convex polyhedron with empty inputs.
-
+- Add the support of Heightfields on CUDA kernels written in Rust using the `cust` crate.
+- Add the `rkyv-serialize` feature that enables the implementation of `rkyv` serialization/deserialization
+  for most shapes.
+- Add the `parallel` feature that enables methods for the parallel traversal of QBVH trees: `QBVH::traverse_bvtt_parallel`,
+  `QBVH::traverse_bvtt_node_parallel`, `QBVH::traverse_depth_first_parallel`, `QBVH::traverse_depth_first_node_parallel`,
 
 ### Fixed
 - Fix the application of non-uniform scaling to balls.

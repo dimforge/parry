@@ -408,7 +408,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
     ) {
         if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
             let exit_early = AtomicBool::new(false);
-            self.traverse_bvtt_simd_node_parallel(
+            self.traverse_bvtt_node_parallel(
                 qbvh2,
                 visitor,
                 &exit_early,
@@ -419,7 +419,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
     }
 
     /// Runs a parallel simultaneous traversal of the sub-tree starting at the given nodes.
-    pub fn traverse_bvtt_simd_node_parallel<
+    pub fn traverse_bvtt_node_parallel<
         LeafData2: IndexedData + Sync,
         Visitor: ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
     >(
@@ -514,7 +514,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         }
 
         stack.as_slice().par_iter().copied().for_each(|entry| {
-            self.traverse_bvtt_simd_node_parallel(qbvh2, visitor, exit_early, data, entry)
+            self.traverse_bvtt_node_parallel(qbvh2, visitor, exit_early, data, entry)
         });
     }
 }
