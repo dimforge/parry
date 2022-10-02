@@ -8,7 +8,7 @@ use crate::query::{
     contact_manifolds::ContactManifoldsWorkspace, query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
-use crate::shape::{HalfSpace, HeightField, Segment, Shape, ShapeType};
+use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
 /// A dispatcher that exposes built-in queries
 #[derive(Debug, Clone)]
@@ -306,38 +306,39 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 max_toi,
                 stop_at_penetration,
             ))
-        } else if let Some(heightfield1) = shape1.as_shape::<HeightField>() {
-            query::details::time_of_impact_heightfield_shape(
-                self,
-                pos12,
-                local_vel12,
-                heightfield1,
-                shape2,
-                max_toi,
-                stop_at_penetration,
-            )
-        } else if let Some(heightfield2) = shape1.as_shape::<HeightField>() {
-            query::details::time_of_impact_shape_heightfield(
-                self,
-                pos12,
-                local_vel12,
-                shape1,
-                heightfield2,
-                max_toi,
-                stop_at_penetration,
-            )
-        } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
-            Ok(query::details::time_of_impact_support_map_support_map(
-                pos12,
-                local_vel12,
-                s1,
-                s2,
-                max_toi,
-                stop_at_penetration,
-            ))
         } else {
             #[cfg(feature = "std")]
-            if let Some(c1) = shape1.as_composite_shape() {
+            if let Some(heightfield1) = shape1.as_heightfield() {
+                return query::details::time_of_impact_heightfield_shape(
+                    self,
+                    pos12,
+                    local_vel12,
+                    heightfield1,
+                    shape2,
+                    max_toi,
+                    stop_at_penetration,
+                );
+            } else if let Some(heightfield2) = shape1.as_heightfield() {
+                return query::details::time_of_impact_shape_heightfield(
+                    self,
+                    pos12,
+                    local_vel12,
+                    shape1,
+                    heightfield2,
+                    max_toi,
+                    stop_at_penetration,
+                );
+            } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map())
+            {
+                return Ok(query::details::time_of_impact_support_map_support_map(
+                    pos12,
+                    local_vel12,
+                    s1,
+                    s2,
+                    max_toi,
+                    stop_at_penetration,
+                ));
+            } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::time_of_impact_composite_shape_shape(
                     self,
                     pos12,
