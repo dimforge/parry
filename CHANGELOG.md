@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.10.0 (02 Oct. 2022)
 
 ### Modified
 - Add to `query::time_of_impact` a boolean argument `stop_at_penetration`. If set to `false`
