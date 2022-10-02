@@ -103,6 +103,7 @@ pub trait QueryDispatcher: Send + Sync {
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_toi: Real,
+        stop_at_penetration: bool,
     ) -> Result<Option<TOI>, Unsupported>;
 
     /// Construct a `QueryDispatcher` that falls back on `other` for cases not handled by `self`
@@ -187,6 +188,7 @@ where
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_toi: Real,
+        stop_at_penetration: bool,
     ) -> Option<TOI>);
 
     chain_method!(nonlinear_time_of_impact(
