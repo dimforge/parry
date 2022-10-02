@@ -90,8 +90,9 @@ pub fn time_of_impact(
     vel2: &Vector<Real>,
     g2: &dyn Shape,
     max_toi: Real,
+    stop_at_penetration: bool,
 ) -> Result<Option<TOI>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
     let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));
-    DefaultQueryDispatcher.time_of_impact(&pos12, &vel12, g1, g2, max_toi)
+    DefaultQueryDispatcher.time_of_impact(&pos12, &vel12, g1, g2, max_toi, stop_at_penetration)
 }

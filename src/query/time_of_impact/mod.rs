@@ -10,6 +10,9 @@ pub use self::time_of_impact_composite_shape_shape::{
 pub use self::time_of_impact_halfspace_support_map::{
     time_of_impact_halfspace_support_map, time_of_impact_support_map_halfspace,
 };
+pub use self::time_of_impact_heightfield_shape::{
+    time_of_impact_heightfield_shape, time_of_impact_shape_heightfield,
+};
 pub use self::time_of_impact_support_map_support_map::time_of_impact_support_map_support_map;
 
 mod time_of_impact;
@@ -17,4 +20,5 @@ mod time_of_impact_ball_ball;
 #[cfg(feature = "std")]
 mod time_of_impact_composite_shape_shape;
 mod time_of_impact_halfspace_support_map;
+mod time_of_impact_heightfield_shape;
 mod time_of_impact_support_map_support_map;
