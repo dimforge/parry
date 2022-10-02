@@ -27,6 +27,7 @@ fn ball_cuboid_toi() {
         &cuboid_vel1,
         &cuboid,
         Real::MAX,
+        true,
     )
     .unwrap();
     let toi_will_touch = query::time_of_impact(
@@ -37,6 +38,7 @@ fn ball_cuboid_toi() {
         &cuboid_vel2,
         &cuboid,
         Real::MAX,
+        true,
     )
     .unwrap();
     let toi_wont_touch = query::time_of_impact(
@@ -47,6 +49,7 @@ fn ball_cuboid_toi() {
         &cuboid_vel1,
         &cuboid,
         Real::MAX,
+        true,
     )
     .unwrap();
 
@@ -69,8 +72,17 @@ fn cuboid_cuboid_toi_issue_214() {
     let vel1 = Vector2::new(1.0, 0.0);
     let vel2 = Vector2::new(0.0, 0.0);
 
-    let toi =
-        query::time_of_impact(&pos1, &vel1, &shape1, &pos2, &vel2, &shape2, Real::MAX).unwrap();
+    let toi = query::time_of_impact(
+        &pos1,
+        &vel1,
+        &shape1,
+        &pos2,
+        &vel2,
+        &shape2,
+        Real::MAX,
+        true,
+    )
+    .unwrap();
     assert!(toi.is_some());
 }
 
@@ -100,6 +112,7 @@ fn time_of_impact_should_return_toi_for_ball_and_rotated_polyline() {
         &polyline_velocity,
         &polyline,
         1.0,
+        true,
     )
     .unwrap();
 
@@ -132,6 +145,7 @@ fn time_of_impact_should_return_toi_for_ball_and_rotated_segment() {
         &segment_velocity,
         &segment,
         1.0,
+        true,
     )
     .unwrap();
 
@@ -164,6 +178,7 @@ fn time_of_impact_should_return_toi_for_rotated_segment_and_ball() {
         &ball_velocity,
         &ball,
         1.0,
+        true,
     )
     .unwrap();
 
