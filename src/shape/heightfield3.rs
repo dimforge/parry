@@ -1,5 +1,6 @@
 #[cfg(feature = "std")]
 use na::DMatrix;
+use std::ops::Range;
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray2, cust::error::CudaResult};
 
@@ -106,7 +107,7 @@ impl HeightField {
         );
         let max = heights.max();
         let min = heights.min();
-        let hscale = scale * na::convert::<_, Real>(0.5);
+        let hscale = scale * 0.5;
         let aabb = AABB::new(
             Point3::new(-hscale.x, min * scale.y, -hscale.z),
             Point3::new(hscale.x, max * scale.y, hscale.z),
@@ -187,29 +188,28 @@ where
         }
     }
 
+    fn quantize_floor_unclamped(&self, val: Real, cell_size: Real) -> isize {
+        ((val + 0.5) / cell_size).floor() as isize
+    }
+
+    fn quantize_ceil_unclamped(&self, val: Real, cell_size: Real) -> isize {
+        ((val + 0.5) / cell_size).ceil() as isize
+    }
+
     fn quantize_floor(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let i = na::clamp(
-            ((val + _0_5) / cell_size).floor(),
+        na::clamp(
+            ((val + 0.5) / cell_size).floor(),
             0.0,
-            na::convert::<f64, Real>((num_cells - 1) as f64),
-        );
-        na::convert_unchecked::<Real, f64>(i) as usize
+            (num_cells - 1) as Real,
+        ) as usize
     }
 
     fn quantize_ceil(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let i = na::clamp(
-            ((val + _0_5) / cell_size).ceil(),
-            0.0,
-            na::convert::<f64, Real>(num_cells as f64),
-        );
-        na::convert_unchecked::<Real, f64>(i) as usize
+        na::clamp(((val + 0.5) / cell_size).ceil(), 0.0, num_cells as Real) as usize
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
     pub fn closest_cell_at_point(&self, pt: &Point3<Real>) -> (usize, usize) {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
         let scaled_pt = pt.coords.component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
@@ -223,14 +223,13 @@ where
 
     /// The pair of index of the cell containing the vertical projection of the given point.
     pub fn cell_at_point(&self, pt: &Point3<Real>) -> Option<(usize, usize)> {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
         let scaled_pt = pt.coords.component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
         let ncells_x = self.ncols();
         let ncells_z = self.nrows();
 
-        if scaled_pt.x < -_0_5 || scaled_pt.x > _0_5 || scaled_pt.z < -_0_5 || scaled_pt.z > _0_5 {
+        if scaled_pt.x < -0.5 || scaled_pt.x > 0.5 || scaled_pt.z < -0.5 || scaled_pt.z > 0.5 {
             // Outside of the heightfield bounds.
             None
         } else {
@@ -240,16 +239,35 @@ where
         }
     }
 
+    /// The pair of index of the cell containing the vertical projection of the given point.
+    pub fn unclamped_cell_at_point(&self, pt: &Point3<Real>) -> (isize, isize) {
+        let scaled_pt = pt.coords.component_div(&self.scale);
+        let cell_width = self.unit_cell_width();
+        let cell_height = self.unit_cell_height();
+
+        let j = self.quantize_floor_unclamped(scaled_pt.x, cell_width);
+        let i = self.quantize_floor_unclamped(scaled_pt.z, cell_height);
+        (i, j)
+    }
+
     /// The smallest x coordinate of the `j`-th column of this heightfield.
     pub fn x_at(&self, j: usize) -> Real {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        (-_0_5 + self.unit_cell_width() * na::convert::<f64, Real>(j as f64)) * self.scale.x
+        (-0.5 + self.unit_cell_width() * (j as Real)) * self.scale.x
     }
 
     /// The smallest z coordinate of the start of the `i`-th row of this heightfield.
     pub fn z_at(&self, i: usize) -> Real {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        (-_0_5 + self.unit_cell_height() * na::convert::<f64, Real>(i as f64)) * self.scale.z
+        (-0.5 + self.unit_cell_height() * (i as Real)) * self.scale.z
+    }
+
+    /// The smallest x coordinate of the `j`-th column of this heightfield.
+    pub fn signed_x_at(&self, j: isize) -> Real {
+        (-0.5 + self.unit_cell_width() * (j as Real)) * self.scale.x
+    }
+
+    /// The smallest z coordinate of the start of the `i`-th row of this heightfield.
+    pub fn signed_z_at(&self, i: isize) -> Real {
+        (-0.5 + self.unit_cell_height() * (i as Real)) * self.scale.z
     }
 
     /// An iterator through all the triangles of this heightfield.
@@ -281,6 +299,10 @@ where
     /// Returns `None` fore triangles that have been removed because of their user-defined status
     /// flags (described by the `HeightFieldCellStatus` bitfield).
     pub fn triangles_at(&self, i: usize, j: usize) -> (Option<Triangle>, Option<Triangle>) {
+        if i >= self.heights.nrows() - 1 || j >= self.heights.ncols() - 1 {
+            return (None, None);
+        }
+
         let status = self.status.get(i, j);
 
         if status.contains(
@@ -293,11 +315,10 @@ where
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
-        let z0 = -_0_5 + cell_height * na::convert::<f64, Real>(i as f64);
+        let z0 = -0.5 + cell_height * (i as Real);
         let z1 = z0 + cell_height;
 
-        let x0 = -_0_5 + cell_width * na::convert::<f64, Real>(j as f64);
+        let x0 = -0.5 + cell_width * (j as Real);
         let x1 = x0 + cell_width;
 
         let y00 = self.heights.get(i + 0, j + 0);
@@ -345,6 +366,11 @@ where
 
             (tri1, tri2)
         }
+    }
+
+    /// The number of cells of this heightfield along each dimension.
+    pub fn num_cells_ij(&self) -> (usize, usize) {
+        (self.nrows(), self.ncols())
     }
 
     /// The status of the `(i, j)`-th cell.
@@ -403,12 +429,12 @@ where
 
     /// The width (extent along its local `x` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_width(&self) -> Real {
-        1.0 / na::convert::<f64, Real>(self.heights.ncols() as f64 - 1.0)
+        1.0 / (self.heights.ncols() as Real - 1.0)
     }
 
     /// The height (extent along its local `z` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_height(&self) -> Real {
-        1.0 / na::convert::<f64, Real>(self.heights.nrows() as f64 - 1.0)
+        1.0 / (self.heights.nrows() as Real - 1.0)
     }
 
     /// The AABB of this heightmap.
@@ -510,9 +536,26 @@ where
         }
     }
 
+    /// The range of segment ids that may intersect the given local AABB.
+    pub fn unclamped_elements_range_in_local_aabb(
+        &self,
+        aabb: &AABB,
+    ) -> (Range<isize>, Range<isize>) {
+        let ref_mins = aabb.mins.coords.component_div(&self.scale);
+        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let cell_width = self.unit_cell_width();
+        let cell_height = self.unit_cell_height();
+
+        let min_x = self.quantize_floor_unclamped(ref_mins.x, cell_width);
+        let min_z = self.quantize_floor_unclamped(ref_mins.z, cell_height);
+
+        let max_x = self.quantize_ceil_unclamped(ref_maxs.x, cell_width);
+        let max_z = self.quantize_ceil_unclamped(ref_maxs.z, cell_height);
+        (min_z..max_z, min_x..max_x)
+    }
+
     /// Applies the function `f` to all the triangles of this heightfield intersecting the given AABB.
     pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(u32, &Triangle)) {
-        let _0_5: Real = na::convert::<f64, Real>(0.5);
         let ncells_x = self.ncols();
         let ncells_z = self.nrows();
 
@@ -521,7 +564,7 @@ where
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
-        if ref_maxs.x <= -_0_5 || ref_maxs.z <= -_0_5 || ref_mins.x >= _0_5 || ref_mins.z >= _0_5 {
+        if ref_maxs.x <= -0.5 || ref_maxs.z <= -0.5 || ref_mins.x >= 0.5 || ref_mins.z >= 0.5 {
             // Outside of the heightfield bounds.
             return;
         }
@@ -542,10 +585,10 @@ where
                     continue;
                 }
 
-                let z0 = -_0_5 + cell_height * na::convert::<f64, Real>(i as f64);
+                let z0 = -0.5 + cell_height * (i as Real);
                 let z1 = z0 + cell_height;
 
-                let x0 = -_0_5 + cell_width * na::convert::<f64, Real>(j as f64);
+                let x0 = -0.5 + cell_width * (j as Real);
                 let x1 = x0 + cell_width;
 
                 let y00 = self.heights.get(i + 0, j + 0);
