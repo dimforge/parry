@@ -172,7 +172,7 @@ impl AABB {
         let center = self.center();
         let rad = na::distance(&self.mins, &self.maxs);
 
-        BoundingSphere::new(center, rad)
+        BoundingSphere::new(center, 0.5 * rad)
     }
 
     #[inline]
