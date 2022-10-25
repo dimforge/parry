@@ -3,6 +3,7 @@ use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
 use crate::shape::{Compound, FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};
+use crate::utils::DefaultStorage;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 impl RayCast for TriMesh {
@@ -120,7 +121,7 @@ impl<'a, S> RayCompositeShapeToiBestFirstVisitor<'a, S> {
 impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB>
     for RayCompositeShapeToiBestFirstVisitor<'a, S>
 where
-    S: TypedSimdCompositeShape,
+    S: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     type Result = (S::PartId, Real);
 
@@ -200,7 +201,7 @@ impl<'a, S> RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
 impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB>
     for RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S>
 where
-    S: TypedSimdCompositeShape,
+    S: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     type Result = (S::PartId, RayIntersection);
 

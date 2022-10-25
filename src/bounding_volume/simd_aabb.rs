@@ -11,6 +11,7 @@ use simba::simd::{SimdPartialOrd, SimdValue};
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct SimdAABB {
     /// The min coordinates of the AABBs.
     pub mins: Point<SimdReal>,

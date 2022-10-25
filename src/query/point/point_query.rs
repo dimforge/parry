@@ -159,4 +159,35 @@ pub trait PointQueryWithLocation {
         let res = self.project_local_point_and_get_location(&m.inverse_transform_point(pt), solid);
         (res.0.transform_by(m), res.1)
     }
+
+    /// Projects a point on `self`, with a maximum projection distance.
+    fn project_local_point_and_get_location_with_max_dist(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<(PointProjection, Self::Location)> {
+        let (proj, location) = self.project_local_point_and_get_location(pt, solid);
+        if na::distance(&proj.point, pt) > max_dist {
+            None
+        } else {
+            Some((proj, location))
+        }
+    }
+
+    /// Projects a point on `self` transformed by `m`, with a maximum projection distance.
+    fn project_point_and_get_location_with_max_dist(
+        &self,
+        m: &Isometry<Real>,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<(PointProjection, Self::Location)> {
+        self.project_local_point_and_get_location_with_max_dist(
+            &m.inverse_transform_point(pt),
+            solid,
+            max_dist,
+        )
+        .map(|res| (res.0.transform_by(m), res.1))
+    }
 }

@@ -63,7 +63,6 @@ mod ray;
 pub mod sat;
 mod split;
 mod time_of_impact;
-#[cfg(feature = "std")]
 pub mod visitors;
 
 /// Queries dedicated to specific pairs of shapes.

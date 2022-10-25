@@ -1,10 +1,11 @@
 #[cfg(target_os = "cuda")]
 use crate::shape::HeightFieldStorage;
-use crate::utils::DevicePointer;
+use crate::utils::{Array1, Array2, DevicePointer};
 
 #[cfg(feature = "std")]
 use cust::{error::CudaResult, memory::DeviceBuffer};
 use cust_core::DeviceCopy;
+use std::ops::{Index, IndexMut};
 
 /*
  *
@@ -46,6 +47,27 @@ impl<T: ?Sized + DeviceCopy> CudaArray2<T> {
     }
 }
 
+#[cfg(feature = "std")]
+impl<T: ?Sized + DeviceCopy> Array2 for CudaArray2<T> {
+    type Item = T;
+
+    fn nrows(&self) -> usize {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+
+    fn ncols(&self) -> usize {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+
+    fn get(&self, i: usize, j: usize) -> Self::Item {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+
+    fn set(&mut self, i: usize, j: usize, val: Self::Item) {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, cust_core::DeviceCopy)]
 /// A pointer to a 2D CUDA array.
@@ -56,29 +78,54 @@ pub struct CudaArrayPointer2<T: ?Sized + DeviceCopy> {
 }
 
 #[cfg(all(feature = "dim3", target_os = "cuda"))]
-impl<T: ?Sized + DeviceCopy> HeightFieldStorage for CudaArrayPointer2<T> {
+impl<T: ?Sized + DeviceCopy> Array2 for CudaArrayPointer2<T> {
     type Item = T;
 
+    #[inline]
     fn nrows(&self) -> usize {
         self.nrows
     }
 
+    #[inline]
     fn ncols(&self) -> usize {
         self.ncols
     }
 
+    #[inline]
     fn get(&self, i: usize, j: usize) -> Self::Item {
         let linear_index = i + j * self.nrows;
         assert!(linear_index < self.nrows * self.ncols);
         unsafe { *self.data.as_ptr().add(linear_index) }
     }
 
+    #[inline]
     fn set(&mut self, i: usize, j: usize, val: Self::Item) {
         let linear_index = i + j * self.nrows;
         assert!(linear_index < self.nrows * self.ncols);
         unsafe {
             *self.data.as_mut_ptr().add(linear_index) = val;
         }
+    }
+}
+
+#[cfg(all(feature = "dim3", not(target_os = "cuda")))]
+impl<T: ?Sized + DeviceCopy> Array2 for CudaArrayPointer2<T> {
+    type Item = T;
+
+    fn nrows(&self) -> usize {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
+    }
+
+    fn ncols(&self) -> usize {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
+    }
+
+    fn get(&self, i: usize, j: usize) -> Self::Item {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
+    }
+
+    fn set(&mut self, i: usize, j: usize, val: Self::Item) {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
     }
 }
 
@@ -89,7 +136,7 @@ impl<T: ?Sized + DeviceCopy> HeightFieldStorage for CudaArrayPointer2<T> {
  */
 #[cfg(feature = "std")]
 /// A 1D array residing on GPU memory.
-pub struct CudaArray1<T: ?Sized + DeviceCopy> {
+pub struct CudaArray1<T: DeviceCopy> {
     data: DeviceBuffer<T>,
 }
 
@@ -114,6 +161,31 @@ impl<T: ?Sized + DeviceCopy> CudaArray1<T> {
     }
 }
 
+#[cfg(feature = "std")]
+impl<T: ?Sized + DeviceCopy> Array1<T> for CudaArray1<T> {
+    fn len(&self) -> usize {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: DeviceCopy> Index<usize> for CudaArray1<T> {
+    type Output = T;
+
+    #[inline]
+    fn index(&self, _: usize) -> &T {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: DeviceCopy> IndexMut<usize> for CudaArray1<T> {
+    #[inline]
+    fn index_mut(&mut self, _: usize) -> &mut T {
+        panic!("Cuda arrays cannot be read directly.");
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, cust_core::DeviceCopy)]
 /// A pointer to a 2D CUDA array.
@@ -124,15 +196,18 @@ pub struct CudaArrayPointer1<T: ?Sized + DeviceCopy> {
 
 #[cfg(target_os = "cuda")]
 impl<T: ?Sized + DeviceCopy> CudaArrayPointer1<T> {
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
+    #[inline]
     pub fn get(&self, i: usize) -> T {
         assert!(i < self.len);
         unsafe { *self.data.as_ptr().add(i) }
     }
 
+    #[inline]
     pub fn set(&mut self, i: usize, val: T) {
         assert!(i < self.len);
         unsafe {
@@ -141,23 +216,55 @@ impl<T: ?Sized + DeviceCopy> CudaArrayPointer1<T> {
     }
 }
 
-#[cfg(all(feature = "dim2", target_os = "cuda"))]
-impl<T: ?Sized + DeviceCopy> HeightFieldStorage for CudaArrayPointer1<T> {
-    type Item = T;
+#[cfg(not(target_os = "cuda"))]
+impl<T: ?Sized + DeviceCopy> Array1<T> for CudaArrayPointer1<T> {
+    fn len(&self) -> usize {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
+    }
+}
 
+#[cfg(target_os = "cuda")]
+impl<T: ?Sized + DeviceCopy> Array1<T> for CudaArrayPointer1<T> {
+    #[inline]
     fn len(&self) -> usize {
         self.len
     }
+}
 
-    fn get(&self, i: usize) -> Self::Item {
-        assert!(i < self.len);
-        unsafe { *self.data.as_ptr().add(i) }
+#[cfg(not(target_os = "cuda"))]
+impl<T: ?Sized + DeviceCopy> Index<usize> for CudaArrayPointer1<T> {
+    type Output = T;
+
+    #[inline]
+    fn index(&self, i: usize) -> &T {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
     }
+}
 
-    fn set(&mut self, i: usize, val: Self::Item) {
+#[cfg(not(target_os = "cuda"))]
+impl<T: ?Sized + DeviceCopy> IndexMut<usize> for CudaArrayPointer1<T> {
+    #[inline]
+    fn index_mut(&mut self, i: usize) -> &mut T {
+        panic!("Cuda pointers can only be read from of a cuda kernel.");
+    }
+}
+
+#[cfg(target_os = "cuda")]
+impl<T: DeviceCopy> Index<usize> for CudaArrayPointer1<T> {
+    type Output = T;
+
+    #[inline]
+    fn index(&self, i: usize) -> &T {
         assert!(i < self.len);
-        unsafe {
-            *self.data.as_mut_ptr().add(i) = val;
-        }
+        unsafe { &*self.data.as_ptr().add(i) }
+    }
+}
+
+#[cfg(target_os = "cuda")]
+impl<T: DeviceCopy> IndexMut<usize> for CudaArrayPointer1<T> {
+    #[inline]
+    fn index_mut(&mut self, i: usize) -> &mut T {
+        assert!(i < self.len);
+        unsafe { &mut *self.data.as_mut_ptr().add(i) }
     }
 }

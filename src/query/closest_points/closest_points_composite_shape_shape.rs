@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::IsometryOpt;
+use crate::utils::{DefaultStorage, IsometryOpt};
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
@@ -17,7 +17,7 @@ pub fn closest_points_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> ClosestPoints
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     let mut visitor =
         CompositeShapeAgainstShapeClosestPointsVisitor::new(dispatcher, pos12, g1, g2, margin);
@@ -39,7 +39,7 @@ pub fn closest_points_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> ClosestPoints
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape,
+    G2: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     closest_points_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, margin).flipped()
 }
@@ -59,7 +59,7 @@ pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Si
 impl<'a, D: ?Sized, G1: ?Sized> CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     /// Initializes a visitor for computing the closest points between a composite-shape and a shape.
     pub fn new(
@@ -87,7 +87,7 @@ impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
     for CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     type Result = (G1::PartId, ClosestPoints);
 

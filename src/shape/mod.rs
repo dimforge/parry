@@ -3,27 +3,26 @@
 pub use self::ball::Ball;
 pub use self::capsule::Capsule;
 #[doc(inline)]
-#[cfg(feature = "std")]
-pub use self::composite_shape::{SimdCompositeShape, TypedSimdCompositeShape};
-#[cfg(feature = "std")]
-pub use self::compound::Compound;
+pub use self::composite_shape::TypedSimdCompositeShape;
 pub use self::cuboid::Cuboid;
 pub use self::feature_id::{FeatureId, PackedFeatureId};
 pub use self::half_space::HalfSpace;
 pub use self::polygonal_feature_map::PolygonalFeatureMap;
-#[cfg(feature = "std")]
-pub use self::polyline::Polyline;
 pub use self::round_shape::RoundShape;
 pub use self::segment::{Segment, SegmentPointLocation};
 #[cfg(feature = "serde-serialize")]
 pub(crate) use self::shape::DeserializableTypedShape;
 #[doc(inline)]
 pub use self::shape::{Shape, ShapeType, TypedShape};
-#[cfg(feature = "std")]
-pub use self::shared_shape::SharedShape;
 #[doc(inline)]
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
+
+#[cfg(feature = "std")]
+pub use self::{
+    composite_shape::SimdCompositeShape, compound::Compound, polyline::Polyline,
+    shared_shape::SharedShape,
+};
 
 #[cfg(feature = "dim2")]
 #[cfg(feature = "std")]
@@ -46,8 +45,8 @@ pub use self::heightfield3::*;
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
-#[cfg(feature = "std")]
 pub use self::trimesh::*;
+pub use self::trimesh_storage::TriMeshStorage;
 
 /// A cylinder dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
@@ -71,7 +70,6 @@ pub type RoundConvexPolygon = RoundShape<ConvexPolygon>;
 mod ball;
 mod capsule;
 #[doc(hidden)]
-#[cfg(feature = "std")]
 pub mod composite_shape;
 #[cfg(feature = "std")]
 mod compound;
@@ -107,7 +105,6 @@ mod polygonal_feature3d;
 mod polygonal_feature_map;
 #[cfg(feature = "dim3")]
 mod tetrahedron;
-#[cfg(feature = "std")]
 pub(crate) mod trimesh;
 // TODO: move this elsewhere?
 mod feature_id;
@@ -115,3 +112,4 @@ mod feature_id;
 mod polygonal_feature2d;
 #[cfg(feature = "std")]
 mod shared_shape;
+mod trimesh_storage;

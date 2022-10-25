@@ -115,14 +115,14 @@ impl CenterDataSplitter {
 /// can intersect slightly at their boundaries with an error of `epsilon`). Given this set,
 /// the QBVH constructed using this splitter will be such that no pair of intermediate nodes
 /// with the same depth have overlapping AABBs.
-pub struct QbvhNonOverlappingDataSplitter<F> {
+pub struct QBVHNonOverlappingDataSplitter<F> {
     /// The leaf data-splitting function.
     pub canonical_split: F,
     /// Allowed overlap between two leaf AABBs.
     pub epsilon: Real,
 }
 
-impl<LeafData, F> QBVHDataSplitter<LeafData> for QbvhNonOverlappingDataSplitter<F>
+impl<LeafData, F> QBVHDataSplitter<LeafData> for QBVHNonOverlappingDataSplitter<F>
 where
     LeafData: IndexedData,
     F: FnMut(LeafData, usize, Real, Real, AABB, AABB) -> SplitResult<(LeafData, AABB)>,

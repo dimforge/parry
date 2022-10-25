@@ -1,6 +1,7 @@
 use crate::math::Real;
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 
+#[derive(Copy, Clone)]
 pub struct WeightedValue<T> {
     pub value: T,
     pub cost: Real,

@@ -1,7 +1,8 @@
 use crate::bounding_volume::SimdAABB;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
-use crate::shape::SimdCompositeShape;
+use crate::query::point::point_query::PointQuery;
+use crate::shape::TypedSimdCompositeShape;
 use crate::utils::IsometryOpt;
 use simba::simd::{SimdBool as _, SimdValue};
 
@@ -27,11 +28,15 @@ impl<'a, S> CompositePointContainmentTest<'a, S> {
     }
 }
 
-impl<'a, S: SimdCompositeShape> SimdVisitor<u32, SimdAABB>
+impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAABB>
     for CompositePointContainmentTest<'a, S>
 {
     #[inline]
-    fn visit(&mut self, bv: &SimdAABB, b: Option<[Option<&u32>; SIMD_WIDTH]>) -> SimdVisitStatus {
+    fn visit(
+        &mut self,
+        bv: &SimdAABB,
+        b: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
+    ) -> SimdVisitStatus {
         let simd_point: Point<SimdReal> = Point::splat(*self.point);
         let mask = bv.contains_local_point(&simd_point);
 
@@ -41,7 +46,7 @@ impl<'a, S: SimdCompositeShape> SimdVisitor<u32, SimdAABB>
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     self.shape
-                        .map_part_at(*data[ii].unwrap(), &mut |part_pos, obj| {
+                        .map_typed_part_at(*data[ii].unwrap(), |part_pos, obj| {
                             if obj
                                 .contains_local_point(&part_pos.inverse_transform_point(self.point))
                             {

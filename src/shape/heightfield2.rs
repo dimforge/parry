@@ -3,50 +3,48 @@ use na::ComplexField;
 #[cfg(feature = "std")]
 use na::DVector;
 use std::ops::Range;
+
+use crate::utils::DefaultStorage;
+
+#[cfg(feature = "cuda")]
+use crate::utils::{CudaArrayPointer1, CudaStorage, CudaStoragePtr};
+
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray1, cust::error::CudaResult};
 
-use na::{Point2, Scalar};
+use na::Point2;
 
 use crate::bounding_volume::AABB;
 use crate::math::{Real, Vector};
 
 use crate::shape::Segment;
+use crate::utils::Array1;
 
 /// Indicates if a cell of an heightfield is removed or not. Set this to `false` for
 /// a removed cell.
 pub type HeightFieldCellStatus = bool;
 
-/// Abstraction over the storage type of an heightfield’s heights.
 pub trait HeightFieldStorage {
-    /// The type of heights.
-    type Item;
-    /// The number of heights on this storage.
-    fn len(&self) -> usize;
-    /// Gets the `i`-th height of the heightfield.
-    fn get(&self, i: usize) -> Self::Item;
-    /// Sets the `i`-th height of the heightfield.
-    fn set(&mut self, i: usize, val: Self::Item);
+    type Heights: Array1<Real>;
+    type Status: Array1<HeightFieldCellStatus>;
 }
 
 #[cfg(feature = "std")]
-impl<T: Scalar> HeightFieldStorage for DVector<T> {
-    type Item = T;
+impl HeightFieldStorage for DefaultStorage {
+    type Heights = DVector<Real>;
+    type Status = DVector<HeightFieldCellStatus>;
+}
 
-    #[inline]
-    fn len(&self) -> usize {
-        self.len()
-    }
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl HeightFieldStorage for CudaStorage {
+    type Heights = CudaArray1<Real>;
+    type Status = CudaArray1<HeightFieldCellStatus>;
+}
 
-    #[inline]
-    fn get(&self, i: usize) -> Self::Item {
-        self[i].clone()
-    }
-
-    #[inline]
-    fn set(&mut self, i: usize, val: Self::Item) {
-        self[i] = val
-    }
+#[cfg(feature = "cuda")]
+impl HeightFieldStorage for CudaStoragePtr {
+    type Heights = CudaArrayPointer1<Real>;
+    type Status = CudaArrayPointer1<HeightFieldCellStatus>;
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -54,32 +52,61 @@ impl<T: Scalar> HeightFieldStorage for DVector<T> {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 #[repr(C)] // Needed for Cuda.
 /// A 2D heightfield with a generic storage buffer for its heights.
-pub struct GenericHeightField<Heights, Status> {
-    heights: Heights,
-    status: Status,
+pub struct GenericHeightField<Storage: HeightFieldStorage> {
+    heights: Storage::Heights,
+    status: Storage::Status,
 
     scale: Vector<Real>,
     aabb: AABB,
 }
 
+impl<Storage> Clone for GenericHeightField<Storage>
+where
+    Storage: HeightFieldStorage,
+    Storage::Heights: Clone,
+    Storage::Status: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            heights: self.heights.clone(),
+            status: self.status.clone(),
+            scale: self.scale,
+            aabb: self.aabb,
+        }
+    }
+}
+
+impl<Storage> Copy for GenericHeightField<Storage>
+where
+    Storage: HeightFieldStorage,
+    Storage::Heights: Copy,
+    Storage::Status: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<Storage> cust_core::DeviceCopy for GenericHeightField<Storage>
+where
+    Storage: HeightFieldStorage,
+    Storage::Heights: cust_core::DeviceCopy + Copy,
+    Storage::Status: cust_core::DeviceCopy + Copy,
+{
+}
+
 /// A 2D heightfield.
 #[cfg(feature = "std")]
-pub type HeightField = GenericHeightField<DVector<Real>, DVector<HeightFieldCellStatus>>;
+pub type HeightField = GenericHeightField<DefaultStorage>;
 
 /// A 2D heightfield stored in the CUDA memory, initializable from the host.
 #[cfg(all(feature = "std", feature = "cuda"))]
-pub type CudaHeightField = GenericHeightField<CudaArray1<Real>, CudaArray1<HeightFieldCellStatus>>;
+pub type CudaHeightField = GenericHeightField<CudaStorage>;
 
-/// A 3D heightfield stored in the CUDA memory, accessible from within a Cuda kernel.
+/// A 2D heightfield stored in the CUDA memory, accessible from within a Cuda kernel.
 #[cfg(feature = "cuda")]
-pub type CudaHeightFieldPointer = GenericHeightField<
-    crate::utils::CudaArrayPointer1<Real>,
-    crate::utils::CudaArrayPointer1<HeightFieldCellStatus>,
->;
+pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
 #[cfg(feature = "std")]
 impl HeightField {
@@ -122,8 +149,8 @@ impl HeightField {
 #[cfg(all(feature = "std", feature = "cuda"))]
 impl CudaHeightField {
     /// Returns the heightfield usable from within a CUDA kernel.
-    pub fn as_device_ptr(&self) -> CudaHeightFieldPointer {
-        CudaHeightFieldPointer {
+    pub fn as_device_ptr(&self) -> CudaHeightFieldPtr {
+        CudaHeightFieldPtr {
             heights: self.heights.as_device_ptr(),
             status: self.status.as_device_ptr(),
             aabb: self.aabb,
@@ -132,18 +159,14 @@ impl CudaHeightField {
     }
 }
 
-impl<Heights, Status> GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// The number of cells of this heightfield.
     pub fn num_cells(&self) -> usize {
         self.heights.len() - 1
     }
 
     /// The height at each cell endpoint.
-    pub fn heights(&self) -> &Heights {
+    pub fn heights(&self) -> &Storage::Heights {
         &self.heights
     }
 
@@ -254,8 +277,8 @@ where
         let x0 = -0.5 + seg_length * (i as Real);
         let x1 = x0 + seg_length;
 
-        let y0 = self.heights.get(i + 0);
-        let y1 = self.heights.get(i + 1);
+        let y0 = self.heights[i + 0];
+        let y1 = self.heights[i + 1];
 
         let mut p0 = Point2::new(x0, y0);
         let mut p1 = Point2::new(x1, y1);
@@ -269,12 +292,12 @@ where
 
     /// Mark the i-th segment of this heightfield as removed or not.
     pub fn set_segment_removed(&mut self, i: usize, removed: bool) {
-        self.status.set(i, !removed)
+        self.status[i] = !removed
     }
 
     /// Checks if the i-th segment has been removed.
     pub fn is_segment_removed(&self, i: usize) -> bool {
-        !self.status.get(i)
+        !self.status[i]
     }
 
     /// The range of segment ids that may intersect the given local AABB.
@@ -312,8 +335,8 @@ where
             let x0 = -0.5 + seg_length * (i as Real);
             let x1 = x0 + seg_length;
 
-            let y0 = self.heights.get(i + 0);
-            let y1 = self.heights.get(i + 1);
+            let y0 = self.heights[i + 0];
+            let y1 = self.heights[i + 1];
 
             if (y0 > ref_maxs.y && y1 > ref_maxs.y) || (y0 < ref_mins.y && y1 < ref_mins.y) {
                 continue;

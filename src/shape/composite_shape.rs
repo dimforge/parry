@@ -1,11 +1,13 @@
 use crate::math::{Isometry, Real};
-use crate::partitioning::{IndexedData, QBVH};
+use crate::partitioning::{GenericQBVH, IndexedData, QBVHStorage, QBVH};
 use crate::shape::Shape;
+use crate::utils::DefaultStorage;
 
 /// Trait implemented by shapes composed of multiple simpler shapes.
 ///
 /// A composite shape is composed of several shapes. For example, this can
 /// be a convex decomposition of a concave shape; or a triangle-mesh.
+#[cfg(feature = "std")]
 pub trait SimdCompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
     fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape));
@@ -17,6 +19,7 @@ pub trait SimdCompositeShape {
 pub trait TypedSimdCompositeShape {
     type PartShape: ?Sized + Shape;
     type PartId: IndexedData;
+    type QBVHStorage: QBVHStorage<Self::PartId>;
 
     fn map_typed_part_at(
         &self,
@@ -33,12 +36,14 @@ pub trait TypedSimdCompositeShape {
         f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape),
     );
 
-    fn typed_qbvh(&self) -> &QBVH<Self::PartId>;
+    fn typed_qbvh(&self) -> &GenericQBVH<Self::PartId, Self::QBVHStorage>;
 }
 
+#[cfg(feature = "std")]
 impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
     type PartShape = dyn Shape;
     type PartId = u32;
+    type QBVHStorage = DefaultStorage;
 
     fn map_typed_part_at(
         &self,
@@ -56,7 +61,7 @@ impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
         self.map_part_at(shape_id, &mut f)
     }
 
-    fn typed_qbvh(&self) -> &QBVH<Self::PartId> {
+    fn typed_qbvh(&self) -> &GenericQBVH<Self::PartId, Self::QBVHStorage> {
         self.qbvh()
     }
 }

@@ -1,6 +1,17 @@
 use crate::bounding_volume::{SimdAABB, AABB};
 use crate::math::{Real, Vector};
+use crate::partitioning::qbvh::storage::QBVHStorage;
+use crate::utils::DefaultStorage;
+
 use na::SimdValue;
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+use {crate::utils::CudaArray1, cust::error::CudaResult};
+#[cfg(feature = "cuda")]
+use {
+    crate::utils::{CudaStorage, CudaStoragePtr},
+    cust_core::DeviceCopy,
+};
 
 /// A data to which an index is associated.
 pub trait IndexedData: Copy {
@@ -49,6 +60,7 @@ pub type SimdNodeIndex = u32;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// The index of one specific node of a QBVH.
 pub struct NodeIndex {
     /// The index of the SIMD node containing the addressed node.
@@ -79,6 +91,7 @@ impl NodeIndex {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct QBVHNode {
     /// The AABBs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAABB,
@@ -98,6 +111,7 @@ pub struct QBVHNode {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// Combination of a leaf data and its associated node’s index.
 pub struct QBVHProxy<LeafData> {
     /// Index of the leaf node the leaf data is associated to.
@@ -133,14 +147,71 @@ impl<LeafData> QBVHProxy<LeafData> {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-#[derive(Clone, Debug)]
-pub struct QBVH<LeafData> {
+#[repr(C)] // Needed for Cuda.
+#[derive(Debug)]
+pub struct GenericQBVH<LeafData, Storage: QBVHStorage<LeafData>> {
     pub(super) root_aabb: AABB,
-    pub(super) nodes: Vec<QBVHNode>,
-    pub(super) dirty_nodes: Vec<u32>,
-    pub(super) proxies: Vec<QBVHProxy<LeafData>>,
+    pub(super) nodes: Storage::Nodes,
+    pub(super) dirty_nodes: Storage::ArrayU32,
+    pub(super) proxies: Storage::ArrayProxies,
 }
 
+pub type QBVH<LeafData> = GenericQBVH<LeafData, DefaultStorage>;
+#[cfg(feature = "cuda")]
+pub type CudaQBVH<LeafData> = GenericQBVH<LeafData, CudaStorage>;
+#[cfg(feature = "cuda")]
+pub type CudaQBVHPtr<LeafData> = GenericQBVH<LeafData, CudaStoragePtr>;
+
+impl<LeafData, Storage> Clone for GenericQBVH<LeafData, Storage>
+where
+    Storage: QBVHStorage<LeafData>,
+    Storage::Nodes: Clone,
+    Storage::ArrayU32: Clone,
+    Storage::ArrayProxies: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            root_aabb: self.root_aabb,
+            nodes: self.nodes.clone(),
+            dirty_nodes: self.dirty_nodes.clone(),
+            proxies: self.proxies.clone(),
+        }
+    }
+}
+
+impl<LeafData, Storage> Copy for GenericQBVH<LeafData, Storage>
+where
+    Storage: QBVHStorage<LeafData>,
+    Storage::Nodes: Copy,
+    Storage::ArrayU32: Copy,
+    Storage::ArrayProxies: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<LeafData, Storage> DeviceCopy for GenericQBVH<LeafData, Storage>
+where
+    Storage: QBVHStorage<LeafData>,
+    Storage::Nodes: DeviceCopy,
+    Storage::ArrayU32: DeviceCopy,
+    Storage::ArrayProxies: DeviceCopy,
+{
+}
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl<LeafData: DeviceCopy> CudaQBVH<LeafData> {
+    /// Returns the qbvh usable from within a CUDA kernel.
+    pub fn as_device_ptr(&self) -> CudaQBVHPtr<LeafData> {
+        GenericQBVH {
+            root_aabb: self.root_aabb,
+            nodes: self.nodes.as_device_ptr(),
+            dirty_nodes: self.dirty_nodes.as_device_ptr(),
+            proxies: self.proxies.as_device_ptr(),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Initialize an empty QBVH.
     pub fn new() -> Self {
@@ -152,6 +223,20 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
         }
     }
 
+    /// Converts this RAM-based qbvh to an qbvh based on CUDA memory.
+    #[cfg(feature = "cuda")]
+    pub fn to_cuda(&self) -> CudaResult<CudaQBVH<LeafData>>
+    where
+        LeafData: DeviceCopy,
+    {
+        Ok(CudaQBVH {
+            root_aabb: self.root_aabb,
+            nodes: CudaArray1::new(&self.nodes)?,
+            dirty_nodes: CudaArray1::new(&self.dirty_nodes)?,
+            proxies: CudaArray1::new(&self.proxies)?,
+        })
+    }
+
     /// Iterates mutably through all the leaf data in this QBVH.
     pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut LeafData)> {
         self.proxies.iter_mut().map(|p| (p.node, &mut p.data))
@@ -160,11 +245,6 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Iterate through all the leaf data in this QBVH.
     pub fn iter_data(&self) -> impl Iterator<Item = (NodeIndex, &LeafData)> {
         self.proxies.iter().map(|p| (p.node, &p.data))
-    }
-
-    /// The AABB of the root of this tree.
-    pub fn root_aabb(&self) -> &AABB {
-        &self.root_aabb
     }
 
     /// The AABB of the given node.
@@ -217,6 +297,13 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
             node.simd_aabb = node.simd_aabb.scaled(&Vector::splat(*scale));
         }
         self
+    }
+}
+
+impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData, Storage> {
+    /// The AABB of the root of this tree.
+    pub fn root_aabb(&self) -> &AABB {
+        &self.root_aabb
     }
 }
 

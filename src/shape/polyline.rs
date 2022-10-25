@@ -5,6 +5,7 @@ use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
 
+use crate::utils::DefaultStorage;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
@@ -225,6 +226,7 @@ impl SimdCompositeShape for Polyline {
 impl TypedSimdCompositeShape for Polyline {
     type PartShape = Segment;
     type PartId = u32;
+    type QBVHStorage = DefaultStorage;
 
     #[inline(always)]
     fn map_typed_part_at(

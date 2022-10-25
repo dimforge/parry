@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::IsometryOpt;
+use crate::utils::{DefaultStorage, IsometryOpt};
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Smallest distance between a composite shape and any other shape.
@@ -15,7 +15,7 @@ pub fn distance_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Real
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     let mut visitor = CompositeShapeAgainstAnyDistanceVisitor::new(dispatcher, pos12, g1, g2);
     g1.typed_qbvh()
@@ -34,7 +34,7 @@ pub fn distance_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Real
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape,
+    G2: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     distance_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
@@ -75,7 +75,7 @@ impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
     for CompositeShapeAgainstAnyDistanceVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
 {
     type Result = (G1::PartId, Real);
 

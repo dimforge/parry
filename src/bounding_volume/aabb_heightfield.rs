@@ -1,12 +1,8 @@
 use crate::bounding_volume::AABB;
 use crate::math::{Isometry, Real};
-use crate::shape::{GenericHeightField, HeightFieldCellStatus, HeightFieldStorage};
+use crate::shape::{GenericHeightField, HeightFieldStorage};
 
-impl<Heights, Status> GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// Computes the world-space AABB of this heightfield, transformed by `pos`.
     #[inline]
     pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {

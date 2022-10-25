@@ -10,6 +10,7 @@ use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
+use crate::utils::DefaultStorage;
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -137,6 +138,7 @@ impl SimdCompositeShape for Compound {
 impl TypedSimdCompositeShape for Compound {
     type PartShape = dyn Shape;
     type PartId = u32;
+    type QBVHStorage = DefaultStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
