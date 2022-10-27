@@ -645,7 +645,6 @@ impl TriMesh {
     fn compute_pseudo_normals(&mut self) {
         use na::RealField;
 
-        let mut degenerate_triangles = vec![false; self.indices().len()];
         let mut vertices_pseudo_normal = vec![Vector::zeros(); self.vertices().len()];
         let mut edges_pseudo_normal = HashMap::default();
         let mut edges_multiplicity = HashMap::default();
@@ -662,15 +661,6 @@ impl TriMesh {
                 let ang1 = (tri.b - tri.a).angle(&(tri.c - tri.a));
                 let ang2 = (tri.a - tri.b).angle(&(tri.c - tri.b));
                 let ang3 = (tri.b - tri.c).angle(&(tri.a - tri.c));
-
-                // NOTE: almost-degenerate triangles can result in a bad normal (due to
-                //       float errors, with a high weight (due to the large angle of one
-                //       of its vertices). We need to ignore these triangles.
-                degenerate_triangles[k] = ang1.max(ang2).max(ang3) > Real::pi() - Real::pi() / 10.0;
-
-                if degenerate_triangles[k] {
-                    continue;
-                }
 
                 vertices_pseudo_normal[idx[0] as usize] += *n * ang1;
                 vertices_pseudo_normal[idx[1] as usize] += *n * ang2;
