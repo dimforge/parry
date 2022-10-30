@@ -1,5 +1,21 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+- Rename `AABB` to `Aabb` to comply with Rust’s style guide.
+- Rename `QBVH` to `Qbvh` to comply with Rust’s style guide.
+
+### Added
+- Add `CudaTriMesh` and `CudaTriMeshPtr` for triangle-meshes usable with CUDA.
+- Add a no-std implementation of point-projection on a triangle mesh.
+
+### Fixed
+- Fix ghost collisions on internal edges on flat 3D meshed and flat 3D heightfields.
+- Fix pseudo-normals calculation that could generated invalid normals for triangles with
+  some small vertex angles.
+
+
 ## v0.10.0 (02 Oct. 2022)
 
 ### Modified
@@ -16,8 +32,8 @@
 - Add the support of Heightfields on CUDA kernels written in Rust using the `cust` crate.
 - Add the `rkyv-serialize` feature that enables the implementation of `rkyv` serialization/deserialization
   for most shapes.
-- Add the `parallel` feature that enables methods for the parallel traversal of QBVH trees: `QBVH::traverse_bvtt_parallel`,
-  `QBVH::traverse_bvtt_node_parallel`, `QBVH::traverse_depth_first_parallel`, `QBVH::traverse_depth_first_node_parallel`.
+- Add the `parallel` feature that enables methods for the parallel traversal of Qbvh trees: `Qbvh::traverse_bvtt_parallel`,
+  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`, `Qbvh::traverse_depth_first_node_parallel`.
 
 ### Fixed
 - Fix the application of non-uniform scaling to balls.
@@ -30,10 +46,10 @@
 - Rename `RoundShape::base_shape` to `RoundShape::inner_shape`.
 
 ### Added
-- Allow custom balancing strategies for the QBVH construction. Some strategies are allowed to generate
+- Allow custom balancing strategies for the Qbvh construction. Some strategies are allowed to generate
   new leaves during the splitting process.
 - Allow using point projection on heightfields from a CUDA kernel.
-- Add the simultaneous traversal of two QBVHs.
+- Add the simultaneous traversal of two Qbvhs.
 - Add computation of `MassProperties` for a `TriMesh`.
 - Add `.to_outline` methods to compute the outline of a 3D shape (useful for debug-rendering).
 - Add method to apply a scaling factor to some shapes. Shapes not supporting non-uniform scaling (like balls)
@@ -70,7 +86,7 @@
 
 ## v0.7.1
 ### Added
-- Add the method `AABB::volume` to compute the volume of an AABB.
+- Add the method `Aabb::volume` to compute the volume of an Aabb.
 
 ## v0.7.0
 ### Modified
@@ -84,9 +100,9 @@
 - Implement `Debug, Clone, PartialEq` for `VHACDParameters`.
 - Add a method to reverse the order of a polyline.
 - Add a method to remove duplicate vertices form a `TriMesh` (and adjusting the index buffer accordingly).
-- Add a method to iterate through all the lean data stored by a QBVH.
+- Add a method to iterate through all the lean data stored by a Qbvh.
 - Implement the Interval Newton Method for computing all the roots of a non-linear scalar function.
-- Implement the intersection test between a spiral and an AABB.
+- Implement the intersection test between a spiral and an Aabb.
 
 ### Modified
 - Rename all occurrences of `quadtree` to `qbvh`. Using the term `quadtree` was not representative of the actual acceleration structure being used (which is a BVH).
@@ -122,9 +138,9 @@
 - Add the optional method `Shape::compute_swept_aabb` to the `Shape` trait.
 
 ### Modified
-- Renamed `SimdQuadTree` to `QBVH` (Quaternary Bounding Volume Hierarchy). The
+- Renamed `SimdQuadTree` to `Qbvh` (Quaternary Bounding Volume Hierarchy). The
   incorrect name `SimdQuadTree` is now deprecated.
-- `QBVH::clear_and_rebuild` is now slightly more general.
+- `Qbvh::clear_and_rebuild` is now slightly more general.
 
 
 ## v0.4.0
@@ -142,8 +158,8 @@
 - Add `MassProperties::set_mass` as a simple way to modify the mass while automatically adjusting
   the angular inertia.
 - Make the fields of `BoundingSphere` public.
-- Add `AABB::EDGES_VERTEX_IDS` and `AABB::FACES_VERTEX_IDS` which are index tables describing
-  the vertices of a given edge, or of a given face, of the AABB.
+- Add `Aabb::EDGES_VERTEX_IDS` and `Aabb::FACES_VERTEX_IDS` which are index tables describing
+  the vertices of a given edge, or of a given face, of the Aabb.
 
 ### Modified
 - Remove the `target_dist` argument from `query::time_of_impact`.
@@ -164,9 +180,9 @@
   (except for user-defined custom shapes).
 - Add dedicated algorithms for the projection of a point on a cone or a cylinder.
 - Improve the overall shape serialization performance.
-- Add `AABB::vertices` to get an array containing its vertices.
-- Add `AABB::split_at_center` to split an AABB into 4 (in 2D) or 8 (in 3D) parts.
-- Add `AABB::to_trimesh` to compute the mesh representation of an AABB.
+- Add `Aabb::vertices` to get an array containing its vertices.
+- Add `Aabb::split_at_center` to split an Aabb into 4 (in 2D) or 8 (in 3D) parts.
+- Add `Aabb::to_trimesh` to compute the mesh representation of an Aabb.
 
 ### Removed
 - Remove the `Shape::as_serialize` method.
