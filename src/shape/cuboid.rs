@@ -76,8 +76,8 @@ impl Cuboid {
 
         PolygonalFeature {
             vertices: [a, b],
-            vids: [vid1, vid2],
-            fid,
+            vids: PackedFeatureId::vertices([vid1, vid2]),
+            fid: PackedFeatureId::face(fid),
             num_vertices: 2,
         }
     }

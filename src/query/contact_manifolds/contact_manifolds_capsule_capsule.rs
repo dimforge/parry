@@ -70,7 +70,13 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     if dist <= prediction + capsule1.radius + capsule2.radius {
         let local_n2 = pos12.inverse_transform_unit_vector(&-local_n1);
         let local_p2 = pos12.inverse_transform_point(&local_p2_1);
-        let contact = TrackedContact::new(local_p1, local_p2, fid1, fid2, dist);
+        let contact = TrackedContact::new(
+            local_p1,
+            local_p2,
+            PackedFeatureId::face(fid1),
+            PackedFeatureId::face(fid2),
+            dist,
+        );
         manifold.points.push(contact);
 
         manifold.local_n1 = *local_n1;
@@ -97,8 +103,8 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
                         TrackedContact::new(
                             clip_a.0,
                             pos12.inverse_transform_point(&clip_a.1),
-                            clip_a.2 as u32,
-                            clip_a.3 as u32,
+                            PackedFeatureId::face(clip_a.2 as u32),
+                            PackedFeatureId::face(clip_a.3 as u32),
                             (clip_a.1 - clip_a.0).dot(&local_n1),
                         )
                     } else {
@@ -106,8 +112,8 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
                         TrackedContact::new(
                             clip_b.0,
                             pos12.inverse_transform_point(&clip_b.1),
-                            clip_b.2 as u32,
-                            clip_b.3 as u32,
+                            PackedFeatureId::face(clip_b.2 as u32),
+                            PackedFeatureId::face(clip_b.3 as u32),
                             (clip_b.1 - clip_b.0).dot(&local_n1),
                         )
                     };

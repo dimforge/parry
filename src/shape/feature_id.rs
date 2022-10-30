@@ -71,6 +71,7 @@ impl PackedFeatureId {
     const CODE_MASK: u32 = 0x3fff_ffff;
     const HEADER_MASK: u32 = !Self::CODE_MASK;
     const HEADER_VERTEX: u32 = 0b01 << 30;
+    #[cfg(feature = "dim3")]
     const HEADER_EDGE: u32 = 0b10 << 30;
     const HEADER_FACE: u32 = 0b11 << 30;
 
@@ -81,6 +82,7 @@ impl PackedFeatureId {
     }
 
     /// Converts a edge feature id into a packed feature id.
+    #[cfg(feature = "dim3")]
     pub fn edge(code: u32) -> Self {
         assert_eq!(code & Self::HEADER_MASK, 0);
         Self(Self::HEADER_EDGE | code)
@@ -109,12 +111,6 @@ impl PackedFeatureId {
         ]
     }
 
-    #[cfg(feature = "dim2")]
-    /// Converts an array of edge feature ids into an array of packed feature ids.
-    pub(crate) fn edges(code: [u32; 2]) -> [Self; 2] {
-        [Self::edge(code[0]), Self::edge(code[1])]
-    }
-
     #[cfg(feature = "dim3")]
     /// Converts an array of edge feature ids into an array of packed feature ids.
     pub(crate) fn edges(code: [u32; 4]) -> [Self; 4] {
@@ -132,6 +128,7 @@ impl PackedFeatureId {
         let code = self.0 & Self::CODE_MASK;
         match header {
             Self::HEADER_VERTEX => FeatureId::Vertex(code),
+            #[cfg(feature = "dim3")]
             Self::HEADER_EDGE => FeatureId::Edge(code),
             Self::HEADER_FACE => FeatureId::Face(code),
             _ => FeatureId::Unknown,
@@ -149,6 +146,7 @@ impl PackedFeatureId {
     }
 
     /// Is the identified feature an edge?
+    #[cfg(feature = "dim3")]
     pub fn is_edge(self) -> bool {
         self.0 & Self::HEADER_MASK == Self::HEADER_EDGE
     }
@@ -163,6 +161,7 @@ impl From<FeatureId> for PackedFeatureId {
     fn from(value: FeatureId) -> Self {
         match value {
             FeatureId::Face(fid) => Self::face(fid),
+            #[cfg(feature = "dim3")]
             FeatureId::Edge(fid) => Self::edge(fid),
             FeatureId::Vertex(fid) => Self::vertex(fid),
             FeatureId::Unknown => Self::UNKNOWN,

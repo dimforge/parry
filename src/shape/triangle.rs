@@ -1,7 +1,7 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::{FeatureId, PackedFeatureId, SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
@@ -217,8 +217,8 @@ impl Triangle {
 
         PolygonalFeature {
             vertices: [pts[i1], pts[i2]],
-            vids: [i1 as u32, i2 as u32],
-            fid: i1 as u32,
+            vids: PackedFeatureId::vertices([i1 as u32, i2 as u32]),
+            fid: PackedFeatureId::face(i1 as u32),
             num_vertices: 2,
         }
     }

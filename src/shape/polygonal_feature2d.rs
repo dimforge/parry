@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
 #[cfg(feature = "std")]
 use crate::query::{self, ContactManifold, TrackedContact};
-use crate::shape::Segment;
+use crate::shape::{PackedFeatureId, Segment};
 
 /// A polygonal feature representing the local polygonal approximation of
 /// a vertex, or face, of a convex shape.
@@ -10,9 +10,9 @@ pub struct PolygonalFeature {
     /// Up to two vertices forming this polygonal feature.
     pub vertices: [Point<Real>; 2],
     /// The feature IDs of this polygon's vertices.
-    pub vids: [u32; 2],
+    pub vids: [PackedFeatureId; 2],
     /// The feature ID of this polygonal feature.
-    pub fid: u32,
+    pub fid: PackedFeatureId,
     /// The number of vertices on this polygon (must be <= 4).
     pub num_vertices: usize,
 }
@@ -21,8 +21,8 @@ impl Default for PolygonalFeature {
     fn default() -> Self {
         Self {
             vertices: [Point::origin(); 2],
-            vids: [0; 2],
-            fid: 0,
+            vids: [PackedFeatureId::UNKNOWN; 2],
+            fid: PackedFeatureId::UNKNOWN,
             num_vertices: 0,
         }
     }
@@ -32,8 +32,8 @@ impl From<Segment> for PolygonalFeature {
     fn from(seg: Segment) -> Self {
         PolygonalFeature {
             vertices: [seg.a, seg.b],
-            vids: [0, 2],
-            fid: 1,
+            vids: PackedFeatureId::vertices([0, 2]),
+            fid: PackedFeatureId::face(1),
             num_vertices: 2,
         }
     }
