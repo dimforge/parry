@@ -5,7 +5,7 @@ use crate::shape::ConvexPolygon;
 use crate::shape::DeserializableTypedShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, Triangle,
+    TriMesh, TriMeshFlags, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
@@ -186,6 +186,16 @@ impl SharedShape {
     /// Initializes a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
         SharedShape(Arc::new(TriMesh::new(vertices, indices)))
+    }
+
+    /// Initializes a triangle mesh shape defined by its vertex and index buffers and
+    /// pre-processing flags.
+    pub fn trimesh_with_flags(
+        vertices: Vec<Point<Real>>,
+        indices: Vec<[u32; 3]>,
+        flags: TriMeshFlags,
+    ) -> Self {
+        SharedShape(Arc::new(TriMesh::with_flags(vertices, indices, flags)))
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
