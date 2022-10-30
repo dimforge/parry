@@ -4,7 +4,7 @@ use crate::query::{
     gjk::{GJKResult, VoronoiSimplex},
     ContactManifold, TrackedContact,
 };
-use crate::shape::{PolygonalFeature, PolygonalFeatureMap, Shape};
+use crate::shape::{PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, Shape};
 use na::Unit;
 
 /// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap`
@@ -92,12 +92,13 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 false,
             );
 
-            if cfg!(feature = "dim3") || (cfg!(feature = "dim2") && manifold.points.is_empty()) {
+            if manifold.points.is_empty() {
+                // cfg!(feature = "dim3") || (cfg!(feature = "dim2") && manifold.points.is_empty()) {
                 let contact = TrackedContact::new(
                     p1,
                     pos12.inverse_transform_point(&p2_1),
-                    u32::MAX, // We don't know what features are involved.
-                    u32::MAX,
+                    PackedFeatureId::UNKNOWN, // FIXME: We don't know what features are involved.
+                    PackedFeatureId::UNKNOWN, // FIXME
                     (p2_1 - p1).dot(&dir),
                 );
                 manifold.points.push(contact);

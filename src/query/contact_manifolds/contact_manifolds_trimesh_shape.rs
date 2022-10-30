@@ -7,6 +7,7 @@ use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
+use crate::utils::hashmap::HashMap;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -18,6 +19,8 @@ pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,
     local_aabb2: AABB,
     old_interferences: Vec<u32>,
+    delayed_manifolds: Vec<u32>,
+    vertex_set: HashMap<u32, ()>,
 }
 
 impl TriMeshShapeContactManifoldsWorkspace {
@@ -26,6 +29,8 @@ impl TriMeshShapeContactManifoldsWorkspace {
             interferences: Vec::new(),
             local_aabb2: AABB::new_invalid(),
             old_interferences: Vec::new(),
+            delayed_manifolds: Vec::new(),
+            vertex_set: HashMap::default(),
         }
     }
 }
@@ -191,6 +196,130 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
             let _ = dispatcher
                 .contact_manifold_convex_convex(pos12, &triangle1, shape2, prediction, manifold);
         }
+    }
+
+    /*
+     *
+     * Deal with internal edges.
+     *
+     */
+    #[cfg(feature = "dim3")]
+    {
+        use crate::shape::FeatureId;
+        use std::cmp::Ordering;
+
+        // 1. Ingest all the face contacts.
+        for (mid, manifold) in manifolds.iter().enumerate() {
+            if let Some(deepest) = manifold.find_deepest_contact() {
+                let tri_fid = if flipped { deepest.fid2 } else { deepest.fid1 };
+
+                if tri_fid.is_face() {
+                    let (tri_idx, tri) = if flipped {
+                        (
+                            trimesh1.indices()[manifold.subshape2 as usize],
+                            trimesh1.triangle(manifold.subshape2),
+                        )
+                    } else {
+                        (
+                            trimesh1.indices()[manifold.subshape1 as usize],
+                            trimesh1.triangle(manifold.subshape1),
+                        )
+                    };
+
+                    let normal = if flipped {
+                        manifold.local_n2
+                    } else {
+                        manifold.local_n1
+                    };
+
+                    if let Some(tri_normal) = tri.normal() {
+                        // We check normal collinearity with an epsilon because sometimes,
+                        // because of rounding errors, a contact may be identified as a face
+                        // contact where it’s really just an edge contact.
+                        if normal.dot(&tri_normal).abs() > 1.0 - 1.0e-4 {
+                            let _ = workspace.vertex_set.insert(tri_idx[0], ());
+                            let _ = workspace.vertex_set.insert(tri_idx[1], ());
+                            let _ = workspace.vertex_set.insert(tri_idx[2], ());
+                            // This as an actual face contact, continue without pushing to delayed_manifolds.
+                            continue;
+                        }
+                    }
+                }
+
+                // NOTE: if we reach this line, then the contact isn’t an actual face contact.
+                workspace.delayed_manifolds.push(mid as u32);
+            }
+        }
+
+        // 2. Order by distance.
+        workspace.delayed_manifolds.sort_by(|a, b| {
+            let a = &manifolds[*a as usize];
+            let b = &manifolds[*b as usize];
+
+            let dist_a = a
+                .find_deepest_contact()
+                .map(|c| c.dist)
+                .unwrap_or(Real::MAX);
+            let dist_b = b
+                .find_deepest_contact()
+                .map(|c| c.dist)
+                .unwrap_or(Real::MAX);
+
+            dist_a.partial_cmp(&dist_b).unwrap_or(Ordering::Equal)
+        });
+
+        // 3. Deal with the edge/vertex contacts.
+        for mid in &workspace.delayed_manifolds {
+            let manifold = &mut manifolds[*mid as usize];
+
+            let tri_idx = if flipped {
+                trimesh1.indices()[manifold.subshape2 as usize]
+            } else {
+                trimesh1.indices()[manifold.subshape1 as usize]
+            };
+
+            manifold.points.retain(|pt| {
+                let tri_fid = if flipped { pt.fid2 } else { pt.fid1 };
+
+                match tri_fid.unpack() {
+                    FeatureId::Face(_) => {
+                        !workspace.vertex_set.contains_key(&tri_idx[0])
+                            && !workspace.vertex_set.contains_key(&tri_idx[1])
+                            && !workspace.vertex_set.contains_key(&tri_idx[2])
+                    }
+                    FeatureId::Edge(id) => {
+                        !workspace.vertex_set.contains_key(&tri_idx[id as usize])
+                            || !workspace
+                                .vertex_set
+                                .contains_key(&tri_idx[(id as usize + 1) % 3])
+                    }
+                    FeatureId::Vertex(id) => {
+                        !workspace.vertex_set.contains_key(&tri_idx[id as usize])
+                    }
+                    FeatureId::Unknown => {
+                        !workspace.vertex_set.contains_key(&tri_idx[0])
+                            && !workspace.vertex_set.contains_key(&tri_idx[1])
+                            && !workspace.vertex_set.contains_key(&tri_idx[2])
+                    }
+                }
+            });
+
+            // if !manifold.points.is_empty() {
+            //     let normal = if flipped {
+            //         manifold.local_n2
+            //     } else {
+            //         manifold.local_n1
+            //     };
+            //     println!("Keeping other contact: {:?}, {:?}", tri_idx, normal);
+            // }
+
+            let _ = workspace.vertex_set.insert(tri_idx[0], ());
+            let _ = workspace.vertex_set.insert(tri_idx[1], ());
+            let _ = workspace.vertex_set.insert(tri_idx[2], ());
+        }
+
+        workspace.vertex_set.clear();
+        workspace.delayed_manifolds.clear();
     }
 }
 

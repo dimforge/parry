@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::{ContactManifold, TrackedContact};
-use crate::shape::{Ball, Shape};
+use crate::shape::{Ball, PackedFeatureId, Shape};
 
 /// Computes the contact manifold between two balls given as `Shape` trait-objects.
 pub fn contact_manifold_ball_ball_shapes<ManifoldData, ContactData: Default + Copy>(
@@ -40,7 +40,8 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
         let local_n2 = pos12.inverse_transform_vector(&-local_n1);
         let local_p1 = local_n1 * radius_a;
         let local_p2 = local_n2 * radius_b;
-        let contact = TrackedContact::new(local_p1.into(), local_p2.into(), 0, 0, dist);
+        let fid = PackedFeatureId::face(0);
+        let contact = TrackedContact::new(local_p1.into(), local_p2.into(), fid, fid, dist);
 
         if manifold.points.len() != 0 {
             manifold.points[0].copy_geometry_from(contact);

@@ -2,7 +2,7 @@ use crate::math::{Isometry, Real, Vector};
 use crate::query::{ContactManifold, TrackedContact};
 #[cfg(feature = "dim2")]
 use crate::shape::SegmentPointLocation;
-use crate::shape::{Capsule, Shape};
+use crate::shape::{Capsule, PackedFeatureId, Shape};
 use approx::AbsDiffEq;
 use na::Unit;
 
@@ -156,11 +156,12 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 
     if dist <= prediction {
         let local_n2 = pos12.inverse_transform_unit_vector(&-local_n1);
+        let fid = PackedFeatureId::face(0);
         let contact = TrackedContact::new(
             local_p1 + *local_n1 * capsule1.radius,
             pos12.inverse_transform_point(&local_p2_1) + *local_n2 * capsule2.radius,
-            0,
-            0,
+            fid,
+            fid,
             dist,
         );
 

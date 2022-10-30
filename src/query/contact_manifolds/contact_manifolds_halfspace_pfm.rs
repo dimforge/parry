@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Real};
 use crate::query::{ContactManifold, TrackedContact};
-use crate::shape::{HalfSpace, PolygonalFeature, PolygonalFeatureMap, Shape};
+use crate::shape::{HalfSpace, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, Shape};
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
@@ -70,7 +70,7 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
             manifold.points.push(TrackedContact::flipped(
                 vtx2_1 - *halfspace1.normal * dist_to_plane,
                 vtx2 - *normal1_2 * border_radius2,
-                0,
+                PackedFeatureId::face(0),
                 feature2.vids[i],
                 dist_to_plane - border_radius2,
                 flipped,

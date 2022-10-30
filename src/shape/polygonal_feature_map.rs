@@ -1,5 +1,5 @@
 use crate::math::{Real, Vector};
-use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
+use crate::shape::{Cuboid, PackedFeatureId, PolygonalFeature, Segment, SupportMap, Triangle};
 use na::Unit;
 #[cfg(feature = "dim3")]
 use {
@@ -69,10 +69,10 @@ impl PolygonalFeatureMap for Cylinder {
             );
             out_features.vertices[1] =
                 Point::new(dir2.x * self.radius, self.half_height, dir2.y * self.radius);
-            out_features.eids = [0, 0, 0, 0];
-            out_features.fid = 0;
+            out_features.eids = PackedFeatureId::edges([0, 0, 0, 0]);
+            out_features.fid = PackedFeatureId::face(0);
             out_features.num_vertices = 2;
-            out_features.vids = [1, 11, 11, 11];
+            out_features.vids = PackedFeatureId::vertices([1, 11, 11, 11]);
         } else {
             // We return a square approximation of the cylinder cap.
             let y = self.half_height.copysign(dir.y);
@@ -82,15 +82,15 @@ impl PolygonalFeatureMap for Cylinder {
             out_features.vertices[3] = Point::new(dir2.y * self.radius, y, -dir2.x * self.radius);
 
             if dir.y < 0.0 {
-                out_features.eids = [2, 4, 6, 8];
-                out_features.fid = 9;
+                out_features.eids = PackedFeatureId::edges([2, 4, 6, 8]);
+                out_features.fid = PackedFeatureId::face(9);
                 out_features.num_vertices = 4;
-                out_features.vids = [1, 3, 5, 7];
+                out_features.vids = PackedFeatureId::vertices([1, 3, 5, 7]);
             } else {
-                out_features.eids = [12, 14, 16, 18];
-                out_features.fid = 19;
+                out_features.eids = PackedFeatureId::edges([12, 14, 16, 18]);
+                out_features.fid = PackedFeatureId::face(19);
                 out_features.num_vertices = 4;
-                out_features.vids = [11, 13, 15, 17];
+                out_features.vids = PackedFeatureId::vertices([11, 13, 15, 17]);
             }
         }
     }
@@ -125,10 +125,10 @@ impl PolygonalFeatureMap for Cone {
                 dir2.y * self.radius,
             );
             out_features.vertices[1] = Point::new(0.0, self.half_height, 0.0);
-            out_features.eids = [0, 0, 0, 0];
-            out_features.fid = 0;
+            out_features.eids = PackedFeatureId::edges([0, 0, 0, 0]);
+            out_features.fid = PackedFeatureId::face(0);
             out_features.num_vertices = 2;
-            out_features.vids = [1, 11, 11, 11];
+            out_features.vids = PackedFeatureId::vertices([1, 11, 11, 11]);
         } else {
             // We return a square approximation of the cone cap.
             let y = -self.half_height;
@@ -137,10 +137,10 @@ impl PolygonalFeatureMap for Cone {
             out_features.vertices[2] = Point::new(-dir2.x * self.radius, y, -dir2.y * self.radius);
             out_features.vertices[3] = Point::new(dir2.y * self.radius, y, -dir2.x * self.radius);
 
-            out_features.eids = [2, 4, 6, 8];
-            out_features.fid = 9;
+            out_features.eids = PackedFeatureId::edges([2, 4, 6, 8]);
+            out_features.fid = PackedFeatureId::face(9);
             out_features.num_vertices = 4;
-            out_features.vids = [1, 3, 5, 7];
+            out_features.vids = PackedFeatureId::vertices([1, 3, 5, 7]);
         }
     }
 }

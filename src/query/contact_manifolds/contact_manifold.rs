@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::shape::PackedFeatureId;
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -16,9 +17,9 @@ pub struct TrackedContact<Data> {
     pub dist: Real,
 
     /// The feature ID of the first shape involved in the contact.
-    pub fid1: u32,
+    pub fid1: PackedFeatureId,
     /// The feature ID of the second shape involved in the contact.
-    pub fid2: u32,
+    pub fid2: PackedFeatureId,
     /// User-data associated to this contact.
     pub data: Data,
 }
@@ -28,8 +29,8 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     pub fn new(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
-        fid1: u32,
-        fid2: u32,
+        fid1: PackedFeatureId,
+        fid2: PackedFeatureId,
         dist: Real,
     ) -> Self {
         Self {
@@ -46,8 +47,8 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     pub fn flipped(
         local_p1: Point<Real>,
         local_p2: Point<Real>,
-        fid1: u32,
-        fid2: u32,
+        fid1: PackedFeatureId,
+        fid2: PackedFeatureId,
         dist: Real,
         flipped: bool,
     ) -> Self {

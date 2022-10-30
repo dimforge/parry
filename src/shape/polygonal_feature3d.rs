@@ -2,7 +2,7 @@ use crate::approx::AbsDiffEq;
 use crate::math::{Isometry, Point, Real, Vector};
 #[cfg(feature = "std")]
 use crate::query::{ContactManifold, TrackedContact};
-use crate::shape::{Segment, Triangle};
+use crate::shape::{PackedFeatureId, Segment, Triangle};
 use crate::utils::WBasis;
 use na::Point2;
 
@@ -13,11 +13,11 @@ pub struct PolygonalFeature {
     /// Up to four vertices forming this polygonal feature.
     pub vertices: [Point<Real>; 4],
     /// The feature IDs of this polygon's vertices.
-    pub vids: [u32; 4],
+    pub vids: [PackedFeatureId; 4],
     /// The feature IDs of this polygon's edges.
-    pub eids: [u32; 4],
+    pub eids: [PackedFeatureId; 4],
     /// The feature ID of this polygonal feature.
-    pub fid: u32,
+    pub fid: PackedFeatureId,
     /// The number of vertices on this polygon (must be <= 4).
     pub num_vertices: usize,
 }
@@ -26,9 +26,9 @@ impl Default for PolygonalFeature {
     fn default() -> Self {
         Self {
             vertices: [Point::origin(); 4],
-            vids: [0; 4],
-            eids: [0; 4],
-            fid: 0,
+            vids: [PackedFeatureId::UNKNOWN; 4],
+            eids: [PackedFeatureId::UNKNOWN; 4],
+            fid: PackedFeatureId::UNKNOWN,
             num_vertices: 0,
         }
     }
@@ -38,9 +38,9 @@ impl From<Triangle> for PolygonalFeature {
     fn from(tri: Triangle) -> Self {
         Self {
             vertices: [tri.a, tri.b, tri.c, tri.c],
-            vids: [0, 2, 4, 4],
-            eids: [1, 3, 5, 5],
-            fid: 0,
+            vids: PackedFeatureId::vertices([0, 1, 2, 2]),
+            eids: PackedFeatureId::edges([0, 1, 2, 2]),
+            fid: PackedFeatureId::face(0),
             num_vertices: 3,
         }
     }
@@ -48,13 +48,11 @@ impl From<Triangle> for PolygonalFeature {
 
 impl From<Segment> for PolygonalFeature {
     fn from(seg: Segment) -> Self {
-        // Vertices have feature ids 0 and 2.
-        // The segment interior has feature id 1.
         Self {
             vertices: [seg.a, seg.b, seg.b, seg.b],
-            vids: [0, 2, 2, 2],
-            eids: [1, 1, 1, 1],
-            fid: 0,
+            vids: PackedFeatureId::vertices([0, 1, 1, 1]),
+            eids: PackedFeatureId::edges([0, 0, 0, 0]),
+            fid: PackedFeatureId::face(0),
             num_vertices: 2,
         }
     }
@@ -63,13 +61,7 @@ impl From<Segment> for PolygonalFeature {
 impl PolygonalFeature {
     /// Creates a new empty polygonal feature.
     pub fn new() -> Self {
-        Self {
-            vertices: [Point::origin(); 4],
-            vids: [0; 4],
-            eids: [0; 4],
-            fid: 0,
-            num_vertices: 0,
-        }
+        Self::default()
     }
 
     /// Transform each vertex of this polygonal feature by the given position `pos`.
@@ -191,11 +183,18 @@ impl PolygonalFeature {
             (face1.vertices[0], face1.vertices[1]),
             (vertices2_1[0], vertices2_1[1]),
         ) {
+            let feature_at = |face: &PolygonalFeature, id| match id {
+                0 => face.vids[0],
+                1 => face.eids[0],
+                2 => face.vids[1],
+                _ => unreachable!(),
+            };
+
             manifold.points.push(TrackedContact::flipped(
                 (clips.0).0,
                 pos12.inverse_transform_point(&(clips.0).1),
-                0, // FIXME
-                0, // FIXME
+                feature_at(face1, (clips.0).2),
+                feature_at(face2, (clips.0).3),
                 ((clips.0).1 - (clips.0).0).dot(&sep_axis1),
                 flipped,
             ));
@@ -203,8 +202,8 @@ impl PolygonalFeature {
             manifold.points.push(TrackedContact::flipped(
                 (clips.1).0,
                 pos12.inverse_transform_point(&(clips.1).1),
-                0, // FIXME
-                0, // FIXME
+                feature_at(face1, (clips.1).2),
+                feature_at(face2, (clips.1).3),
                 ((clips.1).1 - (clips.1).0).dot(&sep_axis1),
                 flipped,
             ));

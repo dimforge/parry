@@ -324,10 +324,10 @@ where
         let cell_height = self.unit_cell_height();
 
         let z0 = -0.5 + cell_height * (i as Real);
-        let z1 = z0 + cell_height;
+        let z1 = -0.5 + cell_height * ((i + 1) as Real);
 
         let x0 = -0.5 + cell_width * (j as Real);
-        let x1 = x0 + cell_width;
+        let x1 = -0.5 + cell_width * ((j + 1) as Real);
 
         let y00 = self.heights.get(i + 0, j + 0);
         let y10 = self.heights.get(i + 1, j + 0);
