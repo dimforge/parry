@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.11.1 (30 Oct. 2022)
+
+### Added
+- Add `SharedShape::trimesh_with_flags` for constructing a triangle mesh with flags
+  specified by the user.
+
 ## v0.11.0 (30 Oct. 2022)
 
 ### Modified
