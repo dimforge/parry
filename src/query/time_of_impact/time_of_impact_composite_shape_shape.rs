@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{QueryDispatcher, Ray, SimdRay, TOI};
@@ -18,7 +18,7 @@ pub fn time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     let mut visitor = TOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
@@ -46,7 +46,7 @@ pub fn time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     time_of_impact_composite_shape_shape(
         dispatcher,
@@ -78,7 +78,7 @@ pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a
 impl<'a, D: ?Sized, G1: ?Sized> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     /// Creates a new visitor used to find the time-of-impact between a composite shape and a shape.
     pub fn new(
@@ -108,11 +108,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
+impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     type Result = (G1::PartId, TOI);
 
@@ -120,11 +120,11 @@ where
     fn visit(
         &mut self,
         best: Real,
-        bv: &SimdAABB,
+        bv: &SimdAabb,
         data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
-        // Compute the minkowski sum of the two AABBs.
-        let msum = SimdAABB {
+        // Compute the minkowski sum of the two Aabbs.
+        let msum = SimdAabb {
             mins: bv.mins + self.msum_shift + (-self.msum_margin),
             maxs: bv.maxs + self.msum_shift + self.msum_margin,
         };

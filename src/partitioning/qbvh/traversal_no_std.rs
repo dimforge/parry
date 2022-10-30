@@ -1,8 +1,8 @@
-use crate::bounding_volume::{SimdAABB, AABB};
+use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
 use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
 use crate::partitioning::{
-    GenericQBVH, QBVHStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
+    GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
 };
 use crate::simd::SIMD_WIDTH;
@@ -11,15 +11,15 @@ use arrayvec::ArrayVec;
 use num::Bounded;
 use simba::simd::SimdBool;
 
-use super::{IndexedData, NodeIndex, QBVH};
+use super::{IndexedData, NodeIndex, Qbvh};
 
-impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData, Storage> {
+impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData, Storage> {
     /// Performs a depth-first traversal on the BVH.
     ///
     /// # Return
     ///
     /// Returns `false` if the traversal exited early, and `true` otherwise.
-    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) -> bool {
+    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAabb>) -> bool {
         self.traverse_depth_first_node(visitor, 0)
     }
 
@@ -30,7 +30,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
     /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_node(
         &self,
-        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
         curr_node: u32,
     ) -> bool {
         let node = &self.nodes[curr_node as usize];
@@ -53,7 +53,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
                     if (bitmask & (1 << ii)) != 0 {
                         if !node.leaf {
                             // Internal node, visit the child.
-                            // Unfortunately, we have this check because invalid AABBs
+                            // Unfortunately, we have this check because invalid Aabbs
                             // return a hit as well.
                             if node.children[ii] as usize <= self.nodes.len() {
                                 if !self.traverse_depth_first_node(visitor, node.children[ii]) {
@@ -75,7 +75,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
     /// user-defined type.
     pub fn traverse_best_first<BFS>(&self, visitor: &mut BFS) -> Option<(NodeIndex, BFS::Result)>
     where
-        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAabb>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
         self.traverse_best_first_node(visitor, 0, Real::MAX)
@@ -92,7 +92,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
         init_cost: Real,
     ) -> Option<(NodeIndex, BFS::Result)>
     where
-        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAabb>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
         if self.nodes.is_empty() {
@@ -120,7 +120,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
         best_cost: &mut Real,
         best_result: &mut Option<(NodeIndex, BFS::Result)>,
     ) where
-        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAabb>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
         while let Some(entry) = stack.pop() {
@@ -170,7 +170,7 @@ impl<LeafData: IndexedData, Storage: QBVHStorage<LeafData>> GenericQBVH<LeafData
                                 }
                             } else {
                                 // Internal node, visit the child.
-                                // Unfortunately, we have this check because invalid AABBs
+                                // Unfortunately, we have this check because invalid Aabbs
                                 // return a hit as well.
                                 if (node.children[ii] as usize) < self.nodes.len() {
                                     let child_node =

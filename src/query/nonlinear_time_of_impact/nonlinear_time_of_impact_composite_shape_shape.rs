@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingSphere, SimdAABB};
+use crate::bounding_volume::{BoundingSphere, SimdAabb};
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
@@ -19,7 +19,7 @@ pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     let mut visitor = NonlinearTOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
@@ -50,7 +50,7 @@ pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     nonlinear_time_of_impact_composite_shape_shape(
         dispatcher,
@@ -82,7 +82,7 @@ pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?S
 impl<'a, D: ?Sized, G1: ?Sized> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     /// Initializes visitor used to determine the non-linear time of impact between
     /// a composite shape and another shape.
@@ -110,11 +110,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
+impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     type Result = (G1::PartId, TOI);
 
@@ -122,7 +122,7 @@ where
     fn visit(
         &mut self,
         best: Real,
-        bv: &SimdAABB,
+        bv: &SimdAabb,
         data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         let mut weights = [0.0; SIMD_WIDTH];

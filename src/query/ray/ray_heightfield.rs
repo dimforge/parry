@@ -87,12 +87,12 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
             }
 
             if curr_param >= max_t {
-                // The part of the ray after max_t is outside of the heightfield AABB.
+                // The part of the ray after max_t is outside of the heightfield Aabb.
                 return None;
             }
 
             if let Some(seg) = self.segment_at(curr) {
-                // TODO: test the y-coordinates (equivalent to an AABB test) before actually computing the intersection.
+                // TODO: test the y-coordinates (equivalent to an Aabb test) before actually computing the intersection.
                 let (s, t) = query::details::closest_points_line_line_parameters(
                     &ray.origin,
                     &ray.dir,

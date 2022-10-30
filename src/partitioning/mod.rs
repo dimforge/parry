@@ -1,9 +1,9 @@
 //! Spatial partitioning tools.
 
 #[cfg(feature = "std")]
-pub use self::qbvh::{CenterDataSplitter, QBVHDataGenerator, QBVHNonOverlappingDataSplitter};
+pub use self::qbvh::{CenterDataSplitter, QbvhDataGenerator, QbvhNonOverlappingDataSplitter};
 pub use self::qbvh::{
-    GenericQBVH, IndexedData, NodeIndex, QBVHNode, QBVHProxy, QBVHStorage, SimdNodeIndex, QBVH,
+    GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, QbvhStorage, SimdNodeIndex,
 };
 #[cfg(feature = "parallel")]
 pub use self::visitor::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor};
@@ -13,8 +13,8 @@ pub use self::visitor::{
 };
 
 /// A quaternary bounding-volume-hierarchy.
-#[deprecated(note = "Renamed to QBVH")]
-pub type SimdQBVH<T> = QBVH<T>;
+#[deprecated(note = "Renamed to Qbvh")]
+pub type SimdQbvh<T> = Qbvh<T>;
 
 mod qbvh;
 mod visitor;

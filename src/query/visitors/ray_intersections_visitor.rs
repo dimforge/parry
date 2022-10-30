@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::{Ray, SimdRay};
@@ -29,12 +29,12 @@ where
     }
 }
 
-impl<'a, T, F> SimdVisitor<T, SimdAABB> for RayIntersectionsVisitor<'a, T, F>
+impl<'a, T, F> SimdVisitor<T, SimdAabb> for RayIntersectionsVisitor<'a, T, F>
 where
     F: FnMut(&T) -> bool,
 {
     #[inline]
-    fn visit(&mut self, bv: &SimdAABB, b: Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus {
+    fn visit(&mut self, bv: &SimdAabb, b: Option<[Option<&T>; SIMD_WIDTH]>) -> SimdVisitStatus {
         let mask = bv.cast_local_ray(&self.simd_ray, self.max_toi).0;
 
         if let Some(data) = b {

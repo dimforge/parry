@@ -1,11 +1,11 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use crate::query::Ray;
 use crate::shape::Segment;
 use num::{Bounded, Zero};
 
-impl AABB {
-    /// Computes the intersection of a segment with this AABB.
+impl Aabb {
+    /// Computes the intersection of a segment with this Aabb.
     ///
     /// Returns `None` if there is no intersection.
     #[inline]
@@ -15,7 +15,7 @@ impl AABB {
             .map(|clip| Segment::new(pa + ab * (clip.0).0.max(0.0), pa + ab * (clip.1).0.min(1.0)))
     }
 
-    /// Computes the parameters of the two intersection points between a line and this AABB.
+    /// Computes the parameters of the two intersection points between a line and this Aabb.
     ///
     /// The parameters are such that the point are given by `orig + dir * parameter`.
     /// Returns `None` if there is no intersection.
@@ -28,7 +28,7 @@ impl AABB {
         clip_aabb_line(self, orig, dir).map(|clip| ((clip.0).0, (clip.1).0))
     }
 
-    /// Computes the intersection segment between a line and this AABB.
+    /// Computes the intersection segment between a line and this Aabb.
     ///
     /// Returns `None` if there is no intersection.
     #[inline]
@@ -37,7 +37,7 @@ impl AABB {
             .map(|clip| Segment::new(orig + dir * (clip.0).0, orig + dir * (clip.1).0))
     }
 
-    /// Computes the parameters of the two intersection points between a ray and this AABB.
+    /// Computes the parameters of the two intersection points between a ray and this Aabb.
     ///
     /// The parameters are such that the point are given by `ray.orig + ray.dir * parameter`.
     /// Returns `None` if there is no intersection.
@@ -56,7 +56,7 @@ impl AABB {
             })
     }
 
-    /// Computes the intersection segment between a ray and this AABB.
+    /// Computes the intersection segment between a ray and this Aabb.
     ///
     /// Returns `None` if there is no intersection.
     #[inline]
@@ -66,9 +66,9 @@ impl AABB {
     }
 }
 
-/// Computes the segment given by the intersection of a line and an AABB.
+/// Computes the segment given by the intersection of a line and an Aabb.
 pub fn clip_aabb_line(
-    aabb: &AABB,
+    aabb: &Aabb,
     origin: &Point<Real>,
     dir: &Vector<Real>,
 ) -> Option<((Real, Vector<Real>, isize), (Real, Vector<Real>, isize))> {

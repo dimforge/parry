@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
+use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
@@ -272,8 +272,8 @@ impl DeserializableTypedShape {
 
 /// Trait implemented by shapes usable by Rapier.
 pub trait Shape: RayCast + PointQuery + DowncastSync {
-    /// Computes the AABB of this shape.
-    fn compute_local_aabb(&self) -> AABB;
+    /// Computes the Aabb of this shape.
+    fn compute_local_aabb(&self) -> Aabb;
     /// Computes the bounding-sphere of this shape.
     fn compute_local_bounding_sphere(&self) -> BoundingSphere;
 
@@ -281,8 +281,8 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape>;
 
-    /// Computes the AABB of this shape with the given position.
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    /// Computes the Aabb of this shape with the given position.
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.compute_local_aabb().transform_by(position)
     }
     /// Computes the bounding-sphere of this shape with the given position.
@@ -346,9 +346,9 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
         None
     }
 
-    /// Computes the swept AABB of this shape, i.e., the space it would occupy by moving from
+    /// Computes the swept Aabb of this shape, i.e., the space it would occupy by moving from
     /// the given start position to the given end position.
-    fn compute_swept_aabb(&self, start_pos: &Isometry<Real>, end_pos: &Isometry<Real>) -> AABB {
+    fn compute_swept_aabb(&self, start_pos: &Isometry<Real>, end_pos: &Isometry<Real>) -> Aabb {
         let aabb1 = self.compute_aabb(start_pos);
         let aabb2 = self.compute_aabb(end_pos);
         aabb1.merged(&aabb2)
@@ -584,7 +584,7 @@ impl Shape for Ball {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -592,7 +592,7 @@ impl Shape for Ball {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -641,7 +641,7 @@ impl Shape for Cuboid {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -649,7 +649,7 @@ impl Shape for Cuboid {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -700,7 +700,7 @@ impl Shape for Capsule {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -708,7 +708,7 @@ impl Shape for Capsule {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -751,7 +751,7 @@ impl Shape for Triangle {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -759,7 +759,7 @@ impl Shape for Triangle {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -814,7 +814,7 @@ impl Shape for Segment {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -822,7 +822,7 @@ impl Shape for Segment {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -873,7 +873,7 @@ impl Shape for Compound {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         *self.local_aabb()
     }
 
@@ -881,7 +881,7 @@ impl Shape for Compound {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.local_aabb().transform_by(position)
     }
 
@@ -921,7 +921,7 @@ impl Shape for Polyline {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         *self.local_aabb()
     }
 
@@ -929,7 +929,7 @@ impl Shape for Polyline {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -967,7 +967,7 @@ impl Shape for TriMesh {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         *self.local_aabb()
     }
 
@@ -975,7 +975,7 @@ impl Shape for TriMesh {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1014,7 +1014,7 @@ impl Shape for HeightField {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1022,7 +1022,7 @@ impl Shape for HeightField {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1056,7 +1056,7 @@ impl Shape for ConvexPolygon {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1064,7 +1064,7 @@ impl Shape for ConvexPolygon {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1119,7 +1119,7 @@ impl Shape for ConvexPolyhedron {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1127,7 +1127,7 @@ impl Shape for ConvexPolyhedron {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1183,7 +1183,7 @@ impl Shape for Cylinder {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1191,7 +1191,7 @@ impl Shape for Cylinder {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1235,7 +1235,7 @@ impl Shape for Cone {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1243,7 +1243,7 @@ impl Shape for Cone {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1289,7 +1289,7 @@ impl Shape for HalfSpace {
         Box::new(self.clone())
     }
 
-    fn compute_local_aabb(&self) -> AABB {
+    fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
 
@@ -1297,7 +1297,7 @@ impl Shape for HalfSpace {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.aabb(position)
     }
 
@@ -1334,7 +1334,7 @@ macro_rules! impl_shape_for_round_shape(
                 Box::new(self.clone())
             }
 
-            fn compute_local_aabb(&self) -> AABB {
+            fn compute_local_aabb(&self) -> Aabb {
                 self.inner_shape.local_aabb().loosened(self.border_radius)
             }
 
@@ -1342,7 +1342,7 @@ macro_rules! impl_shape_for_round_shape(
                 self.inner_shape.local_bounding_sphere().loosened(self.border_radius)
             }
 
-            fn compute_aabb(&self, position: &Isometry<Real>) -> AABB {
+            fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
                 self.inner_shape.aabb(position).loosened(self.border_radius)
             }
 

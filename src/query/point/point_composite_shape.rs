@@ -1,6 +1,6 @@
 #![allow(unused_parens)] // Needed by the macro.
 
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::visitors::CompositePointContainmentTest;
@@ -230,7 +230,7 @@ macro_rules! gen_visitor(
             }
         }
 
-        impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB> for $Visitor<'a, S>
+        impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAabb> for $Visitor<'a, S>
         where S: TypedSimdCompositeShape
               $(, $Location: Copy)*
               $(, S::PartShape: $PartShapeBound)* {
@@ -240,7 +240,7 @@ macro_rules! gen_visitor(
             fn visit(
                 &mut self,
                 best: Real,
-                aabb: &SimdAABB,
+                aabb: &SimdAabb,
                 data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
             ) -> SimdBestFirstVisitStatus<Self::Result> {
                 let dist = aabb.distance_to_local_point(&self.simd_point);

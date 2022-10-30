@@ -1,7 +1,7 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::QBVHStorage;
-use crate::partitioning::{GenericQBVH, QBVH};
+use crate::partitioning::QbvhStorage;
+use crate::partitioning::{GenericQbvh, Qbvh};
 use crate::shape::trimesh_storage::TriMeshStorage;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
 
@@ -304,9 +304,9 @@ bitflags::bitflags! {
 #[cfg_attr(
     feature = "serde-serialize",
     serde(bound(
-        serialize = "<Storage::QBVHStorage as QBVHStorage<u32>>::Nodes: serde::Serialize, \
-                     <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayU32: serde::Serialize, \
-                     <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayProxies: serde::Serialize,\
+        serialize = "<Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: serde::Serialize, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: serde::Serialize, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: serde::Serialize,\
                      Storage::ArrayTopoVertex: serde::Serialize,\
                      Storage::ArrayTopoFace: serde::Serialize,\
                      Storage::ArrayTopoHalfEdge: serde::Serialize,\
@@ -316,9 +316,9 @@ bitflags::bitflags! {
                      Storage::ArrayPoint: serde::Serialize,\
                      Storage::ArrayIdx: serde::Serialize,\
                      Storage::ArrayVectorTriple: serde::Serialize",
-        deserialize = "<Storage::QBVHStorage as QBVHStorage<u32>>::Nodes: serde::Deserialize<'de>, \
-                     <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayU32: serde::Deserialize<'de>, \
-                     <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayProxies: serde::Deserialize<'de>,\
+        deserialize = "<Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: serde::Deserialize<'de>, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: serde::Deserialize<'de>, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: serde::Deserialize<'de>,\
                      Storage::ArrayTopoVertex: serde::Deserialize<'de>,\
                      Storage::ArrayTopoFace: serde::Deserialize<'de>,\
                      Storage::ArrayTopoHalfEdge: serde::Deserialize<'de>,\
@@ -337,7 +337,7 @@ bitflags::bitflags! {
 #[repr(C)] // Needed for Cuda.
 /// A triangle mesh.
 pub struct GenericTriMesh<Storage: TriMeshStorage> {
-    qbvh: GenericQBVH<u32, Storage::QBVHStorage>,
+    qbvh: GenericQbvh<u32, Storage::QbvhStorage>,
     vertices: Storage::ArrayPoint,
     indices: Storage::ArrayIdx,
     #[cfg(feature = "dim3")]
@@ -383,7 +383,7 @@ impl TriMesh {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
     }
 
-    /// Converts this RAM-based heigthfield to an heigthfield based on CUDA memory.
+    /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
     #[cfg(feature = "cuda")]
     pub fn to_cuda(&self) -> CudaResult<CudaTriMesh> {
         Ok(CudaTriMesh {
@@ -422,7 +422,7 @@ impl TriMesh {
         );
 
         let mut result = Self {
-            qbvh: QBVH::new(),
+            qbvh: Qbvh::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
@@ -435,7 +435,7 @@ impl TriMesh {
         let _ = result.set_flags(flags);
 
         if result.qbvh.raw_nodes().is_empty() {
-            // The QBVH hasn’t been computed by `.set_flags`.
+            // The Qbvh hasn’t been computed by `.set_flags`.
             result.rebuild_qbvh();
         }
 
@@ -606,7 +606,7 @@ impl TriMesh {
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
-        // NOTE: the QBVH, and connected components are not changed by this operation.
+        // NOTE: the Qbvh, and connected components are not changed by this operation.
         //       The pseudo-normals just have to be flipped.
         //       The topology must be recomputed.
 
@@ -1006,17 +1006,17 @@ impl<Storage: TriMeshStorage> GenericTriMesh<Storage> {
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
-    pub fn local_aabb(&self) -> &AABB {
+    pub fn local_aabb(&self) -> &Aabb {
         self.qbvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn qbvh(&self) -> &GenericQBVH<u32, Storage::QBVHStorage> {
+    pub fn qbvh(&self) -> &GenericQbvh<u32, Storage::QbvhStorage> {
         &self.qbvh
     }
 
@@ -1143,7 +1143,7 @@ impl SimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn qbvh(&self) -> &QBVH<u32> {
+    fn qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
     }
 }
@@ -1151,7 +1151,7 @@ impl SimdCompositeShape for TriMesh {
 impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage> {
     type PartShape = Triangle;
     type PartId = u32;
-    type QBVHStorage = Storage::QBVHStorage;
+    type QbvhStorage = Storage::QbvhStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -1169,7 +1169,7 @@ impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage
         f(None, &tri)
     }
 
-    fn typed_qbvh(&self) -> &GenericQBVH<u32, Self::QBVHStorage> {
+    fn typed_qbvh(&self) -> &GenericQbvh<u32, Self::QbvhStorage> {
         &self.qbvh
     }
 }
@@ -1284,9 +1284,9 @@ where
 impl<Storage> Clone for GenericTriMesh<Storage>
 where
     Storage: TriMeshStorage,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::Nodes: Clone,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayU32: Clone,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayProxies: Clone,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: Clone,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: Clone,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: Clone,
     Storage::ArrayTopoVertex: Clone,
     Storage::ArrayTopoFace: Clone,
     Storage::ArrayTopoHalfEdge: Clone,
@@ -1314,9 +1314,9 @@ where
 impl<Storage> Copy for GenericTriMesh<Storage>
 where
     Storage: TriMeshStorage,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::Nodes: Copy,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayU32: Copy,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayProxies: Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: Copy,
     Storage::ArrayTopoVertex: Copy,
     Storage::ArrayTopoFace: Copy,
     Storage::ArrayTopoHalfEdge: Copy,
@@ -1333,9 +1333,9 @@ where
 unsafe impl<Storage> cust_core::DeviceCopy for GenericTriMesh<Storage>
 where
     Storage: TriMeshStorage,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::Nodes: cust_core::DeviceCopy + Copy,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayU32: cust_core::DeviceCopy + Copy,
-    <Storage::QBVHStorage as QBVHStorage<u32>>::ArrayProxies: cust_core::DeviceCopy + Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: cust_core::DeviceCopy + Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: cust_core::DeviceCopy + Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: cust_core::DeviceCopy + Copy,
     Storage::ArrayTopoVertex: cust_core::DeviceCopy + Copy,
     Storage::ArrayTopoFace: cust_core::DeviceCopy + Copy,
     Storage::ArrayTopoHalfEdge: cust_core::DeviceCopy + Copy,

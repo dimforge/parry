@@ -17,7 +17,7 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{FillMode, VoxelizedVolume};
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Matrix, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
@@ -238,7 +238,7 @@ impl VoxelSet {
                     let aabb_center =
                         self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
                     let aabb =
-                        AABB::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+                        Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
 
                     #[cfg(feature = "dim2")]
                     if let Some(seg) = aabb.clip_segment(&points[ia], &points[ib]) {
@@ -309,7 +309,7 @@ impl VoxelSet {
                 &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
             for prim_id in intersections {
                 let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
-                let aabb = AABB::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+                let aabb = Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
 
                 let pa = points[indices[*prim_id as usize][0] as usize];
                 let pb = points[indices[*prim_id as usize][1] as usize];

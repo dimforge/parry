@@ -1,12 +1,12 @@
 #[cfg(feature = "std")]
 pub use self::build::{
-    BuilderProxies, CenterDataSplitter, QBVHDataGenerator, QBVHNonOverlappingDataSplitter,
+    BuilderProxies, CenterDataSplitter, QbvhDataGenerator, QbvhNonOverlappingDataSplitter,
 };
 
 pub use self::qbvh::{
-    GenericQBVH, IndexedData, NodeIndex, QBVHNode, QBVHProxy, SimdNodeIndex, QBVH,
+    GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, SimdNodeIndex,
 };
-pub use self::storage::QBVHStorage;
+pub use self::storage::QbvhStorage;
 
 mod qbvh;
 mod storage;

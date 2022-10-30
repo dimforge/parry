@@ -1,4 +1,4 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{PointQuery, SplitResult};
@@ -57,7 +57,7 @@ impl Triangulation {
 impl TriMesh {
     /// Splits this `TriMesh` along the given canonical axis.
     ///
-    /// This will split the AABB by a plane with a normal with it’s `axis`-th component set to 1.
+    /// This will split the Aabb by a plane with a normal with it’s `axis`-th component set to 1.
     /// The splitting plane is shifted wrt. the origin by the `bias` (i.e. it passes through the point
     /// equal to `normal * bias`).
     ///
@@ -344,12 +344,12 @@ impl TriMesh {
         }
     }
 
-    /// Computes the intersection mesh between an AABB and this mesh.
+    /// Computes the intersection mesh between an Aabb and this mesh.
     pub fn intersection_with_aabb(
         &self,
         position: &Isometry<Real>,
         flip_mesh: bool,
-        aabb: &AABB,
+        aabb: &Aabb,
         flip_cuboid: bool,
         epsilon: Real,
     ) -> Option<Self> {
@@ -445,9 +445,9 @@ impl TriMesh {
                 inv_pos * vertices[idx[2] as usize],
             ]);
 
-            // There is no need to clip if the triangle is fully inside of the AABB.
+            // There is no need to clip if the triangle is fully inside of the Aabb.
             // Note that we can’t take a shortcut for the case where all the vertices are
-            // outside of the AABB, because the AABB can still instersect the edges or face.
+            // outside of the Aabb, because the Aabb can still instersect the edges or face.
             if !(aabb.contains_local_point(&to_clip[0])
                 && aabb.contains_local_point(&to_clip[1])
                 && aabb.contains_local_point(&to_clip[2]))

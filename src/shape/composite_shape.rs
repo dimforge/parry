@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real};
-use crate::partitioning::{GenericQBVH, IndexedData, QBVHStorage, QBVH};
+use crate::partitioning::{GenericQbvh, IndexedData, Qbvh, QbvhStorage};
 use crate::shape::Shape;
 use crate::utils::DefaultStorage;
 
@@ -13,13 +13,13 @@ pub trait SimdCompositeShape {
     fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape));
 
     /// Gets the acceleration structure of the composite shape.
-    fn qbvh(&self) -> &QBVH<u32>;
+    fn qbvh(&self) -> &Qbvh<u32>;
 }
 
 pub trait TypedSimdCompositeShape {
     type PartShape: ?Sized + Shape;
     type PartId: IndexedData;
-    type QBVHStorage: QBVHStorage<Self::PartId>;
+    type QbvhStorage: QbvhStorage<Self::PartId>;
 
     fn map_typed_part_at(
         &self,
@@ -36,14 +36,14 @@ pub trait TypedSimdCompositeShape {
         f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape),
     );
 
-    fn typed_qbvh(&self) -> &GenericQBVH<Self::PartId, Self::QBVHStorage>;
+    fn typed_qbvh(&self) -> &GenericQbvh<Self::PartId, Self::QbvhStorage>;
 }
 
 #[cfg(feature = "std")]
 impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
     type PartShape = dyn Shape;
     type PartId = u32;
-    type QBVHStorage = DefaultStorage;
+    type QbvhStorage = DefaultStorage;
 
     fn map_typed_part_at(
         &self,
@@ -61,7 +61,7 @@ impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
         self.map_part_at(shape_id, &mut f)
     }
 
-    fn typed_qbvh(&self) -> &GenericQBVH<Self::PartId, Self::QBVHStorage> {
+    fn typed_qbvh(&self) -> &GenericQbvh<Self::PartId, Self::QbvhStorage> {
         self.qbvh()
     }
 }

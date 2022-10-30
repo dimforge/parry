@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingVolume, AABB};
+use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
@@ -16,7 +16,7 @@ use crate::shape::{Shape, TriMesh};
 #[derive(Clone)]
 pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,
-    local_aabb2: AABB,
+    local_aabb2: Aabb,
     old_interferences: Vec<u32>,
     internal_edges: InternalEdgesFixer,
 }
@@ -25,7 +25,7 @@ impl TriMeshShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
         Self {
             interferences: Vec::new(),
-            local_aabb2: AABB::new_invalid(),
+            local_aabb2: Aabb::new_invalid(),
             old_interferences: Vec::new(),
             internal_edges: InternalEdgesFixer::default(),
         }
@@ -98,7 +98,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     /*
      * Compute interferences.
      */
-    // TODO: somehow precompute the AABB and reuse it?
+    // TODO: somehow precompute the Aabb and reuse it?
     let mut new_local_aabb2 = shape2.compute_aabb(&pos12).loosened(prediction);
     let same_local_aabb2 = workspace.local_aabb2.contains(&new_local_aabb2);
     let mut old_manifolds = Vec::new();

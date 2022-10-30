@@ -1,8 +1,8 @@
 //! Bounding volumes.
 
 #[doc(inline)]
-pub use crate::bounding_volume::aabb::AABB;
-pub use crate::bounding_volume::simd_aabb::SimdAABB;
+pub use crate::bounding_volume::aabb::Aabb;
+pub use crate::bounding_volume::simd_aabb::SimdAabb;
 
 #[doc(inline)]
 pub use crate::bounding_volume::bounding_sphere::BoundingSphere;

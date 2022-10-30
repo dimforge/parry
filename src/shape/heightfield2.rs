@@ -14,7 +14,7 @@ use {crate::utils::CudaArray1, cust::error::CudaResult};
 
 use na::Point2;
 
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
 
 use crate::shape::Segment;
@@ -26,7 +26,7 @@ pub type HeightFieldCellStatus = bool;
 
 /// Trait describing all the types needed for storing an heightfield’s data.
 pub trait HeightFieldStorage {
-    /// Type of the array containing the heightfield’s heigths.
+    /// Type of the array containing the heightfield’s heights.
     type Heights: Array1<Real>;
     /// Type of the array containing the heightfield’s cells status.
     type Status: Array1<HeightFieldCellStatus>;
@@ -63,7 +63,7 @@ pub struct GenericHeightField<Storage: HeightFieldStorage> {
     status: Storage::Status,
 
     scale: Vector<Real>,
-    aabb: AABB,
+    aabb: Aabb,
 }
 
 impl<Storage> Clone for GenericHeightField<Storage>
@@ -123,7 +123,7 @@ impl HeightField {
         let max = heights.max();
         let min = heights.min();
         let hscale = scale * 0.5;
-        let aabb = AABB::new(
+        let aabb = Aabb::new(
             Point2::new(-hscale.x, min * scale.y),
             Point2::new(hscale.x, max * scale.y),
         );
@@ -192,8 +192,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         self
     }
 
-    /// The AABB of this heightfield.
-    pub fn root_aabb(&self) -> &AABB {
+    /// The Aabb of this heightfield.
+    pub fn root_aabb(&self) -> &Aabb {
         &self.aabb
     }
 
@@ -303,8 +303,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         !self.status[i]
     }
 
-    /// The range of segment ids that may intersect the given local AABB.
-    pub fn unclamped_elements_range_in_local_aabb(&self, aabb: &AABB) -> Range<isize> {
+    /// The range of segment ids that may intersect the given local Aabb.
+    pub fn unclamped_elements_range_in_local_aabb(&self, aabb: &Aabb) -> Range<isize> {
         let ref_mins = aabb.mins.coords.component_div(&self.scale);
         let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
         let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
@@ -315,7 +315,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
-    pub fn map_elements_in_local_aabb(&self, aabb: &AABB, f: &mut impl FnMut(u32, &Segment)) {
+    pub fn map_elements_in_local_aabb(&self, aabb: &Aabb, f: &mut impl FnMut(u32, &Segment)) {
         let ref_mins = aabb.mins.coords.component_div(&self.scale);
         let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
         let seg_length = 1.0 / (self.heights.len() as Real - 1.0);

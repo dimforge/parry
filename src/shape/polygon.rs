@@ -1,7 +1,7 @@
 #![allow(dead_code)] // TODO: remove this once we support polygons.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use parry::bounding_volume::AABB;
+use parry::bounding_volume::Aabb;
 
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -31,7 +31,7 @@ impl Polygon {
     }
 
     /// Compute the axis-aligned bounding box of the polygon.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         let p0 = pos * self.vertices[0];
         let mut mins = p0;
         let mut maxs = p0;
@@ -42,7 +42,7 @@ impl Polygon {
             maxs = maxs.sup(&pt);
         }
 
-        AABB::new(mins.into(), maxs.into())
+        Aabb::new(mins.into(), maxs.into())
     }
 
     /// The vertices of this polygon.

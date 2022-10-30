@@ -1,19 +1,19 @@
 use crate::{
-    bounding_volume::AABB,
+    bounding_volume::Aabb,
     math::{Isometry, Point, Real, DIM},
     shape::Triangle,
 };
 
 impl Triangle {
-    /// Computes the world-space AABB of this triangle, transformed by `pos`.
+    /// Computes the world-space Aabb of this triangle, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
+    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         self.transformed(pos).local_aabb()
     }
 
-    /// Computes the local-space AABB of this triangle.
+    /// Computes the local-space Aabb of this triangle.
     #[inline]
-    pub fn local_aabb(&self) -> AABB {
+    pub fn local_aabb(&self) -> Aabb {
         let a = self.a.coords;
         let b = self.b.coords;
         let c = self.c.coords;
@@ -26,7 +26,7 @@ impl Triangle {
             max.coords[d] = a[d].max(b[d]).max(c[d]);
         }
 
-        AABB::new(min, max)
+        Aabb::new(min, max)
     }
 }
 
@@ -55,7 +55,7 @@ mod test {
 
         assert_eq!(t.aabb(&m), support_map_aabb(&m, &t));
 
-        // TODO: also test local AABB once support maps have a local AABB
+        // TODO: also test local Aabb once support maps have a local Aabb
         // function too
     }
 }

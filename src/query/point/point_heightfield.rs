@@ -1,4 +1,4 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, GenericHeightField, HeightFieldStorage, TrianglePointLocation};
@@ -12,7 +12,7 @@ impl<Storage: HeightFieldStorage> PointQuery for GenericHeightField<Storage> {
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
-        let aabb = AABB::new(pt - Vector::repeat(max_dist), pt + Vector::repeat(max_dist));
+        let aabb = Aabb::new(pt - Vector::repeat(max_dist), pt + Vector::repeat(max_dist));
         let mut sq_smallest_dist = Real::MAX;
         let mut best_proj = None;
 

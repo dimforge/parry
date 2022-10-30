@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
@@ -15,7 +15,7 @@ pub fn distance_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Real
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     let mut visitor = CompositeShapeAgainstAnyDistanceVisitor::new(dispatcher, pos12, g1, g2);
     g1.typed_qbvh()
@@ -34,7 +34,7 @@ pub fn distance_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Real
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     distance_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
@@ -71,22 +71,22 @@ impl<'a, D: ?Sized, G1: ?Sized + 'a> CompositeShapeAgainstAnyDistanceVisitor<'a,
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAABB>
+impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for CompositeShapeAgainstAnyDistanceVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QBVHStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     type Result = (G1::PartId, Real);
 
     fn visit(
         &mut self,
         best: Real,
-        bv: &SimdAABB,
+        bv: &SimdAabb,
         data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
-        // Compute the minkowski sum of the two AABBs.
-        let msum = SimdAABB {
+        // Compute the minkowski sum of the two Aabbs.
+        let msum = SimdAabb {
             mins: bv.mins + self.msum_shift + (-self.msum_margin),
             maxs: bv.maxs + self.msum_shift + self.msum_margin,
         };

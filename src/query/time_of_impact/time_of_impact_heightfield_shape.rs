@@ -2,7 +2,7 @@ use crate::math::{Isometry, Real, Vector};
 use crate::query::{QueryDispatcher, Ray, Unsupported, TOI};
 use crate::shape::{GenericHeightField, HeightFieldStorage, Shape};
 #[cfg(feature = "dim3")]
-use crate::{bounding_volume::AABB, query::RayCast};
+use crate::{bounding_volume::Aabb, query::RayCast};
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
@@ -41,7 +41,7 @@ where
         ..curr_range.end.clamp(0, heightfield1.num_cells() as isize) as usize;
     for curr in clamped_curr_range {
         if let Some(seg) = heightfield1.segment_at(curr) {
-            // TODO: pre-check using a ray-cast on the AABBs first?
+            // TODO: pre-check using a ray-cast on the Aabbs first?
             if let Some(hit) =
                 dispatcher.time_of_impact(pos12, vel12, &seg, g2, max_toi, stop_at_penetration)?
             {
@@ -88,7 +88,7 @@ where
         }
 
         if let Some(seg) = heightfield1.segment_at(curr_elt as usize) {
-            // TODO: pre-check using a ray-cast on the AABBs first?
+            // TODO: pre-check using a ray-cast on the Aabbs first?
             if let Some(hit) =
                 dispatcher.time_of_impact(pos12, vel12, &seg, g2, max_toi, stop_at_penetration)?
             {
@@ -123,7 +123,7 @@ where
 
     // Find the first hit between the aabbs.
     let hext2_1 = aabb2_1.half_extents();
-    let msum = AABB::new(aabb1.mins - hext2_1, aabb1.maxs + hext2_1);
+    let msum = Aabb::new(aabb1.mins - hext2_1, aabb1.maxs + hext2_1);
     if let Some(toi) = msum.cast_local_ray(&ray, max_toi, true) {
         // Advance the aabb2 to the hit point.
         aabb2_1.mins += ray.dir * toi;
@@ -165,7 +165,7 @@ where
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
             for tri in [tri_a, tri_b] {
                 if let Some(tri) = tri {
-                    // TODO: pre-check using a ray-cast on the AABBs first?
+                    // TODO: pre-check using a ray-cast on the Aabbs first?
                     if let Some(hit) = dispatcher.time_of_impact(
                         pos12,
                         vel12,

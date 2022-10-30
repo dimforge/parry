@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::point::point_query::PointQuery;
@@ -28,13 +28,13 @@ impl<'a, S> CompositePointContainmentTest<'a, S> {
     }
 }
 
-impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAABB>
+impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
     for CompositePointContainmentTest<'a, S>
 {
     #[inline]
     fn visit(
         &mut self,
-        bv: &SimdAABB,
+        bv: &SimdAabb,
         b: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
     ) -> SimdVisitStatus {
         let simd_point: Point<SimdReal> = Point::splat(*self.point);

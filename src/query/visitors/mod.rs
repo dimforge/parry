@@ -1,7 +1,7 @@
 //! Visitors for performing geometric queries exploiting spatial partitioning data structures.
 
 #[cfg(feature = "std")]
-pub use self::aabb_sets_interferences_collector::AABBSetsInterferencesCollector;
+pub use self::aabb_sets_interferences_collector::AabbSetsInterferencesCollector;
 #[cfg(feature = "std")]
 pub use self::bounding_volume_intersections_simultaneous_visitor::BoundingVolumeIntersectionsSimultaneousVisitor;
 #[cfg(feature = "std")]

@@ -2,7 +2,7 @@ use na::{
     self, Isometry2, Isometry3, Matrix2, Matrix3, Matrix4, Point2, Point3, Point4, RealField,
     Vector2, Vector3, Vector4,
 };
-use parry3d::bounding_volume::{BoundingSphere, AABB};
+use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::math::{Point, Real, Vector};
 use parry3d::query::Ray;
 use parry3d::shape::{Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, Triangle};
@@ -140,14 +140,14 @@ where
     }
 }
 
-impl DefaultGen for AABB
+impl DefaultGen for Aabb
 where
     Standard: Distribution<Vector<Real>>,
 {
-    fn generate<R: Rng>(rng: &mut R) -> AABB {
-        // an AABB centered at the origin.
+    fn generate<R: Rng>(rng: &mut R) -> Aabb {
+        // an Aabb centered at the origin.
         let half_extents = rng.gen::<Vector<Real>>().abs();
-        AABB::new(
+        Aabb::new(
             Point::origin() + (-half_extents),
             Point::origin() + half_extents,
         )

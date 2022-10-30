@@ -1,11 +1,11 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::Real;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 use na::{self, Point3};
 
-impl AABB {
-    /// Discretize the boundary of this AABB as a triangle-mesh.
+impl Aabb {
+    /// Discretize the boundary of this Aabb as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
         let center = self.center();
         let half_extents = self.half_extents();

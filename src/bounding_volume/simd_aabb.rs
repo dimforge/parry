@@ -1,26 +1,26 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
 use crate::query::SimdRay;
 use crate::utils::{self, IsometryOps};
 use num::{One, Zero};
 use simba::simd::{SimdPartialOrd, SimdValue};
 
-/// Four AABB represented as a single SoA AABB with SIMD components.
+/// Four Aabb represented as a single SoA Aabb with SIMD components.
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
-pub struct SimdAABB {
-    /// The min coordinates of the AABBs.
+pub struct SimdAabb {
+    /// The min coordinates of the Aabbs.
     pub mins: Point<SimdReal>,
-    /// The max coordinates the AABBs.
+    /// The max coordinates the Aabbs.
     pub maxs: Point<SimdReal>,
 }
 
 #[cfg(feature = "serde-serialize")]
-impl serde::Serialize for SimdAABB {
+impl serde::Serialize for SimdAabb {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -46,7 +46,7 @@ impl serde::Serialize for SimdAABB {
 }
 
 #[cfg(feature = "serde-serialize")]
-impl<'de> serde::Deserialize<'de> for SimdAABB {
+impl<'de> serde::Deserialize<'de> for SimdAabb {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -54,7 +54,7 @@ impl<'de> serde::Deserialize<'de> for SimdAABB {
         struct Visitor {}
 
         impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = SimdAABB;
+            type Value = SimdAabb;
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(
                     formatter,
@@ -75,44 +75,44 @@ impl<'de> serde::Deserialize<'de> for SimdAABB {
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
                 let mins = Point::from(mins.coords.map(|e| SimdReal::from(e)));
                 let maxs = Point::from(maxs.coords.map(|e| SimdReal::from(e)));
-                Ok(SimdAABB { mins, maxs })
+                Ok(SimdAabb { mins, maxs })
             }
         }
 
-        deserializer.deserialize_struct("SimdAABB", &["mins", "maxs"], Visitor {})
+        deserializer.deserialize_struct("SimdAabb", &["mins", "maxs"], Visitor {})
     }
 }
 
-impl SimdAABB {
-    /// An invalid AABB.
+impl SimdAabb {
+    /// An invalid Aabb.
     pub fn new_invalid() -> Self {
-        Self::splat(AABB::new_invalid())
+        Self::splat(Aabb::new_invalid())
     }
 
     /// Builds an SIMD aabb composed of four identical aabbs.
-    pub fn splat(aabb: AABB) -> Self {
+    pub fn splat(aabb: Aabb) -> Self {
         Self {
             mins: Point::splat(aabb.mins),
             maxs: Point::splat(aabb.maxs),
         }
     }
 
-    /// The center of all the AABBs represented by `self``.
+    /// The center of all the Aabbs represented by `self``.
     pub fn center(&self) -> Point<SimdReal> {
         na::center(&self.mins, &self.maxs)
     }
 
-    /// The half-extents of all the AABBs represented by `self``.
+    /// The half-extents of all the Aabbs represented by `self``.
     pub fn half_extents(&self) -> Vector<SimdReal> {
         (self.maxs - self.mins) * SimdReal::splat(0.5)
     }
 
-    /// The radius of all the AABBs represented by `self``.
+    /// The radius of all the Aabbs represented by `self``.
     pub fn radius(&self) -> SimdReal {
         (self.maxs - self.mins).norm()
     }
 
-    /// Return the AABB of the `self` transformed by the given isometry.
+    /// Return the Aabb of the `self` transformed by the given isometry.
     pub fn transform_by(&self, transform: &Isometry<SimdReal>) -> Self {
         let ls_center = self.center();
         let center = transform * ls_center;
@@ -123,7 +123,7 @@ impl SimdAABB {
         }
     }
 
-    /// Returns a scaled version of this AABB.
+    /// Returns a scaled version of this Aabb.
     #[inline]
     pub fn scaled(self, scale: &Vector<SimdReal>) -> Self {
         let a = self.mins.coords.component_mul(&scale);
@@ -134,30 +134,30 @@ impl SimdAABB {
         }
     }
 
-    /// Dilate all the AABBs represented by `self`` by their extents multiplied
+    /// Dilate all the Aabbs represented by `self`` by their extents multiplied
     /// by the given scale `factor`.
     pub fn dilate_by_factor(&mut self, factor: SimdReal) {
-        // If some of the AABBs on this SimdAABB are invalid,
+        // If some of the Aabbs on this SimdAabb are invalid,
         // don't, dilate them.
         let is_valid = self.mins.x.simd_le(self.maxs.x);
         let factor = factor.select(is_valid, SimdReal::zero());
 
         // NOTE: we multiply each by factor instead of doing
         // (maxs - mins) * factor. That's to avoid overflows (and
-        // therefore NaNs if this SimdAABB contains some invalid
-        // AABBs initialised with Real::MAX
+        // therefore NaNs if this SimdAabb contains some invalid
+        // Aabbs initialised with Real::MAX
         let dilation = self.maxs * factor - self.mins * factor;
         self.mins -= dilation;
         self.maxs += dilation;
     }
 
-    /// Replace the `i-th` AABB of this SIMD AAAB by the given value.
-    pub fn replace(&mut self, i: usize, aabb: AABB) {
+    /// Replace the `i-th` Aabb of this SIMD AAAB by the given value.
+    pub fn replace(&mut self, i: usize, aabb: Aabb) {
         self.mins.replace(i, aabb.mins);
         self.maxs.replace(i, aabb.maxs);
     }
 
-    /// Casts a ray on all the AABBs represented by `self`.
+    /// Casts a ray on all the Aabbs represented by `self`.
     pub fn cast_local_ray(&self, ray: &SimdRay, max_toi: SimdReal) -> (SimdBool, SimdReal) {
         let zero = SimdReal::zero();
         let one = SimdReal::one();
@@ -194,7 +194,7 @@ impl SimdAABB {
         (hit, tmin)
     }
 
-    /// Computes the distances between a point and all the AABBs represented by `self`.
+    /// Computes the distances between a point and all the Aabbs represented by `self`.
     pub fn distance_to_local_point(&self, point: &Point<SimdReal>) -> SimdReal {
         let mins_point = self.mins - point;
         let point_maxs = point - self.maxs;
@@ -202,7 +202,7 @@ impl SimdAABB {
         shift.norm()
     }
 
-    /// Computes the distances between the origin and all the AABBs represented by `self`.
+    /// Computes the distances between the origin and all the Aabbs represented by `self`.
     pub fn distance_to_origin(&self) -> SimdReal {
         self.mins
             .coords
@@ -211,7 +211,7 @@ impl SimdAABB {
             .norm()
     }
 
-    /// Check which AABB represented by `self` contains the given `point`.
+    /// Check which Aabb represented by `self` contains the given `point`.
     pub fn contains_local_point(&self, point: &Point<SimdReal>) -> SimdBool {
         #[cfg(feature = "dim2")]
         return self.mins.x.simd_le(point.x)
@@ -228,20 +228,20 @@ impl SimdAABB {
             & self.maxs.z.simd_ge(point.z);
     }
 
-    /// Lanewise check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// Lanewise check which Aabb represented by `self` contains the given set of `other` aabbs.
     /// The check is performed lane-wise.
     #[cfg(feature = "dim2")]
-    pub fn contains(&self, other: &SimdAABB) -> SimdBool {
+    pub fn contains(&self, other: &SimdAabb) -> SimdBool {
         self.mins.x.simd_le(other.mins.x)
             & self.mins.y.simd_le(other.mins.y)
             & self.maxs.x.simd_ge(other.maxs.x)
             & self.maxs.y.simd_ge(other.maxs.y)
     }
 
-    /// Lanewise check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// Lanewise check which Aabb represented by `self` contains the given set of `other` aabbs.
     /// The check is performed lane-wise.
     #[cfg(feature = "dim3")]
-    pub fn contains(&self, other: &SimdAABB) -> SimdBool {
+    pub fn contains(&self, other: &SimdAabb) -> SimdBool {
         self.mins.x.simd_le(other.mins.x)
             & self.mins.y.simd_le(other.mins.y)
             & self.mins.z.simd_le(other.mins.z)
@@ -250,20 +250,20 @@ impl SimdAABB {
             & self.maxs.z.simd_ge(other.maxs.z)
     }
 
-    /// Lanewise check which AABB represented by `self` intersects the given set of `other` aabbs.
+    /// Lanewise check which Aabb represented by `self` intersects the given set of `other` aabbs.
     /// The check is performed lane-wise.
     #[cfg(feature = "dim2")]
-    pub fn intersects(&self, other: &SimdAABB) -> SimdBool {
+    pub fn intersects(&self, other: &SimdAabb) -> SimdBool {
         self.mins.x.simd_le(other.maxs.x)
             & other.mins.x.simd_le(self.maxs.x)
             & self.mins.y.simd_le(other.maxs.y)
             & other.mins.y.simd_le(self.maxs.y)
     }
 
-    /// Check which AABB represented by `self` contains the given set of `other` aabbs.
+    /// Check which Aabb represented by `self` contains the given set of `other` aabbs.
     /// The check is performed lane-wise.
     #[cfg(feature = "dim3")]
-    pub fn intersects(&self, other: &SimdAABB) -> SimdBool {
+    pub fn intersects(&self, other: &SimdAabb) -> SimdBool {
         self.mins.x.simd_le(other.maxs.x)
             & other.mins.x.simd_le(self.maxs.x)
             & self.mins.y.simd_le(other.maxs.y)
@@ -276,37 +276,37 @@ impl SimdAABB {
     ///
     /// The result is an array such that `result[i].extract(j)` contains the intersection
     /// result between `self.extract(i)` and `other.extract(j)`.
-    pub fn intersects_permutations(&self, other: &SimdAABB) -> [SimdBool; SIMD_WIDTH] {
+    pub fn intersects_permutations(&self, other: &SimdAabb) -> [SimdBool; SIMD_WIDTH] {
         let mut result = [SimdBool::splat(false); SIMD_WIDTH];
         for ii in 0..SIMD_WIDTH {
             // TODO: use SIMD-accelerated shuffling?
-            let extracted = SimdAABB::splat(self.extract(ii));
+            let extracted = SimdAabb::splat(self.extract(ii));
             result[ii] = extracted.intersects(other);
         }
 
         result
     }
 
-    /// Merge all the AABB represented by `self` into a single one.
-    pub fn to_merged_aabb(&self) -> AABB {
-        AABB::new(
+    /// Merge all the Aabb represented by `self` into a single one.
+    pub fn to_merged_aabb(&self) -> Aabb {
+        Aabb::new(
             self.mins.coords.map(|e| e.simd_horizontal_min()).into(),
             self.maxs.coords.map(|e| e.simd_horizontal_max()).into(),
         )
     }
 
-    /// Extracts the AABB stored in the given SIMD lane of the SIMD AABB:
-    pub fn extract(&self, lane: usize) -> AABB {
-        AABB::new(self.mins.extract(lane), self.maxs.extract(lane))
+    /// Extracts the Aabb stored in the given SIMD lane of the SIMD Aabb:
+    pub fn extract(&self, lane: usize) -> Aabb {
+        Aabb::new(self.mins.extract(lane), self.maxs.extract(lane))
     }
 }
 
-impl From<[AABB; SIMD_WIDTH]> for SimdAABB {
-    fn from(aabbs: [AABB; SIMD_WIDTH]) -> Self {
+impl From<[Aabb; SIMD_WIDTH]> for SimdAabb {
+    fn from(aabbs: [Aabb; SIMD_WIDTH]) -> Self {
         let mins = array![|ii| aabbs[ii].mins; SIMD_WIDTH];
         let maxs = array![|ii| aabbs[ii].maxs; SIMD_WIDTH];
 
-        SimdAABB {
+        SimdAabb {
             mins: Point::from(mins),
             maxs: Point::from(maxs),
         }
