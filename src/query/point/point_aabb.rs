@@ -1,11 +1,11 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use crate::num::{Bounded, Zero};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::FeatureId;
 use na;
 
-impl AABB {
+impl Aabb {
     fn do_project_local_point(
         &self,
         pt: &Point<Real>,
@@ -57,7 +57,7 @@ impl AABB {
     }
 }
 
-impl PointQuery for AABB {
+impl PointQuery for Aabb {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
         let (inside, ls_pt, _) = self.do_project_local_point(pt, solid);

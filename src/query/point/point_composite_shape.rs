@@ -1,20 +1,24 @@
 #![allow(unused_parens)] // Needed by the macro.
 
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
-use crate::query::{
-    visitors::CompositePointContainmentTest, PointProjection, PointQuery, PointQueryWithLocation,
-};
+use crate::query::visitors::CompositePointContainmentTest;
+use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
-    Compound, FeatureId, Polyline, SegmentPointLocation, TriMesh, TrianglePointLocation,
+    FeatureId, GenericTriMesh, SegmentPointLocation, TriMeshStorage, TrianglePointLocation,
     TypedSimdCompositeShape,
 };
-#[cfg(feature = "dim3")]
-use crate::utils::SortedPair;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
+#[cfg(feature = "dim3")]
+use crate::utils::Array1;
+
+#[cfg(feature = "std")]
+use crate::shape::{Compound, Polyline};
+
+#[cfg(feature = "std")]
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -44,7 +48,7 @@ impl PointQuery for Polyline {
     }
 }
 
-impl PointQuery for TriMesh {
+impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(point, solid).0
@@ -87,8 +91,20 @@ impl PointQuery for TriMesh {
         let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
     }
+
+    /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
+    fn project_local_point_with_max_dist(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<PointProjection> {
+        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist)
+            .map(|proj| proj.0)
+    }
 }
 
+#[cfg(feature = "std")]
 impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -112,6 +128,7 @@ impl PointQuery for Compound {
     }
 }
 
+#[cfg(feature = "std")]
 impl PointQueryWithLocation for Polyline {
     type Location = (u32, SegmentPointLocation);
 
@@ -127,7 +144,7 @@ impl PointQueryWithLocation for Polyline {
     }
 }
 
-impl PointQueryWithLocation for TriMesh {
+impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage> {
     type Location = (u32, TrianglePointLocation);
 
     #[inline]
@@ -137,40 +154,54 @@ impl PointQueryWithLocation for TriMesh {
         point: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
+        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
+            .unwrap()
+    }
+
+    /// Projects a point on `self`, with a maximum projection distance.
+    fn project_local_point_and_get_location_with_max_dist(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<(PointProjection, Self::Location)> {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-        let (mut proj, (part_id, location)) =
-            self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
 
-        #[cfg(feature = "dim3")]
-        if let Some(pseudo_normals) = self.pseudo_normals() {
-            let pseudo_normal = match location {
-                TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
-                    Some(self.triangle(part_id).scaled_normal())
-                }
-                TrianglePointLocation::OnEdge(i, _) => {
-                    let idx = self.indices()[part_id as usize];
-                    pseudo_normals
+        #[allow(unused_mut)] // mut is needed in 3D.
+        if let Some((_, (mut proj, (part_id, location)))) =
+            self.qbvh()
+                .traverse_best_first_node(&mut visitor, 0, max_dist)
+        {
+            #[cfg(feature = "dim3")]
+            if let Some(pseudo_normals) = self.pseudo_normals() {
+                let pseudo_normal = match location {
+                    TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
+                        Some(self.triangle(part_id).scaled_normal())
+                    }
+                    TrianglePointLocation::OnEdge(i, _) => pseudo_normals
                         .edges_pseudo_normal
-                        .get(&SortedPair::new(idx[i as usize], idx[(i as usize + 1) % 3]))
-                        .copied()
-                }
-                TrianglePointLocation::OnVertex(i) => {
-                    let idx = self.indices()[part_id as usize];
-                    pseudo_normals
-                        .vertices_pseudo_normal
-                        .get(idx[i as usize] as usize)
-                        .copied()
-                }
-            };
+                        .get_at(part_id as usize)
+                        .map(|pn| pn[i as usize]),
+                    TrianglePointLocation::OnVertex(i) => {
+                        let idx = self.indices()[part_id as usize];
+                        pseudo_normals
+                            .vertices_pseudo_normal
+                            .get_at(idx[i as usize] as usize)
+                            .copied()
+                    }
+                };
 
-            if let Some(pseudo_normal) = pseudo_normal {
-                let dpt = point - proj.point;
-                proj.is_inside = dpt.dot(&pseudo_normal) <= 0.0;
+                if let Some(pseudo_normal) = pseudo_normal {
+                    let dpt = point - proj.point;
+                    proj.is_inside = dpt.dot(&pseudo_normal) <= 0.0;
+                }
             }
-        }
 
-        (proj, (part_id, location))
+            Some((proj, (part_id, location)))
+        } else {
+            None
+        }
     }
 }
 
@@ -199,7 +230,7 @@ macro_rules! gen_visitor(
             }
         }
 
-        impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB> for $Visitor<'a, S>
+        impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAabb> for $Visitor<'a, S>
         where S: TypedSimdCompositeShape
               $(, $Location: Copy)*
               $(, S::PartShape: $PartShapeBound)* {
@@ -209,7 +240,7 @@ macro_rules! gen_visitor(
             fn visit(
                 &mut self,
                 best: Real,
-                aabb: &SimdAABB,
+                aabb: &SimdAabb,
                 data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
             ) -> SimdBestFirstVisitStatus<Self::Result> {
                 let dist = aabb.distance_to_local_point(&self.simd_point);

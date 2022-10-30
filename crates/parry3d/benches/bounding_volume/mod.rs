@@ -1,7 +1,7 @@
 use crate::common::{generate, generate_trimesh_around_origin, unref};
 use na::Isometry3;
 use parry3d::bounding_volume::BoundingVolume;
-use parry3d::bounding_volume::{BoundingSphere, AABB};
+use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::shape::{
     Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, TriMesh, Triangle,
 };
@@ -19,8 +19,8 @@ mod macros;
 bench_method!(
     bench_aabb_intersects_aabb_always_true,
     intersects,
-    aabb1: AABB,
-    aabb2: AABB
+    aabb1: Aabb,
+    aabb2: Aabb
 );
 bench_method!(
     bench_bounding_sphere_intersects_bounding_sphere_always_true,
@@ -29,7 +29,7 @@ bench_method!(
     bs2: BoundingSphere
 );
 
-bench_method!(bench_aabb_contains_aabb, contains, aabb1: AABB, aabb2: AABB);
+bench_method!(bench_aabb_contains_aabb, contains, aabb1: Aabb, aabb2: Aabb);
 bench_method!(
     bench_bounding_sphere_contains_bounding_sphere,
     contains,
@@ -37,7 +37,7 @@ bench_method!(
     bs2: BoundingSphere
 );
 
-bench_method!(bench_aabb_merged_aabb, merged, aabb1: AABB, aabb2: AABB);
+bench_method!(bench_aabb_merged_aabb, merged, aabb1: Aabb, aabb2: Aabb);
 bench_method!(
     bench_bounding_sphere_merged_bounding_sphere,
     merged,
@@ -45,7 +45,7 @@ bench_method!(
     bs2: BoundingSphere
 );
 
-bench_method!(bench_aabb_loosened_aabb, loosened, aabb1: AABB, margin: f32);
+bench_method!(bench_aabb_loosened_aabb, loosened, aabb1: Aabb, margin: f32);
 bench_method!(
     bench_bounding_sphere_loosened_bounding_sphere,
     loosened,
@@ -56,7 +56,7 @@ bench_method!(
 /*
  * Bounding volume construction.
  */
-bench_method!(bench_cuboid_aabb, aabb: AABB, c: Cuboid, m: Isometry3<f32>);
+bench_method!(bench_cuboid_aabb, aabb: Aabb, c: Cuboid, m: Isometry3<f32>);
 bench_method!(
     bench_cuboid_bounding_sphere,
     bounding_sphere: BoundingSphere,
@@ -64,7 +64,7 @@ bench_method!(
     m: Isometry3<f32>
 );
 
-bench_method!(bench_ball_aabb, aabb: AABB, b: Ball, m: Isometry3<f32>);
+bench_method!(bench_ball_aabb, aabb: Aabb, b: Ball, m: Isometry3<f32>);
 bench_method!(
     bench_ball_bounding_sphere,
     bounding_sphere: BoundingSphere,
@@ -74,7 +74,7 @@ bench_method!(
 
 bench_method!(
     bench_capsule_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     c: Capsule,
     m: Isometry3<f32>
 );
@@ -85,7 +85,7 @@ bench_method!(
     m: Isometry3<f32>
 );
 
-bench_method!(bench_cone_aabb, aabb: AABB, c: Cone, m: Isometry3<f32>);
+bench_method!(bench_cone_aabb, aabb: Aabb, c: Cone, m: Isometry3<f32>);
 bench_method!(
     bench_cone_bounding_sphere,
     bounding_sphere: BoundingSphere,
@@ -95,7 +95,7 @@ bench_method!(
 
 bench_method!(
     bench_cylinder_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     c: Cylinder,
     m: Isometry3<f32>
 );
@@ -108,7 +108,7 @@ bench_method!(
 
 bench_method!(
     bench_segment_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     c: Segment,
     m: Isometry3<f32>
 );
@@ -121,7 +121,7 @@ bench_method!(
 
 bench_method!(
     bench_triangle_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     c: Triangle,
     m: Isometry3<f32>
 );
@@ -134,7 +134,7 @@ bench_method!(
 
 bench_method!(
     bench_convex_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     c: ConvexHull,
     m: Isometry3<f32>
 );
@@ -147,7 +147,7 @@ bench_method!(
 
 bench_method_gen!(
     bench_mesh_aabb,
-    aabb: AABB,
+    aabb: Aabb,
     mesh: TriMesh = generate_trimesh_around_origin,
     m: Isometry3<f32> = generate
 );

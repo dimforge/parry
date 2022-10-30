@@ -1,10 +1,10 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 
-impl AABB {
-    /// Outlines this AABB’s shape using polylines.
+impl Aabb {
+    /// Outlines this Aabb’s shape using polylines.
     pub fn to_outline(&self) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
         let center = self.center();
         let half_extents = self.half_extents();
@@ -28,7 +28,7 @@ impl Cuboid {
  * The cuboid is centered at the origin, and has its half extents set to 0.5.
  */
 fn unit_cuboid_outline() -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
-    let aabb = AABB::from_half_extents(Point::origin(), Vector::repeat(0.5));
+    let aabb = Aabb::from_half_extents(Point::origin(), Vector::repeat(0.5));
     (
         aabb.vertices().to_vec(),
         vec![

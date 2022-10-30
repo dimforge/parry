@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
 use na::SimdValue;
@@ -6,7 +6,7 @@ use simba::simd::SimdBool as _;
 use std::marker::PhantomData;
 
 #[cfg(feature = "parallel")]
-use crate::partitioning::{QBVHNode, SimdNodeIndex};
+use crate::partitioning::{QbvhNode, SimdNodeIndex};
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
@@ -40,7 +40,7 @@ impl<T1, T2, F> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
     }
 }
 
-impl<T1, T2, F> SimdSimultaneousVisitor<T1, T2, SimdAABB>
+impl<T1, T2, F> SimdSimultaneousVisitor<T1, T2, SimdAabb>
     for BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F>
 where
     F: FnMut(&T1, &T2) -> bool,
@@ -48,9 +48,9 @@ where
     #[inline]
     fn visit(
         &mut self,
-        left_bv: &SimdAABB,
+        left_bv: &SimdAabb,
         left_data: Option<[Option<&T1>; SIMD_WIDTH]>,
-        right_bv: &SimdAABB,
+        right_bv: &SimdAabb,
         right_data: Option<[Option<&T2>; SIMD_WIDTH]>,
     ) -> SimdSimultaneousVisitStatus {
         let mask = if let Some(pos12) = &self.pos12 {
@@ -91,10 +91,10 @@ where
     fn visit(
         &self,
         _: SimdNodeIndex,
-        left_node: &QBVHNode,
+        left_node: &QbvhNode,
         left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
         _: SimdNodeIndex,
-        right_node: &QBVHNode,
+        right_node: &QbvhNode,
         right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
         _: (),
     ) -> (SimdSimultaneousVisitStatus, ()) {

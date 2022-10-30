@@ -1,4 +1,4 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::RoundTriangle;
 use crate::transformation::utils;

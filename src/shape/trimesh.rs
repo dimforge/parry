@@ -1,16 +1,28 @@
-use std::collections::HashSet;
-
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::QBVH;
-use crate::shape::composite_shape::SimdCompositeShape;
+use crate::partitioning::QbvhStorage;
+use crate::partitioning::{GenericQbvh, Qbvh};
+use crate::shape::trimesh_storage::TriMeshStorage;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
-#[cfg(feature = "dim2")]
-use crate::transformation::ear_clipping::triangulate_ear_clipping;
-use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::HashablePartialEq;
+
+use crate::utils::{Array1, DefaultStorage, HashablePartialEq};
 #[cfg(feature = "dim3")]
-use {crate::shape::Cuboid, crate::utils::SortedPair};
+use {crate::shape::Cuboid, crate::shape::HeightFieldStorage, crate::utils::SortedPair};
+
+#[cfg(feature = "std")]
+use {
+    crate::shape::composite_shape::SimdCompositeShape,
+    crate::utils::hashmap::{Entry, HashMap},
+    std::collections::HashSet,
+};
+
+#[cfg(all(feature = "dim2", feature = "std"))]
+use crate::transformation::ear_clipping::triangulate_ear_clipping;
+
+#[cfg(feature = "cuda")]
+use crate::utils::{CudaStorage, CudaStoragePtr};
+#[cfg(all(feature = "std", feature = "cuda"))]
+use {crate::utils::CudaArray1, cust::error::CudaResult};
 
 /// Indicated an inconsistency in the topology of a triangle mesh.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -28,6 +40,7 @@ pub enum TopologyError {
     },
 }
 
+#[cfg(feature = "std")]
 impl std::fmt::Display for TopologyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -52,52 +65,88 @@ impl std::error::Error for TopologyError {}
 /// point on the triangle, as described in the paper:
 /// "Signed distance computation using the angle weighted pseudonormal", Baerentzen, et al.
 /// DOI: 10.1109/TVCG.2005.49
-#[derive(Clone)]
+#[derive(Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[repr(C)] // Needed for Cuda.
 #[cfg(feature = "dim3")]
-pub struct TriMeshPseudoNormals {
+pub struct TriMeshPseudoNormals<Storage: TriMeshStorage> {
     /// The pseudo-normals of the vertices.
-    pub vertices_pseudo_normal: Vec<Vector<Real>>,
+    pub vertices_pseudo_normal: Storage::ArrayVector,
     /// The pseudo-normals of the edges.
-    pub edges_pseudo_normal: HashMap<SortedPair<u32>, Vector<Real>>,
+    pub edges_pseudo_normal: Storage::ArrayVectorTriple,
 }
 
-#[cfg(feature = "dim3")]
-impl Default for TriMeshPseudoNormals {
-    fn default() -> Self {
-        Self {
-            vertices_pseudo_normal: vec![],
-            edges_pseudo_normal: Default::default(),
+#[cfg(all(feature = "dim3", feature = "std", feature = "cuda"))]
+impl TriMeshPseudoNormals<CudaStorage> {
+    /// Returns the heightfield usable from within a CUDA kernel.
+    fn as_device_ptr(&self) -> TriMeshPseudoNormals<CudaStoragePtr> {
+        TriMeshPseudoNormals {
+            vertices_pseudo_normal: self.vertices_pseudo_normal.as_device_ptr(),
+            edges_pseudo_normal: self.edges_pseudo_normal.as_device_ptr(),
         }
     }
 }
 
+#[cfg(all(feature = "dim3", feature = "std", feature = "cuda"))]
+impl TriMeshPseudoNormals<DefaultStorage> {
+    fn to_cuda(&self) -> CudaResult<TriMeshPseudoNormals<CudaStorage>> {
+        Ok(TriMeshPseudoNormals {
+            vertices_pseudo_normal: CudaArray1::new(&self.vertices_pseudo_normal)?,
+            edges_pseudo_normal: CudaArray1::new(&self.edges_pseudo_normal)?,
+        })
+    }
+}
+
 /// The connected-components of a triangle mesh.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct TriMeshConnectedComponents {
+#[repr(C)] // Needed for Cuda.
+pub struct TriMeshConnectedComponents<Storage: TriMeshStorage> {
     /// The `face_colors[i]` gives the connected-component index
     /// of the i-th face.
-    pub face_colors: Vec<u32>,
+    pub face_colors: Storage::ArrayU32,
     /// The set of faces grouped by connected components.
-    pub grouped_faces: Vec<u32>,
+    pub grouped_faces: Storage::ArrayU32,
     /// The range of connected components. `self.grouped_faces[self.ranges[i]..self.ranges[i + 1]]`
     /// contains the indices of all the faces part of the i-th connected component.
-    pub ranges: Vec<usize>,
+    pub ranges: Storage::ArrayUsize,
 }
 
-impl TriMeshConnectedComponents {
+impl<Storage: TriMeshStorage> TriMeshConnectedComponents<Storage> {
     /// The total number of connected components.
     pub fn num_connected_components(&self) -> usize {
         self.ranges.len() - 1
+    }
+}
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl TriMeshConnectedComponents<CudaStorage> {
+    /// Returns the heightfield usable from within a CUDA kernel.
+    fn as_device_ptr(&self) -> TriMeshConnectedComponents<CudaStoragePtr> {
+        TriMeshConnectedComponents {
+            face_colors: self.face_colors.as_device_ptr(),
+            grouped_faces: self.grouped_faces.as_device_ptr(),
+            ranges: self.ranges.as_device_ptr(),
+        }
+    }
+}
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl TriMeshConnectedComponents<DefaultStorage> {
+    fn to_cuda(&self) -> CudaResult<TriMeshConnectedComponents<CudaStorage>> {
+        Ok(TriMeshConnectedComponents {
+            face_colors: CudaArray1::new(&self.face_colors)?,
+            grouped_faces: CudaArray1::new(&self.grouped_faces)?,
+            ranges: CudaArray1::new(&self.ranges)?,
+        })
     }
 }
 
@@ -108,6 +157,8 @@ impl TriMeshConnectedComponents {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+#[repr(C)] // Needed for Cuda.
 pub struct TopoVertex {
     /// One of the half-edge with this vertex as endpoint.
     pub half_edge: u32,
@@ -120,6 +171,8 @@ pub struct TopoVertex {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+#[repr(C)] // Needed for Cuda.
 pub struct TopoFace {
     /// The half-edge adjascent to this face, whith a starting point equal
     /// to the first point of this face.
@@ -133,6 +186,8 @@ pub struct TopoFace {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+#[repr(C)] // Needed for Cuda.
 pub struct TopoHalfEdge {
     /// The next half-edge.
     pub next: u32,
@@ -147,22 +202,34 @@ pub struct TopoHalfEdge {
 }
 
 /// The half-edge topology information of a triangle mesh.
-#[derive(Clone, Default)]
+#[derive(Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct TriMeshTopology {
+#[repr(C)] // Needed for Cuda.
+pub struct TriMeshTopology<Storage: TriMeshStorage> {
     /// The vertices of this half-edge representation.
-    pub vertices: Vec<TopoVertex>,
+    pub vertices: Storage::ArrayTopoVertex,
     /// The faces of this half-edge representation.
-    pub faces: Vec<TopoFace>,
+    pub faces: Storage::ArrayTopoFace,
     /// The half-edges of this half-edge representation.
-    pub half_edges: Vec<TopoHalfEdge>,
+    pub half_edges: Storage::ArrayTopoHalfEdge,
 }
 
-impl TriMeshTopology {
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl TriMeshTopology<CudaStorage> {
+    fn as_device_ptr(&self) -> TriMeshTopology<CudaStoragePtr> {
+        TriMeshTopology {
+            vertices: self.vertices.as_device_ptr(),
+            faces: self.faces.as_device_ptr(),
+            half_edges: self.half_edges.as_device_ptr(),
+        }
+    }
+}
+
+impl<Storage: TriMeshStorage> TriMeshTopology<Storage> {
     #[cfg(feature = "dim3")]
     pub(crate) fn face_half_edges_ids(&self, fid: u32) -> [u32; 3] {
         let first_half_edge = self.faces[fid as usize].half_edge;
@@ -177,6 +244,17 @@ impl TriMeshTopology {
     }
 }
 
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl TriMeshTopology<DefaultStorage> {
+    fn to_cuda(&self) -> CudaResult<TriMeshTopology<CudaStorage>> {
+        Ok(TriMeshTopology {
+            vertices: CudaArray1::new(&self.vertices)?,
+            faces: CudaArray1::new(&self.faces)?,
+            half_edges: CudaArray1::new(&self.half_edges)?,
+        })
+    }
+}
+
 bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[cfg_attr(
@@ -184,6 +262,7 @@ bitflags::bitflags! {
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
     )]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+    #[repr(C)] // Needed for Cuda.
     #[derive(Default)]
     /// The status of the cell of an heightfield.
     pub struct TriMeshFlags: u8 {
@@ -221,28 +300,114 @@ bitflags::bitflags! {
     }
 }
 
-#[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde-serialize",
+    serde(bound(
+        serialize = "<Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: serde::Serialize, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: serde::Serialize, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: serde::Serialize,\
+                     Storage::ArrayTopoVertex: serde::Serialize,\
+                     Storage::ArrayTopoFace: serde::Serialize,\
+                     Storage::ArrayTopoHalfEdge: serde::Serialize,\
+                     Storage::ArrayU32: serde::Serialize,\
+                     Storage::ArrayUsize: serde::Serialize,\
+                     Storage::ArrayVector: serde::Serialize,\
+                     Storage::ArrayPoint: serde::Serialize,\
+                     Storage::ArrayIdx: serde::Serialize,\
+                     Storage::ArrayVectorTriple: serde::Serialize",
+        deserialize = "<Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: serde::Deserialize<'de>, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: serde::Deserialize<'de>, \
+                     <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: serde::Deserialize<'de>,\
+                     Storage::ArrayTopoVertex: serde::Deserialize<'de>,\
+                     Storage::ArrayTopoFace: serde::Deserialize<'de>,\
+                     Storage::ArrayTopoHalfEdge: serde::Deserialize<'de>,\
+                     Storage::ArrayU32: serde::Deserialize<'de>,\
+                     Storage::ArrayUsize: serde::Deserialize<'de>,\
+                     Storage::ArrayVector: serde::Deserialize<'de>,\
+                     Storage::ArrayPoint: serde::Deserialize<'de>,\
+                     Storage::ArrayIdx: serde::Deserialize<'de>,\
+                     Storage::ArrayVectorTriple: serde::Deserialize<'de>",
+    ))
+)]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[repr(C)] // Needed for Cuda.
 /// A triangle mesh.
-pub struct TriMesh {
-    qbvh: QBVH<u32>,
-    vertices: Vec<Point<Real>>,
-    indices: Vec<[u32; 3]>,
+pub struct GenericTriMesh<Storage: TriMeshStorage> {
+    qbvh: GenericQbvh<u32, Storage::QbvhStorage>,
+    vertices: Storage::ArrayPoint,
+    indices: Storage::ArrayIdx,
     #[cfg(feature = "dim3")]
-    pub(crate) pseudo_normals: Option<TriMeshPseudoNormals>,
-    topology: Option<TriMeshTopology>,
-    connected_components: Option<TriMeshConnectedComponents>,
+    pub(crate) pseudo_normals: Option<TriMeshPseudoNormals<Storage>>,
+    topology: Option<TriMeshTopology<Storage>>,
+    connected_components: Option<TriMeshConnectedComponents<Storage>>,
     flags: TriMeshFlags,
 }
 
+/// A triangle-mesh.
+pub type TriMesh = GenericTriMesh<DefaultStorage>;
+#[cfg(feature = "cuda")]
+/// A triangle-mesh stored on CUDA memory.
+pub type CudaTriMesh = GenericTriMesh<CudaStorage>;
+#[cfg(feature = "cuda")]
+/// A triangle-mesh accessible from CUDA kernels.
+pub type CudaTriMeshPtr = GenericTriMesh<CudaStoragePtr>;
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl CudaTriMesh {
+    /// Returns the heightfield usable from within a CUDA kernel.
+    pub fn as_device_ptr(&self) -> CudaTriMeshPtr {
+        GenericTriMesh {
+            qbvh: self.qbvh.as_device_ptr(),
+            vertices: self.vertices.as_device_ptr(),
+            indices: self.indices.as_device_ptr(),
+            #[cfg(feature = "dim3")]
+            pseudo_normals: self.pseudo_normals.as_ref().map(|pn| pn.as_device_ptr()),
+            topology: self.topology.as_ref().map(|topo| topo.as_device_ptr()),
+            connected_components: self
+                .connected_components
+                .as_ref()
+                .map(|cc| cc.as_device_ptr()),
+            flags: self.flags,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
     pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
+    }
+
+    /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
+    #[cfg(feature = "cuda")]
+    pub fn to_cuda(&self) -> CudaResult<CudaTriMesh> {
+        Ok(CudaTriMesh {
+            qbvh: self.qbvh.to_cuda()?,
+            vertices: CudaArray1::new(&self.vertices)?,
+            indices: CudaArray1::new(&self.indices)?,
+            #[cfg(feature = "dim3")]
+            pseudo_normals: self
+                .pseudo_normals
+                .as_ref()
+                .map(|pn| pn.to_cuda())
+                .transpose()?,
+            topology: self
+                .topology
+                .as_ref()
+                .map(|topo| topo.to_cuda())
+                .transpose()?,
+            connected_components: self
+                .connected_components
+                .as_ref()
+                .map(|cc| cc.to_cuda())
+                .transpose()?,
+            flags: self.flags,
+        })
     }
 
     /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
@@ -257,7 +422,7 @@ impl TriMesh {
         );
 
         let mut result = Self {
-            qbvh: QBVH::new(),
+            qbvh: Qbvh::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
@@ -270,16 +435,11 @@ impl TriMesh {
         let _ = result.set_flags(flags);
 
         if result.qbvh.raw_nodes().is_empty() {
-            // The QBVH hasn’t been computed by `.set_flags`.
+            // The Qbvh hasn’t been computed by `.set_flags`.
             result.rebuild_qbvh();
         }
 
         result
-    }
-
-    /// The flags of this triangle mesh.
-    pub fn flags(&self) -> TriMeshFlags {
-        self.flags
     }
 
     /// Sets the flags of this triangle mesh, controlling its optional associated data.
@@ -351,10 +511,11 @@ impl TriMesh {
                 .vertices_pseudo_normal
                 .iter_mut()
                 .for_each(|n| *n = transform * *n);
-            pseudo_normals
-                .edges_pseudo_normal
-                .values_mut()
-                .for_each(|n| *n = transform * *n);
+            pseudo_normals.edges_pseudo_normal.iter_mut().for_each(|n| {
+                n[0] = transform * n[0];
+                n[1] = transform * n[1];
+                n[2] = transform * n[2];
+            });
         }
     }
 
@@ -370,9 +531,14 @@ impl TriMesh {
                 n.component_mul_assign(scale);
                 let _ = n.try_normalize_mut(0.0);
             });
-            pn.edges_pseudo_normal.values_mut().for_each(|n| {
-                n.component_mul_assign(scale);
-                let _ = n.try_normalize_mut(0.0);
+            pn.edges_pseudo_normal.iter_mut().for_each(|n| {
+                n[0].component_mul_assign(scale);
+                n[1].component_mul_assign(scale);
+                n[2].component_mul_assign(scale);
+
+                let _ = n[0].try_normalize_mut(0.0);
+                let _ = n[1].try_normalize_mut(0.0);
+                let _ = n[2].try_normalize_mut(0.0);
             });
         }
 
@@ -411,66 +577,6 @@ impl TriMesh {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
     }
 
-    /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> AABB {
-        self.qbvh.root_aabb().transform_by(pos)
-    }
-
-    /// Gets the local axis-aligned bounding box of this triangle mesh.
-    pub fn local_aabb(&self) -> &AABB {
-        self.qbvh.root_aabb()
-    }
-
-    /// The acceleration structure used by this triangle-mesh.
-    pub fn qbvh(&self) -> &QBVH<u32> {
-        &self.qbvh
-    }
-
-    /// The number of triangles forming this mesh.
-    pub fn num_triangles(&self) -> usize {
-        self.indices.len()
-    }
-
-    /// Does the given feature ID identify a backface of this trimesh?
-    pub fn is_backface(&self, feature: FeatureId) -> bool {
-        if let FeatureId::Face(i) = feature {
-            i >= self.indices.len() as u32
-        } else {
-            false
-        }
-    }
-
-    /// An iterator through all the triangles of this mesh.
-    pub fn triangles(&self) -> impl ExactSizeIterator<Item = Triangle> + '_ {
-        self.indices.iter().map(move |ids| {
-            Triangle::new(
-                self.vertices[ids[0] as usize],
-                self.vertices[ids[1] as usize],
-                self.vertices[ids[2] as usize],
-            )
-        })
-    }
-
-    /// Get the `i`-th triangle of this mesh.
-    pub fn triangle(&self, i: u32) -> Triangle {
-        let idx = self.indices[i as usize];
-        Triangle::new(
-            self.vertices[idx[0] as usize],
-            self.vertices[idx[1] as usize],
-            self.vertices[idx[2] as usize],
-        )
-    }
-
-    /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<Real>] {
-        &self.vertices[..]
-    }
-
-    /// The index buffer of this mesh.
-    pub fn indices(&self) -> &[[u32; 3]] {
-        &self.indices
-    }
-
     /// A flat view of the index buffer of this mesh.
     pub fn flat_indices(&self) -> &[u32] {
         unsafe {
@@ -478,22 +584,6 @@ impl TriMesh {
             let data = self.indices.as_ptr() as *const u32;
             std::slice::from_raw_parts(data, len)
         }
-    }
-
-    /// Returns the topology information of this trimesh, if it has been computed.
-    pub fn topology(&self) -> Option<&TriMeshTopology> {
-        self.topology.as_ref()
-    }
-
-    /// Returns the connected-component information of this trimesh, if it has been computed.
-    pub fn connected_components(&self) -> Option<&TriMeshConnectedComponents> {
-        self.connected_components.as_ref()
-    }
-
-    /// The pseudo-normals of this triangle mesh, if they have been computed.
-    #[cfg(feature = "dim3")]
-    pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
-        self.pseudo_normals.as_ref()
     }
 
     fn rebuild_qbvh(&mut self) {
@@ -516,7 +606,7 @@ impl TriMesh {
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
-        // NOTE: the QBVH, and connected components are not changed by this operation.
+        // NOTE: the Qbvh, and connected components are not changed by this operation.
         //       The pseudo-normals just have to be flipped.
         //       The topology must be recomputed.
 
@@ -526,13 +616,15 @@ impl TriMesh {
                 *n = -*n;
             }
 
-            for n in pseudo_normals.edges_pseudo_normal.values_mut() {
-                *n = -*n;
+            for n in pseudo_normals.edges_pseudo_normal.iter_mut() {
+                n[0] = -n[0];
+                n[1] = -n[1];
+                n[2] = -n[2];
             }
         }
 
         if self.flags.contains(TriMeshFlags::HALF_EDGE_TOPOLOGY) {
-            // TODO: this could be done more efficiently.
+            // TODO: this could be done more efficiently.
             let _ = self.compute_topology(false, false);
         }
     }
@@ -681,6 +773,22 @@ impl TriMesh {
             }
         }
 
+        let edges_pseudo_normal = self
+            .indices()
+            .iter()
+            .map(|idx| {
+                let e0 = SortedPair::new(idx[0], idx[1]);
+                let e1 = SortedPair::new(idx[1], idx[2]);
+                let e2 = SortedPair::new(idx[2], idx[0]);
+                let default = Vector::zeros();
+                [
+                    edges_pseudo_normal.get(&e0).copied().unwrap_or(default),
+                    edges_pseudo_normal.get(&e1).copied().unwrap_or(default),
+                    edges_pseudo_normal.get(&e2).copied().unwrap_or(default),
+                ]
+            })
+            .collect();
+
         self.pseudo_normals = Some(TriMeshPseudoNormals {
             vertices_pseudo_normal,
             edges_pseudo_normal,
@@ -735,7 +843,7 @@ impl TriMesh {
             self.delete_bad_topology_triangles();
         }
 
-        let mut topology = TriMeshTopology::default();
+        let mut topology = TriMeshTopology::<DefaultStorage>::default();
         let mut half_edge_map = HashMap::default();
 
         topology.vertices.resize(
@@ -878,6 +986,89 @@ impl TriMesh {
             assert!(he.vertex == idx[0] || he.vertex == idx[1] || he.vertex == idx[2]);
         }
     }
+
+    /// An iterator through all the triangles of this mesh.
+    pub fn triangles(&self) -> impl ExactSizeIterator<Item = Triangle> + '_ {
+        self.indices.iter().map(move |ids| {
+            Triangle::new(
+                self.vertices[ids[0] as usize],
+                self.vertices[ids[1] as usize],
+                self.vertices[ids[2] as usize],
+            )
+        })
+    }
+}
+
+impl<Storage: TriMeshStorage> GenericTriMesh<Storage> {
+    /// The flags of this triangle mesh.
+    pub fn flags(&self) -> TriMeshFlags {
+        self.flags
+    }
+
+    /// Compute the axis-aligned bounding box of this triangle mesh.
+    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+        self.qbvh.root_aabb().transform_by(pos)
+    }
+
+    /// Gets the local axis-aligned bounding box of this triangle mesh.
+    pub fn local_aabb(&self) -> &Aabb {
+        self.qbvh.root_aabb()
+    }
+
+    /// The acceleration structure used by this triangle-mesh.
+    pub fn qbvh(&self) -> &GenericQbvh<u32, Storage::QbvhStorage> {
+        &self.qbvh
+    }
+
+    /// The number of triangles forming this mesh.
+    pub fn num_triangles(&self) -> usize {
+        self.indices.len()
+    }
+
+    /// Does the given feature ID identify a backface of this trimesh?
+    pub fn is_backface(&self, feature: FeatureId) -> bool {
+        if let FeatureId::Face(i) = feature {
+            i >= self.indices.len() as u32
+        } else {
+            false
+        }
+    }
+
+    /// Get the `i`-th triangle of this mesh.
+    pub fn triangle(&self, i: u32) -> Triangle {
+        let idx = self.indices[i as usize];
+        Triangle::new(
+            self.vertices[idx[0] as usize],
+            self.vertices[idx[1] as usize],
+            self.vertices[idx[2] as usize],
+        )
+    }
+
+    /// The vertex buffer of this mesh.
+    pub fn vertices(&self) -> &Storage::ArrayPoint {
+        &self.vertices
+    }
+
+    /// The index buffer of this mesh.
+    pub fn indices(&self) -> &Storage::ArrayIdx {
+        &self.indices
+    }
+
+    /// Returns the topology information of this trimesh, if it has been computed.
+    pub fn topology(&self) -> Option<&TriMeshTopology<Storage>> {
+        self.topology.as_ref()
+    }
+
+    /// Returns the connected-component information of this trimesh, if it has been computed.
+    pub fn connected_components(&self) -> Option<&TriMeshConnectedComponents<Storage>> {
+        self.connected_components.as_ref()
+    }
+
+    /// The pseudo-normals of this triangle mesh, if they have been computed.
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals<Storage>> {
+        self.pseudo_normals.as_ref()
+    }
 }
 
 /*
@@ -928,18 +1119,16 @@ impl RayCast for TriMesh {
 */
 
 #[cfg(feature = "dim3")]
-impl<Heights, Status> From<crate::shape::GenericHeightField<Heights, Status>> for TriMesh
-where
-    Heights: crate::shape::HeightFieldStorage<Item = Real>,
-    Status: crate::shape::HeightFieldStorage<Item = crate::shape::HeightFieldCellStatus>,
-{
-    fn from(heightfield: crate::shape::GenericHeightField<Heights, Status>) -> Self {
+#[cfg(feature = "std")]
+impl<Storage: HeightFieldStorage> From<crate::shape::GenericHeightField<Storage>> for TriMesh {
+    fn from(heightfield: crate::shape::GenericHeightField<Storage>) -> Self {
         let (vtx, idx) = heightfield.to_trimesh();
         TriMesh::new(vtx, idx)
     }
 }
 
 #[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
 impl From<Cuboid> for TriMesh {
     fn from(cuboid: Cuboid) -> Self {
         let (vtx, idx) = cuboid.to_trimesh();
@@ -947,20 +1136,22 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
+#[cfg(feature = "std")]
 impl SimdCompositeShape for TriMesh {
     fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.triangle(i);
         f(None, &tri)
     }
 
-    fn qbvh(&self) -> &QBVH<u32> {
+    fn qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
     }
 }
 
-impl TypedSimdCompositeShape for TriMesh {
+impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage> {
     type PartShape = Triangle;
     type PartId = u32;
+    type QbvhStorage = Storage::QbvhStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -978,7 +1169,181 @@ impl TypedSimdCompositeShape for TriMesh {
         f(None, &tri)
     }
 
-    fn typed_qbvh(&self) -> &QBVH<u32> {
+    fn typed_qbvh(&self) -> &GenericQbvh<u32, Self::QbvhStorage> {
         &self.qbvh
     }
+}
+
+/*******************************************
+ *
+ * BOILERPLACE Copy/Clone implementations
+ *
+ *
+ ******************************************/
+#[cfg(feature = "dim3")]
+impl<Storage> Clone for TriMeshPseudoNormals<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayVector: Clone,
+    Storage::ArrayVectorTriple: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            vertices_pseudo_normal: self.vertices_pseudo_normal.clone(),
+            edges_pseudo_normal: self.edges_pseudo_normal.clone(),
+        }
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl<Storage> Copy for TriMeshPseudoNormals<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayVector: Copy,
+    Storage::ArrayVectorTriple: Copy,
+{
+}
+
+#[cfg(feature = "dim3")]
+#[cfg(feature = "cuda")]
+unsafe impl<Storage> cust_core::DeviceCopy for TriMeshPseudoNormals<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayVector: cust_core::DeviceCopy + Copy,
+    Storage::ArrayVectorTriple: cust_core::DeviceCopy + Copy,
+{
+}
+
+impl<Storage> Clone for TriMeshConnectedComponents<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayU32: Clone,
+    Storage::ArrayUsize: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            face_colors: self.face_colors.clone(),
+            grouped_faces: self.grouped_faces.clone(),
+            ranges: self.ranges.clone(),
+        }
+    }
+}
+
+impl<Storage> Copy for TriMeshConnectedComponents<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayU32: Copy,
+    Storage::ArrayUsize: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<Storage> cust_core::DeviceCopy for TriMeshConnectedComponents<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayU32: cust_core::DeviceCopy + Copy,
+    Storage::ArrayUsize: cust_core::DeviceCopy + Copy,
+{
+}
+
+impl<Storage> Clone for TriMeshTopology<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayTopoVertex: Clone,
+    Storage::ArrayTopoFace: Clone,
+    Storage::ArrayTopoHalfEdge: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            vertices: self.vertices.clone(),
+            faces: self.faces.clone(),
+            half_edges: self.half_edges.clone(),
+        }
+    }
+}
+
+impl<Storage> Copy for TriMeshTopology<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayTopoVertex: Copy,
+    Storage::ArrayTopoFace: Copy,
+    Storage::ArrayTopoHalfEdge: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<Storage> cust_core::DeviceCopy for TriMeshTopology<Storage>
+where
+    Storage: TriMeshStorage,
+    Storage::ArrayTopoVertex: cust_core::DeviceCopy + Copy,
+    Storage::ArrayTopoFace: cust_core::DeviceCopy + Copy,
+    Storage::ArrayTopoHalfEdge: cust_core::DeviceCopy + Copy,
+{
+}
+
+impl<Storage> Clone for GenericTriMesh<Storage>
+where
+    Storage: TriMeshStorage,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: Clone,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: Clone,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: Clone,
+    Storage::ArrayTopoVertex: Clone,
+    Storage::ArrayTopoFace: Clone,
+    Storage::ArrayTopoHalfEdge: Clone,
+    Storage::ArrayU32: Clone,
+    Storage::ArrayUsize: Clone,
+    Storage::ArrayVector: Clone,
+    Storage::ArrayPoint: Clone,
+    Storage::ArrayIdx: Clone,
+    Storage::ArrayVectorTriple: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            qbvh: self.qbvh.clone(),
+            vertices: self.vertices.clone(),
+            indices: self.indices.clone(),
+            #[cfg(feature = "dim3")]
+            pseudo_normals: self.pseudo_normals.clone(),
+            topology: self.topology.clone(),
+            connected_components: self.connected_components.clone(),
+            flags: self.flags.clone(),
+        }
+    }
+}
+
+impl<Storage> Copy for GenericTriMesh<Storage>
+where
+    Storage: TriMeshStorage,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: Copy,
+    Storage::ArrayTopoVertex: Copy,
+    Storage::ArrayTopoFace: Copy,
+    Storage::ArrayTopoHalfEdge: Copy,
+    Storage::ArrayU32: Copy,
+    Storage::ArrayUsize: Copy,
+    Storage::ArrayVector: Copy,
+    Storage::ArrayPoint: Copy,
+    Storage::ArrayIdx: Copy,
+    Storage::ArrayVectorTriple: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<Storage> cust_core::DeviceCopy for GenericTriMesh<Storage>
+where
+    Storage: TriMeshStorage,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::Nodes: cust_core::DeviceCopy + Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayU32: cust_core::DeviceCopy + Copy,
+    <Storage::QbvhStorage as QbvhStorage<u32>>::ArrayProxies: cust_core::DeviceCopy + Copy,
+    Storage::ArrayTopoVertex: cust_core::DeviceCopy + Copy,
+    Storage::ArrayTopoFace: cust_core::DeviceCopy + Copy,
+    Storage::ArrayTopoHalfEdge: cust_core::DeviceCopy + Copy,
+    Storage::ArrayU32: cust_core::DeviceCopy + Copy,
+    Storage::ArrayUsize: cust_core::DeviceCopy + Copy,
+    Storage::ArrayVector: cust_core::DeviceCopy + Copy,
+    Storage::ArrayPoint: cust_core::DeviceCopy + Copy,
+    Storage::ArrayIdx: cust_core::DeviceCopy + Copy,
+    Storage::ArrayVectorTriple: cust_core::DeviceCopy + Copy,
+{
 }

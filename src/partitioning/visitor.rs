@@ -1,5 +1,5 @@
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
-use crate::partitioning::qbvh::QBVHNode;
+use crate::partitioning::qbvh::QbvhNode;
 use crate::partitioning::SimdNodeIndex;
 
 /// The next action to be taken by a BVH traversal algorithm after having visited a node with some data.
@@ -108,19 +108,19 @@ pub trait ParallelSimdVisitor<LeafData>: Sync {
     fn visit(
         &self,
         node_id: SimdNodeIndex,
-        bv: &QBVHNode,
+        bv: &QbvhNode,
         data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
     ) -> SimdVisitStatus;
 }
 
 impl<F, LeafData> ParallelSimdVisitor<LeafData> for F
 where
-    F: Sync + Fn(&QBVHNode, Option<[Option<&LeafData>; SIMD_WIDTH]>) -> SimdVisitStatus,
+    F: Sync + Fn(&QbvhNode, Option<[Option<&LeafData>; SIMD_WIDTH]>) -> SimdVisitStatus,
 {
     fn visit(
         &self,
         _node_id: SimdNodeIndex,
-        node: &QBVHNode,
+        node: &QbvhNode,
         data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
     ) -> SimdVisitStatus {
         (self)(node, data)
@@ -141,10 +141,10 @@ pub trait ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>: Sync {
     fn visit(
         &self,
         left_node_id: SimdNodeIndex,
-        left_node: &QBVHNode,
+        left_node: &QbvhNode,
         left_data: Option<[Option<&LeafData1>; SIMD_WIDTH]>,
         right_node_id: SimdNodeIndex,
-        right_node: &QBVHNode,
+        right_node: &QbvhNode,
         right_data: Option<[Option<&LeafData2>; SIMD_WIDTH]>,
         visitor_data: Self::Data,
     ) -> (SimdSimultaneousVisitStatus, Self::Data);

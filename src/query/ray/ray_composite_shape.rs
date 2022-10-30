@@ -1,8 +1,9 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
 use crate::shape::{Compound, FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};
+use crate::utils::DefaultStorage;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 impl RayCast for TriMesh {
@@ -117,10 +118,10 @@ impl<'a, S> RayCompositeShapeToiBestFirstVisitor<'a, S> {
     }
 }
 
-impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB>
+impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAabb>
     for RayCompositeShapeToiBestFirstVisitor<'a, S>
 where
-    S: TypedSimdCompositeShape,
+    S: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     type Result = (S::PartId, Real);
 
@@ -128,7 +129,7 @@ where
     fn visit(
         &mut self,
         best: Real,
-        aabb: &SimdAABB,
+        aabb: &SimdAabb,
         data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         let (hit, toi) = aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_toi));
@@ -197,10 +198,10 @@ impl<'a, S> RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
     }
 }
 
-impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAABB>
+impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAabb>
     for RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S>
 where
-    S: TypedSimdCompositeShape,
+    S: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
     type Result = (S::PartId, RayIntersection);
 
@@ -208,7 +209,7 @@ where
     fn visit(
         &mut self,
         best: Real,
-        aabb: &SimdAABB,
+        aabb: &SimdAabb,
         data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         let (hit, toi) = aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_toi));

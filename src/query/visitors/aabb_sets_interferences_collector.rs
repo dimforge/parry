@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Matrix, Real};
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
-pub struct AABBSetsInterferencesCollector<'a, T: 'a> {
+pub struct AabbSetsInterferencesCollector<'a, T: 'a> {
     /// The transform from the local-space of the second bounding volumes to the local space of the first.
     pub ls_m2: &'a Isometry<Real>,
     /// The absolute value of the rotation matrix representing `ls_m2.rotation`.
@@ -10,22 +10,22 @@ pub struct AABBSetsInterferencesCollector<'a, T: 'a> {
     pub ls_m2_abs_rot: &'a Matrix<Real>,
     /// A tolerance applied to the interference tests.
     ///
-    /// AABB pairs closer than `tolerance` will be reported as intersecting.
+    /// Aabb pairs closer than `tolerance` will be reported as intersecting.
     pub tolerence: Real,
     /// The data contained by the nodes with bounding volumes intersecting `self.bv`.
     pub collector: &'a mut Vec<(T, T)>,
 }
 
-impl<'a, T> AABBSetsInterferencesCollector<'a, T> {
-    /// Creates a new `AABBSetsInterferencesCollector`.
+impl<'a, T> AabbSetsInterferencesCollector<'a, T> {
+    /// Creates a new `AabbSetsInterferencesCollector`.
     #[inline]
     pub fn new(
         tolerence: Real,
         ls_m2: &'a Isometry<Real>,
         ls_m2_abs_rot: &'a Matrix<Real>,
         collector: &'a mut Vec<(T, T)>,
-    ) -> AABBSetsInterferencesCollector<'a, T> {
-        AABBSetsInterferencesCollector {
+    ) -> AabbSetsInterferencesCollector<'a, T> {
+        AabbSetsInterferencesCollector {
             tolerence,
             ls_m2,
             ls_m2_abs_rot,
@@ -34,16 +34,16 @@ impl<'a, T> AABBSetsInterferencesCollector<'a, T> {
     }
 }
 
-// impl<'a, T: Clone> SimultaneousVisitor<T, AABB> for AABBSetsInterferencesCollector<'a, T> {
+// impl<'a, T: Clone> SimultaneousVisitor<T, Aabb> for AabbSetsInterferencesCollector<'a, T> {
 //     #[inline]
 //     fn visit(
 //         &mut self,
-//         left_bv: &AABB,
+//         left_bv: &Aabb,
 //         left_data: Option<&T>,
-//         right_bv: &AABB,
+//         right_bv: &Aabb,
 //         right_data: Option<&T>,
 //     ) -> VisitStatus {
-//         let ls_right_bv = AABB::from_half_extents(
+//         let ls_right_bv = Aabb::from_half_extents(
 //             self.ls_m2 * right_bv.center(),
 //             self.ls_m2_abs_rot * right_bv.half_extents() + Vector::repeat(self.tolerence),
 //         );

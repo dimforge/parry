@@ -1,6 +1,6 @@
 use crate::common::{generate, generate_trimesh_around_origin, unref};
 use na::Isometry3;
-use parry3d::bounding_volume::{BoundingSphere, AABB};
+use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::query::{Ray, RayCast};
 use parry3d::shape::{
     Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, TriMesh, Triangle,
@@ -67,7 +67,7 @@ bench_method!(
 bench_method!(
     bench_ray_against_aabb,
     cast_ray,
-    a: AABB,
+    a: Aabb,
     pos: Isometry3<f32>,
     ray: Ray,
     max_toi: f32,

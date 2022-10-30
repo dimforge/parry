@@ -2,14 +2,15 @@
 //! Shape composed from the union of primitives.
 //!
 
-use crate::bounding_volume::{BoundingSphere, BoundingVolume, AABB};
+use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::math::{Isometry, Real};
-use crate::partitioning::QBVH;
+use crate::partitioning::Qbvh;
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
+use crate::utils::DefaultStorage;
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -20,9 +21,9 @@ use crate::transformation::hertel_mehlhorn;
 #[derive(Clone)]
 pub struct Compound {
     shapes: Vec<(Isometry<Real>, SharedShape)>,
-    qbvh: QBVH<u32>,
-    aabbs: Vec<AABB>,
-    aabb: AABB,
+    qbvh: Qbvh<u32>,
+    aabbs: Vec<Aabb>,
+    aabb: Aabb,
 }
 
 impl Compound {
@@ -37,7 +38,7 @@ impl Compound {
         );
         let mut aabbs = Vec::new();
         let mut leaves = Vec::new();
-        let mut aabb = AABB::new_invalid();
+        let mut aabb = Aabb::new_invalid();
 
         for (i, &(ref delta, ref shape)) in shapes.iter().enumerate() {
             let bv = shape.compute_aabb(delta);
@@ -51,7 +52,7 @@ impl Compound {
             }
         }
 
-        let mut qbvh = QBVH::new();
+        let mut qbvh = Qbvh::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
         qbvh.clear_and_rebuild(leaves.into_iter(), 0.0);
@@ -95,9 +96,9 @@ impl Compound {
         &self.shapes[..]
     }
 
-    /// The AABB of this compound in its local-space.
+    /// The Aabb of this compound in its local-space.
     #[inline]
-    pub fn local_aabb(&self) -> &AABB {
+    pub fn local_aabb(&self) -> &Aabb {
         &self.aabb
     }
 
@@ -107,15 +108,15 @@ impl Compound {
         self.aabb.bounding_sphere()
     }
 
-    /// The shapes AABBs.
+    /// The shapes Aabbs.
     #[inline]
-    pub fn aabbs(&self) -> &[AABB] {
+    pub fn aabbs(&self) -> &[Aabb] {
         &self.aabbs[..]
     }
 
     /// The acceleration structure used by this compound shape.
     #[inline]
-    pub fn qbvh(&self) -> &QBVH<u32> {
+    pub fn qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
     }
 }
@@ -129,7 +130,7 @@ impl SimdCompositeShape for Compound {
     }
 
     #[inline]
-    fn qbvh(&self) -> &QBVH<u32> {
+    fn qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
     }
 }
@@ -137,6 +138,7 @@ impl SimdCompositeShape for Compound {
 impl TypedSimdCompositeShape for Compound {
     type PartShape = dyn Shape;
     type PartId = u32;
+    type QbvhStorage = DefaultStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
@@ -161,7 +163,7 @@ impl TypedSimdCompositeShape for Compound {
     }
 
     #[inline]
-    fn typed_qbvh(&self) -> &QBVH<u32> {
+    fn typed_qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
     }
 }

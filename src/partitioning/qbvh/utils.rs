@@ -1,9 +1,9 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real};
 
 pub fn split_indices_wrt_dim<'a>(
     indices: &'a mut [usize],
-    aabbs: &[AABB],
+    aabbs: &[Aabb],
     split_point: &Point<Real>,
     dim: usize,
     enable_fallback_split: bool,

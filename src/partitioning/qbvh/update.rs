@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingVolume, SimdAABB, AABB};
+use crate::bounding_volume::{Aabb, BoundingVolume, SimdAabb};
 #[cfg(feature = "dim3")]
 use crate::math::Vector;
 use crate::math::{Point, Real};
@@ -6,27 +6,27 @@ use crate::simd::{SimdReal, SIMD_WIDTH};
 use simba::simd::{SimdBool, SimdValue};
 use std::ops::Range;
 
-use super::{utils::split_indices_wrt_dim, IndexedData, NodeIndex, QBVHNode, QBVH};
+use super::{utils::split_indices_wrt_dim, IndexedData, NodeIndex, Qbvh, QbvhNode};
 
 #[allow(dead_code)]
-struct QBVHIncrementalBuilderStep {
+struct QbvhIncrementalBuilderStep {
     range: Range<usize>,
     parent: NodeIndex,
 }
 
 #[allow(dead_code)]
-struct QBVHIncrementalBuilder<LeafData> {
-    qbvh: QBVH<LeafData>,
-    to_insert: Vec<QBVHIncrementalBuilderStep>,
-    aabbs: Vec<AABB>,
+struct QbvhIncrementalBuilder<LeafData> {
+    qbvh: Qbvh<LeafData>,
+    to_insert: Vec<QbvhIncrementalBuilderStep>,
+    aabbs: Vec<Aabb>,
     indices: Vec<usize>,
 }
 
 #[allow(dead_code)]
-impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
+impl<LeafData: IndexedData> QbvhIncrementalBuilder<LeafData> {
     pub fn new() -> Self {
         Self {
-            qbvh: QBVH::new(),
+            qbvh: Qbvh::new(),
             to_insert: Vec::new(),
             aabbs: Vec::new(),
             indices: Vec::new(),
@@ -40,8 +40,8 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
             // Leaf case.
             if indices.len() <= 4 {
                 let id = self.qbvh.nodes.len();
-                let mut aabb = AABB::new_invalid();
-                let mut leaf_aabbs = [AABB::new_invalid(); 4];
+                let mut aabb = Aabb::new_invalid();
+                let mut leaf_aabbs = [Aabb::new_invalid(); 4];
                 let mut proxy_ids = [u32::MAX; 4];
 
                 for (k, id) in indices.iter().enumerate() {
@@ -50,8 +50,8 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
                     proxy_ids[k] = *id as u32;
                 }
 
-                let node = QBVHNode {
-                    simd_aabb: SimdAABB::from(leaf_aabbs),
+                let node = QbvhNode {
+                    simd_aabb: SimdAabb::from(leaf_aabbs),
                     children: proxy_ids,
                     parent: to_insert.parent,
                     leaf: true,
@@ -76,7 +76,7 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
             let mut variance = Vector::zeros();
 
             let denom = 1.0 / (indices.len() as Real);
-            let mut aabb = AABB::new_invalid();
+            let mut aabb = Aabb::new_invalid();
 
             for i in &*indices {
                 let coords = self.aabbs[*i].center().coords;
@@ -116,8 +116,8 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
             let (right_bottom, right_top) =
                 split_indices_wrt_dim(right, &self.aabbs, &center, subdiv_dims[1], true);
 
-            let node = QBVHNode {
-                simd_aabb: SimdAABB::new_invalid(),
+            let node = QbvhNode {
+                simd_aabb: SimdAabb::new_invalid(),
                 children: [0; 4], // Will be set after the recursive call
                 parent: to_insert.parent,
                 leaf: false,
@@ -132,19 +132,19 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
             let b = a + left_top.len();
             let c = b + right_bottom.len();
             let d = c + right_top.len();
-            self.to_insert.push(QBVHIncrementalBuilderStep {
+            self.to_insert.push(QbvhIncrementalBuilderStep {
                 range: 0..a,
                 parent: NodeIndex::new(id, 0),
             });
-            self.to_insert.push(QBVHIncrementalBuilderStep {
+            self.to_insert.push(QbvhIncrementalBuilderStep {
                 range: a..b,
                 parent: NodeIndex::new(id, 1),
             });
-            self.to_insert.push(QBVHIncrementalBuilderStep {
+            self.to_insert.push(QbvhIncrementalBuilderStep {
                 range: b..c,
                 parent: NodeIndex::new(id, 2),
             });
-            self.to_insert.push(QBVHIncrementalBuilderStep {
+            self.to_insert.push(QbvhIncrementalBuilderStep {
                 range: c..d,
                 parent: NodeIndex::new(id, 3),
             });
@@ -158,7 +158,7 @@ impl<LeafData: IndexedData> QBVHIncrementalBuilder<LeafData> {
     }
 }
 
-impl<LeafData: IndexedData> QBVH<LeafData> {
+impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Marks a piece of data as dirty so it can be updated during the next
     /// call to `self.update`.
     pub fn pre_update(&mut self, data: LeafData) {
@@ -174,7 +174,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Update all the nodes that have been marked as dirty by `self.pre_update`.
     pub fn update<F>(&mut self, aabb_builder: F, dilation_factor: Real)
     where
-        F: Fn(&LeafData) -> AABB,
+        F: Fn(&LeafData) -> Aabb,
     {
         // Loop on the dirty leaves.
         let dilation_factor = SimdReal::splat(dilation_factor);
@@ -183,15 +183,15 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
             // NOTE: this will data the case where we reach the root of the tree.
             if let Some(node) = self.nodes.get(id as usize) {
                 // Compute the new aabb.
-                let mut new_aabbs = [AABB::new_invalid(); SIMD_WIDTH];
+                let mut new_aabbs = [Aabb::new_invalid(); SIMD_WIDTH];
                 for (child_id, new_aabb) in node.children.iter().zip(new_aabbs.iter_mut()) {
                     if node.leaf {
-                        // We are in a leaf: compute the AABBs.
+                        // We are in a leaf: compute the Aabbs.
                         if let Some(proxy) = self.proxies.get(*child_id as usize) {
                             *new_aabb = aabb_builder(&proxy.data);
                         }
                     } else {
-                        // We are in an internal node: compute the children's AABBs.
+                        // We are in an internal node: compute the children's Aabbs.
                         if let Some(node) = self.nodes.get(*child_id as usize) {
                             *new_aabb = node.simd_aabb.to_merged_aabb();
                         }
@@ -199,7 +199,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                 }
 
                 let node = &mut self.nodes[id as usize];
-                let new_simd_aabb = SimdAABB::from(new_aabbs);
+                let new_simd_aabb = SimdAabb::from(new_aabbs);
                 if !node.simd_aabb.contains(&new_simd_aabb).all() {
                     node.simd_aabb = new_simd_aabb;
                     node.simd_aabb.dilate_by_factor(dilation_factor);

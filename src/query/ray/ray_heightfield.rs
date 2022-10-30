@@ -4,14 +4,10 @@ use crate::query;
 use crate::query::{Ray, RayCast, RayIntersection};
 #[cfg(feature = "dim2")]
 use crate::shape::FeatureId;
-use crate::shape::{GenericHeightField, HeightFieldCellStatus, HeightFieldStorage};
+use crate::shape::{GenericHeightField, HeightFieldStorage};
 
 #[cfg(feature = "dim2")]
-impl<Heights, Status> RayCast for GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
@@ -91,12 +87,12 @@ where
             }
 
             if curr_param >= max_t {
-                // The part of the ray after max_t is outside of the heightfield AABB.
+                // The part of the ray after max_t is outside of the heightfield Aabb.
                 return None;
             }
 
             if let Some(seg) = self.segment_at(curr) {
-                // TODO: test the y-coordinates (equivalent to an AABB test) before actually computing the intersection.
+                // TODO: test the y-coordinates (equivalent to an Aabb test) before actually computing the intersection.
                 let (s, t) = query::details::closest_points_line_line_parameters(
                     &ray.origin,
                     &ray.dir,
@@ -123,11 +119,7 @@ where
 }
 
 #[cfg(feature = "dim3")]
-impl<Heights, Status> RayCast for GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,

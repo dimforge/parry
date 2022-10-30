@@ -1,6 +1,17 @@
-use crate::bounding_volume::{SimdAABB, AABB};
+use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::{Real, Vector};
+use crate::partitioning::qbvh::storage::QbvhStorage;
+use crate::utils::DefaultStorage;
+
 use na::SimdValue;
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+use {crate::utils::CudaArray1, cust::error::CudaResult};
+#[cfg(feature = "cuda")]
+use {
+    crate::utils::{CudaStorage, CudaStoragePtr},
+    cust_core::DeviceCopy,
+};
 
 /// A data to which an index is associated.
 pub trait IndexedData: Copy {
@@ -39,17 +50,18 @@ impl IndexedData for u64 {
     }
 }
 
-/// The index of an internal SIMD node of a QBVH.
+/// The index of an internal SIMD node of a Qbvh.
 pub type SimdNodeIndex = u32;
 
-/// The index of a node part of a QBVH.
+/// The index of a node part of a Qbvh.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-/// The index of one specific node of a QBVH.
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+/// The index of one specific node of a Qbvh.
 pub struct NodeIndex {
     /// The index of the SIMD node containing the addressed node.
     pub index: SimdNodeIndex, // Index of the addressed node in the `nodes` array.
@@ -70,24 +82,25 @@ impl NodeIndex {
     }
 }
 
-/// A SIMD node of an SIMD QBVH.
+/// A SIMD node of an SIMD Qbvh.
 ///
-/// This groups four nodes of the QBVH.
+/// This groups four nodes of the Qbvh.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-pub struct QBVHNode {
-    /// The AABBs of the qbvh nodes represented by this node.
-    pub simd_aabb: SimdAABB,
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+pub struct QbvhNode {
+    /// The Aabbs of the qbvh nodes represented by this node.
+    pub simd_aabb: SimdAabb,
     /// Index of the nodes of the 4 nodes represented by `self`.
     /// If this is a leaf, it contains the proxy ids instead.
     pub children: [u32; 4],
     /// The index of the node parent to the 4 nodes represented by `self`.
     pub parent: NodeIndex,
-    /// Are the four nodes represented by `self` leaves of the `QBVH`?
+    /// Are the four nodes represented by `self` leaves of the `Qbvh`?
     pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
     pub(super) dirty: bool, // TODO: move this to a separate bitvec?
 }
@@ -98,15 +111,16 @@ pub struct QBVHNode {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// Combination of a leaf data and its associated node’s index.
-pub struct QBVHProxy<LeafData> {
+pub struct QbvhProxy<LeafData> {
     /// Index of the leaf node the leaf data is associated to.
     pub node: NodeIndex,
     /// The data contained in this node.
     pub data: LeafData, // The collider data. TODO: only set the collider generation here?
 }
 
-impl<LeafData> QBVHProxy<LeafData> {
+impl<LeafData> QbvhProxy<LeafData> {
     pub(super) fn invalid() -> Self
     where
         LeafData: IndexedData,
@@ -133,42 +147,113 @@ impl<LeafData> QBVHProxy<LeafData> {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
-#[derive(Clone, Debug)]
-pub struct QBVH<LeafData> {
-    pub(super) root_aabb: AABB,
-    pub(super) nodes: Vec<QBVHNode>,
-    pub(super) dirty_nodes: Vec<u32>,
-    pub(super) proxies: Vec<QBVHProxy<LeafData>>,
+#[repr(C)] // Needed for Cuda.
+#[derive(Debug)]
+pub struct GenericQbvh<LeafData, Storage: QbvhStorage<LeafData>> {
+    pub(super) root_aabb: Aabb,
+    pub(super) nodes: Storage::Nodes,
+    pub(super) dirty_nodes: Storage::ArrayU32,
+    pub(super) proxies: Storage::ArrayProxies,
 }
 
-impl<LeafData: IndexedData> QBVH<LeafData> {
-    /// Initialize an empty QBVH.
+/// A quaternary bounding-volume-hierarchy.
+///
+/// This is a bounding-volume-hierarchy where each node has either four children or none.
+pub type Qbvh<LeafData> = GenericQbvh<LeafData, DefaultStorage>;
+#[cfg(feature = "cuda")]
+/// A Qbvh stored in CUDA memory.
+pub type CudaQbvh<LeafData> = GenericQbvh<LeafData, CudaStorage>;
+#[cfg(feature = "cuda")]
+/// A Qbvh accessible from CUDA kernels.
+pub type CudaQbvhPtr<LeafData> = GenericQbvh<LeafData, CudaStoragePtr>;
+
+impl<LeafData, Storage> Clone for GenericQbvh<LeafData, Storage>
+where
+    Storage: QbvhStorage<LeafData>,
+    Storage::Nodes: Clone,
+    Storage::ArrayU32: Clone,
+    Storage::ArrayProxies: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            root_aabb: self.root_aabb,
+            nodes: self.nodes.clone(),
+            dirty_nodes: self.dirty_nodes.clone(),
+            proxies: self.proxies.clone(),
+        }
+    }
+}
+
+impl<LeafData, Storage> Copy for GenericQbvh<LeafData, Storage>
+where
+    Storage: QbvhStorage<LeafData>,
+    Storage::Nodes: Copy,
+    Storage::ArrayU32: Copy,
+    Storage::ArrayProxies: Copy,
+{
+}
+
+#[cfg(feature = "cuda")]
+unsafe impl<LeafData, Storage> DeviceCopy for GenericQbvh<LeafData, Storage>
+where
+    Storage: QbvhStorage<LeafData>,
+    Storage::Nodes: DeviceCopy,
+    Storage::ArrayU32: DeviceCopy,
+    Storage::ArrayProxies: DeviceCopy,
+{
+}
+
+#[cfg(all(feature = "std", feature = "cuda"))]
+impl<LeafData: DeviceCopy> CudaQbvh<LeafData> {
+    /// Returns the qbvh usable from within a CUDA kernel.
+    pub fn as_device_ptr(&self) -> CudaQbvhPtr<LeafData> {
+        GenericQbvh {
+            root_aabb: self.root_aabb,
+            nodes: self.nodes.as_device_ptr(),
+            dirty_nodes: self.dirty_nodes.as_device_ptr(),
+            proxies: self.proxies.as_device_ptr(),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<LeafData: IndexedData> Qbvh<LeafData> {
+    /// Initialize an empty Qbvh.
     pub fn new() -> Self {
-        QBVH {
-            root_aabb: AABB::new_invalid(),
+        Qbvh {
+            root_aabb: Aabb::new_invalid(),
             nodes: Vec::new(),
             dirty_nodes: Vec::new(),
             proxies: Vec::new(),
         }
     }
 
-    /// Iterates mutably through all the leaf data in this QBVH.
+    /// Converts this RAM-based qbvh to an qbvh based on CUDA memory.
+    #[cfg(feature = "cuda")]
+    pub fn to_cuda(&self) -> CudaResult<CudaQbvh<LeafData>>
+    where
+        LeafData: DeviceCopy,
+    {
+        Ok(CudaQbvh {
+            root_aabb: self.root_aabb,
+            nodes: CudaArray1::new(&self.nodes)?,
+            dirty_nodes: CudaArray1::new(&self.dirty_nodes)?,
+            proxies: CudaArray1::new(&self.proxies)?,
+        })
+    }
+
+    /// Iterates mutably through all the leaf data in this Qbvh.
     pub fn iter_data_mut(&mut self) -> impl Iterator<Item = (NodeIndex, &mut LeafData)> {
         self.proxies.iter_mut().map(|p| (p.node, &mut p.data))
     }
 
-    /// Iterate through all the leaf data in this QBVH.
+    /// Iterate through all the leaf data in this Qbvh.
     pub fn iter_data(&self) -> impl Iterator<Item = (NodeIndex, &LeafData)> {
         self.proxies.iter().map(|p| (p.node, &p.data))
     }
 
-    /// The AABB of the root of this tree.
-    pub fn root_aabb(&self) -> &AABB {
-        &self.root_aabb
-    }
-
-    /// The AABB of the given node.
-    pub fn node_aabb(&self, node_id: NodeIndex) -> Option<AABB> {
+    /// The Aabb of the given node.
+    pub fn node_aabb(&self, node_id: NodeIndex) -> Option<Aabb> {
         self.nodes
             .get(node_id.index as usize)
             .map(|n| n.simd_aabb.extract(node_id.lane as usize))
@@ -192,25 +277,25 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
 
     /// The raw nodes of this BVH.
     ///
-    /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
+    /// If this Qbvh isn’t empty, the first element of the returned slice is the root of the
     /// tree. The other elements are not arranged in any particular order.
     /// The more high-level traversal methods should be used instead of this.
-    pub fn raw_nodes(&self) -> &[QBVHNode] {
+    pub fn raw_nodes(&self) -> &[QbvhNode] {
         &self.nodes
     }
 
     /// The raw proxies of this BVH.
     ///
-    /// If this QBVH isn’t empty, the first element of the returned slice is the root of the
+    /// If this Qbvh isn’t empty, the first element of the returned slice is the root of the
     /// tree. The other elements are not arranged in any particular order.
     /// The more high-level traversal methods should be used instead of this.
-    pub fn raw_proxies(&self) -> &[QBVHProxy<LeafData>] {
+    pub fn raw_proxies(&self) -> &[QbvhProxy<LeafData>] {
         &self.proxies
     }
 
-    /// Computes a scaled version of this QBVH.
+    /// Computes a scaled version of this Qbvh.
     ///
-    /// This will apply the scale to each AABB on this BVH.
+    /// This will apply the scale to each Aabb on this BVH.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.root_aabb = self.root_aabb.scaled(scale);
         for node in &mut self.nodes {
@@ -220,20 +305,27 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     }
 }
 
+impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData, Storage> {
+    /// The Aabb of the root of this tree.
+    pub fn root_aabb(&self) -> &Aabb {
+        &self.root_aabb
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::bounding_volume::AABB;
+    use crate::bounding_volume::Aabb;
     use crate::math::{Point, Vector};
-    use crate::partitioning::QBVH;
+    use crate::partitioning::Qbvh;
 
     #[test]
     fn multiple_identical_aabb_stack_overflow() {
         // A stack overflow was caused during the construction of the
-        // QBVH with more than four AABB with the same center.
-        let aabb = AABB::new(Point::origin(), Vector::repeat(1.0).into());
+        // Qbvh with more than four Aabb with the same center.
+        let aabb = Aabb::new(Point::origin(), Vector::repeat(1.0).into());
 
         for k in 0u32..20 {
-            let mut tree = QBVH::new();
+            let mut tree = Qbvh::new();
             tree.clear_and_rebuild((0..k).map(|i| (i, aabb)), 0.0);
         }
     }

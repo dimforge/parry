@@ -17,6 +17,7 @@ pub use self::point_cloud_support_point::{
 pub use self::point_in_poly2d::point_in_poly2d;
 pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
+pub use self::array::{Array1, Array2, DefaultStorage};
 pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::cov::{center_cov, cov};
@@ -35,10 +36,13 @@ pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
 #[cfg(all(feature = "cuda", feature = "std"))]
 pub use self::cuda_array::{CudaArray1, CudaArray2};
 #[cfg(feature = "cuda")]
-pub use self::cuda_array::{CudaArrayPointer1, CudaArrayPointer2};
-#[cfg(feature = "cuda")]
-pub use self::cuda_device_pointer::DevicePointer;
+pub use {
+    self::array::{CudaStorage, CudaStoragePtr},
+    self::cuda_array::{CudaArrayPointer1, CudaArrayPointer2},
+    self::cuda_device_pointer::DevicePointer,
+};
 
+mod array;
 mod as_bytes;
 mod ccw_face_normal;
 mod center;

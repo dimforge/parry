@@ -14,7 +14,6 @@ mod point_aabb;
 mod point_ball;
 mod point_bounding_sphere;
 mod point_capsule;
-#[cfg(feature = "std")]
 mod point_composite_shape;
 #[cfg(feature = "dim3")]
 mod point_cone;

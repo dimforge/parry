@@ -99,7 +99,7 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
     )));
 }
 
-/// Computes the contact manifold between an heigthfield and an abstract shape.
+/// Computes the contact manifold between an heightfield and an abstract shape.
 pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
@@ -122,7 +122,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
     /*
      * Compute interferences.
      */
-    // TODO: somehow precompute the AABB and reuse it?
+    // TODO: somehow precompute the Aabb and reuse it?
     let ls_aabb2 = shape2.compute_aabb(&pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 

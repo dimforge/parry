@@ -66,7 +66,6 @@ pub extern crate simba;
 
 pub mod bounding_volume;
 pub mod mass_properties;
-#[cfg(feature = "std")]
 pub mod partitioning;
 pub mod query;
 pub mod shape;

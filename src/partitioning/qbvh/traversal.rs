@@ -1,11 +1,12 @@
-use crate::bounding_volume::{SimdAABB, AABB};
+use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
 use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
 use crate::partitioning::{
-    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
-    SimdVisitor,
+    GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
+    SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
 };
 use crate::simd::SIMD_WIDTH;
+use crate::utils::Array1;
 use crate::utils::WeightedValue;
 use num::Bounded;
 use simba::simd::SimdBool;
@@ -18,15 +19,15 @@ use {
     std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
 };
 
-use super::{IndexedData, NodeIndex, QBVH};
+use super::{IndexedData, NodeIndex, Qbvh};
 
-impl<LeafData: IndexedData> QBVH<LeafData> {
+impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData, Storage> {
     /// Performs a depth-first traversal on the BVH.
     ///
     /// # Return
     ///
     /// Returns `false` if the traversal exitted early, and `true` otherwise.
-    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAABB>) -> bool {
+    pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAabb>) -> bool {
         self.traverse_depth_first_node(visitor, 0)
     }
 
@@ -37,7 +38,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Returns `false` if the traversal exitted early, and `true` otherwise.
     pub fn traverse_depth_first_node(
         &self,
-        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
         start_node: u32,
     ) -> bool {
         self.traverse_depth_first_node_with_stack(visitor, &mut Vec::new(), start_node)
@@ -50,7 +51,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_with_stack(
         &self,
-        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
         stack: &mut Vec<u32>,
     ) -> bool {
         self.traverse_depth_first_node_with_stack(visitor, stack, 0)
@@ -63,7 +64,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_node_with_stack(
         &self,
-        visitor: &mut impl SimdVisitor<LeafData, SimdAABB>,
+        visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
         stack: &mut Vec<u32>,
         start_node: u32,
     ) -> bool {
@@ -76,7 +77,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
             let node = &self.nodes[entry as usize];
             let leaf_data = if node.leaf {
                 Some(
-                    array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -93,7 +94,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                         if (bitmask & (1 << ii)) != 0 {
                             if !node.leaf {
                                 // Internal node, visit the child.
-                                // Un fortunately, we have this check because invalid AABBs
+                                // Un fortunately, we have this check because invalid Aabbs
                                 // return a hit as well.
                                 if node.children[ii] as usize <= self.nodes.len() {
                                     stack.push(node.children[ii]);
@@ -114,13 +115,9 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
     /// user-defined type.
     pub fn traverse_best_first<BFS>(&self, visitor: &mut BFS) -> Option<(NodeIndex, BFS::Result)>
     where
-        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAabb>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
-        if self.nodes.is_empty() {
-            return None;
-        }
-
         self.traverse_best_first_node(visitor, 0, Real::max_value())
     }
 
@@ -135,9 +132,13 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
         init_cost: Real,
     ) -> Option<(NodeIndex, BFS::Result)>
     where
-        BFS: SimdBestFirstVisitor<LeafData, SimdAABB>,
+        BFS: SimdBestFirstVisitor<LeafData, SimdAabb>,
         BFS::Result: Clone, // Because we cannot move out of an array…
     {
+        if self.nodes.is_empty() {
+            return None;
+        }
+
         let mut queue: BinaryHeap<WeightedValue<u32>> = BinaryHeap::new();
 
         let mut best_cost = init_cost;
@@ -153,7 +154,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
             let node = &self.nodes[entry.value as usize];
             let leaf_data = if node.leaf {
                 Some(
-                    array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -177,7 +178,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                                 if weights[ii] < best_cost && results[ii].is_some() {
                                     // We found a leaf!
                                     if let Some(proxy) =
-                                        self.proxies.get(node.children[ii] as usize)
+                                        self.proxies.get_at(node.children[ii] as usize)
                                     {
                                         best_cost = weights[ii];
                                         best_result =
@@ -186,7 +187,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                                 }
                             } else {
                                 // Internal node, visit the child.
-                                // Un fortunately, we have this check because invalid AABBs
+                                // Un fortunately, we have this check because invalid Aabbs
                                 // return a hit as well.
                                 if (node.children[ii] as usize) < self.nodes.len() {
                                     queue.push(WeightedValue::new(node.children[ii], -weights[ii]));
@@ -201,18 +202,18 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
         best_result
     }
 
-    /// Retrieve all the data of the nodes with AABBs intersecting
-    /// the given AABB:
+    /// Retrieve all the data of the nodes with Aabbs intersecting
+    /// the given Aabb:
     // FIXME: implement a visitor pattern to merge intersect_aabb
     // and intersect_ray into a single method.
-    pub fn intersect_aabb(&self, aabb: &AABB, out: &mut Vec<LeafData>) {
+    pub fn intersect_aabb(&self, aabb: &Aabb, out: &mut Vec<LeafData>) {
         if self.nodes.is_empty() {
             return;
         }
 
         // Special case for the root.
         let mut stack = vec![0u32];
-        let simd_aabb = SimdAABB::splat(*aabb);
+        let simd_aabb = SimdAabb::splat(*aabb);
         while let Some(inode) = stack.pop() {
             let node = &self.nodes[inode as usize];
             let intersections = node.simd_aabb.intersects(&simd_aabb);
@@ -222,13 +223,13 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
                 if (bitmask & (1 << ii)) != 0 {
                     if node.leaf {
                         // We found a leaf!
-                        // Unfortunately, invalid AABBs return a intersection as well.
-                        if let Some(proxy) = self.proxies.get(node.children[ii] as usize) {
+                        // Unfortunately, invalid Aabbs return a intersection as well.
+                        if let Some(proxy) = self.proxies.get_at(node.children[ii] as usize) {
                             out.push(proxy.data);
                         }
                     } else {
                         // Internal node, visit the child.
-                        // Unfortunately, we have this check because invalid AABBs
+                        // Unfortunately, we have this check because invalid Aabbs
                         // return a intersection as well.
                         if node.children[ii] as usize <= self.nodes.len() {
                             stack.push(node.children[ii]);
@@ -239,20 +240,20 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
         }
     }
 
-    /// Performs a simultaneous traversal of two QBVH.
+    /// Performs a simultaneous traversal of two Qbvh.
     pub fn traverse_bvtt<LeafData2: IndexedData>(
         &self,
-        qbvh2: &QBVH<LeafData2>,
-        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
+        qbvh2: &Qbvh<LeafData2>,
+        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAabb>,
     ) {
         self.traverse_bvtt_with_stack(qbvh2, visitor, &mut Vec::new())
     }
 
-    /// Performs a simultaneous traversal of two QBVH.
+    /// Performs a simultaneous traversal of two Qbvh.
     pub fn traverse_bvtt_with_stack<LeafData2: IndexedData>(
         &self,
-        qbvh2: &QBVH<LeafData2>,
-        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAABB>,
+        qbvh2: &Qbvh<LeafData2>,
+        visitor: &mut impl SimdSimultaneousVisitor<LeafData, LeafData2, SimdAabb>,
         stack: &mut Vec<(u32, u32)>,
     ) {
         let qbvh1 = self;
@@ -268,7 +269,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
 
             let leaf_data1 = if node1.leaf {
                 Some(
-                    array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh1.proxies.get_at(node1.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -276,7 +277,7 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
 
             let leaf_data2 = if node2.leaf {
                 Some(
-                    array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh2.proxies.get_at(node2.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -337,8 +338,8 @@ impl<LeafData: IndexedData> QBVH<LeafData> {
 }
 
 #[cfg(feature = "parallel")]
-impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
-    /// Performs a depth-first traversal of two QBVH using
+impl<LeafData: IndexedData + Sync> Qbvh<LeafData> {
+    /// Performs a depth-first traversal of two Qbvh using
     /// parallelism internally for better performances with large tree.
     pub fn traverse_depth_first_parallel(&self, visitor: &impl ParallelSimdVisitor<LeafData>) {
         if !self.nodes.is_empty() {
@@ -361,7 +362,9 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         let mut stack: ArrayVec<u32, SIMD_WIDTH> = ArrayVec::new();
         let node = &self.nodes[entry as usize];
         let leaf_data = if node.leaf {
-            Some(array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH])
+            Some(
+                array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
+            )
         } else {
             None
         };
@@ -378,7 +381,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
                     if (bitmask & (1 << ii)) != 0 {
                         if !node.leaf {
                             // Internal node, visit the child.
-                            // Un fortunately, we have this check because invalid AABBs
+                            // Un fortunately, we have this check because invalid Aabbs
                             // return a hit as well.
                             if node.children[ii] as usize <= self.nodes.len() {
                                 stack.push(node.children[ii]);
@@ -396,14 +399,14 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
             .for_each(|entry| self.traverse_depth_first_node_parallel(visitor, exit_early, entry));
     }
 
-    /// Performs a simultaneous traversal of two QBVH using
+    /// Performs a simultaneous traversal of two Qbvh using
     /// parallelism internally for better performances with large tree.
     pub fn traverse_bvtt_parallel<
         LeafData2: IndexedData + Sync,
         Visitor: ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
     >(
         &self,
-        qbvh2: &QBVH<LeafData2>,
+        qbvh2: &Qbvh<LeafData2>,
         visitor: &Visitor,
     ) {
         if !self.nodes.is_empty() && !qbvh2.nodes.is_empty() {
@@ -424,7 +427,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
         Visitor: ParallelSimdSimultaneousVisitor<LeafData, LeafData2>,
     >(
         &self,
-        qbvh2: &QBVH<LeafData2>,
+        qbvh2: &Qbvh<LeafData2>,
         visitor: &Visitor,
         exit_early: &AtomicBool,
         data: Visitor::Data,
@@ -443,7 +446,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
 
         let leaf_data1 = if node1.leaf {
             Some(
-                array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                array![|ii| Some(&qbvh1.proxies.get_at(node1.children[ii] as usize)?.data); SIMD_WIDTH],
             )
         } else {
             None
@@ -451,7 +454,7 @@ impl<LeafData: IndexedData + Sync> QBVH<LeafData> {
 
         let leaf_data2 = if node2.leaf {
             Some(
-                array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                array![|ii| Some(&qbvh2.proxies.get_at(node2.children[ii] as usize)?.data); SIMD_WIDTH],
             )
         } else {
             None

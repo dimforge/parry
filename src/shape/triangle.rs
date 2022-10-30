@@ -515,6 +515,11 @@ impl Triangle {
             TriangleOrientation::Degenerate
         }
     }
+
+    /// Reverse the orientation of this triangle by swapping b and c.
+    pub fn reverse(&mut self) {
+        std::mem::swap(&mut self.b, &mut self.c);
+    }
 }
 
 impl SupportMap for Triangle {

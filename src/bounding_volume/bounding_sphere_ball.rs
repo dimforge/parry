@@ -10,7 +10,7 @@ impl Ball {
         bv.transform_by(pos)
     }
 
-    /// Computes the local-space AABB of this ball.
+    /// Computes the local-space Aabb of this ball.
     #[inline]
     pub fn local_bounding_sphere(&self) -> BoundingSphere {
         BoundingSphere::new(Point::origin(), self.radius)

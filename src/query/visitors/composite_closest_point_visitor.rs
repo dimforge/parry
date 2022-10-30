@@ -1,4 +1,4 @@
-use crate::bounding_volume::SimdAABB;
+use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{PointProjection, PointQuery};
@@ -26,7 +26,7 @@ impl<'a, S> CompositeClosestPointVisitor<'a, S> {
     }
 }
 
-impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAABB>
+impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAabb>
     for CompositeClosestPointVisitor<'a, S>
 {
     type Result = PointProjection;
@@ -35,7 +35,7 @@ impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAABB>
     fn visit(
         &mut self,
         best: Real,
-        aabb: &SimdAABB,
+        aabb: &SimdAabb,
         data: Option<[Option<&u32>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
         let dist = aabb.distance_to_local_point(&self.simd_point);

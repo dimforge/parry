@@ -2,13 +2,13 @@ use std::mem;
 
 use na;
 
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector, DIM};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::FeatureId;
 use num::Zero;
 
-impl RayCast for AABB {
+impl RayCast for Aabb {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
         let mut tmin: Real = 0.0;
         let mut tmax: Real = max_toi;
@@ -68,7 +68,7 @@ impl RayCast for AABB {
 }
 
 fn ray_aabb(
-    aabb: &AABB,
+    aabb: &Aabb,
     ray: &Ray,
     max_toi: Real,
     solid: bool,

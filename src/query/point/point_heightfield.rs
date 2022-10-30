@@ -1,24 +1,18 @@
-use crate::bounding_volume::AABB;
+use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
-use crate::shape::{
-    FeatureId, GenericHeightField, HeightFieldCellStatus, HeightFieldStorage, TrianglePointLocation,
-};
+use crate::shape::{FeatureId, GenericHeightField, HeightFieldStorage, TrianglePointLocation};
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // For sqrt.
 
-impl<Heights, Status> PointQuery for GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> PointQuery for GenericHeightField<Storage> {
     fn project_local_point_with_max_dist(
         &self,
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
-        let aabb = AABB::new(pt - Vector::repeat(max_dist), pt + Vector::repeat(max_dist));
+        let aabb = Aabb::new(pt - Vector::repeat(max_dist), pt + Vector::repeat(max_dist));
         let mut sq_smallest_dist = Real::MAX;
         let mut best_proj = None;
 
@@ -77,11 +71,7 @@ where
     }
 }
 
-impl<Heights, Status> PointQueryWithLocation for GenericHeightField<Heights, Status>
-where
-    Heights: HeightFieldStorage<Item = Real>,
-    Status: HeightFieldStorage<Item = HeightFieldCellStatus>,
-{
+impl<Storage: HeightFieldStorage> PointQueryWithLocation for GenericHeightField<Storage> {
     type Location = (usize, TrianglePointLocation);
 
     #[inline]
