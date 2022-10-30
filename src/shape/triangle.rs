@@ -1,7 +1,7 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, PackedFeatureId, SupportMap};
+use crate::shape::{FeatureId, SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
@@ -10,6 +10,9 @@ use num::Zero;
 #[cfg(feature = "dim3")]
 use std::f64;
 use std::mem;
+
+#[cfg(feature = "dim2")]
+use crate::shape::PackedFeatureId;
 
 /// A triangle shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

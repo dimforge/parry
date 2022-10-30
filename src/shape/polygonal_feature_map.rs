@@ -1,11 +1,11 @@
 use crate::math::{Real, Vector};
-use crate::shape::{Cuboid, PackedFeatureId, PolygonalFeature, Segment, SupportMap, Triangle};
+use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
 use na::Unit;
 #[cfg(feature = "dim3")]
 use {
     crate::{
         math::Point,
-        shape::{Cone, Cylinder},
+        shape::{Cone, Cylinder, PackedFeatureId},
     },
     approx::AbsDiffEq,
 };

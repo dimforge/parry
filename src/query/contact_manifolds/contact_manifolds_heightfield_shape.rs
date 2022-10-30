@@ -3,13 +3,16 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::{ContactManifoldsWorkspace, InternalEdgesFixer};
+use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 #[cfg(feature = "dim2")]
 use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
+
+#[cfg(feature = "dim3")]
+use crate::query::contact_manifolds::InternalEdgesFixer;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -27,6 +30,7 @@ struct SubDetector {
 pub struct HeightFieldShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<u32, SubDetector>,
+    #[cfg(feature = "dim3")]
     internal_edges: InternalEdgesFixer,
 }
 
@@ -35,6 +39,7 @@ impl HeightFieldShapeContactManifoldsWorkspace {
         Self {
             timestamp: false,
             sub_detectors: HashMap::default(),
+            #[cfg(feature = "dim3")]
             internal_edges: InternalEdgesFixer::default(),
         }
     }

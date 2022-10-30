@@ -1,7 +1,9 @@
-use crate::math::Real;
 use crate::query::ContactManifold;
 use crate::shape::Triangle;
 use crate::utils::hashmap::HashMap;
+
+#[cfg(feature = "dim3")]
+use crate::math::Real;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -9,6 +11,7 @@ use crate::utils::hashmap::HashMap;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Default, Clone)]
+#[allow(dead_code)] // We will need these for 2D too in the future.
 pub struct InternalEdgesFixer {
     delayed_manifolds: Vec<u32>,
     vertex_set: HashMap<u32, ()>,

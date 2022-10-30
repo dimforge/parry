@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::{ContactManifoldsWorkspace, InternalEdgesFixer};
+use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
@@ -12,6 +12,9 @@ use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape, SimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
+
+#[cfg(feature = "dim3")]
+use crate::query::contact_manifolds::InternalEdgesFixer;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -29,6 +32,7 @@ struct SubDetector {
 pub struct HeightFieldCompositeShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<(u32, u32), SubDetector>,
+    #[cfg(feature = "dim3")]
     internal_edges: InternalEdgesFixer,
 }
 
@@ -37,6 +41,7 @@ impl HeightFieldCompositeShapeContactManifoldsWorkspace {
         Self {
             timestamp: false,
             sub_detectors: HashMap::default(),
+            #[cfg(feature = "dim3")]
             internal_edges: InternalEdgesFixer::default(),
         }
     }
