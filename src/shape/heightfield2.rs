@@ -24,8 +24,11 @@ use crate::utils::Array1;
 /// a removed cell.
 pub type HeightFieldCellStatus = bool;
 
+/// Trait describing all the types needed for storing an heightfield’s data.
 pub trait HeightFieldStorage {
+    /// Type of the array containing the heightfield’s heigths.
     type Heights: Array1<Real>;
+    /// Type of the array containing the heightfield’s cells status.
     type Status: Array1<HeightFieldCellStatus>;
 }
 

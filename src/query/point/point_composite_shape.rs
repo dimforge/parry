@@ -6,12 +6,14 @@ use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
-    FeatureId, GenericTriMesh, SegmentPointLocation, TriMesh, TriMeshStorage,
-    TrianglePointLocation, TypedSimdCompositeShape,
+    FeatureId, GenericTriMesh, SegmentPointLocation, TriMeshStorage, TrianglePointLocation,
+    TypedSimdCompositeShape,
 };
-use crate::utils::Array1;
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
+
+#[cfg(feature = "dim3")]
+use crate::utils::Array1;
 
 #[cfg(feature = "std")]
 use crate::shape::{Compound, Polyline};
@@ -165,6 +167,8 @@ impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage>
     ) -> Option<(PointProjection, Self::Location)> {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
+
+        #[allow(unused_mut)] // mut is needed in 3D.
         if let Some((_, (mut proj, (part_id, location)))) =
             self.qbvh()
                 .traverse_best_first_node(&mut visitor, 0, max_dist)

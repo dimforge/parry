@@ -7,12 +7,14 @@ pub trait Array1<T>: IndexMut<usize, Output = T> {
     /// The number of heights on this storage.
     fn len(&self) -> usize;
 
+    /// Is this array empty?
     #[inline]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     // NOTE: we don’t name it just `get` to avoid clashes with pre-existing `get` methods.
+    /// Gets the i-th element of this array, if it exists.
     #[inline]
     fn get_at(&self, i: usize) -> Option<&T> {
         if i < self.len() {
@@ -84,10 +86,13 @@ impl<T: Scalar> Array2 for DMatrix<T> {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+/// Default data storage based on `Vec`, `DVector`, and `DMatrix`.
 pub struct DefaultStorage;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg(feature = "cuda")]
+/// Data storage residing in CUDA memory.
 pub struct CudaStorage;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg(feature = "cuda")]
+/// Data storage for accessing data from CUDA kernels.
 pub struct CudaStoragePtr;

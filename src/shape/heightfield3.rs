@@ -38,8 +38,11 @@ bitflags! {
     }
 }
 
+/// Trait describing all the types needed for storing an heightfield’s data.
 pub trait HeightFieldStorage {
+    /// Type of the array containing the heightfield’s heigths.
     type Heights: Array2<Item = Real>;
+    /// Type of the array containing the heightfield’s cells status.
     type Status: Array2<Item = HeightFieldCellStatus>;
 }
 

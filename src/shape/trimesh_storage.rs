@@ -8,16 +8,27 @@ use crate::utils::CudaArray1;
 #[cfg(feature = "cuda")]
 use crate::utils::{CudaArrayPointer1, CudaStorage, CudaStoragePtr};
 
+/// Trait describing all the types needed for storing a triangle mesh’s data.
 pub trait TriMeshStorage {
+    /// Storage needed to store a QBVH.
     type QBVHStorage: QBVHStorage<u32>;
+    /// Storage needed to store topology vertices.
     type ArrayTopoVertex: Array1<TopoVertex>;
+    /// Storage needed to store topology faces.
     type ArrayTopoFace: Array1<TopoFace>;
+    /// Storage needed to store topology half-edges.
     type ArrayTopoHalfEdge: Array1<TopoHalfEdge>;
+    /// Storage needed to store u32
     type ArrayU32: Array1<u32>;
+    /// Storage needed to store usize.
     type ArrayUsize: Array1<usize>;
+    /// Storage needed to store vectors.
     type ArrayVector: Array1<Vector<Real>>;
+    /// Storage needed to store points.
     type ArrayPoint: Array1<Point<Real>>;
+    /// Storage needed to store triangle indices.
     type ArrayIdx: Array1<[u32; 3]>;
+    /// Storage needed to store triples of vectors.
     type ArrayVectorTriple: Array1<[Vector<Real>; 3]>;
 }
 

@@ -6,9 +6,13 @@ use crate::utils::CudaArray1;
 #[cfg(feature = "cuda")]
 use crate::utils::{CudaArrayPointer1, CudaStorage, CudaStoragePtr};
 
+/// Trait describing all the types needed for storing a QBVH’s data.
 pub trait QBVHStorage<LeafData> {
+    /// Type of the array containing the QBVH nodes.
     type Nodes: Array1<QBVHNode>;
+    /// Type of an array containing u32.
     type ArrayU32: Array1<u32>;
+    /// Type of the array containing the QBVH leaves.
     type ArrayProxies: Array1<QBVHProxy<LeafData>>;
 }
 

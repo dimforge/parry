@@ -156,10 +156,15 @@ pub struct GenericQBVH<LeafData, Storage: QBVHStorage<LeafData>> {
     pub(super) proxies: Storage::ArrayProxies,
 }
 
+/// A quaternary bounding-volume-hierarchy.
+///
+/// This is a bounding-volume-hierarchy where each node has either four children or none.
 pub type QBVH<LeafData> = GenericQBVH<LeafData, DefaultStorage>;
 #[cfg(feature = "cuda")]
+/// A QBVH stored in CUDA memory.
 pub type CudaQBVH<LeafData> = GenericQBVH<LeafData, CudaStorage>;
 #[cfg(feature = "cuda")]
+/// A QBVH accessible from CUDA kernels.
 pub type CudaQBVHPtr<LeafData> = GenericQBVH<LeafData, CudaStoragePtr>;
 
 impl<LeafData, Storage> Clone for GenericQBVH<LeafData, Storage>
