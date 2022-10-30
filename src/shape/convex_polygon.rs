@@ -296,15 +296,15 @@ mod tests {
         ])
         .unwrap();
 
-        let offseted = polygon.offseted(0.5);
+        let offsetted = polygon.offsetted(0.5);
         let expected = vec![
             Point::new(2.207, 0.5),
             Point::new(-2.207, 0.5),
             Point::new(0., -1.707),
         ];
 
-        assert_eq!(offseted.points().len(), 3);
-        assert!(offseted
+        assert_eq!(offsetted.points().len(), 3);
+        assert!(offsetted
             .points()
             .iter()
             .zip(expected.iter())

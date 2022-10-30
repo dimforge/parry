@@ -1,19 +1,21 @@
 # Change Log
 
-## Unreleased
+## v0.11.0 (30 Oct. 2022)
 
 ### Modified
 - Rename `AABB` to `Aabb` to comply with Rust’s style guide.
 - Rename `QBVH` to `Qbvh` to comply with Rust’s style guide.
 
 ### Added
+- Add `ConvexPolygon::offsetted` to dilate a polygon.
 - Add `CudaTriMesh` and `CudaTriMeshPtr` for triangle-meshes usable with CUDA.
 - Add a no-std implementation of point-projection on a triangle mesh.
 
 ### Fixed
 - Fix ghost collisions on internal edges on flat 3D meshed and flat 3D heightfields.
-- Fix pseudo-normals calculation that could generated invalid normals for triangles with
+- Fix pseudo-normals calculation that could generate invalid normals for triangles with
   some small vertex angles.
+- Fix `Aabb::bounding_sphere` which returned a bounding sphere that was too big.
 
 
 ## v0.10.0 (02 Oct. 2022)
