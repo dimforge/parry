@@ -121,6 +121,10 @@ impl InternalEdgesFixer {
 
                 match tri_fid.unpack() {
                     FeatureId::Face(_) => {
+                        // This is a "false face" contact (a contact identified as face because
+                        // of rounding errors but it’s probably just an edge contact.
+                        // We don’t know exactly which edge it is, so we just ignore it
+                        // if any of the vertices already exist in the set.
                         !self.vertex_set.contains_key(&tri_idx[0])
                             && !self.vertex_set.contains_key(&tri_idx[1])
                             && !self.vertex_set.contains_key(&tri_idx[2])
@@ -133,6 +137,8 @@ impl InternalEdgesFixer {
                     }
                     FeatureId::Vertex(id) => !self.vertex_set.contains_key(&tri_idx[id as usize]),
                     FeatureId::Unknown => {
+                        // We don’t know the feature type here, so we just ignore it
+                        // if any of the vertices already exist in the set.
                         !self.vertex_set.contains_key(&tri_idx[0])
                             && !self.vertex_set.contains_key(&tri_idx[1])
                             && !self.vertex_set.contains_key(&tri_idx[2])
