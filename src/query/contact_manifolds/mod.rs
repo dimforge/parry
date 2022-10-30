@@ -42,6 +42,7 @@ pub(self) use {
     self::contact_manifolds_heightfield_composite_shape::HeightFieldCompositeShapeContactManifoldsWorkspace,
     self::contact_manifolds_heightfield_shape::HeightFieldShapeContactManifoldsWorkspace,
     self::contact_manifolds_trimesh_shape::TriMeshShapeContactManifoldsWorkspace,
+    self::internal_edges_fixer::InternalEdgesFixer,
 };
 
 mod contact_manifold;
@@ -59,3 +60,4 @@ mod contact_manifolds_heightfield_shape;
 mod contact_manifolds_pfm_pfm;
 mod contact_manifolds_trimesh_shape;
 mod contact_manifolds_workspace;
+mod internal_edges_fixer;

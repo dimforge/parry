@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::ContactManifoldsWorkspace;
+use crate::query::contact_manifolds::{ContactManifoldsWorkspace, InternalEdgesFixer};
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
@@ -29,6 +29,7 @@ struct SubDetector {
 pub struct HeightFieldCompositeShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<(u32, u32), SubDetector>,
+    internal_edges: InternalEdgesFixer,
 }
 
 impl HeightFieldCompositeShapeContactManifoldsWorkspace {
@@ -36,6 +37,7 @@ impl HeightFieldCompositeShapeContactManifoldsWorkspace {
         Self {
             timestamp: false,
             sub_detectors: HashMap::default(),
+            internal_edges: InternalEdgesFixer::default(),
         }
     }
 }
@@ -156,7 +158,17 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
 
     workspace
         .sub_detectors
-        .retain(|_, detector| detector.timestamp == new_timestamp)
+        .retain(|_, detector| detector.timestamp == new_timestamp);
+
+    #[cfg(feature = "dim3")]
+    {
+        workspace.internal_edges.remove_invalid_contacts(
+            manifolds,
+            flipped,
+            |id| heightfield1.triangle_at_id(id).unwrap(),
+            |id| heightfield1.triangle_vids_at_id(id).unwrap(),
+        )
+    }
 }
 
 impl WorkspaceData for HeightFieldCompositeShapeContactManifoldsWorkspace {
