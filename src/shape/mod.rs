@@ -8,7 +8,7 @@ pub use self::composite_shape::{SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "std")]
 pub use self::compound::Compound;
 pub use self::cuboid::Cuboid;
-pub use self::feature_id::FeatureId;
+pub use self::feature_id::{FeatureId, PackedFeatureId};
 pub use self::half_space::HalfSpace;
 pub use self::polygonal_feature_map::PolygonalFeatureMap;
 #[cfg(feature = "std")]

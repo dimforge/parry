@@ -11,6 +11,9 @@ use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 
+#[cfg(feature = "dim3")]
+use crate::query::contact_manifolds::InternalEdgesFixer;
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -27,6 +30,8 @@ struct SubDetector {
 pub struct HeightFieldShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<u32, SubDetector>,
+    #[cfg(feature = "dim3")]
+    internal_edges: InternalEdgesFixer,
 }
 
 impl HeightFieldShapeContactManifoldsWorkspace {
@@ -34,6 +39,8 @@ impl HeightFieldShapeContactManifoldsWorkspace {
         Self {
             timestamp: false,
             sub_detectors: HashMap::default(),
+            #[cfg(feature = "dim3")]
+            internal_edges: InternalEdgesFixer::default(),
         }
     }
 }
@@ -174,7 +181,17 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
 
     workspace
         .sub_detectors
-        .retain(|_, detector| detector.timestamp == new_timestamp)
+        .retain(|_, detector| detector.timestamp == new_timestamp);
+
+    #[cfg(feature = "dim3")]
+    {
+        workspace.internal_edges.remove_invalid_contacts(
+            manifolds,
+            flipped,
+            |id| heightfield1.triangle_at_id(id).unwrap(),
+            |id| heightfield1.triangle_vids_at_id(id).unwrap(),
+        )
+    }
 }
 
 impl WorkspaceData for HeightFieldShapeContactManifoldsWorkspace {

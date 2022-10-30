@@ -3,7 +3,7 @@
 use crate::math::{Point, Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::shape::Segment;
-use crate::shape::{FeatureId, PolygonalFeature, SupportMap};
+use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 use na::Unit;
 
@@ -76,8 +76,8 @@ impl Cuboid {
 
         PolygonalFeature {
             vertices: [a, b],
-            vids: [vid1, vid2],
-            fid,
+            vids: PackedFeatureId::vertices([vid1, vid2]),
+            fid: PackedFeatureId::face(fid),
             num_vertices: 2,
         }
     }
@@ -220,9 +220,9 @@ impl Cuboid {
 
         PolygonalFeature {
             vertices,
-            vids,
-            eids,
-            fid: fid as u32,
+            vids: PackedFeatureId::vertices(vids),
+            eids: PackedFeatureId::edges(eids),
+            fid: PackedFeatureId::face(fid as u32),
             num_vertices: 4,
         }
     }

@@ -11,6 +11,9 @@ use num::Zero;
 use std::f64;
 use std::mem;
 
+#[cfg(feature = "dim2")]
+use crate::shape::PackedFeatureId;
+
 /// A triangle shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -217,8 +220,8 @@ impl Triangle {
 
         PolygonalFeature {
             vertices: [pts[i1], pts[i2]],
-            vids: [i1 as u32, i2 as u32],
-            fid: i1 as u32,
+            vids: PackedFeatureId::vertices([i1 as u32, i2 as u32]),
+            fid: PackedFeatureId::face(i1 as u32),
             num_vertices: 2,
         }
     }

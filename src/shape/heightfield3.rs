@@ -187,6 +187,18 @@ where
         }
     }
 
+    fn split_triangle_id(&self, id: u32) -> (usize, usize, bool) {
+        let left = id < self.num_triangles as u32 / 2;
+        let tri_id = if left {
+            id as usize
+        } else {
+            id as usize - self.num_triangles / 2
+        };
+        let j = tri_id / (self.heights.nrows() - 1);
+        let i = tri_id - j * (self.heights.nrows() - 1);
+        (i, j, left)
+    }
+
     fn face_id(&self, i: usize, j: usize, left: bool, front: bool) -> u32 {
         let tid = self.triangle_id(i, j, left);
         if front {
@@ -302,6 +314,77 @@ where
         }
     }
 
+    /// Gets the the vertices of the triangle identified by `id`.
+    pub fn triangle_at_id(&self, id: u32) -> Option<Triangle> {
+        let (i, j, left) = self.split_triangle_id(id);
+        if left {
+            self.triangles_at(i, j).0
+        } else {
+            self.triangles_at(i, j).1
+        }
+    }
+
+    /// Gets the vertex indices of the triangle identified by `id`.
+    pub fn triangle_vids_at_id(&self, id: u32) -> Option<[u32; 3]> {
+        let (i, j, left) = self.split_triangle_id(id);
+        if left {
+            self.triangles_vids_at(i, j).0
+        } else {
+            self.triangles_vids_at(i, j).1
+        }
+    }
+
+    /// Gets the indices of the vertices of the (up to) two triangles for the cell (i, j).
+    pub fn triangles_vids_at(&self, i: usize, j: usize) -> (Option<[u32; 3]>, Option<[u32; 3]>) {
+        if i >= self.heights.nrows() - 1 || j >= self.heights.ncols() - 1 {
+            return (None, None);
+        }
+
+        let status = self.status.get(i, j);
+
+        if status.contains(
+            HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED
+                | HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED,
+        ) {
+            return (None, None);
+        }
+
+        let p00 = ((i + 0) + (j + 0) * self.heights.nrows()) as u32;
+        let p10 = ((i + 1) + (j + 0) * self.heights.nrows()) as u32;
+        let p01 = ((i + 0) + (j + 1) * self.heights.nrows()) as u32;
+        let p11 = ((i + 1) + (j + 1) * self.heights.nrows()) as u32;
+
+        if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
+            let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
+                None
+            } else {
+                Some([p00, p10, p11])
+            };
+
+            let tri2 = if status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED) {
+                None
+            } else {
+                Some([p00, p11, p01])
+            };
+
+            (tri1, tri2)
+        } else {
+            let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
+                None
+            } else {
+                Some([p00, p10, p01])
+            };
+
+            let tri2 = if status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED) {
+                None
+            } else {
+                Some([p10, p11, p01])
+            };
+
+            (tri1, tri2)
+        }
+    }
+
     /// The two triangles at the cell (i, j) of this heightfield.
     ///
     /// Returns `None` fore triangles that have been removed because of their user-defined status
@@ -324,10 +407,10 @@ where
         let cell_height = self.unit_cell_height();
 
         let z0 = -0.5 + cell_height * (i as Real);
-        let z1 = z0 + cell_height;
+        let z1 = -0.5 + cell_height * ((i + 1) as Real);
 
         let x0 = -0.5 + cell_width * (j as Real);
-        let x1 = x0 + cell_width;
+        let x1 = -0.5 + cell_width * ((j + 1) as Real);
 
         let y00 = self.heights.get(i + 0, j + 0);
         let y10 = self.heights.get(i + 1, j + 0);

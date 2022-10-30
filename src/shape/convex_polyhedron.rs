@@ -1,5 +1,5 @@
 use crate::math::{Point, Real, Vector, DIM};
-use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
+use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{self, SortedPair};
@@ -548,11 +548,11 @@ impl PolygonalFeatureMap for ConvexPolyhedron {
             .enumerate()
         {
             out_feature.vertices[i] = self.points[*vid as usize];
-            out_feature.vids[i] = *vid;
-            out_feature.eids[i] = *eid;
+            out_feature.vids[i] = PackedFeatureId::vertex(*vid);
+            out_feature.eids[i] = PackedFeatureId::edge(*eid);
         }
 
-        out_feature.fid = best_fid as u32;
+        out_feature.fid = PackedFeatureId::face(best_fid as u32);
         out_feature.num_vertices = num_vertices as usize;
     }
 }

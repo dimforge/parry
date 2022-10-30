@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::ContactManifoldsWorkspace;
+use crate::query::contact_manifolds::{ContactManifoldsWorkspace, InternalEdgesFixer};
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
@@ -18,6 +18,7 @@ pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,
     local_aabb2: AABB,
     old_interferences: Vec<u32>,
+    internal_edges: InternalEdgesFixer,
 }
 
 impl TriMeshShapeContactManifoldsWorkspace {
@@ -26,6 +27,7 @@ impl TriMeshShapeContactManifoldsWorkspace {
             interferences: Vec::new(),
             local_aabb2: AABB::new_invalid(),
             old_interferences: Vec::new(),
+            internal_edges: InternalEdgesFixer::default(),
         }
     }
 }
@@ -192,6 +194,18 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
                 .contact_manifold_convex_convex(pos12, &triangle1, shape2, prediction, manifold);
         }
     }
+
+    /*
+     *
+     * Deal with internal edges.
+     *
+     */
+    workspace.internal_edges.remove_invalid_contacts(
+        manifolds,
+        flipped,
+        |id| trimesh1.triangle(id),
+        |id| trimesh1.indices()[id as usize],
+    );
 }
 
 impl WorkspaceData for TriMeshShapeContactManifoldsWorkspace {

@@ -1,5 +1,5 @@
 use crate::math::{Point, Real, Vector};
-use crate::shape::{FeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
+use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
 use na::{self, ComplexField, RealField, Unit};
 
@@ -164,8 +164,8 @@ impl PolygonalFeatureMap for ConvexPolygon {
         let i2 = (best_face + 1) % self.points.len();
         *out_feature = PolygonalFeature {
             vertices: [self.points[i1], self.points[i2]],
-            vids: [i1 as u32 * 2, i2 as u32 * 2],
-            fid: i1 as u32 * 2 + 1,
+            vids: PackedFeatureId::vertices([i1 as u32 * 2, i2 as u32 * 2]),
+            fid: PackedFeatureId::face(i1 as u32 * 2 + 1),
             num_vertices: 2,
         };
     }

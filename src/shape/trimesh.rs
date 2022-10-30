@@ -136,7 +136,7 @@ pub struct TopoFace {
 pub struct TopoHalfEdge {
     /// The next half-edge.
     pub next: u32,
-    /// This half-edge twin on the adjascent triangle.
+    /// This half-edge twin on the adjacent triangle.
     ///
     /// This is `u32::MAX` if there is no twin.
     pub twin: u32,
@@ -643,13 +643,11 @@ impl TriMesh {
     /// It may be useful to call `self.remove_duplicate_vertices()` before this method, in order to fix the
     /// index buffer if some of the vertices of this trimesh are duplicated.
     fn compute_pseudo_normals(&mut self) {
-        use na::RealField;
-
         let mut vertices_pseudo_normal = vec![Vector::zeros(); self.vertices().len()];
         let mut edges_pseudo_normal = HashMap::default();
         let mut edges_multiplicity = HashMap::default();
 
-        for (k, idx) in self.indices().iter().enumerate() {
+        for idx in self.indices() {
             let vtx = self.vertices();
             let tri = Triangle::new(
                 vtx[idx[0] as usize],

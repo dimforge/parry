@@ -54,3 +54,117 @@ impl FeatureId {
         }
     }
 }
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+/// A feature id where the feature type is packed into the same value as the feature index.
+pub struct PackedFeatureId(pub u32);
+
+impl PackedFeatureId {
+    /// Packed feature id identifying an unknown feature.
+    pub const UNKNOWN: Self = Self(0);
+
+    const CODE_MASK: u32 = 0x3fff_ffff;
+    const HEADER_MASK: u32 = !Self::CODE_MASK;
+    const HEADER_VERTEX: u32 = 0b01 << 30;
+    #[cfg(feature = "dim3")]
+    const HEADER_EDGE: u32 = 0b10 << 30;
+    const HEADER_FACE: u32 = 0b11 << 30;
+
+    /// Converts a vertex feature id into a packed feature id.
+    pub fn vertex(code: u32) -> Self {
+        assert_eq!(code & Self::HEADER_MASK, 0);
+        Self(Self::HEADER_VERTEX | code)
+    }
+
+    /// Converts a edge feature id into a packed feature id.
+    #[cfg(feature = "dim3")]
+    pub fn edge(code: u32) -> Self {
+        assert_eq!(code & Self::HEADER_MASK, 0);
+        Self(Self::HEADER_EDGE | code)
+    }
+
+    /// Converts a face feature id into a packed feature id.
+    pub fn face(code: u32) -> Self {
+        assert_eq!(code & Self::HEADER_MASK, 0);
+        Self(Self::HEADER_FACE | code)
+    }
+
+    #[cfg(feature = "dim2")]
+    /// Converts an array of vertex feature ids into an array of packed feature ids.
+    pub(crate) fn vertices(code: [u32; 2]) -> [Self; 2] {
+        [Self::vertex(code[0]), Self::vertex(code[1])]
+    }
+
+    #[cfg(feature = "dim3")]
+    /// Converts an array of vertex feature ids into an array of packed feature ids.
+    pub(crate) fn vertices(code: [u32; 4]) -> [Self; 4] {
+        [
+            Self::vertex(code[0]),
+            Self::vertex(code[1]),
+            Self::vertex(code[2]),
+            Self::vertex(code[3]),
+        ]
+    }
+
+    #[cfg(feature = "dim3")]
+    /// Converts an array of edge feature ids into an array of packed feature ids.
+    pub(crate) fn edges(code: [u32; 4]) -> [Self; 4] {
+        [
+            Self::edge(code[0]),
+            Self::edge(code[1]),
+            Self::edge(code[2]),
+            Self::edge(code[3]),
+        ]
+    }
+
+    /// Unpacks this feature id into an explicit enum.
+    pub fn unpack(self) -> FeatureId {
+        let header = self.0 & Self::HEADER_MASK;
+        let code = self.0 & Self::CODE_MASK;
+        match header {
+            Self::HEADER_VERTEX => FeatureId::Vertex(code),
+            #[cfg(feature = "dim3")]
+            Self::HEADER_EDGE => FeatureId::Edge(code),
+            Self::HEADER_FACE => FeatureId::Face(code),
+            _ => FeatureId::Unknown,
+        }
+    }
+
+    /// Is the identified feature a face?
+    pub fn is_face(self) -> bool {
+        self.0 & Self::HEADER_MASK == Self::HEADER_FACE
+    }
+
+    /// Is the identified feature a vertex?
+    pub fn is_vertex(self) -> bool {
+        self.0 & Self::HEADER_MASK == Self::HEADER_VERTEX
+    }
+
+    /// Is the identified feature an edge?
+    #[cfg(feature = "dim3")]
+    pub fn is_edge(self) -> bool {
+        self.0 & Self::HEADER_MASK == Self::HEADER_EDGE
+    }
+
+    /// Is the identified feature unknown?
+    pub fn is_unknown(self) -> bool {
+        self == Self::UNKNOWN
+    }
+}
+
+impl From<FeatureId> for PackedFeatureId {
+    fn from(value: FeatureId) -> Self {
+        match value {
+            FeatureId::Face(fid) => Self::face(fid),
+            #[cfg(feature = "dim3")]
+            FeatureId::Edge(fid) => Self::edge(fid),
+            FeatureId::Vertex(fid) => Self::vertex(fid),
+            FeatureId::Unknown => Self::UNKNOWN,
+        }
+    }
+}
