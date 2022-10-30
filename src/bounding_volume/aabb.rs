@@ -170,9 +170,8 @@ impl Aabb {
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
         let center = self.center();
-        let rad = na::distance(&self.mins, &self.maxs);
-
-        BoundingSphere::new(center, rad)
+        let radius = na::distance(&self.mins, &self.maxs) * 0.5;
+        BoundingSphere::new(center, radius)
     }
 
     #[inline]
