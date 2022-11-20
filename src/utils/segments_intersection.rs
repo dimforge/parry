@@ -10,9 +10,9 @@ use na::ComplexField;
 pub enum SegmentsIntersection {
     /// Single point of intersection.
     Point {
-        /// Location of the first intersection point on the first segment.
+        /// Location of the intersection point on the first segment.
         loc1: SegmentPointLocation,
-        /// Location of the second intersection point on the second segment.
+        /// Location of the intersection point on the second segment.
         loc2: SegmentPointLocation,
     },
     /// Intersection along a segment (when both segments are collinear).
