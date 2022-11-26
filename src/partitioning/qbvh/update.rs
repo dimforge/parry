@@ -40,10 +40,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         let id = data.index();
         let proxy = self.proxies.get_mut(id)?;
         let node = self.nodes.get_mut(proxy.node.index as usize)?;
+        node.children[proxy.node.lane as usize] = u32::MAX;
 
         if !node.is_dirty() {
             node.set_dirty(true);
-            node.children[proxy.node.lane as usize] = u32::MAX;
             self.dirty_nodes.push(proxy.node.index);
         }
 
@@ -63,13 +63,13 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 .extend_from_slice(&[root, QbvhNode::empty_leaf_with_parent(NodeIndex::new(0, 0))]);
         }
 
-        let id = data.index();
+        let proxy_id = data.index();
 
-        if self.proxies.len() <= id {
-            self.proxies.resize(id + 1, QbvhProxy::invalid());
+        if self.proxies.len() <= proxy_id {
+            self.proxies.resize(proxy_id + 1, QbvhProxy::invalid());
         }
 
-        let proxy = &mut self.proxies[id];
+        let proxy = &mut self.proxies[proxy_id];
         proxy.data = data;
 
         if proxy.is_detached() {
@@ -78,7 +78,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 let mut child = self.nodes[0].children[ii];
 
                 if child == u32::MAX {
-                    // Missing node, add it.
+                    // Missing node, create it.
                     child = self.nodes.len() as u32;
                     self.nodes
                         .push(QbvhNode::empty_leaf_with_parent(NodeIndex::new(
@@ -88,20 +88,18 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 }
 
                 let child_node = &mut self.nodes[child as usize];
-                if child_node.children[SIMD_WIDTH - 1] == u32::MAX {
-                    // Insert into this node.
-                    for kk in 0..SIMD_WIDTH {
-                        if child_node.children[kk] == u32::MAX {
-                            child_node.children[kk] = id as u32;
-                            proxy.node = NodeIndex::new(child, kk as u8);
+                // Insert into this node if there is room.
+                for kk in 0..SIMD_WIDTH {
+                    if child_node.children[kk] == u32::MAX {
+                        child_node.children[kk] = proxy_id as u32;
+                        proxy.node = NodeIndex::new(child, kk as u8);
 
-                            if !child_node.is_dirty() {
-                                self.dirty_nodes.push(child);
-                                child_node.set_dirty(true);
-                            }
-
-                            return;
+                        if !child_node.is_dirty() {
+                            self.dirty_nodes.push(child);
+                            child_node.set_dirty(true);
                         }
+
+                        return;
                     }
                 }
             }
@@ -119,28 +117,23 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 }
             }
 
+            let new_leaf_node_id = self.nodes.len() as u32 + 1;
+            let mut new_leaf_node = QbvhNode::empty_leaf_with_parent(NodeIndex::new(0, 1));
+            new_leaf_node.children[0] = proxy_id as u32;
             // The first new node contains the (unmodified) old root, the second
             // new node contains the newly added proxy.
-            self.dirty_nodes.push(self.nodes.len() as u32 + 1);
-
-            let mut new_leaf_node = QbvhNode::empty_leaf_with_parent(NodeIndex::new(0, 1));
-            new_leaf_node.children[0] = id as u32;
+            self.dirty_nodes.push(new_leaf_node_id);
             new_leaf_node.set_dirty(true);
+            proxy.node = NodeIndex::new(new_leaf_node_id, 0);
 
             let new_root_children = [
                 self.nodes.len() as u32,
-                self.nodes.len() as u32 + 1,
-                self.nodes.len() as u32 + 2,
-                self.nodes.len() as u32 + 3,
+                new_leaf_node_id,
+                u32::MAX,
+                u32::MAX,
             ];
 
-            self.nodes.extend_from_slice(&[
-                old_root,
-                new_leaf_node,
-                QbvhNode::empty_leaf_with_parent(NodeIndex::new(0, 2)),
-                QbvhNode::empty_leaf_with_parent(NodeIndex::new(0, 3)),
-            ]);
-
+            self.nodes.extend_from_slice(&[old_root, new_leaf_node]);
             self.nodes[0].children = new_root_children;
         } else {
             let node = &mut self.nodes[proxy.node.index as usize];
@@ -176,7 +169,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     }
 
     #[doc(hidden)]
-    pub fn check_topology(&self, aabb_builder: impl Fn(&LeafData) -> Aabb) {
+    pub fn check_topology(&self, check_aabbs: bool, aabb_builder: impl Fn(&LeafData) -> Aabb) {
         if self.nodes.is_empty() {
             return;
         }
@@ -200,14 +193,18 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 // Check parent <-> children indices.
                 assert!(!parent.is_leaf());
                 assert_eq!(parent.children[node.parent.lane as usize], id);
-                // Make sure the parent AABB contains its child AABB.
-                assert!(
-                    parent
-                        .simd_aabb
-                        .extract(node.parent.lane as usize)
-                        .contains(&node.simd_aabb.to_merged_aabb()),
-                    "failed for {id}"
-                );
+
+                if check_aabbs {
+                    // Make sure the parent AABB contains its child AABB.
+                    assert!(
+                        parent
+                            .simd_aabb
+                            .extract(node.parent.lane as usize)
+                            .contains(&node.simd_aabb.to_merged_aabb()),
+                        "failed for {id}"
+                    );
+                }
+
                 // If this node is changed, its parent is changed too.
                 if node.is_changed() {
                     assert!(parent.is_changed());
@@ -222,15 +219,19 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                         assert!(!proxy_id_found[proxy_id as usize]);
                         proxy_id_found[proxy_id as usize] = true;
 
-                        // Proxy AABB is correct.
-                        let aabb = node.simd_aabb.extract(ii);
-                        assert!(aabb.contains(&aabb_builder(&self.proxies[proxy_id as usize].data)));
-                        // assert_eq!(aabb, aabb_builder(&self.proxies[proxy_id as usize].data));
+                        if check_aabbs {
+                            // Proxy AABB is correct.
+                            let aabb = node.simd_aabb.extract(ii);
+                            assert!(
+                                aabb.contains(&aabb_builder(&self.proxies[proxy_id as usize].data))
+                            );
+                        }
 
                         // Proxy node reference is correct.
                         assert_eq!(
                             self.proxies[proxy_id as usize].node,
-                            NodeIndex::new(id, ii as u8)
+                            NodeIndex::new(id, ii as u8),
+                            "Failed {proxy_id}"
                         );
                     }
                 }
@@ -244,7 +245,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         }
 
         // Each proxy was visited once.
-        assert!(proxy_id_found.iter().all(|found| *found));
+        assert_eq!(
+            proxy_id_found.iter().filter(|found| **found).count(),
+            self.proxies.iter().filter(|p| !p.is_detached()).count()
+        );
     }
 
     /// Update all the nodes that have been marked as dirty by [`Qbvh::pre_update_or_insert`],
