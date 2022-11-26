@@ -34,7 +34,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
         curr_node: u32,
     ) -> bool {
         let node = &self.nodes[curr_node as usize];
-        let leaf_data = if node.leaf {
+        let leaf_data = if node.is_leaf() {
             Some(
                 array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
             )
@@ -51,7 +51,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
                 for ii in 0..SIMD_WIDTH {
                     if (bitmask & (1 << ii)) != 0 {
-                        if !node.leaf {
+                        if !node.is_leaf() {
                             // Internal node, visit the child.
                             // Unfortunately, we have this check because invalid Aabbs
                             // return a hit as well.
@@ -132,7 +132,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
             }
 
             let node = &self.nodes[entry.value as usize];
-            let leaf_data = if node.leaf {
+            let leaf_data = if node.is_leaf() {
                 Some(
                     array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
@@ -157,7 +157,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
                     for ii in 0..SIMD_WIDTH {
                         if (bitmask & (1 << ii)) != 0 {
-                            if node.leaf {
+                            if node.is_leaf() {
                                 if weights[ii] < *best_cost && results[ii].is_some() {
                                     // We found a leaf!
                                     if let Some(proxy) =

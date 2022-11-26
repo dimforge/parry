@@ -174,7 +174,7 @@ pub struct TopoVertex {
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
 pub struct TopoFace {
-    /// The half-edge adjascent to this face, whith a starting point equal
+    /// The half-edge adjacent to this face, with a starting point equal
     /// to the first point of this face.
     pub half_edge: u32,
 }

@@ -3,7 +3,8 @@
 #[cfg(feature = "std")]
 pub use self::qbvh::{CenterDataSplitter, QbvhDataGenerator, QbvhNonOverlappingDataSplitter};
 pub use self::qbvh::{
-    GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, QbvhStorage, SimdNodeIndex,
+    GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, QbvhStorage,
+    QbvhUpdateWorkspace, SimdNodeIndex,
 };
 #[cfg(feature = "parallel")]
 pub use self::visitor::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor};

@@ -1,5 +1,12 @@
 # Change Log
 
+## Unreleased
+
+### Added
+- Add `Qbvh::remove`, `Qbvh::pre_update_or_insert`, `Qbvh::refit`, `Qbvh::rebalance` to allow modifying a `Qbvh`
+  without having to rebuild it completely.
+- Add `SharedShape::trimesh_with_flags` for building a trimesh with specific pre-processing flags.
+
 ## v0.11.1 (30 Oct. 2022)
 
 ### Added
