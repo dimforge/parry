@@ -317,7 +317,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Rebalances the `Qbvh` tree.
     ///
     /// This will modify the topology of this tree. This assumes that the leaf AABBs have
-    /// already been updated with [`Qbvh::refit`] or [`Qbvh::clear_and_rebuild`].
+    /// already been updated with [`Qbvh::refit`].
     pub fn rebalance(&mut self, margin: Real, workspace: &mut QbvhUpdateWorkspace) {
         if self.nodes.is_empty() {
             return;
