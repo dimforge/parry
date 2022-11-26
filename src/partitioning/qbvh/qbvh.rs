@@ -2,6 +2,7 @@ use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::{Real, Vector};
 use crate::partitioning::qbvh::storage::QbvhStorage;
 use crate::utils::DefaultStorage;
+use bitflags::bitflags;
 
 use na::SimdValue;
 
@@ -80,6 +81,29 @@ impl NodeIndex {
             lane: 0,
         }
     }
+
+    pub(super) fn is_invalid(&self) -> bool {
+        self.index == u32::MAX
+    }
+}
+
+bitflags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[cfg_attr(
+        feature = "rkyv",
+        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    )]
+    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+    #[derive(Default)]
+    /// The status of a QBVH node.
+    pub struct QbvhNodeFlags: u8 {
+        /// If this bit is set, the node is a leaf.
+        const LEAF = 0b0001;
+        /// If this bit is set, this node was recently changed.
+        const CHANGED = 0b0010;
+        /// Does this node need an update?
+        const DIRTY = 0b0100;
+    }
 }
 
 /// A SIMD node of an SIMD Qbvh.
@@ -100,9 +124,62 @@ pub struct QbvhNode {
     pub children: [u32; 4],
     /// The index of the node parent to the 4 nodes represented by `self`.
     pub parent: NodeIndex,
-    /// Are the four nodes represented by `self` leaves of the `Qbvh`?
-    pub leaf: bool, // TODO: pack this with the NodexIndex.lane?
-    pub(super) dirty: bool, // TODO: move this to a separate bitvec?
+    /// Status flags for this node.
+    pub flags: QbvhNodeFlags,
+}
+
+impl QbvhNode {
+    #[inline]
+    /// Is this node a leaf?
+    pub fn is_leaf(&self) -> bool {
+        self.flags.contains(QbvhNodeFlags::LEAF)
+    }
+
+    #[inline]
+    /// Does the AABB of this node needs to be updated?
+    pub fn is_dirty(&self) -> bool {
+        self.flags.contains(QbvhNodeFlags::DIRTY)
+    }
+
+    #[inline]
+    /// Sets if the AABB of this node needs to be updated.
+    pub fn set_dirty(&mut self, dirty: bool) {
+        self.flags.set(QbvhNodeFlags::DIRTY, dirty);
+    }
+
+    #[inline]
+    /// Was the AABB of this node changed since the last rebalancing?
+    pub fn is_changed(&self) -> bool {
+        self.flags.contains(QbvhNodeFlags::CHANGED)
+    }
+
+    #[inline]
+    /// Sets if the AABB of this node changed since the last rebalancing.
+    pub fn set_changed(&mut self, changed: bool) {
+        self.flags.set(QbvhNodeFlags::CHANGED, changed);
+    }
+
+    #[inline]
+    /// An empty internal node.
+    pub fn empty() -> Self {
+        Self {
+            simd_aabb: SimdAabb::new_invalid(),
+            children: [u32::MAX; 4],
+            parent: NodeIndex::invalid(),
+            flags: QbvhNodeFlags::default(),
+        }
+    }
+
+    #[inline]
+    /// An empty leaf.
+    pub fn empty_leaf_with_parent(parent: NodeIndex) -> Self {
+        Self {
+            simd_aabb: SimdAabb::new_invalid(),
+            children: [u32::MAX; 4],
+            parent,
+            flags: QbvhNodeFlags::LEAF,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -137,6 +214,10 @@ impl<LeafData> QbvhProxy<LeafData> {
             data,
         }
     }
+
+    pub(super) fn is_detached(&self) -> bool {
+        self.node.is_invalid()
+    }
 }
 
 /// A quaternary bounding-volume-hierarchy.
@@ -153,6 +234,7 @@ pub struct GenericQbvh<LeafData, Storage: QbvhStorage<LeafData>> {
     pub(super) root_aabb: Aabb,
     pub(super) nodes: Storage::Nodes,
     pub(super) dirty_nodes: Storage::ArrayU32,
+    pub(super) free_list: Storage::ArrayU32,
     pub(super) proxies: Storage::ArrayProxies,
 }
 
@@ -179,6 +261,7 @@ where
             root_aabb: self.root_aabb,
             nodes: self.nodes.clone(),
             dirty_nodes: self.dirty_nodes.clone(),
+            free_list: self.free_list.clone(),
             proxies: self.proxies.clone(),
         }
     }
@@ -211,6 +294,7 @@ impl<LeafData: DeviceCopy> CudaQbvh<LeafData> {
             root_aabb: self.root_aabb,
             nodes: self.nodes.as_device_ptr(),
             dirty_nodes: self.dirty_nodes.as_device_ptr(),
+            free_list: self.free_list.as_device_ptr(),
             proxies: self.proxies.as_device_ptr(),
         }
     }
@@ -224,6 +308,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             root_aabb: Aabb::new_invalid(),
             nodes: Vec::new(),
             dirty_nodes: Vec::new(),
+            free_list: Vec::new(),
             proxies: Vec::new(),
         }
     }
@@ -238,6 +323,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             root_aabb: self.root_aabb,
             nodes: CudaArray1::new(&self.nodes)?,
             dirty_nodes: CudaArray1::new(&self.dirty_nodes)?,
+            free_list: CudaArray1::new(&self.free_list)?,
             proxies: CudaArray1::new(&self.proxies)?,
         })
     }
@@ -265,7 +351,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     pub fn leaf_data(&mut self, node_id: NodeIndex) -> Option<LeafData> {
         let node = self.nodes.get(node_id.index as usize)?;
 
-        if !node.leaf {
+        if !node.is_leaf() {
             return None;
         }
 

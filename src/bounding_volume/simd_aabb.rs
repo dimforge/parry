@@ -134,6 +134,12 @@ impl SimdAabb {
         }
     }
 
+    /// Enlarges this bounding volume by the given margin.
+    pub fn loosen(&mut self, margin: SimdReal) {
+        self.mins -= Vector::repeat(margin);
+        self.maxs += Vector::repeat(margin);
+    }
+
     /// Dilate all the Aabbs represented by `self`` by their extents multiplied
     /// by the given scale `factor`.
     pub fn dilate_by_factor(&mut self, factor: SimdReal) {

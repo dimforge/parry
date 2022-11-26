@@ -1,7 +1,9 @@
 //! Spatial partitioning tools.
 
 #[cfg(feature = "std")]
-pub use self::qbvh::{CenterDataSplitter, QbvhDataGenerator, QbvhNonOverlappingDataSplitter};
+pub use self::qbvh::{
+    CenterDataSplitter, QbvhDataGenerator, QbvhNonOverlappingDataSplitter, QbvhUpdateWorkspace,
+};
 pub use self::qbvh::{
     GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, QbvhStorage, SimdNodeIndex,
 };

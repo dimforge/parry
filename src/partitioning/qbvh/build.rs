@@ -1,4 +1,4 @@
-use crate::bounding_volume::{Aabb, BoundingVolume, SimdAabb};
+use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Vector;
 use crate::math::{Point, Real};
 use crate::query::SplitResult;
@@ -6,7 +6,7 @@ use crate::simd::SimdReal;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;
-use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy};
+use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhNodeFlags, QbvhProxy};
 
 pub struct BuilderProxies<'a, LeafData> {
     proxies: &'a mut Vec<QbvhProxy<LeafData>>,
@@ -67,24 +67,24 @@ impl<LeafData> QbvhDataSplitter<LeafData> for CenterDataSplitter {
         _: &'idx mut Vec<usize>,
         proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
-        self.split_dataset_wo_workspace(subdiv_dims, center, indices, proxies)
+        self.split_dataset_wo_workspace(subdiv_dims, center, indices, &*proxies.aabbs)
     }
 }
 
 impl CenterDataSplitter {
-    fn split_dataset_wo_workspace<'idx, LeafData>(
-        &mut self,
+    pub(crate) fn split_dataset_wo_workspace<'idx>(
+        &self,
         subdiv_dims: [usize; 2],
         center: Point<Real>,
         indices: &'idx mut [usize],
-        proxies: BuilderProxies<LeafData>,
+        aabbs: &[Aabb],
     ) -> [&'idx mut [usize]; 4] {
         // TODO: should we split wrt. the median instead of the average?
         // TODO: we should ensure each subslice contains at least 4 elements each (or less if
         // indices has less than 16 elements in the first place).
         let (left, right) = split_indices_wrt_dim(
             indices,
-            &proxies.aabbs,
+            aabbs,
             &center,
             subdiv_dims[0],
             self.enable_fallback_split,
@@ -92,14 +92,14 @@ impl CenterDataSplitter {
 
         let (left_bottom, left_top) = split_indices_wrt_dim(
             left,
-            &proxies.aabbs,
+            aabbs,
             &center,
             subdiv_dims[1],
             self.enable_fallback_split,
         );
         let (right_bottom, right_top) = split_indices_wrt_dim(
             right,
-            &proxies.aabbs,
+            aabbs,
             &center,
             subdiv_dims[1],
             self.enable_fallback_split,
@@ -219,7 +219,7 @@ where
         }
 
         // 3: Partition the indices.
-        let mut center_splitter = CenterDataSplitter {
+        let center_splitter = CenterDataSplitter {
             enable_fallback_split: false,
         };
 
@@ -227,7 +227,7 @@ where
             subdiv_dims,
             split_pt,
             indices_workspace,
-            proxies,
+            &*proxies.aabbs,
         )
     }
 }
@@ -281,6 +281,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         mut splitter: impl QbvhDataSplitter<LeafData>,
         dilation_factor: Real,
     ) {
+        self.free_list.clear();
         self.nodes.clear();
         self.proxies.clear();
 
@@ -306,8 +307,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             simd_aabb: SimdAabb::new_invalid(),
             children: [1, u32::MAX, u32::MAX, u32::MAX],
             parent: NodeIndex::invalid(),
-            leaf: false,
-            dirty: false,
+            flags: QbvhNodeFlags::default(),
         };
 
         self.nodes.push(root_node);
@@ -340,12 +340,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         if indices.len() <= 4 {
             // Leaf case.
             let my_id = self.nodes.len();
-            let mut my_aabb = Aabb::new_invalid();
             let mut leaf_aabbs = [Aabb::new_invalid(); 4];
             let mut proxy_ids = [u32::MAX; 4];
 
             for (k, id) in indices.iter().enumerate() {
-                my_aabb.merge(&aabbs[*id]);
                 leaf_aabbs[k] = aabbs[*id];
                 proxy_ids[k] = *id as u32;
                 self.proxies[*id].node = NodeIndex::new(my_id as u32, k as u8);
@@ -355,12 +353,13 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 simd_aabb: SimdAabb::from(leaf_aabbs),
                 children: proxy_ids,
                 parent,
-                leaf: true,
-                dirty: false,
+                flags: QbvhNodeFlags::LEAF,
             };
 
             node.simd_aabb.dilate_by_factor(SimdReal::splat(dilation));
+            let my_aabb = node.simd_aabb.to_merged_aabb();
             self.nodes.push(node);
+
             return (my_id as u32, my_aabb);
         }
 
@@ -403,8 +402,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             simd_aabb: SimdAabb::new_invalid(),
             children: [0; 4], // Will be set after the recursive call
             parent,
-            leaf: false,
-            dirty: false,
+            flags: QbvhNodeFlags::default(),
         };
 
         let id = self.nodes.len() as u32;
@@ -442,12 +440,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             .simd_aabb
             .dilate_by_factor(SimdReal::splat(dilation));
 
-        // TODO: will this chain of .merged be properly optimized?
-        let my_aabb = children[0]
-            .1
-            .merged(&children[1].1)
-            .merged(&children[2].1)
-            .merged(&children[3].1);
+        let my_aabb = self.nodes[id as usize].simd_aabb.to_merged_aabb();
         (id, my_aabb)
     }
 }
