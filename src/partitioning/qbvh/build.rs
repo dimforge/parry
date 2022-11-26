@@ -281,6 +281,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         mut splitter: impl QbvhDataSplitter<LeafData>,
         dilation_factor: Real,
     ) {
+        self.free_list.clear();
         self.nodes.clear();
         self.proxies.clear();
 
