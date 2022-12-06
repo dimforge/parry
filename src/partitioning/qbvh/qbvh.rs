@@ -262,7 +262,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Returns the data associated to a given leaf.
     ///
     /// Returns `None` if the provided node ID does not identify a leaf.
-    pub fn leaf_data(&mut self, node_id: NodeIndex) -> Option<LeafData> {
+    pub fn leaf_data(&self, node_id: NodeIndex) -> Option<LeafData> {
         let node = self.nodes.get(node_id.index as usize)?;
 
         if !node.leaf {
