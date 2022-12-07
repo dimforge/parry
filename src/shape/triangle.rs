@@ -694,9 +694,8 @@ impl ConvexPolyhedron for Triangle {
 #[cfg(feature = "dim2")]
 #[cfg(test)]
 mod test {
-    use crate::math::Real;
     use crate::shape::Triangle;
-    use na::Point3;
+    use na::Point2;
 
     #[test]
     fn test_triangle_area() {
