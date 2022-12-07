@@ -452,8 +452,23 @@ impl Triangle {
     }
 
     /// Tests if a point is inside of this triangle.
+    #[cfg(feature = "dim2")]
     pub fn contains_point(&self, p: &Point<Real>) -> bool {
-        const EPS : Real = crate::math::DEFAULT_EPSILON;
+        let ab = self.b - self.a;
+        let bc = self.c - self.b;
+        let ca = self.a - self.c;
+        let sgn1 = ab.perp(&(p - self.a));
+        let sgn2 = bc.perp(&(p - self.b));
+        let sgn3 = ca.perp(&(p - self.c));
+        sgn1.signum() * sgn2.signum() >= 0.0
+            && sgn1.signum() * sgn3.signum() >= 0.0
+            && sgn2.signum() * sgn3.signum() >= 0.0
+    }
+
+    /// Tests if a point is inside of this triangle.
+    #[cfg(feature = "dim3")]
+    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+        const EPS: Real = crate::math::DEFAULT_EPSILON;
 
         let vb = self.b - self.a;
         let vc = self.c - self.a;
@@ -491,12 +506,11 @@ impl Triangle {
         let c = vp.dot(&nb) * signed_clim.signum();
         let clim = signed_clim.abs();
 
-        return
-            c >= 0.0 &&
-            c <= clim &&
-            b >= 0.0 &&
-            b <= blim &&
-            c * blim + b * clim <= blim * clim;
+        return c >= 0.0
+            && c <= clim
+            && b >= 0.0
+            && b <= blim
+            && c * blim + b * clim <= blim * clim;
     }
 
     /// The normal of the given feature of this shape.
@@ -547,7 +561,6 @@ impl Triangle {
         std::mem::swap(&mut self.b, &mut self.c);
     }
 }
-
 
 impl SupportMap for Triangle {
     #[inline]
@@ -678,11 +691,53 @@ impl ConvexPolyhedron for Triangle {
 }
 */
 
+#[cfg(feature = "dim2")]
+#[cfg(test)]
+mod test {
+    use crate::math::Real;
+    use crate::shape::Triangle;
+    use na::Point3;
+
+    #[test]
+    fn test_triangle_area() {
+        let pa = Point2::new(5.0, 0.0);
+        let pb = Point2::new(0.0, 0.0);
+        let pc = Point2::new(0.0, 4.0);
+
+        assert!(relative_eq!(Triangle::new(pa, pb, pc).area(), 10.0));
+    }
+
+    #[test]
+    fn test_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point2::new(5.0, 0.0),
+            Point2::new(0.0, 0.0),
+            Point2::new(0.0, 4.0),
+        );
+
+        assert!(tri.contains_point(&Point2::new(1.0, 1.0)));
+        assert!(!tri.contains_point(&Point2::new(-1.0, 1.0)));
+    }
+
+    #[test]
+    fn test_obtuse_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point2::new(-10.0, 10.0),
+            Point2::new(0.0, 0.0),
+            Point2::new(20.0, 0.0),
+        );
+
+        assert!(tri.contains_point(&Point2::new(-3.0, 5.0)));
+        assert!(tri.contains_point(&Point2::new(5.0, 1.0)));
+        assert!(!tri.contains_point(&Point2::new(0.0, -1.0)));
+    }
+}
+
 #[cfg(feature = "dim3")]
 #[cfg(test)]
 mod test {
-    use crate::shape::Triangle;
     use crate::math::Real;
+    use crate::shape::Triangle;
     use na::Point3;
 
     #[test]
@@ -752,18 +807,25 @@ mod test {
         // a number of points along a line intersecting the triangle.
         for i in -50i16..150 {
             let a = 0.15;
-            let b = 0.01 * Real::from(i);  // b ranges from -0.5 to 1.5
+            let b = 0.01 * Real::from(i); // b ranges from -0.5 to 1.5
             let c = 1.0 - a - b;
             let p = o + (va * a + vb * b + vc * c);
 
             match i {
-                ii if ii < 0 || ii > 85 =>
-                    assert!(!tri.contains_point(&p), "Should not contain: i = {}, b = {}", i, b),
-                ii if ii > 0 && ii < 85 =>
-                    assert!(tri.contains_point(&p), "Should contain: i = {}, b = {}", i, b),
-                _ => (),  // Points at the edge may be seen as inside or outside
+                ii if ii < 0 || ii > 85 => assert!(
+                    !tri.contains_point(&p),
+                    "Should not contain: i = {}, b = {}",
+                    i,
+                    b
+                ),
+                ii if ii > 0 && ii < 85 => assert!(
+                    tri.contains_point(&p),
+                    "Should contain: i = {}, b = {}",
+                    i,
+                    b
+                ),
+                _ => (), // Points at the edge may be seen as inside or outside
             }
         }
-
     }
 }
