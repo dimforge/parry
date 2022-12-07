@@ -452,25 +452,65 @@ impl Triangle {
     }
 
     /// Tests if a point is inside of this triangle.
+    #[cfg(feature = "dim2")]
     pub fn contains_point(&self, p: &Point<Real>) -> bool {
-        let p1p2 = self.b - self.a;
-        let p2p3 = self.c - self.b;
-        let p3p1 = self.a - self.c;
+        let ab = self.b - self.a;
+        let bc = self.c - self.b;
+        let ca = self.a - self.c;
+        let sgn1 = ab.perp(&(p - self.a));
+        let sgn2 = bc.perp(&(p - self.b));
+        let sgn3 = ca.perp(&(p - self.c));
+        sgn1.signum() * sgn2.signum() >= 0.0
+            && sgn1.signum() * sgn3.signum() >= 0.0
+            && sgn2.signum() * sgn3.signum() >= 0.0
+    }
 
-        let p1p = *p - self.a;
-        let p2p = *p - self.b;
-        let p3p = *p - self.c;
+    /// Tests if a point is inside of this triangle.
+    #[cfg(feature = "dim3")]
+    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+        const EPS: Real = crate::math::DEFAULT_EPSILON;
 
-        let d11 = p1p.dot(&p1p2);
-        let d12 = p2p.dot(&p2p3);
-        let d13 = p3p.dot(&p3p1);
+        let vb = self.b - self.a;
+        let vc = self.c - self.a;
+        let vp = p - self.a;
 
-        d11 >= 0.0
-            && d11 <= p1p2.norm_squared()
-            && d12 >= 0.0
-            && d12 <= p2p3.norm_squared()
-            && d13 >= 0.0
-            && d13 <= p3p1.norm_squared()
+        let n = vc.cross(&vb);
+        let n_norm = n.norm_squared();
+        if n_norm < EPS || vp.dot(&n).abs() > EPS * n_norm {
+            // the triangle is degenerate or the
+            // point does not lie on the same plane as the triangle.
+            return false;
+        }
+
+        // We are seeking B, C such that vp = vb * B + vc * C .
+        // If B and C are both in [0, 1] and B + C <= 1 then p is in the triangle.
+        //
+        // We can project this equation along a vector nb coplanar to the triangle
+        // and perpendicular to vb:
+        // vp.dot(nb) = vb.dot(nb) * B + vc.dot(nb) * C
+        //     => C = vp.dot(nb) / vc.dot(nb)
+        // and similarly for B.
+        //
+        // In order to avoid divisions and sqrts we scale both B and C - so
+        // b = vb.dot(nc) * B and c = vc.dot(nb) * C - this results in harder-to-follow math but
+        // hopefully fast code.
+
+        let nb = vb.cross(&n);
+        let nc = vc.cross(&n);
+
+        let signed_blim = vb.dot(&nc);
+        let b = vp.dot(&nc) * signed_blim.signum();
+        let blim = signed_blim.abs();
+
+        let signed_clim = vc.dot(&nb);
+        let c = vp.dot(&nb) * signed_clim.signum();
+        let clim = signed_clim.abs();
+
+        return c >= 0.0
+            && c <= clim
+            && b >= 0.0
+            && b <= blim
+            && c * blim + b * clim <= blim * clim;
     }
 
     /// The normal of the given feature of this shape.
@@ -651,9 +691,51 @@ impl ConvexPolyhedron for Triangle {
 }
 */
 
+#[cfg(feature = "dim2")]
+#[cfg(test)]
+mod test {
+    use crate::shape::Triangle;
+    use na::Point2;
+
+    #[test]
+    fn test_triangle_area() {
+        let pa = Point2::new(5.0, 0.0);
+        let pb = Point2::new(0.0, 0.0);
+        let pc = Point2::new(0.0, 4.0);
+
+        assert!(relative_eq!(Triangle::new(pa, pb, pc).area(), 10.0));
+    }
+
+    #[test]
+    fn test_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point2::new(5.0, 0.0),
+            Point2::new(0.0, 0.0),
+            Point2::new(0.0, 4.0),
+        );
+
+        assert!(tri.contains_point(&Point2::new(1.0, 1.0)));
+        assert!(!tri.contains_point(&Point2::new(-1.0, 1.0)));
+    }
+
+    #[test]
+    fn test_obtuse_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point2::new(-10.0, 10.0),
+            Point2::new(0.0, 0.0),
+            Point2::new(20.0, 0.0),
+        );
+
+        assert!(tri.contains_point(&Point2::new(-3.0, 5.0)));
+        assert!(tri.contains_point(&Point2::new(5.0, 1.0)));
+        assert!(!tri.contains_point(&Point2::new(0.0, -1.0)));
+    }
+}
+
 #[cfg(feature = "dim3")]
 #[cfg(test)]
 mod test {
+    use crate::math::Real;
     use crate::shape::Triangle;
     use na::Point3;
 
@@ -664,5 +746,85 @@ mod test {
         let pc = Point3::new(0.0, 0.0, 4.0);
 
         assert!(relative_eq!(Triangle::new(pa, pb, pc).area(), 10.0));
+    }
+
+    #[test]
+    fn test_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point3::new(0.0, 5.0, 0.0),
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(0.0, 0.0, 4.0),
+        );
+
+        assert!(tri.contains_point(&Point3::new(0.0, 1.0, 1.0)));
+        assert!(!tri.contains_point(&Point3::new(0.0, -1.0, 1.0)));
+    }
+
+    #[test]
+    fn test_obtuse_triangle_contains_point() {
+        let tri = Triangle::new(
+            Point3::new(-10.0, 10.0, 0.0),
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(20.0, 0.0, 0.0),
+        );
+
+        assert!(tri.contains_point(&Point3::new(-3.0, 5.0, 0.0)));
+        assert!(tri.contains_point(&Point3::new(5.0, 1.0, 0.0)));
+        assert!(!tri.contains_point(&Point3::new(0.0, -1.0, 0.0)));
+    }
+
+    #[test]
+    fn test_3dtriangle_contains_point() {
+        let o = Point3::new(0.0, 0.0, 0.0);
+        let pa = Point3::new(1.2, 1.4, 5.6);
+        let pb = Point3::new(1.5, 6.7, 1.9);
+        let pc = Point3::new(5.0, 2.1, 1.3);
+
+        let tri = Triangle::new(pa, pb, pc);
+
+        let va = pa - o;
+        let vb = pb - o;
+        let vc = pc - o;
+
+        let n = (pa - pb).cross(&(pb - pc));
+
+        // This is a simple algorithm for generating points that are inside the
+        // triangle: o + (va * alpha + vb * beta + vc * gamma) is always inside the
+        // triangle if:
+        // * each of alpha, beta, gamma is in (0, 1)
+        // * alpha + beta + gamma = 1
+        let contained_p = o + (va * 0.2 + vb * 0.3 + vc * 0.5);
+        let not_contained_coplanar_p = o + (va * -0.5 + vb * 0.8 + vc * 0.7);
+        let not_coplanar_p = o + (va * 0.2 + vb * 0.3 + vc * 0.5) + n * 0.1;
+        let not_coplanar_p2 = o + (va * -0.5 + vb * 0.8 + vc * 0.7) + n * 0.1;
+        assert!(tri.contains_point(&contained_p));
+        assert!(!tri.contains_point(&not_contained_coplanar_p));
+        assert!(!tri.contains_point(&not_coplanar_p));
+        assert!(!tri.contains_point(&not_coplanar_p2));
+
+        // Test that points that are clearly within the triangle as seen as such, by testing
+        // a number of points along a line intersecting the triangle.
+        for i in -50i16..150 {
+            let a = 0.15;
+            let b = 0.01 * Real::from(i); // b ranges from -0.5 to 1.5
+            let c = 1.0 - a - b;
+            let p = o + (va * a + vb * b + vc * c);
+
+            match i {
+                ii if ii < 0 || ii > 85 => assert!(
+                    !tri.contains_point(&p),
+                    "Should not contain: i = {}, b = {}",
+                    i,
+                    b
+                ),
+                ii if ii > 0 && ii < 85 => assert!(
+                    tri.contains_point(&p),
+                    "Should contain: i = {}, b = {}",
+                    i,
+                    b
+                ),
+                _ => (), // Points at the edge may be seen as inside or outside
+            }
+        }
     }
 }
