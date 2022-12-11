@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.12.0 (11 Nov. 2022)
+## v0.12.0 (11 Dec. 2022)
 
 ### Modified
 - `Qbvh::leaf_data` now requires `&self` instead of `&mut self`.
