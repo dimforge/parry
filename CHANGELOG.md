@@ -1,11 +1,19 @@
 # Change Log
 
-## Unreleased
+## v0.12.0 (11 Nov. 2022)
+
+### Modified
+- `Qbvh::leaf_data` now requires `&self` instead of `&mut self`.
+- Replace the `Qbvh::leaf` boolean by a bitflags.
 
 ### Added
 - Add `Qbvh::remove`, `Qbvh::pre_update_or_insert`, `Qbvh::refit`, `Qbvh::rebalance` to allow modifying a `Qbvh`
   without having to rebuild it completely.
+- Add `QbvhNode::is_leaf` to get if a node is a leaf or not.
 - Add `SharedShape::trimesh_with_flags` for building a trimesh with specific pre-processing flags.
+
+### Fixed
+- Fix `Triangle::contains_point`.
 
 ## v0.11.1 (30 Oct. 2022)
 

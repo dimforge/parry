@@ -63,7 +63,7 @@ jobs:
   build-cuda:
     runs-on: ubuntu-latest
     steps:
-      - uses: Jimver/cuda-toolkit@v0.2.4
+      - uses: Jimver/cuda-toolkit@v0.2.8
         with:
           cuda: '11.2.2'
       - name: Install nightly-2021-12-04
