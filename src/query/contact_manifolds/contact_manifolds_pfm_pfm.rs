@@ -92,13 +92,12 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 false,
             );
 
-            if manifold.points.is_empty() {
-                // cfg!(feature = "dim3") || (cfg!(feature = "dim2") && manifold.points.is_empty()) {
+            if cfg!(feature = "dim3") || (cfg!(feature = "dim2") && manifold.points.is_empty()) {
                 let contact = TrackedContact::new(
                     p1,
                     pos12.inverse_transform_point(&p2_1),
-                    PackedFeatureId::UNKNOWN, // FIXME: We don't know what features are involved.
-                    PackedFeatureId::UNKNOWN, // FIXME
+                    PackedFeatureId::UNKNOWN, // TODO: We don't know what features are involved.
+                    PackedFeatureId::UNKNOWN,
                     (p2_1 - p1).dot(&dir),
                 );
                 manifold.points.push(contact);
