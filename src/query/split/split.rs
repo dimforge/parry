@@ -8,3 +8,13 @@ pub enum SplitResult<T> {
     /// The shape being split is fully contained in the positive half-space of the plane.
     Positive,
 }
+
+/// The result of a plane-intersection operation.
+pub enum IntersectResult<T> {
+    /// The intersect operation yielded a result, lying in the plane
+    Intersect(T),
+    /// The shape being intersected is fully contained in the negative half-space of the plane.
+    Negative,
+    /// The shape being intersected is fully contained in the positive half-space of the plane.
+    Positive,
+}

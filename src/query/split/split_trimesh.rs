@@ -1,8 +1,10 @@
+use std::collections::HashSet;
+
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
-use crate::query::{PointQuery, SplitResult};
-use crate::shape::{Cuboid, FeatureId, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
+use crate::query::{IntersectResult, PointQuery, SplitResult};
+use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
@@ -342,6 +344,259 @@ impl TriMesh {
             let mesh_rhs = TriMesh::new(vertices_rhs, indices_rhs);
             SplitResult::Pair(mesh_lhs, mesh_rhs)
         }
+    }
+
+    /// Computes the intersection [`Polyline`]s between this mesh, transformed by `position`,
+    /// and a plane identified by its normal `axis` and the `bias`
+    /// (i.e. the plane passes through the point equal to `normal * bias`).
+    pub fn intersection_with_plane(
+        &self,
+        position: &Isometry<Real>,
+        axis: &UnitVector<Real>,
+        bias: Real,
+        epsilon: Real,
+    ) -> IntersectResult<Vec<Polyline>> {
+        let local_axis = position.inverse_transform_unit_vector(axis);
+        let added_bias = -position.translation.vector.dot(&axis);
+        self.intersection_with_local_plane(&local_axis, bias + added_bias, epsilon)
+    }
+
+    /// Computes the intersection [`Polyline`]s between this mesh
+    /// and a plane identified by its normal `local_axis`
+    /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
+    pub fn intersection_with_local_plane(
+        &self,
+        local_axis: &UnitVector<Real>,
+        bias: Real,
+        epsilon: Real,
+    ) -> IntersectResult<Vec<Polyline>> {
+        // 1. Partition the vertices.
+        let vertices = self.vertices();
+        let indices = self.indices();
+        let mut colors = vec![0u8; self.vertices().len()];
+
+        // Color 0 = on plane.
+        //       1 = on negative half-space.
+        //       2 = on positive half-space.
+        let mut found_negative = false;
+        let mut found_positive = false;
+        for (i, pt) in vertices.iter().enumerate() {
+            let dist_to_plane = pt.coords.dot(&local_axis) - bias;
+            if dist_to_plane < -epsilon {
+                found_negative = true;
+                colors[i] = 1;
+            } else if dist_to_plane > epsilon {
+                found_positive = true;
+                colors[i] = 2;
+            }
+        }
+
+        // Exit early if `self` isn’t crossed by the plane.
+        if !found_negative {
+            return IntersectResult::Positive;
+        }
+
+        if !found_positive {
+            return IntersectResult::Negative;
+        }
+
+        // 2. Split the triangles.
+        let mut index_adjacencies = HashMap::default(); // Adjacency list of indices
+
+        // Helper function for adding polyline segments to the adjacency list
+        let mut add_segment_adjacencies = |idx_a, idx_b| {
+            let _ = index_adjacencies
+                .entry(idx_a)
+                .and_modify(|list: &mut HashSet<u32>| {
+                    let _ = list.insert(idx_b);
+                })
+                .or_insert_with(|| {
+                    let mut adjacencies = HashSet::with_capacity(2);
+                    let _ = adjacencies.insert(idx_b);
+                    adjacencies
+                });
+            let _ = index_adjacencies
+                .entry(idx_b)
+                .and_modify(|list: &mut HashSet<u32>| {
+                    let _ = list.insert(idx_a);
+                })
+                .or_insert_with(|| {
+                    let mut adjacencies = HashSet::with_capacity(2);
+                    let _ = adjacencies.insert(idx_a);
+                    adjacencies
+                });
+        };
+
+        let mut intersections_found = HashMap::default();
+        let mut existing_vertices_found = HashMap::default();
+        let mut new_vertices = Vec::new();
+
+        for idx in indices.iter() {
+            let mut intersection_features = (FeatureId::Unknown, FeatureId::Unknown);
+
+            // First, find where the plane intersects the triangle.
+            for ia in 0..3 {
+                let ib = (ia + 1) % 3;
+                let idx_a = idx[ia as usize];
+                let idx_b = idx[ib as usize];
+
+                let fid = match (colors[idx_a as usize], colors[idx_b as usize]) {
+                    (1, 2) | (2, 1) => FeatureId::Edge(ia),
+                    // NOTE: the case (_, 0) will be dealt with in the next loop iteration.
+                    (0, _) => FeatureId::Vertex(ia),
+                    _ => continue,
+                };
+
+                if intersection_features.0 == FeatureId::Unknown {
+                    intersection_features.0 = fid;
+                } else {
+                    // FIXME: this assertion may fire if the triangle is coplanar with the edge?
+                    // assert_eq!(intersection_features.1, FeatureId::Unknown);
+                    intersection_features.1 = fid;
+                }
+            }
+
+            // Helper that intersects an edge with the plane.
+            let mut intersect_edge = |idx_a, idx_b| {
+                *intersections_found
+                    .entry(SortedPair::new(idx_a, idx_b))
+                    .or_insert_with(|| {
+                        let segment =
+                            Segment::new(vertices[idx_a as usize], vertices[idx_b as usize]);
+                        // Intersect the segment with the plane.
+                        if let Some((intersection, _)) = segment
+                            .local_split_and_get_intersection(local_axis, bias, epsilon)
+                            .1
+                        {
+                            new_vertices.push(intersection);
+                            colors.push(0);
+                            (new_vertices.len() - 1) as u32
+                        } else {
+                            unreachable!()
+                        }
+                    })
+            };
+
+            // Perform the intersection, push new triangles, and update
+            // triangulation constraints if needed.
+            match intersection_features {
+                (_, FeatureId::Unknown) => {
+                    // The plane doesn’t intersect the triangle, or intersects it at
+                    // a single vertex, so we don’t have anything to do.
+                    assert!(
+                        matches!(intersection_features.0, FeatureId::Unknown)
+                            || matches!(intersection_features.0, FeatureId::Vertex(_))
+                    );
+                }
+                (FeatureId::Vertex(iv1), FeatureId::Vertex(iv2)) => {
+                    // The plane intersects the triangle along one of its edge.
+                    // We don’t have to split the triangle, but we need to add
+                    // the edge to the polyline indices
+
+                    let id1 = idx[iv1 as usize];
+                    let id2 = idx[iv2 as usize];
+
+                    let out_id1 = *existing_vertices_found.entry(id1).or_insert_with(|| {
+                        let v1 = vertices[id1 as usize];
+
+                        new_vertices.push(v1);
+                        (new_vertices.len() - 1) as u32
+                    });
+                    let out_id2 = *existing_vertices_found.entry(id2).or_insert_with(|| {
+                        let v2 = vertices[id2 as usize];
+
+                        new_vertices.push(v2);
+                        (new_vertices.len() - 1) as u32
+                    });
+
+                    add_segment_adjacencies(out_id1, out_id2);
+                }
+                (FeatureId::Vertex(iv), FeatureId::Edge(ie))
+                | (FeatureId::Edge(ie), FeatureId::Vertex(iv)) => {
+                    // The plane splits the triangle into exactly two triangles.
+                    let ia = ie;
+                    let ib = (ie + 1) % 3;
+                    let ic = (ie + 2) % 3;
+                    let idx_a = idx[ia as usize];
+                    let idx_b = idx[ib as usize];
+                    let idx_c = idx[ic as usize];
+                    assert_eq!(iv, ic);
+
+                    let intersection_idx = intersect_edge(idx_a, idx_b);
+
+                    add_segment_adjacencies(idx_c, intersection_idx);
+                }
+                (FeatureId::Edge(mut e1), FeatureId::Edge(mut e2)) => {
+                    // The plane splits the triangle into 1 + 2 triangles.
+                    // First, make sure the edge indices are consecutive.
+                    if e2 != (e1 + 1) % 3 {
+                        std::mem::swap(&mut e1, &mut e2);
+                    }
+
+                    let ia = e2; // The first point of the second edge is the vertex shared by both edges.
+                    let ib = (e2 + 1) % 3;
+                    let ic = (e2 + 2) % 3;
+                    let idx_a = idx[ia as usize];
+                    let idx_b = idx[ib as usize];
+                    let idx_c = idx[ic as usize];
+
+                    let intersection1 = intersect_edge(idx_c, idx_a);
+                    let intersection2 = intersect_edge(idx_a, idx_b);
+
+                    add_segment_adjacencies(intersection1, intersection2);
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        // 3. Ensure consistent edge orientation by traversing the adjacency list
+        let mut polylines: Vec<Polyline> = Vec::new();
+
+        let mut seen = vec![false; index_adjacencies.len()];
+        for (idx, neighbors) in index_adjacencies.iter() {
+            if !seen[*idx as usize] {
+                // Start a new component
+                // Traverse the adjencies until the loop closes
+
+                let first = *idx;
+                let mut prev = first;
+                let mut next = neighbors.iter().next(); // Arbitrary neighbor
+
+                let mut vertex_indices = vec![prev];
+
+                'traversal: while let Some(current) = next {
+                    seen[*current as usize] = true;
+                    vertex_indices.push(*current);
+
+                    for neighbor in index_adjacencies
+                        .get(current)
+                        .expect("Polyline index has no neighbors")
+                        .iter()
+                    {
+                        if *neighbor != prev && *neighbor != first {
+                            prev = *current;
+                            next = Some(neighbor);
+                            continue 'traversal;
+                        } else if *neighbor != prev && *neighbor == first {
+                            // If the next index is same as the first, exit
+                            next = None;
+                        }
+                    }
+                }
+
+                // Select vertices and construct final polyline
+                let mut polyline_vertices = Vec::with_capacity(vertex_indices.len());
+                for idx in vertex_indices.into_iter() {
+                    polyline_vertices.push(new_vertices[idx as usize]);
+                }
+                let polyline_indices = (0..polyline_vertices.len() as u32)
+                    .map(|i| [i, (i + 1) % polyline_vertices.len() as u32])
+                    .collect();
+                polylines.push(Polyline::new(polyline_vertices, Some(polyline_indices)));
+            }
+        }
+
+        IntersectResult::Intersect(polylines)
     }
 
     /// Computes the intersection mesh between an Aabb and this mesh.
