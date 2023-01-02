@@ -346,6 +346,21 @@ impl TriMesh {
         }
     }
 
+    /// Computes the intersection [`Polyline`]s between this mesh and the plane identified by
+    /// the given canonical axis.
+    ///
+    /// This will intersect the mesh by a plane with a normal with it’s `axis`-th component set to 1.
+    /// The splitting plane is shifted wrt. the origin by the `bias` (i.e. it passes through the point
+    /// equal to `normal * bias`).
+    pub fn canonical_intersection_with_plane(
+        &self,
+        axis: usize,
+        bias: Real,
+        epsilon: Real,
+    ) -> IntersectResult<Vec<Polyline>> {
+        self.intersection_with_local_plane(&Vector::ith_axis(axis), bias, epsilon)
+    }
+
     /// Computes the intersection [`Polyline`]s between this mesh, transformed by `position`,
     /// and a plane identified by its normal `axis` and the `bias`
     /// (i.e. the plane passes through the point equal to `normal * bias`).
