@@ -1,15 +1,16 @@
 use na::{Point3, Vector3};
+use parry3d::math::{Isometry, Real};
 use parry3d::query::IntersectResult;
 use parry3d::shape::TriMesh;
 
-fn build_diamond() -> TriMesh {
+fn build_diamond(position: &Isometry<Real>) -> TriMesh {
     // Two tetrahedrons sharing a face
     let points = vec![
-        Point3::new(0.0, 2.0, 0.0),
-        Point3::new(-2.0, -1.0, 0.0),
-        Point3::new(0.0, 0.0, 2.0),
-        Point3::new(2.0, -1.0, 0.0),
-        Point3::new(0.0, 0.0, -2.0),
+        position * Point3::new(0.0, 2.0, 0.0),
+        position * Point3::new(-2.0, -1.0, 0.0),
+        position * Point3::new(0.0, 0.0, 2.0),
+        position * Point3::new(2.0, -1.0, 0.0),
+        position * Point3::new(0.0, 0.0, -2.0),
     ];
 
     let indices = vec![
@@ -26,17 +27,15 @@ fn build_diamond() -> TriMesh {
 
 #[test]
 fn trimesh_plane_edge_intersection() {
-    let mesh = build_diamond();
+    let mesh = build_diamond(&Isometry::identity());
 
     let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, std::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
-    if let IntersectResult::Intersect(lines) = result {
-        assert_eq!(lines.len(), 1);
-
+    if let IntersectResult::Intersect(line) = result {
         // Need to check points individually since order is not garunteed
-        let vertices = lines[0].vertices();
+        let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
         assert!(vertices.contains(&Point3::new(-1.5, -0.75, 0.5)));
         assert!(vertices.contains(&Point3::new(1.5, -0.75, 0.5)));
@@ -46,17 +45,15 @@ fn trimesh_plane_edge_intersection() {
 
 #[test]
 fn trimesh_plane_vertex_intersection() {
-    let mesh = build_diamond();
+    let mesh = build_diamond(&Isometry::identity());
 
     let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.0, std::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
-    if let IntersectResult::Intersect(lines) = result {
-        assert_eq!(lines.len(), 1);
-
+    if let IntersectResult::Intersect(line) = result {
         // Need to check points individually since order is not garunteed
-        let vertices = lines[0].vertices();
+        let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
         assert!(vertices.contains(&Point3::new(-2.0, -1.0, 0.0)));
         assert!(vertices.contains(&Point3::new(2.0, -1.0, 0.0)));
@@ -66,17 +63,15 @@ fn trimesh_plane_vertex_intersection() {
 
 #[test]
 fn trimesh_plane_mixed_intersection() {
-    let mesh = build_diamond();
+    let mesh = build_diamond(&Isometry::identity());
 
     let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(0), 0.0, std::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
-    if let IntersectResult::Intersect(lines) = result {
-        assert_eq!(lines.len(), 1);
-
+    if let IntersectResult::Intersect(line) = result {
         // Need to check points individually since order is not garunteed
-        let vertices = lines[0].vertices();
+        let vertices = line.vertices();
         assert_eq!(vertices.len(), 4);
         assert!(vertices.contains(&Point3::new(0.0, 2.0, 0.0)));
         assert!(vertices.contains(&Point3::new(0.0, 0.0, 2.0)));
@@ -86,8 +81,32 @@ fn trimesh_plane_mixed_intersection() {
 }
 
 #[test]
+fn trimesh_plane_multi_intersection() {
+    let mut mesh = build_diamond(&Isometry::identity());
+    mesh.append(&build_diamond(&Isometry::translation(-5.0, 0.0, 0.0)));
+
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, std::f32::EPSILON);
+
+    assert!(matches!(result, IntersectResult::Intersect(_)));
+
+    if let IntersectResult::Intersect(line) = result {
+        // Need to check points individually since order is not garunteed
+        let vertices = line.vertices();
+        assert_eq!(vertices.len(), 6);
+
+        assert!(vertices.contains(&Point3::new(-1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Point3::new(1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Point3::new(0.0, 1.5, 0.5)));
+
+        assert!(vertices.contains(&Point3::new(-6.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Point3::new(-3.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Point3::new(-5.0, 1.5, 0.5)));
+    }
+}
+
+#[test]
 fn trimesh_plane_above() {
-    let mesh = build_diamond();
+    let mesh = build_diamond(&Isometry::identity());
 
     let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), -5.0, std::f32::EPSILON);
 
@@ -96,7 +115,7 @@ fn trimesh_plane_above() {
 
 #[test]
 fn trimesh_plane_below() {
-    let mesh = build_diamond();
+    let mesh = build_diamond(&Isometry::identity());
 
     let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 5.0, std::f32::EPSILON);
 

@@ -350,12 +350,14 @@ impl TriMesh {
     /// This will intersect the mesh by a plane with a normal with it’s `axis`-th component set to 1.
     /// The splitting plane is shifted wrt. the origin by the `bias` (i.e. it passes through the point
     /// equal to `normal * bias`).
+    ///
+    /// Note that the resultant polyline may have multiple connected components
     pub fn canonical_intersection_with_plane(
         &self,
         axis: usize,
         bias: Real,
         epsilon: Real,
-    ) -> IntersectResult<Vec<Polyline>> {
+    ) -> IntersectResult<Polyline> {
         self.intersection_with_local_plane(&Vector::ith_axis(axis), bias, epsilon)
     }
 
@@ -368,7 +370,7 @@ impl TriMesh {
         axis: &UnitVector<Real>,
         bias: Real,
         epsilon: Real,
-    ) -> IntersectResult<Vec<Polyline>> {
+    ) -> IntersectResult<Polyline> {
         let local_axis = position.inverse_transform_unit_vector(axis);
         let added_bias = -position.translation.vector.dot(&axis);
         self.intersection_with_local_plane(&local_axis, bias + added_bias, epsilon)
@@ -382,7 +384,7 @@ impl TriMesh {
         local_axis: &UnitVector<Real>,
         bias: Real,
         epsilon: Real,
-    ) -> IntersectResult<Vec<Polyline>> {
+    ) -> IntersectResult<Polyline> {
         // 1. Partition the vertices.
         let vertices = self.vertices();
         let indices = self.indices();
@@ -561,7 +563,7 @@ impl TriMesh {
         }
 
         // 3. Ensure consistent edge orientation by traversing the adjacency list
-        let mut polylines: Vec<Polyline> = Vec::new();
+        let mut polyline_indices: Vec<[u32; 2]> = Vec::with_capacity(index_adjacencies.len() + 1);
 
         let mut seen = vec![false; index_adjacencies.len()];
         for (idx, neighbors) in index_adjacencies.iter().enumerate() {
@@ -573,11 +575,9 @@ impl TriMesh {
                 let mut prev = first;
                 let mut next = neighbors.first(); // Arbitrary neighbor
 
-                let mut vertex_indices = vec![prev];
-
                 'traversal: while let Some(current) = next {
                     seen[*current] = true;
-                    vertex_indices.push(*current);
+                    polyline_indices.push([prev as u32, *current as u32]);
 
                     for neighbor in index_adjacencies[*current].iter() {
                         if *neighbor != prev && *neighbor != first {
@@ -585,25 +585,17 @@ impl TriMesh {
                             next = Some(neighbor);
                             continue 'traversal;
                         } else if *neighbor != prev && *neighbor == first {
-                            // If the next index is same as the first, exit
+                            // If the next index is same as the first, close the polyline and exit
+                            polyline_indices.push([*current as u32, first as u32]);
                             next = None;
+                            continue 'traversal;
                         }
                     }
                 }
-
-                // Select vertices and construct final polyline
-                let mut polyline_vertices = Vec::with_capacity(vertex_indices.len());
-                for idx in vertex_indices.into_iter() {
-                    polyline_vertices.push(new_vertices[idx]);
-                }
-                let polyline_indices = (0..polyline_vertices.len() as u32)
-                    .map(|i| [i, (i + 1) % polyline_vertices.len() as u32])
-                    .collect();
-                polylines.push(Polyline::new(polyline_vertices, Some(polyline_indices)));
             }
         }
 
-        IntersectResult::Intersect(polylines)
+        IntersectResult::Intersect(Polyline::new(new_vertices, Some(polyline_indices)))
     }
 
     /// Computes the intersection mesh between an Aabb and this mesh.
