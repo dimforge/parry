@@ -539,7 +539,14 @@ impl TriMesh {
 
                     let intersection_idx = intersect_edge(idx_a, idx_b);
 
-                    add_segment_adjacencies(idx_c, intersection_idx);
+                    let out_idx_c = *existing_vertices_found.entry(idx_c).or_insert_with(|| {
+                        let v2 = vertices[idx_c as usize];
+
+                        new_vertices.push(v2);
+                        (new_vertices.len() - 1) as u32
+                    });
+
+                    add_segment_adjacencies(out_idx_c, intersection_idx);
                 }
                 (FeatureId::Edge(mut e1), FeatureId::Edge(mut e2)) => {
                     // The plane splits the triangle into 1 + 2 triangles.
