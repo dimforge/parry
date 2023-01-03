@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
@@ -416,30 +414,21 @@ impl TriMesh {
         }
 
         // 2. Split the triangles.
-        let mut index_adjacencies = HashMap::default(); // Adjacency list of indices
+        let mut index_adjacencies: Vec<Vec<usize>> = Vec::new(); // Adjacency list of indices
 
-        // Helper function for adding polyline segments to the adjacency list
-        let mut add_segment_adjacencies = |idx_a, idx_b| {
-            let _ = index_adjacencies
-                .entry(idx_a)
-                .and_modify(|list: &mut HashSet<u32>| {
-                    let _ = list.insert(idx_b);
-                })
-                .or_insert_with(|| {
-                    let mut adjacencies = HashSet::with_capacity(2);
-                    let _ = adjacencies.insert(idx_b);
-                    adjacencies
-                });
-            let _ = index_adjacencies
-                .entry(idx_b)
-                .and_modify(|list: &mut HashSet<u32>| {
-                    let _ = list.insert(idx_a);
-                })
-                .or_insert_with(|| {
-                    let mut adjacencies = HashSet::with_capacity(2);
-                    let _ = adjacencies.insert(idx_a);
-                    adjacencies
-                });
+        // Helper functions for adding polyline segments to the adjacency list
+        let mut add_segment_adjacencies = |idx_a: usize, idx_b| {
+            assert!(idx_a <= index_adjacencies.len());
+
+            if idx_a < index_adjacencies.len() {
+                index_adjacencies[idx_a].push(idx_b);
+            } else if idx_a == index_adjacencies.len() {
+                index_adjacencies.push(vec![idx_b])
+            }
+        };
+        let mut add_segment_adjacencies_symmetric = |idx_a: usize, idx_b| {
+            add_segment_adjacencies(idx_a, idx_b);
+            add_segment_adjacencies(idx_b, idx_a);
         };
 
         let mut intersections_found = HashMap::default();
@@ -485,7 +474,7 @@ impl TriMesh {
                         {
                             new_vertices.push(intersection);
                             colors.push(0);
-                            (new_vertices.len() - 1) as u32
+                            new_vertices.len() - 1
                         } else {
                             unreachable!()
                         }
@@ -515,16 +504,16 @@ impl TriMesh {
                         let v1 = vertices[id1 as usize];
 
                         new_vertices.push(v1);
-                        (new_vertices.len() - 1) as u32
+                        new_vertices.len() - 1
                     });
                     let out_id2 = *existing_vertices_found.entry(id2).or_insert_with(|| {
                         let v2 = vertices[id2 as usize];
 
                         new_vertices.push(v2);
-                        (new_vertices.len() - 1) as u32
+                        new_vertices.len() - 1
                     });
 
-                    add_segment_adjacencies(out_id1, out_id2);
+                    add_segment_adjacencies_symmetric(out_id1, out_id2);
                 }
                 (FeatureId::Vertex(iv), FeatureId::Edge(ie))
                 | (FeatureId::Edge(ie), FeatureId::Vertex(iv)) => {
@@ -543,10 +532,10 @@ impl TriMesh {
                         let v2 = vertices[idx_c as usize];
 
                         new_vertices.push(v2);
-                        (new_vertices.len() - 1) as u32
+                        new_vertices.len() - 1
                     });
 
-                    add_segment_adjacencies(out_idx_c, intersection_idx);
+                    add_segment_adjacencies_symmetric(out_idx_c, intersection_idx);
                 }
                 (FeatureId::Edge(mut e1), FeatureId::Edge(mut e2)) => {
                     // The plane splits the triangle into 1 + 2 triangles.
@@ -565,7 +554,7 @@ impl TriMesh {
                     let intersection1 = intersect_edge(idx_c, idx_a);
                     let intersection2 = intersect_edge(idx_a, idx_b);
 
-                    add_segment_adjacencies(intersection1, intersection2);
+                    add_segment_adjacencies_symmetric(intersection1, intersection2);
                 }
                 _ => unreachable!(),
             }
@@ -575,26 +564,22 @@ impl TriMesh {
         let mut polylines: Vec<Polyline> = Vec::new();
 
         let mut seen = vec![false; index_adjacencies.len()];
-        for (idx, neighbors) in index_adjacencies.iter() {
-            if !seen[*idx as usize] {
+        for (idx, neighbors) in index_adjacencies.iter().enumerate() {
+            if !seen[idx] {
                 // Start a new component
                 // Traverse the adjencies until the loop closes
 
-                let first = *idx;
+                let first = idx;
                 let mut prev = first;
-                let mut next = neighbors.iter().next(); // Arbitrary neighbor
+                let mut next = neighbors.first(); // Arbitrary neighbor
 
                 let mut vertex_indices = vec![prev];
 
                 'traversal: while let Some(current) = next {
-                    seen[*current as usize] = true;
+                    seen[*current] = true;
                     vertex_indices.push(*current);
 
-                    for neighbor in index_adjacencies
-                        .get(current)
-                        .expect("Polyline index has no neighbors")
-                        .iter()
-                    {
+                    for neighbor in index_adjacencies[*current].iter() {
                         if *neighbor != prev && *neighbor != first {
                             prev = *current;
                             next = Some(neighbor);
@@ -609,7 +594,7 @@ impl TriMesh {
                 // Select vertices and construct final polyline
                 let mut polyline_vertices = Vec::with_capacity(vertex_indices.len());
                 for idx in vertex_indices.into_iter() {
-                    polyline_vertices.push(new_vertices[idx as usize]);
+                    polyline_vertices.push(new_vertices[idx]);
                 }
                 let polyline_indices = (0..polyline_vertices.len() as u32)
                     .map(|i| [i, (i + 1) % polyline_vertices.len() as u32])
