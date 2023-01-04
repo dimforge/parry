@@ -143,6 +143,55 @@ impl Polyline {
         }
     }
 
+    /// Extracts the connected components of this polyline, consuming `self`.
+    ///
+    /// Assumes that:
+    /// - This polyline is closed with `self.indices[i][1] == self.indices[(i + 1) % component_length][0]`
+    /// for each component, where `component_length` is the number of vertices in that component.
+    /// - The indices for each component are found contiguously in the index buffer.
+    pub fn extract_connected_components(self) -> Vec<Polyline> {
+        let vertices = self.vertices();
+        let indices = self.indices();
+
+        if indices.len() == 0 {
+            // Polyline is empty, return empty Vec
+            return Vec::new();
+        } else {
+            let mut components = Vec::new();
+
+            let mut start_i = 0; // Start position of component
+            let mut start_node = indices[0][0]; // Start vertex index of component
+
+            let mut component_vertices = Vec::new();
+            let mut component_indices: Vec<[u32; 2]> = Vec::new();
+
+            // Iterate over indices, building polylines as we go
+            for (i, idx) in indices.into_iter().enumerate() {
+                component_vertices.push(vertices[idx[0] as usize]);
+
+                if idx[1] != start_node {
+                    // Keep scanning and adding data
+                    component_indices.push([(i - start_i) as u32, (i - start_i + 1) as u32]);
+                } else {
+                    // Start node reached: build polyline and start next component
+                    component_indices.push([(i - start_i) as u32, 0]);
+                    components.push(Polyline::new(
+                        component_vertices.drain(..).collect(),
+                        Some(component_indices.drain(..).collect()),
+                    ));
+
+                    if i + 1 < indices.len() {
+                        // More components to find
+                        start_node = indices[i + 1][0];
+                        start_i = i + 1;
+                    }
+                }
+            }
+
+            components
+        }
+    }
+
     /// Perform a point projection assuming a solid interior based on a counter-clock-wise orientation.
     ///
     /// This is similar to `self.project_local_point_and_get_location` except that the resulting
