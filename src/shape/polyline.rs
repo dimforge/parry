@@ -145,11 +145,26 @@ impl Polyline {
 
     /// Extracts the connected components of this polyline, consuming `self`.
     ///
-    /// Assumes that:
-    /// - This polyline is closed with `self.indices[i][1] == self.indices[(i + 1) % component_length][0]`
-    /// for each component, where `component_length` is the number of vertices in that component.
-    /// - The indices for each component are found contiguously in the index buffer.
-    pub fn extract_connected_components(self) -> Vec<Polyline> {
+    /// This method is currently quite restrictive on the kind of allowed input. The polyline
+    /// represented by `self` must already have an index buffer sorted such that:
+    /// - Each connected component appears in the index buffer one after the other, i.e., a
+    ///   connected component of this polyline must be a contiguous range of this polyline’s
+    ///   index buffer.
+    /// - Each connected component is closed, i.e., each range of this polyline index buffer
+    ///   `self.indices[i_start..=end_start]` forming a complete connected component, we must have
+    ///   `self.indices[i_start][0] == self.indices[end_start][1]`.
+    /// - The indices for each component must already be in order, i.e., if `self.indices[i]` and
+    ///   `self.indices[i + 1]` are part of the same connected component then we must have
+    ///   `self.indices[i][1] == self.indices[i + 1][0]`.
+    ///
+    /// # Output
+    /// Returns the set of polylines. If the inputs fulfill the constraints mentioned above, each
+    /// polyline will be a closed loop with consistent edge orientations, i.e., for all indices `i`,
+    /// we have `polyline.indices[i][1] == polyline.indices[i + 1][0]`.
+    ///
+    /// The orientation of each closed loop (clockwise or counterclockwise) are identical to their
+    /// original orientation in `self`.
+    pub fn extract_connected_components(&self) -> Vec<Polyline> {
         let vertices = self.vertices();
         let indices = self.indices();
 
