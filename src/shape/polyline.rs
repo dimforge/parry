@@ -151,11 +151,11 @@ impl Polyline {
     ///   connected component of this polyline must be a contiguous range of this polyline’s
     ///   index buffer.
     /// - Each connected component is closed, i.e., each range of this polyline index buffer
-    ///   `self.indices[i_start..=end_start]` forming a complete connected component, we must have
-    ///   `self.indices[i_start][0] == self.indices[end_start][1]`.
-    /// - The indices for each component must already be in order, i.e., if `self.indices[i]` and
-    ///   `self.indices[i + 1]` are part of the same connected component then we must have
-    ///   `self.indices[i][1] == self.indices[i + 1][0]`.
+    ///   `self.indices[i_start..=i_end]` forming a complete connected component, we must have
+    ///   `self.indices[i_start][0] == self.indices[i_end][1]`.
+    /// - The indices for each component must already be in order, i.e., if the segments
+    ///   `self.indices[i]` and `self.indices[i + 1]` are part of the same connected component then
+    ///   we must have `self.indices[i][1] == self.indices[i + 1][0]`.
     ///
     /// # Output
     /// Returns the set of polylines. If the inputs fulfill the constraints mentioned above, each
