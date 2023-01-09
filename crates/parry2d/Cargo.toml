@@ -24,6 +24,7 @@ dim2    = [ ]
 f32     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
 rkyv-serialize = [ "rkyv", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
+bytemuck-serialize = [ "bytemuck", "nalgebra/convert-bytemuck" ]
 simd-stable = [ "simba/wide", "simd-is-enabled" ]
 simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
 enhanced-determinism = [ "simba/libm_force", "indexmap" ]
@@ -58,6 +59,7 @@ rustc-hash      = { version = "1", optional = true }
 cust_core       = { version = "0.1", optional = true }
 spade           = { version = "2", optional = true }
 rayon           = { version = "1", optional = true }
+bytemuck        = { version = "1", features = [ "derive" ], optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust = { version = "0.3", optional = true }

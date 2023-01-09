@@ -7,6 +7,7 @@ use crate::shape::SupportMap;
 
 /// A Ball shape.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 // #[cfg_attr(
 //     feature = "rkyv",
 //     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)

@@ -1,5 +1,15 @@
 # Change Log
 
+## Unreleased
+### Added
+- Add `TriMesh::canonical_intersection_with_plane` for intersecting with planes aligned with one of the coordinate axes.
+- Add `TriMesh::intersection_with_plane` for intersecting with arbitrary planes.
+- Add `TriMesh::intersection_with_local_plane` for intersecting with arbitrary planes in the same space as the mesh
+- Add `IntersectResult` as the output type for the above functions.
+- Add `Polyline::extract_connected_components` which splits a compound polyline into its connected components.
+- Add implementations of `bytemuck::Pod` and `bytemuck::Zeroable` for all the simple shapes that allow it
+  (`Cuboid`, `Ball`, `Cone`, etc.), and for bounding volumes (`BoundingSphere` and `Aabb`).
+
 ## v0.12.0 (11 Dec. 2022)
 
 ### Modified
