@@ -13,12 +13,14 @@ use na::ComplexField; // for .abs()
 
 /// An Axis Aligned Bounding Box.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Debug, PartialEq, Copy, Clone)]
+#[repr(C)]
 pub struct Aabb {
     pub mins: Point<Real>,
     pub maxs: Point<Real>,
