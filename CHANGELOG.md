@@ -1,6 +1,7 @@
 # Change Log
 
-## Unreleased
+## v0.12.1 (09 Jan. 2023)
+
 ### Added
 - Add `TriMesh::canonical_intersection_with_plane` for intersecting with planes aligned with one of the coordinate axes.
 - Add `TriMesh::intersection_with_plane` for intersecting with arbitrary planes.
