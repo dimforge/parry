@@ -8,7 +8,8 @@ use crate::shape::FeatureId;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
@@ -60,7 +61,8 @@ impl Ray {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
 )]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed

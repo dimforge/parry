@@ -10,7 +10,8 @@ use num::Zero;
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
 )]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]

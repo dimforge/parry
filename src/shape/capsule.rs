@@ -10,7 +10,8 @@ use either::Either;
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
