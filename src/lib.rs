@@ -16,7 +16,7 @@ the rust programming language.
 #![allow(missing_copy_implementations)]
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "rkyv"), deny(unused_qualifications))] // TODO: deny this globally once bytecheck stops generating unused results.
+#![cfg_attr(not(feature = "rkyv"), deny(unused_qualifications))] // TODO: deny that everytime
 
 #[cfg(all(
     feature = "simd-is-enabled",
