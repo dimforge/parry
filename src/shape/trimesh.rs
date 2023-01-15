@@ -921,20 +921,22 @@ impl TriMesh {
     // NOTE: we can only compute connected components if the topology
     //       has been computed too. So instead of making this method
     //       public, the `.compute_topology` method has a boolean to
-    //       compute the connected componets too.
+    //       compute the connected components too.
     fn compute_connected_components(&mut self) {
         let topo = self.topology.as_ref().unwrap();
         let mut face_colors = vec![u32::MAX; topo.faces.len()];
         let mut grouped_faces = Vec::new();
         let mut ranges = vec![0];
+        let mut stack = vec![];
 
         for i in 0..topo.faces.len() {
             if face_colors[i] == u32::MAX {
-                let mut stack = vec![i as u32];
                 let color = ranges.len() as u32 - 1;
+                face_colors[i] = color;
+                grouped_faces.push(i as u32);
+                stack.push(i as u32);
 
                 while let Some(tri_id) = stack.pop() {
-                    grouped_faces.push(tri_id);
                     let eid = topo.faces[tri_id as usize].half_edge;
                     let edge_a = &topo.half_edges[eid as usize];
                     let edge_b = &topo.half_edges[edge_a.next as usize];

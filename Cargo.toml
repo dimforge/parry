@@ -9,5 +9,5 @@ parry2d-f64 = { path = "crates/parry2d-f64" }
 parry3d-f64 = { path = "crates/parry3d-f64" }
 
 #simba = { path = "../simba" }
-simba = { git = "https://github.com/dimforge/simba", rev = "45a5266eb36ed9d25907e9bf9130cd4ac846a748" }
-nalgebra = { git = "https://github.com/dimforge/nalgebra", rev = "0cf79aef0e6155befc3279a3145f1940822b8377" }
+#simba = { git = "https://github.com/dimforge/simba", rev = "45a5266eb36ed9d25907e9bf9130cd4ac846a748" }
+#nalgebra = { git = "https://github.com/dimforge/nalgebra", rev = "0cf79aef0e6155befc3279a3145f1940822b8377" }
