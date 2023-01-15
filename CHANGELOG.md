@@ -1,5 +1,18 @@
 # Change Log
 
+## v0.13.0 (15 Jan. 2023)
+
+### Modified
+- About `rkyv` support: most POD structs (`Aabb`, `Ball`, `Cuboid`, etc.) are now archived as themselves instead of
+  being archived as different types (for example `Aabb` is archived as `Aabb` itself istead of `ArchivedAabb`).
+
+### Added
+- In 3D, add `transformation::try_convex_hull` for a convex hull calculation that will return an error instead of
+  panicking on unsupported inputs.
+
+### Fixed
+- Fixed duplicate faces in the connected components returned by `TriMesh::connected_components`.
+
 ## v0.12.1 (09 Jan. 2023)
 
 ### Added
