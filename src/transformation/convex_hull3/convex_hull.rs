@@ -1,5 +1,5 @@
 use super::InitialMesh;
-use super::TriangleFacet;
+use super::{ConvexHullError, TriangleFacet};
 use crate::math::Real;
 use crate::transformation::convex_hull_utils::indexed_support_point_nth;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
@@ -8,8 +8,15 @@ use na::{self, Point3};
 
 /// Computes the convex hull of a set of 3d points.
 pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    try_convex_hull(points).unwrap()
+}
+
+/// Computes the convex hull of a set of 3d points.
+pub fn try_convex_hull(
+    points: &[Point3<Real>],
+) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {
     if points.is_empty() {
-        return (Vec::new(), Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     }
 
     // print_buildable_vec("input", points);
@@ -23,12 +30,13 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 
     let mut triangles;
 
-    match super::get_initial_mesh(points, &mut normalized_points[..], &mut undecidable_points) {
+    match super::try_get_initial_mesh(points, &mut normalized_points[..], &mut undecidable_points)?
+    {
         InitialMesh::Facets(facets) => {
             triangles = facets;
         }
         InitialMesh::ResultMesh(vertices, indices) => {
-            return (vertices, indices);
+            return Ok((vertices, indices));
         }
     }
 
@@ -75,7 +83,7 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
                 &mut silhouette_loop_facets_and_idx,
                 &mut removed_facets,
                 &mut triangles[..],
-            );
+            )?;
 
             // Check that the silhouette is valid.
             // FIXME: remove this debug code.
@@ -97,11 +105,9 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
                 }
 
                 if any_valid {
-                    panic!(
-                        "Warning: exitting an unfinished work: {}, {}",
-                        normalized_points[point],
-                        triangles.len()
-                    );
+                    return Err(ConvexHullError::InternalError(
+                        "Internal error: exiting an unfinished work.",
+                    ));
                 }
 
                 // FIXME: this is very harsh.
@@ -143,11 +149,9 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 
     let mut points = points.to_vec();
     utils::remove_unused_points(&mut points, &mut idx[..]);
-
-    assert!(points.len() != 0, "Internal error: empty output mesh.");
     // super::check_convex_hull(&points, &idx);
 
-    (points, idx)
+    Ok((points, idx))
 }
 
 fn compute_silhouette(
@@ -203,7 +207,7 @@ fn fix_silhouette_topology(
     out_facets_and_idx: &mut Vec<(usize, usize)>,
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
-) {
+) -> Result<(), ConvexHullError> {
     // FIXME: don't allocate this everytime.
     let mut workspace = vec![0; points.len()];
     let mut needs_fixing = false;
@@ -236,7 +240,7 @@ fn fix_silhouette_topology(
                     .iter()
                     .map(|(f, ai)| triangles[*f].second_point_from_edge(*ai)),
             )
-            .unwrap();
+            .ok_or(ConvexHullError::MissingSupportPoint)?;
             let selected = &out_facets_and_idx[supp];
             if workspace[triangles[selected.0].second_point_from_edge(selected.1)] == 1 {
                 // This is a valid point to start with.
@@ -290,6 +294,8 @@ fn fix_silhouette_topology(
 
         // println!("");
     }
+
+    Ok(())
 }
 
 fn attach_and_push_facets(

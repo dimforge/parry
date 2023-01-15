@@ -1,4 +1,4 @@
-use super::TriangleFacet;
+use super::{ConvexHullError, TriangleFacet};
 use crate::math::Real;
 use crate::shape::Triangle;
 use crate::transformation;
@@ -6,25 +6,6 @@ use crate::transformation::convex_hull_utils::support_point_id;
 use crate::utils;
 use na::{Point2, Point3, Vector3};
 use std::cmp::Ordering;
-
-#[derive(Debug, PartialEq)]
-pub enum InitialMeshError {
-    AssertionFailed(&'static str),
-    MissingSupportPoint,
-    Unreachable,
-}
-
-impl std::fmt::Display for InitialMeshError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InitialMeshError::AssertionFailed(reason) => write!(f, "AssertionFailed({})", reason),
-            InitialMeshError::MissingSupportPoint => write!(f, "MissingSupportPoint"),
-            InitialMeshError::Unreachable => write!(f, "Unreachable"),
-        }
-    }
-}
-
-impl std::error::Error for InitialMeshError {}
 
 #[derive(Debug)]
 pub enum InitialMesh {
@@ -52,19 +33,11 @@ fn build_degenerate_mesh_segment(
     (vec![a, b], vec![ta, tb])
 }
 
-pub fn get_initial_mesh(
-    original_points: &[Point3<Real>],
-    normalized_points: &mut [Point3<Real>],
-    undecidable: &mut Vec<usize>,
-) -> InitialMesh {
-    try_get_initial_mesh(original_points, normalized_points, undecidable).unwrap()
-}
-
 pub fn try_get_initial_mesh(
     original_points: &[Point3<Real>],
     normalized_points: &mut [Point3<Real>],
     undecidable: &mut Vec<usize>,
-) -> Result<InitialMesh, InitialMeshError> {
+) -> Result<InitialMesh, ConvexHullError> {
     /*
      * Compute the eigenvectors to see if the input data live on a subspace.
      */
@@ -177,9 +150,9 @@ pub fn try_get_initial_mesh(
             }
 
             let p1 = support_point_id(&eigpairs[0].0, normalized_points)
-                .ok_or(InitialMeshError::MissingSupportPoint)?;
+                .ok_or(ConvexHullError::MissingSupportPoint)?;
             let p2 = support_point_id(&-eigpairs[0].0, normalized_points)
-                .ok_or(InitialMeshError::MissingSupportPoint)?;
+                .ok_or(ConvexHullError::MissingSupportPoint)?;
 
             let mut max_area = 0.0;
             let mut p3 = usize::max_value();
@@ -195,7 +168,7 @@ pub fn try_get_initial_mesh(
             }
 
             if p3 == usize::max_value() {
-                Err(InitialMeshError::AssertionFailed("Internal convex hull error: no triangle found."))
+                Err(ConvexHullError::InternalError("no triangle found."))
             } else {
                 // Build two facets with opposite normals
                 let mut f1 = TriangleFacet::new(p1, p2, p3, normalized_points);
@@ -248,7 +221,7 @@ pub fn try_get_initial_mesh(
                 Ok(InitialMesh::Facets(facets))
             }
         }
-        _ => Err(InitialMeshError::Unreachable),
+        _ => Err(ConvexHullError::Unreachable),
     }
 }
 
@@ -256,10 +229,14 @@ pub fn try_get_initial_mesh(
 mod tests {
     #[test]
     #[cfg(feature = "f32")]
+    // TODO: ideally we would want this test to actually fail (i.e. we want the
+    // convex hull calculation to succeed in this case). Though right now almost-coplanar
+    // points can result in a failure of the algorithm. So we are testing here that the
+    // error is correctly reported (instead of panicking internally).
     fn try_get_initial_mesh_should_fail_for_missing_support_points() {
-        use na::Point3;
         use super::*;
-        use crate::transformation::convex_hull_utils::normalize;
+        use crate::transformation::try_convex_hull;
+        use na::Point3;
 
         let point_cloud = vec![
             Point3::new(103.05024, 303.44974, 106.125),
@@ -268,14 +245,7 @@ mod tests {
             Point3::new(106.55025, 303.44974, 106.125),
             Point3::new(106.55043, 303.44974, 106.125),
         ];
-
-        let mut normalized_points = point_cloud.to_vec();
-        let _ = normalize(&mut normalized_points[..]);
-
-        let mut undecidable_points = vec![];
-
-        let result = try_get_initial_mesh(&point_cloud, &mut normalized_points, &mut undecidable_points);
-
-        assert_eq!(InitialMeshError::MissingSupportPoint, result.unwrap_err());
+        let result = try_convex_hull(&point_cloud);
+        assert_eq!(ConvexHullError::MissingSupportPoint, result.unwrap_err());
     }
 }
