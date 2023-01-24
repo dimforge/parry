@@ -98,7 +98,7 @@ bitflags! {
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[derive(Default)]
     /// The status of a QBVH node.
-    pub struct QbvhNodeFlags: u8 {
+    pub struct QbvhNodeFlags: u64 {
         /// If this bit is set, the node is a leaf.
         const LEAF = 0b0001;
         /// If this bit is set, this node was recently changed.
@@ -115,9 +115,10 @@ bitflags! {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+#[repr(C)]
 pub struct QbvhNode {
     /// The Aabbs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAabb,
@@ -234,9 +235,13 @@ impl<LeafData> QbvhProxy<LeafData> {
 #[derive(Debug)]
 pub struct GenericQbvh<LeafData, Storage: QbvhStorage<LeafData>> {
     pub(super) root_aabb: Aabb,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     pub(super) nodes: Storage::Nodes,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     pub(super) dirty_nodes: Storage::ArrayU32,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     pub(super) free_list: Storage::ArrayU32,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     pub(super) proxies: Storage::ArrayProxies,
 }
 
