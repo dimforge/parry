@@ -18,7 +18,7 @@ pub fn intersect_meshes(
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
     flip2: bool,
-) -> Result<Option<TriMesh>, MeshIntersectionError> {
+) -> Result<Option<(TriMesh, Vec<[u32; 3]>)>, MeshIntersectionError> {
     if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
     }
@@ -151,7 +151,10 @@ pub fn intersect_meshes(
     new_indices1.append(&mut new_indices12);
 
     if !new_indices1.is_empty() {
-        Ok(Some(TriMesh::new(new_vertices, new_indices1)))
+        Ok(Some((
+            TriMesh::new(new_vertices, new_indices1),
+            new_indices2,
+        )))
     } else {
         Ok(None)
     }
