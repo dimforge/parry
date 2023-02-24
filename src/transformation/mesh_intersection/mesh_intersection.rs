@@ -293,7 +293,7 @@ pub fn intersect_meshes_track(
         new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
 
-    new_indices1.append(&mut new_indices2);
+    new_indices1.append(&mut new_indices2.clone());
     new_indices1.append(&mut new_indices12);
 
     if !new_indices1.is_empty() {
