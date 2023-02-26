@@ -17,6 +17,14 @@ use na::{ComplexField, RealField}; // for .abs() and .copysign()
 pub trait PolygonalFeatureMap: SupportMap {
     /// Compute the support polygonal face of `self` towards the `dir`.
     fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature);
+
+    // TODO: this is currently just a workaround for https://github.com/dimforge/rapier/issues/417
+    //       until we get a better way to deal with the issue without breaking internal edges
+    //       handling.
+    /// Is this shape a `ConvexPolyhedron`?
+    fn is_convex_polyhedron(&self) -> bool {
+        false
+    }
 }
 
 impl PolygonalFeatureMap for Segment {

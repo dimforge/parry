@@ -558,6 +558,10 @@ impl PolygonalFeatureMap for ConvexPolyhedron {
         out_feature.fid = PackedFeatureId::face(best_fid as u32);
         out_feature.num_vertices = num_vertices as usize;
     }
+
+    fn is_convex_polyhedron(&self) -> bool {
+        true
+    }
 }
 
 /*
