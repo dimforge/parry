@@ -21,6 +21,7 @@ pub trait PolygonalFeatureMap: SupportMap {
     // TODO: this is currently just a workaround for https://github.com/dimforge/rapier/issues/417
     //       until we get a better way to deal with the issue without breaking internal edges
     //       handling.
+    /// Is this shape a `ConvexPolyhedron`?
     fn is_convex_polyhedron(&self) -> bool {
         false
     }
