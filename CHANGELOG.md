@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.13.1 (26 Feb. 2023)
+
+### Fixed
+- Add workaround to address jitter issue due to incorrectly empty contact manifolds generated sometimes for convex  
+  polyhedron.
+
 ## v0.13.0 (15 Jan. 2023)
 
 ### Modified

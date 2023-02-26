@@ -1,6 +1,6 @@
 [package]
 name    = "parry3d-f64"
-version = "0.13.0"
+version = "0.13.1"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
 description = "3 dimensional collision detection library in Rust. 64-bits precision version."
