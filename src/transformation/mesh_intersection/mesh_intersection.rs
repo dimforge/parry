@@ -164,7 +164,7 @@ pub fn intersect_meshes_track(
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
     flip2: bool,
-) -> Result<Option<(TriMesh, Vec<[u32; 3]>)>, MeshIntersectionError> {
+) -> Result<Option<(TriMesh, Vec<usize>)>, MeshIntersectionError> {
     if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
     }
@@ -293,14 +293,13 @@ pub fn intersect_meshes_track(
         new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
 
-    new_indices1.append(&mut new_indices2.clone());
+    // TODO track new_indices12 and indices21 separatly
+    let tracks = vec![new_indices1.len(), new_indices2.len(), new_indices12.len()];
+    new_indices1.append(&mut new_indices2);
     new_indices1.append(&mut new_indices12);
 
     if !new_indices1.is_empty() {
-        Ok(Some((
-            TriMesh::new(new_vertices, new_indices1),
-            new_indices2,
-        )))
+        Ok(Some((TriMesh::new(new_vertices, new_indices1), tracks)))
     } else {
         Ok(None)
     }
