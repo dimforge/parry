@@ -19,7 +19,7 @@ pub fn intersect_meshes(
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
-    let res = intersect_meshes_track(pos1, mesh1, flip1, pos2, mesh2, flip2);
+    let res = tracked_intersection(pos1, mesh1, flip1, pos2, mesh2, flip2);
     match res {
         Ok(Some((mesh, _tracks))) => Ok(Some(mesh)),
         Ok(None) => Ok(None),
@@ -32,7 +32,7 @@ pub fn intersect_meshes(
 ///
 /// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
 /// The result mesh vertex coordinates are given in the local-space of `mesh1`.
-pub fn intersect_meshes_track(
+pub fn tracked_intersection(
     pos1: &Isometry<Real>,
     mesh1: &TriMesh,
     flip1: bool,
