@@ -151,6 +151,7 @@ pub fn intersect_meshes(
 
     new_indices1.append(&mut new_indices2);
     new_indices1.append(&mut new_indices12);
+    new_indices1.append(&mut new_indices21);
 
     if !new_indices1.is_empty() {
         Ok(Some(TriMesh::new(new_vertices, new_indices1)))
