@@ -9,6 +9,7 @@ use parry::bounding_volume::Aabb;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 /// A convex planar polygon.
 pub struct Polygon {
     pub(crate) vertices: Vec<Point<Real>>,

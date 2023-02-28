@@ -85,6 +85,7 @@ impl<T: Scalar> Array2 for DMatrix<T> {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 /// Default data storage based on `Vec`, `DVector`, and `DMatrix`.
 pub struct DefaultStorage;

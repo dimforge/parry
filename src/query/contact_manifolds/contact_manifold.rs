@@ -7,6 +7,7 @@ use crate::shape::PackedFeatureId;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 /// A single contact between two shape.
 pub struct TrackedContact<Data> {
     /// The contact point in the local-space of the first shape.

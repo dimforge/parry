@@ -10,6 +10,7 @@ use crate::math::Real;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Default, Clone)]
 #[allow(dead_code)] // We will need these for 2D too in the future.
 pub struct InternalEdgesFixer {

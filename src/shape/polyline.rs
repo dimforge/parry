@@ -15,6 +15,7 @@ use na::ComplexField; // for .abs()
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 /// A polyline.
 pub struct Polyline {
     qbvh: Qbvh<u32>,

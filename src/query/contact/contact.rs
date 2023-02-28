@@ -10,6 +10,7 @@ use std::mem;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(as = "Self")
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 pub struct Contact {
     /// Position of the contact on the first object.
     pub point1: Point<Real>,

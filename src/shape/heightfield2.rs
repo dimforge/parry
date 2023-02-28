@@ -55,6 +55,7 @@ impl HeightFieldStorage for CudaStoragePtr {
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Debug)]
 #[repr(C)] // Needed for Cuda.
 /// A 2D heightfield with a generic storage buffer for its heights.

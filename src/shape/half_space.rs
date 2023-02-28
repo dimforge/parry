@@ -10,6 +10,7 @@ use na::Unit;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(as = "Self")
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
 pub struct HalfSpace {

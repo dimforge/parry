@@ -13,6 +13,7 @@ use crate::shape::{Shape, TriMesh};
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Clone)]
 pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,

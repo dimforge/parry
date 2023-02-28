@@ -13,6 +13,7 @@ use num::Zero;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(as = "Self")
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct BoundingSphere {

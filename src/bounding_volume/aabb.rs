@@ -19,6 +19,7 @@ use na::ComplexField; // for .abs()
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(as = "Self")
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]

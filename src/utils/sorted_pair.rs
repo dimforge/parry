@@ -9,6 +9,7 @@ use std::ops::Deref;
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
+#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 pub struct SortedPair<T: PartialOrd>([T; 2]);
 
 impl<T: PartialOrd> SortedPair<T> {
