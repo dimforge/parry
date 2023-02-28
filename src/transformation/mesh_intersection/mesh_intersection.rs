@@ -19,149 +19,19 @@ pub fn intersect_meshes(
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
-    if mesh1.topology().is_none() || mesh2.topology().is_none() {
-        return Err(MeshIntersectionError::MissingTopology);
-    }
-
-    if mesh1.pseudo_normals().is_none() || mesh2.pseudo_normals().is_none() {
-        return Err(MeshIntersectionError::MissingPseudoNormals);
-    }
-
-    // NOTE: remove this, used for debugging only.
-    mesh1.assert_half_edge_topology_is_valid();
-    mesh2.assert_half_edge_topology_is_valid();
-
-    let pos12 = pos1.inv_mul(pos2);
-
-    // 1: collect all the potential triangle-triangle intersections.
-    let mut intersections = vec![];
-    let mut visitor = BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(
-        pos12,
-        |tri1: &u32, tri2: &u32| {
-            intersections.push((*tri1, *tri2));
-            true
-        },
-    );
-
-    mesh1.qbvh().traverse_bvtt(mesh2.qbvh(), &mut visitor);
-
-    let mut deleted_faces1: HashSet<u32> = HashSet::default();
-    let mut deleted_faces2: HashSet<u32> = HashSet::default();
-    let mut new_indices1 = vec![];
-    let mut new_indices2 = vec![];
-
-    for (fid1, fid2) in &intersections {
-        let tri1 = mesh1.triangle(*fid1);
-        let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
-
-        if super::triangle_triangle_intersection(&tri1, &tri2).is_some() {
-            let _ = deleted_faces1.insert(*fid1);
-            let _ = deleted_faces2.insert(*fid2);
-        }
-    }
-
-    extract_connected_components(
-        &pos12,
-        &mesh1,
-        &mesh2,
-        flip2,
-        &deleted_faces1,
-        &mut new_indices1,
-    );
-    extract_connected_components(
-        &pos12.inverse(),
-        &mesh2,
-        &mesh1,
-        flip1,
-        &deleted_faces2,
-        &mut new_indices2,
-    );
-
-    let mut new_vertices12 = vec![];
-    let mut new_indices12 = vec![];
-    let mut new_indices21 = vec![];
-
-    cut_and_triangulate_intersections(
-        &pos12,
-        &mesh1,
-        flip1,
-        &mesh2,
-        flip2,
-        &mut new_vertices12,
-        &mut new_indices12,
-        &mut new_indices21,
-        &mut intersections,
-    );
-
-    let old_vertices1 = mesh1.vertices();
-    let old_vertices2 = mesh2.vertices();
-
-    // At this point, we know what triangles we want from the first mesh,
-    // and the ones we want from the second mesh. Now we need to build the
-    // vertex buffer and adjust the indices accordingly.
-    let mut new_vertices = vec![];
-
-    // Maps from unified index to the final vertex index.
-    let mut index_map = HashMap::new();
-    let base_id2 = mesh1.vertices().len() as u32;
-
-    // Grab all the triangles from the connected component extracted from the first mesh.
-    for idx1 in &mut new_indices1 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(idx1[k]).or_insert_with(|| {
-                let vtx = old_vertices1[idx1[k] as usize];
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            idx1[k] = new_id as u32;
-        }
-    }
-
-    // Grab all the triangles from the connected component extracted from the second mesh.
-    for idx2 in &mut new_indices2 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(base_id2 + idx2[k]).or_insert_with(|| {
-                let vtx = pos12 * old_vertices2[idx2[k] as usize];
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            idx2[k] = new_id as u32;
-        }
-    }
-
-    // Grab all the trinangles from the intersections.
-    for idx12 in &mut new_indices12 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(idx12[k]).or_insert_with(|| {
-                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, idx12[k]);
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            idx12[k] = new_id as u32;
-        }
-    }
-
-    if flip1 {
-        new_indices1.iter_mut().for_each(|idx| idx.swap(1, 2));
-    }
-
-    if flip2 {
-        new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
-    }
-
-    new_indices1.append(&mut new_indices2);
-    new_indices1.append(&mut new_indices12);
-    new_indices1.append(&mut new_indices21);
-
-    if !new_indices1.is_empty() {
-        Ok(Some(TriMesh::new(new_vertices, new_indices1)))
-    } else {
-        Ok(None)
+    let res = intersect_meshes_track(pos1, mesh1, flip1, pos2, mesh2, flip2);
+    match res {
+        Ok(Some((mesh, _tracks))) => Ok(Some(mesh)),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e),
     }
 }
 
 
-/// Computes the intersection of two meshes, returns tracking meta
+/// Computes the intersection of two meshes, returns additional tracking meta
+///
+/// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
+/// The result mesh vertex coordinates are given in the local-space of `mesh1`.
 pub fn intersect_meshes_track(
     pos1: &Isometry<Real>,
     mesh1: &TriMesh,
