@@ -280,7 +280,7 @@ pub fn intersect_meshes_track(
         }
     }
 
-    // Grab all the trinangles from the intersections.
+    // Grab all the trinangles from intersection1.
     for idx12 in &mut new_indices12 {
         for k in 0..3 {
             let new_id = *index_map.entry(idx12[k]).or_insert_with(|| {
@@ -292,6 +292,18 @@ pub fn intersect_meshes_track(
         }
     }
 
+    // Grab all the trinangles from intersection2.
+    for idx21 in &mut new_indices21 {
+        for k in 0..3 {
+            let new_id = *index_map.entry(idx21[k]).or_insert_with(|| {
+                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, idx21[k]);
+                new_vertices.push(vtx);
+                new_vertices.len() - 1
+            });
+            idx21[k] = new_id as u32;
+        }
+    }
+
     if flip1 {
         new_indices1.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
@@ -300,7 +312,6 @@ pub fn intersect_meshes_track(
         new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
 
-    // TODO track new_indices12 and indices21 separatly
     let tracks = vec![new_indices1.len(), new_indices2.len(), new_indices12.len(), new_indices21.len()];
     new_indices1.append(&mut new_indices2);
     new_indices1.append(&mut new_indices12);
