@@ -1,9 +1,12 @@
 # Change Log
 
-## v0.13.2 (08 March 2023)
+## v0.13.3 (08 March 2023)
 
 ### Modified
 - Improved performance of intersection checks involving composite shapes (compound shapes, trimeshes, polylines, etc.)
+
+## v0.13.2 (08 March 2023)
+This version was yanked. See the release notes for 0.13.3 instead.
 
 ## v0.13.1 (26 Feb. 2023)
 
