@@ -8,7 +8,7 @@ pub use self::intersection_test_ball_point_query::{
 #[cfg(feature = "std")]
 pub use self::intersection_test_composite_shape_shape::{
     intersection_test_composite_shape_shape, intersection_test_shape_composite_shape,
-    IntersectionCompositeShapeShapeBestFirstVisitor,
+    IntersectionCompositeShapeShapeVisitor,
 };
 pub use self::intersection_test_cuboid_cuboid::intersection_test_cuboid_cuboid;
 pub use self::intersection_test_cuboid_segment::{
