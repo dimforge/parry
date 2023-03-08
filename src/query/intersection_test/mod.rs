@@ -6,9 +6,11 @@ pub use self::intersection_test_ball_point_query::{
     intersection_test_ball_point_query, intersection_test_point_query_ball,
 };
 #[cfg(feature = "std")]
+// TODO: remove this once we get rid of IntersectionCompositeShapeShapeBestFirstVisitor
+#[allow(deprecated)]
 pub use self::intersection_test_composite_shape_shape::{
     intersection_test_composite_shape_shape, intersection_test_shape_composite_shape,
-    IntersectionCompositeShapeShapeVisitor,
+    IntersectionCompositeShapeShapeBestFirstVisitor, IntersectionCompositeShapeShapeVisitor,
 };
 pub use self::intersection_test_cuboid_cuboid::intersection_test_cuboid_cuboid;
 pub use self::intersection_test_cuboid_segment::{
