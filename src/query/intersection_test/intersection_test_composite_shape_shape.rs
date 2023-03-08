@@ -1,12 +1,10 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdReal, Vector, SIMD_WIDTH};
-use crate::partitioning::{
-    SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdVisitStatus, SimdVisitor,
-};
+use crate::math::{Isometry, Real, SIMD_WIDTH};
+use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
 use crate::utils::{DefaultStorage, IsometryOpt};
-use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
+use simba::simd::SimdBool as _;
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D: ?Sized, G1: ?Sized>(
