@@ -1,10 +1,10 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdReal, Vector, SIMD_WIDTH};
-use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
+use crate::math::{Isometry, Real, SIMD_WIDTH};
+use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
 use crate::utils::{DefaultStorage, IsometryOpt};
-use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
+use simba::simd::SimdBool as _;
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D: ?Sized, G1: ?Sized>(
@@ -17,13 +17,10 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
-    let mut visitor =
-        IntersectionCompositeShapeShapeBestFirstVisitor::new(dispatcher, pos12, g1, g2);
+    let mut visitor = IntersectionCompositeShapeShapeVisitor::new(dispatcher, pos12, g1, g2);
 
-    g1.typed_qbvh()
-        .traverse_best_first(&mut visitor)
-        .map(|e| e.1 .1)
-        .unwrap_or(false)
+    let _ = g1.typed_qbvh().traverse_depth_first(&mut visitor);
+    visitor.found_intersection
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
@@ -41,17 +38,18 @@ where
 }
 
 /// A visitor for checking if a composite-shape and a shape intersect.
-pub struct IntersectionCompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: Vector<SimdReal>,
-    msum_margin: Vector<SimdReal>,
+pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
+    ls_aabb2: SimdAabb,
 
     dispatcher: &'a D,
     pos12: &'a Isometry<Real>,
     g1: &'a G1,
     g2: &'a dyn Shape,
+
+    found_intersection: bool,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1>
+impl<'a, D: ?Sized, G1: ?Sized> IntersectionCompositeShapeShapeVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
@@ -62,41 +60,32 @@ where
         pos12: &'a Isometry<Real>,
         g1: &'a G1,
         g2: &'a dyn Shape,
-    ) -> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1> {
+    ) -> IntersectionCompositeShapeShapeVisitor<'a, D, G1> {
         let ls_aabb2 = g2.compute_aabb(&pos12);
 
-        IntersectionCompositeShapeShapeBestFirstVisitor {
+        IntersectionCompositeShapeShapeVisitor {
             dispatcher,
-            msum_shift: Vector::splat(-ls_aabb2.center().coords),
-            msum_margin: Vector::splat(ls_aabb2.half_extents()),
+            ls_aabb2: SimdAabb::splat(ls_aabb2),
             pos12,
             g1,
             g2,
+            found_intersection: false,
         }
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
-    for IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1>
+impl<'a, D: ?Sized, G1: ?Sized> SimdVisitor<G1::PartId, SimdAabb>
+    for IntersectionCompositeShapeShapeVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
 {
-    type Result = (G1::PartId, bool);
-
     fn visit(
         &mut self,
-        best: Real,
         bv: &SimdAabb,
         data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
-    ) -> SimdBestFirstVisitStatus<Self::Result> {
-        // Compute the minkowski sum of the two Aabbs.
-        let msum = SimdAabb {
-            mins: bv.mins + self.msum_shift + (-self.msum_margin),
-            maxs: bv.maxs + self.msum_shift + self.msum_margin,
-        };
-        let dist = msum.distance_to_origin();
-        let mask = dist.simd_lt(SimdReal::splat(best));
+    ) -> SimdVisitStatus {
+        let mask = self.ls_aabb2.intersects(bv);
 
         if let Some(data) = data {
             let bitmask = mask.bitmask();
@@ -114,16 +103,13 @@ where
                     });
 
                     if found_intersection {
-                        return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, true)));
+                        self.found_intersection = true;
+                        return SimdVisitStatus::ExitEarly;
                     }
                 }
             }
         }
 
-        SimdBestFirstVisitStatus::MaybeContinue {
-            weights: dist,
-            mask,
-            results: [None; SIMD_WIDTH],
-        }
+        SimdVisitStatus::MaybeContinue(mask)
     }
 }
