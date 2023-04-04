@@ -109,7 +109,7 @@ impl Polyline {
     /// A flat view of the index buffer of this mesh.
     pub fn flat_indices(&self) -> &[u32] {
         unsafe {
-            let len = self.indices.len() * 3;
+            let len = self.indices.len() * 2;
             let data = self.indices.as_ptr() as *const u32;
             std::slice::from_raw_parts(data, len)
         }
