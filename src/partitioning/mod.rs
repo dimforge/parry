@@ -6,6 +6,7 @@ pub use self::qbvh::{
 };
 pub use self::qbvh::{
     GenericQbvh, IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhProxy, QbvhStorage, SimdNodeIndex,
+    QbvhNodeFlags,
 };
 #[cfg(feature = "parallel")]
 pub use self::visitor::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor};

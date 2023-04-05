@@ -342,7 +342,9 @@ bitflags::bitflags! {
 /// A triangle mesh.
 pub struct GenericTriMesh<Storage: TriMeshStorage> {
     qbvh: GenericQbvh<u32, Storage::QbvhStorage>,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     vertices: Storage::ArrayPoint,
+    #[cfg_attr(feature = "rkyv", with(rkyv::with::CopyOptimize))]
     indices: Storage::ArrayIdx,
     #[cfg(feature = "dim3")]
     pub(crate) pseudo_normals: Option<TriMeshPseudoNormals<Storage>>,
