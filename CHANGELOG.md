@@ -1,5 +1,10 @@
 # Change Log
 
+## Unreleased
+
+### Added
+- Add validation when using `rkyv` safe API whenever applicable to `parry` types.
+
 ## v0.13.3 (08 March 2023)
 
 ### Modified
