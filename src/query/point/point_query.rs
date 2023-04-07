@@ -8,7 +8,8 @@ use na;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 pub struct PointProjection {
     /// Whether or not the point to project was inside of the shape.

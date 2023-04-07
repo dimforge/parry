@@ -13,7 +13,8 @@ use na::ComplexField; // for .abs()
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vertex {
@@ -25,7 +26,8 @@ pub struct Vertex {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Edge {
@@ -49,7 +51,8 @@ impl Edge {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Face {
@@ -61,7 +64,8 @@ pub struct Face {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 struct Triangle {
@@ -87,7 +91,8 @@ impl Triangle {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Clone)]
 /// A convex polyhedron without degenerate faces.

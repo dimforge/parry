@@ -7,7 +7,8 @@
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum FeatureId {
@@ -60,7 +61,8 @@ impl FeatureId {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 /// A feature id where the feature type is packed into the same value as the feature index.

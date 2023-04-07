@@ -8,7 +8,8 @@ use std::ops::{Add, Mul};
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>"))
+    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>")),
+    archive(check_bytes)
 )]
 pub struct SdpMatrix2<N> {
     /// The component at the first row and first column of this matrix.
@@ -114,7 +115,8 @@ impl Mul<Real> for SdpMatrix2<Real> {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>"))
+    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>")),
+    archive(check_bytes)
 )]
 pub struct SdpMatrix3<N> {
     /// The component at the first row and first column of this matrix.

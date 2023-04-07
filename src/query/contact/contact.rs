@@ -8,7 +8,8 @@ use std::mem;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 pub struct Contact {
     /// Position of the contact on the first object.

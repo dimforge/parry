@@ -13,7 +13,8 @@ const EPSILON: Real = f32::EPSILON as Real;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {

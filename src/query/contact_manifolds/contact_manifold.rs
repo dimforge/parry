@@ -5,7 +5,8 @@ use crate::shape::PackedFeatureId;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
 /// A single contact between two shape.
 pub struct TrackedContact<Data> {

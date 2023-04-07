@@ -9,7 +9,8 @@ use simba::simd::{SimdPartialOrd, SimdValue};
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct SimdAabb {
