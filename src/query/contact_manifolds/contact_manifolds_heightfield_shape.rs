@@ -17,9 +17,9 @@ use crate::query::contact_manifolds::InternalEdgesFixer;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Clone)]
 struct SubDetector {
     manifold_id: usize,

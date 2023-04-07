@@ -23,8 +23,7 @@ std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "
 dim3    = [ ]
 f32     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
-rkyv-serialize = [ "rkyv", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
-rkyv-safe-deser = [ "rkyv-serialize", "rkyv/validation" ]
+rkyv-serialize = [ "rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
 bytemuck-serialize = [ "bytemuck", "nalgebra/convert-bytemuck" ]
 
 simd-stable = [ "simba/wide", "simd-is-enabled" ]

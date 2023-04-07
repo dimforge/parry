@@ -11,9 +11,9 @@ use num::Zero;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct BoundingSphere {

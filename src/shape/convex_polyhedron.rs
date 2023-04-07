@@ -13,9 +13,9 @@ use na::ComplexField; // for .abs()
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vertex {
     pub first_adj_face_or_edge: u32,
@@ -26,9 +26,9 @@ pub struct Vertex {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Edge {
     pub vertices: Point2<u32>,
@@ -51,9 +51,9 @@ impl Edge {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Face {
     pub first_vertex_or_edge: u32,
@@ -64,9 +64,9 @@ pub struct Face {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 struct Triangle {
     vertices: [u32; 3],
@@ -91,9 +91,9 @@ impl Triangle {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(PartialEq, Debug, Clone)]
 /// A convex polyhedron without degenerate faces.
 pub struct ConvexPolyhedron {

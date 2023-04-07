@@ -9,9 +9,9 @@ use crate::shape::FeatureId;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
 pub struct Ray {
@@ -63,9 +63,9 @@ impl Ray {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed
     /// with: `ray.point_at(toi)` or equivalently `origin + dir * toi` where `origin` is the origin of the ray;

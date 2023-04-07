@@ -69,9 +69,9 @@ impl std::error::Error for TopologyError {}
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[repr(C)] // Needed for Cuda.
 #[cfg(feature = "dim3")]
 pub struct TriMeshPseudoNormals<Storage: TriMeshStorage> {
@@ -107,9 +107,9 @@ impl TriMeshPseudoNormals<DefaultStorage> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[repr(C)] // Needed for Cuda.
 pub struct TriMeshConnectedComponents<Storage: TriMeshStorage> {
     /// The `face_colors[i]` gives the connected-component index
@@ -158,9 +158,9 @@ impl TriMeshConnectedComponents<DefaultStorage> {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
 pub struct TopoVertex {
@@ -174,9 +174,9 @@ pub struct TopoVertex {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
 pub struct TopoFace {
@@ -191,9 +191,9 @@ pub struct TopoFace {
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
 pub struct TopoHalfEdge {
@@ -214,9 +214,9 @@ pub struct TopoHalfEdge {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[repr(C)] // Needed for Cuda.
 pub struct TriMeshTopology<Storage: TriMeshStorage> {
     /// The vertices of this half-edge representation.
@@ -269,9 +269,9 @@ bitflags::bitflags! {
     #[cfg_attr(
         feature = "rkyv",
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self")
+        archive(as = "Self"),
+        archive(check_bytes)
     )]
-    #[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[repr(C)] // Needed for Cuda.
     #[derive(Default)]
@@ -343,9 +343,9 @@ bitflags::bitflags! {
 )]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[repr(C)] // Needed for Cuda.
 /// A triangle mesh.
 pub struct GenericTriMesh<Storage: TriMeshStorage> {

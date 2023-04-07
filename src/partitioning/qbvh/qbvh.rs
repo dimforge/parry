@@ -60,9 +60,9 @@ pub type SimdNodeIndex = u32;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// The index of one specific node of a Qbvh.
 pub struct NodeIndex {
@@ -116,9 +116,9 @@ bitflags! {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct QbvhNode {
     /// The Aabbs of the qbvh nodes represented by this node.
@@ -190,9 +190,9 @@ impl QbvhNode {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// Combination of a leaf data and its associated node’s index.
 pub struct QbvhProxy<LeafData> {
@@ -231,9 +231,9 @@ impl<LeafData> QbvhProxy<LeafData> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[repr(C)] // Needed for Cuda.
 #[derive(Debug)]
 pub struct GenericQbvh<LeafData, Storage: QbvhStorage<LeafData>> {

@@ -8,9 +8,9 @@ use crate::math::Real;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Default, Clone)]
 #[allow(dead_code)] // We will need these for 2D too in the future.
 pub struct InternalEdgesFixer {

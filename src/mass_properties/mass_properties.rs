@@ -13,9 +13,9 @@ const EPSILON: Real = f32::EPSILON as Real;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    archive(as = "Self"),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.

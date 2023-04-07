@@ -22,9 +22,9 @@ bitflags! {
     #[cfg_attr(
         feature = "rkyv",
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self")
-    )]
-    #[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
+        archive(as = "Self"),
+        archive(check_bytes)
+)]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[derive(Default)]
     /// The status of the cell of an heightfield.
@@ -69,9 +69,9 @@ impl HeightFieldStorage for CudaStoragePtr {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
 )]
-#[cfg_attr(feature = "rkyv-safe-deser", archive(check_bytes))]
 #[derive(Debug)]
 #[repr(C)] // Needed for Cuda.
 /// A 3D heightfield with a generic storage buffer for its height grid.
