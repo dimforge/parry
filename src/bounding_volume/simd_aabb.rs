@@ -39,7 +39,7 @@ impl serde::Serialize for SimdAabb {
                 .map(|e| array![|ii| e.extract(ii); SIMD_WIDTH]),
         );
 
-        let mut simd_aabb = serializer.serialize_struct("simd_aabb", 2)?;
+        let mut simd_aabb = serializer.serialize_struct("SimdAabb", 2)?;
         simd_aabb.serialize_field("mins", &mins)?;
         simd_aabb.serialize_field("maxs", &maxs)?;
         simd_aabb.end()
@@ -54,6 +54,13 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
     {
         struct Visitor {}
 
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Mins,
+            Maxs,
+        }
+
         impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = SimdAabb;
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -62,6 +69,37 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
                     "two arrays containing at least {} floats",
                     SIMD_WIDTH * DIM * 2
                 )
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut mins: Option<Point<[Real; SIMD_WIDTH]>> = None;
+                let mut maxs: Option<Point<[Real; SIMD_WIDTH]>> = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Mins => {
+                            if mins.is_some() {
+                                return Err(serde::de::Error::duplicate_field("mins"));
+                            }
+                            mins = Some(map.next_value()?);
+                        }
+                        Field::Maxs => {
+                            if maxs.is_some() {
+                                return Err(serde::de::Error::duplicate_field("maxs"));
+                            }
+                            maxs = Some(map.next_value()?);
+                        }
+                    }
+                }
+
+                let mins = mins.ok_or_else(|| serde::de::Error::missing_field("mins"))?;
+                let maxs = maxs.ok_or_else(|| serde::de::Error::missing_field("maxs"))?;
+                let mins = mins.map(SimdReal::from);
+                let maxs = maxs.map(SimdReal::from);
+                Ok(SimdAabb { mins, maxs })
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -74,8 +112,8 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
                 let maxs: Point<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
-                let mins = Point::from(mins.coords.map(|e| SimdReal::from(e)));
-                let maxs = Point::from(maxs.coords.map(|e| SimdReal::from(e)));
+                let mins = mins.map(SimdReal::from);
+                let maxs = maxs.map(SimdReal::from);
                 Ok(SimdAabb { mins, maxs })
             }
         }
