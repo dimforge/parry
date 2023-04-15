@@ -77,6 +77,7 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
             {
                 let mut mins: Option<Point<[Real; SIMD_WIDTH]>> = None;
                 let mut maxs: Option<Point<[Real; SIMD_WIDTH]>> = None;
+
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Mins => {
@@ -93,10 +94,11 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
                         }
                     }
                 }
+
                 let mins = mins.ok_or_else(|| serde::de::Error::missing_field("mins"))?;
                 let maxs = maxs.ok_or_else(|| serde::de::Error::missing_field("maxs"))?;
-                let mins = Point::from(mins.coords.map(|e| SimdReal::from(e)));
-                let maxs = Point::from(maxs.coords.map(|e| SimdReal::from(e)));
+                let mins = mins.map(SimdReal::from);
+                let maxs = maxs.map(SimdReal::from);
                 Ok(SimdAabb { mins, maxs })
             }
 
@@ -110,8 +112,8 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
                 let maxs: Point<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
-                let mins = Point::from(mins.coords.map(|e| SimdReal::from(e)));
-                let maxs = Point::from(maxs.coords.map(|e| SimdReal::from(e)));
+                let mins = mins.map(SimdReal::from);
+                let maxs = maxs.map(SimdReal::from);
                 Ok(SimdAabb { mins, maxs })
             }
         }
