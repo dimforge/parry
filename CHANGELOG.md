@@ -1,6 +1,10 @@
 # Change Log
 
-## Unreleased
+## v0.13.4
+
+### Fixed
+- Fix `Polyline::flat_indices` that returned an incorrectly sized slice.
+- Fix serialization of `SimdAabb` into map-like formats like JSON, YAML, RON.
 
 ### Added
 - Add validation when using `rkyv` safe API whenever applicable to `parry` types.
