@@ -8,6 +8,9 @@ use simba::simd::{SimdBool, SimdValue};
 
 use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhNodeFlags};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Default)]
 /// Workspace for QBVH update.
 ///
@@ -88,6 +91,11 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 }
 
                 let child_node = &mut self.nodes[child as usize];
+                // skip non-leaf node that is attached to the root
+                if !child_node.is_leaf() {
+                    continue;
+                }
+
                 // Insert into this node if there is room.
                 for kk in 0..SIMD_WIDTH {
                     if child_node.children[kk] == u32::MAX {
@@ -453,6 +461,8 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 if has_leaf {
                     internal_ids[new_internal_lane_containing_leaf] = my_leaf_id;
                     internal_aabbs[new_internal_lane_containing_leaf] = my_leaf_aabb;
+                    // need to merge the leaf aabb into the internal aabb which we did not do previously
+                    my_internal_aabb.merge(&my_leaf_aabb);
                 }
 
                 let internal_node = QbvhNode {
