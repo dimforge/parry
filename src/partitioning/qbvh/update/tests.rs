@@ -34,14 +34,14 @@ fn test_case_qbvh_3() {
 // #[test]
 // fn test_case_qbvh() {
 //     // do this in multiple thread
-//     let found = Arc::new(AtomicBool::new(false));
+//     let found = std::sync::Arc::new(core::sync::atomic::AtomicBool::new(false));
 //     for _ in 0..std::thread::available_parallelism().unwrap().into() {
 //         let found = found.clone();
 
 //         let _handle = std::thread::spawn(move || loop {
 //             let seed = rand::random();
 //             let result = std::panic::catch_unwind(|| {
-//                 test_qbvh_random_operations(seed, 100, false, None, 0.53, 100);
+//                 test_qbvh_random_operations(seed, 10000, false, None, 0.53, 1000);
 //             });
 
 //             match result {

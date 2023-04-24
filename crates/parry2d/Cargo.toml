@@ -66,6 +66,6 @@ cust = { version = "0.3", optional = true }
 
 [dev-dependencies]
 simba = { version = "0.8", default-features = false, features = [ "partial_fixed_point_support" ] }
-oorandom = "11"
+oorandom = "10.0.0"
 ptree    = "0.4.0"
 rand     = { version = "0.8" }
