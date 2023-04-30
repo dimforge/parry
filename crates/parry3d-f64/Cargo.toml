@@ -66,3 +66,5 @@ cust       = { version = "0.3", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
+ptree    = "0.4.0"
+rand     = { version = "0.8" }
