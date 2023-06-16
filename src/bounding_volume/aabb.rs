@@ -320,7 +320,7 @@ impl Aabb {
         ]
     }
 
-    /// Splits this Aabb at its center, into height parts (as in an octree).
+    /// Splits this Aabb at its center, into eight parts (as in an octree).
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn split_at_center(&self) -> [Aabb; 8] {
