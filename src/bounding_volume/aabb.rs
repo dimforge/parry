@@ -38,11 +38,13 @@ impl Aabb {
     /// Here is how the faces are numbered, assuming
     /// a right-handed coordinate system:
     ///
+    /// ```text
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1, hidden by the 4-5-6-7 face.)
-    ///   /            4 - 5
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
     ///  z
+    /// ```
     #[cfg(feature = "dim3")]
     pub const EDGES_VERTEX_IDS: [(usize, usize); 12] = [
         (0, 1),
@@ -66,11 +68,13 @@ impl Aabb {
     /// Here is how the faces are numbered, assuming
     /// a right-handed coordinate system:
     ///
+    /// ```text
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1, hidden by the 4-5-6-7 face.)
-    ///   /            4 - 5
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
     ///  z
+    /// ```
     #[cfg(feature = "dim3")]
     pub const FACES_VERTEX_IDS: [(usize, usize, usize, usize); 6] = [
         (1, 2, 6, 5),
