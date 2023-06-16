@@ -40,7 +40,7 @@ impl Aabb {
     ///
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1, hidden by the 4-5-6-7 face.)
     ///   /            4 - 5
     ///  z
     #[cfg(feature = "dim3")]
@@ -68,7 +68,7 @@ impl Aabb {
     ///
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1, hidden by the 4-5-6-7 face.)
     ///   /            4 - 5
     ///  z
     #[cfg(feature = "dim3")]
