@@ -3,17 +3,17 @@
 //! # General cases
 //! The most general methods provided by this module are:
 //!
-//! * [`query::closest_points()`] to compute the closest points between two shapes.
-//! * [`query::distance()`] to compute the distance between two shapes.
-//! * [`query::contact()`] to compute one pair of contact points between two shapes, including penetrating contact.
-//! * [`query::intersection_test()`] to determine if two shapes are intersecting or not.
-//! * [`query::time_of_impact()`] to determine when two shapes undergoing translational motions hit for the first time.
-//! * [`query::nonlinear_time_of_impact()`] to determine when two shapes undergoing continuous rigid motions hit for the first time.
+//! * [`closest_points()`] to compute the closest points between two shapes.
+//! * [`distance()`] to compute the distance between two shapes.
+//! * [`contact()`] to compute one pair of contact points between two shapes, including penetrating contact.
+//! * [`intersection_test()`] to determine if two shapes are intersecting or not.
+//! * [`time_of_impact()`] to determine when two shapes undergoing translational motions hit for the first time.
+//! * [`nonlinear_time_of_impact()`] to determine when two shapes undergoing continuous rigid motions hit for the first time.
 //!
 //! Ray-casting and point-projection can be achieved by importing traits:
 //!
-//! * [`query::RayCast`] for ray-casting.
-//! * [`query::PointQuery`] for point projection.
+//! * [`RayCast`] for ray-casting.
+//! * [`PointQuery`] for point projection.
 //!
 //! # Specific cases
 //! The functions exported by the `details` submodule are more specific versions of the ones described above.
