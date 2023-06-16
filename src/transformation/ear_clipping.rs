@@ -1,5 +1,5 @@
 //! Ear-clipping algorithm for creating a triangle mesh from a simple polygon.
-//! Based on https://github.com/ivanfratric/polypartition, contributed by embotech AG.
+//! Based on <https://github.com/ivanfratric/polypartition>, contributed by embotech AG.
 
 use crate::{
     math::{Point, Real},
