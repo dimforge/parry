@@ -4,8 +4,8 @@ version = "0.13.4"
 authors = [ "Sébastien Crozet <developer@crozet.re>" ]
 
 description = "2 dimensional collision detection library in Rust. 64-bit precision version."
-documentation = "http://parry.rs/docs"
-homepage = "http://parry.rs"
+documentation = "https://parry.rs/docs"
+homepage = "https://parry.rs"
 repository = "https://github.com/dimforge/parry"
 readme = "README.md"
 keywords = [ "collision", "geometry", "distance", "ray", "convex" ]
