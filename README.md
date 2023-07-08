@@ -33,7 +33,7 @@ and open-source! We regularly give updates about our progress on [our blog](http
 ## Resources and discussions
 - [Dimforge](https://dimforge.com): See all the open-source projects we are working on! Follow our announcements
   on our [blog](https://www.dimforge.com/blog).
-- [User guide](https://www.parry.rs/docs/): (WIP) Learn to use Rapier in your project by reading the official User Guide.
+- [User guide](https://www.parry.rs/docs/): (WIP) Learn to use Parry in your project by reading the official User Guide.
 - [Discord](https://discord.gg/vt9DJSW): Come chat with us, get help, suggest features, on Discord!
 
 ## Acknowledgements
