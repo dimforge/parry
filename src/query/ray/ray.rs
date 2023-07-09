@@ -3,14 +3,16 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::FeatureId;
 
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, CheckBytes};
+
 /// A Ray.
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
@@ -62,9 +64,8 @@ impl Ray {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object.  The exact contact point can be computed

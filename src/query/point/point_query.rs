@@ -2,14 +2,16 @@ use crate::math::{Isometry, Point, Real};
 use crate::shape::FeatureId;
 use na;
 
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, CheckBytes};
+
 /// Description of the projection of a point on a shape.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 pub struct PointProjection {
     /// Whether or not the point to project was inside of the shape.

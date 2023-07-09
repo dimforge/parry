@@ -24,6 +24,9 @@ use crate::utils::{CudaStorage, CudaStoragePtr};
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray1, cust::error::CudaResult};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, CheckBytes};
+
 /// Indicated an inconsistency in the topology of a triangle mesh.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
@@ -157,9 +160,8 @@ impl TriMeshConnectedComponents<DefaultStorage> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
@@ -173,9 +175,8 @@ pub struct TopoVertex {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
@@ -190,9 +191,8 @@ pub struct TopoFace {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)] // Needed for Cuda.
@@ -270,7 +270,6 @@ bitflags::bitflags! {
         feature = "rkyv",
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
         archive(as = "Self"),
-        archive(check_bytes)
     )]
     #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[repr(C)] // Needed for Cuda.

@@ -5,14 +5,16 @@ use crate::math::{Isometry, Point, Real};
 use na;
 use num::Zero;
 
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, CheckBytes};
+
 /// A Bounding Sphere.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]

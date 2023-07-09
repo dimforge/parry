@@ -9,12 +9,14 @@ use std::f64;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, CheckBytes};
+
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Vertex {
@@ -25,9 +27,8 @@ pub struct Vertex {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Edge {
@@ -50,9 +51,8 @@ impl Edge {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self"),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
+    archive(as = "Self")
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Face {
