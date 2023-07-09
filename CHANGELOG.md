@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.13.5
+
+### Fixed
+- When using `rkyv`, fix `CheckBytes` implementation for types archived as themselves.
+- Fix occasional crash in the `QBVH` incremental update.
+
 ## v0.13.4
 
 ### Fixed
