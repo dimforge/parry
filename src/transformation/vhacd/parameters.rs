@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::transformation::voxelization::FillMode;
 
 /// Parameters controlling the VHACD convex decomposition.
@@ -58,15 +58,15 @@ impl Default for VHACDParameters {
             #[cfg(feature = "dim3")]
             resolution: 64,
             #[cfg(feature = "dim3")]
-            concavity: 0.01,
+            concavity: real!(0.01),
             #[cfg(feature = "dim2")]
             resolution: 256,
             #[cfg(feature = "dim2")]
             concavity: 0.1,
             plane_downsampling: 4,
             convex_hull_downsampling: 4,
-            alpha: 0.05,
-            beta: 0.05,
+            alpha: real!(0.05),
+            beta: real!(0.05),
             convex_hull_approximation: true,
             max_convex_hulls: 1024,
             fill_mode: FillMode::FloodFill {

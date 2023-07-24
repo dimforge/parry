@@ -1,4 +1,4 @@
-use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
+use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, real, Rotation, Vector};
 use crate::utils;
 use na::ComplexField;
 use num::Zero;
@@ -9,7 +9,7 @@ use {na::Matrix3, std::ops::MulAssign};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-const EPSILON: Real = f32::EPSILON as Real;
+const EPSILON: Real = Real::EPSILON;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -91,7 +91,7 @@ impl MassProperties {
     pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
         let mut eigen = inertia.symmetric_eigen();
 
-        if eigen.eigenvectors.determinant() < 0.0 {
+        if eigen.eigenvectors.determinant() < real!(0.0) {
             eigen.eigenvectors.swap_columns(1, 2);
             eigen.eigenvalues.swap_rows(1, 2);
         }
@@ -101,7 +101,7 @@ impl MassProperties {
         let _ = principal_inertia_local_frame.renormalize();
 
         // Drop negative eigenvalues.
-        let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { 0.0 } else { e });
+        let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { real!(0.0) } else { e });
 
         Self::with_principal_inertia_frame(
             local_com,
@@ -196,8 +196,8 @@ impl MassProperties {
     pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Matrix3<Real> {
         let matrix = self.reconstruct_inertia_matrix();
 
-        if self.inv_mass != 0.0 {
-            let mass = 1.0 / self.inv_mass;
+        if self.inv_mass != real!(0.0) {
+            let mass = real!(1.0) / self.inv_mass;
             let diag = shift.norm_squared();
             let diagm = Matrix3::from_diagonal_element(diag);
             matrix + (diagm + shift * shift.transpose()) * mass
@@ -242,7 +242,7 @@ impl MassProperties {
 impl Zero for MassProperties {
     fn zero() -> Self {
         Self {
-            inv_mass: 0.0,
+            inv_mass: real!(0.0),
             inv_principal_inertia_sqrt: na::zero(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
@@ -307,7 +307,7 @@ impl Sub<MassProperties> for MassProperties {
         let mut new_mass = m1 - m2;
 
         if new_mass < EPSILON {
-            new_mass = 0.0;
+            new_mass = real!(0.0);
         }
 
         let inv_mass = utils::inv(new_mass);
@@ -419,7 +419,7 @@ impl std::iter::Sum<MassProperties> for MassProperties {
     where
         I: Iterator<Item = Self>,
     {
-        let mut total_mass = 0.0;
+        let mut total_mass = real!(0.0);
         let mut total_com = Point::origin();
         let mut total_inertia = Matrix3::zeros();
         // TODO: avoid this allocation.
@@ -433,7 +433,7 @@ impl std::iter::Sum<MassProperties> for MassProperties {
             all_props.push(props);
         }
 
-        if total_mass > 0.0 {
+        if total_mass > real!(0.0) {
             total_com /= total_mass;
         }
 
@@ -509,7 +509,7 @@ impl approx::RelativeEq for MassProperties {
 #[cfg(test)]
 mod test {
     use super::MassProperties;
-    use crate::math::Point;
+    use crate::math::{Point, real};
     #[cfg(feature = "dim3")]
     use crate::math::{Rotation, Vector};
     use crate::shape::{Ball, Capsule, Shape};
@@ -520,28 +520,28 @@ mod test {
     fn mass_properties_add_partial_zero() {
         let m1 = MassProperties {
             local_com: Point::origin(),
-            inv_mass: 2.0,
+            inv_mass: real!(2.0),
             inv_principal_inertia_sqrt: na::zero(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
         };
         let m2 = MassProperties {
             local_com: Point::origin(),
-            inv_mass: 0.0,
+            inv_mass: real!(0.0),
             #[cfg(feature = "dim2")]
-            inv_principal_inertia_sqrt: 1.0,
+            inv_principal_inertia_sqrt: real!(1.0),
             #[cfg(feature = "dim3")]
-            inv_principal_inertia_sqrt: Vector::new(1.0, 2.0, 3.0),
+            inv_principal_inertia_sqrt: Vector::new(real!(1.0), real!(2.0), real!(3.0)),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
         };
         let result = MassProperties {
             local_com: Point::origin(),
-            inv_mass: 2.0,
+            inv_mass: real!(2.0),
             #[cfg(feature = "dim2")]
-            inv_principal_inertia_sqrt: 1.0,
+            inv_principal_inertia_sqrt: real!(1.0),
             #[cfg(feature = "dim3")]
-            inv_principal_inertia_sqrt: Vector::new(1.0, 2.0, 3.0),
+            inv_principal_inertia_sqrt: Vector::new(real!(1.0), real!(2.0), real!(3.0)),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
         };
@@ -553,30 +553,30 @@ mod test {
     #[test]
     fn mass_properties_add_sub() {
         // Check that addition and subtraction of mass properties behave as expected.
-        let c1 = Capsule::new_x(1.0, 2.0);
-        let c2 = Capsule::new_y(3.0, 4.0);
-        let c3 = Ball::new(2.0);
+        let c1 = Capsule::new_x(real!(1.0), real!(2.0));
+        let c2 = Capsule::new_y(real!(3.0), real!(4.0));
+        let c3 = Ball::new(real!(2.0));
 
-        let m1 = c1.mass_properties(1.0);
-        let m2 = c2.mass_properties(1.0);
-        let m3 = c3.mass_properties(1.0);
+        let m1 = c1.mass_properties(real!(1.0));
+        let m2 = c2.mass_properties(real!(1.0));
+        let m3 = c3.mass_properties(real!(1.0));
         let m1m2m3 = m1 + m2 + m3;
 
-        assert_relative_eq!(m1 + m2, m2 + m1, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m1, m2 + m3, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m2, m1 + m3, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m3, m1 + m2, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - (m1 + m2), m3, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - (m1 + m3), m2, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - (m2 + m3), m1, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m1 - m2, m3, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = 1.0e-6);
+        assert_relative_eq!(m1 + m2, m2 + m1, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m1, m2 + m3, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m2, m1 + m3, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m3, m1 + m2, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - (m1 + m2), m3, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - (m1 + m3), m2, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - (m2 + m3), m1, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m1 - m2, m3, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = real!(1.0e-6));
+        assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = real!(1.0e-6));
 
         assert_relative_eq!(
             ((m1m2m3 - m1) - m2) - m3,
             MassProperties::zero(),
-            epsilon = 1.0e-6
+            epsilon = real!(1.0e-6)
         );
     }
 

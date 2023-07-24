@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
 
@@ -31,7 +31,7 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
     let dist = center_dist - radius_a - radius_b;
 
     if dist < prediction {
-        let local_n1 = if center_dist != 0.0 {
+        let local_n1 = if center_dist != real!(0.0) {
             dcenter / center_dist
         } else {
             Vector::y()

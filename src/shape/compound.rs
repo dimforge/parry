@@ -3,7 +3,7 @@
 //!
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::partitioning::Qbvh;
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
@@ -55,7 +55,7 @@ impl Compound {
         let mut qbvh = Qbvh::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        qbvh.clear_and_rebuild(leaves.into_iter(), 0.0);
+        qbvh.clear_and_rebuild(leaves.into_iter(), real!(0.0));
 
         Compound {
             shapes,

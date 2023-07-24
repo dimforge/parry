@@ -1,6 +1,6 @@
 use na::Unit;
 
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::details;
 use crate::query::gjk::{self, VoronoiSimplex};
 use crate::query::{TOIStatus, TOI};
@@ -24,11 +24,11 @@ where
         |(toi, normal1, witness1, witness2)| {
             if toi > max_toi {
                 None
-            } else if !stop_at_penetration && toi < 1.0e-5 {
+            } else if !stop_at_penetration && toi < real!(1.0e-5 ){
                 let contact = details::contact_support_map_support_map(pos12, g1, g2, Real::MAX)?;
                 let normal_vel = contact.normal1.dot(&vel12);
 
-                if normal_vel >= 0.0 {
+                if normal_vel >= real!(0.0) {
                     None
                 } else {
                     Some(TOI {

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, real};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
 use na::Unit;
@@ -36,7 +36,7 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     let (proj, fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
     let dpos = local_p2_1 - proj.point;
 
-    if let Some((mut local_n1, mut dist)) = Unit::try_new_and_get(dpos, 0.0) {
+    if let Some((mut local_n1, mut dist)) = Unit::try_new_and_get(dpos, real!(0.0)) {
         if proj.is_inside {
             local_n1 = -local_n1;
             dist = -dist;

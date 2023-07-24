@@ -1,7 +1,7 @@
 use std::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::math::{Isometry, Point, Real, real, Vector, DIM};
 use crate::shape::SupportMap;
 use na;
 
@@ -18,13 +18,13 @@ where
     for d in 0..DIM {
         // FIXME: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = 1.0;
+        basis[d] = real!(1.0);
         max[d] = i.support_point(m, &basis)[d];
 
-        basis[d] = -1.0;
+        basis[d] = real!(-1.0);
         min[d] = i.support_point(m, &basis)[d];
 
-        basis[d] = 0.0;
+        basis[d] = real!(0.0);
     }
 
     Aabb::new(Point::from(min), Point::from(max))
@@ -42,13 +42,13 @@ where
     for d in 0..DIM {
         // FIXME: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = 1.0;
+        basis[d] = real!(1.0);
         max[d] = i.local_support_point(&basis)[d];
 
-        basis[d] = -1.0;
+        basis[d] = real!(-1.0);
         min[d] = i.local_support_point(&basis)[d];
 
-        basis[d] = 0.0;
+        basis[d] = real!(0.0);
     }
 
     Aabb::new(Point::from(min), Point::from(max))

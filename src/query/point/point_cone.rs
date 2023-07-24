@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cone, FeatureId, Segment};
 use na;
@@ -27,12 +27,12 @@ impl PointQuery for Cone {
 
         // Project on the conic side.
         // TODO: we could solve this in 2D using the plane passing through the cone axis and the conic_side_segment to save some computation.
-        let apex_point = Point::new(0.0, self.half_height, 0.0);
+        let apex_point = Point::new(real!(0.0), self.half_height, real!(0.0));
         let conic_side_segment = Segment::new(apex_point, projection_on_basis_circle);
         let conic_side_segment_dir = conic_side_segment.scaled_direction();
         let mut proj = conic_side_segment.project_local_point(pt, true);
 
-        let apex_to_basis_center = Vector::new(0.0, -2.0 * self.half_height, 0.0);
+        let apex_to_basis_center = Vector::new(real!(0.0), real!(-2.0) * self.half_height, real!(0.0));
 
         // Now determine if the point is inside of the cone.
         if pt.y >= -self.half_height
@@ -40,7 +40,7 @@ impl PointQuery for Cone {
             && conic_side_segment_dir
                 .cross(&(pt - apex_point))
                 .dot(&conic_side_segment_dir.cross(&apex_to_basis_center))
-                >= 0.0
+                >= real!(0.0)
         {
             if solid {
                 PointProjection::new(true, *pt)

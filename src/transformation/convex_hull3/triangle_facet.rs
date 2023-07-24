@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::Triangle;
 use na::{Point3, Vector3};
 use num::Bounded;
@@ -33,7 +33,7 @@ impl TriangleFacet {
             pts: [p1, p2, p3],
             visible_points: Vec::new(),
             furthest_point: Bounded::max_value(),
-            furthest_distance: 0.0,
+            furthest_distance: real!(0.0),
         }
     }
 
@@ -88,7 +88,7 @@ impl TriangleFacet {
         let p0 = points[self.pts[0]];
         let pt = points[point];
 
-        if (pt - p0).dot(&self.normal) < crate::math::DEFAULT_EPSILON * 100.0 {
+        if (pt - p0).dot(&self.normal) < crate::math::DEFAULT_EPSILON * real!(100.0) {
             return false;
         }
 
@@ -112,7 +112,7 @@ impl TriangleFacet {
             let p0 = points[self.pts[i]];
             let pt = points[point];
 
-            if (pt - p0).dot(&self.normal) >= 0.0 {
+            if (pt - p0).dot(&self.normal) >= real!(0.0) {
                 return true;
             }
         }

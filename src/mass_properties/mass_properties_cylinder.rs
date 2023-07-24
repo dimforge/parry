@@ -2,7 +2,7 @@ use crate::mass_properties::MassProperties;
 use crate::math::{PrincipalAngularInertia, Real, Vector};
 #[cfg(feature = "dim3")]
 use {
-    crate::math::{Point, Rotation},
+    crate::math::{Point, Rotation, real},
     na::RealField,
 };
 
@@ -18,12 +18,12 @@ impl MassProperties {
 
         #[cfg(feature = "dim3")]
         {
-            let volume = half_height * radius * radius * Real::pi() * 2.0;
+            let volume = half_height * radius * radius * Real::pi() * real!(2.0);
             let sq_radius = radius * radius;
-            let sq_height = half_height * half_height * 4.0;
-            let off_principal = (sq_radius * 3.0 + sq_height) / 12.0;
+            let sq_height = half_height * half_height * real!(4.0);
+            let off_principal = (sq_radius * real!(3.0) + sq_height) / real!(12.0);
 
-            let inertia = Vector::new(off_principal, sq_radius / 2.0, off_principal);
+            let inertia = Vector::new(off_principal, sq_radius / real!(2.0), off_principal);
             (volume, inertia)
         }
     }

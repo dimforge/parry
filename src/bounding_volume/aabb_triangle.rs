@@ -35,7 +35,7 @@ impl Triangle {
 mod test {
     use crate::{
         bounding_volume::details::support_map_aabb,
-        math::{Isometry, Point, Real, Translation},
+        math::{Isometry, Point, Real, Translation, real},
         shape::Triangle,
     };
     use na::{RealField, UnitQuaternion};
@@ -43,14 +43,14 @@ mod test {
     #[test]
     fn triangle_aabb_matches_support_map_aabb() {
         let t = Triangle::new(
-            Point::new(0.3, -0.1, 0.2),
-            Point::new(-0.7, 1.0, 0.0),
-            Point::new(-0.7, 1.5, 0.0),
+            Point::new(real!(0.3), real!(-0.1), real!(0.2)),
+            Point::new(real!(-0.7), real!(1.0), real!(0.0)),
+            Point::new(real!(-0.7), real!(1.5), real!(0.0)),
         );
 
         let m = Isometry::from_parts(
-            Translation::new(-0.2, 5.0, 0.2),
-            UnitQuaternion::from_euler_angles(0.0, Real::frac_pi_2(), 0.0),
+            Translation::new(real!(-0.2), real!(5.0), real!(0.2)),
+            UnitQuaternion::from_euler_angles(real!(0.0), Real::frac_pi_2(), real!(0.0)),
         );
 
         assert_eq!(t.aabb(&m), support_map_aabb(&m, &t));

@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::sat;
 use crate::shape::{Cuboid, Segment};
 
@@ -29,7 +29,7 @@ pub fn intersection_test_cuboid_segment(
 ) -> bool {
     let sep1 =
         sat::cuboid_support_map_find_local_separating_normal_oneway(cube1, segment2, &pos12).0;
-    if sep1 > 0.0 {
+    if sep1 > real!(0.0) {
         return false;
     }
 
@@ -42,7 +42,7 @@ pub fn intersection_test_cuboid_segment(
             &pos12.inverse(),
         )
         .0;
-        if sep2 > 0.0 {
+        if sep2 > real!(0.0) {
             return false;
         }
     }
@@ -52,6 +52,6 @@ pub fn intersection_test_cuboid_segment(
     #[cfg(feature = "dim3")]
     {
         let sep3 = sat::cuboid_segment_find_local_separating_edge_twoway(cube1, segment2, &pos12).0;
-        sep3 <= 0.0
+        sep3 <= real!(0.0)
     }
 }

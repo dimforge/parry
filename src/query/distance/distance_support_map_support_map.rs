@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::shape::SupportMap;
 
@@ -47,9 +47,9 @@ where
     }
 
     match gjk::closest_points(pos12, g1, g2, Real::max_value(), true, simplex) {
-        GJKResult::Intersection => 0.0,
+        GJKResult::Intersection => real!(0.0),
         GJKResult::ClosestPoints(p1, p2, _) => na::distance(&p1, &p2),
         GJKResult::Proximity(_) => unreachable!(),
-        GJKResult::NoIntersection(_) => 0.0, // FIXME: GJK did not converge.
+        GJKResult::NoIntersection(_) => real!(0.0), // FIXME: GJK did not converge.
     }
 }

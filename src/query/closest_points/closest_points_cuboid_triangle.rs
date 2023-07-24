@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::{sat, ClosestPoints, PointQuery};
 use crate::shape::{Cuboid, SupportMap, Triangle};
 
@@ -31,7 +31,7 @@ pub fn closest_points_cuboid_triangle(
         return ClosestPoints::Disjoint;
     }
 
-    if sep1.0 <= 0.0 && sep2.0 <= 0.0 && sep3.0 <= 0.0 {
+    if sep1.0 <= real!(0.0) && sep2.0 <= real!(0.0) && sep3.0 <= real!(0.0) {
         return ClosestPoints::Intersecting;
     }
 

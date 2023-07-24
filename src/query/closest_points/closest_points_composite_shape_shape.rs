@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -107,7 +107,7 @@ where
 
         if let Some(data) = data {
             let bitmask = mask.bitmask();
-            let mut weights = [0.0; SIMD_WIDTH];
+            let mut weights = [real!(0.0); SIMD_WIDTH];
             let mut mask = [false; SIMD_WIDTH];
             let mut results = [None; SIMD_WIDTH];
             let mut found_intersection = false;

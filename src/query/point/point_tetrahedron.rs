@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Tetrahedron, TetrahedronPointLocation};
 
@@ -46,7 +46,7 @@ impl PointQueryWithLocation for Tetrahedron {
         let ap_ac = ap.dot(&ac);
         let ap_ad = ap.dot(&ad);
 
-        let _0: Real = 0.0;
+        let _0: Real = real!(0.0);
 
         if ap_ab <= _0 && ap_ac <= _0 && ap_ad <= _0 {
             // Voronoï region of `a`.
@@ -112,8 +112,8 @@ impl PointQueryWithLocation for Tetrahedron {
             Real,
             Option<(PointProjection, TetrahedronPointLocation)>,
         ) {
-            let _0: Real = 0.0;
-            let _1: Real = 1.0;
+            let _0: Real = real!(0.0);
+            let _1: Real = real!(1.0);
 
             let ab_ab = ap_ab - bp_ab;
 
@@ -258,8 +258,8 @@ impl PointQueryWithLocation for Tetrahedron {
             /* ap_ab: Real, bp_ab: Real, cp_ab: Real,
             ap_ac: Real, bp_ac: Real, cp_ac: Real, */
         ) -> Option<(PointProjection, TetrahedronPointLocation)> {
-            let _0: Real = 0.0;
-            let _1: Real = 1.0;
+            let _0: Real = real!(0.0);
+            let _1: Real = real!(1.0);
 
             if dabc < _0 && dbca < _0 && dacb < _0 {
                 let n = ab.cross(ac); // TODO: is is possible to avoid this cross product?

@@ -1,7 +1,7 @@
 #![allow(unused_parens)] // Needed by the macro.
 
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
+use crate::math::{Point, Real, SimdReal, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
@@ -194,7 +194,7 @@ impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage>
 
                 if let Some(pseudo_normal) = pseudo_normal {
                     let dpt = point - proj.point;
-                    proj.is_inside = dpt.dot(&pseudo_normal) <= 0.0;
+                    proj.is_inside = dpt.dot(&pseudo_normal) <= real!(0.0);
                 }
             }
 
@@ -247,7 +247,7 @@ macro_rules! gen_visitor(
                 let mask = dist.simd_lt(SimdReal::splat(best));
 
                 if let Some(data) = data {
-                    let mut weights = [0.0; SIMD_WIDTH];
+                    let mut weights = [real!(0.0); SIMD_WIDTH];
                     let mut results = [None; SIMD_WIDTH];
                     let bitmask = mask.bitmask();
 

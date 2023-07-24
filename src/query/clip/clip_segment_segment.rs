@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
 
@@ -81,7 +81,7 @@ pub fn clip_segment_segment(
     let tangent1 = seg1.1 - seg1.0;
     let sqnorm_tangent1 = tangent1.norm_squared();
 
-    let mut range1 = [0.0, sqnorm_tangent1];
+    let mut range1 = [real!(0.0), sqnorm_tangent1];
     let mut range2 = [
         (seg2.0 - seg1.0).dot(&tangent1),
         (seg2.1 - seg1.0).dot(&tangent1),

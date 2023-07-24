@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
 use crate::query::{Ray, RayCast, RayIntersection};
@@ -22,12 +22,12 @@ impl RayCast for Triangle {
 
         if solid {
             // Check if ray starts in triangle
-            let perp_sign1 = edges[0].scaled_direction().perp(&(ray.origin - edges[0].a)) > 0.0;
-            let perp_sign2 = edges[1].scaled_direction().perp(&(ray.origin - edges[1].a)) > 0.0;
-            let perp_sign3 = edges[2].scaled_direction().perp(&(ray.origin - edges[2].a)) > 0.0;
+            let perp_sign1 = edges[0].scaled_direction().perp(&(ray.origin - edges[0].a)) > real!(0.0);
+            let perp_sign2 = edges[1].scaled_direction().perp(&(ray.origin - edges[1].a)) > real!(0.0);
+            let perp_sign3 = edges[2].scaled_direction().perp(&(ray.origin - edges[2].a)) > real!(0.0);
 
             if perp_sign1 == perp_sign2 && perp_sign1 == perp_sign3 {
-                return Some(RayIntersection::new(0.0, Vector::y(), FeatureId::Face(0)));
+                return Some(RayIntersection::new(real!(0.0), Vector::y(), FeatureId::Face(0)));
             }
         }
 
@@ -83,7 +83,7 @@ pub fn local_ray_intersection_with_triangle(
     let d = n.dot(&ray.dir);
 
     // the normal and the ray direction are parallel
-    if d == 0.0 {
+    if d == real!(0.0) {
         return None;
     }
 
@@ -91,11 +91,11 @@ pub fn local_ray_intersection_with_triangle(
     let t = ap.dot(&n);
 
     // the ray does not intersect the halfspace defined by the triangle
-    if (t < 0.0 && d < 0.0) || (t > 0.0 && d > 0.0) {
+    if (t < real!(0.0) && d < real!(0.0)) || (t > real!(0.0) && d > real!(0.0)) {
         return None;
     }
 
-    let fid = if d < 0.0 { 0 } else { 1 };
+    let fid = if d < real!(0.0) { 0 } else { 1 };
 
     let d = d.abs();
 
@@ -109,20 +109,20 @@ pub fn local_ray_intersection_with_triangle(
     let toi;
     let normal;
 
-    if t < 0.0 {
+    if t < real!(0.0) {
         v = -ac.dot(&e);
 
-        if v < 0.0 || v > d {
+        if v < real!(0.0) || v > d {
             return None;
         }
 
         w = ab.dot(&e);
 
-        if w < 0.0 || v + w > d {
+        if w < real!(0.0) || v + w > d {
             return None;
         }
 
-        let invd = 1.0 / d;
+        let invd = real!(1.0) / d;
         toi = -t * invd;
         normal = -n.normalize();
         v = v * invd;
@@ -130,17 +130,17 @@ pub fn local_ray_intersection_with_triangle(
     } else {
         v = ac.dot(&e);
 
-        if v < 0.0 || v > d {
+        if v < real!(0.0) || v > d {
             return None;
         }
 
         w = -ab.dot(&e);
 
-        if w < 0.0 || v + w > d {
+        if w < real!(0.0) || v + w > d {
             return None;
         }
 
-        let invd = 1.0 / d;
+        let invd = real!(1.0) / d;
         toi = t * invd;
         normal = n.normalize();
         v = v * invd;
@@ -149,6 +149,6 @@ pub fn local_ray_intersection_with_triangle(
 
     Some((
         RayIntersection::new(toi, normal, FeatureId::Face(fid)),
-        Vector3::new(-v - w + 1.0, v, w),
+        Vector3::new(-v - w + real!(1.0), v, w),
     ))
 }

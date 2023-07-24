@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -95,14 +95,14 @@ where
 
         if let Some(data) = data {
             let bitmask = mask.bitmask();
-            let mut weights = [0.0; SIMD_WIDTH];
+            let mut weights = [real!(0.0); SIMD_WIDTH];
             let mut mask = [false; SIMD_WIDTH];
             let mut results = [None; SIMD_WIDTH];
 
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
-                    let mut dist = Ok(0.0);
+                    let mut dist = Ok(real!(0.0));
                     self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
                         dist =
                             self.dispatcher
@@ -111,8 +111,8 @@ where
 
                     match dist {
                         Ok(dist) => {
-                            if dist == 0.0 {
-                                return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, 0.0)));
+                            if dist == real!(0.0) {
+                                return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, real!(0.0))));
                             } else {
                                 weights[ii] = dist;
                                 mask[ii] = dist < best;

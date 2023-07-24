@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{QueryDispatcher, Ray, SimdRay, TOI};
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -135,7 +135,7 @@ where
         if let Some(data) = data {
             let better_toi = toi.simd_lt(SimdReal::splat(best));
             let bitmask = (mask & better_toi).bitmask();
-            let mut weights = [0.0; SIMD_WIDTH];
+            let mut weights = [real!(0.0); SIMD_WIDTH];
             let mut mask = [false; SIMD_WIDTH];
             let mut results = [None; SIMD_WIDTH];
 

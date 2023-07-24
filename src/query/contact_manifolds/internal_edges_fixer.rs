@@ -3,7 +3,7 @@ use crate::shape::Triangle;
 use crate::utils::hashmap::HashMap;
 
 #[cfg(feature = "dim3")]
-use crate::math::Real;
+use crate::math::{Real, real};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -45,6 +45,7 @@ impl InternalEdgesFixer {
         ContactData: Default + Copy,
     {
         use crate::shape::FeatureId;
+        use crate::na::ComplexField;
         use std::cmp::Ordering;
 
         // 1. Ingest all the face contacts.
@@ -75,7 +76,7 @@ impl InternalEdgesFixer {
                         // We check normal collinearity with an epsilon because sometimes,
                         // because of rounding errors, a contact may be identified as a face
                         // contact where it’s really just an edge contact.
-                        if normal.dot(&tri_normal).abs() > 1.0 - 1.0e-4 {
+                        if normal.dot(&tri_normal).abs() > real!(1.0) - real!(1.0e-4) {
                             let _ = self.vertex_set.insert(tri_idx[0], ());
                             let _ = self.vertex_set.insert(tri_idx[1], ());
                             let _ = self.vertex_set.insert(tri_idx[2], ());

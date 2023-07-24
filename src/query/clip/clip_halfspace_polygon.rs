@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::query::{self, Ray};
 
 /// Cuts a polygon with the given half-space.
@@ -19,7 +19,7 @@ pub fn clip_halfspace_polygon(
         return;
     }
 
-    let keep_point = |pt: &Point<Real>| (pt - center).dot(normal) <= 0.0;
+    let keep_point = |pt: &Point<Real>| (pt - center).dot(normal) <= real!(0.0);
     let last_pt = polygon.last().unwrap();
     let mut last_keep = keep_point(last_pt);
 
@@ -39,7 +39,7 @@ pub fn clip_halfspace_polygon(
             let ray = Ray::new(*prev_pt, pt - prev_pt);
 
             if let Some(toi) = query::details::ray_toi_with_halfspace(&center, normal, &ray) {
-                if toi > 0.0 && toi < 1.0 {
+                if toi > real!(0.0) && toi < real!(1.0) {
                     result.push(ray.origin + ray.dir * toi)
                 }
             }

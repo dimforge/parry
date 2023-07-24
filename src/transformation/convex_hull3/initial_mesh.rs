@@ -1,5 +1,5 @@
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::Triangle;
 use crate::transformation;
 use crate::transformation::convex_hull_utils::support_point_id;
@@ -82,7 +82,7 @@ pub fn try_get_initial_mesh(
      */
     let mut dimension = 0;
     while dimension < 3 {
-        if relative_eq!(eigpairs[dimension].1, 0.0, epsilon = 1.0e-7) {
+        if relative_eq!(eigpairs[dimension].1, real!(0.0), epsilon = real!(1.0e-7)) {
             break;
         }
 
@@ -154,7 +154,7 @@ pub fn try_get_initial_mesh(
             let p2 = support_point_id(&-eigpairs[0].0, normalized_points)
                 .ok_or(ConvexHullError::MissingSupportPoint)?;
 
-            let mut max_area = 0.0;
+            let mut max_area = real!(0.0);
             let mut p3 = usize::max_value();
 
             for (i, point) in normalized_points.iter().enumerate() {
@@ -192,7 +192,7 @@ pub fn try_get_initial_mesh(
                     }
 
                     let mut furthest = usize::max_value();
-                    let mut furthest_dist = 0.0;
+                    let mut furthest_dist = real!(0.0);
 
                     for (i, curr_facet) in facets.iter().enumerate() {
                         if curr_facet.can_see_point(point, normalized_points) {

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::sat;
 use crate::shape::Cuboid;
 
@@ -11,13 +11,13 @@ pub fn intersection_test_cuboid_cuboid(
 ) -> bool {
     let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, &pos12).0;
 
-    if sep1 > 0.0 {
+    if sep1 > real!(0.0) {
         return false;
     }
 
     let pos21 = pos12.inverse();
     let sep2 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid2, cuboid1, &pos21).0;
-    if sep2 > 0.0 {
+    if sep2 > real!(0.0) {
         return false;
     }
 
@@ -26,6 +26,6 @@ pub fn intersection_test_cuboid_cuboid(
     #[cfg(feature = "dim3")]
     {
         let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, &pos12).0;
-        sep3 <= 0.0
+        sep3 <= real!(0.0)
     }
 }

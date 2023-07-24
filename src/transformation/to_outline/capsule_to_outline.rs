@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::{Capsule, Cylinder};
 use crate::transformation::utils;
 use na::{self, Point3};
@@ -28,14 +28,14 @@ pub(crate) fn canonical_capsule_outline(
     vtx[shift as usize..(shift + ncap_pts) as usize]
         .iter_mut()
         .for_each(|pt| {
-            *pt *= caps_radius * 2.0;
+            *pt *= caps_radius * real!(2.0);
             pt.y += cylinder_half_height
         });
 
     vtx[(shift + ncap_pts) as usize..]
         .iter_mut()
         .for_each(|pt| {
-            *pt *= caps_radius * 2.0;
+            *pt *= caps_radius * real!(2.0);
             pt.y = -pt.y - cylinder_half_height
         });
 

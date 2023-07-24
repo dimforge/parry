@@ -17,7 +17,7 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM, real};
 use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
 use std::sync::Arc;
@@ -139,7 +139,7 @@ impl VoxelizedVolume {
         let mut result = VoxelizedVolume {
             resolution: [0; DIM],
             origin: Point::origin(),
-            scale: 1.0,
+            scale: real!(1.0),
             values: Vec::new(),
             data: Vec::new(),
             primitive_intersections: Vec::new(),
@@ -184,12 +184,12 @@ impl VoxelizedVolume {
             result.resolution[1] = 2 + (resolution as Real * d[1] / d[2]) as u32;
         }
 
-        result.scale = r / (resolution as Real - 1.0);
-        let inv_scale = (resolution as Real - 1.0) / r;
+        result.scale = r / (resolution as Real - real!(1.0));
+        let inv_scale = (resolution as Real - real!(1.0)) / r;
         result.allocate();
 
         let mut tri_pts = [Point::origin(); DIM];
-        let box_half_size = Vector::repeat(0.5);
+        let box_half_size = Vector::repeat(real!(0.5));
         let mut ijk0 = Vector::repeat(0u32);
         let mut ijk1 = Vector::repeat(0u32);
 
@@ -204,10 +204,10 @@ impl VoxelizedVolume {
                 let pt = points[tri[c] as usize];
                 tri_pts[c] = (pt - result.origin.coords) * inv_scale;
 
-                let i = (tri_pts[c].x + 0.5) as u32;
-                let j = (tri_pts[c].y + 0.5) as u32;
+                let i = (tri_pts[c].x + real!(0.5)) as u32;
+                let j = (tri_pts[c].y + real!(0.5)) as u32;
                 #[cfg(feature = "dim3")]
-                let k = (tri_pts[c].z + 0.5) as u32;
+                let k = (tri_pts[c].z + real!(0.5)) as u32;
 
                 assert!(i < result.resolution[0] && j < result.resolution[1]);
                 #[cfg(feature = "dim3")]
@@ -282,18 +282,18 @@ impl VoxelizedVolume {
                                         let eps = 0.0; // -1.0e-6;
 
                                         assert!(params.0 <= params.1);
-                                        if params.0 > 1.0 + eps || params.1 < 0.0 - eps {
+                                        if params.0 > real!(1.0) + eps || params.1 < 0.0 - eps {
                                             continue;
                                         }
 
                                         data.multiplicity += ((params.0 >= -eps && params.0 <= eps)
-                                            || (params.0 >= 1.0 - eps && params.0 <= 1.0 + eps))
+                                            || (params.0 >= real!(1.0) - eps && params.0 <= real!(1.0) + eps))
                                             as u32;
                                         data.multiplicity += ((params.1 >= -eps && params.1 <= eps)
-                                            || (params.1 >= 1.0 - eps && params.1 <= 1.0 + eps))
+                                            || (params.1 >= real!(1.0) - eps && params.1 <= real!(1.0) + eps))
                                             as u32;
                                         data.multiplicity += (params.0 > eps) as u32 * 2;
-                                        data.multiplicity += (params.1 < 1.0 - eps) as u32 * 2;
+                                        data.multiplicity += (params.1 < real!(1.0) - eps) as u32 * 2;
 
                                         if keep_voxel_to_primitives_map {
                                             data.num_primitive_intersections += 1;
@@ -762,14 +762,14 @@ impl VoxelizedVolume {
                         let ijk = Vector::new(i as Real, j as Real, k as Real);
 
                         let shifts = [
-                            Vector::new(-0.5, -0.5, -0.5),
-                            Vector::new(0.5, -0.5, -0.5),
-                            Vector::new(0.5, 0.5, -0.5),
-                            Vector::new(-0.5, 0.5, -0.5),
-                            Vector::new(-0.5, -0.5, 0.5),
-                            Vector::new(0.5, -0.5, 0.5),
-                            Vector::new(0.5, 0.5, 0.5),
-                            Vector::new(-0.5, 0.5, 0.5),
+                            Vector::new(real!(-0.5), real!(-0.5), real!(-0.5)),
+                            Vector::new(real!(0.5), real!(-0.5), real!(-0.5)),
+                            Vector::new(real!(0.5), real!(0.5), real!(-0.5)),
+                            Vector::new(real!(-0.5), real!(0.5), real!(-0.5)),
+                            Vector::new(real!(-0.5), real!(-0.5), real!(0.5)),
+                            Vector::new(real!(0.5), real!(-0.5), real!(0.5)),
+                            Vector::new(real!(0.5), real!(0.5), real!(0.5)),
+                            Vector::new(real!(-0.5), real!(0.5), real!(0.5)),
                         ];
 
                         for shift in &shifts {

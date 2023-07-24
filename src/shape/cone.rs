@@ -1,6 +1,6 @@
 //! Support mapping based Cone shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::shape::SupportMap;
 use na;
 use num::Zero;
@@ -60,7 +60,7 @@ impl Cone {
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         // NOTE: if the y scale is negative, the result cone points downwards,
         //       which can’t be represented with this Cone (without a transform).
-        if scale.x != scale.z || scale.y < 0.0 {
+        if scale.x != scale.z || scale.y < real!(0.0) {
             // The scaled shape isn’t a cone.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs);
             vtx.iter_mut()
@@ -82,7 +82,7 @@ impl SupportMap for Cone {
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         let mut vres = *dir;
 
-        vres[1] = 0.0;
+        vres[1] = real!(0.0);
 
         if vres.normalize_mut().is_zero() {
             vres = na::zero();

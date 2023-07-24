@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::shape::Ball;
 use crate::transformation::utils;
 use na::{self, Point3, RealField};
@@ -9,7 +9,7 @@ use na::ComplexField;
 impl Ball {
     /// Outlines this ball’s shape using polylines.
     pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
-        let diameter = self.radius * 2.0;
+        let diameter = self.radius * real!(2.0);
         let (vtx, idx) = unit_sphere_outline(nsubdiv);
         (utils::scaled(vtx, Vector::repeat(diameter)), idx)
     }
@@ -21,9 +21,9 @@ fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
     let mut coords = Vec::new();
     let mut indices = Vec::new();
 
-    utils::push_circle(0.5, nsubdiv, dtheta, 0.0, &mut coords);
-    utils::push_circle(0.5, nsubdiv, dtheta, 0.0, &mut coords);
-    utils::push_circle(0.5, nsubdiv, dtheta, 0.0, &mut coords);
+    utils::push_circle(real!(0.5), nsubdiv, dtheta, real!(0.0), &mut coords);
+    utils::push_circle(real!(0.5), nsubdiv, dtheta, real!(0.0), &mut coords);
+    utils::push_circle(real!(0.5), nsubdiv, dtheta, real!(0.0), &mut coords);
 
     let n = nsubdiv as usize;
     utils::transform(
@@ -52,8 +52,8 @@ pub(crate) fn push_unit_hemisphere_outline(
     let dtheta = Real::pi() / (nsubdiv as Real);
     let npoints = nsubdiv + 1;
 
-    utils::push_circle(0.5, npoints, dtheta, 0.0, pts);
-    utils::push_circle(0.5, npoints, dtheta, 0.0, pts);
+    utils::push_circle(real!(0.5), npoints, dtheta, real!(0.0), pts);
+    utils::push_circle(real!(0.5), npoints, dtheta, real!(0.0), pts);
 
     let n = npoints as usize;
     utils::transform(

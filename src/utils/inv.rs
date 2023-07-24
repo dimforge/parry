@@ -1,9 +1,9 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 
 pub fn inv(val: Real) -> Real {
-    if val == 0.0 {
-        0.0
+    if val == real!(0.0) {
+        real!(0.0)
     } else {
-        1.0 / val
+        real!(1.0) / val
     }
 }

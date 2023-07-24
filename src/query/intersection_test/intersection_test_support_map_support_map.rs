@@ -1,6 +1,6 @@
 use na::{self, Unit};
 
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::shape::SupportMap;
 
@@ -50,7 +50,7 @@ where
 
     simplex.reset(CSOPoint::from_shapes(pos12, g1, g2, &dir));
 
-    match gjk::closest_points(pos12, g1, g2, 0.0, false, simplex) {
+    match gjk::closest_points(pos12, g1, g2, real!(0.0), false, simplex) {
         GJKResult::Intersection => (true, dir),
         GJKResult::Proximity(dir) => (false, dir),
         GJKResult::NoIntersection(dir) => (false, dir),

@@ -1,7 +1,7 @@
 //! Bounding sphere.
 
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, real};
 use na;
 use num::Zero;
 
@@ -116,26 +116,26 @@ impl BoundingVolume for BoundingSphere {
 
     #[inline]
     fn loosen(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= real!(0.0), "The loosening margin must be positive.");
         self.radius = self.radius + amount
     }
 
     #[inline]
     fn loosened(&self, amount: Real) -> BoundingSphere {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= real!(0.0), "The loosening margin must be positive.");
         BoundingSphere::new(self.center, self.radius + amount)
     }
 
     #[inline]
     fn tighten(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= real!(0.0), "The tightening margin must be positive.");
         assert!(amount <= self.radius, "The tightening margin is to large.");
         self.radius = self.radius - amount
     }
 
     #[inline]
     fn tightened(&self, amount: Real) -> BoundingSphere {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= real!(0.0), "The tightening margin must be positive.");
         assert!(amount <= self.radius, "The tightening margin is to large.");
         BoundingSphere::new(self.center, self.radius - amount)
     }

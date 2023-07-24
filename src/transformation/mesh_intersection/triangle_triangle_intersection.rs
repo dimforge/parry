@@ -1,5 +1,5 @@
 use super::EPS;
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::query;
 use crate::shape::{FeatureId, Segment, Triangle};
 use crate::transformation::polygon_intersection::PolylinePointLocation;
@@ -38,7 +38,7 @@ pub fn triangle_triangle_intersection(
     let normal1 = tri1.normal()?;
     let normal2 = tri2.normal()?;
 
-    if let Some(intersection_dir) = normal1.cross(&normal2).try_normalize(1.0e-6) {
+    if let Some(intersection_dir) = normal1.cross(&normal2).try_normalize(real!(1.0e-6)) {
         let mut range1 = [
             (Real::MAX, Point::origin(), FeatureId::Unknown),
             (-Real::MAX, Point::origin(), FeatureId::Unknown),

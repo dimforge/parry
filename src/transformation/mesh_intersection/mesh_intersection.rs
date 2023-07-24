@@ -1,5 +1,5 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection, EPS};
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
@@ -339,7 +339,7 @@ impl Triangulation {
                 // NOTE: this is not ideal though, so we should find a way to simply
                 //       delete spurious triangles that are outside of the intersection
                 //       curve.
-                proj = a + ab * param + shift * EPS * 10.0;
+                proj = a + ab * param + shift * EPS * real!(10.0);
             }
             _ => {}
         }
@@ -589,9 +589,9 @@ fn extract_result(
             let center = tri.center();
             let projection = mesh2.project_point(&pos12, &tri.center(), false);
 
-            if !tri.is_affinely_dependent_eps(EPS * 10.0)
+            if !tri.is_affinely_dependent_eps(EPS * real!(10.0))
                 && ((flip2 ^ projection.is_inside)
-                    || (projection.point - center).norm() <= EPS * 10.0)
+                    || (projection.point - center).norm() <= EPS * real!(10.0))
             {
                 if flip1 {
                     idx.swap(1, 2);
@@ -625,9 +625,9 @@ fn extract_result(
             //       If the center lies on the other mesh, then that we have a duplicate face that was already
             //       added in the previous loop.
             let projection = mesh1.project_local_point(&center, false);
-            if !tri.is_affinely_dependent_eps(EPS * 10.0)
+            if !tri.is_affinely_dependent_eps(EPS * real!(10.0))
                 && ((flip1 ^ projection.is_inside)
-                    && (projection.point - center).norm() > EPS * 10.0)
+                    && (projection.point - center).norm() > EPS * real!(10.0))
             {
                 if flip2 {
                     idx.swap(1, 2);

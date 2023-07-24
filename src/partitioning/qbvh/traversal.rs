@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
 use crate::partitioning::{
     GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
@@ -143,7 +143,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
         let mut best_cost = init_cost;
         let mut best_result = None;
-        queue.push(WeightedValue::new(start_node, -best_cost / 2.0));
+        queue.push(WeightedValue::new(start_node, -best_cost / real!(2.0)));
 
         while let Some(entry) = queue.pop() {
             if -entry.cost >= best_cost {

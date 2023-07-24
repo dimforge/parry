@@ -408,18 +408,18 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 #[cfg(test)]
 mod test {
     use crate::bounding_volume::Aabb;
-    use crate::math::{Point, Vector};
+    use crate::math::{Point, Vector, real};
     use crate::partitioning::Qbvh;
 
     #[test]
     fn multiple_identical_aabb_stack_overflow() {
         // A stack overflow was caused during the construction of the
         // Qbvh with more than four Aabb with the same center.
-        let aabb = Aabb::new(Point::origin(), Vector::repeat(1.0).into());
+        let aabb = Aabb::new(Point::origin(), Vector::repeat(real!(1.0)).into());
 
         for k in 0u32..20 {
             let mut tree = Qbvh::new();
-            tree.clear_and_rebuild((0..k).map(|i| (i, aabb)), 0.0);
+            tree.clear_and_rebuild((0..k).map(|i| (i, aabb)), real!(0.0));
         }
     }
 }

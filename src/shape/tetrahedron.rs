@@ -1,6 +1,6 @@
 //! Definition of the tetrahedron shape.
 
-use crate::math::{Matrix, Point, Real};
+use crate::math::{Matrix, Point, Real, real};
 use crate::shape::{Segment, Triangle};
 use crate::utils;
 use na::Matrix3;
@@ -64,10 +64,10 @@ impl TetrahedronPointLocation {
     ///
     /// Returns `None` if the location is `TetrahedronPointLocation::OnSolid`.
     pub fn barycentric_coordinates(&self) -> Option<[Real; 4]> {
-        let mut bcoords = [0.0; 4];
+        let mut bcoords = [real!(0.0); 4];
 
         match self {
-            TetrahedronPointLocation::OnVertex(i) => bcoords[*i as usize] = 1.0,
+            TetrahedronPointLocation::OnVertex(i) => bcoords[*i as usize] = real!(1.0),
             TetrahedronPointLocation::OnEdge(i, uv) => {
                 let idx = Tetrahedron::edge_ids(*i);
                 bcoords[idx.0 as usize] = uv[0];
@@ -201,7 +201,7 @@ impl Tetrahedron {
         m.try_inverse().map(|im| {
             let bcoords = im * (p - self.a);
             [
-                1.0 - bcoords.x - bcoords.y - bcoords.z,
+                real!(1.0) - bcoords.x - bcoords.y - bcoords.z,
                 bcoords.x,
                 bcoords.y,
                 bcoords.z,

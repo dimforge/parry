@@ -1,6 +1,6 @@
 use na::Point2;
 
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::{self, SegmentsIntersection};
 
@@ -65,7 +65,7 @@ pub fn convex_polygons_intersection(
     poly2: &[Point2<Real>],
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
-    const EPS: Real = Real::EPSILON * 100.0;
+    const EPS: Real = Real::EPSILON * real!(100.0);
 
     // FIXME: this does not handle correctly the case where the
     // first triangle of the polygon is degenerate.
@@ -147,7 +147,7 @@ pub fn convex_polygons_intersection(
                     second_loc2,
                 } => {
                     // Special case: edge1 & edge2 overlap and oppositely oriented.
-                    if dir_edge1.dot(&dir_edge2) < 0.0 {
+                    if dir_edge1.dot(&dir_edge2) < real!(0.0) {
                         let loc1 =
                             PolylinePointLocation::from_segment_point_location(a1, a2, first_loc1);
                         let loc2 =

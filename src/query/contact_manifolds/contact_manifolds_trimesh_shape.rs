@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, BoundingVolume};
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
@@ -106,11 +106,11 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 
     if !same_local_aabb2 {
         let extra_margin =
-            (new_local_aabb2.maxs - new_local_aabb2.mins).map(|e| (e / 10.0).min(0.1));
+            (new_local_aabb2.maxs - new_local_aabb2.mins).map(|e| (e / real!(10.0)).min(real!(0.1)));
         new_local_aabb2.mins -= extra_margin;
         new_local_aabb2.maxs += extra_margin;
 
-        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // FIXME: what would be the best value?
+        let local_aabb2 = new_local_aabb2; // .loosened(prediction * real!(2.0)); // FIXME: what would be the best value?
         std::mem::swap(
             &mut workspace.old_interferences,
             &mut workspace.interferences,

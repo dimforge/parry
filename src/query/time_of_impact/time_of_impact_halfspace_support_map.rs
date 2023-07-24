@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::{Ray, RayCast, TOIStatus, TOI};
 use crate::shape::{HalfSpace, SupportMap};
 
@@ -16,7 +16,7 @@ where
 {
     // FIXME: add method to get only the local support point.
     // This would avoid the `inverse_transform_point` later.
-    if !stop_at_penetration && vel12.dot(&halfspace.normal) > 0.0 {
+    if !stop_at_penetration && vel12.dot(&halfspace.normal) > real!(0.0) {
         return None;
     }
 
@@ -33,7 +33,7 @@ where
         let witness2 = support_point;
         let mut witness1 = ray.point_at(toi);
 
-        if support_point.coords.dot(&halfspace.normal) < 0.0 {
+        if support_point.coords.dot(&halfspace.normal) < real!(0.0) {
             status = TOIStatus::Penetrating
         } else {
             // Project the witness point to the halfspace.

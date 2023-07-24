@@ -3,7 +3,7 @@ use std::borrow::Cow;
 
 use crate::{
     bounding_volume::Aabb,
-    math::{Point, Real},
+    math::{Point, Real, real},
     partitioning::{GenericQbvh, Qbvh},
     utils::DefaultStorage,
 };
@@ -112,12 +112,12 @@ fn test_qbvh_random_operations(
                     {
                         let _count = qbvh
                             .qbvh
-                            .refit(0.0, &mut qbvh.workspace, |index| qbvh.aabbs[*index]);
+                            .refit(real!(0.0), &mut qbvh.workspace, |index| qbvh.aabbs[*index]);
                         println!("before rebalance");
                         qbvh.print_tree();
                     }
                     {
-                        qbvh.qbvh.rebalance(0.0, &mut qbvh.workspace);
+                        qbvh.qbvh.rebalance(real!(0.0), &mut qbvh.workspace);
                         println!("after rebalance");
                         qbvh.print_tree();
                     }
@@ -170,12 +170,12 @@ fn test_qbvh_random_operations(
                     {
                         let _count = qbvh
                             .qbvh
-                            .refit(0.0, &mut qbvh.workspace, |index| qbvh.aabbs[*index]);
+                            .refit(real!(0.0), &mut qbvh.workspace, |index| qbvh.aabbs[*index]);
                         println!("before rebalance");
                         qbvh.print_tree();
                     }
                     {
-                        qbvh.qbvh.rebalance(0.0, &mut qbvh.workspace);
+                        qbvh.qbvh.rebalance(real!(0.0), &mut qbvh.workspace);
                         println!("after rebalance");
                         qbvh.print_tree();
                     }
@@ -214,7 +214,7 @@ impl QbvhTester {
         let mut qbvh = Qbvh::new();
         let workspace = QbvhUpdateWorkspace::default();
         let aabbs = self.aabbs.clone();
-        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, aabb.clone())), 0.0);
+        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, aabb.clone())), real!(0.0));
         QbvhTester {
             qbvh,
             workspace,
@@ -227,8 +227,8 @@ impl QbvhTester {
         self.qbvh.pre_update_or_insert(index);
         let _count = self
             .qbvh
-            .refit(0.0, &mut self.workspace, |index| self.aabbs[*index]);
-        self.qbvh.rebalance(0.0, &mut self.workspace);
+            .refit(real!(0.0), &mut self.workspace, |index| self.aabbs[*index]);
+        self.qbvh.rebalance(real!(0.0), &mut self.workspace);
         index
     }
 
@@ -237,8 +237,8 @@ impl QbvhTester {
         let _removed = self.qbvh.remove(aabb_index);
         let _count = self
             .qbvh
-            .refit(0.0, &mut self.workspace, |index| self.aabbs[*index]);
-        self.qbvh.rebalance(0.0, &mut self.workspace);
+            .refit(real!(0.0), &mut self.workspace, |index| self.aabbs[*index]);
+        self.qbvh.rebalance(real!(0.0), &mut self.workspace);
     }
 
     fn check_topology(&self) {

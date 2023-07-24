@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::RoundCone;
 use crate::transformation::utils;
 use na::{self, Point3, Vector3};
@@ -18,14 +18,14 @@ impl RoundCone {
         let mut out_idx = vec![];
 
         // Compute the profile.
-        let center_ab = Point3::new(-r, -he, 0.0);
-        let center_cd = Point3::new(0.0, he, 0.0);
-        let side_dir = Vector3::new(-2.0 * he, r, 0.0).normalize();
+        let center_ab = Point3::new(-r, -he, real!(0.0));
+        let center_cd = Point3::new(real!(0.0), he, real!(0.0));
+        let side_dir = Vector3::new(real!(-2.0) * he, r, real!(0.0)).normalize();
 
-        let a = Point3::new(-r, -he - br, 0.0);
-        let b = Point3::new(-r, -he, 0.0) + side_dir * br;
-        let c = Point3::new(0.0, he, 0.0) + side_dir * br;
-        let d = Point3::new(0.0, he + br, 0.0);
+        let a = Point3::new(-r, -he - br, real!(0.0));
+        let b = Point3::new(-r, -he, real!(0.0)) + side_dir * br;
+        let c = Point3::new(real!(0.0), he, real!(0.0)) + side_dir * br;
+        let d = Point3::new(real!(0.0), he + br, real!(0.0));
 
         out_vtx.push(a);
         utils::push_arc(center_ab, a, b, border_nsubdiv, &mut out_vtx);

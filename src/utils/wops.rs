@@ -1,6 +1,6 @@
 //! Miscellaneous utilities.
 
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::simd::{SimdBool, SimdReal};
 use na::{Matrix3, Point2, Point3, Scalar, SimdRealField, Vector2, Vector3};
 use simba::simd::SimdValue;
@@ -27,7 +27,7 @@ pub trait WSign<Rhs>: Sized {
 
 impl WSign<Real> for Real {
     fn copy_sign_to(self, to: Self) -> Self {
-        let minus_zero: Real = -0.0;
+        let minus_zero: Real = real!(-0.0);
         let signbit = minus_zero.to_bits();
         Real::from_bits((signbit & self.to_bits()) | ((!signbit) & to.to_bits()))
     }
@@ -233,9 +233,9 @@ impl WCrossMatrix for Vector3<Real> {
     #[rustfmt::skip]
     fn gcross_matrix(self) -> Self::CrossMat {
         Matrix3::new(
-            0.0, -self.z, self.y,
-            self.z, 0.0, -self.x,
-            -self.y, self.x, 0.0,
+            real!(0.0), -self.z, self.y,
+            self.z, real!(0.0), -self.x,
+            -self.y, self.x, real!(0.0),
         )
     }
 }

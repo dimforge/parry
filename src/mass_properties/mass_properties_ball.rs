@@ -1,6 +1,6 @@
 use crate::mass_properties::MassProperties;
 #[cfg(feature = "dim3")]
-use crate::math::Vector;
+use crate::math::{Vector, real};
 use crate::math::{Point, PrincipalAngularInertia, Real};
 use na::RealField;
 
@@ -16,8 +16,8 @@ impl MassProperties {
         }
         #[cfg(feature = "dim3")]
         {
-            let volume = Real::pi() * radius * radius * radius * 4.0 / 3.0;
-            let i = radius * radius * 2.0 / 5.0;
+            let volume = Real::pi() * radius * radius * radius * real!(4.0) / real!(3.0);
+            let i = radius * radius * real!(2.0) / real!(5.0);
 
             (volume, Vector::repeat(i))
         }

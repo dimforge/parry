@@ -1,6 +1,6 @@
 //! Utilities useful for various generations tasks.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
@@ -213,8 +213,8 @@ pub fn push_arc(
 ) {
     assert!(nsubdivs > 0);
     if let (Some((start_dir, start_len)), Some((end_dir, end_len))) = (
-        na::Unit::try_new_and_get(start - center, 0.0),
-        na::Unit::try_new_and_get(end - center, 0.0),
+        na::Unit::try_new_and_get(start - center, real!(0.0)),
+        na::Unit::try_new_and_get(end - center, real!(0.0)),
     ) {
         let len_inc = (end_len - start_len) / nsubdivs as Real;
 
@@ -222,14 +222,14 @@ pub fn push_arc(
         let rot = Some(na::UnitComplex::scaled_rotation_between_axis(
             &start_dir,
             &end_dir,
-            1.0 / nsubdivs as Real,
+            real!(1.0) / nsubdivs as Real,
         ));
 
         #[cfg(feature = "dim3")]
         let rot = na::UnitQuaternion::scaled_rotation_between_axis(
             &start_dir,
             &end_dir,
-            1.0 / nsubdivs as Real,
+            real!(1.0) / nsubdivs as Real,
         );
 
         if let Some(rot) = rot {

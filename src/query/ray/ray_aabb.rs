@@ -3,14 +3,14 @@ use std::mem;
 use na;
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
+use crate::math::{Real, Vector, DIM, real};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::FeatureId;
 use num::Zero;
 
 impl RayCast for Aabb {
     fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
-        let mut tmin: Real = 0.0;
+        let mut tmin: Real = real!(0.0);
         let mut tmax: Real = max_toi;
 
         for i in 0usize..DIM {
@@ -19,7 +19,7 @@ impl RayCast for Aabb {
                     return None;
                 }
             } else {
-                let denom = 1.0 / ray.dir[i];
+                let denom = real!(1.0) / ray.dir[i];
                 let mut inter_with_near_halfspace = (self.mins[i] - ray.origin[i]) * denom;
                 let mut inter_with_far_halfspace = (self.maxs[i] - ray.origin[i]) * denom;
 
@@ -75,9 +75,9 @@ fn ray_aabb(
 ) -> Option<(Real, Vector<Real>, isize)> {
     use crate::query::clip;
     clip::clip_aabb_line(aabb, &ray.origin, &ray.dir).and_then(|(near, far)| {
-        if near.0 < 0.0 {
+        if near.0 < real!(0.0) {
             if solid {
-                Some((0.0, na::zero(), far.2))
+                Some((real!(0.0), na::zero(), far.2))
             } else if far.0 <= max_toi {
                 Some(far)
             } else {

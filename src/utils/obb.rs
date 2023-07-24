@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Rotation, Translation, Vector, DIM};
+use crate::math::{Isometry, Point, Real, Rotation, Translation, Vector, DIM, real};
 use crate::shape::Cuboid;
 
 /// Computes an oriented bounding box for the given set of points.
@@ -9,7 +9,7 @@ pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
     let cov = crate::utils::cov(pts);
     let mut eigv = cov.symmetric_eigen().eigenvectors;
 
-    if eigv.determinant() < 0.0 {
+    if eigv.determinant() < real!(0.0) {
         eigv = -eigv;
     }
 
@@ -30,7 +30,7 @@ pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
     let rot = Rotation::from_rotation_matrix(&na::Rotation3::from_matrix_unchecked(eigv));
 
     (
-        rot * Translation::from((maxs + mins) / 2.0),
-        Cuboid::new((maxs - mins) / 2.0),
+        rot * Translation::from((maxs + mins) / real!(2.0)),
+        Cuboid::new((maxs - mins) / real!(2.0)),
     )
 }

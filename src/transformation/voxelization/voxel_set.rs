@@ -18,7 +18,7 @@
 
 use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
-use crate::math::{Matrix, Point, Real, Vector, DIM};
+use crate::math::{Matrix, Point, Real, Vector, DIM, real};
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
 
@@ -72,7 +72,7 @@ impl VoxelSet {
             origin: Point::origin(),
             min_bb_voxels: Point::origin(),
             max_bb_voxels: Vector::repeat(1).into(),
-            scale: 1.0,
+            scale: real!(1.0),
             voxels: Vec::new(),
             intersections: Arc::new(Vec::new()),
             primitive_classes: Arc::new(Vec::new()),
@@ -238,7 +238,7 @@ impl VoxelSet {
                     let aabb_center =
                         self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
                     let aabb =
-                        Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+                        Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / real!(2.0)));
 
                     #[cfg(feature = "dim2")]
                     if let Some(seg) = aabb.clip_segment(&points[ia], &points[ib]) {
@@ -309,7 +309,7 @@ impl VoxelSet {
                 &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
             for prim_id in intersections {
                 let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
-                let aabb = Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
+                let aabb = Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / real!(2.0)));
 
                 let pa = points[indices[*prim_id as usize][0] as usize];
                 let pb = points[indices[*prim_id as usize][1] as usize];
@@ -397,22 +397,22 @@ impl VoxelSet {
 
         #[cfg(feature = "dim2")]
         let shifts = [
-            Vector::new(-0.5, -0.5),
-            Vector::new(0.5, -0.5),
-            Vector::new(0.5, 0.5),
-            Vector::new(-0.5, 0.5),
+            Vector::new(real!(-0.5), real!(-0.5)),
+            Vector::new(real!(0.5), real!(-0.5)),
+            Vector::new(real!(0.5), real!(0.5)),
+            Vector::new(real!(-0.5), real!(0.5)),
         ];
 
         #[cfg(feature = "dim3")]
         let shifts = [
-            Vector::new(-0.5, -0.5, -0.5),
-            Vector::new(0.5, -0.5, -0.5),
-            Vector::new(0.5, 0.5, -0.5),
-            Vector::new(-0.5, 0.5, -0.5),
-            Vector::new(-0.5, -0.5, 0.5),
-            Vector::new(0.5, -0.5, 0.5),
-            Vector::new(0.5, 0.5, 0.5),
-            Vector::new(-0.5, 0.5, 0.5),
+            Vector::new(real!(-0.5), real!(-0.5), real!(-0.5)),
+            Vector::new(real!(0.5), real!(-0.5), real!(-0.5)),
+            Vector::new(real!(0.5), real!(0.5), real!(-0.5)),
+            Vector::new(real!(-0.5), real!(0.5), real!(-0.5)),
+            Vector::new(real!(-0.5), real!(-0.5), real!(0.5)),
+            Vector::new(real!(0.5), real!(-0.5), real!(0.5)),
+            Vector::new(real!(0.5), real!(0.5), real!(0.5)),
+            Vector::new(real!(-0.5), real!(0.5), real!(0.5)),
         ];
 
         for shift in &shifts {
@@ -445,7 +445,7 @@ impl VoxelSet {
             // if      (d >= 0.0 && d <= d0) positive_pts.push(pt);
             // else if (d < 0.0 && -d <= d0) negative_pts.push(pt);
 
-            if d >= 0.0 {
+            if d >= real!(0.0) {
                 if d <= d0 {
                     self.map_voxel_points(&voxel, |p| positive_pts.push(p));
                 } else {
@@ -473,7 +473,7 @@ impl VoxelSet {
     // Returns (negative_volume, positive_volume)
     pub(crate) fn compute_clipped_volumes(&self, plane: &CutPlane) -> (Real, Real) {
         if self.voxels.is_empty() {
-            return (0.0, 0.0);
+            return (real!(0.0), real!(0.0));
         }
 
         let mut num_positive_voxels = 0;
@@ -481,7 +481,7 @@ impl VoxelSet {
         for voxel in &self.voxels {
             let pt = self.get_voxel_point(voxel);
             let d = plane.abc.dot(&pt.coords) + plane.d;
-            num_positive_voxels += (d >= 0.0) as usize;
+            num_positive_voxels += (d >= real!(0.0)) as usize;
         }
 
         let num_negative_voxels = self.voxels.len() - num_positive_voxels;
@@ -534,7 +534,7 @@ impl VoxelSet {
             let pt = self.get_voxel_point(&voxel);
             let d = plane.abc.dot(&pt.coords) + plane.d;
 
-            if d >= 0.0 {
+            if d >= real!(0.0) {
                 if voxel.is_on_surface || d <= d0 {
                     voxel.is_on_surface = true;
                     positive_part.voxels.push(voxel);
@@ -596,7 +596,7 @@ impl VoxelSet {
         // points twice. So passing an iterator to crate::utils::cov
         // isn't really possible.
         let mut center = Point::origin();
-        let denom = 1.0 / (num_voxels as Real);
+        let denom = real!(1.0) / (num_voxels as Real);
 
         for voxel in &self.voxels {
             center += voxel.coords.map(|e| e as Real).coords * denom;
@@ -605,7 +605,7 @@ impl VoxelSet {
         let mut cov_mat = Matrix::zeros();
         for voxel in &self.voxels {
             let xyz = voxel.coords.map(|e| e as Real) - center;
-            cov_mat.syger(denom, &xyz, &xyz, 1.0);
+            cov_mat.syger(denom, &xyz, &xyz, real!(1.0));
         }
 
         cov_mat.symmetric_eigenvalues()

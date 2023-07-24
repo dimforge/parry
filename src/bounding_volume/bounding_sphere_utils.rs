@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::utils;
 use na::{self, ComplexField};
 
@@ -9,7 +9,7 @@ pub fn point_cloud_bounding_sphere_with_center(
     pts: &[Point<Real>],
     center: Point<Real>,
 ) -> (Point<Real>, Real) {
-    let mut sqradius = 0.0;
+    let mut sqradius = real!(0.0);
 
     for pt in pts.iter() {
         let distance_squared = na::distance_squared(pt, &center);

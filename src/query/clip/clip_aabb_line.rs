@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, real, Vector, DIM};
 use crate::query::Ray;
 use crate::shape::Segment;
 use num::{Bounded, Zero};
@@ -12,7 +12,7 @@ impl Aabb {
     pub fn clip_segment(&self, pa: &Point<Real>, pb: &Point<Real>) -> Option<Segment> {
         let ab = pb - pa;
         clip_aabb_line(self, pa, &ab)
-            .map(|clip| Segment::new(pa + ab * (clip.0).0.max(0.0), pa + ab * (clip.1).0.min(1.0)))
+            .map(|clip| Segment::new(pa + ab * (clip.0).0.max(real!(0.0)), pa + ab * (clip.1).0.min(real!(1.0))))
     }
 
     /// Computes the parameters of the two intersection points between a line and this Aabb.
@@ -48,10 +48,10 @@ impl Aabb {
                 let t0 = clip.0;
                 let t1 = clip.1;
 
-                if t1 < 0.0 {
+                if t1 < real!(0.0) {
                     None
                 } else {
-                    Some((t0.max(0.0), t1))
+                    Some((t0.max(real!(0.0)), t1))
                 }
             })
     }
@@ -85,7 +85,7 @@ pub fn clip_aabb_line(
                 return None;
             }
         } else {
-            let denom = 1.0 / dir[i];
+            let denom = real!(1.0) / dir[i];
             let flip_sides;
             let mut inter_with_near_halfspace = (aabb.mins[i] - origin[i]) * denom;
             let mut inter_with_far_halfspace = (aabb.maxs[i] - origin[i]) * denom;
@@ -124,7 +124,7 @@ pub fn clip_aabb_line(
                 far_diag = true;
             }
 
-            if tmax < 0.0 || tmin > tmax {
+            if tmax < real!(0.0) || tmin > tmax {
                 return None;
             }
         }
@@ -136,9 +136,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::zeros();
 
         if near_side < 0 {
-            normal[(-near_side - 1) as usize] = 1.0;
+            normal[(-near_side - 1) as usize] = real!(1.0);
         } else {
-            normal[(near_side - 1) as usize] = -1.0;
+            normal[(near_side - 1) as usize] = real!(-1.0);
         }
 
         (tmin, normal, near_side)
@@ -150,9 +150,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::zeros();
 
         if far_side < 0 {
-            normal[(-far_side - 1) as usize] = -1.0;
+            normal[(-far_side - 1) as usize] = real!(-1.0);
         } else {
-            normal[(far_side - 1) as usize] = 1.0;
+            normal[(far_side - 1) as usize] = real!(1.0);
         }
 
         (tmax, normal, far_side)

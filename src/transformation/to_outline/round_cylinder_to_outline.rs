@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::RoundCylinder;
 use crate::transformation::utils;
 use na::{self, Point3};
@@ -18,12 +18,12 @@ impl RoundCylinder {
         let mut out_idx = vec![];
 
         // Compute the profile.
-        let center_ab = Point3::new(-r, -he, 0.0);
-        let center_cd = Point3::new(-r, he, 0.0);
-        let a = Point3::new(-r, -he - br, 0.0);
-        let b = Point3::new(-r - br, -he, 0.0);
-        let c = Point3::new(-r - br, he, 0.0);
-        let d = Point3::new(-r, he + br, 0.0);
+        let center_ab = Point3::new(-r, -he, real!(0.0));
+        let center_cd = Point3::new(-r, he, real!(0.0));
+        let a = Point3::new(-r, -he - br, real!(0.0));
+        let b = Point3::new(-r - br, -he, real!(0.0));
+        let c = Point3::new(-r - br, he, real!(0.0));
+        let d = Point3::new(-r, he + br, real!(0.0));
 
         out_vtx.push(a);
         utils::push_arc(center_ab, a, b, border_nsubdiv, &mut out_vtx);

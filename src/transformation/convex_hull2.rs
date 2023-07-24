@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, support_point_id};
 use na::{self, Point2, Vector2};
 use num_traits::Zero;
@@ -210,7 +210,7 @@ impl SegmentFacet {
         let norm = normal.normalize_mut();
 
         SegmentFacet {
-            valid: norm != 0.0,
+            valid: norm != real!(0.0),
             normal,
             prev,
             next,

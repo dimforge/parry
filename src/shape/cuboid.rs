@@ -1,6 +1,6 @@
 //! Support mapping based Cuboid shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 #[cfg(feature = "dim3")]
 use crate::shape::Segment;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
@@ -149,7 +149,7 @@ impl Cuboid {
         // to make this AoSoA friendly?
         let he = self.half_extents;
         let iamax = local_dir.iamax();
-        let sign = (1.0 as Real).copysign(local_dir[iamax]);
+        let sign = real!(1.0).copysign(local_dir[iamax]);
 
         let vertices = match iamax {
             0 => [
@@ -240,9 +240,9 @@ impl Cuboid {
                 let mut dir: Vector<Real> = na::zero();
 
                 if id < 2 {
-                    dir[id as usize] = 1.0;
+                    dir[id as usize] = real!(1.0);
                 } else {
-                    dir[id as usize - 2] = -1.0;
+                    dir[id as usize - 2] = real!(-1.0);
                 }
                 Some(Unit::new_unchecked(dir))
             }
@@ -251,20 +251,20 @@ impl Cuboid {
 
                 match id {
                     0b00 => {
-                        dir[0] = 1.0;
-                        dir[1] = 1.0;
+                        dir[0] = real!(1.0);
+                        dir[1] = real!(1.0);
                     }
                     0b01 => {
-                        dir[1] = 1.0;
-                        dir[0] = -1.0;
+                        dir[1] = real!(1.0);
+                        dir[0] = real!(-1.0);
                     }
                     0b11 => {
-                        dir[0] = -1.0;
-                        dir[1] = -1.0;
+                        dir[0] = real!(-1.0);
+                        dir[1] = real!(-1.0);
                     }
                     0b10 => {
-                        dir[1] = -1.0;
-                        dir[0] = 1.0;
+                        dir[1] = real!(-1.0);
+                        dir[0] = real!(1.0);
                     }
                     _ => return None,
                 }
@@ -283,9 +283,9 @@ impl Cuboid {
                 let mut dir: Vector<Real> = na::zero();
 
                 if id < 3 {
-                    dir[id as usize] = 1.0;
+                    dir[id as usize] = real!(1.0);
                 } else {
-                    dir[id as usize - 3] = -1.0;
+                    dir[id as usize - 3] = real!(-1.0);
                 }
                 Some(Unit::new_unchecked(dir))
             }

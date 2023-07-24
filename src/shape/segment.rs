@@ -1,6 +1,6 @@
 //! Definition of the segment shape.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::shape::{FeatureId, SupportMap};
 
 use na::{self, Unit};
@@ -39,10 +39,10 @@ pub enum SegmentPointLocation {
 impl SegmentPointLocation {
     /// The barycentric coordinates corresponding to this point location.
     pub fn barycentric_coordinates(&self) -> [Real; 2] {
-        let mut bcoords = [0.0; 2];
+        let mut bcoords = [real!(0.0); 2];
 
         match self {
-            SegmentPointLocation::OnVertex(i) => bcoords[*i as usize] = 1.0,
+            SegmentPointLocation::OnVertex(i) => bcoords[*i as usize] = real!(1.0),
             SegmentPointLocation::OnEdge(uv) => {
                 bcoords[0] = uv[0];
                 bcoords[1] = uv[1];
@@ -111,9 +111,9 @@ impl Segment {
     pub fn scaled_planar_normal(&self, plane_axis: u8) -> Vector<Real> {
         let dir = self.scaled_direction();
         match plane_axis {
-            0 => Vector::new(0.0, dir.z, -dir.y),
-            1 => Vector::new(-dir.z, 0.0, dir.x),
-            2 => Vector::new(dir.y, -dir.x, 0.0),
+            0 => Vector::new(real!(0.0), dir.z, -dir.y),
+            1 => Vector::new(-dir.z, real!(0.0), dir.x),
+            2 => Vector::new(dir.y, -dir.x, real!(0.0)),
             _ => panic!("Invalid axis given: must be 0 (X axis), 1 (Y axis) or 2 (Z axis)"),
         }
     }
@@ -172,7 +172,7 @@ impl Segment {
                 FeatureId::Edge(_) => {
                     let iamin = direction.iamin();
                     let mut normal = Vector::zeros();
-                    normal[iamin] = 1.0;
+                    normal[iamin] = real!(1.0);
                     normal -= *direction * direction[iamin];
                     Some(Unit::new_normalize(normal))
                 }

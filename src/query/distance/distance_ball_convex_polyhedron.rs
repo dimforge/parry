@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, real};
 use crate::shape::{Ball, Shape};
 
 /// Distance between a ball and a convex polyhedron.
@@ -26,5 +26,5 @@ pub fn distance_convex_polyhedron_ball(
 ) -> Real {
     let center2_1 = Point::from(pos12.translation.vector);
     let proj = shape1.project_local_point(&center2_1, true);
-    (na::distance(&proj.point, &center2_1) - ball2.radius).max(0.0)
+    (na::distance(&proj.point, &center2_1) - ball2.radius).max(real!(0.0))
 }

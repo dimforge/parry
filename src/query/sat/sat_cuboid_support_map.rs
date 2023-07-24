@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector, DIM};
+use crate::math::{Isometry, Real, Vector, DIM, real};
 use crate::shape::{Cuboid, SupportMap};
 
 use na::Unit;
@@ -78,7 +78,7 @@ pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
     let mut best_dir = Vector::zeros();
 
     for i in 0..DIM {
-        for sign in &[-1.0, 1.0] {
+        for sign in &[real!(-1.0), real!(1.0)] {
             let axis1 = Vector::ith(i, *sign);
             let pt2 = shape2.support_point_toward(&pos12, &Unit::new_unchecked(-axis1));
             let separation = pt2[i] * *sign - cube1.half_extents[i];

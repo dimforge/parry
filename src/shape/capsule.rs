@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Rotation, Vector};
+use crate::math::{Isometry, Point, Real, Rotation, Vector, real};
 use crate::shape::{Segment, SupportMap};
 use na::Unit;
 
@@ -59,7 +59,7 @@ impl Capsule {
 
     /// The half-height of this capsule.
     pub fn half_height(&self) -> Real {
-        self.height() / 2.0
+        self.height() / real!(2.0)
     }
 
     /// The center of this capsule.
@@ -83,7 +83,7 @@ impl Capsule {
     /// The rotation `r` such that `r * Y` is collinear with `b - a`.
     pub fn rotation_wrt_y(&self) -> Rotation<Real> {
         let mut dir = self.segment.b - self.segment.a;
-        if dir.y < 0.0 {
+        if dir.y < real!(0.0) {
             dir = -dir;
         }
 
@@ -167,7 +167,7 @@ impl Capsule {
 
 impl SupportMap for Capsule {
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        let dir = Unit::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
+        let dir = Unit::try_new(*dir, real!(0.0)).unwrap_or(Vector::y_axis());
         self.local_support_point_toward(&dir)
     }
 

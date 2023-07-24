@@ -1,6 +1,6 @@
 use super::InitialMesh;
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::transformation::convex_hull_utils::indexed_support_point_nth;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
 use crate::utils;
@@ -361,7 +361,7 @@ fn attach_and_push_facets(
             }
 
             let mut furthest = usize::max_value();
-            let mut furthest_dist = 0.0;
+            let mut furthest_dist = real!(0.0);
 
             for (i, curr_facet) in new_facets.iter_mut().enumerate() {
                 if !curr_facet.affinely_dependent {
@@ -390,7 +390,7 @@ fn attach_and_push_facets(
 
     while i != undecidable.len() {
         let mut furthest = usize::max_value();
-        let mut furthest_dist = 0.0;
+        let mut furthest_dist = real!(0.0);
         let undecidable_point = undecidable[i];
 
         for (j, curr_facet) in new_facets.iter_mut().enumerate() {
@@ -420,6 +420,7 @@ fn attach_and_push_facets(
 #[cfg(test)]
 mod test {
     use crate::transformation;
+    use crate::math::real;
     #[cfg(feature = "dim2")]
     use na::Point2;
 
@@ -443,7 +444,7 @@ mod test {
         use crate::shape::Ball;
 
         // This triggered a failure to an affinely dependent facet.
-        let (points, _) = Ball::new(0.4).to_trimesh(20, 20);
+        let (points, _) = Ball::new(real!(0.4)).to_trimesh(20, 20);
         let (vertices, _) = transformation::convex_hull(points.as_slice());
 
         // dummy test, we are just checking that the construction did not fail.

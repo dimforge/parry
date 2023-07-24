@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::ClosestPoints;
 use crate::shape::{Segment, SegmentPointLocation};
 
@@ -51,8 +51,8 @@ pub fn closest_points_segment_segment_with_locations_nD<const D: usize>(
     let e = d2.norm_squared();
     let f = d2.dot(&r);
 
-    let _0: Real = 0.0;
-    let _1: Real = 1.0;
+    let _0: Real = real!(0.0);
+    let _1: Real = real!(1.0);
 
     let mut s;
     let mut t;

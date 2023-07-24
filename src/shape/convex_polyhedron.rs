@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM, real};
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
 use crate::utils::hashmap::{Entry, HashMap};
@@ -222,7 +222,7 @@ impl ConvexPolyhedron {
         for e in &mut edges {
             let tri1 = triangles.get(e.faces[0] as usize)?;
             let tri2 = triangles.get(e.faces[1] as usize)?;
-            if tri1.normal.dot(&tri2.normal) > 1.0 - eps {
+            if tri1.normal.dot(&tri2.normal) > real!(1.0) - eps {
                 e.deleted = true;
             }
         }
@@ -446,11 +446,11 @@ impl ConvexPolyhedron {
             .for_each(|pt| pt.coords.component_mul_assign(scale));
 
         for f in &mut self.faces {
-            f.normal = Unit::try_new(f.normal.component_mul(&scale), 0.0).unwrap_or(f.normal);
+            f.normal = Unit::try_new(f.normal.component_mul(&scale), real!(0.0)).unwrap_or(f.normal);
         }
 
         for e in &mut self.edges {
-            e.dir = Unit::try_new(e.dir.component_mul(&scale), 0.0).unwrap_or(e.dir);
+            e.dir = Unit::try_new(e.dir.component_mul(&scale), real!(0.0)).unwrap_or(e.dir);
         }
 
         Some(self)
@@ -491,7 +491,7 @@ impl ConvexPolyhedron {
 
     /// Computes the ID of the features with a normal that maximize the dot-product with `local_dir`.
     pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
-        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
+        let eps: Real = na::convert::<f64, Real>(f64::consts::PI) / real!(180.0);
         self.support_feature_id_toward_eps(local_dir, eps)
     }
 

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::{QueryDispatcher, Ray, Unsupported, TOI};
 use crate::shape::{GenericHeightField, HeightFieldStorage, Shape};
 #[cfg(feature = "dim3")]
@@ -24,7 +24,7 @@ where
 
     let mut curr_range = heightfield1.unclamped_elements_range_in_local_aabb(&aabb2_1);
     // Enlarge the range by 1 to account for movement within a cell.
-    let right = ray.dir.x > 0.0;
+    let right = ray.dir.x > real!(0.0);
 
     if right {
         curr_range.end += 1;
@@ -55,7 +55,7 @@ where
     /*
      * Test other segments in the path of the ray.
      */
-    if ray.dir.x == 0.0 {
+    if ray.dir.x == real!(0.0) {
         return Ok(best_hit);
     }
 
@@ -140,15 +140,15 @@ where
     /*
      * Enlarge the ranges by 1 to account for any movement within one cell.
      */
-    if ray.dir.z > 0.0 {
+    if ray.dir.z > real!(0.0) {
         curr_range_i.end += 1;
-    } else if ray.dir.z < 0.0 {
+    } else if ray.dir.z < real!(0.0) {
         curr_range_i.start -= 1;
     }
 
-    if ray.dir.x > 0.0 {
+    if ray.dir.x > real!(0.0) {
         curr_range_j.end += 1;
-    } else if ray.dir.x < 0.0 {
+    } else if ray.dir.x < real!(0.0) {
         curr_range_j.start -= 1;
     }
 
@@ -191,7 +191,7 @@ where
         }
     }
 
-    if ray.dir.y == 0.0 {
+    if ray.dir.y == real!(0.0) {
         return Ok(best_hit);
     }
 
@@ -203,20 +203,20 @@ where
         /*
          * Find the next cell to cast the ray on.
          */
-        let toi_x = if ray.dir.x > 0.0 {
+        let toi_x = if ray.dir.x > real!(0.0) {
             let x = heightfield1.signed_x_at(cell.1 + 1);
             (x - ray.origin.x) / ray.dir.x
-        } else if ray.dir.x < 0.0 {
+        } else if ray.dir.x < real!(0.0) {
             let x = heightfield1.signed_x_at(cell.1 + 0);
             (x - ray.origin.x) / ray.dir.x
         } else {
             Real::MAX
         };
 
-        let toi_z = if ray.dir.z > 0.0 {
+        let toi_z = if ray.dir.z > real!(0.0) {
             let z = heightfield1.signed_z_at(cell.0 + 1);
             (z - ray.origin.z) / ray.dir.z
-        } else if ray.dir.z < 0.0 {
+        } else if ray.dir.z < real!(0.0) {
             let z = heightfield1.signed_z_at(cell.0 + 0);
             (z - ray.origin.z) / ray.dir.z
         } else {
@@ -227,11 +227,11 @@ where
             break;
         }
 
-        if toi_x >= 0.0 && toi_x <= toi_z {
+        if toi_x >= real!(0.0) && toi_x <= toi_z {
             cell.1 += ray.dir.x.signum() as isize;
         }
 
-        if toi_z >= 0.0 && toi_z <= toi_x {
+        if toi_z >= real!(0.0) && toi_z <= toi_x {
             cell.0 += ray.dir.z.signum() as isize;
         }
 

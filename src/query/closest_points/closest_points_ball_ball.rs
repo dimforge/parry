@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, real};
 use crate::query::ClosestPoints;
 use crate::shape::Ball;
 
@@ -13,7 +13,7 @@ pub fn closest_points_ball_ball(
     margin: Real,
 ) -> ClosestPoints {
     assert!(
-        margin >= 0.0,
+        margin >= real!(0.0),
         "The proximity margin must be positive or null."
     );
 

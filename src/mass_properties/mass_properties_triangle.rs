@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -14,8 +14,8 @@ impl MassProperties {
         let area = triangle.area();
         let com = triangle.center();
 
-        if area == 0.0 {
-            return MassProperties::new(com, 0.0, 0.0);
+        if area == real!(0.0) {
+            return MassProperties::new(com, real!(0.0), real!(0.0));
         }
 
         let ipart = triangle.unit_angular_inertia();

@@ -1,5 +1,5 @@
 use crate::approx::AbsDiffEq;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 #[cfg(feature = "std")]
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{PackedFeatureId, Segment, Triangle};
@@ -224,6 +224,7 @@ impl PolygonalFeature {
         // The plane they are projected onto has normal sep_axis1
         // and contains the origin (this is numerically OK because
         // we are not working in world-space here).
+
         let basis = sep_axis1.orthonormal_basis();
         let projected_face1 = [
             Point2::new(
@@ -275,7 +276,7 @@ impl PolygonalFeature {
                 (vertices2_1[2] - vertices2_1[1]).cross(&(vertices2_1[0] - vertices2_1[1]));
             let denom = normal2_1.dot(&sep_axis1);
 
-            if !relative_eq!(denom, 0.0) {
+            if !relative_eq!(denom, real!(0.0)) {
                 let last_index2 = face2.num_vertices as usize - 1;
                 'point_loop1: for i in 0..face1.num_vertices as usize {
                     let p1 = projected_face1[i];
@@ -286,9 +287,9 @@ impl PolygonalFeature {
                         let new_sign = (projected_face2[j + 1] - projected_face2[j])
                             .perp(&(p1 - projected_face2[j]));
 
-                        if sign == 0.0 {
+                        if sign == real!(0.0) {
                             sign = new_sign;
-                        } else if sign * new_sign < 0.0 {
+                        } else if sign * new_sign < real!(0.0) {
                             // The point lies outside.
                             continue 'point_loop1;
                         }
@@ -319,7 +320,7 @@ impl PolygonalFeature {
                 .cross(&(face1.vertices[0] - face1.vertices[1]));
 
             let denom = -normal1.dot(&sep_axis1);
-            if !relative_eq!(denom, 0.0) {
+            if !relative_eq!(denom, real!(0.0)) {
                 let last_index1 = face1.num_vertices as usize - 1;
                 'point_loop2: for i in 0..face2.num_vertices as usize {
                     let p2 = projected_face2[i];
@@ -330,9 +331,9 @@ impl PolygonalFeature {
                         let new_sign = (projected_face1[j + 1] - projected_face1[j])
                             .perp(&(p2 - projected_face1[j]));
 
-                        if sign == 0.0 {
+                        if sign == real!(0.0) {
                             sign = new_sign;
-                        } else if sign * new_sign < 0.0 {
+                        } else if sign * new_sign < real!(0.0) {
                             // The point lies outside.
                             continue 'point_loop2;
                         }
@@ -373,15 +374,15 @@ impl PolygonalFeature {
                     projected_face1[(i + 1) % face1.num_vertices],
                 ];
                 if let Some(bcoords) = closest_points_line2d(projected_edge1, projected_edge2) {
-                    if bcoords.0 > 0.0 && bcoords.0 < 1.0 && bcoords.1 > 0.0 && bcoords.1 < 1.0 {
+                    if bcoords.0 > real!(0.0) && bcoords.0 < real!(1.0) && bcoords.1 > real!(0.0) && bcoords.1 < real!(1.0) {
                         // Found a contact between the two edges.
                         let edge1 = (
                             face1.vertices[i],
                             face1.vertices[(i + 1) % face1.num_vertices],
                         );
                         let edge2 = (vertices2_1[j], vertices2_1[(j + 1) % face2.num_vertices]);
-                        let local_p1 = edge1.0 * (1.0 - bcoords.0) + edge1.1.coords * bcoords.0;
-                        let local_p2_1 = edge2.0 * (1.0 - bcoords.1) + edge2.1.coords * bcoords.1;
+                        let local_p1 = edge1.0 * (real!(1.0) - bcoords.0) + edge1.1.coords * bcoords.0;
+                        let local_p2_1 = edge2.0 * (real!(1.0) - bcoords.1) + edge2.1.coords * bcoords.1;
                         let dist = (local_p2_1 - local_p1).dot(&sep_axis1);
 
                         if dist <= prediction {
@@ -419,13 +420,13 @@ fn closest_points_line2d(
     let eps = Real::default_epsilon();
 
     if a <= eps && e <= eps {
-        Some((0.0, 0.0))
+        Some((real!(0.0), real!(0.0)))
     } else if a <= eps {
-        Some((0.0, f / e))
+        Some((real!(0.0), f / e))
     } else {
         let c = dir1.dot(&r);
         if e <= eps {
-            Some((-c / a, 0.0))
+            Some((-c / a, real!(0.0)))
         } else {
             let b = dir1.dot(&dir2);
             let ae = a * e;
@@ -438,7 +439,7 @@ fn closest_points_line2d(
             let s = if !parallel {
                 (b * f - c * e) / denom
             } else {
-                0.0
+                real!(0.0)
             };
 
             if parallel {

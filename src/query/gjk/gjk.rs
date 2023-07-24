@@ -5,7 +5,7 @@ use na::{self, ComplexField, Unit};
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 // use query::Proximity;
-use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::math::{Isometry, Point, Real, Vector, DIM, real};
 use crate::query::{self, Ray};
 
 use num::{Bounded, Zero};
@@ -35,7 +35,7 @@ pub enum GJKResult {
 /// The absolute tolerence used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
-    _eps * 10.0
+    _eps * real!(10.0)
 }
 
 /// Projects the origin on the boundary of the given shape.
@@ -104,7 +104,7 @@ where
 
     let mut old_dir;
 
-    if let Some(proj_dir) = Unit::try_new(proj.coords, 0.0) {
+    if let Some(proj_dir) = Unit::try_new(proj.coords, real!(0.0)) {
         old_dir = -proj_dir;
     } else {
         return GJKResult::Intersection;
@@ -141,7 +141,7 @@ where
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
-        } else if !exact_dist && min_bound > 0.0 && max_bound <= max_dist {
+        } else if !exact_dist && min_bound > real!(0.0) && max_bound <= max_dist {
             return GJKResult::Proximity(old_dir);
         } else if max_bound - min_bound <= _eps_rel * max_bound {
             if exact_dist {
@@ -246,11 +246,11 @@ where
 
     let ray_length = ray.dir.norm();
 
-    if relative_eq!(ray_length, 0.0) {
+    if relative_eq!(ray_length, real!(0.0)) {
         return None;
     }
 
-    let mut ltoi = 0.0;
+    let mut ltoi = real!(0.0);
     let mut curr_ray = Ray::new(ray.origin, ray.dir / ray_length);
     let dir = -curr_ray.dir;
     let mut ldir = dir;
@@ -284,8 +284,8 @@ where
             CSOPoint::from_shapes(pos12, g1, g2, &dir)
         };
 
-        if last_chance && ltoi > 0.0 {
-            // last_chance && ltoi > 0.0 && (support_point.point - curr_ray.origin).dot(&ldir) >= 0.0 {
+        if last_chance && ltoi > real!(0.0) {
+            // last_chance && ltoi > real!(0.0) && (support_point.point - curr_ray.origin).dot(&ldir) >= real!(0.0) {
             return Some((ltoi / ray_length, ldir));
         }
 
@@ -299,7 +299,7 @@ where
         //          > 0             |  > 0  | New higher bound.
         match query::details::ray_toi_with_halfspace(&support_point.point, &dir, &curr_ray) {
             Some(t) => {
-                if dir.dot(&curr_ray.dir) < 0.0 && t > 0.0 {
+                if dir.dot(&curr_ray.dir) < real!(0.0) && t > real!(0.0) {
                     // new lower bound
                     ldir = *dir;
                     ltoi += t;

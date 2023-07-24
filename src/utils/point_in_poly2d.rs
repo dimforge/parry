@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use na::Point2;
 use num::Zero;
 
@@ -7,7 +7,7 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     if poly.len() == 0 {
         false
     } else {
-        let mut sign = 0.0;
+        let mut sign = real!(0.0);
 
         for i1 in 0..poly.len() {
             let i2 = (i1 + 1) % poly.len();
@@ -17,7 +17,7 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
 
             if sign.is_zero() {
                 sign = perp;
-            } else if sign * perp < 0.0 {
+            } else if sign * perp < real!(0.0) {
                 return false;
             }
         }

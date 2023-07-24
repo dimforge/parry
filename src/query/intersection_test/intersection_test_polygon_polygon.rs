@@ -2,7 +2,7 @@
 
 use crate::geometry::proximity_detector::PrimitiveProximityDetectionContext;
 use crate::geometry::{sat, Polygon, Proximity};
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 
 pub fn detect_proximity_polygon_polygon(
     _ctxt: &mut PrimitiveProximityDetectionContext,
@@ -42,13 +42,13 @@ fn detect_proximity<'a>(
     }
 
     if sep2.0 > sep1.0 {
-        if sep2.0 > 0.0 {
+        if sep2.0 > real!(0.0) {
             Proximity::WithinMargin
         } else {
             Proximity::Intersecting
         }
     } else {
-        if sep1.0 > 0.0 {
+        if sep1.0 > real!(0.0) {
             Proximity::WithinMargin
         } else {
             Proximity::Intersecting

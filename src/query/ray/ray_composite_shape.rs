@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
+use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
 use crate::shape::{Compound, FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};
@@ -135,7 +135,7 @@ where
         let (hit, toi) = aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_toi));
 
         if let Some(data) = data {
-            let mut weights = [0.0; SIMD_WIDTH];
+            let mut weights = [real!(0.0); SIMD_WIDTH];
             let mut mask = [false; SIMD_WIDTH];
             let mut results = [None; SIMD_WIDTH];
 
@@ -215,7 +215,7 @@ where
         let (hit, toi) = aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_toi));
 
         if let Some(data) = data {
-            let mut weights = [0.0; SIMD_WIDTH];
+            let mut weights = [real!(0.0); SIMD_WIDTH];
             let mut mask = [false; SIMD_WIDTH];
             let mut results = [None; SIMD_WIDTH];
 

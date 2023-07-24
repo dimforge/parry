@@ -1,6 +1,8 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Cuboid, Segment};
+#[cfg(feature = "dim3")]
+use crate::math::real;
 
 /// Finds the best separating edge between a cuboid and a segment.
 ///
@@ -16,9 +18,9 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 
     let axes = [
         // Vector::{x, y ,z}().cross(y2)
-        Vector::new(0.0, -x2.z, x2.y),
-        Vector::new(x2.z, 0.0, -x2.x),
-        Vector::new(-x2.y, x2.x, 0.0),
+        Vector::new(real!(0.0), -x2.z, x2.y),
+        Vector::new(x2.z, real!(0.0), -x2.x),
+        Vector::new(-x2.y, x2.x, real!(0.0)),
     ];
 
     sat::cuboid_support_map_find_local_separating_edge_twoway(cube1, segment2, &axes, pos12)

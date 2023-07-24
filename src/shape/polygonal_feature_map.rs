@@ -4,7 +4,7 @@ use na::Unit;
 #[cfg(feature = "dim3")]
 use {
     crate::{
-        math::Point,
+        math::{Point, real},
         shape::{Cone, Cylinder, PackedFeatureId},
     },
     approx::AbsDiffEq,
@@ -68,7 +68,7 @@ impl PolygonalFeatureMap for Cylinder {
             .try_normalize(Real::default_epsilon())
             .unwrap_or(Vector2::x());
 
-        if dir.y.abs() < 0.5 {
+        if dir.y.abs() < real!(0.5) {
             // We return a segment lying on the cylinder's curved part.
             out_features.vertices[0] = Point::new(
                 dir2.x * self.radius,
@@ -89,7 +89,7 @@ impl PolygonalFeatureMap for Cylinder {
             out_features.vertices[2] = Point::new(-dir2.x * self.radius, y, -dir2.y * self.radius);
             out_features.vertices[3] = Point::new(dir2.y * self.radius, y, -dir2.x * self.radius);
 
-            if dir.y < 0.0 {
+            if dir.y < real!(0.0) {
                 out_features.eids = PackedFeatureId::edges([2, 4, 6, 8]);
                 out_features.fid = PackedFeatureId::face(9);
                 out_features.num_vertices = 4;
@@ -125,14 +125,14 @@ impl PolygonalFeatureMap for Cone {
             .try_normalize(Real::default_epsilon())
             .unwrap_or(Vector2::x());
 
-        if dir.y > 0.0 {
+        if dir.y > real!(0.0) {
             // We return a segment lying on the cone's curved part.
             out_features.vertices[0] = Point::new(
                 dir2.x * self.radius,
                 -self.half_height,
                 dir2.y * self.radius,
             );
-            out_features.vertices[1] = Point::new(0.0, self.half_height, 0.0);
+            out_features.vertices[1] = Point::new(real!(0.0), self.half_height, real!(0.0));
             out_features.eids = PackedFeatureId::edges([0, 0, 0, 0]);
             out_features.fid = PackedFeatureId::face(0);
             out_features.num_vertices = 2;

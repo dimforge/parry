@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, UnitVector, Vector};
+use crate::math::{Point, Real, UnitVector, Vector, real};
 use crate::query::SplitResult;
 use crate::shape::Segment;
 
@@ -48,11 +48,11 @@ impl Segment {
         let bcoord = a / b;
         let dir_norm = dir.norm();
 
-        if relative_eq!(b, 0.0)
+        if relative_eq!(b, real!(0.0))
             || bcoord * dir_norm <= epsilon
             || bcoord * dir_norm >= dir_norm - epsilon
         {
-            if a >= 0.0 {
+            if a >= real!(0.0) {
                 (SplitResult::Negative, None)
             } else {
                 (SplitResult::Positive, None)
@@ -61,7 +61,7 @@ impl Segment {
             let intersection = self.a + dir * bcoord;
             let s1 = Segment::new(self.a, intersection);
             let s2 = Segment::new(intersection, self.b);
-            if a >= 0.0 {
+            if a >= real!(0.0) {
                 (SplitResult::Pair(s1, s2), Some((intersection, bcoord)))
             } else {
                 (SplitResult::Pair(s2, s1), Some((intersection, bcoord)))

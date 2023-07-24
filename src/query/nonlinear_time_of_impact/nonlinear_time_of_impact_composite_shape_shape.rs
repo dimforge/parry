@@ -1,5 +1,5 @@
 use crate::bounding_volume::{BoundingSphere, SimdAabb};
-use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
+use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH, real};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
 use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
@@ -125,7 +125,7 @@ where
         bv: &SimdAabb,
         data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
     ) -> SimdBestFirstVisitStatus<Self::Result> {
-        let mut weights = [0.0; SIMD_WIDTH];
+        let mut weights = [real!(0.0); SIMD_WIDTH];
         let mut mask = [false; SIMD_WIDTH];
         let mut results = [None; SIMD_WIDTH];
 

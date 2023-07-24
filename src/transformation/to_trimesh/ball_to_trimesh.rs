@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM, real};
 use crate::shape::Ball;
 use crate::transformation::utils;
 use na::{self, ComplexField, Point3, RealField};
@@ -10,7 +10,7 @@ impl Ball {
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
     ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
-        let diameter = self.radius * 2.0;
+        let diameter = self.radius * real!(2.0);
         let (vtx, idx) = unit_sphere(ntheta_subdiv, nphi_subdiv);
         (utils::scaled(vtx, Vector::repeat(diameter)), idx)
     }
@@ -23,7 +23,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
     let mut coords = Vec::new();
     let mut curr_phi: Real = -Real::frac_pi_2() + dphi;
 
-    coords.push(Point::new(0.0, -1.0, 0.0));
+    coords.push(Point::new(real!(0.0), real!(-1.0), real!(0.0)));
 
     for _ in 1..nphi_subdiv {
         utils::push_circle(
@@ -36,7 +36,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
         curr_phi = curr_phi + dphi;
     }
 
-    coords.push(Point::new(0.0, 1.0, 0.0));
+    coords.push(Point::new(real!(0.0), real!(1.0), real!(0.0)));
 
     let mut idx = Vec::new();
 
@@ -59,7 +59,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
         &mut idx,
     );
 
-    (utils::scaled(coords, Vector::repeat(0.5)), idx)
+    (utils::scaled(coords, Vector::repeat(real!(0.5))), idx)
 }
 
 /// Creates an hemisphere with a diameter of 1.
@@ -73,7 +73,7 @@ pub(crate) fn unit_hemisphere(
     let dphi = pi_two / (nphi_subdiv as Real);
 
     let mut coords = Vec::new();
-    let mut curr_phi: Real = 0.0;
+    let mut curr_phi: Real = real!(0.0);
 
     for _ in 0..nphi_subdiv {
         utils::push_circle(
@@ -86,7 +86,7 @@ pub(crate) fn unit_hemisphere(
         curr_phi = curr_phi + dphi;
     }
 
-    coords.push(Point::new(0.0, 1.0, 0.0));
+    coords.push(Point::new(real!(0.0), real!(1.0), real!(0.0)));
 
     let mut idx = Vec::new();
 
@@ -106,5 +106,5 @@ pub(crate) fn unit_hemisphere(
         &mut idx,
     );
 
-    (utils::scaled(coords, Vector::repeat(0.5)), idx)
+    (utils::scaled(coords, Vector::repeat(real!(0.5))), idx)
 }

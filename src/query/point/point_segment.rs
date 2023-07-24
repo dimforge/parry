@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Segment, SegmentPointLocation};
 
@@ -21,7 +21,7 @@ impl PointQuery for Segment {
                 {
                     let dir = self.scaled_direction();
                     let dpt = *pt - proj.point;
-                    if dpt.perp(&dir) >= 0.0 {
+                    if dpt.perp(&dir) >= real!(0.0) {
                         FeatureId::Face(0)
                     } else {
                         FeatureId::Face(1)
@@ -55,12 +55,12 @@ impl PointQueryWithLocation for Segment {
         let ap = pt - self.a;
         let ab_ap = ab.dot(&ap);
         let sqnab = ab.norm_squared();
-        let _1 = 1.0;
+        let _1 = real!(1.0);
 
         let proj;
         let location;
 
-        if ab_ap <= 0.0 {
+        if ab_ap <= real!(0.0) {
             // Voronoï region of vertex 'a'.
             location = SegmentPointLocation::OnVertex(0);
             proj = self.a;
@@ -69,7 +69,7 @@ impl PointQueryWithLocation for Segment {
             location = SegmentPointLocation::OnVertex(1);
             proj = self.b;
         } else {
-            assert!(sqnab != 0.0);
+            assert!(sqnab != real!(0.0));
 
             // Voronoï region of the segment interior.
             let u = ab_ap / sqnab;

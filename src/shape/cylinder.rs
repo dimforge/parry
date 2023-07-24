@@ -1,6 +1,6 @@
 //! Support mapping based Cylinder shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::shape::SupportMap;
 use na;
 use num::Zero;
@@ -81,7 +81,7 @@ impl SupportMap for Cylinder {
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         let mut vres = *dir;
 
-        vres[1] = 0.0;
+        vres[1] = real!(0.0);
 
         if vres.normalize_mut().is_zero() {
             vres = na::zero()

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::{sat, Contact, PointQuery};
 use crate::shape::{Cuboid, SupportMap};
 use approx::AbsDiffEq;
@@ -47,7 +47,7 @@ pub fn contact_cuboid_cuboid(
 
         // NOTE: we had to recompute the normal because we can't use
         // the separation vector for the case where we have a vertex-vertex contact.
-        if separation < 0.0 || normalized_dir.is_none() {
+        if separation < real!(0.0) || normalized_dir.is_none() {
             // Penetration or contact lying on the boundary exactly.
             normal1 = Unit::new_unchecked(sep1.1);
             dist = separation;
@@ -86,7 +86,7 @@ pub fn contact_cuboid_cuboid(
 
         // NOTE: we had to recompute the normal because we can't use
         // the separation vector for the case where we have a vertex-vertex contact.
-        if separation < 0.0 || normalized_dir.is_none() {
+        if separation < real!(0.0) || normalized_dir.is_none() {
             // Penetration or contact lying on the boundary exactly.
             normal2 = Unit::new_unchecked(sep2.1);
             dist = separation;

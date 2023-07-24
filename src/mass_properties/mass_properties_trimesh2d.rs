@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -11,11 +11,11 @@ impl MassProperties {
     ) -> MassProperties {
         let (area, com) = trimesh_area_and_center_of_mass(vertices, indices);
 
-        if area == 0.0 {
-            return MassProperties::new(com, 0.0, 0.0);
+        if area == real!(0.0) {
+            return MassProperties::new(com, real!(0.0), real!(0.0));
         }
 
-        let mut itot = 0.0;
+        let mut itot = real!(0.0);
 
         for idx in indices {
             let triangle = Triangle::new(
@@ -40,7 +40,7 @@ pub fn trimesh_area_and_center_of_mass(
     indices: &[[u32; 3]],
 ) -> (Real, Point<Real>) {
     let mut res = Point::origin();
-    let mut areasum = 0.0;
+    let mut areasum = real!(0.0);
 
     for idx in indices {
         let triangle = Triangle::new(
@@ -55,7 +55,7 @@ pub fn trimesh_area_and_center_of_mass(
         areasum += area;
     }
 
-    if areasum == 0.0 {
+    if areasum == real!(0.0) {
         (areasum, res)
     } else {
         (areasum, res / areasum)

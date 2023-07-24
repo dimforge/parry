@@ -16,7 +16,7 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM, real};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 use std::sync::Arc;
@@ -89,7 +89,7 @@ impl VHACD {
         let mut result = Self {
             // raycast_mesh: None,
             voxel_parts: Vec::new(),
-            volume_ch0: 0.0,
+            volume_ch0: real!(0.0),
             max_concavity: -Real::MAX,
         };
 
@@ -111,19 +111,19 @@ impl VHACD {
             let e = eigenvalues.y * eigenvalues.y;
             let dir = Vector::x();
 
-            if e == 0.0 {
-                (dir, 0.0)
+            if e == real!(0.0) {
+                (dir, real!(0.0))
             } else {
-                (dir, 1.0 - vx / e)
+                (dir, real!(1.0) - vx / e)
             }
         } else {
             let e = eigenvalues.x * eigenvalues.x;
             let dir = Vector::y();
 
-            if e == 0.0 {
-                (dir, 0.0)
+            if e == real!(0.0) {
+                (dir, real!(0.0))
             } else {
-                (dir, 1.0 - vy / e)
+                (dir, real!(1.0) - vy / e)
             }
         }
     }
@@ -138,28 +138,28 @@ impl VHACD {
             let e = eigenvalues.y * eigenvalues.y + eigenvalues.z * eigenvalues.z;
             let dir = Vector::x();
 
-            if e == 0.0 {
-                (dir, 0.0)
+            if e == real!(0.0) {
+                (dir, real!(0.0))
             } else {
-                (dir, 1.0 - vx / e)
+                (dir, real!(1.0) - vx / e)
             }
         } else if vy < vx && vy < vz {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.z * eigenvalues.z;
             let dir = Vector::y();
 
-            if e == 0.0 {
-                (dir, 0.0)
+            if e == real!(0.0) {
+                (dir, real!(0.0))
             } else {
-                (dir, 1.0 - vy / e)
+                (dir, real!(1.0) - vy / e)
             }
         } else {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.y * eigenvalues.y;
             let dir = Vector::z();
 
-            if e == 0.0 {
-                (dir, 0.0)
+            if e == real!(0.0) {
+                (dir, real!(0.0))
             } else {
-                (dir, 1.0 - vz / e)
+                (dir, real!(1.0) - vz / e)
             }
         }
     }
@@ -179,9 +179,9 @@ impl VHACD {
 
             for i in (i0..=i1).step_by(downsampling as usize) {
                 let plane = CutPlane {
-                    abc: Vector::ith(dim, 1.0),
+                    abc: Vector::ith(dim, real!(1.0)),
                     axis: dim as u8,
-                    d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
+                    d: -(vset.origin[dim] + (i as Real + real!(0.5)) * vset.scale),
                     index: i,
                 };
 
@@ -205,9 +205,9 @@ impl VHACD {
 
         for i in i0..=i1 {
             let plane = CutPlane {
-                abc: Vector::ith(best_id, 1.0),
+                abc: Vector::ith(best_id, real!(1.0)),
                 axis: best_plane.axis,
-                d: -(vset.origin[best_id] + (i as Real + 0.5) * vset.scale),
+                d: -(vset.origin[best_id] + (i as Real + real!(0.5)) * vset.scale),
                 index: i,
             };
             planes.push(plane);
@@ -396,7 +396,7 @@ impl VHACD {
         input_parts.push(std::mem::replace(&mut voxels, VoxelSet::new()));
 
         let mut first_iteration = true;
-        self.volume_ch0 = 1.0;
+        self.volume_ch0 = real!(1.0);
 
         // Compute the decomposition depth based on the number of convex hulls being requested.
         let mut hull_count = 2;
@@ -581,9 +581,9 @@ fn clip_mesh(
     for pt in points {
         let d = plane.abc.dot(&pt.coords) + plane.d;
 
-        if d > 0.0 {
+        if d > real!(0.0) {
             positive_part.push(*pt);
-        } else if d < 0.0 {
+        } else if d < real!(0.0) {
             negative_part.push(*pt);
         } else {
             positive_part.push(*pt);
@@ -615,7 +615,7 @@ fn compute_volume(polygon: &[Point<Real>]) -> Real {
     if !polygon.is_empty() {
         crate::mass_properties::details::convex_polygon_area_and_center_of_mass(&polygon).0
     } else {
-        0.0
+        real!(0.0)
     }
 }
 
@@ -625,6 +625,6 @@ fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<[u32; DIM]>)) -> Real {
         crate::mass_properties::details::trimesh_signed_volume_and_center_of_mass(&mesh.0, &mesh.1)
             .0
     } else {
-        0.0
+        real!(0.0)
     }
 }

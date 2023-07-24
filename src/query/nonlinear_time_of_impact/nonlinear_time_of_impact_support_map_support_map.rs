@@ -2,7 +2,7 @@
 use na::ComplexField; // for .abs()
 use na::{RealField, Unit};
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::query::{self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, TOIStatus, TOI};
 use crate::shape::{Shape, SupportMap};
 use crate::utils::WCross;
@@ -177,7 +177,7 @@ where
                             let pt1 = sm1.local_support_point_toward(&normal1);
                             let pt2 = sm2.support_point_toward(&pos12, &-normal1);
 
-                            if (pt2 - pt1).dot(&normal1) > 0.0 {
+                            if (pt2 - pt1).dot(&normal1) > real!(0.0) {
                                 // We found an axis that separate both objects at the end configuration.
                                 return None;
                             }
@@ -214,7 +214,7 @@ where
             sum_linear_thickness,
             max_angular_thickness,
         } => {
-            if (result.toi - start_time).abs() < 1.0e-5 {
+            if (result.toi - start_time).abs() < real!(1.0e-5) {
                 handle_penetration_at_start_time(
                     dispatcher,
                     motion1,
@@ -288,14 +288,14 @@ where
         .min(linear_time_increment)
         // This is needed to avoid some tunnelling. But this is
         // kind of "brute force" so we should find something better.
-        .min((end_time - start_time) / 10.0);
+        .min((end_time - start_time) / real!(10.0));
 
     // println!(
     //     "Lin time incr: {}, ang time incr: {}",
     //     linear_time_increment, angular_time_increment
     // );
 
-    if time_increment == 0.0 {
+    if time_increment == real!(0.0) {
         time_increment = end_time;
     }
 
@@ -324,7 +324,7 @@ where
             let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time * r2);
             let vel12 = vel2 - vel1;
             let normal_vel = -vel12.dot(&(pos1_at_next_time * contact.normal1));
-            let ccd_threshold = if contact.dist <= 0.0 {
+            let ccd_threshold = if contact.dist <= real!(0.0) {
                 sum_linear_thickness
             } else {
                 contact.dist + sum_linear_thickness
@@ -360,7 +360,7 @@ where
                     status: TOIStatus::Converged,
                 };
 
-                if contact.dist > 0.0 {
+                if contact.dist > real!(0.0) {
                     // This is an acceptable impact. Now determine when
                     // the impacts happens exactly.
                     let curr_range = BisectionRange {
@@ -418,7 +418,7 @@ where
 
         // If there is no angular velocity, we don't have to
         // continue because we can't rotate the object.
-        if inv_dangvel == 0.0 {
+        if inv_dangvel == real!(0.0) {
             return None;
         }
 
@@ -462,14 +462,14 @@ where
     loop {
         // println!("Bisection dist: {}, range: {:?}", dist, range);
         // TODO: use the secant method too for finding the next iterate and converge more quickly.
-        if dist < 0.0 {
+        if dist < real!(0.0) {
             // Too close or penetration, go back in time.
             range.max_t = range.curr_t;
-            range.curr_t = (range.min_t + range.curr_t) * 0.5;
+            range.curr_t = (range.min_t + range.curr_t) * real!(0.5);
         } else if dist > rel_tol {
             // Too far apart, go forward in time.
             range.min_t = range.curr_t;
-            range.curr_t = (range.curr_t + range.max_t) * 0.5;
+            range.curr_t = (range.curr_t + range.max_t) * real!(0.5);
         } else {
             // Reached tolerance, break.
             // println!("Bisection, break on dist tolerance.");

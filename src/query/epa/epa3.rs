@@ -1,6 +1,6 @@
 //! Three-dimensional penetration depth queries using the Expanding Polytope Algorithm.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::query::PointQueryWithLocation;
 use crate::shape::{SupportMap, Triangle, TrianglePointLocation};
@@ -101,7 +101,7 @@ impl Face {
             TrianglePointLocation::OnFace(_, bcoords) => {
                 (Self::new_with_proj(vertices, bcoords, pts, adj), true)
             }
-            _ => (Self::new_with_proj(vertices, [0.0; 3], pts, adj), false),
+            _ => (Self::new_with_proj(vertices, [real!(0.0); 3], pts, adj), false),
         }
     }
 
@@ -221,7 +221,7 @@ impl EPA {
         G2: SupportMap,
     {
         let _eps = crate::math::DEFAULT_EPSILON;
-        let _eps_tol = _eps * 100.0;
+        let _eps_tol = _eps * real!(100.0);
 
         self.reset();
 
@@ -234,14 +234,14 @@ impl EPA {
 
         if simplex.dimension() == 0 {
             let mut n: Vector<Real> = na::zero();
-            n[1] = 1.0;
+            n[1] = real!(1.0);
             return Some((Point::origin(), Point::origin(), Unit::new_unchecked(n)));
         } else if simplex.dimension() == 3 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
             let dp3 = self.vertices[3] - self.vertices[0];
 
-            if dp1.cross(&dp2).dot(&dp3) > 0.0 {
+            if dp1.cross(&dp2).dot(&dp3) > real!(0.0) {
                 self.vertices.swap(1, 2)
             }
 
@@ -308,8 +308,8 @@ impl EPA {
             self.faces.push(face1);
             self.faces.push(face2);
 
-            self.heap.push(FaceId::new(0, 0.0)?);
-            self.heap.push(FaceId::new(1, 0.0)?);
+            self.heap.push(FaceId::new(0, real!(0.0))?);
+            self.heap.push(FaceId::new(1, real!(0.0))?);
         }
 
         let mut niter = 0;

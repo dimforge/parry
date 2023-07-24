@@ -1,5 +1,5 @@
 //! Support mapping based HalfSpace shape.
-use crate::math::{Real, Vector};
+use crate::math::{Real, Vector, real};
 use na::Unit;
 
 #[cfg(feature = "rkyv")]
@@ -32,6 +32,6 @@ impl HalfSpace {
     /// Returns `None` if `self.normal` scaled by `scale` is zero (the scaled half-space
     /// degenerates to a single point).
     pub fn scaled(self, scale: &Vector<Real>) -> Option<Self> {
-        Unit::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
+        Unit::try_new(self.normal.component_mul(scale), real!(0.0)).map(|normal| Self { normal })
     }
 }

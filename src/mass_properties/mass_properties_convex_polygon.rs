@@ -1,7 +1,7 @@
 #![allow(dead_code)] // TODO: remove this
 
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -9,11 +9,11 @@ impl MassProperties {
     pub fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
-        if area == 0.0 {
-            return MassProperties::new(com, 0.0, 0.0);
+        if area == real!(0.0) {
+            return MassProperties::new(com, real!(0.0), real!(0.0));
         }
 
-        let mut itot = 0.0;
+        let mut itot = real!(0.0);
 
         let mut iterpeek = vertices.iter().peekable();
         let first_element = *iterpeek.peek().unwrap(); // store first element to close the cycle in the end with unwrap_or
@@ -37,7 +37,7 @@ pub fn convex_polygon_area_and_center_of_mass(
         .fold(Point::origin(), |e1, e2| e1 + e2.coords)
         / convex_polygon.len() as Real;
     let mut res = Point::origin();
-    let mut areasum = 0.0;
+    let mut areasum = real!(0.0);
 
     let mut iterpeek = convex_polygon.iter().peekable();
     let first_element = *iterpeek.peek().unwrap(); // Stores first element to close the cycle in the end with unwrap_or.
@@ -54,7 +54,7 @@ pub fn convex_polygon_area_and_center_of_mass(
         areasum += area;
     }
 
-    if areasum == 0.0 {
+    if areasum == real!(0.0) {
         (areasum, geometric_center)
     } else {
         (areasum, res / areasum)

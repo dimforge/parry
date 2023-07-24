@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Isometry, Real, real};
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
@@ -53,7 +53,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     // We use very small thresholds for the manifold update because something to high would
     // cause numerical drifts with the effect of introducing bumps in
     // what should have been smooth rolling motions.
-    if manifold.try_update_contacts_eps(&pos12, crate::utils::COS_1_DEGREES, 1.0e-6) {
+    if manifold.try_update_contacts_eps(&pos12, crate::utils::COS_1_DEGREES, real!(1.0e-6)) {
         return;
     }
 
@@ -109,7 +109,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
             }
 
             // Adjust points to take the radius into account.
-            if border_radius1 != 0.0 || border_radius2 != 0.0 {
+            if border_radius1 != real!(0.0) || border_radius2 != real!(0.0) {
                 for contact in &mut manifold.points {
                     contact.local_p1 += *local_n1 * border_radius1;
                     contact.local_p2 += *local_n2 * border_radius2;
@@ -126,7 +126,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         }
         _ => {
             // Reset the cached direction.
-            manifold.local_n1.fill(0.0);
+            manifold.local_n1.fill(real!(0.0));
         }
     }
 

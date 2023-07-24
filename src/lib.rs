@@ -73,14 +73,45 @@ pub mod shape;
 pub mod transformation;
 pub mod utils;
 
+#[macro_use]
 mod real {
+    /// The scalar type used throughout this crate.
+    #[cfg(feature = "i32f32")]
+    pub type Real = simba::scalar::FixedI32F32;
+
+    #[cfg(feature = "i32f32")]
+    /// Create literal of the scalar that is used throughout this crate.
+    macro_rules! real {
+        ($lit:literal) => {
+            simba::scalar::FixedI32F32::lit(stringify!($lit))
+        };
+    }
+
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f64")]
     pub type Real = f64;
 
+    #[cfg(feature = "f64")]
+    /// Create literal of the scalar that is used throughout this crate.
+    macro_rules! real {
+        ($lit:literal) => {
+            $lit as f64
+        };
+    }
+
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f32")]
     pub type Real = f32;
+
+    #[cfg(feature = "f32")]
+    /// Create literal of the scalar that is used throughout this crate.
+    macro_rules! real {
+        ($lit:literal) => {
+            $lit as f32
+        };
+    }
+
+    pub(crate) use real;
 }
 
 /// Compilation flags dependent aliases for mathematical types.
@@ -240,6 +271,10 @@ mod simd {
     /// A SIMD float with SIMD_WIDTH lanes.
     #[cfg(feature = "f64")]
     pub type SimdReal = simba::simd::AutoF64x4;
+
+    /// A SIMD float with SIMD_WIDTH lanes.
+    #[cfg(feature = "i32f32")]
+    pub type SimdReal = simba::simd::AutoFixedI32F32x4;
 
     /// A SIMD bool with SIMD_WIDTH lanes.
     pub type SimdBool = AutoBoolx4;

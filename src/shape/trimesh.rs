@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::partitioning::QbvhStorage;
 use crate::partitioning::{GenericQbvh, Qbvh};
 use crate::shape::trimesh_storage::TriMeshStorage;
@@ -540,16 +540,16 @@ impl TriMesh {
         if let Some(pn) = &mut self.pseudo_normals {
             pn.vertices_pseudo_normal.iter_mut().for_each(|n| {
                 n.component_mul_assign(scale);
-                let _ = n.try_normalize_mut(0.0);
+                let _ = n.try_normalize_mut(real!(0.0));
             });
             pn.edges_pseudo_normal.iter_mut().for_each(|n| {
                 n[0].component_mul_assign(scale);
                 n[1].component_mul_assign(scale);
                 n[2].component_mul_assign(scale);
 
-                let _ = n[0].try_normalize_mut(0.0);
-                let _ = n[1].try_normalize_mut(0.0);
-                let _ = n[2].try_normalize_mut(0.0);
+                let _ = n[0].try_normalize_mut(real!(0.0));
+                let _ = n[1].try_normalize_mut(real!(0.0));
+                let _ = n[2].try_normalize_mut(real!(0.0));
             });
         }
 
@@ -610,7 +610,7 @@ impl TriMesh {
 
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        self.qbvh.clear_and_rebuild(data, 0.0);
+        self.qbvh.clear_and_rebuild(data, real!(0.0));
     }
 
     /// Reverse the orientation of the triangle mesh.

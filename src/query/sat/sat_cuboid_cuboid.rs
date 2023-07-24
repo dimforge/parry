@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector, DIM};
+use crate::math::{Isometry, Real, Vector, DIM, real};
 use crate::shape::{Cuboid, SupportMap};
 #[cfg(not(feature = "std"))]
 use na::RealField; // For .copysign()
@@ -11,7 +11,7 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     pos12: &Isometry<Real>,
     axis1: &Vector<Real>,
 ) -> (Real, Vector<Real>) {
-    let signum = (1.0 as Real).copysign(pos12.translation.vector.dot(axis1));
+    let signum = real!(1.0).copysign(pos12.translation.vector.dot(axis1));
     let axis1 = axis1 * signum;
     let axis2 = pos12.inverse_transform_vector(&-axis1);
     let local_pt1 = cuboid1.local_support_point(&axis1);
@@ -42,17 +42,17 @@ pub fn cuboid_cuboid_find_local_separating_edge_twoway(
     // We have 3 * 3 = 9 axes to test.
     let axes = [
         // Vector::{x, y ,z}().cross(y2)
-        Vector::new(0.0, -x2.z, x2.y),
-        Vector::new(x2.z, 0.0, -x2.x),
-        Vector::new(-x2.y, x2.x, 0.0),
+        Vector::new(real!(0.0), -x2.z, x2.y),
+        Vector::new(x2.z, real!(0.0), -x2.x),
+        Vector::new(-x2.y, x2.x, real!(0.0)),
         // Vector::{x, y ,z}().cross(y2)
-        Vector::new(0.0, -y2.z, y2.y),
-        Vector::new(y2.z, 0.0, -y2.x),
-        Vector::new(-y2.y, y2.x, 0.0),
+        Vector::new(real!(0.0), -y2.z, y2.y),
+        Vector::new(y2.z, real!(0.0), -y2.x),
+        Vector::new(-y2.y, y2.x, real!(0.0)),
         // Vector::{x, y ,z}().cross(y2)
-        Vector::new(0.0, -z2.z, z2.y),
-        Vector::new(z2.z, 0.0, -z2.x),
-        Vector::new(-z2.y, z2.x, 0.0),
+        Vector::new(real!(0.0), -z2.z, z2.y),
+        Vector::new(z2.z, real!(0.0), -z2.x),
+        Vector::new(-z2.y, z2.x, real!(0.0)),
     ];
 
     for axis1 in &axes {
@@ -87,7 +87,7 @@ pub fn cuboid_cuboid_find_local_separating_normal_oneway(
     let mut best_dir = Vector::zeros();
 
     for i in 0..DIM {
-        let sign = (1.0 as Real).copysign(pos12.translation.vector[i]);
+        let sign = real!(1.0).copysign(pos12.translation.vector[i]);
         let axis1 = Vector::ith(i, sign);
         let axis2 = pos12.inverse_transform_vector(&-axis1);
         let local_pt2 = cuboid2.local_support_point(&axis2);

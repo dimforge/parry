@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Real, Vector, real};
 use crate::query::sat;
 use crate::shape::{Segment, SupportMap, Triangle};
 use na::Unit;
@@ -54,7 +54,7 @@ pub fn segment_triangle_find_local_separating_edge_twoway(
     let mut sep_dir = axes1[0];
 
     for axis1 in &axes1 {
-        if let Some(axis1) = Unit::try_new(*axis1, 0.0) {
+        if let Some(axis1) = Unit::try_new(*axis1, real!(0.0)) {
             let sep =
                 sat::support_map_support_map_compute_separation(segment1, triangle2, pos12, &axis1);
 

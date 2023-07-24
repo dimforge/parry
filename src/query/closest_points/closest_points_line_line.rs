@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real, Vector, real};
 use crate::na::{Point as SPoint, SVector};
 
 /// Closest points between two lines.
@@ -44,13 +44,13 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
     let f = dir2.dot(&r);
 
     if a <= eps && e <= eps {
-        (0.0, 0.0, false)
+        (real!(0.0), real!(0.0), false)
     } else if a <= eps {
-        (0.0, f / e, false)
+        (real!(0.0), f / e, false)
     } else {
         let c = dir1.dot(&r);
         if e <= eps {
-            (-c / a, 0.0, false)
+            (-c / a, real!(0.0), false)
         } else {
             let b = dir1.dot(dir2);
             let ae = a * e;
@@ -63,7 +63,7 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
             let s = if !parallel {
                 (b * f - c * e) / denom
             } else {
-                0.0
+                real!(0.0)
             };
 
             (s, (b * s + f) / e, parallel)

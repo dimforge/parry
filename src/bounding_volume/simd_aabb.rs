@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
+use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH, real};
 use crate::query::SimdRay;
 use crate::utils::{self, IsometryOps};
 use num::{One, Zero};
@@ -143,7 +143,7 @@ impl SimdAabb {
 
     /// The half-extents of all the Aabbs represented by `self``.
     pub fn half_extents(&self) -> Vector<SimdReal> {
-        (self.maxs - self.mins) * SimdReal::splat(0.5)
+        (self.maxs - self.mins) * SimdReal::splat(real!(0.5))
     }
 
     /// The radius of all the Aabbs represented by `self``.

@@ -1,15 +1,14 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM, TWO_DIM};
+use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM, TWO_DIM, real};
 use crate::shape::{Cuboid, SupportMap};
 use crate::utils::IsometryOps;
 use arrayvec::ArrayVec;
 use na;
 use num::Bounded;
 
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
+use na::ComplexField; // for .abs() and .sin_cos()
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -176,7 +175,7 @@ impl Aabb {
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
         let center = self.center();
-        let radius = na::distance(&self.mins, &self.maxs) * 0.5;
+        let radius = na::distance(&self.mins, &self.maxs) * real!(0.5);
         BoundingSphere::new(center, radius)
     }
 
@@ -455,7 +454,7 @@ impl Aabb {
             angvel,
             point: na::Vector2::new(dpos.dot(&tangents[0]), dpos.dot(&tangents[1])),
             plane: Vector::x(),
-            bias: 0.0,
+            bias: real!(0.0),
         };
 
         // Check the 8 planar faces of the Aabb.
@@ -482,8 +481,8 @@ impl Aabb {
             crate::utils::find_root_intervals_to(
                 &distance_fn,
                 interval,
-                1.0e-5,
-                1.0e-5,
+                real!(1.0e-5),
+                real!(1.0e-5),
                 100,
                 &mut roots,
                 &mut candidates,
@@ -538,14 +537,14 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn loosen(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= real!(0.0), "The loosening margin must be positive.");
         self.mins = self.mins + Vector::repeat(-amount);
         self.maxs = self.maxs + Vector::repeat(amount);
     }
 
     #[inline]
     fn loosened(&self, amount: Real) -> Aabb {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= real!(0.0), "The loosening margin must be positive.");
         Aabb {
             mins: self.mins + Vector::repeat(-amount),
             maxs: self.maxs + Vector::repeat(amount),
@@ -554,7 +553,7 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn tighten(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= real!(0.0), "The tightening margin must be positive.");
         self.mins = self.mins + Vector::repeat(amount);
         self.maxs = self.maxs + Vector::repeat(-amount);
         assert!(
@@ -565,7 +564,7 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn tightened(&self, amount: Real) -> Aabb {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= real!(0.0), "The tightening margin must be positive.");
 
         Aabb::new(
             self.mins + Vector::repeat(amount),

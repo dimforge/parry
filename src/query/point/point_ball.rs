@@ -1,6 +1,6 @@
 use na::{self, ComplexField};
 
-use crate::math::{Point, Real};
+use crate::math::{Point, Real, real};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Ball, FeatureId};
 
@@ -32,8 +32,8 @@ impl PointQuery for Ball {
     fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
         let dist = pt.coords.norm() - self.radius;
 
-        if solid && dist < 0.0 {
-            0.0
+        if solid && dist < real!(0.0) {
+            real!(0.0)
         } else {
             dist
         }

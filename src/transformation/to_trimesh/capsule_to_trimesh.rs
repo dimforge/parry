@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::{Real, real};
 use crate::shape::Capsule;
 use crate::transformation::utils;
 use na::{self, Point3};
@@ -10,8 +10,8 @@ impl Capsule {
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
     ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
-        let diameter = self.radius * 2.0;
-        let height = self.half_height() * 2.0;
+        let diameter = self.radius * real!(2.0);
+        let height = self.half_height() * real!(2.0);
         let (vtx, idx) = canonical_capsule(diameter, height, ntheta_subdiv, nphi_subdiv);
         (utils::transformed(vtx, self.canonical_transform()), idx)
     }
@@ -32,7 +32,7 @@ pub(crate) fn canonical_capsule(
     let mut top_coords = coords;
     let mut top_indices = indices;
 
-    let half_height = cylinder_height * 0.5;
+    let half_height = cylinder_height * real!(0.5);
 
     // shift the top
     for coord in top_coords.iter_mut() {

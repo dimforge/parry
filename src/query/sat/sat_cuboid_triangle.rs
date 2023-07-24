@@ -2,6 +2,8 @@
 use crate::approx::AbsDiffEq;
 use crate::math::{Isometry, Real, Vector};
 #[cfg(feature = "dim3")]
+use crate::math::real;
+#[cfg(feature = "dim3")]
 use crate::query::sat;
 #[cfg(feature = "dim2")]
 use crate::query::sat::support_map_support_map_compute_separation;
@@ -33,17 +35,17 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
     // We have 3 * 3 = 9 axes to test.
     let axes = [
         // Vector::{x, y ,z}().cross(ab)
-        Vector::new(0.0, -ab.z, ab.y),
-        Vector::new(ab.z, 0.0, -ab.x),
-        Vector::new(-ab.y, ab.x, 0.0),
+        Vector::new(real!(0.0), -ab.z, ab.y),
+        Vector::new(ab.z, real!(0.0), -ab.x),
+        Vector::new(-ab.y, ab.x, real!(0.0)),
         // Vector::{x, y ,z}().cross(bc)
-        Vector::new(0.0, -bc.z, bc.y),
-        Vector::new(bc.z, 0.0, -bc.x),
-        Vector::new(-bc.y, bc.x, 0.0),
+        Vector::new(real!(0.0), -bc.z, bc.y),
+        Vector::new(bc.z, real!(0.0), -bc.x),
+        Vector::new(-bc.y, bc.x, real!(0.0)),
         // Vector::{x, y ,z}().cross(ca)
-        Vector::new(0.0, -ca.z, ca.y),
-        Vector::new(ca.z, 0.0, -ca.x),
-        Vector::new(-ca.y, ca.x, 0.0),
+        Vector::new(real!(0.0), -ca.z, ca.y),
+        Vector::new(ca.z, real!(0.0), -ca.x),
+        Vector::new(-ca.y, ca.x, real!(0.0)),
     ];
 
     let tri_dots = [
