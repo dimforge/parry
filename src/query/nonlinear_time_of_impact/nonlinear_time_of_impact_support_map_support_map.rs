@@ -1,6 +1,6 @@
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::ComplexField; // for .abs()
-use na::{RealField, Unit};
+use na::Unit;
 
 use crate::math::{Point, Real, Vector, real};
 use crate::query::{self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, TOIStatus, TOI};
@@ -39,10 +39,11 @@ impl NonlinearTOIMode {
         S1: ?Sized + Shape,
         S2: ?Sized + Shape,
     {
+        use na::RealField;
+
         let sum_linear_thickness = shape1.ccd_thickness() + shape2.ccd_thickness();
-        let max_angular_thickness = shape1
-            .ccd_angular_thickness()
-            .max(shape2.ccd_angular_thickness());
+        let max_angular_thickness = RealField::max(shape1
+            .ccd_angular_thickness(), shape2.ccd_angular_thickness());
 
         NonlinearTOIMode::DirectionalTOI {
             sum_linear_thickness,
@@ -279,7 +280,7 @@ where
     let dangvel = (motion2.angvel - motion1.angvel).norm();
     let inv_dangvel = crate::utils::inv(dangvel);
     let linear_increment = sum_linear_thickness;
-    let angular_increment = Real::pi() - max_angular_thickness;
+    let angular_increment = <Real as na::RealField>::pi() - max_angular_thickness;
 
     let linear_time_increment =
         linear_increment * crate::utils::inv((motion2.linvel - motion1.linvel).norm());

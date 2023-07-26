@@ -1,6 +1,8 @@
 use crate::mass_properties::MassProperties;
 use crate::math::{Matrix, Point, Real, DIM, real};
 use crate::shape::Tetrahedron;
+#[cfg(feature = "i32f32")]
+use crate::na::ComplexField; // for .signum()
 use num::Zero;
 
 impl MassProperties {

@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Real, Vector, DIM, real};
 use crate::shape::{Cuboid, SupportMap};
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::RealField; // For .copysign()
 
 /// Computes the separation of two cuboids along `axis1`.

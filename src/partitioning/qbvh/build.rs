@@ -3,6 +3,8 @@ use crate::math::Vector;
 use crate::math::{Point, Real, real};
 use crate::query::SplitResult;
 use crate::simd::SimdReal;
+#[cfg(feature = "i32f32")]
+use crate::na::ComplexField;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;

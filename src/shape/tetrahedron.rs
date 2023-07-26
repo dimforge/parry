@@ -6,7 +6,7 @@ use crate::utils;
 use na::Matrix3;
 use std::mem;
 
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::ComplexField; // for .abs()
 
 #[cfg(feature = "rkyv")]

@@ -7,7 +7,7 @@ use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 use na::Unit;
 
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::RealField; // for .copysign()
 
 #[cfg(feature = "rkyv")]

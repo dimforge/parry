@@ -6,7 +6,7 @@ use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
 
 use crate::utils::DefaultStorage;
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::ComplexField; // for .abs()
 
 #[derive(Clone)]

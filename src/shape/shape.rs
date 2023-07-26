@@ -900,12 +900,12 @@ impl Shape for Compound {
     fn ccd_thickness(&self) -> Real {
         self.shapes()
             .iter()
-            .fold(Real::MAX, |curr, (_, s)| curr.min(s.ccd_thickness()))
+            .fold(Real::MAX, |curr, (_, s)| RealField::min(curr, s.ccd_thickness()))
     }
 
     fn ccd_angular_thickness(&self) -> Real {
         self.shapes().iter().fold(Real::MAX, |curr, (_, s)| {
-            curr.max(s.ccd_angular_thickness())
+            RealField::max(curr, s.ccd_angular_thickness())
         })
     }
 
@@ -1271,7 +1271,7 @@ impl Shape for Cone {
         let apex_half_angle = self.radius.atan2(self.half_height);
         assert!(apex_half_angle >= real!(0.0));
         let basis_angle = Real::frac_pi_2() - apex_half_angle;
-        basis_angle.min(apex_half_angle * real!(2.0))
+        RealField::min(basis_angle, apex_half_angle * real!(2.0))
     }
 
     fn as_support_map(&self) -> Option<&dyn SupportMap> {

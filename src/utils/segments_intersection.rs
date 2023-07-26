@@ -3,7 +3,7 @@ use na::Point2;
 use crate::math::{Real, real};
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::ComplexField;
 
 /// Intersection between two segments.

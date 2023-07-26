@@ -10,7 +10,7 @@ use {
     approx::AbsDiffEq,
 };
 
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::{ComplexField, RealField}; // for .abs() and .copysign()
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.

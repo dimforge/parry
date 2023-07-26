@@ -2,6 +2,9 @@
 use either::Either;
 use na::Unit;
 
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
+use na::ComplexField; // for .abs()
+
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::SupportMap;
 

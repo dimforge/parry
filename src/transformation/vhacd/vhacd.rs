@@ -21,6 +21,9 @@ use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 use std::sync::Arc;
 
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
+use na::ComplexField; // for .abs()
+
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
 #[cfg(feature = "dim3")]

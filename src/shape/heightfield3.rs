@@ -14,7 +14,7 @@ use crate::shape::{FeatureId, Triangle};
 use crate::utils::Array2;
 use na::Point3;
 
-#[cfg(not(feature = "std"))]
+#[cfg(any(not(feature = "std"), feature = "i32f32"))]
 use na::ComplexField;
 
 bitflags! {
