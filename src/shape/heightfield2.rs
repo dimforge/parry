@@ -189,7 +189,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
 
     /// Returns a scaled version of this heightfield.
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.set_scale(self.scale.component_mul(&scale));
+        self.set_scale(self.scale.component_mul(scale));
         self
     }
 
@@ -257,7 +257,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let inter = crate::query::details::closest_points_line_line_parameters(
             &seg.a,
             &seg.scaled_direction(),
-            &pt,
+            pt,
             &Vector::y(),
         );
         Some(seg.a.y + inter.1)

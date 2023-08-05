@@ -227,17 +227,17 @@ impl SharedShape {
         params: &VHACDParameters,
     ) -> Self {
         let mut parts = vec![];
-        let decomp = VHACD::decompose(params, &vertices, &indices, true);
+        let decomp = VHACD::decompose(params, vertices, indices, true);
 
         #[cfg(feature = "dim2")]
-        for vertices in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+        for vertices in decomp.compute_exact_convex_hulls(vertices, indices) {
             if let Some(convex) = Self::convex_polyline(vertices) {
                 parts.push((Isometry::identity(), convex));
             }
         }
 
         #[cfg(feature = "dim3")]
-        for (vertices, indices) in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+        for (vertices, indices) in decomp.compute_exact_convex_hulls(vertices, indices) {
             if let Some(convex) = Self::convex_mesh(vertices, &indices) {
                 parts.push((Isometry::identity(), convex));
             }
@@ -255,17 +255,17 @@ impl SharedShape {
         border_radius: Real,
     ) -> Self {
         let mut parts = vec![];
-        let decomp = VHACD::decompose(params, &vertices, &indices, true);
+        let decomp = VHACD::decompose(params, vertices, indices, true);
 
         #[cfg(feature = "dim2")]
-        for vertices in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+        for vertices in decomp.compute_exact_convex_hulls(vertices, indices) {
             if let Some(convex) = Self::round_convex_polyline(vertices, border_radius) {
                 parts.push((Isometry::identity(), convex));
             }
         }
 
         #[cfg(feature = "dim3")]
-        for (vertices, indices) in decomp.compute_exact_convex_hulls(&vertices, &indices) {
+        for (vertices, indices) in decomp.compute_exact_convex_hulls(vertices, indices) {
             if let Some(convex) = Self::round_convex_mesh(vertices, &indices, border_radius) {
                 parts.push((Isometry::identity(), convex));
             }

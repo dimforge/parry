@@ -120,7 +120,7 @@ impl Capsule {
             // The scaled shape is not a capsule.
             let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
                 vtx,
             )?))
@@ -150,7 +150,7 @@ impl Capsule {
             // The scaled shape is not a capsule.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))

@@ -65,7 +65,7 @@ where
         g1: &'a G1,
         g2: &'a dyn Shape,
     ) -> IntersectionCompositeShapeShapeVisitor<'a, D, G1> {
-        let ls_aabb2 = g2.compute_aabb(&pos12);
+        let ls_aabb2 = g2.compute_aabb(pos12);
 
         IntersectionCompositeShapeShapeVisitor {
             dispatcher,
@@ -142,7 +142,7 @@ where
         g1: &'a G1,
         g2: &'a dyn Shape,
     ) -> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1> {
-        let ls_aabb2 = g2.compute_aabb(&pos12);
+        let ls_aabb2 = g2.compute_aabb(pos12);
 
         IntersectionCompositeShapeShapeBestFirstVisitor {
             dispatcher,

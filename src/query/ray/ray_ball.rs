@@ -84,7 +84,7 @@ pub fn ray_toi_and_normal_with_ball(
     ray: &Ray,
     solid: bool,
 ) -> (bool, Option<RayIntersection>) {
-    let (inside, inter) = ray_toi_with_ball(&center, radius, ray, solid);
+    let (inside, inter) = ray_toi_with_ball(center, radius, ray, solid);
 
     (
         inside,

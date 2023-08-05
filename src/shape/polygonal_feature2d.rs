@@ -89,7 +89,7 @@ impl PolygonalFeature {
         let v2_1 = pos12 * vertex2.vertices[0];
         let tangent1 = face1.vertices[1] - face1.vertices[0];
         let normal1 = Vector::new(-tangent1.y, tangent1.x);
-        let denom = -normal1.dot(&sep_axis1);
+        let denom = -normal1.dot(sep_axis1);
         let dist = (face1.vertices[0] - v2_1).dot(&normal1) / denom;
         let local_p2 = v2_1;
         let local_p1 = v2_1 - dist * normal1;

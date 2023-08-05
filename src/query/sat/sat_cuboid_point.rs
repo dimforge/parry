@@ -22,7 +22,7 @@ pub fn point_cuboid_find_local_separating_normal_oneway(
             -normal1
         };
 
-        let pt2 = shape2.support_point_toward(&pos12, &-axis1);
+        let pt2 = shape2.support_point_toward(pos12, &-axis1);
         let separation = (pt2 - point1).dot(&axis1);
 
         if separation > best_separation {

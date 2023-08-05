@@ -69,7 +69,7 @@ where
 {
     time_of_impact_halfspace_support_map(
         &pos12.inverse(),
-        &-pos12.inverse_transform_vector(&vel12),
+        &-pos12.inverse_transform_vector(vel12),
         halfspace,
         other,
         max_toi,

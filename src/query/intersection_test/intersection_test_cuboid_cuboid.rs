@@ -9,7 +9,7 @@ pub fn intersection_test_cuboid_cuboid(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
 ) -> bool {
-    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, &pos12).0;
+    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, pos12).0;
 
     if sep1 > 0.0 {
         return false;
@@ -25,7 +25,7 @@ pub fn intersection_test_cuboid_cuboid(
     return true; // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     {
-        let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, &pos12).0;
+        let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, pos12).0;
         sep3 <= 0.0
     }
 }

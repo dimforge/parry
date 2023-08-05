@@ -158,7 +158,7 @@ impl PolygonalFeature {
                 let edge2 = (vertices2_1[0], vertices2_1[1]);
                 let local_p1 = edge1.0 * bcoords1[0] + edge1.1.coords * bcoords1[1];
                 let local_p2_1 = edge2.0 * bcoords2[0] + edge2.1.coords * bcoords2[1];
-                let dist = (local_p2_1 - local_p1).dot(&sep_axis1);
+                let dist = (local_p2_1 - local_p1).dot(sep_axis1);
 
                 if dist <= prediction {
                     manifold.points.push(TrackedContact::flipped(
@@ -195,7 +195,7 @@ impl PolygonalFeature {
                 pos12.inverse_transform_point(&(clips.0).1),
                 feature_at(face1, (clips.0).2),
                 feature_at(face2, (clips.0).3),
-                ((clips.0).1 - (clips.0).0).dot(&sep_axis1),
+                ((clips.0).1 - (clips.0).0).dot(sep_axis1),
                 flipped,
             ));
 
@@ -204,7 +204,7 @@ impl PolygonalFeature {
                 pos12.inverse_transform_point(&(clips.1).1),
                 feature_at(face1, (clips.1).2),
                 feature_at(face2, (clips.1).3),
-                ((clips.1).1 - (clips.1).0).dot(&sep_axis1),
+                ((clips.1).1 - (clips.1).0).dot(sep_axis1),
                 flipped,
             ));
         }
@@ -273,7 +273,7 @@ impl PolygonalFeature {
         if face2.num_vertices > 2 {
             let normal2_1 =
                 (vertices2_1[2] - vertices2_1[1]).cross(&(vertices2_1[0] - vertices2_1[1]));
-            let denom = normal2_1.dot(&sep_axis1);
+            let denom = normal2_1.dot(sep_axis1);
 
             if !relative_eq!(denom, 0.0) {
                 let last_index2 = face2.num_vertices as usize - 1;
@@ -318,7 +318,7 @@ impl PolygonalFeature {
             let normal1 = (face1.vertices[2] - face1.vertices[1])
                 .cross(&(face1.vertices[0] - face1.vertices[1]));
 
-            let denom = -normal1.dot(&sep_axis1);
+            let denom = -normal1.dot(sep_axis1);
             if !relative_eq!(denom, 0.0) {
                 let last_index1 = face1.num_vertices as usize - 1;
                 'point_loop2: for i in 0..face2.num_vertices as usize {
@@ -382,7 +382,7 @@ impl PolygonalFeature {
                         let edge2 = (vertices2_1[j], vertices2_1[(j + 1) % face2.num_vertices]);
                         let local_p1 = edge1.0 * (1.0 - bcoords.0) + edge1.1.coords * bcoords.0;
                         let local_p2_1 = edge2.0 * (1.0 - bcoords.1) + edge2.1.coords * bcoords.1;
-                        let dist = (local_p2_1 - local_p1).dot(&sep_axis1);
+                        let dist = (local_p2_1 - local_p1).dot(sep_axis1);
 
                         if dist <= prediction {
                             manifold.points.push(TrackedContact::flipped(

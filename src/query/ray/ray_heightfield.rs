@@ -16,7 +16,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
         _: bool,
     ) -> Option<RayIntersection> {
         let aabb = self.local_aabb();
-        let (min_t, mut max_t) = aabb.clip_ray_parameters(&ray)?;
+        let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
 
         if min_t > max_toi {
             return None;
@@ -130,7 +130,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
         use num_traits::Bounded;
 
         let aabb = self.local_aabb();
-        let (min_t, mut max_t) = aabb.clip_ray_parameters(&ray)?;
+        let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
         max_t = max_t.min(max_toi);
         let clip_ray_a = ray.point_at(min_t);
         let mut cell = match self.cell_at_point(&clip_ray_a) {

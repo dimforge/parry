@@ -257,7 +257,7 @@ impl VHACD {
 
                 clip_mesh(
                     #[cfg(feature = "dim2")]
-                    &input_voxels_ch,
+                    input_voxels_ch,
                     #[cfg(feature = "dim3")]
                     &input_voxels_ch.0,
                     plane,
@@ -613,7 +613,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) 
 #[cfg(feature = "dim2")]
 fn compute_volume(polygon: &[Point<Real>]) -> Real {
     if !polygon.is_empty() {
-        crate::mass_properties::details::convex_polygon_area_and_center_of_mass(&polygon).0
+        crate::mass_properties::details::convex_polygon_area_and_center_of_mass(polygon).0
     } else {
         0.0
     }

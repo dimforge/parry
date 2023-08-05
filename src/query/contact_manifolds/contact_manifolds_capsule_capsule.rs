@@ -36,7 +36,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     ContactData: Default + Copy,
 {
     let seg1 = capsule1.segment;
-    let seg2_1 = capsule2.segment.transformed(&pos12);
+    let seg2_1 = capsule2.segment.transformed(pos12);
     let (loc1, loc2) = crate::query::details::closest_points_segment_segment_with_locations_nD(
         (&seg1.a, &seg1.b),
         (&seg2_1.a, &seg2_1.b),
@@ -144,7 +144,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     ContactData: Default + Copy,
 {
     let seg1 = capsule1.segment;
-    let seg2_1 = capsule2.segment.transformed(&pos12);
+    let seg2_1 = capsule2.segment.transformed(pos12);
     let (loc1, loc2) =
         crate::query::closest_points::closest_points_segment_segment_with_locations_nD(
             (&seg1.a, &seg1.b),

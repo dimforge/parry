@@ -297,7 +297,7 @@ where
     Ok(time_of_impact_heightfield_shape(
         dispatcher,
         &pos12.inverse(),
-        &-pos12.inverse_transform_vector(&vel12),
+        &-pos12.inverse_transform_vector(vel12),
         heightfield2,
         g1,
         max_toi,

@@ -53,7 +53,7 @@ impl Polyline {
 
     /// Gets the local axis-aligned bounding box of this polyline.
     pub fn local_aabb(&self) -> &Aabb {
-        &self.qbvh.root_aabb()
+        self.qbvh.root_aabb()
     }
 
     pub(crate) fn qbvh(&self) -> &Qbvh<u32> {

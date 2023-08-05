@@ -93,7 +93,7 @@ impl ConvexPolygon {
             .for_each(|pt| pt.coords.component_mul_assign(scale));
 
         for n in &mut self.normals {
-            *n = Unit::try_new(n.component_mul(&scale), 0.0)?;
+            *n = Unit::try_new(n.component_mul(scale), 0.0)?;
         }
 
         Some(self)
@@ -185,10 +185,10 @@ impl PolygonalFeatureMap for ConvexPolygon {
         let cuboid = crate::shape::Cuboid::new(self.points[2].coords);
         cuboid.local_support_feature(dir, out_feature);
         let mut best_face = 0;
-        let mut max_dot = self.normals[0].dot(&dir);
+        let mut max_dot = self.normals[0].dot(dir);
 
         for i in 1..self.normals.len() {
-            let dot = self.normals[i].dot(&dir);
+            let dot = self.normals[i].dot(dir);
 
             if dot > max_dot {
                 max_dot = dot;

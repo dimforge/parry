@@ -9,7 +9,7 @@ pub fn contact_halfspace_support_map<G: ?Sized + SupportMap>(
     other: &G,
     prediction: Real,
 ) -> Option<Contact> {
-    let deepest = other.support_point_toward(&pos12, &-halfspace.normal);
+    let deepest = other.support_point_toward(pos12, &-halfspace.normal);
     let distance = halfspace.normal.dot(&deepest.coords);
 
     if distance <= prediction {

@@ -16,7 +16,7 @@ pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
         (shape1.as_halfspace(), shape2.as_polygonal_feature_map())
     {
         contact_manifold_halfspace_pfm(
-            &pos12,
+            pos12,
             halfspace1,
             pfm2,
             border_radius2,
