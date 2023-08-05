@@ -272,7 +272,7 @@ impl DeserializableTypedShape {
 
 /// Trait implemented by shapes usable by Rapier.
 pub trait Shape: RayCast + PointQuery + DowncastSync {
-    /// Computes the Aabb of this shape.
+    /// Computes the [`Aabb`] of this shape.
     fn compute_local_aabb(&self) -> Aabb;
     /// Computes the bounding-sphere of this shape.
     fn compute_local_bounding_sphere(&self) -> BoundingSphere;
@@ -281,7 +281,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape>;
 
-    /// Computes the Aabb of this shape with the given position.
+    /// Computes the [`Aabb`] of this shape with the given position.
     fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.compute_local_aabb().transform_by(position)
     }
@@ -346,7 +346,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
         None
     }
 
-    /// Computes the swept Aabb of this shape, i.e., the space it would occupy by moving from
+    /// Computes the swept [`Aabb`] of this shape, i.e., the space it would occupy by moving from
     /// the given start position to the given end position.
     fn compute_swept_aabb(&self, start_pos: &Isometry<Real>, end_pos: &Isometry<Real>) -> Aabb {
         let aabb1 = self.compute_aabb(start_pos);

@@ -4,7 +4,7 @@ use crate::shape::Cuboid;
 use crate::utils::IsometryOps;
 
 impl Cuboid {
-    /// Computes the world-space Aabb of this cuboid, transformed by `pos`.
+    /// Computes the world-space [`Aabb`] of this cuboid, transformed by `pos`.
     #[inline]
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         let center = Point::from(pos.translation.vector);
@@ -13,7 +13,7 @@ impl Cuboid {
         Aabb::from_half_extents(center, ws_half_extents)
     }
 
-    /// Computes the local-space Aabb of this cuboid.
+    /// Computes the local-space [`Aabb`] of this cuboid.
     #[inline]
     pub fn local_aabb(&self) -> Aabb {
         let half_extents = Point::from(self.half_extents);

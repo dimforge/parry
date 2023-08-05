@@ -96,7 +96,7 @@ impl Compound {
         &self.shapes[..]
     }
 
-    /// The Aabb of this compound in its local-space.
+    /// The [`Aabb`] of this compound in its local-space.
     #[inline]
     pub fn local_aabb(&self) -> &Aabb {
         &self.aabb
