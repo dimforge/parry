@@ -10,5 +10,5 @@ parry3d-f64 = { path = "crates/parry3d-f64" }
 parry3d-i32f32 = { path = "crates/parry3d-i32f32" }
 
 #simba = { path = "../simba" }
-#simba = { git = "https://github.com/dimforge/simba", rev = "45a5266eb36ed9d25907e9bf9130cd4ac846a748" }
+simba = { git = "https://github.com/rhzx86/simba", branch = "fixed-point-i32f32" }
 #nalgebra = { git = "https://github.com/dimforge/nalgebra", rev = "0cf79aef0e6155befc3279a3145f1940822b8377" }
