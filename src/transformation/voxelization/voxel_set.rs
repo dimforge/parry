@@ -20,6 +20,7 @@ use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
 use crate::math::{Matrix, Point, Real, Vector, DIM, real};
 use crate::transformation::vhacd::CutPlane;
+use crate::num::FromPrimitive;
 use std::sync::Arc;
 
 #[cfg(feature = "dim2")]
@@ -133,7 +134,7 @@ impl VoxelSet {
 
     /// Computes the total volume of the voxels contained by this set.
     pub fn compute_volume(&self) -> Real {
-        self.voxel_volume() * self.voxels.len() as Real
+        self.voxel_volume() * Real::from_usize(self.voxels.len()).unwrap()
     }
 
     fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
@@ -236,7 +237,7 @@ impl VoxelSet {
                 let prim_class = self.primitive_classes.get(*prim_id as usize).copied();
                 if prim_class == Some(u32::MAX) || prim_class == None {
                     let aabb_center =
-                        self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                        self.origin + voxel.coords.coords.map(|k| Real::from_u32(k).unwrap()) * self.scale;
                     let aabb =
                         Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / real!(2.0)));
 
@@ -308,7 +309,7 @@ impl VoxelSet {
             let intersections =
                 &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
             for prim_id in intersections {
-                let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                let aabb_center = self.origin + voxel.coords.coords.map(|k| Real::from_u32(k).unwrap()) * self.scale;
                 let aabb = Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / real!(2.0)));
 
                 let pa = points[indices[*prim_id as usize][0] as usize];
@@ -393,7 +394,7 @@ impl VoxelSet {
 
     /// Gets the vertices of the given voxel.
     fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point<Real>)) {
-        let ijk = voxel.coords.coords.map(|e| e as Real);
+        let ijk = voxel.coords.coords.map(|e| Real::from_u32(e).unwrap());
 
         #[cfg(feature = "dim2")]
         let shifts = [
@@ -485,8 +486,8 @@ impl VoxelSet {
         }
 
         let num_negative_voxels = self.voxels.len() - num_positive_voxels;
-        let positive_volume = self.voxel_volume() * (num_positive_voxels as Real);
-        let negative_volume = self.voxel_volume() * (num_negative_voxels as Real);
+        let positive_volume = self.voxel_volume() * Real::from_usize(num_positive_voxels).unwrap();
+        let negative_volume = self.voxel_volume() * Real::from_usize(num_negative_voxels).unwrap();
 
         (negative_volume, positive_volume)
     }
@@ -596,15 +597,15 @@ impl VoxelSet {
         // points twice. So passing an iterator to crate::utils::cov
         // isn't really possible.
         let mut center = Point::origin();
-        let denom = real!(1.0) / (num_voxels as Real);
+        let denom = real!(1.0) / Real::from_usize(num_voxels).unwrap();
 
         for voxel in &self.voxels {
-            center += voxel.coords.map(|e| e as Real).coords * denom;
+            center += voxel.coords.map(|e| Real::from_u32(e).unwrap()).coords * denom;
         }
 
         let mut cov_mat = Matrix::zeros();
         for voxel in &self.voxels {
-            let xyz = voxel.coords.map(|e| e as Real) - center;
+            let xyz = voxel.coords.map(|e| Real::from_u32(e).unwrap()) - center;
             cov_mat.syger(denom, &xyz, &xyz, real!(1.0));
         }
 

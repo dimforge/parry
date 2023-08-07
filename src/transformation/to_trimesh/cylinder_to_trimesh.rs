@@ -1,6 +1,7 @@
 use crate::math::{Real, real};
 use crate::shape::Cylinder;
 use crate::transformation::utils;
+use crate::num::FromPrimitive;
 use na::{self, Point3, RealField, Vector3};
 
 impl Cylinder {
@@ -17,7 +18,7 @@ impl Cylinder {
 /// Generates a cylinder with unit height and diameter.
 fn unit_cylinder(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let two_pi = Real::two_pi();
-    let invsubdiv = real!(1.0) / (nsubdiv as Real);
+    let invsubdiv = real!(1.0) / Real::from_u32(nsubdiv).unwrap();
     let dtheta = two_pi * invsubdiv;
     let mut coords = Vec::new();
     let mut indices = Vec::new();

@@ -1,6 +1,7 @@
 use crate::utils::DefaultStorage;
 #[cfg(feature = "std")]
 use na::DMatrix;
+use num::{FromPrimitive, ToPrimitive};
 use std::ops::Range;
 
 #[cfg(feature = "cuda")]
@@ -229,23 +230,23 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     fn quantize_floor_unclamped(&self, val: Real, cell_size: Real) -> isize {
-        ((val + real!(0.5)) / cell_size).floor() as isize
+        ((val + real!(0.5)) / cell_size).floor().to_isize().unwrap()
     }
 
     fn quantize_ceil_unclamped(&self, val: Real, cell_size: Real) -> isize {
-        ((val + real!(0.5)) / cell_size).ceil() as isize
+        ((val + real!(0.5)) / cell_size).ceil().to_isize().unwrap()
     }
 
     fn quantize_floor(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
         na::clamp(
             ((val + real!(0.5)) / cell_size).floor(),
             real!(0.0),
-            (num_cells - 1) as Real,
-        ) as usize
+            Real::from_usize(num_cells - 1).unwrap(),
+        ).to_usize().unwrap()
     }
 
     fn quantize_ceil(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
-        na::clamp(((val + real!(0.5)) / cell_size).ceil(), real!(0.0), num_cells as Real) as usize
+        na::clamp(((val + real!(0.5)) / cell_size).ceil(), real!(0.0), Real::from_usize(num_cells).unwrap()).to_usize().unwrap()
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
@@ -292,22 +293,22 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
 
     /// The smallest x coordinate of the `j`-th column of this heightfield.
     pub fn x_at(&self, j: usize) -> Real {
-        (real!(-0.5) + self.unit_cell_width() * (j as Real)) * self.scale.x
+        (real!(-0.5) + self.unit_cell_width() * Real::from_usize(j).unwrap()) * self.scale.x
     }
 
     /// The smallest z coordinate of the start of the `i`-th row of this heightfield.
     pub fn z_at(&self, i: usize) -> Real {
-        (real!(-0.5) + self.unit_cell_height() * (i as Real)) * self.scale.z
+        (real!(-0.5) + self.unit_cell_height() * Real::from_usize(i).unwrap()) * self.scale.z
     }
 
     /// The smallest x coordinate of the `j`-th column of this heightfield.
     pub fn signed_x_at(&self, j: isize) -> Real {
-        (real!(-0.5) + self.unit_cell_width() * (j as Real)) * self.scale.x
+        (real!(-0.5) + self.unit_cell_width() * Real::from_isize(j).unwrap()) * self.scale.x
     }
 
     /// The smallest z coordinate of the start of the `i`-th row of this heightfield.
     pub fn signed_z_at(&self, i: isize) -> Real {
-        (real!(-0.5) + self.unit_cell_height() * (i as Real)) * self.scale.z
+        (real!(-0.5) + self.unit_cell_height() * Real::from_isize(i).unwrap()) * self.scale.z
     }
 
     /// An iterator through all the triangles of this heightfield.
@@ -426,11 +427,11 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
-        let z0 = real!(-0.5) + cell_height * (i as Real);
-        let z1 = real!(-0.5) + cell_height * ((i + 1) as Real);
+        let z0 = real!(-0.5) + cell_height * Real::from_usize(i).unwrap();
+        let z1 = real!(-0.5) + cell_height * Real::from_usize(i + 1).unwrap();
 
-        let x0 = real!(-0.5) + cell_width * (j as Real);
-        let x1 = real!(-0.5) + cell_width * ((j + 1) as Real);
+        let x0 = real!(-0.5) + cell_width * Real::from_usize(j).unwrap();
+        let x1 = real!(-0.5) + cell_width * Real::from_usize(j + 1).unwrap();
 
         let y00 = self.heights.get(i + 0, j + 0);
         let y10 = self.heights.get(i + 1, j + 0);
@@ -540,12 +541,12 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
 
     /// The width (extent along its local `x` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_width(&self) -> Real {
-        real!(1.0) / (self.heights.ncols() as Real - real!(1.0))
+        real!(1.0) / Real::from_usize(self.heights.ncols() - 1).unwrap()
     }
 
     /// The height (extent along its local `z` axis) of each cell of this heightmap, excluding the scale factor.
     pub fn unit_cell_height(&self) -> Real {
-        real!(1.0) / (self.heights.nrows() as Real - real!(1.0))
+        real!(1.0) / Real::from_usize(self.heights.nrows() - 1).unwrap()
     }
 
     /// The Aabb of this heightmap.
@@ -696,10 +697,10 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                     continue;
                 }
 
-                let z0 = real!(-0.5) + cell_height * (i as Real);
+                let z0 = real!(-0.5) + cell_height * Real::from_usize(i).unwrap();
                 let z1 = z0 + cell_height;
 
-                let x0 = real!(-0.5) + cell_width * (j as Real);
+                let x0 = real!(-0.5) + cell_width * Real::from_usize(j).unwrap();
                 let x1 = x0 + cell_width;
 
                 let y00 = self.heights.get(i + 0, j + 0);
@@ -808,7 +809,7 @@ impl<'a, Storage: HeightFieldStorage> HeightFieldRadialTriangles<'a, Storage> {
         } else {
             (max_dist / self.heightfield.cell_width())
                 .ceil()
-                .max((max_dist / self.heightfield.cell_height()).ceil()) as usize
+                .max((max_dist / self.heightfield.cell_height()).ceil()).to_usize().unwrap()
         };
 
         loop {

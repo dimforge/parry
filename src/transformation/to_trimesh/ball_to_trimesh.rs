@@ -1,6 +1,7 @@
 use crate::math::{Point, Real, Vector, DIM, real};
 use crate::shape::Ball;
 use crate::transformation::utils;
+use crate::num::FromPrimitive;
 use na::{self, ComplexField, Point3, RealField};
 
 impl Ball {
@@ -17,8 +18,8 @@ impl Ball {
 }
 
 fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
-    let dtheta = Real::two_pi() / (ntheta_subdiv as Real);
-    let dphi = Real::pi() / (nphi_subdiv as Real);
+    let dtheta = Real::two_pi() / Real::from_u32(ntheta_subdiv).unwrap();
+    let dphi = Real::pi() / Real::from_u32(nphi_subdiv).unwrap();
 
     let mut coords = Vec::new();
     let mut curr_phi: Real = -Real::frac_pi_2() + dphi;
@@ -69,8 +70,8 @@ pub(crate) fn unit_hemisphere(
 ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();
-    let dtheta = two_pi / (ntheta_subdiv as Real);
-    let dphi = pi_two / (nphi_subdiv as Real);
+    let dtheta = two_pi / Real::from_u32(ntheta_subdiv).unwrap();
+    let dphi = pi_two / Real::from_u32(nphi_subdiv).unwrap();
 
     let mut coords = Vec::new();
     let mut curr_phi: Real = real!(0.0);

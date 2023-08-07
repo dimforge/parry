@@ -20,6 +20,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM, real};
 use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
+use crate::num::{FromPrimitive, ToPrimitive};
 use std::sync::Arc;
 
 /// Controls how the voxelization determines which voxel needs
@@ -159,33 +160,33 @@ impl VoxelizedVolume {
         if d[0] > d[1] {
             r = d[0];
             result.resolution[0] = resolution;
-            result.resolution[1] = 2 + (resolution as Real * d[1] / d[0]) as u32;
+            result.resolution[1] = 2 + (Real::from_u32(resolution).unwrap() * d[1] / d[0]).to_u32().unwrap();
         } else {
             r = d[1];
             result.resolution[1] = resolution;
-            result.resolution[0] = 2 + (resolution as Real * d[0] / d[1]) as u32;
+            result.resolution[0] = 2 + (Real::from_u32(resolution).unwrap() * d[0] / d[1]).to_u32().unwrap();
         }
 
         #[cfg(feature = "dim3")]
         if d[0] > d[1] && d[0] > d[2] {
             r = d[0];
             result.resolution[0] = resolution;
-            result.resolution[1] = 2 + (resolution as Real * d[1] / d[0]) as u32;
-            result.resolution[2] = 2 + (resolution as Real * d[2] / d[0]) as u32;
+            result.resolution[1] = 2 + (Real::from_u32(resolution).unwrap() * d[1] / d[0]).to_u32().unwrap();
+            result.resolution[2] = 2 + (Real::from_u32(resolution).unwrap() * d[2] / d[0]).to_u32().unwrap();
         } else if d[1] > d[0] && d[1] > d[2] {
             r = d[1];
             result.resolution[1] = resolution;
-            result.resolution[0] = 2 + (resolution as Real * d[0] / d[1]) as u32;
-            result.resolution[2] = 2 + (resolution as Real * d[2] / d[1]) as u32;
+            result.resolution[0] = 2 + (Real::from_u32(resolution).unwrap() * d[0] / d[1]).to_u32().unwrap();
+            result.resolution[2] = 2 + (Real::from_u32(resolution).unwrap() * d[2] / d[1]).to_u32().unwrap();
         } else {
             r = d[2];
             result.resolution[2] = resolution;
-            result.resolution[0] = 2 + (resolution as Real * d[0] / d[2]) as u32;
-            result.resolution[1] = 2 + (resolution as Real * d[1] / d[2]) as u32;
+            result.resolution[0] = 2 + (Real::from_u32(resolution).unwrap() * d[0] / d[2]).to_u32().unwrap();
+            result.resolution[1] = 2 + (Real::from_u32(resolution).unwrap() * d[1] / d[2]).to_u32().unwrap();
         }
 
-        result.scale = r / (resolution as Real - real!(1.0));
-        let inv_scale = (resolution as Real - real!(1.0)) / r;
+        result.scale = r / (Real::from_u32(resolution).unwrap() - real!(1.0));
+        let inv_scale = (Real::from_u32(resolution).unwrap() - real!(1.0)) / r;
         result.allocate();
 
         let mut tri_pts = [Point::origin(); DIM];
@@ -204,10 +205,10 @@ impl VoxelizedVolume {
                 let pt = points[tri[c] as usize];
                 tri_pts[c] = (pt - result.origin.coords) * inv_scale;
 
-                let i = (tri_pts[c].x + real!(0.5)) as u32;
-                let j = (tri_pts[c].y + real!(0.5)) as u32;
+                let i = (tri_pts[c].x + real!(0.5)).to_u32().unwrap();
+                let j = (tri_pts[c].y + real!(0.5)).to_u32().unwrap();
                 #[cfg(feature = "dim3")]
-                let k = (tri_pts[c].z + real!(0.5)) as u32;
+                let k = (tri_pts[c].z + real!(0.5)).to_u32().unwrap();
 
                 assert!(i < result.resolution[0] && j < result.resolution[1]);
                 #[cfg(feature = "dim3")]
@@ -242,9 +243,9 @@ impl VoxelizedVolume {
                 for j in ijk0.y..ijk1.y {
                     for k in range_k.clone() {
                         #[cfg(feature = "dim2")]
-                        let pt = Point::new(i as Real, j as Real);
+                        let pt = Point::new(Real::from_u32(i).unwrap(), Real::from_u32(j).unwrap());
                         #[cfg(feature = "dim3")]
-                        let pt = Point::new(i as Real, j as Real, k as Real);
+                        let pt = Point::new(Real::from_u32(i).unwrap(), Real::from_u32(j).unwrap(), Real::from_u32(k).unwrap());
 
                         let id = result.voxel_index(i, j, k);
                         let value = &mut result.values[id as usize];
@@ -759,7 +760,7 @@ impl VoxelizedVolume {
                     let voxel = self.voxel(i, j, k);
 
                     if voxel == value {
-                        let ijk = Vector::new(i as Real, j as Real, k as Real);
+                        let ijk = Vector::new(Real::from_u32(i).unwrap(), Real::from_u32(j).unwrap(), Real::from_u32(k).unwrap());
 
                         let shifts = [
                             Vector::new(real!(-0.5), real!(-0.5), real!(-0.5)),

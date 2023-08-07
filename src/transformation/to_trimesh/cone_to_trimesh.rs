@@ -1,6 +1,7 @@
 use crate::math::{Real, real};
 use crate::shape::Cone;
 use crate::transformation::utils;
+use crate::num::FromPrimitive;
 use na::{self, Point3, RealField, Vector3};
 
 impl Cone {
@@ -17,7 +18,7 @@ impl Cone {
 /// Generates a cone with unit height and diameter.
 fn unit_cone(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     let two_pi = Real::two_pi();
-    let dtheta = two_pi / (nsubdiv as Real);
+    let dtheta = two_pi / Real::from_u32(nsubdiv).unwrap();
     let mut coords = Vec::new();
     let mut indices = Vec::new();
 

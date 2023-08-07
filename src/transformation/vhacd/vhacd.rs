@@ -19,6 +19,7 @@
 use crate::math::{Point, Real, Vector, DIM, real};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
+use crate::num::FromPrimitive;
 use std::sync::Arc;
 
 #[cfg(any(not(feature = "std"), feature = "i32f32"))]
@@ -184,7 +185,7 @@ impl VHACD {
                 let plane = CutPlane {
                     abc: Vector::ith(dim, real!(1.0)),
                     axis: dim as u8,
-                    d: -(vset.origin[dim] + (i as Real + real!(0.5)) * vset.scale),
+                    d: -(vset.origin[dim] + (Real::from_u32(i).unwrap() + real!(0.5)) * vset.scale),
                     index: i,
                 };
 
@@ -210,7 +211,7 @@ impl VHACD {
             let plane = CutPlane {
                 abc: Vector::ith(best_id, real!(1.0)),
                 axis: best_plane.axis,
-                d: -(vset.origin[best_id] + (i as Real + real!(0.5)) * vset.scale),
+                d: -(vset.origin[best_id] + (Real::from_u32(i).unwrap() + real!(0.5)) * vset.scale),
                 index: i,
             };
             planes.push(plane);

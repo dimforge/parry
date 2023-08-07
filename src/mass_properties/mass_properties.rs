@@ -582,6 +582,8 @@ mod test {
 
     #[test]
     fn mass_properties_sum_no_nan() {
+        use crate::na::RealField;
+
         let mp: MassProperties = [MassProperties::zero()].iter().map(|v| *v).sum();
         assert!(!mp.local_com.x.is_nan() && !mp.local_com.y.is_nan());
         #[cfg(feature = "dim3")]

@@ -6,6 +6,7 @@ use crate::{
     math::{Point, Real, real},
     partitioning::{GenericQbvh, Qbvh},
     utils::DefaultStorage,
+    num::FromPrimitive,
 };
 
 use super::QbvhUpdateWorkspace;
@@ -270,8 +271,8 @@ fn generate_random_aabb(rng: &mut StdRng) -> Aabb {
 
     #[cfg(feature = "dim3")]
     {
-        let mins = Point::new(min_x as Real, min_y as Real, min_z as Real);
-        let maxs = Point::new(max_x as Real, max_y as Real, max_z as Real);
+        let mins = Point::new(Real::from_i32(min_x).unwrap(), Real::from_i32(min_y).unwrap(), Real::from_i32(min_z).unwrap());
+        let maxs = Point::new(Real::from_i32(max_x).unwrap(), Real::from_i32(max_y).unwrap(), Real::from_i32(max_z).unwrap());
         Aabb::new(mins, maxs)
     }
     #[cfg(feature = "dim2")]

@@ -5,6 +5,7 @@ use crate::query::SplitResult;
 use crate::simd::SimdReal;
 #[cfg(feature = "i32f32")]
 use crate::na::ComplexField;
+use crate::num::FromPrimitive;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;
@@ -373,7 +374,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         #[cfg(feature = "dim3")]
         let mut variance = Vector::zeros();
 
-        let center_denom = real!(1.0) / (indices.len() as Real);
+        let center_denom = real!(1.0) / Real::from_usize(indices.len()).unwrap();
 
         for i in &*indices {
             let coords = aabbs[*i].center().coords;
@@ -382,7 +383,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         #[cfg(feature = "dim3")]
         {
-            let variance_denom = real!(1.0) / ((indices.len() - 1) as Real);
+            let variance_denom = real!(1.0) / Real::from_usize(indices.len() - 1).unwrap();
             for i in &*indices {
                 let dir_to_center = aabbs[*i].center() - center;
                 variance += dir_to_center.component_mul(&dir_to_center) * variance_denom;

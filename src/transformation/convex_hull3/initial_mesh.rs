@@ -4,7 +4,7 @@ use crate::shape::Triangle;
 use crate::transformation;
 use crate::transformation::convex_hull_utils::support_point_id;
 use crate::utils;
-use na::{Point2, Point3, Vector3};
+use na::{Point2, Point3, Vector3, Matrix3};
 use std::cmp::Ordering;
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ pub fn try_get_initial_mesh(
     #[cfg(feature = "improved_fixed_point_support")]
     {
         eigvec = Matrix3::identity();
-        eigval = Vector3::repeat(1.0);
+        eigval = Vector3::repeat(real!(1.0));
     }
 
     let mut eigpairs = [

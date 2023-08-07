@@ -299,7 +299,7 @@ impl PolygonalFeature {
                     // Output the contact.
                     let dist = (vertices2_1[0] - face1.vertices[i]).dot(&normal2_1) / denom;
                     let local_p1 = face1.vertices[i];
-                    let local_p2_1 = face1.vertices[i] + dist * sep_axis1;
+                    let local_p2_1 = face1.vertices[i] + sep_axis1 * dist;
 
                     if dist <= prediction {
                         manifold.points.push(TrackedContact::flipped(
@@ -343,7 +343,7 @@ impl PolygonalFeature {
                     // Output the contact.
                     let dist = (face1.vertices[0] - vertices2_1[i]).dot(&normal1) / denom;
                     let local_p2_1 = vertices2_1[i];
-                    let local_p1 = vertices2_1[i] - dist * sep_axis1;
+                    let local_p1 = vertices2_1[i] - sep_axis1 * dist;
 
                     if true {
                         // dist <= prediction {

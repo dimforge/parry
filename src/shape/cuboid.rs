@@ -5,6 +5,8 @@ use crate::math::{Point, Real, Vector, real};
 use crate::shape::Segment;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
+#[cfg(feature = "dim3")]
+use crate::num::ToPrimitive;
 use na::Unit;
 
 #[cfg(any(not(feature = "std"), feature = "i32f32"))]
@@ -178,7 +180,7 @@ impl Cuboid {
             i * 2
         }
 
-        let sign_index = ((sign as i8 + 1) / 2) as usize;
+        let sign_index = ((sign.to_i8().unwrap() + 1) / 2) as usize;
         // The vertex id as numbered depending on the sign of the vertex
         // component. A + sign means the corresponding bit is 0 while a -
         // sign means the corresponding bit is 1.

@@ -21,7 +21,7 @@ default = [ "required-features", "std" ]
 required-features = [ "dim3", "i32f32" ]
 std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
 dim3    = [ ]
-i32f32  = [ "simba/partial_fixed_point_support" ]
+i32f32  = [ "simba/partial_fixed_point_support", "improved_fixed_point_support" ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
 rkyv-serialize = [ "rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
 bytemuck-serialize = [ "bytemuck", "nalgebra/convert-bytemuck" ]
@@ -34,6 +34,8 @@ parallel = [ "rayon" ]
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
 simd-is-enabled = [ ]
+
+improved_fixed_point_support = [ ]
 
 [lib]
 name = "parry3d_i32f32"

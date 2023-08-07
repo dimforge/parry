@@ -1,6 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::shape::Ball;
 use crate::transformation::utils;
+use crate::num::FromPrimitive;
 use na::{self, Point3, RealField};
 
 #[cfg(not(feature = "std"))]
@@ -17,7 +18,7 @@ impl Ball {
 
 fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
     let two_pi = Real::two_pi();
-    let dtheta = two_pi / (nsubdiv as Real);
+    let dtheta = two_pi / Real::from_u32(nsubdiv).unwrap();
     let mut coords = Vec::new();
     let mut indices = Vec::new();
 
@@ -49,7 +50,7 @@ pub(crate) fn push_unit_hemisphere_outline(
     idx: &mut Vec<[u32; 2]>,
 ) {
     let base_idx = pts.len() as u32;
-    let dtheta = Real::pi() / (nsubdiv as Real);
+    let dtheta = Real::pi() / Real::from_u32(nsubdiv).unwrap();
     let npoints = nsubdiv + 1;
 
     utils::push_circle(real!(0.5), npoints, dtheta, real!(0.0), pts);

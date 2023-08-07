@@ -120,6 +120,8 @@ where
     Storage: HeightFieldStorage,
     D: QueryDispatcher,
 {
+    use num::ToPrimitive;
+
     let aabb1 = heightfield1.local_aabb();
     let mut aabb2_1 = g2.compute_aabb(pos12);
     let ray = Ray::new(aabb2_1.center(), *vel12);
@@ -231,11 +233,11 @@ where
         }
 
         if toi_x >= real!(0.0) && toi_x <= toi_z {
-            cell.1 += ray.dir.x.signum() as isize;
+            cell.1 += ray.dir.x.signum().to_isize().unwrap();
         }
 
         if toi_z >= real!(0.0) && toi_z <= toi_x {
-            cell.0 += ray.dir.z.signum() as isize;
+            cell.0 += ray.dir.z.signum().to_isize().unwrap();
         }
 
         if cell == prev_cell {

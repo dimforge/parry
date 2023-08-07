@@ -4,6 +4,7 @@ use crate::math::{Isometry, Point, Real, Vector, real};
 use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
+use crate::num::FromPrimitive;
 
 /// Applies in-place a transformation to an array of points.
 pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
@@ -216,20 +217,20 @@ pub fn push_arc(
         na::Unit::try_new_and_get(start - center, real!(0.0)),
         na::Unit::try_new_and_get(end - center, real!(0.0)),
     ) {
-        let len_inc = (end_len - start_len) / nsubdivs as Real;
+        let len_inc = (end_len - start_len) / Real::from_u32(nsubdivs).unwrap();
 
         #[cfg(feature = "dim2")]
         let rot = Some(na::UnitComplex::scaled_rotation_between_axis(
             &start_dir,
             &end_dir,
-            real!(1.0) / nsubdivs as Real,
+            real!(1.0) / Real::from_u32(nsubdivs).unwrap(),
         ));
 
         #[cfg(feature = "dim3")]
         let rot = na::UnitQuaternion::scaled_rotation_between_axis(
             &start_dir,
             &end_dir,
-            real!(1.0) / nsubdivs as Real,
+            real!(1.0) / Real::from_u32(nsubdivs).unwrap(),
         );
 
         if let Some(rot) = rot {
@@ -272,11 +273,11 @@ pub fn apply_revolution(
     out_idx: &mut Vec<[u32; 2]>,
 ) {
     use na::RealField;
-    let ang_increment = Real::two_pi() / (nsubdivs as Real);
+    let ang_increment = Real::two_pi() / Real::from_u32(nsubdivs).unwrap();
     let angs = [
-        ang_increment * (nsubdivs / 4) as Real,
-        ang_increment * (nsubdivs / 2) as Real,
-        ang_increment * ((3 * nsubdivs) / 4) as Real,
+        ang_increment * Real::from_u32(nsubdivs / 4).unwrap(),
+        ang_increment * Real::from_u32(nsubdivs / 2).unwrap(),
+        ang_increment * Real::from_u32((3 * nsubdivs) / 4).unwrap(),
     ];
 
     let half_profile_len = out_vtx.len();
