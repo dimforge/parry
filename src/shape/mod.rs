@@ -16,6 +16,7 @@ pub(crate) use self::shape::DeserializableTypedShape;
 pub use self::shape::{Shape, ShapeType, TypedShape};
 #[doc(inline)]
 pub use self::support_map::SupportMap;
+pub use self::tapered_capsule::TaperedCapsule;
 pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 
 #[cfg(feature = "std")]
@@ -83,6 +84,7 @@ mod segment;
 pub mod shape;
 #[doc(hidden)]
 pub mod support_map;
+mod tapered_capsule;
 mod triangle;
 
 #[cfg(feature = "dim2")]
