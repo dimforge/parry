@@ -3,7 +3,7 @@ use crate::transformation::voxelization::FillMode;
 
 /// Parameters controlling the VHACD convex decomposition.
 ///
-/// See https://github.com/Unity-Technologies/VHACD#parameters for details.
+/// See <https://github.com/Unity-Technologies/VHACD#parameters> for details.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VHACDParameters {
     /// Maximum concavity.

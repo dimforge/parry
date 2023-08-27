@@ -5,13 +5,13 @@ use crate::{
 };
 
 impl Triangle {
-    /// Computes the world-space Aabb of this triangle, transformed by `pos`.
+    /// Computes the world-space [`Aabb`] of this triangle, transformed by `pos`.
     #[inline]
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         self.transformed(pos).local_aabb()
     }
 
-    /// Computes the local-space Aabb of this triangle.
+    /// Computes the local-space [`Aabb`] of this triangle.
     #[inline]
     pub fn local_aabb(&self) -> Aabb {
         let a = self.a.coords;

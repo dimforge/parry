@@ -95,7 +95,7 @@ pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
 
 /*
  *
- * Parallel visitors bellow.
+ * Parallel visitors below.
  *
  */
 

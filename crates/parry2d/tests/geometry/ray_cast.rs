@@ -34,7 +34,7 @@ fn collinear_raycast_starting_on_segment() {
 }
 
 #[test]
-fn collinear_raycast_starting_bellow_segment() {
+fn collinear_raycast_starting_below_segment() {
     let m1 = Isometry2::identity();
     let ray = Ray::new(Point2::new(0.0, -2.0), Vector2::new(0.0, 1.0));
     let seg = Segment::new(Point2::new(0.0, 1.0), Point2::new(0.0, -1.0));
@@ -84,7 +84,7 @@ fn perpendicular_raycast_starting_above_segment() {
 }
 
 #[test]
-fn perpendicular_raycast_starting_bellow_segment() {
+fn perpendicular_raycast_starting_below_segment() {
     let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
     let ray = Ray::new(Point2::new(0.0, -11.0), Vector2::new(1.0, 0.0));
     assert!(!segment.intersects_local_ray(&ray, std::f32::MAX));

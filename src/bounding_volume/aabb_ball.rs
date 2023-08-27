@@ -20,13 +20,13 @@ pub fn local_ball_aabb(radius: Real) -> Aabb {
 }
 
 impl Ball {
-    /// Computes the world-space Aabb of this ball transformed by `pos`.
+    /// Computes the world-space [`Aabb`] of this ball transformed by `pos`.
     #[inline]
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         ball_aabb(&Point::<Real>::from(pos.translation.vector), self.radius)
     }
 
-    /// Computes the local-space Aabb of this ball.
+    /// Computes the local-space [`Aabb`] of this ball.
     #[inline]
     pub fn local_aabb(&self) -> Aabb {
         local_ball_aabb(self.radius)

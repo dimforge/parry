@@ -1,5 +1,5 @@
 //! Hertel-Mehlhorn algorithm for convex partitioning.
-//! Based on https://github.com/ivanfratric/polypartition, contributed by embotech AG.
+//! Based on <https://github.com/ivanfratric/polypartition>, contributed by embotech AG.
 
 use crate::math::{Point, Real};
 use crate::utils::point_in_triangle::{corner_direction, Orientation};
@@ -26,7 +26,7 @@ fn find_edge_index_in_polygon(p1: u32, p2: u32, indices: &[u32]) -> Option<(usiz
 /// polygons is created. However, in practice it works much better than that and often returns the optimal
 /// partitioning.
 ///
-/// This algorithm is described in https://people.mpi-inf.mpg.de/~mehlhorn/ftp/FastTriangulation.pdf
+/// This algorithm is described in <https://people.mpi-inf.mpg.de/~mehlhorn/ftp/FastTriangulation.pdf>.
 pub fn hertel_mehlhorn(vertices: &[Point<Real>], indices: &[[u32; 3]]) -> Vec<Vec<Point<Real>>> {
     hertel_mehlhorn_idx(vertices, indices)
         .into_iter()

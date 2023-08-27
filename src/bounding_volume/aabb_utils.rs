@@ -5,7 +5,7 @@ use crate::math::{Isometry, Point, Real, Vector, DIM};
 use crate::shape::SupportMap;
 use na;
 
-/// Computes the Aabb of an support mapped shape.
+/// Computes the [`Aabb`] of an [support mapped shape](SupportMap).
 #[cfg(feature = "dim3")]
 pub fn support_map_aabb<G>(m: &Isometry<Real>, i: &G) -> Aabb
 where
@@ -30,7 +30,7 @@ where
     Aabb::new(Point::from(min), Point::from(max))
 }
 
-/// Computes the Aabb of an support mapped shape.
+/// Computes the [`Aabb`] of an [support mapped shape](SupportMap).
 pub fn local_support_map_aabb<G>(i: &G) -> Aabb
 where
     G: SupportMap,
@@ -54,7 +54,7 @@ where
     Aabb::new(Point::from(min), Point::from(max))
 }
 
-/// Computes the Aabb of a set of points transformed by `m`.
+/// Computes the [`Aabb`] of a set of points transformed by `m`.
 pub fn point_cloud_aabb<'a, I>(m: &Isometry<Real>, pts: I) -> Aabb
 where
     I: IntoIterator<Item = &'a Point<Real>>,
@@ -77,7 +77,7 @@ where
     Aabb::new(min, max)
 }
 
-/// Computes the Aabb of a set of points.
+/// Computes the [`Aabb`] of a set of points.
 pub fn local_point_cloud_aabb<'a, I>(pts: I) -> Aabb
 where
     I: IntoIterator<Item = &'a Point<Real>>,

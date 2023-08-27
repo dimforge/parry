@@ -31,18 +31,20 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    /// The vertex indices of each edge of this Aabb.
+    /// The vertex indices of each edge of this `Aabb`.
     ///
-    /// This gives, for each edge of this Aabb, the indices of its
+    /// This gives, for each edge of this `Aabb`, the indices of its
     /// vertices when taken from the `self.vertices()` array.
     /// Here is how the faces are numbered, assuming
     /// a right-handed coordinate system:
     ///
+    /// ```text
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
-    ///   /            4 - 5
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
     ///  z
+    /// ```
     #[cfg(feature = "dim3")]
     pub const EDGES_VERTEX_IDS: [(usize, usize); 12] = [
         (0, 1),
@@ -59,18 +61,20 @@ impl Aabb {
         (3, 7),
     ];
 
-    /// The vertex indices of each face of this Aabb.
+    /// The vertex indices of each face of this `Aabb`.
     ///
-    /// This gives, for each face of this Aabb, the indices of its
+    /// This gives, for each face of this `Aabb`, the indices of its
     /// vertices when taken from the `self.vertices()` array.
     /// Here is how the faces are numbered, assuming
     /// a right-handed coordinate system:
     ///
+    /// ```text
     ///    y             3 - 2
     ///    |           7 − 6 |
-    ///    ___ x       |   | 1  (the zero is bellow 3 and on the left of 1, hidden by the 4-5-6-7 face.)
-    ///   /            4 - 5
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
     ///  z
+    /// ```
     #[cfg(feature = "dim3")]
     pub const FACES_VERTEX_IDS: [(usize, usize, usize, usize); 6] = [
         (1, 2, 6, 5),
@@ -92,9 +96,9 @@ impl Aabb {
         Aabb { mins, maxs }
     }
 
-    /// Creates an invalid Aabb with `mins` components set to `Real::max_values` and `maxs`components set to `-Real::max_values`.
+    /// Creates an invalid `Aabb` with `mins` components set to `Real::max_values` and `maxs`components set to `-Real::max_values`.
     ///
-    /// This is often used as the initial values of some Aabb merging algorithms.
+    /// This is often used as the initial values of some `Aabb` merging algorithms.
     #[inline]
     pub fn new_invalid() -> Self {
         Self::new(
@@ -103,13 +107,13 @@ impl Aabb {
         )
     }
 
-    /// Creates a new Aabb from its center and its half-extents.
+    /// Creates a new `Aabb` from its center and its half-extents.
     #[inline]
     pub fn from_half_extents(center: Point<Real>, half_extents: Vector<Real>) -> Self {
         Self::new(center - half_extents, center + half_extents)
     }
 
-    /// Creates a new Aabb from a set of points.
+    /// Creates a new `Aabb` from a set of points.
     pub fn from_points<'a, I>(pts: I) -> Self
     where
         I: IntoIterator<Item = &'a Point<Real>>,
@@ -117,20 +121,20 @@ impl Aabb {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
 
-    /// The center of this Aabb.
+    /// The center of this `Aabb`.
     #[inline]
     pub fn center(&self) -> Point<Real> {
         na::center(&self.mins, &self.maxs)
     }
 
-    /// The half extents of this Aabb.
+    /// The half extents of this `Aabb`.
     #[inline]
     pub fn half_extents(&self) -> Vector<Real> {
         let half: Real = na::convert::<f64, Real>(0.5);
         (self.maxs - self.mins) * half
     }
 
-    /// The volume of this Aabb.
+    /// The volume of this `Aabb`.
     #[inline]
     pub fn volume(&self) -> Real {
         let extents = self.extents();
@@ -140,19 +144,19 @@ impl Aabb {
         return extents.x * extents.y * extents.z;
     }
 
-    /// The extents of this Aabb.
+    /// The extents of this `Aabb`.
     #[inline]
     pub fn extents(&self) -> Vector<Real> {
         self.maxs - self.mins
     }
 
-    /// Enlarges this Aabb so it also contains the point `pt`.
+    /// Enlarges this `Aabb` so it also contains the point `pt`.
     pub fn take_point(&mut self, pt: Point<Real>) {
         self.mins = self.mins.coords.inf(&pt.coords).into();
         self.maxs = self.maxs.coords.sup(&pt.coords).into();
     }
 
-    /// Computes the Aabb bounding `self` transformed by `m`.
+    /// Computes the `Aabb` bounding `self` transformed by `m`.
     #[inline]
     pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
         let ls_center = self.center();
@@ -172,7 +176,7 @@ impl Aabb {
         }
     }
 
-    /// The smallest bounding sphere containing this Aabb.
+    /// The smallest bounding sphere containing this `Aabb`.
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
         let center = self.center();
@@ -191,7 +195,7 @@ impl Aabb {
         true
     }
 
-    /// Computes the intersection of this Aabb and another one.
+    /// Computes the intersection of this `Aabb` and another one.
     pub fn intersection(&self, other: &Aabb) -> Option<Aabb> {
         let result = Aabb {
             mins: Point::from(self.mins.coords.sup(&other.mins.coords)),
@@ -207,17 +211,17 @@ impl Aabb {
         Some(result)
     }
 
-    /// Returns the difference between this Aabb and `rhs`.
+    /// Returns the difference between this `Aabb` and `rhs`.
     ///
-    /// Removing another Aabb from `self` will result in zero, one, or up to 4 (in 2D) or 8 (in 3D)
+    /// Removing another `Aabb` from `self` will result in zero, one, or up to 4 (in 2D) or 8 (in 3D)
     /// new smaller Aabbs.
     pub fn difference(&self, rhs: &Aabb) -> ArrayVec<Self, TWO_DIM> {
         self.difference_with_cut_sequence(rhs).0
     }
 
-    /// Returns the difference between this Aabb and `rhs`.
+    /// Returns the difference between this `Aabb` and `rhs`.
     ///
-    /// Removing another Aabb from `self` will result in zero, one, or up to 4 (in 2D) or 8 (in 3D)
+    /// Removing another `Aabb` from `self` will result in zero, one, or up to 4 (in 2D) or 8 (in 3D)
     /// new smaller Aabbs.
     ///
     /// # Return
@@ -272,7 +276,7 @@ impl Aabb {
         (result, cut_sequence)
     }
 
-    /// Computes the vertices of this Aabb.
+    /// Computes the vertices of this `Aabb`.
     #[inline]
     #[cfg(feature = "dim2")]
     pub fn vertices(&self) -> [Point<Real>; 4] {
@@ -284,7 +288,7 @@ impl Aabb {
         ]
     }
 
-    /// Computes the vertices of this Aabb.
+    /// Computes the vertices of this `Aabb`.
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn vertices(&self) -> [Point<Real>; 8] {
@@ -300,7 +304,7 @@ impl Aabb {
         ]
     }
 
-    /// Splits this Aabb at its center, into four parts (as in a quad-tree).
+    /// Splits this `Aabb` at its center, into four parts (as in a quad-tree).
     #[inline]
     #[cfg(feature = "dim2")]
     pub fn split_at_center(&self) -> [Aabb; 4] {
@@ -320,7 +324,7 @@ impl Aabb {
         ]
     }
 
-    /// Splits this Aabb at its center, into height parts (as in an octree).
+    /// Splits this `Aabb` at its center, into eight parts (as in an octree).
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn split_at_center(&self) -> [Aabb; 8] {
@@ -362,7 +366,7 @@ impl Aabb {
         ]
     }
 
-    /// Projects every point of Aabb on an arbitrary axis.
+    /// Projects every point of `Aabb` on an arbitrary axis.
     pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());
         let shift = cuboid

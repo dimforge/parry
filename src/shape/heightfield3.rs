@@ -548,7 +548,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         1.0 / (self.heights.nrows() as Real - 1.0)
     }
 
-    /// The Aabb of this heightmap.
+    /// The [`Aabb`] of this heightmap.
     pub fn root_aabb(&self) -> &Aabb {
         &self.aabb
     }

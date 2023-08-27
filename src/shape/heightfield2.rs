@@ -193,7 +193,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         self
     }
 
-    /// The Aabb of this heightfield.
+    /// The [`Aabb`] of this heightfield.
     pub fn root_aabb(&self) -> &Aabb {
         &self.aabb
     }
