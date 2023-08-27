@@ -22,7 +22,7 @@ pub struct Ball {
 }
 
 impl Ball {
-    /// Creates a new ball from its radius and center.
+    /// Creates a new ball with the given radius.
     #[inline]
     pub fn new(radius: Real) -> Ball {
         Ball { radius }
