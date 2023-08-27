@@ -50,8 +50,8 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
 ) where
     ContactData: Default + Copy,
 {
-    if (!flipped && manifold.try_update_contacts(&pos12))
-        || (flipped && manifold.try_update_contacts(&pos21))
+    if (!flipped && manifold.try_update_contacts(pos12))
+        || (flipped && manifold.try_update_contacts(pos21))
     {
         return;
     }
@@ -62,13 +62,13 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
      *
      */
     let sep1 =
-        sat::cuboid_support_map_find_local_separating_normal_oneway(cuboid1, triangle2, &pos12);
+        sat::cuboid_support_map_find_local_separating_normal_oneway(cuboid1, triangle2, pos12);
     if sep1.0 > prediction {
         manifold.clear();
         return;
     }
 
-    let sep2 = sat::triangle_cuboid_find_local_separating_normal_oneway(triangle2, cuboid1, &pos21);
+    let sep2 = sat::triangle_cuboid_find_local_separating_normal_oneway(triangle2, cuboid1, pos21);
     if sep2.0 > prediction {
         manifold.clear();
         return;
@@ -82,7 +82,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     #[cfg(feature = "dim2")]
     let sep3 = (-Real::MAX, Vector::x()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
-    let sep3 = sat::cuboid_triangle_find_local_separating_edge_twoway(cuboid1, triangle2, &pos12);
+    let sep3 = sat::cuboid_triangle_find_local_separating_edge_twoway(cuboid1, triangle2, pos12);
     if sep3.0 > prediction {
         manifold.clear();
         return;

@@ -1069,7 +1069,7 @@ impl Shape for ConvexPolygon {
     }
 
     fn mass_properties(&self, density: Real) -> MassProperties {
-        MassProperties::from_convex_polygon(density, &self.points())
+        MassProperties::from_convex_polygon(density, self.points())
     }
 
     fn is_convex(&self) -> bool {

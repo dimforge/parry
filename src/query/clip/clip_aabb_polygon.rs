@@ -24,16 +24,16 @@ impl Aabb {
         points: &mut Vec<Point<Real>>,
         workspace: &mut Vec<Point<Real>>,
     ) {
-        super::clip_halfspace_polygon(&self.mins, &-Vector::x(), &points, workspace);
-        super::clip_halfspace_polygon(&self.maxs, &Vector::x(), &workspace, points);
+        super::clip_halfspace_polygon(&self.mins, &-Vector::x(), points, workspace);
+        super::clip_halfspace_polygon(&self.maxs, &Vector::x(), workspace, points);
 
-        super::clip_halfspace_polygon(&self.mins, &-Vector::y(), &points, workspace);
-        super::clip_halfspace_polygon(&self.maxs, &Vector::y(), &workspace, points);
+        super::clip_halfspace_polygon(&self.mins, &-Vector::y(), points, workspace);
+        super::clip_halfspace_polygon(&self.maxs, &Vector::y(), workspace, points);
 
         #[cfg(feature = "dim3")]
         {
-            super::clip_halfspace_polygon(&self.mins, &-Vector::z(), &points, workspace);
-            super::clip_halfspace_polygon(&self.maxs, &Vector::z(), &workspace, points);
+            super::clip_halfspace_polygon(&self.mins, &-Vector::z(), points, workspace);
+            super::clip_halfspace_polygon(&self.maxs, &Vector::z(), workspace, points);
         }
     }
 }

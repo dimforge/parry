@@ -124,7 +124,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
      * Compute interferences.
      */
     // TODO: somehow precompute the Aabb and reuse it?
-    let ls_aabb2 = shape2.compute_aabb(&pos12).loosened(prediction);
+    let ls_aabb2 = shape2.compute_aabb(pos12).loosened(prediction);
     let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2, &mut |i, part1| {

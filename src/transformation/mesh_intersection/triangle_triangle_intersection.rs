@@ -222,12 +222,12 @@ pub fn triangle_triangle_intersection(
             crate::transformation::convex_polygons_intersection(&poly1, &poly2, |pt1, pt2| {
                 let intersection = match (pt1, pt2) {
                     (Some(loc1), Some(loc2)) => {
-                        let (f1, p1) = convert_loc(loc1, &pts1);
-                        let (f2, p2) = convert_loc(loc2, &pts2);
+                        let (f1, p1) = convert_loc(loc1, pts1);
+                        let (f2, p2) = convert_loc(loc2, pts2);
                         TriangleTriangleIntersectionPoint { p1, p2, f1, f2 }
                     }
                     (Some(loc1), None) => {
-                        let (f1, p1) = convert_loc(loc1, &pts1);
+                        let (f1, p1) = convert_loc(loc1, pts1);
                         TriangleTriangleIntersectionPoint {
                             p1,
                             p2: p1,
@@ -236,7 +236,7 @@ pub fn triangle_triangle_intersection(
                         }
                     }
                     (None, Some(loc2)) => {
-                        let (f2, p2) = convert_loc(loc2, &pts2);
+                        let (f2, p2) = convert_loc(loc2, pts2);
                         TriangleTriangleIntersectionPoint {
                             p1: p2,
                             p2,
@@ -267,7 +267,7 @@ fn segment_plane_intersection(
     let dir_norm = dir.norm();
 
     let toi =
-        query::details::line_toi_with_halfspace(plane_center, &plane_normal, &segment.a, &dir)?;
+        query::details::line_toi_with_halfspace(plane_center, plane_normal, &segment.a, &dir)?;
     let scaled_toi = toi * dir_norm;
 
     if scaled_toi < -EPS || scaled_toi > dir_norm + EPS {

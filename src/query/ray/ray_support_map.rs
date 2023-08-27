@@ -76,7 +76,7 @@ impl RayCast for Cylinder {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
-            &ray,
+            ray,
             max_toi,
             solid,
         )
@@ -94,7 +94,7 @@ impl RayCast for Cone {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
-            &ray,
+            ray,
             max_toi,
             solid,
         )
@@ -111,7 +111,7 @@ impl RayCast for Capsule {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
-            &ray,
+            ray,
             max_toi,
             solid,
         )
@@ -130,7 +130,7 @@ impl RayCast for ConvexPolyhedron {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
-            &ray,
+            ray,
             max_toi,
             solid,
         )
@@ -149,7 +149,7 @@ impl RayCast for ConvexPolygon {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
-            &ray,
+            ray,
             max_toi,
             solid,
         )
@@ -237,7 +237,7 @@ impl RayCast for Segment {
             local_ray_intersection_with_support_map_with_params(
                 self,
                 &mut VoronoiSimplex::new(),
-                &ray,
+                ray,
                 max_toi,
                 solid,
             )

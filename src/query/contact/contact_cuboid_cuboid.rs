@@ -14,7 +14,7 @@ pub fn contact_cuboid_cuboid(
 ) -> Option<Contact> {
     let pos21 = pos12.inverse();
 
-    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, &pos12);
+    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, pos12);
     if sep1.0 > prediction {
         return None;
     }
@@ -27,7 +27,7 @@ pub fn contact_cuboid_cuboid(
     #[cfg(feature = "dim2")]
     let sep3 = (-Real::MAX, crate::math::Vector::<Real>::y()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
-    let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, &pos12);
+    let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, pos12);
     if sep3.0 > prediction {
         return None;
     }

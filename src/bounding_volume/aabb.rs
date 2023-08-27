@@ -164,8 +164,8 @@ impl Aabb {
 
     #[inline]
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
-        let a = self.mins.coords.component_mul(&scale);
-        let b = self.maxs.coords.component_mul(&scale);
+        let a = self.mins.coords.component_mul(scale);
+        let b = self.maxs.coords.component_mul(scale);
         Self {
             mins: a.inf(&b).into(),
             maxs: a.sup(&b).into(),
@@ -368,9 +368,9 @@ impl Aabb {
         let shift = cuboid
             .local_support_point_toward(axis)
             .coords
-            .dot(&axis)
+            .dot(axis)
             .abs();
-        let center = self.center().coords.dot(&axis);
+        let center = self.center().coords.dot(axis);
         (center - shift, center + shift)
     }
 
@@ -471,8 +471,8 @@ impl Aabb {
             (self.maxs[2], Vector::z(), 2),
         ];
 
-        let range = self.project_on_axis(&axis);
-        let range_bias = center.coords.dot(&axis);
+        let range = self.project_on_axis(axis);
+        let range_bias = center.coords.dot(axis);
         let interval = Interval::sort(range.0, range.1) - range_bias;
 
         for (bias, axis, i) in &planes {

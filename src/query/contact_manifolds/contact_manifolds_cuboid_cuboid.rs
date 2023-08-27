@@ -25,7 +25,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
 ) {
-    if manifold.try_update_contacts(&pos12) {
+    if manifold.try_update_contacts(pos12) {
         return;
     }
 
@@ -37,13 +37,13 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
      * Point-Face
      *
      */
-    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, &pos12);
+    let sep1 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid1, cuboid2, pos12);
     if sep1.0 > prediction {
         manifold.clear();
         return;
     }
 
-    let sep2 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid2, cuboid1, &pos21);
+    let sep2 = sat::cuboid_cuboid_find_local_separating_normal_oneway(cuboid2, cuboid1, pos21);
     if sep2.0 > prediction {
         manifold.clear();
         return;
@@ -57,7 +57,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     #[cfg(feature = "dim2")]
     let sep3 = (-Real::MAX, Vector::x()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
-    let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, &pos12);
+    let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, pos12);
     if sep3.0 > prediction {
         manifold.clear();
         return;

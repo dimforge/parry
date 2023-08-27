@@ -100,7 +100,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
      * Compute interferences.
      */
     // TODO: somehow precompute the Aabb and reuse it?
-    let mut new_local_aabb2 = shape2.compute_aabb(&pos12).loosened(prediction);
+    let mut new_local_aabb2 = shape2.compute_aabb(pos12).loosened(prediction);
     let same_local_aabb2 = workspace.local_aabb2.contains(&new_local_aabb2);
     let mut old_manifolds = Vec::new();
 

@@ -64,7 +64,7 @@ impl Cylinder {
             // The scaled shape isn’t a cylinder.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))

@@ -80,7 +80,7 @@ impl TriMesh {
         epsilon: Real,
     ) -> SplitResult<Self> {
         let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(&axis);
+        let added_bias = -position.translation.vector.dot(axis);
         self.local_split(&local_axis, bias + added_bias, epsilon)
     }
 
@@ -109,7 +109,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(&local_axis) - bias;
+            let dist_to_plane = pt.coords.dot(local_axis) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;
@@ -372,7 +372,7 @@ impl TriMesh {
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
         let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(&axis);
+        let added_bias = -position.translation.vector.dot(axis);
         self.intersection_with_local_plane(&local_axis, bias + added_bias, epsilon)
     }
 
@@ -396,7 +396,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(&local_axis) - bias;
+            let dist_to_plane = pt.coords.dot(local_axis) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;

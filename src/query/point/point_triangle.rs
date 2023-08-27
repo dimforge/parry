@@ -123,18 +123,18 @@ impl PointQueryWithLocation for Triangle {
         ) -> ProjectionInfo {
             #[cfg(feature = "dim2")]
             {
-                let n = ab.perp(&ac);
-                let vc = n * ab.perp(&ap);
+                let n = ab.perp(ac);
+                let vc = n * ab.perp(ap);
                 if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
-                let vb = -n * ac.perp(&cp);
+                let vb = -n * ac.perp(cp);
                 if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
-                let va = n * bc.perp(&bp);
+                let va = n * bc.perp(bp);
                 if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
@@ -153,25 +153,25 @@ impl PointQueryWithLocation for Triangle {
 
                 #[cfg(not(feature = "improved_fixed_point_support"))]
                 {
-                    n = ab.cross(&ac);
+                    n = ab.cross(ac);
                 }
 
-                let vc = n.dot(&ab.cross(&ap));
+                let vc = n.dot(&ab.cross(ap));
                 if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
-                let vb = -n.dot(&ac.cross(&cp));
+                let vb = -n.dot(&ac.cross(cp));
                 if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
-                let va = n.dot(&bc.cross(&bp));
+                let va = n.dot(&bc.cross(bp));
                 if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
 
-                let clockwise = if n.dot(&ap) >= 0.0 { 0 } else { 1 };
+                let clockwise = if n.dot(ap) >= 0.0 { 0 } else { 1 };
 
                 return ProjectionInfo::OnFace(clockwise, va, vb, vc);
             }

@@ -143,7 +143,7 @@ pub fn try_get_initial_mesh(
         3 => {
             // The hull is a polyhedron.
             // Find a initial triangle lying on the principal halfspace…
-            let center = crate::utils::center(&normalized_points);
+            let center = crate::utils::center(normalized_points);
 
             for point in normalized_points.iter_mut() {
                 *point = Point3::from((*point - center) / eigval.amax());

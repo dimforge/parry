@@ -62,16 +62,16 @@ pub fn intersect_meshes(
 
     extract_connected_components(
         &pos12,
-        &mesh1,
-        &mesh2,
+        mesh1,
+        mesh2,
         flip2,
         &deleted_faces1,
         &mut new_indices1,
     );
     extract_connected_components(
         &pos12.inverse(),
-        &mesh2,
-        &mesh1,
+        mesh2,
+        mesh1,
         flip1,
         &deleted_faces2,
         &mut new_indices2,
@@ -82,9 +82,9 @@ pub fn intersect_meshes(
 
     cut_and_triangulate_intersections(
         &pos12,
-        &mesh1,
+        mesh1,
         flip1,
-        &mesh2,
+        mesh2,
         flip2,
         &mut new_vertices12,
         &mut new_indices12,
@@ -475,10 +475,10 @@ fn cut_and_triangulate_intersections(
     }
 
     extract_result(
-        &pos12,
-        &mesh1,
+        pos12,
+        mesh1,
         flip1,
-        &mesh2,
+        mesh2,
         flip2,
         &spade_handle_to_intersection,
         &intersection_points,
@@ -579,7 +579,7 @@ fn extract_result(
             for k in 0..3 {
                 let fids = spade_handle_to_intersection[0][&(*tri_id, vtx[k].fix())];
                 let vid = fids_to_unified_index(fids);
-                let vertex = unified_vertex(mesh1, mesh2, &new_vertices12, pos12, vid);
+                let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
 
                 idx[k] = vid as u32;
                 tri[k] = vertex;
@@ -587,7 +587,7 @@ fn extract_result(
 
             let tri = Triangle::from(tri);
             let center = tri.center();
-            let projection = mesh2.project_point(&pos12, &tri.center(), false);
+            let projection = mesh2.project_point(pos12, &tri.center(), false);
 
             if !tri.is_affinely_dependent_eps(EPS * 10.0)
                 && ((flip2 ^ projection.is_inside)
@@ -609,7 +609,7 @@ fn extract_result(
             for k in 0..3 {
                 let fids = spade_handle_to_intersection[1][&(*tri_id, vtx[k].fix())];
                 let vid = fids_to_unified_index(fids);
-                let vertex = unified_vertex(mesh1, mesh2, &new_vertices12, pos12, vid);
+                let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
 
                 idx[k] = vid as u32;
                 tri[k] = vertex;

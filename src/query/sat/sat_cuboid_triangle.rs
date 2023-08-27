@@ -69,8 +69,8 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 
             // NOTE: for both axis and -axis, the dot1 will have the same
             // value because of the cuboid's symmetry.
-            let local_pt1 = cube1.local_support_point(&axis);
-            let dot1 = local_pt1.coords.dot(&axis) / axis_norm;
+            let local_pt1 = cube1.local_support_point(axis);
+            let dot1 = local_pt1.coords.dot(axis) / axis_norm;
 
             let (dot2_min, dot2_max) = crate::utils::sort2(tri_dots[i].0, tri_dots[i].1);
 

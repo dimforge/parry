@@ -26,23 +26,23 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             Ok(query::details::intersection_test_ball_ball(&p12, b1, b2))
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
             Ok(query::details::intersection_test_cuboid_cuboid(
-                &pos12, c1, c2,
+                pos12, c1, c2,
             ))
         } else if let (Some(t1), Some(c2)) = (shape1.as_triangle(), shape2.as_cuboid()) {
             Ok(query::details::intersection_test_triangle_cuboid(
-                &pos12, t1, c2,
+                pos12, t1, c2,
             ))
         } else if let (Some(c1), Some(t2)) = (shape1.as_cuboid(), shape2.as_triangle()) {
             Ok(query::details::intersection_test_cuboid_triangle(
-                &pos12, c1, t2,
+                pos12, c1, t2,
             ))
         } else if let Some(b1) = shape1.as_ball() {
             Ok(query::details::intersection_test_ball_point_query(
-                &pos12, b1, shape2,
+                pos12, b1, shape2,
             ))
         } else if let Some(b2) = shape2.as_ball() {
             Ok(query::details::intersection_test_point_query_ball(
-                &pos12, shape1, b2,
+                pos12, shape1, b2,
             ))
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
@@ -203,7 +203,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
         if let (Some(b1), Some(b2)) = (ball1, ball2) {
             Ok(query::details::closest_points_ball_ball(
-                &pos12, b1, b2, max_dist,
+                pos12, b1, b2, max_dist,
             ))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::closest_points_ball_convex_polyhedron(
@@ -217,7 +217,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             (shape1.as_shape::<Segment>(), shape2.as_shape::<Segment>())
         {
             Ok(query::details::closest_points_segment_segment(
-                &pos12, s1, s2, max_dist,
+                pos12, s1, s2, max_dist,
             ))
         // } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
         //     Ok(query::details::closest_points_cuboid_cuboid(
@@ -239,27 +239,27 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
             Ok(query::details::closest_points_halfspace_support_map(
-                &pos12, p1, s2, max_dist,
+                pos12, p1, s2, max_dist,
             ))
         } else if let (Some(s1), Some(p2)) =
             (shape1.as_support_map(), shape2.as_shape::<HalfSpace>())
         {
             Ok(query::details::closest_points_support_map_halfspace(
-                &pos12, s1, p2, max_dist,
+                pos12, s1, p2, max_dist,
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::closest_points_support_map_support_map(
-                &pos12, s1, s2, max_dist,
+                pos12, s1, s2, max_dist,
             ))
         } else {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::closest_points_composite_shape_shape(
-                    self, &pos12, c1, shape2, max_dist,
+                    self, pos12, c1, shape2, max_dist,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::closest_points_shape_composite_shape(
-                    self, &pos12, shape1, c2, max_dist,
+                    self, pos12, shape1, c2, max_dist,
                 ));
             }
 

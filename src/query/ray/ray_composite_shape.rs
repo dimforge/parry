@@ -148,9 +148,9 @@ where
                     self.shape
                         .map_typed_part_at(part_id, |part_pos, part_shape| {
                             let toi = if let Some(part_pos) = part_pos {
-                                part_shape.cast_ray(part_pos, &self.ray, self.max_toi, self.solid)
+                                part_shape.cast_ray(part_pos, self.ray, self.max_toi, self.solid)
                             } else {
-                                part_shape.cast_local_ray(&self.ray, self.max_toi, self.solid)
+                                part_shape.cast_local_ray(self.ray, self.max_toi, self.solid)
                             };
                             if let Some(toi) = toi {
                                 results[ii] = Some((part_id, toi));
@@ -229,13 +229,13 @@ where
                             let result = if let Some(part_pos) = part_pos {
                                 part_shape.cast_ray_and_get_normal(
                                     part_pos,
-                                    &self.ray,
+                                    self.ray,
                                     self.max_toi,
                                     self.solid,
                                 )
                             } else {
                                 part_shape.cast_local_ray_and_get_normal(
-                                    &self.ray,
+                                    self.ray,
                                     self.max_toi,
                                     self.solid,
                                 )

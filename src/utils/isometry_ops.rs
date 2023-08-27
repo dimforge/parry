@@ -55,7 +55,7 @@ impl<'a> IsometryOpt for Option<&'a Isometry<Real>> {
     #[inline]
     fn inv_mul(self, rhs: &Isometry<Real>) -> Isometry<Real> {
         if let Some(iso) = self {
-            iso.inv_mul(&rhs)
+            iso.inv_mul(rhs)
         } else {
             *rhs
         }
@@ -129,7 +129,7 @@ impl IsometryOpt for Option<Isometry<Real>> {
     #[inline]
     fn inv_mul(self, rhs: &Isometry<Real>) -> Isometry<Real> {
         if let Some(iso) = self {
-            iso.inv_mul(&rhs)
+            iso.inv_mul(rhs)
         } else {
             *rhs
         }

@@ -55,7 +55,7 @@ impl RayCast for Aabb {
         max_toi: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        ray_aabb(self, &ray, max_toi, solid).map(|(t, n, i)| {
+        ray_aabb(self, ray, max_toi, solid).map(|(t, n, i)| {
             let feature = if i < 0 {
                 FeatureId::Face((-i) as u32 - 1 + 3)
             } else {

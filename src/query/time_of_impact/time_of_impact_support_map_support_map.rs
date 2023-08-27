@@ -20,13 +20,13 @@ where
     G1: SupportMap,
     G2: SupportMap,
 {
-    gjk::directional_distance(pos12, g1, g2, &vel12, &mut VoronoiSimplex::new()).and_then(
+    gjk::directional_distance(pos12, g1, g2, vel12, &mut VoronoiSimplex::new()).and_then(
         |(toi, normal1, witness1, witness2)| {
             if toi > max_toi {
                 None
             } else if !stop_at_penetration && toi < 1.0e-5 {
                 let contact = details::contact_support_map_support_map(pos12, g1, g2, Real::MAX)?;
-                let normal_vel = contact.normal1.dot(&vel12);
+                let normal_vel = contact.normal1.dot(vel12);
 
                 if normal_vel >= 0.0 {
                     None

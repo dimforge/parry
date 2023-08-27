@@ -12,6 +12,6 @@ pub fn distance(
     pos2: &Isometry<Real>,
     g2: &dyn Shape,
 ) -> Result<Real, Unsupported> {
-    let pos12 = pos1.inv_mul(&pos2);
+    let pos12 = pos1.inv_mul(pos2);
     DefaultQueryDispatcher.distance(&pos12, g1, g2)
 }

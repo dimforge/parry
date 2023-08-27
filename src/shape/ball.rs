@@ -45,7 +45,7 @@ impl Ball {
             // The scaled shape isn’t a ball.
             let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
                 vtx,
             )?))
@@ -72,7 +72,7 @@ impl Ball {
             // The scaled shape isn’t a ball.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(&scale));
+                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))

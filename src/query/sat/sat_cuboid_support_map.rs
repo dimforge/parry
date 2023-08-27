@@ -13,13 +13,13 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
     pos12: &Isometry<Real>,
     axis1: &Unit<Vector<Real>>,
 ) -> (Real, Unit<Vector<Real>>) {
-    let axis1_2 = pos12.inverse_transform_unit_vector(&axis1);
+    let axis1_2 = pos12.inverse_transform_unit_vector(axis1);
     let separation1 = {
         let axis2 = -axis1_2;
-        let local_pt1 = cube1.local_support_point_toward(&axis1);
+        let local_pt1 = cube1.local_support_point_toward(axis1);
         let local_pt2 = shape2.local_support_point_toward(&axis2);
         let pt2 = pos12 * local_pt2;
-        (pt2 - local_pt1).dot(&axis1)
+        (pt2 - local_pt1).dot(axis1)
     };
 
     let separation2 = {
@@ -80,7 +80,7 @@ pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
     for i in 0..DIM {
         for sign in &[-1.0, 1.0] {
             let axis1 = Vector::ith(i, *sign);
-            let pt2 = shape2.support_point_toward(&pos12, &Unit::new_unchecked(-axis1));
+            let pt2 = shape2.support_point_toward(pos12, &Unit::new_unchecked(-axis1));
             let separation = pt2[i] * *sign - cube1.half_extents[i];
 
             if separation > best_separation {

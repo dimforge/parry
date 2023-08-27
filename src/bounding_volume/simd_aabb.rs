@@ -165,8 +165,8 @@ impl SimdAabb {
     /// Returns a scaled version of this Aabb.
     #[inline]
     pub fn scaled(self, scale: &Vector<SimdReal>) -> Self {
-        let a = self.mins.coords.component_mul(&scale);
-        let b = self.maxs.coords.component_mul(&scale);
+        let a = self.mins.coords.component_mul(scale);
+        let b = self.maxs.coords.component_mul(scale);
         Self {
             mins: a.inf(&b).into(),
             maxs: a.sup(&b).into(),

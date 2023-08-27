@@ -54,7 +54,7 @@ impl RayCast for Triangle {
         max_toi: Real,
         _: bool,
     ) -> Option<RayIntersection> {
-        let inter = local_ray_intersection_with_triangle(&self.a, &self.b, &self.c, &ray)?.0;
+        let inter = local_ray_intersection_with_triangle(&self.a, &self.b, &self.c, ray)?.0;
 
         if inter.toi <= max_toi {
             Some(inter)
