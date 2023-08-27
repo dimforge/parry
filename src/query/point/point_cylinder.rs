@@ -45,11 +45,11 @@ impl PointQuery for Cylinder {
             if pt.y > self.half_height {
                 if planar_dist_from_basis_center <= self.radius {
                     let projection_on_top = Point::new(pt.coords.x, self.half_height, pt.coords.z);
-                    return PointProjection::new(false, projection_on_top);
+                    PointProjection::new(false, projection_on_top)
                 } else {
                     let projection_on_top_circle =
                         Point::new(proj2d[0], self.half_height, proj2d[1]);
-                    return PointProjection::new(false, projection_on_top_circle);
+                    PointProjection::new(false, projection_on_top_circle)
                 }
             } else if pt.y < -self.half_height {
                 // Project on the bottom plane or the bottom circle.

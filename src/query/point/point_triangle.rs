@@ -139,7 +139,7 @@ impl PointQueryWithLocation for Triangle {
                     return ProjectionInfo::OnBC;
                 }
 
-                return ProjectionInfo::OnFace(0, va, vb, vc);
+                ProjectionInfo::OnFace(0, va, vb, vc)
             }
             #[cfg(feature = "dim3")]
             {
@@ -173,7 +173,7 @@ impl PointQueryWithLocation for Triangle {
 
                 let clockwise = if n.dot(ap) >= 0.0 { 0 } else { 1 };
 
-                return ProjectionInfo::OnFace(clockwise, va, vb, vc);
+                ProjectionInfo::OnFace(clockwise, va, vb, vc)
             }
         }
 

@@ -346,7 +346,7 @@ impl EPA {
 
         let best_face = &self.faces[best_face_id.id];
         let cpts = best_face.closest_points(&self.vertices);
-        return Some((cpts.0, cpts.1, best_face.normal));
+        Some((cpts.0, cpts.1, best_face.normal))
     }
 }
 
