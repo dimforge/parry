@@ -250,7 +250,7 @@ fn fix_silhouette_topology(
         }
 
         let mut removing = None;
-        let old_facets_and_idx = std::mem::replace(out_facets_and_idx, Vec::new());
+        let old_facets_and_idx = std::mem::take(out_facets_and_idx);
 
         for i in 0..old_facets_and_idx.len() {
             let facet_id = (loop_start + i) % old_facets_and_idx.len();

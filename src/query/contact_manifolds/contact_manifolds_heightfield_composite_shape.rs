@@ -91,7 +91,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     let qbvh2 = composite2.qbvh();
     let mut stack2 = Vec::new();
     let ls_aabb2_1 = qbvh2.root_aabb().transform_by(pos12).loosened(prediction);
-    let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
+    let mut old_manifolds = std::mem::take(manifolds);
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2_1, &mut |leaf1, part1| {
         #[cfg(feature = "dim2")]

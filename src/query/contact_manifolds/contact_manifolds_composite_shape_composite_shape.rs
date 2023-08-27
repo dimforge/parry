@@ -98,7 +98,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
 
     // Traverse qbvh1 first.
     let ls_aabb2_1 = ls_aabb2.transform_by(&pos12).loosened(prediction);
-    let mut old_manifolds = std::mem::replace(manifolds, Vec::new());
+    let mut old_manifolds = std::mem::take(manifolds);
 
     let mut leaf_fn1 = |leaf1: &u32| {
         composite1.map_part_at(*leaf1, &mut |part_pos1, part_shape1| {
