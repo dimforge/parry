@@ -9,7 +9,7 @@ use na::Unit;
     archive(check_bytes)
 )]
 #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 /// A shape with rounded borders.
 pub struct RoundShape<S> {

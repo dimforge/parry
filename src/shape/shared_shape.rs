@@ -14,6 +14,8 @@ use na::Unit;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use super::TypedShape;
+
 /// The shape of a collider.
 #[derive(Clone)]
 pub struct SharedShape(pub Arc<dyn Shape>);
@@ -382,5 +384,49 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
         DeserializableTypedShape::deserialize(deserializer)?
             .into_shared_shape()
             .ok_or(D::Error::custom("Cannot deserialize custom shape."))
+    }
+}
+
+impl PartialEq for SharedShape {
+    fn eq(&self, other: &Self) -> bool {
+        // shapes with different types can't be equal.
+        if self.shape_type() != other.shape_type() {
+            return false;
+        }
+        match self.as_typed_shape() {
+            TypedShape::Ball(shape) => shape == other.as_ball().unwrap(),
+            TypedShape::Cuboid(shape) => shape == other.as_cuboid().unwrap(),
+            TypedShape::RoundCuboid(shape) => shape == other.as_round_cuboid().unwrap(),
+            TypedShape::Capsule(shape) => shape == other.as_capsule().unwrap(),
+            TypedShape::Segment(shape) => shape == other.as_segment().unwrap(),
+            TypedShape::Triangle(shape) => shape == other.as_triangle().unwrap(),
+            TypedShape::RoundTriangle(shape) => shape == other.as_round_triangle().unwrap(),
+            TypedShape::TriMesh(shape) => shape == other.as_trimesh().unwrap(),
+            TypedShape::Polyline(shape) => shape == other.as_polyline().unwrap(),
+            TypedShape::HalfSpace(shape) => shape == other.as_halfspace().unwrap(),
+            TypedShape::HeightField(_) => false,
+            TypedShape::Compound(shape) => shape == other.as_compound().unwrap(),
+            TypedShape::Custom(_) => false,
+            #[cfg(feature = "dim3")]
+            TypedShape::ConvexPolyhedron(shape) => shape == other.as_convex_polyhedron().unwrap(),
+            #[cfg(feature = "dim3")]
+            TypedShape::Cylinder(shape) => shape == other.as_cylinder().unwrap(),
+            #[cfg(feature = "dim3")]
+            TypedShape::Cone(shape) => shape == other.as_cone().unwrap(),
+            #[cfg(feature = "dim3")]
+            TypedShape::RoundCylinder(shape) => shape == other.as_round_cylinder().unwrap(),
+            #[cfg(feature = "dim3")]
+            TypedShape::RoundCone(shape) => shape == other.as_round_cone().unwrap(),
+            #[cfg(feature = "dim3")]
+            TypedShape::RoundConvexPolyhedron(shape) => {
+                shape == other.as_round_convex_polyhedron().unwrap()
+            }
+            #[cfg(feature = "dim2")]
+            TypedShape::ConvexPolygon(shape) => shape == other.as_convex_polygon().unwrap(),
+            #[cfg(feature = "dim2")]
+            TypedShape::RoundConvexPolygon(shape) => {
+                shape == other.as_round_convex_polygon().unwrap()
+            }
+        }
     }
 }

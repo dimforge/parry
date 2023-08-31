@@ -10,7 +10,7 @@ use na::{self, ComplexField, RealField, Unit};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConvexPolygon {
     points: Vec<Point<Real>>,
     normals: Vec<Unit<Vector<Real>>>,

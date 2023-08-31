@@ -23,6 +23,12 @@ pub struct Polyline {
     indices: Vec<[u32; 2]>,
 }
 
+impl PartialEq for Polyline {
+    fn eq(&self, other: &Self) -> bool {
+        self.indices() == other.indices() && self.vertices() == other.vertices()
+    }
+}
+
 impl Polyline {
     /// Creates a new polyline from a vertex buffer and an index buffer.
     pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {

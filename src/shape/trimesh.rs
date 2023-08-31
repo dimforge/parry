@@ -358,6 +358,22 @@ pub struct GenericTriMesh<Storage: TriMeshStorage> {
     flags: TriMeshFlags,
 }
 
+impl PartialEq for TriMesh {
+    fn eq(&self, other: &Self) -> bool {
+        let triangles = self.triangles();
+        let other_triangles = other.triangles();
+        if triangles.len() != other_triangles.len() {
+            return false;
+        }
+        for (t1, t2) in triangles.zip(other_triangles) {
+            if t1 != t2 {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 /// A triangle-mesh.
 pub type TriMesh = GenericTriMesh<DefaultStorage>;
 #[cfg(feature = "cuda")]
