@@ -429,8 +429,13 @@ impl TriMesh {
             }
         };
         let mut add_segment_adjacencies_symmetric = |idx_a: usize, idx_b| {
-            add_segment_adjacencies(idx_a, idx_b);
-            add_segment_adjacencies(idx_b, idx_a);
+            if idx_a < idx_b {
+                add_segment_adjacencies(idx_a, idx_b);
+                add_segment_adjacencies(idx_b, idx_a);
+            } else {
+                add_segment_adjacencies(idx_b, idx_a);
+                add_segment_adjacencies(idx_a, idx_b);
+            }
         };
 
         let mut intersections_found = HashMap::default();
