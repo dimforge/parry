@@ -22,6 +22,6 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
             }
         }
 
-        return true;
+        true
     }
 }

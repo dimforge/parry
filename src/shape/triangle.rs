@@ -511,11 +511,7 @@ impl Triangle {
         let c = vp.dot(&nb) * signed_clim.signum();
         let clim = signed_clim.abs();
 
-        return c >= 0.0
-            && c <= clim
-            && b >= 0.0
-            && b <= blim
-            && c * blim + b * clim <= blim * clim;
+        c >= 0.0 && c <= clim && b >= 0.0 && b <= blim && c * blim + b * clim <= blim * clim
     }
 
     /// The normal of the given feature of this shape.

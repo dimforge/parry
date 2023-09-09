@@ -82,7 +82,7 @@ impl VoronoiSimplex {
 
         self.dim += 1;
         self.vertices[self.dim] = pt;
-        return true;
+        true
     }
 
     /// Retrieves the barycentric coordinate associated to the `i`-th by the last call to `project_origin_and_reduce`.

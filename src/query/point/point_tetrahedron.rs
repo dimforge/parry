@@ -294,7 +294,7 @@ impl PointQueryWithLocation for Tetrahedron {
                     return Some((proj, TetrahedronPointLocation::OnFace(i as u32, bcoords)));
                 }
             }
-            return None;
+            None
         }
 
         // Face abc.
@@ -343,6 +343,6 @@ impl PointQueryWithLocation for Tetrahedron {
         }
 
         let proj = PointProjection::new(true, *pt);
-        return (proj, TetrahedronPointLocation::OnSolid);
+        (proj, TetrahedronPointLocation::OnSolid)
     }
 }
