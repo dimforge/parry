@@ -575,8 +575,8 @@ impl TriMesh {
                 .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
         );
 
-        let vertices = std::mem::replace(&mut self.vertices, Vec::new());
-        let indices = std::mem::replace(&mut self.indices, Vec::new());
+        let vertices = std::mem::take(&mut self.vertices);
+        let indices = std::mem::take(&mut self.indices);
         *self = TriMesh::with_flags(vertices, indices, self.flags);
     }
 
