@@ -167,12 +167,12 @@ impl VoxelizedVolume {
         }
 
         #[cfg(feature = "dim3")]
-        if d[0] > d[1] && d[0] > d[2] {
+        if d[0] >= d[1] && d[0] >= d[2] {
             r = d[0];
             result.resolution[0] = resolution;
             result.resolution[1] = 2 + (resolution as Real * d[1] / d[0]) as u32;
             result.resolution[2] = 2 + (resolution as Real * d[2] / d[0]) as u32;
-        } else if d[1] > d[0] && d[1] > d[2] {
+        } else if d[1] >= d[0] && d[1] >= d[2] {
             r = d[1];
             result.resolution[1] = resolution;
             result.resolution[0] = 2 + (resolution as Real * d[0] / d[1]) as u32;
