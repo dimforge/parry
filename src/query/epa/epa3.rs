@@ -418,7 +418,7 @@ impl EPA {
 
         let best_face = &self.faces[best_face_id.id];
         let points = best_face.closest_points(&self.vertices);
-        return Some((points.0, points.1, best_face.normal));
+        Some((points.0, points.1, best_face.normal))
     }
 
     fn compute_silhouette(&mut self, point: usize, id: usize, opp_pt_id: usize) {

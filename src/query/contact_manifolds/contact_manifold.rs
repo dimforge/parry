@@ -141,7 +141,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         #[cfg(feature = "dim2")]
         let points = self.points.clone();
         #[cfg(feature = "dim3")]
-        let points = std::mem::replace(&mut self.points, Vec::new());
+        let points = std::mem::take(&mut self.points);
         self.points.clear();
 
         ContactManifold {

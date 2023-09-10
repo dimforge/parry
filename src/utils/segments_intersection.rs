@@ -141,7 +141,7 @@ fn parallel_intersection(
         });
     }
 
-    return None;
+    None
 }
 
 // Checks that `c` is in-between `a` and `b`.

@@ -171,7 +171,7 @@ impl Polyline {
 
         if indices.len() == 0 {
             // Polyline is empty, return empty Vec
-            return Vec::new();
+            Vec::new()
         } else {
             let mut components = Vec::new();
 

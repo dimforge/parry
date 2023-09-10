@@ -377,7 +377,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         workspace.to_sort.extend(0..workspace.orig_ids.len());
         let root_id = NodeIndex::new(0, 0);
 
-        let mut indices = std::mem::replace(&mut workspace.to_sort, vec![]);
+        let mut indices = std::mem::take(&mut workspace.to_sort);
         let (id, aabb) = self.do_recurse_rebalance(&mut indices, workspace, root_id, margin);
         workspace.to_sort = indices;
 
