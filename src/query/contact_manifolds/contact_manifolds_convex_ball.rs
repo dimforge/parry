@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
 use na::Unit;
@@ -36,41 +36,48 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     let (proj, fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
     let dpos = local_p2_1 - proj.point;
 
-    if let Some((mut local_n1, mut dist)) = Unit::try_new_and_get(dpos, 0.0) {
-        if proj.is_inside {
-            local_n1 = -local_n1;
-            dist = -dist;
-        }
+    // local_n1 points from the surface towards our origin if defined, otherwise from the other
+    // shape's origin towards our origin if defined, otherwise towards +x
+    let (mut local_n1, mut dist) = Unit::try_new_and_get(dpos, 0.0).unwrap_or_else(|| {
+        (
+            Unit::try_new(pos12.translation.vector, 0.0).unwrap_or_else(|| Vector::x_axis()),
+            0.0,
+        )
+    });
 
-        if dist <= ball2.radius + prediction {
-            let local_n2 = pos12.inverse_transform_vector(&-*local_n1);
-            let local_p2 = (local_n2 * ball2.radius).into();
-            let contact_point = TrackedContact::flipped(
-                proj.point,
-                local_p2,
-                fid1.into(),
-                PackedFeatureId::face(0),
-                dist - ball2.radius,
-                flipped,
-            );
+    if proj.is_inside {
+        local_n1 = -local_n1;
+        dist = -dist;
+    }
 
-            if manifold.points.len() != 1 {
-                manifold.clear();
-                manifold.points.push(contact_point);
-            } else {
-                // Copy only the geometry so we keep the warmstart impulses.
-                manifold.points[0].copy_geometry_from(contact_point);
-            }
+    if dist <= ball2.radius + prediction {
+        let local_n2 = pos12.inverse_transform_vector(&-*local_n1);
+        let local_p2 = (local_n2 * ball2.radius).into();
+        let contact_point = TrackedContact::flipped(
+            proj.point,
+            local_p2,
+            fid1.into(),
+            PackedFeatureId::face(0),
+            dist - ball2.radius,
+            flipped,
+        );
 
-            if flipped {
-                manifold.local_n1 = local_n2;
-                manifold.local_n2 = *local_n1;
-            } else {
-                manifold.local_n1 = *local_n1;
-                manifold.local_n2 = local_n2;
-            }
-        } else {
+        if manifold.points.len() != 1 {
             manifold.clear();
+            manifold.points.push(contact_point);
+        } else {
+            // Copy only the geometry so we keep the warmstart impulses.
+            manifold.points[0].copy_geometry_from(contact_point);
         }
+
+        if flipped {
+            manifold.local_n1 = local_n2;
+            manifold.local_n2 = *local_n1;
+        } else {
+            manifold.local_n1 = *local_n1;
+            manifold.local_n2 = local_n2;
+        }
+    } else {
+        manifold.clear();
     }
 }
