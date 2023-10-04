@@ -339,8 +339,8 @@ impl EPA {
             }
 
             niter += 1;
-            if niter > 10000 {
-                return None;
+            if niter > 20 {
+                break;
             }
         }
 
