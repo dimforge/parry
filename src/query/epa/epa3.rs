@@ -411,7 +411,7 @@ impl EPA {
             // self.check_topology(); // NOTE: for debugging only.
 
             niter += 1;
-            if niter > 20 {
+            if niter > 100 {
                 break;
             }
         }
