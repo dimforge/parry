@@ -44,20 +44,20 @@ impl ConvexPolygon {
         let mut nremoved = 0;
         // See if the first vertex must be removed.
         if normals[0].dot(&*normals[normals.len() - 1]) > 1.0 - eps {
-            nremoved = 1;
+            //nremoved = 1;
         }
 
         // Second, find vertices that can be removed because
         // of collinearity of adjascent faces.
         for i2 in 1..points.len() {
             let i1 = i2 - 1;
-            if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
+            //if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
                 // Remove
-                nremoved += 1;
-            } else {
+            //    nremoved += 1;
+            //} else {
                 points[i2 - nremoved] = points[i2];
                 normals[i2 - nremoved] = normals[i2];
-            }
+            //}
         }
 
         let new_length = points.len() - nremoved;
