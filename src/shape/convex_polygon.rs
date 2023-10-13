@@ -34,7 +34,6 @@ impl ConvexPolygon {
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
         let mut normals = Vec::with_capacity(points.len());
-
         // First, compute all normals.
         for i1 in 0..points.len() {
             let i2 = (i1 + 1) % points.len();
@@ -63,8 +62,8 @@ impl ConvexPolygon {
         let new_length = points.len() - nremoved;
         points.truncate(new_length);
         normals.truncate(new_length);
-
-        if !points.is_empty() {
+        
+        if points.len() > 2  {
             Some(ConvexPolygon { points, normals })
         } else {
             None
