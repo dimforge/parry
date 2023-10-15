@@ -17,7 +17,7 @@ mod tests;
 /// Re-using the same workspace for multiple QBVH modification isn’t mandatory, but it improves
 /// performances by avoiding useless allocation.
 pub struct QbvhUpdateWorkspace {
-    stack: Vec<(u32, u8)>,
+    stack: Vec<(u32, u16)>,
     dirty_parent_nodes: Vec<u32>,
     // For rebalancing.
     to_sort: Vec<usize>,
@@ -337,7 +337,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         workspace.clear();
 
-        const MIN_CHANGED_DEPTH: u8 = 5; // TODO: find a good value
+        const MIN_CHANGED_DEPTH: u16 = 5; // TODO: find a good value
 
         for root_child in self.nodes[0].children {
             if root_child < self.nodes.len() as u32 {
