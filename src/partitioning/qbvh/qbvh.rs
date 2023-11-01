@@ -6,6 +6,10 @@ use bitflags::bitflags;
 
 use na::SimdValue;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
+
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 #[cfg(all(feature = "std", feature = "cuda"))]
@@ -307,7 +311,7 @@ impl<LeafData: DeviceCopy> CudaQbvh<LeafData> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Initialize an empty Qbvh.
     pub fn new() -> Self {

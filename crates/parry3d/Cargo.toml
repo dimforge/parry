@@ -19,6 +19,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = [ "required-features", "std" ]
 required-features = [ "dim3", "f32" ]
+alloc   = [ "hashbrown", "num-traits/libm" ]
 std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
 dim3    = [ ]
 f32     = [ ]
@@ -61,6 +62,7 @@ cust_core  = { version = "0.1", optional = true }
 spade      = { version = "2", optional = true } # Make this optional?
 rayon      = { version = "1", optional = true }
 bytemuck   = { version = "1", features = [ "derive" ], optional = true }
+hashbrown  = { version = "0.14.2", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust       = { version = "0.3", optional = true }

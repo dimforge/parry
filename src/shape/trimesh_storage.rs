@@ -8,6 +8,9 @@ use crate::utils::CudaArray1;
 #[cfg(feature = "cuda")]
 use crate::utils::{CudaArrayPointer1, CudaStorage, CudaStoragePtr};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// Trait describing all the types needed for storing a triangle mesh’s data.
 pub trait TriMeshStorage {
     /// Storage needed to store a Qbvh.
@@ -32,7 +35,7 @@ pub trait TriMeshStorage {
     type ArrayVectorTriple: Array1<[Vector<Real>; 3]>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl TriMeshStorage for DefaultStorage {
     type QbvhStorage = Self;
     type ArrayTopoVertex = Vec<TopoVertex>;

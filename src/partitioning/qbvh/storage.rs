@@ -5,6 +5,8 @@ use crate::utils::{Array1, DefaultStorage};
 use crate::utils::CudaArray1;
 #[cfg(feature = "cuda")]
 use crate::utils::{CudaArrayPointer1, CudaStorage, CudaStoragePtr};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 /// Trait describing all the types needed for storing a Qbvh’s data.
 pub trait QbvhStorage<LeafData> {
@@ -16,7 +18,7 @@ pub trait QbvhStorage<LeafData> {
     type ArrayProxies: Array1<QbvhProxy<LeafData>>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<LeafData> QbvhStorage<LeafData> for DefaultStorage {
     type Nodes = Vec<QbvhNode>;
     type ArrayU32 = Vec<u32>;

@@ -15,7 +15,7 @@ mod qbvh;
 mod storage;
 pub(self) mod utils;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod build;
 #[cfg(feature = "std")]
 mod traversal;

@@ -2,6 +2,9 @@ use core::ops::IndexMut;
 #[cfg(feature = "std")]
 use na::{DMatrix, DVector, Scalar};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// Abstraction over a 1D array.
 pub trait Array1<T>: IndexMut<usize, Output = T> {
     /// The number of heights on this storage.
@@ -25,7 +28,7 @@ pub trait Array1<T>: IndexMut<usize, Output = T> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<T> Array1<T> for Vec<T> {
     #[inline]
     fn len(&self) -> usize {
