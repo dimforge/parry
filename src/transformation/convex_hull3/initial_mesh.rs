@@ -7,6 +7,9 @@ use crate::utils;
 use na::{Point2, Point3, Vector3};
 use std::cmp::Ordering;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 #[derive(Debug)]
 pub enum InitialMesh {
     Facets(Vec<TriangleFacet>),

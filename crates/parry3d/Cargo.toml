@@ -19,7 +19,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = [ "required-features", "std" ]
 required-features = [ "dim3", "f32" ]
-alloc   = [ "hashbrown", "num-traits/libm" ]
+alloc   = [ "hashbrown", "num-traits/libm", "nalgebra/alloc" ]
 std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
 dim3    = [ ]
 f32     = [ ]
@@ -59,7 +59,7 @@ num-derive = "0.4"
 indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash = { version = "1", optional = true }
 cust_core  = { version = "0.1", optional = true }
-spade      = { version = "2", optional = true } # Make this optional?
+spade      = { version = "2", optional = true }
 rayon      = { version = "1", optional = true }
 bytemuck   = { version = "1", features = [ "derive" ], optional = true }
 hashbrown  = { version = "0.14.2", optional = true }

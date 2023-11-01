@@ -3,6 +3,9 @@ use crate::shape::Ball;
 use crate::transformation::utils;
 use na::{self, ComplexField, Point3, RealField};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl Ball {
     /// Discretize the boundary of this ball as a triangle-mesh.
     pub fn to_trimesh(

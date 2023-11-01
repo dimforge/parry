@@ -3,6 +3,9 @@ use crate::shape::Capsule;
 use crate::transformation::utils;
 use na::{self, Point2, RealField, Vector2};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 impl Capsule {
     /// Discretize the boundary of this capsule as a polygonal line.
     pub fn to_polyline(&self, nsubdiv: u32) -> Vec<Point2<Real>> {

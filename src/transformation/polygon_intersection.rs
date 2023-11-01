@@ -4,6 +4,9 @@ use crate::math::Real;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::{self, SegmentsIntersection};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum InFlag {
     PIn,

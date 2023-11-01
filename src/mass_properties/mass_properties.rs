@@ -9,6 +9,9 @@ use {na::Matrix3, std::ops::MulAssign};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 const EPSILON: Real = f32::EPSILON as Real;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -378,8 +381,8 @@ impl AddAssign<MassProperties> for MassProperties {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::iter::Sum<MassProperties> for MassProperties {
+#[cfg(any(feature = "std", feature = "alloc"))]
+impl core::iter::Sum<MassProperties> for MassProperties {
     #[cfg(feature = "dim2")]
     fn sum<I>(iter: I) -> Self
     where

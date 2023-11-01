@@ -6,7 +6,7 @@ pub use self::center::center;
 pub use self::deterministic_state::DeterministicState;
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::cleanup::remove_unused_points;
 pub(crate) use self::inv::inv;
 pub use self::isometry_ops::{IsometryOps, IsometryOpt};
@@ -47,7 +47,7 @@ mod as_bytes;
 mod ccw_face_normal;
 mod center;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod cleanup;
 mod consts;
 mod cov;
@@ -58,7 +58,7 @@ mod cuda_device_pointer;
 #[cfg(feature = "std")]
 mod deterministic_state;
 mod hashable_partial_eq;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub mod hashmap;
 #[cfg(feature = "std")]
 mod interval;

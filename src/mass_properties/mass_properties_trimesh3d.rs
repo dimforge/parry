@@ -29,7 +29,10 @@ impl MassProperties {
             itot += ipart * vol;
         }
 
+        #[cfg(feature = "std")]
         let sign = volume.signum();
+        #[cfg(not(feature = "std"))]
+        let sign = if volume >= 0.0f32 { 1.0f32 } else { -1.0f32 };
         Self::with_inertia_matrix(com, volume * density * sign, itot * density * sign)
     }
 }
@@ -208,6 +211,7 @@ mod test {
 
         use crate::shape::Shape;
         let orig_mprops = cuboid.mass_properties(1.0);
+        #[cfg(feature = "std")]
         dbg!(orig_mprops.principal_inertia());
 
         let mut trimesh = cuboid.to_trimesh();

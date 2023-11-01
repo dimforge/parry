@@ -3,6 +3,9 @@ use crate::shape::{Capsule, Cylinder};
 use crate::transformation::utils;
 use na::{self, Point3};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 impl Capsule {
     /// Outlines this capsule’s shape using polylines.
     pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {

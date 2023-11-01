@@ -6,6 +6,9 @@ use na::{self, Point3, RealField};
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 impl Ball {
     /// Outlines this ball’s shape using polylines.
     pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {

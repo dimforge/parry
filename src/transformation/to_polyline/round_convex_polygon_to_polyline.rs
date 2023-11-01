@@ -3,6 +3,9 @@ use crate::shape::RoundConvexPolygon;
 use crate::transformation::utils;
 use na::{self, Point2};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl RoundConvexPolygon {
     /// Discretize the boundary of this round convex polygon as a polygonal line.
     pub fn to_polyline(&self, border_subdivs: u32) -> Vec<Point2<Real>> {

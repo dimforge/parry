@@ -3,6 +3,9 @@ use crate::shape::Ball;
 use crate::transformation::utils;
 use na::{self, Point2, RealField};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 impl Ball {
     /// Discretize the boundary of this ball as a polygonal line.
     pub fn to_polyline(&self, nsubdivs: u32) -> Vec<Point2<Real>> {

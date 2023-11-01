@@ -51,10 +51,12 @@ pub fn deserialize_hashmap_capacity<
  */
 #[cfg(feature = "enhanced-determinism")]
 pub type FxHashMap32<K, V> = indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<FxHasher32>>;
-#[cfg(feature = "enhanced-determinism")]
+#[cfg(all(feature = "enhanced-determinism", feature = "std"))]
 pub use {self::FxHashMap32 as HashMap, indexmap::map::Entry};
-#[cfg(not(feature = "enhanced-determinism"))]
+#[cfg(all(not(feature = "enhanced-determinism"), feature = "std"))]
 pub use {rustc_hash::FxHashMap as HashMap, std::collections::hash_map::Entry};
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+pub use {hashbrown::HashMap, hashbrown::hash_map::Entry};
 
 const K: u32 = 0x9e3779b9;
 

@@ -2,6 +2,9 @@ use crate::math::Real;
 use crate::shape::HeightField;
 use na::Point2;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl HeightField {
     /// Rasterize this heightfield as a (potentially discontinuous) polyline.
     pub fn to_polyline(&self) -> (Vec<Point2<Real>>, Vec<[u32; 2]>) {

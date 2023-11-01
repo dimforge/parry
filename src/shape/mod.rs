@@ -25,7 +25,7 @@ pub use self::{
 };
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::convex_polygon::ConvexPolygon;
 #[cfg(feature = "dim2")]
 pub use self::heightfield2::*;
@@ -35,7 +35,7 @@ pub use self::polygonal_feature2d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::cone::Cone;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::convex_polyhedron::ConvexPolyhedron;
 #[cfg(feature = "dim3")]
 pub use self::cylinder::Cylinder;
@@ -60,11 +60,11 @@ pub type RoundCuboid = RoundShape<Cuboid>;
 pub type RoundTriangle = RoundShape<Triangle>;
 /// A convex polyhedron dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub type RoundConvexPolyhedron = RoundShape<ConvexPolyhedron>;
 /// A convex polygon dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub type RoundConvexPolygon = RoundShape<ConvexPolygon>;
 
 mod ball;
@@ -86,7 +86,7 @@ pub mod support_map;
 mod triangle;
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod convex_polygon;
 #[cfg(feature = "dim2")]
 mod heightfield2;
@@ -94,7 +94,7 @@ mod heightfield2;
 #[cfg(feature = "dim3")]
 mod cone;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod convex_polyhedron;
 #[cfg(feature = "dim3")]
 mod cylinder;

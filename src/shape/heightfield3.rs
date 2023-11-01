@@ -1,5 +1,5 @@
 use crate::utils::DefaultStorage;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use na::DMatrix;
 use std::ops::Range;
 
@@ -47,7 +47,7 @@ pub trait HeightFieldStorage {
     type Status: Array2<Item = HeightFieldCellStatus>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightFieldStorage for DefaultStorage {
     type Heights = DMatrix<Real>;
     type Status = DMatrix<HeightFieldCellStatus>;

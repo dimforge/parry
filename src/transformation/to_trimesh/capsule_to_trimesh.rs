@@ -3,6 +3,9 @@ use crate::shape::Capsule;
 use crate::transformation::utils;
 use na::{self, Point3};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl Capsule {
     /// Discretize the boundary of this capsule as a triangle-mesh.
     pub fn to_trimesh(

@@ -3,6 +3,9 @@ use crate::shape::Triangle;
 use na::{Point3, Vector3};
 use num::Bounded;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[derive(Debug)]
 pub struct TriangleFacet {
     pub valid: bool,
