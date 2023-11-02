@@ -2,8 +2,14 @@ use crate::query::ContactManifold;
 use crate::shape::Triangle;
 use crate::utils::hashmap::HashMap;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[cfg(feature = "dim3")]
 use crate::math::Real;
+
+#[cfg(not(feature = "std"))]
+use crate::na::ComplexField;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(

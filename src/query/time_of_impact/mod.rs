@@ -5,7 +5,7 @@ pub use self::time_of_impact_ball_ball::time_of_impact_ball_ball;
 pub use self::time_of_impact_halfspace_support_map::{
     time_of_impact_halfspace_support_map, time_of_impact_support_map_halfspace,
 };
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::{
     time_of_impact_composite_shape_shape::{
         time_of_impact_composite_shape_shape, time_of_impact_shape_composite_shape,
@@ -19,10 +19,10 @@ pub use self::{
 
 mod time_of_impact;
 mod time_of_impact_ball_ball;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod time_of_impact_composite_shape_shape;
 mod time_of_impact_halfspace_support_map;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod time_of_impact_heightfield_shape;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod time_of_impact_support_map_support_map;

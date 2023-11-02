@@ -11,6 +11,9 @@ use crate::shape::{Shape, SimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -103,7 +106,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
                         timestamp: new_timestamp,
                     };
 
-                    let mut manifold = ContactManifold::new();
+                    let mut manifold: ContactManifold<ManifoldData, ContactData> = ContactManifold::new();
 
                     if flipped {
                         manifold.subshape1 = 0;

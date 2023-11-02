@@ -80,7 +80,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
             pfm1.local_support_feature(&local_n1, &mut feature1);
             pfm2.local_support_feature(&local_n2, &mut feature2);
 
-            PolygonalFeature::contacts(
+            PolygonalFeature::contacts::<ManifoldData, ContactData>(
                 pos12,
                 &pos12.inverse(),
                 &local_n1,

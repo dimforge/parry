@@ -122,7 +122,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     let old_manifold_points = manifold.points.clone();
     manifold.clear();
 
-    PolygonalFeature::contacts(
+    PolygonalFeature::contacts::<ManifoldData, ContactData>(
         pos12,
         pos21,
         &best_sep.1,

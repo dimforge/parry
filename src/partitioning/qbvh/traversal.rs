@@ -10,7 +10,6 @@ use crate::utils::Array1;
 use crate::utils::WeightedValue;
 use num::Bounded;
 use simba::simd::SimdBool;
-use std::collections::BinaryHeap;
 #[cfg(feature = "parallel")]
 use {
     crate::partitioning::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor},
@@ -18,6 +17,12 @@ use {
     rayon::prelude::*,
     std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
 };
+
+#[cfg(feature = "std")]
+use std::collections::BinaryHeap;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec, collections::BinaryHeap};
 
 use super::{IndexedData, NodeIndex, Qbvh};
 

@@ -27,7 +27,7 @@
 
 pub use self::closest_points::{closest_points, ClosestPoints};
 pub use self::contact::{contact, Contact};
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::contact_manifolds::{
     ContactManifold, ContactManifoldsWorkspace, TrackedContact, TypedWorkspaceData, WorkspaceData,
 };
@@ -37,7 +37,7 @@ pub use self::error::Unsupported;
 pub use self::intersection_test::intersection_test;
 pub use self::nonlinear_time_of_impact::{nonlinear_time_of_impact, NonlinearRigidMotion};
 pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::query_dispatcher::PersistentQueryDispatcher;
 pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
@@ -47,7 +47,7 @@ pub use self::time_of_impact::{time_of_impact, TOIStatus, TOI};
 mod clip;
 pub mod closest_points;
 pub mod contact;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod contact_manifolds;
 mod default_query_dispatcher;
 mod distance;

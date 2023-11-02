@@ -8,6 +8,9 @@ use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
 
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -163,7 +166,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
                 }
             }
 
-            let manifold = if old_inter_it.peek() != Some(triangle_id) {
+            let manifold: ContactManifold<ManifoldData, ContactData> = if old_inter_it.peek() != Some(triangle_id) {
                 let (id1, id2) = if flipped {
                     (0, *triangle_id)
                 } else {

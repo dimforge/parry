@@ -1,5 +1,8 @@
 use downcast_rs::{impl_downcast, DowncastSync};
 
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
 use crate::query::contact_manifolds::{
     CompositeShapeCompositeShapeContactManifoldsWorkspace,
     CompositeShapeShapeContactManifoldsWorkspace,

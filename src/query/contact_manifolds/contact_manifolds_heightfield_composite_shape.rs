@@ -13,6 +13,9 @@ use crate::shape::{HeightField, Shape, SimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+
 #[cfg(feature = "dim3")]
 use crate::query::contact_manifolds::InternalEdgesFixer;
 
@@ -117,7 +120,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
                             timestamp: new_timestamp,
                         };
 
-                        let mut manifold = ContactManifold::new();
+                        let mut manifold: ContactManifold<ManifoldData, ContactData> = ContactManifold::new();
 
                         if flipped {
                             manifold.subshape1 = *leaf2;
