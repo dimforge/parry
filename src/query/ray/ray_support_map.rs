@@ -7,9 +7,9 @@ use crate::math::Real;
 use crate::query;
 use crate::query::gjk::{self, CSOPoint, VoronoiSimplex};
 use crate::query::{Ray, RayCast, RayIntersection};
-#[cfg(all(feature = "std", feature = "dim2"))]
+#[cfg(all(any(feature = "std", feature = "alloc"), feature = "dim2"))]
 use crate::shape::ConvexPolygon;
-#[cfg(all(feature = "std", feature = "dim3"))]
+#[cfg(all(any(feature = "std", feature = "alloc"), feature = "dim3"))]
 use crate::shape::ConvexPolyhedron;
 use crate::shape::{Capsule, FeatureId, Segment, SupportMap};
 #[cfg(feature = "dim3")]
@@ -119,7 +119,7 @@ impl RayCast for Capsule {
 }
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl RayCast for ConvexPolyhedron {
     fn cast_local_ray_and_get_normal(
         &self,
@@ -138,7 +138,7 @@ impl RayCast for ConvexPolyhedron {
 }
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl RayCast for ConvexPolygon {
     fn cast_local_ray_and_get_normal(
         &self,

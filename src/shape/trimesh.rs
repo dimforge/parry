@@ -18,6 +18,7 @@ use {
 
 #[cfg(feature = "alloc")]
 use {
+    crate::shape::composite_shape::SimdCompositeShape,
     hashbrown::{HashSet, HashMap, hash_map::Entry},
     alloc::{vec::Vec, vec}
 };
@@ -1145,7 +1146,7 @@ impl RayCast for TriMesh {
 */
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<Storage: HeightFieldStorage> From<crate::shape::GenericHeightField<Storage>> for TriMesh {
     fn from(heightfield: crate::shape::GenericHeightField<Storage>) -> Self {
         let (vtx, idx) = heightfield.to_trimesh();
@@ -1154,7 +1155,7 @@ impl<Storage: HeightFieldStorage> From<crate::shape::GenericHeightField<Storage>
 }
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl From<Cuboid> for TriMesh {
     fn from(cuboid: Cuboid) -> Self {
         let (vtx, idx) = cuboid.to_trimesh();
@@ -1162,7 +1163,7 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl SimdCompositeShape for TriMesh {
     fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.triangle(i);

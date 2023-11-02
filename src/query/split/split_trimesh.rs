@@ -5,8 +5,14 @@ use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
+#[cfg(feature = "std")]
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
+
+#[cfg(feature = "std")]
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
     basis: [Vector<Real>; 2],
@@ -15,6 +21,7 @@ struct Triangulation {
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
+#[cfg(feature = "std")]
 impl Triangulation {
     fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
         Triangulation {
@@ -65,11 +72,14 @@ impl TriMesh {
     /// Returns the result of the split. The first mesh returned is the piece lying on the negative
     /// half-space delimited by the splitting plane. The second mesh returned is the piece lying on the
     /// positive half-space delimited by the splitting plane.
+    #[cfg(feature = "std")]
     pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
         // TODO: optimize this.
         self.local_split(&Vector::ith_axis(axis), bias, epsilon)
     }
 
+
+    #[cfg(feature = "std")]
     /// Splits this mesh, transformed by `position` by a plane identified by its normal `local_axis`
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn split(
@@ -84,6 +94,8 @@ impl TriMesh {
         self.local_split(&local_axis, bias + added_bias, epsilon)
     }
 
+
+    #[cfg(feature = "std")]
     /// Splits this mesh by a plane identified by its normal `local_axis`
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn local_split(
@@ -438,8 +450,14 @@ impl TriMesh {
             }
         };
 
+        #[cfg(feature = "std")]
         let mut intersections_found = HashMap::default();
+        #[cfg(feature = "alloc")]
+        let mut intersections_found: HashMap<SortedPair<u32>, usize> = HashMap::default();
+        #[cfg(feature = "std")]
         let mut existing_vertices_found = HashMap::default();
+        #[cfg(feature = "alloc")]
+        let mut existing_vertices_found: HashMap<u32, usize> = HashMap::default();
         let mut new_vertices = Vec::new();
 
         for idx in indices.iter() {

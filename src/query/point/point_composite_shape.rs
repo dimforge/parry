@@ -15,10 +15,10 @@ use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 #[cfg(feature = "dim3")]
 use crate::utils::Array1;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::shape::{Compound, Polyline};
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -104,7 +104,7 @@ impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -128,7 +128,7 @@ impl PointQuery for Compound {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl PointQueryWithLocation for Polyline {
     type Location = (u32, SegmentPointLocation);
 

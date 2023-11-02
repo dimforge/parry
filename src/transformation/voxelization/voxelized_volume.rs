@@ -20,7 +20,12 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
+
+#[cfg(feature = "std")]
 use std::sync::Arc;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, sync::Arc};
 
 /// Controls how the voxelization determines which voxel needs
 /// to be considered empty, and which ones will be considered full.

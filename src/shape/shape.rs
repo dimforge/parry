@@ -4,7 +4,7 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{PointQuery, RayCast};
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::shape::{composite_shape::SimdCompositeShape, Compound, HeightField, Polyline, TriMesh};
 use crate::shape::{
     Ball, Capsule, Cuboid, FeatureId, HalfSpace, PolygonalFeatureMap, RoundCuboid, RoundShape,
@@ -14,16 +14,19 @@ use crate::shape::{
 use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
 use na::{RealField, Unit};
 use num::Zero;
 use num_derive::FromPrimitive;
+
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
 
 #[derive(Copy, Clone, Debug, FromPrimitive, PartialEq, Eq, Hash)]
 /// Enum representing the type of a shape.
@@ -100,24 +103,24 @@ pub enum TypedShape<'a> {
     /// A triangle shape.
     Triangle(&'a Triangle),
     /// A triangle mesh shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     TriMesh(&'a TriMesh),
     /// A set of segments.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     Polyline(&'a Polyline),
     /// A shape representing a full half-space.
     HalfSpace(&'a HalfSpace),
     /// A heightfield shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     HeightField(&'a HeightField),
     /// A Compound shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     Compound(&'a Compound),
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     ConvexPolygon(&'a ConvexPolygon),
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     /// A convex polyhedron.
     ConvexPolyhedron(&'a ConvexPolyhedron),
     #[cfg(feature = "dim3")]
@@ -144,11 +147,11 @@ pub enum TypedShape<'a> {
     RoundCone(&'a RoundCone),
     /// A convex polyhedron with rounded corners.
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     RoundConvexPolyhedron(&'a RoundConvexPolyhedron),
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     RoundConvexPolygon(&'a RoundConvexPolygon),
     /// A custom user-defined shape with a type identified by a number.
     Custom(u32),
@@ -170,24 +173,24 @@ pub(crate) enum DeserializableTypedShape {
     /// A triangle shape.
     Triangle(Triangle),
     /// A triangle mesh shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     TriMesh(TriMesh),
     /// A set of segments.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     Polyline(Polyline),
     /// A shape representing a full half-space.
     HalfSpace(HalfSpace),
     /// A heightfield shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     HeightField(HeightField),
     /// A Compound shape.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     Compound(Compound),
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     ConvexPolygon(ConvexPolygon),
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     /// A convex polyhedron.
     ConvexPolyhedron(ConvexPolyhedron),
     #[cfg(feature = "dim3")]
@@ -214,11 +217,11 @@ pub(crate) enum DeserializableTypedShape {
     RoundCone(RoundCone),
     /// A convex polyhedron with rounded corners.
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     RoundConvexPolyhedron(RoundConvexPolyhedron),
     /// A convex polygon with rounded corners.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     RoundConvexPolygon(RoundConvexPolygon),
     /// A custom user-defined shape identified by a number.
     Custom(u32),
@@ -234,20 +237,20 @@ impl DeserializableTypedShape {
             DeserializableTypedShape::Capsule(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Segment(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Triangle(s) => Some(SharedShape::new(s)),
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::TriMesh(s) => Some(SharedShape::new(s)),
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::Polyline(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::HalfSpace(s) => Some(SharedShape::new(s)),
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::HeightField(s) => Some(SharedShape::new(s)),
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::Compound(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim2")]
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::ConvexPolygon(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::ConvexPolyhedron(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
             DeserializableTypedShape::Cylinder(s) => Some(SharedShape::new(s)),
@@ -260,10 +263,10 @@ impl DeserializableTypedShape {
             #[cfg(feature = "dim3")]
             DeserializableTypedShape::RoundCone(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim3")]
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::RoundConvexPolyhedron(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "dim2")]
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             DeserializableTypedShape::RoundConvexPolygon(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Custom(_) => None,
         }
@@ -278,7 +281,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn compute_local_bounding_sphere(&self) -> BoundingSphere;
 
     /// Clones this shape into a boxed trait-object.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape>;
 
     /// Computes the [`Aabb`] of this shape with the given position.
@@ -323,7 +326,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
         None
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         None
     }
@@ -422,45 +425,45 @@ impl dyn Shape {
     }
 
     /// Converts this abstract shape to a compound shape, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_compound(&self) -> Option<&Compound> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable compound shape, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_compound_mut(&mut self) -> Option<&mut Compound> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a triangle mesh, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_trimesh(&self) -> Option<&TriMesh> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable triangle mesh, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_trimesh_mut(&mut self) -> Option<&mut TriMesh> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a polyline, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_polyline(&self) -> Option<&Polyline> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable polyline, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_polyline_mut(&mut self) -> Option<&mut Polyline> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a heightfield, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_heightfield(&self) -> Option<&HeightField> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable heightfield, if it is one.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_heightfield_mut(&mut self) -> Option<&mut HeightField> {
         self.downcast_mut()
     }
@@ -485,37 +488,37 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_convex_polygon_mut(&mut self) -> Option<&mut ConvexPolygon> {
         self.downcast_mut()
     }
 
     /// Converts this abstract shape to a round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_round_convex_polygon(&self) -> Option<&RoundConvexPolygon> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_round_convex_polygon_mut(&mut self) -> Option<&mut RoundConvexPolygon> {
         self.downcast_mut()
     }
 
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
         self.downcast_ref()
     }
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_convex_polyhedron_mut(&mut self) -> Option<&mut ConvexPolyhedron> {
         self.downcast_mut()
     }
@@ -566,20 +569,20 @@ impl dyn Shape {
 
     /// Converts this abstract shape to a round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_round_convex_polyhedron(&self) -> Option<&RoundConvexPolyhedron> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to a mutable round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn as_round_convex_polyhedron_mut(&mut self) -> Option<&mut RoundConvexPolyhedron> {
         self.downcast_mut()
     }
 }
 
 impl Shape for Ball {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -636,7 +639,7 @@ impl Shape for Ball {
 }
 
 impl Shape for Cuboid {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -695,7 +698,7 @@ impl Shape for Cuboid {
 }
 
 impl Shape for Capsule {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -746,7 +749,7 @@ impl Shape for Capsule {
 }
 
 impl Shape for Triangle {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -809,7 +812,7 @@ impl Shape for Triangle {
 }
 
 impl Shape for Segment {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -867,7 +870,7 @@ impl Shape for Segment {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for Compound {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -909,13 +912,13 @@ impl Shape for Compound {
         })
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for Polyline {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -955,13 +958,13 @@ impl Shape for Polyline {
         Real::frac_pi_4()
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for TriMesh {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1002,13 +1005,13 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for HeightField {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1050,7 +1053,7 @@ impl Shape for HeightField {
 }
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for ConvexPolygon {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1113,7 +1116,7 @@ impl Shape for ConvexPolygon {
 }
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Shape for ConvexPolyhedron {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
@@ -1178,7 +1181,7 @@ impl Shape for ConvexPolyhedron {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cylinder {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1230,7 +1233,7 @@ impl Shape for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl Shape for Cone {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1284,7 +1287,7 @@ impl Shape for Cone {
 }
 
 impl Shape for HalfSpace {
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
     }
@@ -1329,7 +1332,7 @@ impl Shape for HalfSpace {
 macro_rules! impl_shape_for_round_shape(
     ($($S: ty, $Tag: ident);*) => {$(
         impl Shape for RoundShape<$S> {
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             fn clone_box(&self) -> Box<dyn Shape> {
                 Box::new(self.clone())
             }
@@ -1388,7 +1391,7 @@ impl_shape_for_round_shape!(
     Triangle, RoundTriangle
 );
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl_shape_for_round_shape!(ConvexPolygon, RoundConvexPolygon);
 #[cfg(feature = "dim3")]
 impl_shape_for_round_shape!(
@@ -1397,5 +1400,5 @@ impl_shape_for_round_shape!(
 );
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl_shape_for_round_shape!(ConvexPolyhedron, RoundConvexPolyhedron);

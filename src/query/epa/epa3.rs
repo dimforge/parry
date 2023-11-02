@@ -7,8 +7,13 @@ use crate::shape::{SupportMap, Triangle, TrianglePointLocation};
 use crate::utils;
 use na::{self, Unit};
 use num::Bounded;
-use std::cmp::Ordering;
+use core::cmp::Ordering;
+
+#[cfg(feature = "std")]
 use std::collections::BinaryHeap;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, collections::BinaryHeap};
 
 #[derive(Copy, Clone, PartialEq)]
 struct FaceId {
@@ -447,12 +452,14 @@ impl EPA {
 
     #[allow(dead_code)]
     fn print_silhouette(&self) {
+        #[cfg(feature = "std")]
         print!("Silhouette points: ");
         for i in 0..self.silhouette.len() {
             let edge = &self.silhouette[i];
             let face = &self.faces[edge.face_id];
 
             if !face.deleted {
+                #[cfg(feature = "std")]
                 print!(
                     "({}, {}) ",
                     face.pts[(edge.opp_pt_id + 2) % 3],
@@ -460,6 +467,7 @@ impl EPA {
                 );
             }
         }
+        #[cfg(feature = "std")]
         println!("");
     }
 

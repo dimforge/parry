@@ -112,7 +112,7 @@ pub type CudaHeightField = GenericHeightField<CudaStorage>;
 #[cfg(feature = "cuda")]
 pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
     pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {

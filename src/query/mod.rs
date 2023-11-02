@@ -51,7 +51,7 @@ pub mod contact;
 mod contact_manifolds;
 mod default_query_dispatcher;
 mod distance;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub mod epa;
 mod error;
 pub mod gjk;

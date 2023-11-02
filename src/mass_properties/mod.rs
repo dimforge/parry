@@ -5,7 +5,7 @@ pub use self::mass_properties::MassProperties;
 mod mass_properties;
 mod mass_properties_ball;
 mod mass_properties_capsule;
-#[cfg(feature = "std")] // locked because of sync
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod mass_properties_compound;
 #[cfg(feature = "dim3")]
 mod mass_properties_cone;
@@ -29,7 +29,7 @@ mod mass_properties_trimesh3d;
 /// Free functions for some special-cases of mass-properties computation.
 pub mod details {
     #[cfg(feature = "dim2")]
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub use super::mass_properties_convex_polygon::convex_polygon_area_and_center_of_mass;
     #[cfg(feature = "dim2")]
     #[cfg(any(feature = "std", feature = "alloc"))]

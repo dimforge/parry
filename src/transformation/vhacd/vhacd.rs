@@ -19,7 +19,15 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
+
+#[cfg(feature = "std")]
 use std::sync::Arc;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, sync::Arc};
+
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;

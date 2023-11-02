@@ -18,10 +18,10 @@ mod convex_hull3;
 pub(crate) mod convex_hull_utils;
 
 mod polygon_intersection;
-#[cfg(feature = "std")] // locked due to std::sync
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Approximate convex decomposition using the VHACD algorithm.
 pub mod vhacd;
-#[cfg(feature = "std")] // locked due to std::sync
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Voxelization of a 2D polyline or 3D triangle mesh.
 pub mod voxelization;
 

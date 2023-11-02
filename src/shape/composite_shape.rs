@@ -7,7 +7,7 @@ use crate::utils::DefaultStorage;
 ///
 /// A composite shape is composed of several shapes. For example, this can
 /// be a convex decomposition of a concave shape; or a triangle-mesh.
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub trait SimdCompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
     fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape));
@@ -39,7 +39,7 @@ pub trait TypedSimdCompositeShape {
     fn typed_qbvh(&self) -> &GenericQbvh<Self::PartId, Self::QbvhStorage>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
     type PartShape = dyn Shape;
     type PartId = u32;

@@ -9,6 +9,9 @@ use crate::utils::DefaultStorage;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[derive(Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(

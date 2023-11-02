@@ -1,6 +1,7 @@
 //! Two-dimensional penetration depth queries using the Expanding Polytope Algorithm.
 
-use std::cmp::Ordering;
+use core::cmp::Ordering;
+#[cfg(feature = "std")]
 use std::collections::BinaryHeap;
 
 use na::{self, Unit};
@@ -10,6 +11,9 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 use crate::utils;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, collections::BinaryHeap};
 
 #[derive(Copy, Clone, PartialEq)]
 struct FaceId {

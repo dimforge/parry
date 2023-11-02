@@ -18,10 +18,9 @@ pub use self::shape::{Shape, ShapeType, TypedShape};
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::{
-    composite_shape::SimdCompositeShape, compound::Compound, polyline::Polyline,
-    shared_shape::SharedShape,
+    composite_shape::SimdCompositeShape, compound::Compound, polyline::Polyline, shared_shape::SharedShape
 };
 
 #[cfg(feature = "dim2")]
@@ -71,11 +70,11 @@ mod ball;
 mod capsule;
 #[doc(hidden)]
 pub mod composite_shape;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod compound;
 mod cuboid;
 mod half_space;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod polyline;
 mod round_shape;
 mod segment;
@@ -110,6 +109,6 @@ pub(crate) mod trimesh;
 mod feature_id;
 #[cfg(feature = "dim2")]
 mod polygonal_feature2d;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod shared_shape;
 mod trimesh_storage;
