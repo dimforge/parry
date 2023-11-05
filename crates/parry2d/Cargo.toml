@@ -19,8 +19,8 @@ maintenance = { status = "actively-developed" }
 [features]
 default = [ "required-features", "std" ]
 required-features = [ "dim2", "f32" ]
-alloc   = [ "hashbrown", "num-traits/libm", "nalgebra/alloc" ]
-std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
+alloc   = [ "hashbrown", "num-traits/libm", "nalgebra/alloc", "spade/alloc" ]
+std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade/std" ]
 dim2    = [ ]
 f32     = [ ]
 serde-serialize = [ "serde", "nalgebra/serde-serialize", "arrayvec/serde" ]
@@ -58,7 +58,7 @@ num-derive      = "0.4"
 indexmap        = { version = "1", features = [ "serde-1" ], optional = true }
 rustc-hash      = { version = "1", optional = true }
 cust_core       = { version = "0.1", optional = true }
-spade           = { version = "2", optional = true }
+spade           = { git = "https://github.com/hatmajster/spade.git", branch = "no_std", default-features = false, optional = true }
 rayon           = { version = "1", optional = true }
 bytemuck        = { version = "1", features = [ "derive" ], optional = true }
 hashbrown       = { version = "0.14.2", optional = true }

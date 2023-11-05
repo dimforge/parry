@@ -5,14 +5,14 @@ use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 
 #[cfg(feature = "alloc")]
 use alloc::{vec, vec::Vec};
 
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
     basis: [Vector<Real>; 2],
@@ -21,7 +21,7 @@ struct Triangulation {
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl Triangulation {
     fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
         Triangulation {
