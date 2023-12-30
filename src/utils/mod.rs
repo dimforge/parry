@@ -14,7 +14,7 @@ pub use self::median::median;
 pub use self::point_cloud_support_point::{
     point_cloud_support_point, point_cloud_support_point_id,
 };
-pub use self::point_in_poly2d::point_in_poly2d;
+pub use self::point_in_poly2d::{point_in_poly2d, point_in_poly2d_winding};
 pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
 pub use self::array::{Array1, Array2, DefaultStorage};
