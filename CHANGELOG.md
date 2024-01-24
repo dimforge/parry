@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.13.6
+
+### Fixed
+- Fix ball-convex manifolds missing contacts in some corner cases.
+- Fix panic in `TriMesh::intersection_with_plane`.
+
 ## v0.13.5
 
 ### Fixed
