@@ -26,6 +26,12 @@ pub struct Compound {
     aabb: Aabb,
 }
 
+impl PartialEq for Compound {
+    fn eq(&self, other: &Self) -> bool {
+        self.shapes() == other.shapes()
+    }
+}
+
 impl Compound {
     /// Builds a new compound shape.
     ///
