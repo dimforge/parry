@@ -5,6 +5,9 @@ use crate::na::ComplexField;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// Applies in-place a transformation to an array of points.
 pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
     points.iter_mut().for_each(|p| *p = m * *p);

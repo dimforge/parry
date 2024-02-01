@@ -3,6 +3,9 @@ use crate::shape::Cone;
 use crate::transformation::utils;
 use na::{self, Point3, Vector3};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl Cone {
     /// Outlines this cone’s shape using polylines.
     pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {

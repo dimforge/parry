@@ -1,6 +1,6 @@
 use crate::approx::AbsDiffEq;
 use crate::math::{Isometry, Point, Real, Vector};
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{PackedFeatureId, Segment, Triangle};
 use crate::utils::WBasis;
@@ -72,7 +72,7 @@ impl PolygonalFeature {
     }
 
     /// Computes all the contacts between two polygonal features.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         _pos21: &Isometry<Real>,
@@ -94,7 +94,7 @@ impl PolygonalFeature {
         }
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn contacts_edge_edge<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         face1: &PolygonalFeature,
@@ -210,7 +210,7 @@ impl PolygonalFeature {
         }
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn contacts_face_face<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         face1: &PolygonalFeature,

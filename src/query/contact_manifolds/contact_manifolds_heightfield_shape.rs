@@ -14,6 +14,9 @@ use crate::utils::hashmap::{Entry, HashMap};
 #[cfg(feature = "dim3")]
 use crate::query::contact_manifolds::InternalEdgesFixer;
 
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -149,7 +152,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
                 };
 
                 let (id1, id2) = if flipped { (0, i) } else { (i, 0) };
-                manifolds.push(ContactManifold::with_data(
+                manifolds.push(ContactManifold::<ManifoldData, ContactData>::with_data(
                     id1,
                     id2,
                     ManifoldData::default(),

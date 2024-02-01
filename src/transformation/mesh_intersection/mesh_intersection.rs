@@ -4,8 +4,15 @@ use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, Poi
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
 use na::{Point2, Vector2};
+#[cfg(any(feature = "std", feature = "alloc"))]
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
+
+#[cfg(feature = "std")]
 use std::collections::{HashMap, HashSet};
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+#[cfg(feature = "alloc")]
+use hashbrown::{HashMap, HashSet};
 
 /// Computes the intersection of two meshes.
 ///

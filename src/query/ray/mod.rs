@@ -18,7 +18,7 @@ pub mod ray;
 mod ray_aabb;
 mod ray_ball;
 mod ray_bounding_sphere;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod ray_composite_shape;
 mod ray_cuboid;
 mod ray_halfspace;

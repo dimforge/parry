@@ -2,6 +2,9 @@ use crate::math::Real;
 use crate::shape::ConvexPolyhedron;
 use na::Point3;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl ConvexPolyhedron {
     /// Discretize the boundary of this convex polyhedron as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {

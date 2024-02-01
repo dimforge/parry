@@ -3,6 +3,9 @@ use crate::shape::RoundCone;
 use crate::transformation::utils;
 use na::{self, Point3, Vector3};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl RoundCone {
     /// Outlines this round cone’s shape using polylines.
     pub fn to_outline(

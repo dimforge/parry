@@ -3,6 +3,9 @@ use crate::math::{Point, Real, Vector};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl Aabb {
     /// Outlines this Aabb’s shape using polylines.
     pub fn to_outline(&self) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {

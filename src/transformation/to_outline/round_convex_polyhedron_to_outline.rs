@@ -3,6 +3,9 @@ use crate::shape::RoundConvexPolyhedron;
 use crate::transformation::utils;
 use na::Point3;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl RoundConvexPolyhedron {
     /// Outlines this round convex polyhedron’s shape using polylines.
     pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {

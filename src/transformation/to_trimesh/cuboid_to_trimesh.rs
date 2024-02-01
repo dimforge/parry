@@ -4,6 +4,9 @@ use crate::shape::Cuboid;
 use crate::transformation::utils;
 use na::{self, Point3};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl Aabb {
     /// Discretize the boundary of this Aabb as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {

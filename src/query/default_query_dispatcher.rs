@@ -3,12 +3,15 @@ use crate::query::{
     self, details::NonlinearTOIMode, ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher,
     Unsupported, TOI,
 };
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use crate::query::{
     contact_manifolds::ContactManifoldsWorkspace, query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
+
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
 
 /// A dispatcher that exposes built-in queries
 #[derive(Debug, Clone)]
@@ -61,7 +64,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12, s1, s2,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::intersection_test_composite_shape_shape(
                     self, pos12, c1, shape2,
@@ -307,7 +310,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 stop_at_penetration,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(any(feature = "std", feature = "alloc"))]
             if let Some(heightfield1) = shape1.as_heightfield() {
                 return query::details::time_of_impact_heightfield_shape(
                     self,
@@ -427,7 +430,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData>
     for DefaultQueryDispatcher
 where
@@ -518,7 +521,7 @@ where
                     );
                 } else {
                     if manifolds.is_empty() {
-                        manifolds.push(ContactManifold::new());
+                        manifolds.push(ContactManifold::<ManifoldData, ContactData>::new());
                     }
 
                     return self.contact_manifold_convex_convex(

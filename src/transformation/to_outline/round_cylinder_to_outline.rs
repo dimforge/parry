@@ -3,6 +3,9 @@ use crate::shape::RoundCylinder;
 use crate::transformation::utils;
 use na::{self, Point3};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl RoundCylinder {
     /// Outlines this round cylinder’s shape using polylines.
     pub fn to_outline(

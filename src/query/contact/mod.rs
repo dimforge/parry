@@ -14,7 +14,7 @@ pub use self::contact_halfspace_support_map::{
     contact_halfspace_support_map, contact_support_map_halfspace,
 };
 pub use self::contact_shape_shape::contact;
-#[cfg(feature = "std")] // TODO: doesn’t work without std because of EPA
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub use self::contact_support_map_support_map::{
     contact_support_map_support_map, contact_support_map_support_map_with_params,
 };
@@ -27,5 +27,5 @@ mod contact_composite_shape_shape;
 mod contact_cuboid_cuboid;
 mod contact_halfspace_support_map;
 mod contact_shape_shape;
-#[cfg(feature = "std")] // TODO: doesn’t work without std because of EPA
+#[cfg(any(feature = "std", feature = "alloc"))]
 mod contact_support_map_support_map;

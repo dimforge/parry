@@ -6,11 +6,11 @@ use crate::utils::{self, SortedPair};
 use na::{self, ComplexField, Point2, Unit};
 use std::f64;
 
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
-
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -139,7 +139,10 @@ impl ConvexPolyhedron {
         let mut edges = Vec::<Edge>::new();
         let mut faces = Vec::<Face>::new();
         let mut triangles = Vec::new();
+        #[cfg(feature = "std")]
         let mut edge_map = HashMap::default();
+        #[cfg(feature = "alloc")]
+        let mut edge_map: HashMap<SortedPair<u32>, u32> = HashMap::default();
 
         let mut faces_adj_to_vertex = Vec::new();
         let mut edges_adj_to_vertex = Vec::new();

@@ -13,7 +13,7 @@ pub enum ConvexHullError {
 }
 
 impl std::fmt::Display for ConvexHullError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             ConvexHullError::InternalError(reason) => write!(f, "InternalError({})", reason),
             ConvexHullError::MissingSupportPoint => write!(f, "MissingSupportPoint"),
@@ -22,4 +22,5 @@ impl std::fmt::Display for ConvexHullError {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for ConvexHullError {}

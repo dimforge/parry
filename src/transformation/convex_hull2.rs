@@ -5,6 +5,9 @@ use crate::transformation::convex_hull_utils::{indexed_support_point_id, support
 use na::{self, Point2, Vector2};
 use num_traits::Zero;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 /// Computes the convex hull of a set of 2d points.
 ///
 /// The computed convex-hull have its points given in counter-clockwise order.

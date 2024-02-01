@@ -1,5 +1,5 @@
 use crate::utils::DefaultStorage;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use na::DMatrix;
 use std::ops::Range;
 
@@ -47,7 +47,7 @@ pub trait HeightFieldStorage {
     type Status: Array2<Item = HeightFieldCellStatus>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightFieldStorage for DefaultStorage {
     type Heights = DMatrix<Real>;
     type Status = DMatrix<HeightFieldCellStatus>;
@@ -118,7 +118,7 @@ where
 }
 
 /// A 3D heightfield.
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub type HeightField = GenericHeightField<DefaultStorage>;
 
 /// A 3D heightfield stored in the CUDA memory, initializable from the host.
@@ -129,7 +129,7 @@ pub type CudaHeightField = GenericHeightField<CudaStorage>;
 #[cfg(feature = "cuda")]
 pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightField {
     /// Initializes a new heightfield with the given heights and a scaling factor.
     pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {

@@ -6,7 +6,7 @@ pub(crate) use self::convex_hull2::convex_hull2_idx;
 pub use self::convex_hull2::{convex_hull2 as convex_hull, convex_hull2_idx as convex_hull_idx};
 #[cfg(feature = "dim3")]
 pub use self::convex_hull3::{check_convex_hull, convex_hull, try_convex_hull, ConvexHullError};
-#[cfg(feature = "dim3")]
+#[cfg(all(feature = "dim3", any(feature = "std", feature = "alloc")))]
 pub use self::mesh_intersection::intersect_meshes;
 pub use self::polygon_intersection::{
     convex_polygons_intersection, convex_polygons_intersection_points,
@@ -18,8 +18,10 @@ mod convex_hull3;
 pub(crate) mod convex_hull_utils;
 
 mod polygon_intersection;
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Approximate convex decomposition using the VHACD algorithm.
 pub mod vhacd;
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Voxelization of a 2D polyline or 3D triangle mesh.
 pub mod voxelization;
 

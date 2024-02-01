@@ -5,6 +5,12 @@ use crate::query::SplitResult;
 use crate::simd::SimdReal;
 use simba::simd::SimdValue;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // for .abs()
+
 use super::utils::split_indices_wrt_dim;
 use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhNodeFlags, QbvhProxy};
 

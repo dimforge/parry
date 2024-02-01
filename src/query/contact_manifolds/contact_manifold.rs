@@ -1,6 +1,9 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::PackedFeatureId;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec};
+
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(

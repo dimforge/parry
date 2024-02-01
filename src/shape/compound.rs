@@ -12,6 +12,9 @@ use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeSha
 use crate::transformation::hertel_mehlhorn;
 use crate::utils::DefaultStorage;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// A compound shape with an aabb bounding volume.
 ///
 /// A compound shape is a shape composed of the union of several simpler shape. This is

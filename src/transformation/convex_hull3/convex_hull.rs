@@ -6,6 +6,10 @@ use crate::transformation::convex_hull_utils::{indexed_support_point_id, normali
 use crate::utils;
 use na::{self, Point3};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
+
 /// Computes the convex hull of a set of 3d points.
 pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     try_convex_hull(points).unwrap()

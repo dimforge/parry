@@ -2,7 +2,7 @@ use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::SIMD_WIDTH;
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use simba::simd::SimdBool as _;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsVisitor<T, F> {

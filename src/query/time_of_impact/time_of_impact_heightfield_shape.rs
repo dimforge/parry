@@ -4,6 +4,9 @@ use crate::shape::{GenericHeightField, HeightFieldStorage, Shape};
 #[cfg(feature = "dim3")]
 use crate::{bounding_volume::Aabb, query::RayCast};
 
+#[cfg(not(feature = "std"))]
+use crate::na::ComplexField;
+
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
 pub fn time_of_impact_heightfield_shape<Storage, D: ?Sized>(

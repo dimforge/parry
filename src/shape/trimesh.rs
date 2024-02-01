@@ -16,7 +16,14 @@ use {
     std::collections::HashSet,
 };
 
-#[cfg(all(feature = "dim2", feature = "std"))]
+#[cfg(feature = "alloc")]
+use {
+    crate::shape::composite_shape::SimdCompositeShape,
+    hashbrown::{HashSet, HashMap, hash_map::Entry},
+    alloc::{vec::Vec, vec}
+};
+
+#[cfg(all(feature = "dim2", any(feature = "std", feature = "alloc")))]
 use crate::transformation::ear_clipping::triangulate_ear_clipping;
 
 #[cfg(feature = "cuda")]
@@ -387,7 +394,7 @@ impl CudaTriMesh {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
     pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
@@ -747,7 +754,14 @@ impl TriMesh {
     /// index buffer if some of the vertices of this trimesh are duplicated.
     fn compute_pseudo_normals(&mut self) {
         let mut vertices_pseudo_normal = vec![Vector::zeros(); self.vertices().len()];
+
+        #[cfg(feature = "alloc")]
+        let mut edges_pseudo_normal: HashMap<SortedPair<u32>, na::Vector3<f32>> = HashMap::default();
+        #[cfg(feature = "alloc")]
+        let mut edges_multiplicity: HashMap<SortedPair<u32>, i32> = HashMap::default();
+        #[cfg(feature = "std")]
         let mut edges_pseudo_normal = HashMap::default();
+        #[cfg(feature = "std")]
         let mut edges_multiplicity = HashMap::default();
 
         for idx in self.indices() {
@@ -855,7 +869,7 @@ impl TriMesh {
         }
 
         let mut topology = TriMeshTopology::<DefaultStorage>::default();
-        let mut half_edge_map = HashMap::default();
+        let mut half_edge_map: HashMap<(u32, u32), u32> = HashMap::default();
 
         topology.vertices.resize(
             self.vertices.len(),
@@ -1132,7 +1146,7 @@ impl RayCast for TriMesh {
 */
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl<Storage: HeightFieldStorage> From<crate::shape::GenericHeightField<Storage>> for TriMesh {
     fn from(heightfield: crate::shape::GenericHeightField<Storage>) -> Self {
         let (vtx, idx) = heightfield.to_trimesh();
@@ -1141,7 +1155,7 @@ impl<Storage: HeightFieldStorage> From<crate::shape::GenericHeightField<Storage>
 }
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl From<Cuboid> for TriMesh {
     fn from(cuboid: Cuboid) -> Self {
         let (vtx, idx) = cuboid.to_trimesh();
@@ -1149,7 +1163,7 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl SimdCompositeShape for TriMesh {
     fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
         let tri = self.triangle(i);

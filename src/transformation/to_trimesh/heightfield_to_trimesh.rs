@@ -2,6 +2,9 @@ use crate::math::Real;
 use crate::shape::{GenericHeightField, HeightFieldStorage};
 use na::Point3;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// Discretize the boundary of this heightfield as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {

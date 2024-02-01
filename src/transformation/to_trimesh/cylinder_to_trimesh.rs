@@ -3,6 +3,9 @@ use crate::shape::Cylinder;
 use crate::transformation::utils;
 use na::{self, Point3, RealField, Vector3};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl Cylinder {
     /// Discretize the boundary of this cylinder as a triangle-mesh.
     pub fn to_trimesh(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {

@@ -1,6 +1,10 @@
 use crate::math::{Point, Real};
 use std::iter;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
+
 /// Given an index buffer, remove from `points` every point that is not indexed.
 pub fn remove_unused_points(points: &mut Vec<Point<Real>>, idx: &mut [[u32; 3]]) {
     let mut used: Vec<bool> = iter::repeat(false).take(points.len()).collect();

@@ -89,7 +89,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     let feature1 = cuboid1.support_feature(best_sep.1);
     let feature2 = cuboid2.support_feature(local_n2);
 
-    PolygonalFeature::contacts(
+    PolygonalFeature::contacts::<ManifoldData, ContactData>(
         pos12,
         pos21,
         &best_sep.1,

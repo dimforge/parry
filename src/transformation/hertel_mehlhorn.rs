@@ -4,6 +4,9 @@
 use crate::math::{Point, Real};
 use crate::utils::point_in_triangle::{corner_direction, Orientation};
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// Checks if the counter-clockwise polygon `poly` has an edge going counter-clockwise from `p1` to `p2`.
 /// Returns the edge point's indices in the second polygon. Returns `None` if none were found.
 fn find_edge_index_in_polygon(p1: u32, p2: u32, indices: &[u32]) -> Option<(usize, usize)> {

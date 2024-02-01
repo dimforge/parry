@@ -16,6 +16,9 @@ pub struct ConvexPolygon {
     normals: Vec<Unit<Vector<Real>>>,
 }
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 impl ConvexPolygon {
     /// Creates a new 2D convex polygon from an arbitrary set of points.
     ///

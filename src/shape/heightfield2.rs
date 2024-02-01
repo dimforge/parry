@@ -1,6 +1,6 @@
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 use na::DVector;
 use std::ops::Range;
 
@@ -32,7 +32,7 @@ pub trait HeightFieldStorage {
     type Status: Array1<HeightFieldCellStatus>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightFieldStorage for DefaultStorage {
     type Heights = DVector<Real>;
     type Status = DVector<HeightFieldCellStatus>;
@@ -101,7 +101,7 @@ where
 }
 
 /// A 2D heightfield.
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 pub type HeightField = GenericHeightField<DefaultStorage>;
 
 /// A 2D heightfield stored in the CUDA memory, initializable from the host.
@@ -112,7 +112,7 @@ pub type CudaHeightField = GenericHeightField<CudaStorage>;
 #[cfg(feature = "cuda")]
 pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "alloc"))]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
     pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {

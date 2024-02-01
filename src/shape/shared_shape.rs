@@ -11,8 +11,13 @@ use crate::shape::{
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
 use na::Unit;
-use std::ops::Deref;
+use core::ops::Deref;
+
+#[cfg(feature = "std")]
 use std::sync::Arc;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec, sync::Arc};
 
 /// The shape of a collider.
 #[derive(Clone)]

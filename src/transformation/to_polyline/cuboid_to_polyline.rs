@@ -3,6 +3,9 @@ use crate::shape::Cuboid;
 use crate::transformation::utils;
 use na::{self, Point2};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec::Vec, vec};
+
 impl Cuboid {
     /// Discretize the boundary of this cuboid as a polygonal line.
     pub fn to_polyline(&self) -> Vec<Point2<Real>> {
