@@ -65,8 +65,8 @@ impl ConvexPolygon {
         let new_length = points.len() - nremoved;
         points.truncate(new_length);
         normals.truncate(new_length);
-        
-        if points.len() > 2  {
+
+        if points.len() > 2 {
             Some(ConvexPolygon { points, normals })
         } else {
             None
