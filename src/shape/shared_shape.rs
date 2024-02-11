@@ -5,7 +5,7 @@ use crate::shape::ConvexPolygon;
 use crate::shape::DeserializableTypedShape;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, TriMeshFlags, Triangle,
+    TriMesh, TriMeshFlags, Triangle, ShapeType
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
@@ -13,6 +13,7 @@ use crate::transformation::vhacd::{VHACDParameters, VHACD};
 use na::Unit;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::fmt;
 
 /// The shape of a collider.
 #[derive(Clone)]
@@ -28,6 +29,13 @@ impl Deref for SharedShape {
 impl AsRef<dyn Shape> for SharedShape {
     fn as_ref(&self) -> &dyn Shape {
         &*self.0
+    }
+}
+
+impl fmt::Debug for SharedShape {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let shape_type: ShapeType = (*self.0).shape_type();
+        write!(f, "SharedShape ( Arc<{:?}> )", shape_type)
     }
 }
 
