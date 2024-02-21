@@ -1010,6 +1010,21 @@ impl TriMesh {
             )
         })
     }
+
+    /// Gets the normal of the triangle represented by `feature`.
+    pub fn feature_normal_at_point(
+            &self,
+            feature: FeatureId,
+            _point: &Point<Real>,
+        ) -> Option<na::Unit<Vector<Real>>>
+    {
+        match feature {
+            FeatureId::Face(i) => self
+                .triangle(i % self.num_triangles() as u32)
+                .feature_normal(FeatureId::Face(0)),
+            _ => None,
+        }
+    }
 }
 
 impl<Storage: TriMeshStorage> GenericTriMesh<Storage> {

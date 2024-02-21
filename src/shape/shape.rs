@@ -1002,6 +1002,15 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
+    fn feature_normal_at_point(
+            &self,
+            feature: FeatureId,
+            point: &Point<Real>,
+        ) -> Option<Unit<Vector<Real>>>
+    {
+        self.feature_normal_at_point(feature, point)
+    }
+
     #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
