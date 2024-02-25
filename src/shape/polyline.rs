@@ -9,7 +9,7 @@ use crate::utils::DefaultStorage;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",

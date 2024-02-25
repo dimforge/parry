@@ -18,7 +18,7 @@ use crate::utils::DefaultStorage;
 /// the main way of creating a concave shape from convex parts. Each parts can have its own
 /// delta transformation to shift or rotate it with regard to the other shapes.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Compound {
     shapes: Vec<(Isometry<Real>, SharedShape)>,
     qbvh: Qbvh<u32>,

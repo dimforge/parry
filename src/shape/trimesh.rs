@@ -4,6 +4,7 @@ use crate::partitioning::QbvhStorage;
 use crate::partitioning::{GenericQbvh, Qbvh};
 use crate::shape::trimesh_storage::TriMeshStorage;
 use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
+use std::fmt;
 
 use crate::utils::{Array1, DefaultStorage, HashablePartialEq};
 #[cfg(feature = "dim3")]
@@ -356,6 +357,12 @@ pub struct GenericTriMesh<Storage: TriMeshStorage> {
     topology: Option<TriMeshTopology<Storage>>,
     connected_components: Option<TriMeshConnectedComponents<Storage>>,
     flags: TriMeshFlags,
+}
+
+impl fmt::Debug for GenericTriMesh<DefaultStorage> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "GenericTriMesh<DefaultStorage>")
+    }
 }
 
 /// A triangle-mesh.

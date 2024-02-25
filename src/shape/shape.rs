@@ -85,7 +85,7 @@ pub enum ShapeType {
     Custom,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize))]
 /// Enum representing the shape with its actual type
 pub enum TypedShape<'a> {
