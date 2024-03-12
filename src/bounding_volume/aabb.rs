@@ -176,6 +176,46 @@ impl Aabb {
         }
     }
 
+    #[inline]
+    #[cfg(feature = "dim2")]
+    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
+        let center: Point<Real> = na::center(&self.mins, &self.maxs);
+
+        let translated_min = na::Translation2::from(center).transform_point(&self.mins);
+        let translated_max = na::Translation2::from(center).transform_point(&self.maxs);
+
+        let transformed_min = translated_min.coords.component_mul(scale);
+        let transformed_max = translated_max.coords.component_mul(scale);
+
+        let a = transformed_min + center;
+        let b = transformed_max + center;
+
+        Self {
+            mins: a.inf(&b).into(),
+            maxs: a.sup(&b).into(),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
+        let center: Point<Real> = na::center(&self.mins, &self.maxs);
+
+        let translated_min = na::Translation3::from(center).transform_point(&self.mins);
+        let translated_max = na::Translation3::from(center).transform_point(&self.maxs);
+
+        let transformed_min = translated_min.coords.component_mul(scale);
+        let transformed_max = translated_max.coords.component_mul(scale);
+
+        let a = transformed_min + center;
+        let b = transformed_max + center;
+
+        Self {
+            mins: a.inf(&b).into(),
+            maxs: a.sup(&b).into(),
+        }
+    }
+
     /// The smallest bounding sphere containing this `Aabb`.
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
