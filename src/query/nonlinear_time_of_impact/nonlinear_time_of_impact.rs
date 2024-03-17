@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::query::{
     DefaultQueryDispatcher, NonlinearRigidMotion, QueryDispatcher, Unsupported, TOI,
 };

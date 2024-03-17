@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::query::gjk::VoronoiSimplex;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{RoundShape, SupportMap};

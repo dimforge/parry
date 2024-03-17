@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::*;
 use crate::query::ClosestPoints;
 use crate::shape::Ball;
 
@@ -7,7 +7,7 @@ use crate::shape::Ball;
 /// Each returned point is expressed on the local-space of the corresponding shape.
 #[inline]
 pub fn closest_points_ball_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     b1: &Ball,
     b2: &Ball,
     margin: Real,
@@ -19,7 +19,7 @@ pub fn closest_points_ball_ball(
 
     let r1 = b1.radius;
     let r2 = b2.radius;
-    let delta_pos = pos12.translation.vector;
+    let delta_pos = pos12.translation.into_inner();
     let distance = delta_pos.norm();
     let sum_radius = r1 + r2;
 

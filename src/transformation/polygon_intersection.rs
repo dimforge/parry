@@ -1,6 +1,4 @@
-use na::Point2;
-
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::{self, SegmentsIntersection};
 
@@ -21,11 +19,11 @@ pub enum PolylinePointLocation {
 
 impl PolylinePointLocation {
     /// Computes the point corresponding to this location.
-    pub fn to_point(&self, pts: &[Point2<Real>]) -> Point2<Real> {
+    pub fn to_point(&self, pts: &[Point2]) -> Point2 {
         match self {
             PolylinePointLocation::OnVertex(i) => pts[*i],
             PolylinePointLocation::OnEdge(i1, i2, bcoords) => {
-                pts[*i1] * bcoords[0] + pts[*i2].coords * bcoords[1]
+                pts[*i1] * bcoords[0] + pts[*i2].as_vector() * bcoords[1]
             }
         }
     }
@@ -44,9 +42,9 @@ impl PolylinePointLocation {
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
 pub fn convex_polygons_intersection_points(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
-    out: &mut Vec<Point2<Real>>,
+    poly1: &[Point2],
+    poly2: &[Point2],
+    out: &mut Vec<Point2>,
 ) {
     convex_polygons_intersection(poly1, poly2, |loc1, loc2| {
         if let Some(loc1) = loc1 {
@@ -61,8 +59,8 @@ pub fn convex_polygons_intersection_points(
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
 pub fn convex_polygons_intersection(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Point2],
+    poly2: &[Point2],
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
     const EPS: Real = Real::EPSILON * 100.0;
@@ -147,7 +145,7 @@ pub fn convex_polygons_intersection(
                     second_loc2,
                 } => {
                     // Special case: edge1 & edge2 overlap and oppositely oriented.
-                    if dir_edge1.dot(&dir_edge2) < 0.0 {
+                    if dir_edge1.dot(dir_edge2) < 0.0 {
                         let loc1 =
                             PolylinePointLocation::from_segment_point_location(a1, a2, first_loc1);
                         let loc2 =

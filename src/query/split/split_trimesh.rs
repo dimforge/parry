@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, UnitVector, Vector};
+use crate::math::*;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
@@ -9,14 +9,14 @@ use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triang
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    basis: [Vector<Real>; 2],
-    basis_origin: Point<Real>,
+    basis: [Vector; 2],
+    basis_origin: Point,
     spade2index: HashMap<FixedVertexHandle, u32>,
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
 impl Triangulation {
-    fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
+    fn new(axis: UnitVector, basis_origin: Point) -> Self {
         Triangulation {
             delaunay: ConstrainedDelaunayTriangulation::new(),
             basis: axis.orthonormal_basis(),
@@ -26,12 +26,12 @@ impl Triangulation {
         }
     }
 
-    fn project(&self, pt: Point<Real>) -> spade::Point2<Real> {
+    fn project(&self, pt: Point) -> spade::Point2<Real> {
         let dpt = pt - self.basis_origin;
-        spade::Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]))
+        spade::Point2::new(dpt.dot(self.basis[0]), dpt.dot(self.basis[1]))
     }
 
-    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point<Real>]) {
+    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point]) {
         let proj1 = self.project(points[id1 as usize]);
         let proj2 = self.project(points[id2 as usize]);
 
@@ -74,13 +74,13 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn split(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Isometry,
+        axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
         let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(axis);
+        let added_bias = -position.translation.into_inner().dot(*axis);
         self.local_split(&local_axis, bias + added_bias, epsilon)
     }
 
@@ -88,7 +88,7 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn local_split(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
@@ -109,7 +109,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(local_axis) - bias;
+            let dist_to_plane = pt.as_vector().dot(*local_axis) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;
@@ -366,13 +366,13 @@ impl TriMesh {
     /// (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_plane(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Isometry,
+        axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
         let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(axis);
+        let added_bias = -position.translation.into_inner().dot(axis.into_inner());
         self.intersection_with_local_plane(&local_axis, bias + added_bias, epsilon)
     }
 
@@ -381,7 +381,7 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_local_plane(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
@@ -396,7 +396,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(local_axis) - bias;
+            let dist_to_plane = pt.as_vector().dot(local_axis.into_inner()) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;
@@ -606,7 +606,7 @@ impl TriMesh {
     /// Computes the intersection mesh between an Aabb and this mesh.
     pub fn intersection_with_aabb(
         &self,
-        position: &Isometry<Real>,
+        position: &Isometry,
         flip_mesh: bool,
         aabb: &Aabb,
         flip_cuboid: bool,
@@ -627,10 +627,10 @@ impl TriMesh {
     /// Computes the intersection mesh between a cuboid and this mesh transformed by `position`.
     pub fn intersection_with_cuboid(
         &self,
-        position: &Isometry<Real>,
+        position: &Isometry,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Isometry,
         flip_cuboid: bool,
         epsilon: Real,
     ) -> Option<Self> {
@@ -648,7 +648,7 @@ impl TriMesh {
         &self,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Isometry,
         flip_cuboid: bool,
         _epsilon: Real,
     ) -> Option<Self> {
@@ -699,9 +699,9 @@ impl TriMesh {
         for tri in intersecting_tris {
             let idx = indices[tri as usize];
             to_clip.extend_from_slice(&[
-                inv_pos * vertices[idx[0] as usize],
-                inv_pos * vertices[idx[1] as usize],
-                inv_pos * vertices[idx[2] as usize],
+                inv_pos.transform_point(&vertices[idx[0] as usize]),
+                inv_pos.transform_point(&vertices[idx[1] as usize]),
+                inv_pos.transform_point(&vertices[idx[2] as usize]),
             ]);
 
             // There is no need to clip if the triangle is fully inside of the Aabb.
@@ -726,7 +726,7 @@ impl TriMesh {
         // The clipping outputs points in the local-space of the cuboid.
         // So we need to transform it back.
         for pt in &mut new_vertices {
-            *pt = cuboid_position * *pt;
+            *pt = cuboid_position.transform_point(&*pt);
         }
 
         if new_vertices.len() >= 3 {

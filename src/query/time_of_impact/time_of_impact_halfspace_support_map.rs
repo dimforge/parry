@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::*;
 use crate::query::{Ray, RayCast, TOIStatus, TOI};
 use crate::shape::{HalfSpace, SupportMap};
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
 pub fn time_of_impact_halfspace_support_map<G: ?Sized>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     halfspace: &HalfSpace,
     other: &G,
     max_toi: Real,
@@ -16,7 +16,7 @@ where
 {
     // FIXME: add method to get only the local support point.
     // This would avoid the `inverse_transform_point` later.
-    if !stop_at_penetration && vel12.dot(&halfspace.normal) > 0.0 {
+    if !stop_at_penetration && vel12.dot(halfspace.normal) > 0.0 {
         return None;
     }
 
@@ -33,12 +33,13 @@ where
         let witness2 = support_point;
         let mut witness1 = ray.point_at(toi);
 
-        if support_point.coords.dot(&halfspace.normal) < 0.0 {
+        if support_point.as_vector().dot(halfspace.normal) < 0.0 {
             status = TOIStatus::Penetrating
         } else {
             // Project the witness point to the halfspace.
             // Note that witness2 is already in the halfspace's local-space.
-            witness1 = witness1 - *halfspace.normal * witness1.coords.dot(&halfspace.normal);
+            witness1 = witness1
+                - halfspace.normal.into_inner() * witness1.as_vector().dot(halfspace.normal);
             status = TOIStatus::Converged
         }
 
@@ -57,8 +58,8 @@ where
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
 pub fn time_of_impact_support_map_halfspace<G: ?Sized>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     other: &G,
     halfspace: &HalfSpace,
     max_toi: Real,

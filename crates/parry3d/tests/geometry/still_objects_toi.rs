@@ -1,4 +1,4 @@
-use na::{self, Isometry3, Vector3};
+use parry3d::math::{GlamVectorOps, Isometry, Vector};
 use parry3d::query::time_of_impact;
 use parry3d::shape::Cuboid;
 
@@ -19,11 +19,11 @@ use parry3d::shape::Cuboid;
  * with box 1 having the provided v_y.
  */
 fn collide(v_y: f32) -> Option<f32> {
-    let pos1 = Isometry3::translation(0.0, 1.1, 0.0);
-    let pos2 = Isometry3::identity();
-    let vel1 = Vector3::y() * v_y;
-    let vel2 = Vector3::zeros();
-    let cuboid = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
+    let pos1 = Isometry::translation(0.0, 1.1, 0.0);
+    let pos2 = Isometry::identity();
+    let vel1 = Vector::y() * v_y;
+    let vel2 = Vector::zeros();
+    let cuboid = Cuboid::new(Vector::new(0.5, 0.5, 0.5));
 
     time_of_impact(
         &pos1,

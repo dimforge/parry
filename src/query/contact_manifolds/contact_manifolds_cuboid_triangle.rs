@@ -1,13 +1,13 @@
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::{sat, ContactManifold};
 use crate::shape::PolygonalFeature;
 use crate::shape::{Cuboid, Shape, Triangle};
 
 /// Computes the contact manifold between a cuboid and a triangle represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -40,8 +40,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a cuboid and a triangle.
 pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Isometry,
+    pos21: &Isometry,
     cuboid1: &'a Cuboid,
     triangle2: &'a Triangle,
     prediction: Real,
@@ -97,14 +97,14 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     let mut best_sep = sep1;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
-        best_sep = (sep2.0, pos12 * -sep2.1);
+        best_sep = (sep2.0, pos12.rotation * -sep2.1);
     } else if sep3.0 > sep1.0 {
         best_sep = sep3;
     }
 
     let feature1;
     let feature2;
-    let normal2 = pos21 * -best_sep.1;
+    let normal2 = pos21.rotation * -best_sep.1;
 
     #[cfg(feature = "dim2")]
     {

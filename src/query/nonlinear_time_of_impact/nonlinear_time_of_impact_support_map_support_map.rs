@@ -1,8 +1,8 @@
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
-use na::{RealField, Unit};
+use na::RealField;
 
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::query::{self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, TOIStatus, TOI};
 use crate::shape::{Shape, SupportMap};
 use crate::utils::WCross;
@@ -112,10 +112,10 @@ where
 
     let mut result = TOI {
         toi: start_time,
-        normal1: Vector::<Real>::x_axis(),
-        normal2: Vector::<Real>::x_axis(),
-        witness1: Point::<Real>::origin(),
-        witness2: Point::<Real>::origin(),
+        normal1: Vector::x_axis(),
+        normal2: Vector::x_axis(),
+        witness1: Point::origin(),
+        witness2: Point::origin(),
         status: TOIStatus::Penetrating,
     };
 
@@ -144,7 +144,7 @@ where
                 result.witness2 = p2;
 
                 if let Some((normal1, dist)) =
-                    Unit::try_new_and_get(pos12 * p2 - p1, crate::math::DEFAULT_EPSILON)
+                    UnitVector::try_new_and_get(pos12.transform_point(&p2) - p1, DEFAULT_EPSILON)
                 {
                     // FIXME: do the "inverse transform unit vector" only when we are about to return.
                     result.normal1 = normal1;
@@ -177,7 +177,7 @@ where
                             let pt1 = sm1.local_support_point_toward(&normal1);
                             let pt2 = sm2.support_point_toward(&pos12, &-normal1);
 
-                            if (pt2 - pt1).dot(&normal1) > 0.0 {
+                            if (pt2 - pt1).dot(normal1) > 0.0 {
                                 // We found an axis that separate both objects at the end configuration.
                                 return None;
                             }
@@ -320,10 +320,10 @@ where
             //    of contact points potentially causing tunneling hit for the first time.
             let r1 = contact.point1 - motion1.local_center;
             let r2 = contact.point2 - motion2.local_center;
-            let vel1 = motion1.linvel + motion1.angvel.gcross(pos1_at_next_time * r1);
-            let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time * r2);
+            let vel1 = motion1.linvel + motion1.angvel.gcross(pos1_at_next_time.rotation * r1);
+            let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time.rotation * r2);
             let vel12 = vel2 - vel1;
-            let normal_vel = -vel12.dot(&(pos1_at_next_time * contact.normal1));
+            let normal_vel = -vel12.dot(pos1_at_next_time.rotation * contact.normal1);
             let ccd_threshold = if contact.dist <= 0.0 {
                 sum_linear_thickness
             } else {
@@ -442,7 +442,7 @@ fn bisect<SM1, SM2>(
     sm1: &SM1,
     motion2: &NonlinearRigidMotion,
     sm2: &SM2,
-    normal1: &Unit<Vector<Real>>,
+    normal1: &UnitVector,
     mut range: BisectionRange,
 ) -> (BisectionRange, usize)
 where
@@ -457,7 +457,7 @@ where
     // This is necessary to reduce the risk of extracting a root that
     // is not the root happening at the smallest time.
     let pos1 = motion1.position_at_time(range.curr_t);
-    let world_normal1 = pos1 * normal1;
+    let world_normal1 = pos1.rotation * *normal1;
 
     loop {
         // println!("Bisection dist: {}, range: {:?}", dist, range);
@@ -489,7 +489,7 @@ where
         let normal1 = pos1.inverse_transform_unit_vector(&world_normal1);
         let pt1 = sm1.local_support_point_toward(&normal1);
         let pt2 = sm2.support_point_toward(&pos12, &-normal1);
-        dist = pt2.coords.dot(&normal1) - pt1.coords.dot(&normal1);
+        dist = pt2.as_vector().dot(normal1) - pt1.as_vector().dot(normal1);
 
         niter += 1;
     }

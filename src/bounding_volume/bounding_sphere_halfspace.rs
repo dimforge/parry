@@ -1,5 +1,5 @@
 use crate::bounding_volume::BoundingSphere;
-use crate::math::{Isometry, Point, Real};
+use crate::math::*;
 use crate::shape::HalfSpace;
 
 use num::Bounded;
@@ -7,7 +7,7 @@ use num::Bounded;
 impl HalfSpace {
     /// Computes the world-space bounding sphere of this half-space, transformed by `pos`.
     #[inline]
-    pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {
+    pub fn bounding_sphere(&self, pos: &Isometry) -> BoundingSphere {
         let bv: BoundingSphere = self.local_bounding_sphere();
         bv.transform_by(pos)
     }

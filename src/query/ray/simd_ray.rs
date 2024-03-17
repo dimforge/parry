@@ -1,4 +1,4 @@
-use crate::math::{Point, SimdReal, Vector};
+use crate::math::*;
 use crate::query::Ray;
 use simba::simd::SimdValue;
 
@@ -6,17 +6,17 @@ use simba::simd::SimdValue;
 #[derive(Debug, Copy, Clone)]
 pub struct SimdRay {
     /// The origin of the rays represented as a single SIMD point.
-    pub origin: Point<SimdReal>,
+    pub origin: SimdPoint,
     /// The direction of the rays represented as a single SIMD vector.
-    pub dir: Vector<SimdReal>,
+    pub dir: SimdVector,
 }
 
 impl SimdRay {
     /// Creates a new SIMD ray with all its lanes filled with the same ray.
     pub fn splat(ray: Ray) -> Self {
         Self {
-            origin: Point::splat(ray.origin),
-            dir: Vector::splat(ray.dir),
+            origin: SimdPoint::splat(ray.origin.into()),
+            dir: SimdVector::splat(ray.dir.into()),
         }
     }
 }

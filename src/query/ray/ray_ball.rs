@@ -1,6 +1,6 @@
 use na::{self, ComplexField};
 
-use crate::math::{Point, Real};
+use crate::math::*;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{Ball, FeatureId};
 use num::Zero;
@@ -31,7 +31,7 @@ impl RayCast for Ball {
 /// The first result element is `true` if the ray started inside of the ball.
 #[inline]
 pub fn ray_toi_with_ball(
-    center: &Point<Real>,
+    center: &Point,
     radius: Real,
     ray: &Ray,
     solid: bool,
@@ -39,7 +39,7 @@ pub fn ray_toi_with_ball(
     let dcenter = ray.origin - *center;
 
     let a = ray.dir.norm_squared();
-    let b = dcenter.dot(&ray.dir);
+    let b = dcenter.dot(ray.dir);
     let c = dcenter.norm_squared() - radius * radius;
 
     // Special case for when the dir is zero.
@@ -79,7 +79,7 @@ pub fn ray_toi_with_ball(
 /// Computes the time of impact and contact normal of a ray on a ball.
 #[inline]
 pub fn ray_toi_and_normal_with_ball(
-    center: &Point<Real>,
+    center: &Point,
     radius: Real,
     ray: &Ray,
     solid: bool,
@@ -89,7 +89,7 @@ pub fn ray_toi_and_normal_with_ball(
     (
         inside,
         inter.map(|n| {
-            let pos = ray.origin + ray.dir * n - center;
+            let pos = ray.origin + ray.dir * n - *center;
             let normal = pos.normalize();
 
             RayIntersection::new(n, if inside { -normal } else { normal }, FeatureId::Face(0))

@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
 use std::ops::{Add, Mul};
 
@@ -112,7 +112,7 @@ impl Mul<Real> for SdpMatrix2<Real> {
 }
 
 /// A 3x3 symmetric-definite-positive matrix.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",

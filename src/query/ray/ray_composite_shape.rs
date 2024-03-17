@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
 use crate::shape::{Compound, FeatureId, Polyline, TriMesh, TypedSimdCompositeShape};

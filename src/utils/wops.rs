@@ -1,7 +1,6 @@
 //! Miscellaneous utilities.
 
-use crate::math::Real;
-use crate::simd::{SimdBool, SimdReal};
+use crate::math::*;
 use na::{Matrix3, Point2, Point3, Scalar, SimdRealField, Vector2, Vector3};
 use simba::simd::SimdValue;
 
@@ -249,7 +248,7 @@ impl WCrossMatrix for Vector2<Real> {
     }
 }
 
-pub(crate) trait WCross<Rhs>: Sized {
+pub trait WCross<Rhs>: Sized {
     type Result;
     fn gcross(&self, rhs: Rhs) -> Self::Result;
 }

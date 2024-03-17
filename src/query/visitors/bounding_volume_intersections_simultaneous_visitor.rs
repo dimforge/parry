@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
 use na::SimdValue;
 use simba::simd::SimdBool as _;
@@ -10,7 +10,7 @@ use crate::partitioning::{QbvhNode, SimdNodeIndex};
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
-    pos12: Option<Isometry<SimdReal>>,
+    pos12: Option<SimdIsometry>,
     callback: F,
     _phantom: PhantomData<(T1, T2)>,
 }
@@ -29,11 +29,11 @@ impl<T1, T2, F> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
     /// Creates a new `BoundingVolumeIntersectionsSimultaneousVisitor`.
     #[inline]
     pub fn with_relative_pos(
-        pos12: Isometry<Real>,
+        pos12: Isometry,
         callback: F,
     ) -> BoundingVolumeIntersectionsSimultaneousVisitor<T1, T2, F> {
         BoundingVolumeIntersectionsSimultaneousVisitor {
-            pos12: Some(Isometry::splat(pos12)),
+            pos12: Some(SimdIsometry::splat(pos12.into())),
             callback,
             _phantom: PhantomData,
         }

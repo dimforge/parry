@@ -1,6 +1,6 @@
 //! Definition of the tetrahedron shape.
 
-use crate::math::{Matrix, Point, Real};
+use crate::math::*;
 use crate::shape::{Segment, Triangle};
 use crate::utils;
 use na::Matrix3;
@@ -25,13 +25,13 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Tetrahedron {
     /// The tetrahedron first point.
-    pub a: Point<Real>,
+    pub a: Point,
     /// The tetrahedron first point.
-    pub b: Point<Real>,
+    pub b: Point,
     /// The tetrahedron first point.
-    pub c: Point<Real>,
+    pub c: Point,
     /// The tetrahedron first point.
-    pub d: Point<Real>,
+    pub d: Point,
 }
 
 /// Logical description of the location of a point on a triangle.
@@ -108,12 +108,12 @@ impl TetrahedronPointLocation {
 impl Tetrahedron {
     /// Creates a tetrahedron from three points.
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>, d: Point<Real>) -> Tetrahedron {
+    pub fn new(a: Point, b: Point, c: Point, d: Point) -> Tetrahedron {
         Tetrahedron { a, b, c, d }
     }
 
     /// Creates the reference to a tetrahedron from the reference to an array of four points.
-    pub fn from_array(arr: &[Point<Real>; 4]) -> &Tetrahedron {
+    pub fn from_array(arr: &[Point; 4]) -> &Tetrahedron {
         unsafe { mem::transmute(arr) }
     }
 
@@ -192,14 +192,14 @@ impl Tetrahedron {
     /// Computes the barycentric coordinates of the given point in the coordinate system of this tetrahedron.
     ///
     /// Returns `None` if this tetrahedron is degenerate.
-    pub fn barycentric_coordinates(&self, p: &Point<Real>) -> Option<[Real; 4]> {
+    pub fn barycentric_coordinates(&self, p: &Point) -> Option<[Real; 4]> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         let ad = self.d - self.a;
         let m = Matrix::new(ab.x, ac.x, ad.x, ab.y, ac.y, ad.y, ab.z, ac.z, ad.z);
 
         m.try_inverse().map(|im| {
-            let bcoords = im * (p - self.a);
+            let bcoords = im * (*p - self.a);
             [
                 1.0 - bcoords.x - bcoords.y - bcoords.z,
                 bcoords.x,
@@ -234,7 +234,7 @@ impl Tetrahedron {
 
     /// Computes the center of this tetrahedron.
     #[inline]
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point {
         utils::center(&[self.a, self.b, self.c, self.d])
     }
 }

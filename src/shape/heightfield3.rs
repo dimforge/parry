@@ -1,3 +1,4 @@
+use crate::math::*;
 use crate::utils::DefaultStorage;
 #[cfg(feature = "std")]
 use na::DMatrix;
@@ -9,10 +10,8 @@ use crate::utils::{CudaArrayPointer2, CudaStorage, CudaStoragePtr};
 use {crate::utils::CudaArray2, cust::error::CudaResult};
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector};
 use crate::shape::{FeatureId, Triangle};
 use crate::utils::Array2;
-use na::Point3;
 
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
@@ -78,7 +77,7 @@ pub struct GenericHeightField<Storage: HeightFieldStorage> {
     heights: Storage::Heights,
     status: Storage::Status,
 
-    scale: Vector<Real>,
+    scale: Vector,
     aabb: Aabb,
     num_triangles: usize,
 }
@@ -132,7 +131,7 @@ pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 #[cfg(feature = "std")]
 impl HeightField {
     /// Initializes a new heightfield with the given heights and a scaling factor.
-    pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {
+    pub fn new(heights: DMatrix<Real>, scale: Vector) -> Self {
         assert!(
             heights.nrows() > 1 && heights.ncols() > 1,
             "A heightfield heights must have at least 2 rows and columns."
@@ -141,8 +140,8 @@ impl HeightField {
         let min = heights.min();
         let hscale = scale * 0.5;
         let aabb = Aabb::new(
-            Point3::new(-hscale.x, min * scale.y, -hscale.z),
-            Point3::new(hscale.x, max * scale.y, hscale.z),
+            Point::new(-hscale.x, min * scale.y, -hscale.z),
+            Point::new(hscale.x, max * scale.y, hscale.z),
         );
         let num_triangles = (heights.nrows() - 1) * (heights.ncols() - 1) * 2;
         let status = DMatrix::repeat(
@@ -249,8 +248,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn closest_cell_at_point(&self, pt: &Point3<Real>) -> (usize, usize) {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn closest_cell_at_point(&self, pt: &Point) -> (usize, usize) {
+        let scaled_pt = pt.as_vector().component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
         let ncells_x = self.ncols();
@@ -262,8 +261,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn cell_at_point(&self, pt: &Point3<Real>) -> Option<(usize, usize)> {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn cell_at_point(&self, pt: &Point) -> Option<(usize, usize)> {
+        let scaled_pt = pt.as_vector().component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
         let ncells_x = self.ncols();
@@ -280,8 +279,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn unclamped_cell_at_point(&self, pt: &Point3<Real>) -> (isize, isize) {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn unclamped_cell_at_point(&self, pt: &Point) -> (isize, isize) {
+        let scaled_pt = pt.as_vector().component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -322,7 +321,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
     pub fn triangles_around_point<'a>(
         &'a self,
-        point: &Point3<Real>,
+        point: &Point,
     ) -> HeightFieldRadialTriangles<Storage> {
         let center = self.closest_cell_at_point(point);
         HeightFieldRadialTriangles {
@@ -437,16 +436,16 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let y01 = self.heights.get(i + 0, j + 1);
         let y11 = self.heights.get(i + 1, j + 1);
 
-        let mut p00 = Point3::new(x0, y00, z0);
-        let mut p10 = Point3::new(x0, y10, z1);
-        let mut p01 = Point3::new(x1, y01, z0);
-        let mut p11 = Point3::new(x1, y11, z1);
+        let mut p00 = Point::new(x0, y00, z0);
+        let mut p10 = Point::new(x0, y10, z1);
+        let mut p01 = Point::new(x1, y01, z0);
+        let mut p11 = Point::new(x1, y11, z1);
 
         // Apply scales:
-        p00.coords.component_mul_assign(&self.scale);
-        p10.coords.component_mul_assign(&self.scale);
-        p01.coords.component_mul_assign(&self.scale);
-        p11.coords.component_mul_assign(&self.scale);
+        p00.as_vector_mut().component_mul_assign(&self.scale);
+        p10.as_vector_mut().component_mul_assign(&self.scale);
+        p01.as_vector_mut().component_mul_assign(&self.scale);
+        p11.as_vector_mut().component_mul_assign(&self.scale);
 
         if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
             let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
@@ -510,20 +509,20 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// The scale factor applied to this heightfield.
-    pub fn scale(&self) -> &Vector<Real> {
+    pub fn scale(&self) -> &Vector {
         &self.scale
     }
 
     /// Sets the scale factor applied to this heightfield.
-    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
+    pub fn set_scale(&mut self, new_scale: Vector) {
         let ratio = new_scale.component_div(&self.scale);
-        self.aabb.mins.coords.component_mul_assign(&ratio);
-        self.aabb.maxs.coords.component_mul_assign(&ratio);
+        self.aabb.mins.as_vector_mut().component_mul_assign(&ratio);
+        self.aabb.maxs.as_vector_mut().component_mul_assign(&ratio);
         self.scale = new_scale;
     }
 
     /// Returns a scaled version of this heightfield.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.set_scale(self.scale.component_mul(scale));
         self
     }
@@ -652,8 +651,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         &self,
         aabb: &Aabb,
     ) -> (Range<isize>, Range<isize>) {
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins.as_vector().component_div(&self.scale);
+        let ref_maxs = aabb.maxs.as_vector().component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -670,8 +669,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let ncells_x = self.ncols();
         let ncells_z = self.nrows();
 
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins.as_vector().component_div(&self.scale);
+        let ref_maxs = aabb.maxs.as_vector().component_div(&self.scale);
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -716,16 +715,16 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                     continue;
                 }
 
-                let mut p00 = Point3::new(x0, y00, z0);
-                let mut p10 = Point3::new(x0, y10, z1);
-                let mut p01 = Point3::new(x1, y01, z0);
-                let mut p11 = Point3::new(x1, y11, z1);
+                let mut p00 = Point::new(x0, y00, z0);
+                let mut p10 = Point::new(x0, y10, z1);
+                let mut p01 = Point::new(x1, y01, z0);
+                let mut p11 = Point::new(x1, y11, z1);
 
                 // Apply scales:
-                p00.coords.component_mul_assign(&self.scale);
-                p10.coords.component_mul_assign(&self.scale);
-                p01.coords.component_mul_assign(&self.scale);
-                p11.coords.component_mul_assign(&self.scale);
+                p00.as_vector_mut().component_mul_assign(&self.scale);
+                p10.as_vector_mut().component_mul_assign(&self.scale);
+                p01.as_vector_mut().component_mul_assign(&self.scale);
+                p11.as_vector_mut().component_mul_assign(&self.scale);
 
                 // Build the two triangles, contact processors and call f.
                 if !status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {

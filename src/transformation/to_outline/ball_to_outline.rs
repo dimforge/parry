@@ -1,21 +1,21 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::shape::Ball;
 use crate::transformation::utils;
-use na::{self, Point3, RealField};
+use na::RealField;
 
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
 
 impl Ball {
     /// Outlines this ball’s shape using polylines.
-    pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
+    pub fn to_outline(&self, nsubdiv: u32) -> (Vec<Point>, Vec<[u32; 2]>) {
         let diameter = self.radius * 2.0;
         let (vtx, idx) = unit_sphere_outline(nsubdiv);
         (utils::scaled(vtx, Vector::repeat(diameter)), idx)
     }
 }
 
-fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
+fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point>, Vec<[u32; 2]>) {
     let two_pi = Real::two_pi();
     let dtheta = two_pi / (nsubdiv as Real);
     let mut coords = Vec::new();
@@ -45,7 +45,7 @@ fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
 /// Creates an hemisphere with a radius of 0.5.
 pub(crate) fn push_unit_hemisphere_outline(
     nsubdiv: u32,
-    pts: &mut Vec<Point<Real>>,
+    pts: &mut Vec<Point>,
     idx: &mut Vec<[u32; 2]>,
 ) {
     let base_idx = pts.len() as u32;

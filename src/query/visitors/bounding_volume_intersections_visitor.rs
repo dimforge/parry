@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::SIMD_WIDTH;
+use crate::math::*;
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use simba::simd::SimdBool as _;
 use std::marker::PhantomData;

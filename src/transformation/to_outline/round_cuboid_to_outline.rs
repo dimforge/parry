@@ -1,11 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::shape::RoundCuboid;
 use crate::transformation::utils;
 
 impl RoundCuboid {
     /// Outlines this round cuboid’s surface with polylines.
-    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
+    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point>, Vec<[u32; 2]>) {
         let aabb = Aabb::from_half_extents(Point::origin(), self.inner_shape.half_extents);
         let aabb_vtx = aabb.vertices();
         let fidx = Aabb::FACES_VERTEX_IDS;

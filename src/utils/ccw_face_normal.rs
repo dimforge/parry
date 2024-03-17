@@ -1,16 +1,15 @@
-use crate::math::{Point, Real, Vector};
-use na::Unit;
+use crate::math::*;
 
 /// Computes the direction pointing toward the right-hand-side of an oriented segment.
 ///
 /// Returns `None` if the segment is degenerate.
 #[inline]
 #[cfg(feature = "dim2")]
-pub fn ccw_face_normal(pts: [&Point<Real>; 2]) -> Option<Unit<Vector<Real>>> {
-    let ab = pts[1] - pts[0];
+pub fn ccw_face_normal(pts: [&Point; 2]) -> Option<UnitVector> {
+    let ab = *pts[1] - *pts[0];
     let res = Vector::new(ab[1], -ab[0]);
 
-    Unit::try_new(res, crate::math::DEFAULT_EPSILON)
+    UnitVector::try_new(res, DEFAULT_EPSILON)
 }
 
 /// Computes the normal of a counter-clock-wise triangle.
@@ -18,10 +17,10 @@ pub fn ccw_face_normal(pts: [&Point<Real>; 2]) -> Option<Unit<Vector<Real>>> {
 /// Returns `None` if the triangle is degenerate.
 #[inline]
 #[cfg(feature = "dim3")]
-pub fn ccw_face_normal(pts: [&Point<Real>; 3]) -> Option<Unit<Vector<Real>>> {
-    let ab = pts[1] - pts[0];
-    let ac = pts[2] - pts[0];
-    let res = ab.cross(&ac);
+pub fn ccw_face_normal(pts: [&Point; 3]) -> Option<UnitVector> {
+    let ab = *pts[1] - *pts[0];
+    let ac = *pts[2] - *pts[0];
+    let res = ab.cross(ac);
 
-    Unit::try_new(res, crate::math::DEFAULT_EPSILON)
+    UnitVector::try_new(res, DEFAULT_EPSILON)
 }

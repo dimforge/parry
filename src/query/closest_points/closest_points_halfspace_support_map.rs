@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::ClosestPoints;
 use crate::shape::HalfSpace;
 use crate::shape::SupportMap;
 
 /// Closest points between a halfspace and a support-mapped shape (Cuboid, ConvexHull, etc.)
 pub fn closest_points_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
     margin: Real,
@@ -16,13 +16,13 @@ pub fn closest_points_halfspace_support_map<G: ?Sized + SupportMap>(
     );
 
     let deepest = other.support_point(pos12, &-halfspace.normal);
-    let distance = halfspace.normal.dot(&(-deepest.coords));
+    let distance = halfspace.normal.dot(-deepest.as_vector());
 
     if distance >= -margin {
         if distance >= 0.0 {
             ClosestPoints::Intersecting
         } else {
-            let p1 = deepest + *halfspace.normal * distance;
+            let p1 = deepest + halfspace.normal.into_inner() * distance;
             let p2 = pos12.inverse_transform_point(&deepest);
             ClosestPoints::WithinMargin(p1, p2)
         }
@@ -33,7 +33,7 @@ pub fn closest_points_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Closest points between a support-mapped shape (Cuboid, ConvexHull, etc.) and a halfspace.
 pub fn closest_points_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
     margin: Real,

@@ -1,8 +1,8 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
+use crate::math::SimdReal;
 use crate::math::Vector;
-use crate::math::{Point, Real};
+use crate::math::*;
 use crate::query::SplitResult;
-use crate::simd::SimdReal;
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;
@@ -34,7 +34,7 @@ pub trait QbvhDataSplitter<LeafData> {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
         proxies: BuilderProxies<LeafData>,
@@ -62,7 +62,7 @@ impl<LeafData> QbvhDataSplitter<LeafData> for CenterDataSplitter {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         _: &'idx mut Vec<usize>,
         proxies: BuilderProxies<LeafData>,
@@ -75,7 +75,7 @@ impl CenterDataSplitter {
     pub(crate) fn split_dataset_wo_workspace<'idx>(
         &self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         aabbs: &[Aabb],
     ) -> [&'idx mut [usize]; 4] {
@@ -130,7 +130,7 @@ where
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
         mut proxies: BuilderProxies<LeafData>,
@@ -374,7 +374,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         let center_denom = 1.0 / (indices.len() as Real);
 
         for i in &*indices {
-            let coords = aabbs[*i].center().coords;
+            let coords = aabbs[*i].center().into_vector();
             center += coords * center_denom;
         }
 

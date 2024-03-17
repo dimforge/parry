@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::{GenericHeightField, HeightFieldCellStatus, HeightFieldStorage};
 use na::Point3;
 

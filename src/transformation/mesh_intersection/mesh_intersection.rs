@@ -1,9 +1,8 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection, EPS};
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::utils::WBasis;
-use na::{Point2, Vector2};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::{HashMap, HashSet};
 
@@ -12,10 +11,10 @@ use std::collections::{HashMap, HashSet};
 /// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
 /// The result mesh vertex coordinates are given in the local-space of `mesh1`.
 pub fn intersect_meshes(
-    pos1: &Isometry<Real>,
+    pos1: &Isometry,
     mesh1: &TriMesh,
     flip1: bool,
-    pos2: &Isometry<Real>,
+    pos2: &Isometry,
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
@@ -119,7 +118,7 @@ pub fn intersect_meshes(
     for idx2 in &mut new_indices2 {
         for k in 0..3 {
             let new_id = *index_map.entry(base_id2 + idx2[k]).or_insert_with(|| {
-                let vtx = pos12 * old_vertices2[idx2[k] as usize];
+                let vtx = pos12.transform_point(&old_vertices2[idx2[k] as usize]);
                 new_vertices.push(vtx);
                 new_vertices.len() - 1
             });
@@ -158,7 +157,7 @@ pub fn intersect_meshes(
 }
 
 fn extract_connected_components(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     flip2: bool,
@@ -263,11 +262,11 @@ struct SpadeInfo {
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    basis: [Vector<Real>; 2],
+    basis: [Vector; 2],
     vtx_handles: [FixedVertexHandle; 3],
-    ref_pt: Point<Real>,
-    ref_proj: [Point2<Real>; 3],
-    normalization: na::Matrix2<Real>,
+    ref_pt: Point,
+    ref_proj: [Point2; 3],
+    normalization: Matrix2,
 }
 
 impl Triangulation {
@@ -281,15 +280,29 @@ impl Triangulation {
 
         let mut ref_proj = [
             Point2::origin(),
-            Point2::new(ab.dot(&basis[0]), ab.dot(&basis[1])),
-            Point2::new(ac.dot(&basis[0]), ac.dot(&basis[1])),
+            Point2::new(ab.dot(basis[0]), ab.dot(basis[1])),
+            Point2::new(ac.dot(basis[0]), ac.dot(basis[1])),
         ];
 
-        let normalization_inv =
-            na::Matrix2::from_columns(&[ref_proj[1].coords, ref_proj[2].coords]);
-        let normalization = normalization_inv
-            .try_inverse()
-            .unwrap_or(na::Matrix2::identity());
+        #[cfg(feature = "linalg-nalgebra")]
+        let normalization = {
+            let normalization_inv =
+                Matrix2::from_columns(&[ref_proj[1].into_vector(), ref_proj[2].into_vector()]);
+            normalization_inv
+                .try_inverse()
+                .unwrap_or(Matrix2::identity())
+        };
+
+        #[cfg(feature = "linalg-glam")]
+        let normalization = {
+            let normalization_inv = Matrix2::from_cols(ref_proj[1], ref_proj[2]);
+
+            if normalization_inv.determinant() == 0.0 {
+                Matrix2::IDENTITY
+            } else {
+                normalization_inv.inverse()
+            }
+        };
 
         for k in 0..3 {
             ref_proj[k] = normalization * ref_proj[k];
@@ -317,10 +330,10 @@ impl Triangulation {
         }
     }
 
-    fn project(&self, pt: Point<Real>, orig_fid: FeatureId) -> spade::Point2<Real> {
+    fn project(&self, pt: Point, orig_fid: FeatureId) -> spade::Point2<Real> {
         let dpt = pt - self.ref_pt;
         let mut proj =
-            self.normalization * Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]));
+            self.normalization * Point2::new(dpt.dot(self.basis[0]), dpt.dot(self.basis[1]));
 
         match orig_fid {
             FeatureId::Edge(i) => {
@@ -328,7 +341,7 @@ impl Triangulation {
                 let b = self.ref_proj[(i as usize + 1) % 3];
                 let ab = b - a;
                 let ap = proj - a;
-                let param = ab.dot(&ap) / ab.norm_squared();
+                let param = ab.dot(ap) / ab.norm_squared();
                 let shift = Vector2::new(ab.y, -ab.x);
 
                 // NOTE: if we have intersections exactly on the edge, we nudge
@@ -349,12 +362,12 @@ impl Triangulation {
 }
 
 fn cut_and_triangulate_intersections(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     mesh1: &TriMesh,
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
-    new_vertices12: &mut Vec<Point<Real>>,
+    new_vertices12: &mut Vec<Point>,
     new_indices12: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
 ) {
@@ -508,33 +521,33 @@ fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
 fn unified_vertex(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    new_vertices12: &[Point<Real>],
-    pos12: &Isometry<Real>,
+    new_vertices12: &[Point],
+    pos12: &Isometry,
     vid: u32,
-) -> Point<Real> {
+) -> Point {
     let base_id2 = mesh1.vertices().len() as u32;
     let base_id12 = (mesh1.vertices().len() + mesh2.vertices().len()) as u32;
 
     if vid < base_id2 {
         mesh1.vertices()[vid as usize]
     } else if vid < base_id12 {
-        pos12 * mesh2.vertices()[(vid - base_id2) as usize]
+        pos12.transform_point(&mesh2.vertices()[(vid - base_id2) as usize])
     } else {
         new_vertices12[(vid - base_id12) as usize]
     }
 }
 
 fn extract_result(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     mesh1: &TriMesh,
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
     spade_handle_to_intersection: &[HashMap<(u32, FixedVertexHandle), (FeatureId, FeatureId)>; 2],
-    intersection_points: &HashMap<(FeatureId, FeatureId), [Point<Real>; 2]>,
+    intersection_points: &HashMap<(FeatureId, FeatureId), [Point; 2]>,
     triangulations1: &HashMap<u32, Triangulation>,
     triangulations2: &HashMap<u32, Triangulation>,
-    new_vertices12: &mut Vec<Point<Real>>,
+    new_vertices12: &mut Vec<Point>,
     new_indices12: &mut Vec<[u32; 3]>,
 ) {
     // Base ids for indexing in the first mesh vertices, second mesh vertices, and new vertices, as if they

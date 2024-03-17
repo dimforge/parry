@@ -1,10 +1,9 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::{GenericHeightField, HeightFieldStorage};
-use na::Point3;
 
 impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// Discretize the boundary of this heightfield as a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self) -> (Vec<Point>, Vec<[u32; 3]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 

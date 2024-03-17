@@ -9,7 +9,6 @@ pub use self::deterministic_state::DeterministicState;
 #[cfg(feature = "std")]
 pub use self::cleanup::remove_unused_points;
 pub(crate) use self::inv::inv;
-pub use self::isometry_ops::{IsometryOps, IsometryOpt};
 pub use self::median::median;
 pub use self::point_cloud_support_point::{
     point_cloud_support_point, point_cloud_support_point_id,
@@ -63,7 +62,6 @@ pub mod hashmap;
 #[cfg(feature = "std")]
 mod interval;
 mod inv;
-mod isometry_ops;
 mod median;
 mod obb;
 mod point_cloud_support_point;

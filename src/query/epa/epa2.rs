@@ -3,10 +3,10 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-use na::{self, Unit};
+use na::{self};
 use num::Bounded;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 use crate::utils;
@@ -52,8 +52,8 @@ impl Ord for FaceId {
 #[derive(Clone, Debug)]
 struct Face {
     pts: [usize; 2],
-    normal: Unit<Vector<Real>>,
-    proj: Point<Real>,
+    normal: UnitVector,
+    proj: Point,
     bcoords: [Real; 2],
     deleted: bool,
 }
@@ -74,7 +74,7 @@ impl Face {
 
     pub fn new_with_proj(
         vertices: &[CSOPoint],
-        proj: Point<Real>,
+        proj: Point,
         bcoords: [Real; 2],
         pts: [usize; 2],
     ) -> Self {
@@ -86,7 +86,7 @@ impl Face {
             normal = n;
             deleted = false;
         } else {
-            normal = Unit::new_unchecked(na::zero());
+            normal = UnitVector::new_unchecked(Vector::default());
             deleted = true;
         }
 
@@ -99,12 +99,12 @@ impl Face {
         }
     }
 
-    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point<Real>, Point<Real>) {
+    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point, Point) {
         (
             vertices[self.pts[0]].orig1 * self.bcoords[0]
-                + vertices[self.pts[1]].orig1.coords * self.bcoords[1],
+                + vertices[self.pts[1]].orig1.as_vector() * self.bcoords[1],
             vertices[self.pts[0]].orig2 * self.bcoords[0]
-                + vertices[self.pts[1]].orig2.coords * self.bcoords[1],
+                + vertices[self.pts[1]].orig2.as_vector() * self.bcoords[1],
         )
     }
 }
@@ -143,10 +143,10 @@ impl EPA {
     /// Return the projected point in the local-space of `g`.
     pub fn project_origin<G: ?Sized>(
         &mut self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>>
+    ) -> Option<Point>
     where
         G: SupportMap,
     {
@@ -160,16 +160,16 @@ impl EPA {
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
     pub fn closest_points<G1: ?Sized, G2: ?Sized>(
         &mut self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
+    ) -> Option<(Point, Point, UnitVector)>
     where
         G1: SupportMap,
         G2: SupportMap,
     {
-        let _eps: Real = crate::math::DEFAULT_EPSILON;
+        let _eps: Real = DEFAULT_EPSILON;
         let _eps_tol = _eps * 100.0;
 
         self.reset();
@@ -193,12 +193,12 @@ impl EPA {
             let orig1 = self.vertices[0].orig1;
             for _ in 0..MAX_ITERS {
                 let supp1 = g1.local_support_point(&n);
-                if let Some(tangent) = Unit::try_new(supp1 - orig1, _eps_tol) {
-                    if n.dot(&tangent) < _eps_tol {
+                if let Some(tangent) = UnitVector::try_new(supp1 - orig1, _eps_tol) {
+                    if n.dot(tangent) < _eps_tol {
                         break;
                     }
 
-                    n = Unit::new_unchecked(Vector::new(-tangent.y, tangent.x));
+                    n = UnitVector::new_unchecked(Vector::new(-tangent.y, tangent.x));
                 } else {
                     break;
                 }
@@ -208,12 +208,12 @@ impl EPA {
             let orig2 = self.vertices[0].orig2;
             for _ in 0..MAX_ITERS {
                 let supp2 = g2.support_point(pos12, &-n);
-                if let Some(tangent) = Unit::try_new(supp2 - orig2, _eps_tol) {
-                    if (-n).dot(&tangent) < _eps_tol {
+                if let Some(tangent) = UnitVector::try_new(supp2 - orig2, _eps_tol) {
+                    if -n.dot(tangent) < _eps_tol {
                         break;
                     }
 
-                    n = Unit::new_unchecked(Vector::new(-tangent.y, tangent.x));
+                    n = UnitVector::new_unchecked(Vector::new(-tangent.y, tangent.x));
                 } else {
                     break;
                 }
@@ -224,7 +224,7 @@ impl EPA {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
 
-            if dp1.perp(&dp2) < 0.0 {
+            if dp1.gcross(dp2) < 0.0 {
                 self.vertices.swap(1, 2)
             }
 
@@ -241,17 +241,17 @@ impl EPA {
             self.faces.push(face3);
 
             if proj_is_inside1 {
-                let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
+                let dist1 = self.faces[0].normal.dot(self.vertices[0].point.as_vector());
                 self.heap.push(FaceId::new(0, -dist1)?);
             }
 
             if proj_is_inside2 {
-                let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
+                let dist2 = self.faces[1].normal.dot(self.vertices[1].point.as_vector());
                 self.heap.push(FaceId::new(1, -dist2)?);
             }
 
             if proj_is_inside3 {
-                let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
+                let dist3 = self.faces[2].normal.dot(self.vertices[2].point.as_vector());
                 self.heap.push(FaceId::new(2, -dist3)?);
             }
         } else {
@@ -271,8 +271,8 @@ impl EPA {
                 pts2,
             ));
 
-            let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-            let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
+            let dist1 = self.faces[0].normal.dot(self.vertices[0].point.as_vector());
+            let dist2 = self.faces[1].normal.dot(self.vertices[1].point.as_vector());
 
             self.heap.push(FaceId::new(0, dist1)?);
             self.heap.push(FaceId::new(1, dist2)?);
@@ -297,7 +297,7 @@ impl EPA {
             let support_point_id = self.vertices.len();
             self.vertices.push(cso_point);
 
-            let candidate_max_dist = cso_point.point.coords.dot(&face.normal);
+            let candidate_max_dist = cso_point.point.as_vector().dot(face.normal);
 
             if candidate_max_dist < max_dist {
                 best_face_id = face_id;
@@ -322,7 +322,7 @@ impl EPA {
 
             for f in new_faces.iter() {
                 if f.1 {
-                    let dist = f.0.normal.dot(&f.0.proj.coords);
+                    let dist = f.0.normal.dot(f.0.proj.as_vector());
                     if dist < curr_dist {
                         // FIXME: if we reach this point, there were issues due to
                         // numerical errors.
@@ -350,10 +350,10 @@ impl EPA {
     }
 }
 
-fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Real; 2])> {
+fn project_origin(a: &Point, b: &Point) -> Option<(Point, [Real; 2])> {
     let ab = *b - *a;
-    let ap = -a.coords;
-    let ab_ap = ab.dot(&ap);
+    let ap = -a.as_vector();
+    let ab_ap = ab.dot(ap);
     let sqnab = ab.norm_squared();
 
     if sqnab == 0.0 {

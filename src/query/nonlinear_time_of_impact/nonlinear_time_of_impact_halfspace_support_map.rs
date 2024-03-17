@@ -1,14 +1,14 @@
 use na::RealField;
 
-use crate::math::{Isometry, Real, Vector};
+use crate::math::*;
 use crate::query::{Ray, RayCast};
 use crate::shape::HalfSpace;
 use crate::shape::SupportMap;
 
 /// Time Of Impact of a halfspace with a support-mapped shape under a rigid motion (translation + rotation).
 pub fn nonlinear_time_of_impact_halfspace_support_map<G: ?Sized>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     halfspace: &HalfSpace,
     other: &G,
 ) -> Option
@@ -36,8 +36,8 @@ where
 
 /// Time Of Impact of a halfspace with a support-mapped shape under a rigid motion (translation + rotation).
 pub fn nonlinear_time_of_impact_support_map_halfspace<G: ?Sized>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     other: &G,
     halfspace: &HalfSpace,
 ) -> Option

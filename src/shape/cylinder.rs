@@ -1,8 +1,7 @@
 //! Support mapping based Cylinder shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::shape::SupportMap;
-use na;
 use num::Zero;
 
 #[cfg(feature = "std")]
@@ -57,14 +56,14 @@ impl Cylinder {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.z {
             // The scaled shape isn’t a cylinder.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -78,13 +77,13 @@ impl Cylinder {
 }
 
 impl SupportMap for Cylinder {
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let mut vres = *dir;
 
         vres[1] = 0.0;
 
         if vres.normalize_mut().is_zero() {
-            vres = na::zero()
+            vres = Vector::zeros();
         } else {
             vres = vres * self.radius;
         }

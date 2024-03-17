@@ -1,13 +1,13 @@
 use crate::mass_properties::MassProperties;
 #[cfg(feature = "dim3")]
 use crate::math::Vector;
-use crate::math::{Point, PrincipalAngularInertia, Real};
+use crate::math::*;
 use na::RealField;
 
 impl MassProperties {
     pub(crate) fn ball_volume_unit_angular_inertia(
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         #[cfg(feature = "dim2")]
         {
             let volume = Real::pi() * radius * radius;

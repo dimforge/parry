@@ -2,7 +2,7 @@ use na;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
-use crate::math::Real;
+use crate::math::*;
 #[cfg(feature = "dim2")]
 use crate::query;
 use crate::query::gjk::{self, CSOPoint, VoronoiSimplex};
@@ -29,7 +29,7 @@ where
     G: SupportMap,
 {
     let supp = shape.local_support_point(&-ray.dir);
-    simplex.reset(CSOPoint::single_point(supp - ray.origin.coords));
+    simplex.reset(CSOPoint::single_point(supp - ray.origin.as_vector()));
 
     let inter = gjk::cast_local_ray(shape, simplex, ray, max_toi);
 
@@ -40,11 +40,11 @@ where
                 let ndir = ray.dir.normalize();
                 let supp = shape.local_support_point(&ndir);
                 let eps = na::convert::<f64, Real>(0.001f64);
-                let shift = (supp - ray.origin).dot(&ndir) + eps;
+                let shift = (supp - ray.origin).dot(ndir) + eps;
                 let new_ray = Ray::new(ray.origin + ndir * shift, -ray.dir);
 
                 // FIXME: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
-                simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
+                simplex.reset(CSOPoint::single_point(supp - new_ray.origin.as_vector()));
 
                 gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(
                     |(toi, normal)| {
@@ -166,15 +166,13 @@ impl RayCast for Segment {
     ) -> Option<RayIntersection> {
         #[cfg(feature = "dim2")]
         {
-            use crate::math::Vector;
-
             let seg_dir = self.scaled_direction();
             let (s, t, parallel) = query::details::closest_points_line_line_parameters_eps(
-                &ray.origin,
-                &ray.dir,
-                &self.a,
-                &seg_dir,
-                crate::math::DEFAULT_EPSILON,
+                &ray.origin.into(),
+                &ray.dir.into(),
+                &self.a.into(),
+                &seg_dir.into(),
+                DEFAULT_EPSILON,
             );
 
             if parallel {
@@ -182,12 +180,15 @@ impl RayCast for Segment {
                 // the case where there is no intersection at all
                 // from the case where the line are collinear.
                 let dpos = self.a - ray.origin;
-                let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
+                let normal = self
+                    .normal()
+                    .map(|n| n.into_inner())
+                    .unwrap_or_else(Vector::zeros);
 
-                if dpos.dot(&normal).abs() < crate::math::DEFAULT_EPSILON {
+                if dpos.dot(normal).abs() < DEFAULT_EPSILON {
                     // The rays and the segment are collinear.
-                    let dist1 = dpos.dot(&ray.dir);
-                    let dist2 = dist1 + seg_dir.dot(&ray.dir);
+                    let dist1 = dpos.dot(ray.dir);
+                    let dist2 = dist1 + seg_dir.dot(ray.dir);
 
                     match (dist1 >= 0.0, dist2 >= 0.0) {
                         (true, true) => {
@@ -218,9 +219,12 @@ impl RayCast for Segment {
                     None
                 }
             } else if s >= 0.0 && s <= max_toi && t >= 0.0 && t <= 1.0 {
-                let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
+                let normal = self
+                    .normal()
+                    .map(|n| n.into_inner())
+                    .unwrap_or_else(Vector::zeros);
 
-                if normal.dot(&ray.dir) > 0.0 {
+                if normal.dot(ray.dir) > 0.0 {
                     Some(RayIntersection::new(s, -normal, FeatureId::Face(1)))
                 } else {
                     Some(RayIntersection::new(s, normal, FeatureId::Face(0)))

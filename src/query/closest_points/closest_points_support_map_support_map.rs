@@ -1,13 +1,11 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::*;
 use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::query::ClosestPoints;
 use crate::shape::SupportMap;
 
-use na::Unit;
-
 /// Closest points between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
 pub fn closest_points_support_map_support_map<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     prediction: Real,
@@ -37,12 +35,12 @@ where
 ///
 /// This allows a more fine grained control other the underlying GJK algorigtm.
 pub fn closest_points_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     prediction: Real,
     simplex: &mut VoronoiSimplex,
-    init_dir: Option<Vector<Real>>,
+    init_dir: Option<Vector>,
 ) -> GJKResult
 where
     G1: SupportMap,
@@ -50,19 +48,14 @@ where
 {
     let dir = match init_dir {
         // FIXME: or pos12.translation.vector (without the minus sign) ?
-        None => -pos12.translation.vector,
+        None => -pos12.translation.into_inner(),
         Some(dir) => dir,
     };
 
-    if let Some(dir) = Unit::try_new(dir, crate::math::DEFAULT_EPSILON) {
+    if let Some(dir) = UnitVector::try_new(dir, DEFAULT_EPSILON) {
         simplex.reset(CSOPoint::from_shapes(pos12, g1, g2, &dir));
     } else {
-        simplex.reset(CSOPoint::from_shapes(
-            pos12,
-            g1,
-            g2,
-            &Vector::<Real>::x_axis(),
-        ));
+        simplex.reset(CSOPoint::from_shapes(pos12, g1, g2, &Vector::x_axis()));
     }
 
     gjk::closest_points(pos12, g1, g2, prediction, true, simplex)

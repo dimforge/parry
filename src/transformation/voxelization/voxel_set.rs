@@ -18,20 +18,20 @@
 
 use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
-use crate::math::{Matrix, Point, Real, Vector, DIM};
+use crate::math::*;
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
 
 #[cfg(feature = "dim2")]
-type ConvexHull = Vec<Point<Real>>;
+type ConvexHull = Vec<Point>;
 #[cfg(feature = "dim3")]
-type ConvexHull = (Vec<Point<Real>>, Vec<[u32; DIM]>);
+type ConvexHull = (Vec<Point>, Vec<[u32; DIM]>);
 
 /// A voxel.
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
     /// The integer coordinates of the voxel as part of the voxel grid.
-    pub coords: Point<u32>,
+    pub coords: VectorU32,
     /// Is this voxel on the surface of the volume (i.e. not inside of it)?
     pub is_on_surface: bool,
     /// Range of indices (to be looked up into the `VoxelSet` primitive map)
@@ -42,7 +42,7 @@ pub struct Voxel {
 impl Default for Voxel {
     fn default() -> Self {
         Self {
-            coords: Point::origin(),
+            coords: VectorU32::zeros(),
             is_on_surface: false,
             intersections_range: (0, 0),
         }
@@ -54,12 +54,12 @@ impl Default for Voxel {
 /// It only contains voxels that are considered as "full" after a voxelization.
 pub struct VoxelSet {
     /// The 3D origin of this voxel-set.
-    pub origin: Point<Real>,
+    pub origin: Point,
     /// The scale factor between the voxel integer coordinates and their
     /// actual float world-space coordinates.
     pub scale: Real,
-    pub(crate) min_bb_voxels: Point<u32>,
-    pub(crate) max_bb_voxels: Point<u32>,
+    pub(crate) min_bb_voxels: VectorU32,
+    pub(crate) max_bb_voxels: VectorU32,
     pub(crate) voxels: Vec<Voxel>,
     pub(crate) intersections: Arc<Vec<u32>>,
     pub(crate) primitive_classes: Arc<Vec<u32>>,
@@ -70,8 +70,8 @@ impl VoxelSet {
     pub fn new() -> Self {
         Self {
             origin: Point::origin(),
-            min_bb_voxels: Point::origin(),
-            max_bb_voxels: Vector::repeat(1).into(),
+            min_bb_voxels: VectorU32::zeros(),
+            max_bb_voxels: VectorU32::repeat(1),
             scale: 1.0,
             voxels: Vec::new(),
             intersections: Arc::new(Vec::new()),
@@ -105,7 +105,7 @@ impl VoxelSet {
     /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
     ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
     pub fn voxelize(
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
         resolution: u32,
         fill_mode: FillMode,
@@ -122,12 +122,12 @@ impl VoxelSet {
     }
 
     /// The minimal coordinates of the integer bounding-box of the voxels in this set.
-    pub fn min_bb_voxels(&self) -> Point<u32> {
+    pub fn min_bb_voxels(&self) -> VectorU32 {
         self.min_bb_voxels
     }
 
     /// The maximal coordinates of the integer bounding-box of the voxels in this set.
-    pub fn max_bb_voxels(&self) -> Point<u32> {
+    pub fn max_bb_voxels(&self) -> VectorU32 {
         self.max_bb_voxels
     }
 
@@ -136,12 +136,12 @@ impl VoxelSet {
         self.voxel_volume() * self.voxels.len() as Real
     }
 
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
-        self.get_point(na::convert(voxel.coords))
+    fn get_voxel_point(&self, voxel: &Voxel) -> Point {
+        self.get_point(voxel.coords.map(|e| e as Real).into())
     }
 
-    pub(crate) fn get_point(&self, voxel: Point<Real>) -> Point<Real> {
-        self.origin + voxel.coords * self.scale
+    pub(crate) fn get_point(&self, voxel: Point) -> Point {
+        self.origin + voxel.as_vector() * self.scale
     }
 
     /// The number of voxels in this set.
@@ -183,9 +183,9 @@ impl VoxelSet {
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hull(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> Vec<Point<Real>> {
+    ) -> Vec<Point> {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
@@ -196,17 +196,13 @@ impl VoxelSet {
     #[cfg(feature = "dim3")]
     pub fn compute_exact_convex_hull(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    ) -> (Vec<Point>, Vec<[u32; DIM]>) {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
-    fn do_compute_exact_convex_hull(
-        &self,
-        points: &[Point<Real>],
-        indices: &[[u32; DIM]],
-    ) -> ConvexHull {
+    fn do_compute_exact_convex_hull(&self, points: &[Point], indices: &[[u32; DIM]]) -> ConvexHull {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
@@ -235,8 +231,7 @@ impl VoxelSet {
                 //   triangle once.
                 let prim_class = self.primitive_classes.get(*prim_id as usize).copied();
                 if prim_class == Some(u32::MAX) || prim_class == None {
-                    let aabb_center =
-                        self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                    let aabb_center = self.origin + voxel.coords.map(|k| k as Real) * self.scale;
                     let aabb =
                         Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
 
@@ -294,9 +289,9 @@ impl VoxelSet {
     /// `voxel_to_primitives_map = true`.
     pub fn compute_primitive_intersections(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> Vec<Point<Real>> {
+    ) -> Vec<Point> {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute primitive intersections voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
@@ -308,7 +303,7 @@ impl VoxelSet {
             let intersections =
                 &self.intersections[voxel.intersections_range.0..voxel.intersections_range.1];
             for prim_id in intersections {
-                let aabb_center = self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
+                let aabb_center = self.origin + voxel.coords.map(|k| k as Real) * self.scale;
                 let aabb = Aabb::from_half_extents(aabb_center, Vector::repeat(self.scale / 2.0));
 
                 let pa = points[indices[*prim_id as usize][0] as usize];
@@ -350,7 +345,7 @@ impl VoxelSet {
     ///   regular intervals. Useful to save some computation times if an exact result isn't need.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim2")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point<Real>> {
+    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point> {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -374,7 +369,7 @@ impl VoxelSet {
     ///   regular intervals. Useful to save some computation times if an exact result isn't need.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point>, Vec<[u32; DIM]>) {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -392,8 +387,8 @@ impl VoxelSet {
     }
 
     /// Gets the vertices of the given voxel.
-    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point<Real>)) {
-        let ijk = voxel.coords.coords.map(|e| e as Real);
+    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point)) {
+        let ijk = voxel.coords.map(|e| e as Real);
 
         #[cfg(feature = "dim2")]
         let shifts = [
@@ -423,8 +418,8 @@ impl VoxelSet {
     pub(crate) fn intersect(
         &self,
         plane: &CutPlane,
-        positive_pts: &mut Vec<Point<Real>>,
-        negative_pts: &mut Vec<Point<Real>>,
+        positive_pts: &mut Vec<Point>,
+        negative_pts: &mut Vec<Point>,
         sampling: u32,
     ) {
         let num_voxels = self.voxels.len();
@@ -440,7 +435,7 @@ impl VoxelSet {
         for v in 0..num_voxels {
             let voxel = self.voxels[v];
             let pt = self.get_voxel_point(&voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
+            let d = plane.abc.dot(pt.as_vector()) + plane.d;
 
             // if      (d >= 0.0 && d <= d0) positive_pts.push(pt);
             // else if (d < 0.0 && -d <= d0) negative_pts.push(pt);
@@ -480,7 +475,7 @@ impl VoxelSet {
 
         for voxel in &self.voxels {
             let pt = self.get_voxel_point(voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
+            let d = plane.abc.dot(pt.as_vector()) + plane.d;
             num_positive_voxels += (d >= 0.0) as usize;
         }
 
@@ -532,7 +527,7 @@ impl VoxelSet {
         for v in 0..num_voxels {
             let mut voxel = self.voxels[v];
             let pt = self.get_voxel_point(&voxel);
-            let d = plane.abc.dot(&pt.coords) + plane.d;
+            let d = plane.abc.dot(pt.as_vector()) + plane.d;
 
             if d >= 0.0 {
                 if voxel.is_on_surface || d <= d0 {
@@ -559,7 +554,7 @@ impl VoxelSet {
         &self,
         base_index: u32,
         is_on_surface: bool,
-    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    ) -> (Vec<Point>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -585,7 +580,7 @@ impl VoxelSet {
         (vertices, indices)
     }
 
-    pub(crate) fn compute_principal_axes(&self) -> Vector<Real> {
+    pub(crate) fn compute_principal_axes(&self) -> Vector {
         let num_voxels = self.voxels.len();
         if num_voxels == 0 {
             return Vector::zeros();
@@ -599,13 +594,13 @@ impl VoxelSet {
         let denom = 1.0 / (num_voxels as Real);
 
         for voxel in &self.voxels {
-            center += voxel.coords.map(|e| e as Real).coords * denom;
+            center += voxel.coords.map(|e| e as Real) * denom;
         }
 
         let mut cov_mat = Matrix::zeros();
         for voxel in &self.voxels {
-            let xyz = voxel.coords.map(|e| e as Real) - center;
-            cov_mat.syger(denom, &xyz, &xyz, 1.0);
+            let xyz = voxel.coords.map(|e| e as Real) - center.as_vector();
+            cov_mat += outer_product(denom * xyz, xyz);
         }
 
         cov_mat.symmetric_eigenvalues()
@@ -613,7 +608,7 @@ impl VoxelSet {
 }
 
 #[cfg(feature = "dim2")]
-fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
+fn convex_hull(vertices: &[Point]) -> Vec<Point> {
     if vertices.len() > 1 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -622,7 +617,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+fn convex_hull(vertices: &[Point]) -> (Vec<Point>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {

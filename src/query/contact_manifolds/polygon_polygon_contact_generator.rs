@@ -2,7 +2,7 @@
 
 use crate::geometry::contact_generator::PrimitiveContactGenerationContext;
 use crate::geometry::{sat, Contact, ContactData, ContactManifold, ContactManifoldData, Polygon};
-use crate::math::{Isometry, Point, Real};
+use crate::math::*;
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
 use parry::query;
@@ -26,9 +26,9 @@ pub fn generate_contacts_polygon_polygon(_ctxt: &mut PrimitiveContactGenerationC
 
 fn generate_contacts<'a>(
     mut p1: &'a Polygon,
-    mut m1: &'a Isometry<Real>,
+    mut m1: &'a Isometry,
     mut p2: &'a Polygon,
-    mut m2: &'a Isometry<Real>,
+    mut m2: &'a Isometry,
     manifold: &'a mut ContactManifold,
 ) {
     let mut m12 = m1.inv_mul(&m2);
@@ -76,8 +76,8 @@ fn generate_contacts<'a>(
         m12 * p2.vertices[(support_face2 + 1) % len2],
     );
     if let Some((clip_a, clip_b)) = query::details::clip_segment_segment(seg1, seg2) {
-        let dist_a = (clip_a.1 - clip_a.0).dot(&local_n1);
-        let dist_b = (clip_b.1 - clip_b.0).dot(&local_n1);
+        let dist_a = (clip_a.1 - clip_a.0).dot(local_n1);
+        let dist_b = (clip_b.1 - clip_b.0).dot(local_n1);
 
         let mut data_a = ContactData::default();
         let mut data_b = ContactData::default();

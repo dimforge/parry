@@ -1,26 +1,31 @@
-use crate::math::{Point, Real};
+use crate::math::*;
 #[cfg(feature = "dim2")]
-use crate::{math::Vector, utils};
+use crate::utils;
 
 // Features in clipping points are:
 // 0 = First vertex.
 // 1 = On the face.
 // 2 = Second vertex.
-pub type ClippingPoints = (Point<Real>, Point<Real>, usize, usize);
+pub type ClippingPoints = (Point, Point, usize, usize);
 
 /// Projects two segments on one another towards the direction `normal`,
 /// and compute their intersection.
 #[cfg(feature = "dim2")]
 pub fn clip_segment_segment_with_normal(
-    mut seg1: (Point<Real>, Point<Real>),
-    mut seg2: (Point<Real>, Point<Real>),
-    normal: Vector<Real>,
+    mut seg1: (Point, Point),
+    mut seg2: (Point, Point),
+    normal: Vector,
 ) -> Option<(ClippingPoints, ClippingPoints)> {
-    use crate::utils::WBasis;
     let tangent = normal.orthonormal_basis()[0];
 
-    let mut range1 = [seg1.0.coords.dot(&tangent), seg1.1.coords.dot(&tangent)];
-    let mut range2 = [seg2.0.coords.dot(&tangent), seg2.1.coords.dot(&tangent)];
+    let mut range1 = [
+        seg1.0.as_vector().dot(tangent),
+        seg1.1.as_vector().dot(tangent),
+    ];
+    let mut range2 = [
+        seg2.0.as_vector().dot(tangent),
+        seg2.1.as_vector().dot(tangent),
+    ];
     let mut features1 = [0, 2];
     let mut features2 = [0, 2];
 
@@ -74,8 +79,8 @@ pub fn clip_segment_segment_with_normal(
 
 /// Projects two segments on one another and compute their intersection.
 pub fn clip_segment_segment(
-    mut seg1: (Point<Real>, Point<Real>),
-    mut seg2: (Point<Real>, Point<Real>),
+    mut seg1: (Point, Point),
+    mut seg2: (Point, Point),
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     // NOTE: no need to normalize the tangent.
     let tangent1 = seg1.1 - seg1.0;
@@ -83,8 +88,8 @@ pub fn clip_segment_segment(
 
     let mut range1 = [0.0, sqnorm_tangent1];
     let mut range2 = [
-        (seg2.0 - seg1.0).dot(&tangent1),
-        (seg2.1 - seg1.0).dot(&tangent1),
+        (seg2.0 - seg1.0).dot(tangent1),
+        (seg2.1 - seg1.0).dot(tangent1),
     ];
     let mut features1 = [0, 2];
     let mut features2 = [0, 2];

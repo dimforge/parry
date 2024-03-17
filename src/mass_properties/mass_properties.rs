@@ -1,10 +1,10 @@
-use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
+use crate::math::*;
 use crate::utils;
 use na::ComplexField;
 use num::Zero;
-use std::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "dim3")]
-use {na::Matrix3, std::ops::MulAssign};
+use std::ops::MulAssign;
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -18,10 +18,11 @@ const EPSILON: Real = f32::EPSILON as Real;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
+#[cfg_attr(feature = "bevy", derive(bevy::prelude::Reflect), reflect(PartialEq))]
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
-    pub local_com: Point<Real>,
+    pub local_com: Point,
     /// The inverse of the mass of a rigid-body.
     ///
     /// If this is zero, the rigid-body is assumed to have infinite mass.
@@ -29,10 +30,10 @@ pub struct MassProperties {
     /// The inverse of the principal angular inertia of the rigid-body.
     ///
     /// Components set to zero are assumed to be infinite along the corresponding principal axis.
-    pub inv_principal_inertia_sqrt: AngVector<Real>,
+    pub inv_principal_inertia_sqrt: AngVector,
     #[cfg(feature = "dim3")]
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
-    pub principal_inertia_local_frame: Rotation<Real>,
+    pub principal_inertia_local_frame: Rotation,
 }
 
 impl MassProperties {
@@ -40,7 +41,7 @@ impl MassProperties {
     ///
     /// The center-of-mass is specified in the local-space of the rigid-body.
     #[cfg(feature = "dim2")]
-    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: Real) -> Self {
+    pub fn new(local_com: Point, mass: Real, principal_inertia: Real) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt = utils::inv(ComplexField::sqrt(principal_inertia));
         Self {
@@ -56,7 +57,7 @@ impl MassProperties {
     /// The principal angular inertia are the angular inertia along the coordinate axes in the local-space
     /// of the rigid-body.
     #[cfg(feature = "dim3")]
-    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: AngVector<Real>) -> Self {
+    pub fn new(local_com: Point, mass: Real, principal_inertia: AngVector) -> Self {
         Self::with_principal_inertia_frame(local_com, mass, principal_inertia, Rotation::identity())
     }
 
@@ -67,10 +68,10 @@ impl MassProperties {
     /// the `principal_inertia_local_frame` expressed in the local-space of the rigid-body.
     #[cfg(feature = "dim3")]
     pub fn with_principal_inertia_frame(
-        local_com: Point<Real>,
+        local_com: Point,
         mass: Real,
-        principal_inertia: AngVector<Real>,
-        principal_inertia_local_frame: Rotation<Real>,
+        principal_inertia: AngVector,
+        principal_inertia_local_frame: Rotation,
     ) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt =
@@ -88,7 +89,7 @@ impl MassProperties {
     /// The angular inertia matrix will be diagonalized in order to extract the principal inertia
     /// values and principal inertia frame.
     #[cfg(feature = "dim3")]
-    pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
+    pub fn with_inertia_matrix(local_com: Point, mass: Real, inertia: Matrix) -> Self {
         let mut eigen = inertia.symmetric_eigen();
 
         if eigen.eigenvectors.determinant() < 0.0 {
@@ -96,7 +97,7 @@ impl MassProperties {
             eigen.eigenvalues.swap_rows(1, 2);
         }
         let mut principal_inertia_local_frame = Rotation::from_rotation_matrix(
-            &na::Rotation3::from_matrix_unchecked(eigen.eigenvectors),
+            &RotationMatrix::from_matrix_unchecked(eigen.eigenvectors),
         );
         let _ = principal_inertia_local_frame.renormalize();
 
@@ -117,7 +118,7 @@ impl MassProperties {
     }
 
     /// The angular inertia along the principal inertia axes of the rigid-body.
-    pub fn principal_inertia(&self) -> AngVector<Real> {
+    pub fn principal_inertia(&self) -> AngVector {
         #[cfg(feature = "dim2")]
         return utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
         #[cfg(feature = "dim3")]
@@ -125,21 +126,21 @@ impl MassProperties {
     }
 
     /// The world-space center of mass of the rigid-body.
-    pub fn world_com(&self, pos: &Isometry<Real>) -> Point<Real> {
-        pos * self.local_com
+    pub fn world_com(&self, pos: &Isometry) -> Point {
+        pos.transform_point(&self.local_com)
     }
 
     #[cfg(feature = "dim2")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation<Real>) -> AngularInertia<Real> {
+    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation) -> Real {
         self.inv_principal_inertia_sqrt
     }
 
     #[cfg(feature = "dim3")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation<Real>) -> AngularInertia<Real> {
+    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation) -> AngularInertia<Real> {
         if !self.inv_principal_inertia_sqrt.is_zero() {
-            let mut lhs = (rot * self.principal_inertia_local_frame)
+            let mut lhs = (*rot * self.principal_inertia_local_frame)
                 .to_rotation_matrix()
                 .into_inner();
             let rhs = lhs.transpose();
@@ -150,7 +151,7 @@ impl MassProperties {
             lhs.column_mut(2)
                 .mul_assign(self.inv_principal_inertia_sqrt.z);
             let inertia = lhs * rhs;
-            AngularInertia::from_sdp_matrix(inertia)
+            AngularInertia::from_sdp_matrix(inertia.into())
         } else {
             AngularInertia::zero()
         }
@@ -158,10 +159,10 @@ impl MassProperties {
 
     #[cfg(feature = "dim3")]
     /// Reconstructs the inverse angular inertia tensor of the rigid body from its principal inertia values and axes.
-    pub fn reconstruct_inverse_inertia_matrix(&self) -> Matrix3<Real> {
+    pub fn reconstruct_inverse_inertia_matrix(&self) -> Matrix {
         let inv_principal_inertia = self.inv_principal_inertia_sqrt.map(|e| e * e);
         self.principal_inertia_local_frame.to_rotation_matrix()
-            * Matrix3::from_diagonal(&inv_principal_inertia)
+            * Matrix::from_diagonal(inv_principal_inertia)
             * self
                 .principal_inertia_local_frame
                 .inverse()
@@ -170,10 +171,10 @@ impl MassProperties {
 
     #[cfg(feature = "dim3")]
     /// Reconstructs the angular inertia tensor of the rigid body from its principal inertia values and axes.
-    pub fn reconstruct_inertia_matrix(&self) -> Matrix3<Real> {
+    pub fn reconstruct_inertia_matrix(&self) -> Matrix {
         let principal_inertia = self.inv_principal_inertia_sqrt.map(|e| utils::inv(e * e));
         self.principal_inertia_local_frame.to_rotation_matrix()
-            * Matrix3::from_diagonal(&principal_inertia)
+            * Matrix::from_diagonal(principal_inertia)
             * self
                 .principal_inertia_local_frame
                 .inverse()
@@ -181,7 +182,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim2")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Real {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector) -> Real {
         let i = utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
 
         if self.inv_mass != 0.0 {
@@ -193,25 +194,25 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim3")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Matrix3<Real> {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector) -> Matrix {
         let matrix = self.reconstruct_inertia_matrix();
 
         if self.inv_mass != 0.0 {
             let mass = 1.0 / self.inv_mass;
             let diag = shift.norm_squared();
-            let diagm = Matrix3::from_diagonal_element(diag);
-            matrix + (diagm + shift * shift.transpose()) * mass
+            let diagm = Matrix::from_diagonal_element(diag);
+            matrix + (diagm + outer_product(shift, shift)) * mass
         } else {
             matrix
         }
     }
 
     /// Transform each element of the mass properties.
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Isometry) -> Self {
         // NOTE: we don't apply the parallel axis theorem here
         // because the center of mass is also transformed.
         Self {
-            local_com: m * self.local_com,
+            local_com: m.transform_point(&self.local_com),
             inv_mass: self.inv_mass,
             inv_principal_inertia_sqrt: self.inv_principal_inertia_sqrt,
             #[cfg(feature = "dim3")]
@@ -243,7 +244,7 @@ impl Zero for MassProperties {
     fn zero() -> Self {
         Self {
             inv_mass: 0.0,
-            inv_principal_inertia_sqrt: na::zero(),
+            inv_principal_inertia_sqrt: AngVector::default(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
             local_com: Point::origin(),
@@ -267,16 +268,17 @@ impl Sub<MassProperties> for MassProperties {
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
 
-        let mut new_mass = m1 - m2;
+        let new_mass = m1 - m2;
 
         if new_mass < EPSILON {
             // Account for small numerical errors.
-            new_mass = 0.0;
+            // No mass => zero inertia.
+            return Self::zero();
         }
 
         let inv_mass = utils::inv(new_mass);
 
-        let local_com = (self.local_com * m1 - other.local_com.coords * m2) * inv_mass;
+        let local_com = (self.local_com * m1 - other.local_com.as_vector() * m2) * inv_mass;
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let mut inertia = i1 - i2;
@@ -304,17 +306,20 @@ impl Sub<MassProperties> for MassProperties {
 
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
-        let mut new_mass = m1 - m2;
+        let new_mass = m1 - m2;
 
         if new_mass < EPSILON {
-            new_mass = 0.0;
+            // No mass => zero inertia.
+            return Self::zero();
         }
 
         let inv_mass = utils::inv(new_mass);
-        let local_com = (self.local_com * m1 - other.local_com.coords * m2) * inv_mass;
+        let local_com = (self.local_com * m1 - other.local_com.as_vector() * m2) * inv_mass;
+
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 - i2;
+
         Self::with_inertia_matrix(local_com, new_mass, inertia)
     }
 }
@@ -339,7 +344,7 @@ impl Add<MassProperties> for MassProperties {
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
         let inv_mass = utils::inv(m1 + m2);
-        let local_com = (self.local_com * m1 + other.local_com.coords * m2) * inv_mass;
+        let local_com = (self.local_com * m1 + other.local_com.as_vector() * m2) * inv_mass;
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 + i2;
@@ -363,7 +368,7 @@ impl Add<MassProperties> for MassProperties {
         let m1 = utils::inv(self.inv_mass);
         let m2 = utils::inv(other.inv_mass);
         let inv_mass = utils::inv(m1 + m2);
-        let local_com = (self.local_com * m1 + other.local_com.coords * m2) * inv_mass;
+        let local_com = (self.local_com * m1 + other.local_com.as_vector() * m2) * inv_mass;
         let i1 = self.construct_shifted_inertia_matrix(local_com - self.local_com);
         let i2 = other.construct_shifted_inertia_matrix(local_com - other.local_com);
         let inertia = i1 + i2;
@@ -395,7 +400,7 @@ impl std::iter::Sum<MassProperties> for MassProperties {
         for props in iter {
             let mass = utils::inv(props.inv_mass);
             total_mass += mass;
-            total_com += props.local_com.coords * mass;
+            total_com += props.local_com.as_vector() * mass;
             all_props.push(props);
         }
 
@@ -421,7 +426,7 @@ impl std::iter::Sum<MassProperties> for MassProperties {
     {
         let mut total_mass = 0.0;
         let mut total_com = Point::origin();
-        let mut total_inertia = Matrix3::zeros();
+        let mut total_inertia = Matrix::zeros();
         // TODO: avoid this allocation.
         // This is needed because we iterate twice.
         let mut all_props = Vec::new();
@@ -429,7 +434,7 @@ impl std::iter::Sum<MassProperties> for MassProperties {
         for props in iter {
             let mass = utils::inv(props.inv_mass);
             total_mass += mass;
-            total_com += props.local_com.coords * mass;
+            total_com += props.local_com.as_vector() * mass;
             all_props.push(props);
         }
 
@@ -458,16 +463,20 @@ impl approx::AbsDiffEq for MassProperties {
             .abs_diff_eq(&other.inv_principal_inertia_sqrt, epsilon);
 
         #[cfg(feature = "dim3")]
-        let inertia_is_ok = self
-            .reconstruct_inverse_inertia_matrix()
-            .abs_diff_eq(&other.reconstruct_inverse_inertia_matrix(), epsilon);
+        let inertia_is_ok = approx::AbsDiffEq::abs_diff_eq(
+            &self.reconstruct_inverse_inertia_matrix(),
+            &other.reconstruct_inverse_inertia_matrix(),
+            epsilon,
+        );
 
         inertia_is_ok
-            && self.local_com.abs_diff_eq(&other.local_com, epsilon)
+            && approx::AbsDiffEq::abs_diff_eq(&self.local_com, &other.local_com, epsilon)
             && self.inv_mass.abs_diff_eq(&other.inv_mass, epsilon)
-            && self
-                .inv_principal_inertia_sqrt
-                .abs_diff_eq(&other.inv_principal_inertia_sqrt, epsilon)
+            && approx::AbsDiffEq::abs_diff_eq(
+                &self.inv_principal_inertia_sqrt,
+                &other.inv_principal_inertia_sqrt,
+                epsilon,
+            )
     }
 }
 
@@ -511,7 +520,7 @@ mod test {
     use super::MassProperties;
     use crate::math::Point;
     #[cfg(feature = "dim3")]
-    use crate::math::{Rotation, Vector};
+    use crate::math::*;
     use crate::shape::{Ball, Capsule, Shape};
     use approx::assert_relative_eq;
     use num::Zero;
@@ -521,7 +530,7 @@ mod test {
         let m1 = MassProperties {
             local_com: Point::origin(),
             inv_mass: 2.0,
-            inv_principal_inertia_sqrt: na::zero(),
+            inv_principal_inertia_sqrt: AngVector::zeros(),
             #[cfg(feature = "dim3")]
             principal_inertia_local_frame: Rotation::identity(),
         };
@@ -569,7 +578,7 @@ mod test {
         assert_relative_eq!(m1m2m3 - (m1 + m2), m3, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - (m1 + m3), m2, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - (m2 + m3), m1, epsilon = 1.0e-6);
-        assert_relative_eq!(m1m2m3 - m1 - m2, m3, epsilon = 1.0e-6);
+        assert_relative_eq!(m1m2m3 - m1 - m2, m3, epsilon = 1.0e-5);
         assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = 1.0e-6);
 

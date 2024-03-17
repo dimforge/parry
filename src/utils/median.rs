@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use na;
 
 /// Computes the median of a set of values.

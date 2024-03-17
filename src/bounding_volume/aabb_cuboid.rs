@@ -1,13 +1,12 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real};
+use crate::math::*;
 use crate::shape::Cuboid;
-use crate::utils::IsometryOps;
 
 impl Cuboid {
     /// Computes the world-space [`Aabb`] of this cuboid, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
-        let center = Point::from(pos.translation.vector);
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
+        let center = Point::from(pos.translation);
         let ws_half_extents = pos.absolute_transform_vector(&self.half_extents);
 
         Aabb::from_half_extents(center, ws_half_extents)

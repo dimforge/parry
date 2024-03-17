@@ -1,16 +1,16 @@
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::Contact;
 use crate::shape::{HalfSpace, SupportMap};
 
 /// Contact between a halfspace and a support-mapped shape (Cuboid, ConvexHull, etc.)
 pub fn contact_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
     prediction: Real,
 ) -> Option<Contact> {
     let deepest = other.support_point_toward(pos12, &-halfspace.normal);
-    let distance = halfspace.normal.dot(&deepest.coords);
+    let distance = halfspace.normal.dot(deepest.as_vector());
 
     if distance <= prediction {
         let point1 = deepest - halfspace.normal.into_inner() * distance;
@@ -31,7 +31,7 @@ pub fn contact_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Contact between a support-mapped shape (Cuboid, ConvexHull, etc.) and a halfspace.
 pub fn contact_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
     prediction: Real,

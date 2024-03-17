@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::query::{
     self, details::NonlinearTOIMode, ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher,
     Unsupported, TOI,
@@ -17,12 +17,12 @@ pub struct DefaultQueryDispatcher;
 impl QueryDispatcher for DefaultQueryDispatcher {
     fn intersection_test(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<bool, Unsupported> {
         if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
-            let p12 = Point::from(pos12.translation.vector);
+            let p12 = Point::from(pos12.translation);
             Ok(query::details::intersection_test_ball_ball(&p12, b1, b2))
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
             Ok(query::details::intersection_test_cuboid_cuboid(
@@ -81,7 +81,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<Real, Unsupported> {
@@ -89,7 +89,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         let ball2 = shape2.as_ball();
 
         if let (Some(b1), Some(b2)) = (ball1, ball2) {
-            let p2 = Point::from(pos12.translation.vector);
+            let p2 = Point::from(pos12.translation);
             Ok(query::details::distance_ball_ball(b1, &p2, b2))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::distance_ball_convex_polyhedron(
@@ -137,7 +137,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn contact(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -193,7 +193,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn closest_points(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         max_dist: Real,
@@ -269,8 +269,8 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn time_of_impact(
         &self,
-        pos12: &Isometry<Real>,
-        local_vel12: &Vector<Real>,
+        pos12: &Isometry,
+        local_vel12: &Vector,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         max_toi: Real,
@@ -436,7 +436,7 @@ where
 {
     fn contact_manifolds(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -537,7 +537,7 @@ where
 
     fn contact_manifold_convex_convex(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,

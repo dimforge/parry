@@ -1,8 +1,7 @@
 #[cfg(feature = "std")]
 use either::Either;
-use na::Unit;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::shape::SupportMap;
 
 /// A Ball shape.
@@ -38,14 +37,14 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
             // The scaled shape isn’t a ball.
             let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
                 vtx,
             )?))
@@ -65,14 +64,14 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
             // The scaled shape isn’t a ball.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -85,22 +84,22 @@ impl Ball {
 
 impl SupportMap for Ball {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
-        self.support_point_toward(m, &Unit::new_normalize(*dir))
+    fn support_point(&self, m: &Isometry, dir: &Vector) -> Point {
+        self.support_point_toward(m, &UnitVector::new_normalize(*dir))
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        Point::from(m.translation.vector) + **dir * self.radius
+    fn support_point_toward(&self, m: &Isometry, dir: &UnitVector) -> Point {
+        Point::from(m.translation) + dir.into_inner() * self.radius
     }
 
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        self.local_support_point_toward(&Unit::new_normalize(*dir))
+    fn local_support_point(&self, dir: &Vector) -> Point {
+        self.local_support_point_toward(&UnitVector::new_normalize(*dir))
     }
 
     #[inline]
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        Point::from(**dir * self.radius)
+    fn local_support_point_toward(&self, dir: &UnitVector) -> Point {
+        Point::from(dir.into_inner() * self.radius)
     }
 }

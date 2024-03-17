@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::partitioning::Qbvh;
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
@@ -19,13 +19,13 @@ use na::ComplexField; // for .abs()
 /// A polyline.
 pub struct Polyline {
     qbvh: Qbvh<u32>,
-    vertices: Vec<Point<Real>>,
+    vertices: Vec<Point>,
     indices: Vec<[u32; 2]>,
 }
 
 impl Polyline {
     /// Creates a new polyline from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+    pub fn new(vertices: Vec<Point>, indices: Option<Vec<[u32; 2]>>) -> Self {
         let indices =
             indices.unwrap_or_else(|| (0..vertices.len() as u32 - 1).map(|i| [i, i + 1]).collect());
         let data = indices.iter().enumerate().map(|(i, idx)| {
@@ -47,7 +47,7 @@ impl Polyline {
     }
 
     /// Compute the axis-aligned bounding box of this polyline.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
@@ -98,7 +98,7 @@ impl Polyline {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Point] {
         &self.vertices[..]
     }
 
@@ -117,10 +117,10 @@ impl Polyline {
     }
 
     /// Computes a scaled version of this polyline.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.vertices
             .iter_mut()
-            .for_each(|pt| pt.coords.component_mul_assign(scale));
+            .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
         Self {
             qbvh: self.qbvh.scaled(scale),
             vertices: self.vertices,
@@ -221,7 +221,7 @@ impl Polyline {
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,
-        point: Point<Real>,
+        point: Point,
         #[cfg(feature = "dim3")] axis: u8,
     ) -> (PointProjection, (u32, SegmentPointLocation)) {
         let mut proj = self.project_local_point_and_get_location(&point, false);
@@ -252,24 +252,24 @@ impl Polyline {
                         self.segment(adj_seg).scaled_direction()
                     };
 
-                    let dot = normal1.dot(&dir2);
+                    let dot12 = normal1.dot(dir2);
                     // TODO: is this threshold too big? This corresponds to an angle equal to
                     //       abs(acos(1.0e-3)) = (90 - 0.057) degrees.
                     //       We did encounter some cases where this was needed, but perhaps the
                     //       actual problem was an issue with the SegmentPointLocation (which should
                     //       perhaps have been Edge instead of Vertex)?
                     let threshold = 1.0e-3 * dir2.norm();
-                    if dot.abs() > threshold {
+                    if dot12.abs() > threshold {
                         // If the vertex is a reentrant vertex, then the point is
                         // inside. Otherwise, it is outside.
-                        dot >= 0.0
+                        dot12 >= 0.0
                     } else {
                         // If the two edges are collinear, we can’t classify the vertex.
                         // So check against the edge’s normal instead.
-                        (point - proj.0.point).dot(&normal1) <= 0.0
+                        (point - proj.0.point).dot(normal1) <= 0.0
                     }
                 }
-                SegmentPointLocation::OnEdge(_) => (point - proj.0.point).dot(&normal1) <= 0.0,
+                SegmentPointLocation::OnEdge(_) => (point - proj.0.point).dot(normal1) <= 0.0,
             };
         }
 
@@ -278,7 +278,7 @@ impl Polyline {
 }
 
 impl SimdCompositeShape for Polyline {
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape)) {
         let tri = self.segment(i);
         f(None, &tri)
     }
@@ -294,17 +294,13 @@ impl TypedSimdCompositeShape for Polyline {
     type QbvhStorage = DefaultStorage;
 
     #[inline(always)]
-    fn map_typed_part_at(
-        &self,
-        i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
-    ) {
+    fn map_typed_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &Self::PartShape)) {
         let seg = self.segment(i);
         f(None, &seg)
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &dyn Shape)) {
         let seg = self.segment(i);
         f(None, &seg)
     }

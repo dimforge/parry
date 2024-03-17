@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::{Real, Vector};
+use crate::math::*;
 use crate::partitioning::qbvh::storage::QbvhStorage;
 use crate::utils::DefaultStorage;
 use bitflags::bitflags;
@@ -50,6 +50,16 @@ impl IndexedData for u64 {
     }
     fn index(&self) -> usize {
         *self as usize
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl IndexedData for bevy::prelude::Entity {
+    fn default() -> Self {
+        Self::PLACEHOLDER
+    }
+    fn index(&self) -> usize {
+        (*self).index() as usize
     }
 }
 
@@ -389,10 +399,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Computes a scaled version of this Qbvh.
     ///
     /// This will apply the scale to each Aabb on this BVH.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.root_aabb = self.root_aabb.scaled(scale);
         for node in &mut self.nodes {
-            node.simd_aabb = node.simd_aabb.scaled(&Vector::splat(*scale));
+            node.simd_aabb = node.simd_aabb.scaled(&SimdVector::splat((*scale).into()));
         }
         self
     }
@@ -408,7 +418,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 #[cfg(test)]
 mod test {
     use crate::bounding_volume::Aabb;
-    use crate::math::{Point, Vector};
+    use crate::math::*;
     use crate::partitioning::Qbvh;
 
     #[test]

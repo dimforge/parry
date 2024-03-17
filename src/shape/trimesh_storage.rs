@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::partitioning::QbvhStorage;
 use crate::shape::{TopoFace, TopoHalfEdge, TopoVertex};
 use crate::utils::{Array1, DefaultStorage};
@@ -23,13 +23,13 @@ pub trait TriMeshStorage {
     /// Storage needed to store usize.
     type ArrayUsize: Array1<usize>;
     /// Storage needed to store vectors.
-    type ArrayVector: Array1<Vector<Real>>;
+    type ArrayVector: Array1<Vector>;
     /// Storage needed to store points.
-    type ArrayPoint: Array1<Point<Real>>;
+    type ArrayPoint: Array1<Point>;
     /// Storage needed to store triangle indices.
     type ArrayIdx: Array1<[u32; 3]>;
     /// Storage needed to store triples of vectors.
-    type ArrayVectorTriple: Array1<[Vector<Real>; 3]>;
+    type ArrayVectorTriple: Array1<[Vector; 3]>;
 }
 
 #[cfg(feature = "std")]
@@ -40,10 +40,10 @@ impl TriMeshStorage for DefaultStorage {
     type ArrayTopoHalfEdge = Vec<TopoHalfEdge>;
     type ArrayU32 = Vec<u32>;
     type ArrayUsize = Vec<usize>;
-    type ArrayVector = Vec<Vector<Real>>;
-    type ArrayPoint = Vec<Point<Real>>;
+    type ArrayVector = Vec<Vector>;
+    type ArrayPoint = Vec<Point>;
     type ArrayIdx = Vec<[u32; 3]>;
-    type ArrayVectorTriple = Vec<[Vector<Real>; 3]>;
+    type ArrayVectorTriple = Vec<[Vector; 3]>;
 }
 
 #[cfg(all(feature = "std", feature = "cuda"))]
@@ -54,10 +54,10 @@ impl TriMeshStorage for CudaStorage {
     type ArrayTopoHalfEdge = CudaArray1<TopoHalfEdge>;
     type ArrayU32 = CudaArray1<u32>;
     type ArrayUsize = CudaArray1<usize>;
-    type ArrayVector = CudaArray1<Vector<Real>>;
-    type ArrayPoint = CudaArray1<Point<Real>>;
+    type ArrayVector = CudaArray1<Vector>;
+    type ArrayPoint = CudaArray1<Point>;
     type ArrayIdx = CudaArray1<[u32; 3]>;
-    type ArrayVectorTriple = CudaArray1<[Vector<Real>; 3]>;
+    type ArrayVectorTriple = CudaArray1<[Vector; 3]>;
 }
 
 #[cfg(feature = "cuda")]
@@ -68,8 +68,8 @@ impl TriMeshStorage for CudaStoragePtr {
     type ArrayTopoHalfEdge = CudaArrayPointer1<TopoHalfEdge>;
     type ArrayU32 = CudaArrayPointer1<u32>;
     type ArrayUsize = CudaArrayPointer1<usize>;
-    type ArrayVector = CudaArrayPointer1<Vector<Real>>;
-    type ArrayPoint = CudaArrayPointer1<Point<Real>>;
+    type ArrayVector = CudaArrayPointer1<Vector>;
+    type ArrayPoint = CudaArrayPointer1<Point>;
     type ArrayIdx = CudaArrayPointer1<[u32; 3]>;
-    type ArrayVectorTriple = CudaArrayPointer1<[Vector<Real>; 3]>;
+    type ArrayVectorTriple = CudaArrayPointer1<[Vector; 3]>;
 }

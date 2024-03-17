@@ -1,26 +1,25 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Point, Real, SimdBool, SimdReal, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::SimdCompositeShape;
-use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Best-first traversal visitor for computing the point closest to a composite shape.
 pub struct CompositeClosestPointVisitor<'a, S: 'a> {
     shape: &'a S,
-    point: &'a Point<Real>,
-    simd_point: Point<SimdReal>,
+    point: &'a Point,
+    simd_point: SimdPoint,
     solid: bool,
 }
 
 impl<'a, S> CompositeClosestPointVisitor<'a, S> {
     /// Initializes a visitor that allows the computation of the point closest to `point` on `shape`.
-    pub fn new(shape: &'a S, point: &'a Point<Real>, solid: bool) -> Self {
+    pub fn new(shape: &'a S, point: &'a Point, solid: bool) -> Self {
         CompositeClosestPointVisitor {
             shape,
             point,
-            simd_point: Point::splat(*point),
+            simd_point: SimdPoint::splat((*point).into()),
             solid,
         }
     }
@@ -57,7 +56,7 @@ impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAabb>
                                 obj.project_local_point(self.point, self.solid)
                             };
 
-                            weights[ii] = na::distance(self.point, &proj.point);
+                            weights[ii] = distance(self.point, proj.point);
                             mask[ii] = true;
                             results[ii] = Some(proj);
                         });

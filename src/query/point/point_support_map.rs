@@ -1,6 +1,4 @@
-use na::Unit;
-
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 #[cfg(feature = "std")]
 use crate::query::epa::EPA;
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
@@ -17,15 +15,15 @@ use crate::shape::{FeatureId, SupportMap};
 pub fn local_point_projection_on_support_map<G>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
-    point: &Point<Real>,
+    point: &Point,
     solid: bool,
 ) -> PointProjection
 where
     G: SupportMap,
 {
-    let m = Isometry::new(-point.coords, na::zero());
-    let m_inv = Isometry::new(point.coords, na::zero());
-    let dir = Unit::try_new(-m.translation.vector, crate::math::DEFAULT_EPSILON)
+    let m = Isometry::new(-point.as_vector(), AngVector::default());
+    let m_inv = Isometry::new(point.into_vector(), AngVector::default());
+    let dir = UnitVector::try_new(-m.translation.into_inner(), DEFAULT_EPSILON)
         .unwrap_or(Vector::x_axis());
     let support_point = CSOPoint::from_shapes(&m_inv, shape, &ConstantOrigin, &dir);
 
@@ -41,7 +39,7 @@ where
             return PointProjection::new(true, pt);
         } else {
             // return match minkowski_sampling::project_origin(&m, shape, simplex) {
-            //     Some(p) => PointProjection::new(true, p + point.coords),
+            //     Some(p) => PointProjection::new(true, p + point.as_vector()),
             //     None => PointProjection::new(true, *point),
             // };
 
@@ -54,20 +52,17 @@ where
 #[cfg(feature = "dim3")]
 impl PointQuery for ConvexPolyhedron {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, solid: bool) -> PointProjection {
         local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
-        if let Some(local_dir) = Unit::try_new(local_dir, crate::math::DEFAULT_EPSILON) {
+        if let Some(local_dir) = UnitVector::try_new(local_dir, DEFAULT_EPSILON) {
             let feature = self.support_feature_id_toward(&local_dir);
             (proj, feature)
         } else {
@@ -79,20 +74,17 @@ impl PointQuery for ConvexPolyhedron {
 #[cfg(feature = "dim2")]
 impl PointQuery for ConvexPolygon {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, solid: bool) -> PointProjection {
         local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
-        if let Some(local_dir) = Unit::try_new(local_dir, crate::math::DEFAULT_EPSILON) {
+        if let Some(local_dir) = UnitVector::try_new(local_dir, DEFAULT_EPSILON) {
             let feature = self.support_feature_id_toward(&local_dir);
             (proj, feature)
         } else {

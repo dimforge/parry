@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Matrix, Point, Real, DIM};
+use crate::math::*;
 use crate::shape::Tetrahedron;
 use num::Zero;
 
@@ -7,7 +7,7 @@ impl MassProperties {
     /// Computes the mass properties of a triangle mesh.
     pub fn from_trimesh(
         density: Real,
-        vertices: &[Point<Real>],
+        vertices: &[Point],
         indices: &[[u32; DIM]],
     ) -> MassProperties {
         let (volume, com) = trimesh_signed_volume_and_center_of_mass(vertices, indices);
@@ -36,16 +36,16 @@ impl MassProperties {
 
 /// Computes the unit inertia tensor of a tetrahedron, with regard to the given `point`.
 pub fn tetrahedron_unit_inertia_tensor_wrt_point(
-    point: &Point<Real>,
-    p1: &Point<Real>,
-    p2: &Point<Real>,
-    p3: &Point<Real>,
-    p4: &Point<Real>,
-) -> Matrix<Real> {
-    let p1 = p1 - point;
-    let p2 = p2 - point;
-    let p3 = p3 - point;
-    let p4 = p4 - point;
+    point: &Point,
+    p1: &Point,
+    p2: &Point,
+    p3: &Point,
+    p4: &Point,
+) -> Matrix {
+    let p1 = *p1 - *point;
+    let p2 = *p2 - *point;
+    let p3 = *p3 - *point;
+    let p4 = *p4 - *point;
 
     // Just for readability.
     let x1 = p1[0];
@@ -153,9 +153,9 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
 
 /// Computes the volume and center-of-mass of a mesh.
 pub fn trimesh_signed_volume_and_center_of_mass(
-    vertices: &[Point<Real>],
+    vertices: &[Point],
     indices: &[[u32; DIM]],
-) -> (Real, Point<Real>) {
+) -> (Real, Point) {
     let geometric_center = Point::new(-10.0, -10.0, -10.0); // utils::center(vertices);
 
     let mut res = Point::origin();
@@ -169,7 +169,7 @@ pub fn trimesh_signed_volume_and_center_of_mass(
         let volume = Tetrahedron::new(geometric_center, p2, p3, p4).signed_volume();
         let center = Tetrahedron::new(geometric_center, p2, p3, p4).center();
 
-        res += center.coords * volume;
+        res += center.as_vector() * volume;
         vol += volume;
     }
 
@@ -182,7 +182,7 @@ pub fn trimesh_signed_volume_and_center_of_mass(
 
 #[cfg(test)]
 mod test {
-    use crate::math::Vector;
+    use crate::math::{GlamVectorOps, Vector};
     use crate::{
         mass_properties::MassProperties,
         shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Shape},

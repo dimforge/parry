@@ -1,9 +1,9 @@
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::*;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
 
 #[inline]
-fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
+fn compute_result(pt: &Point, proj: Point) -> PointProjection {
     #[cfg(feature = "dim2")]
     {
         PointProjection::new(*pt == proj, proj)
@@ -19,15 +19,12 @@ fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
 
 impl PointQuery for Triangle {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let (proj, loc) = if DIM == 2 {
             self.project_local_point_and_get_location(pt, false)
         } else {
@@ -57,7 +54,7 @@ impl PointQueryWithLocation for Triangle {
     #[inline]
     fn project_local_point_and_get_location(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         let a = self.a;
@@ -68,28 +65,28 @@ impl PointQueryWithLocation for Triangle {
 
         let ab = b - a;
         let ac = c - a;
-        let ap = pt - a;
+        let ap = *pt - a;
 
-        let ab_ap = ab.dot(&ap);
-        let ac_ap = ac.dot(&ap);
+        let ab_ap = ab.dot(ap);
+        let ac_ap = ac.dot(ap);
 
         if ab_ap <= 0.0 && ac_ap <= 0.0 {
             // Voronoï region of `a`.
             return (compute_result(pt, a), TrianglePointLocation::OnVertex(0));
         }
 
-        let bp = pt - b;
-        let ab_bp = ab.dot(&bp);
-        let ac_bp = ac.dot(&bp);
+        let bp = *pt - b;
+        let ab_bp = ab.dot(bp);
+        let ac_bp = ac.dot(bp);
 
         if ab_bp >= 0.0 && ac_bp <= ab_bp {
             // Voronoï region of `b`.
             return (compute_result(pt, b), TrianglePointLocation::OnVertex(1));
         }
 
-        let cp = pt - c;
-        let ab_cp = ab.dot(&cp);
-        let ac_cp = ac.dot(&cp);
+        let cp = *pt - c;
+        let ab_cp = ab.dot(cp);
+        let ac_cp = ac.dot(cp);
 
         if ac_cp >= 0.0 && ab_cp <= ac_cp {
             // Voronoï region of `c`.
@@ -108,12 +105,12 @@ impl PointQueryWithLocation for Triangle {
         // For 2D and 3D, it uses explicit cross/perp products that are
         // more numerically stable.
         fn stable_check_edges_voronoi(
-            ab: &Vector<Real>,
-            ac: &Vector<Real>,
-            bc: &Vector<Real>,
-            ap: &Vector<Real>,
-            bp: &Vector<Real>,
-            cp: &Vector<Real>,
+            ab: &Vector,
+            ac: &Vector,
+            bc: &Vector,
+            ap: &Vector,
+            bp: &Vector,
+            cp: &Vector,
             ab_ap: Real,
             ab_bp: Real,
             ac_ap: Real,
@@ -123,18 +120,18 @@ impl PointQueryWithLocation for Triangle {
         ) -> ProjectionInfo {
             #[cfg(feature = "dim2")]
             {
-                let n = ab.perp(ac);
-                let vc = n * ab.perp(ap);
+                let n = ab.gcross(*ac);
+                let vc = n * ab.gcross(*ap);
                 if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
-                let vb = -n * ac.perp(cp);
+                let vb = -n * ac.gcross(*cp);
                 if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
-                let va = n * bc.perp(bp);
+                let va = n * bc.gcross(*bp);
                 if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
@@ -147,31 +144,31 @@ impl PointQueryWithLocation for Triangle {
 
                 #[cfg(feature = "improved_fixed_point_support")]
                 {
-                    let scaled_n = ab.cross(&ac);
+                    let scaled_n = ab.cross(ac);
                     n = scaled_n.try_normalize(0.0).unwrap_or(scaled_n);
                 }
 
                 #[cfg(not(feature = "improved_fixed_point_support"))]
                 {
-                    n = ab.cross(ac);
+                    n = ab.cross(*ac);
                 }
 
-                let vc = n.dot(&ab.cross(ap));
+                let vc = n.dot(ab.cross(*ap));
                 if vc < 0.0 && ab_ap >= 0.0 && ab_bp <= 0.0 {
                     return ProjectionInfo::OnAB;
                 }
 
-                let vb = -n.dot(&ac.cross(cp));
+                let vb = -n.dot(ac.cross(*cp));
                 if vb < 0.0 && ac_ap >= 0.0 && ac_cp <= 0.0 {
                     return ProjectionInfo::OnAC;
                 }
 
-                let va = n.dot(&bc.cross(bp));
+                let va = n.dot(bc.cross(*bp));
                 if va < 0.0 && ac_bp - ab_bp >= 0.0 && ab_cp - ac_cp >= 0.0 {
                     return ProjectionInfo::OnBC;
                 }
 
-                let clockwise = if n.dot(ap) >= 0.0 { 0 } else { 1 };
+                let clockwise = if n.dot(*ap) >= 0.0 { 0 } else { 1 };
 
                 ProjectionInfo::OnFace(clockwise, va, vb, vc)
             }
@@ -205,7 +202,7 @@ impl PointQueryWithLocation for Triangle {
             }
             ProjectionInfo::OnBC => {
                 // Voronoï region of `bc`.
-                let w = bc.dot(&bp) / bc.norm_squared();
+                let w = bc.dot(bp) / bc.norm_squared();
                 let bcoords = [_1 - w, w];
 
                 let res = b + bc * w;

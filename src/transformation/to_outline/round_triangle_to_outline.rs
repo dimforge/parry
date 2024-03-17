@@ -1,11 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::shape::RoundTriangle;
 use crate::transformation::utils;
 
 impl RoundTriangle {
     /// Outlines this round triangle’s surface with polylines.
-    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
+    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point>, Vec<[u32; 2]>) {
         let tri = &self.inner_shape;
         let n = tri
             .normal()

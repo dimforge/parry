@@ -1,19 +1,19 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::sat;
 use crate::shape::{Cuboid, Triangle};
 
 /// Tests if a triangle intersects an Aabb.
 pub fn intersection_test_aabb_triangle(aabb1: &Aabb, triangle2: &Triangle) -> bool {
     let cuboid1 = Cuboid::new(aabb1.half_extents());
-    let pos12 = Isometry::from_parts((-aabb1.center().coords).into(), na::one());
+    let pos12 = Isometry::from_parts((-aabb1.center().as_vector()).into(), Rotation::identity());
     intersection_test_cuboid_triangle(&pos12, &cuboid1, triangle2)
 }
 
 /// Tests if a triangle intersects a cuboid.
 #[inline]
 pub fn intersection_test_triangle_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     triangle1: &Triangle,
     cuboid2: &Cuboid,
 ) -> bool {
@@ -23,7 +23,7 @@ pub fn intersection_test_triangle_cuboid(
 /// Tests if a triangle intersects an cuboid.
 #[inline]
 pub fn intersection_test_cuboid_triangle(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cube1: &Cuboid,
     triangle2: &Triangle,
 ) -> bool {

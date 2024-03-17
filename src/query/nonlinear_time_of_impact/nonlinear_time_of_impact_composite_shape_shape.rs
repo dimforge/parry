@@ -1,5 +1,5 @@
 use crate::bounding_volume::{BoundingSphere, SimdAabb};
-use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
 use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
@@ -129,7 +129,7 @@ where
         let mut mask = [false; SIMD_WIDTH];
         let mut results = [None; SIMD_WIDTH];
 
-        // let centers1: [Point<Real>; SIMD_WIDTH] = bv.center().into();
+        // let centers1: [Point; SIMD_WIDTH] = bv.center().into();
         let centers1 = bv.center();
         let radius1: [Real; SIMD_WIDTH] = bv.radius().into();
 
@@ -137,8 +137,12 @@ where
             let center1 = centers1.extract(ii);
             let ball1 = Ball::new(radius1[ii]);
             let ball2 = Ball::new(self.sphere2.radius());
-            let ball_motion1 = self.motion1.prepend_translation(center1.coords);
-            let ball_motion2 = self.motion2.prepend_translation(self.sphere2.center.coords);
+            let ball_motion1 = self
+                .motion1
+                .prepend_translation(center1.into_vector().into());
+            let ball_motion2 = self
+                .motion2
+                .prepend_translation(self.sphere2.center.into_vector());
 
             if let Some(toi) = query::details::nonlinear_time_of_impact_support_map_support_map(
                 self.dispatcher,

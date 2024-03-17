@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 
 // pub(crate) const SIN_10_DEGREES: Real = 0.17364817766;
 // pub(crate) const COS_10_DEGREES: Real = 0.98480775301;

@@ -1,5 +1,5 @@
 use crate::approx::AbsDiffEq;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 #[cfg(feature = "std")]
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{PackedFeatureId, Segment, Triangle};
@@ -11,7 +11,7 @@ use na::Point2;
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
     /// Up to four vertices forming this polygonal feature.
-    pub vertices: [Point<Real>; 4],
+    pub vertices: [Point; 4],
     /// The feature IDs of this polygon's vertices.
     pub vids: [PackedFeatureId; 4],
     /// The feature IDs of this polygon's edges.
@@ -65,19 +65,19 @@ impl PolygonalFeature {
     }
 
     /// Transform each vertex of this polygonal feature by the given position `pos`.
-    pub fn transform_by(&mut self, pos: &Isometry<Real>) {
+    pub fn transform_by(&mut self, pos: &Isometry) {
         for p in &mut self.vertices[0..self.num_vertices] {
-            *p = pos * *p;
+            *p = pos.transform_point(&*p);
         }
     }
 
     /// Computes all the contacts between two polygonal features.
     #[cfg(feature = "std")]
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
-        _pos21: &Isometry<Real>,
-        sep_axis1: &Vector<Real>,
-        _sep_axis2: &Vector<Real>,
+        pos12: &Isometry,
+        _pos21: &Isometry,
+        sep_axis1: &Vector,
+        _sep_axis2: &Vector,
         feature1: &Self,
         feature2: &Self,
         prediction: Real,
@@ -96,9 +96,9 @@ impl PolygonalFeature {
 
     #[cfg(feature = "std")]
     fn contacts_edge_edge<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<Real>,
+        sep_axis1: &Vector,
         face2: &PolygonalFeature,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
@@ -111,24 +111,27 @@ impl PolygonalFeature {
         let basis = sep_axis1.orthonormal_basis();
         let projected_edge1 = [
             Point2::new(
-                face1.vertices[0].coords.dot(&basis[0]),
-                face1.vertices[0].coords.dot(&basis[1]),
+                face1.vertices[0].as_vector().dot(basis[0]),
+                face1.vertices[0].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                face1.vertices[1].coords.dot(&basis[0]),
-                face1.vertices[1].coords.dot(&basis[1]),
+                face1.vertices[1].as_vector().dot(basis[0]),
+                face1.vertices[1].as_vector().dot(basis[1]),
             ),
         ];
 
-        let vertices2_1 = [pos12 * face2.vertices[0], pos12 * face2.vertices[1]];
+        let vertices2_1 = [
+            pos12.transform_point(&face2.vertices[0]),
+            pos12.transform_point(&face2.vertices[1]),
+        ];
         let projected_edge2 = [
             Point2::new(
-                vertices2_1[0].coords.dot(&basis[0]),
-                vertices2_1[0].coords.dot(&basis[1]),
+                vertices2_1[0].as_vector().dot(basis[0]),
+                vertices2_1[0].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                vertices2_1[1].coords.dot(&basis[0]),
-                vertices2_1[1].coords.dot(&basis[1]),
+                vertices2_1[1].as_vector().dot(basis[0]),
+                vertices2_1[1].as_vector().dot(basis[1]),
             ),
         ];
 
@@ -156,9 +159,9 @@ impl PolygonalFeature {
 
                 let edge1 = (face1.vertices[0], face1.vertices[1]);
                 let edge2 = (vertices2_1[0], vertices2_1[1]);
-                let local_p1 = edge1.0 * bcoords1[0] + edge1.1.coords * bcoords1[1];
-                let local_p2_1 = edge2.0 * bcoords2[0] + edge2.1.coords * bcoords2[1];
-                let dist = (local_p2_1 - local_p1).dot(sep_axis1);
+                let local_p1 = edge1.0 * bcoords1[0] + edge1.1.as_vector() * bcoords1[1];
+                let local_p2_1 = edge2.0 * bcoords2[0] + edge2.1.as_vector() * bcoords2[1];
+                let dist = (local_p2_1 - local_p1).dot(*sep_axis1);
 
                 if dist <= prediction {
                     manifold.points.push(TrackedContact::flipped(
@@ -195,7 +198,7 @@ impl PolygonalFeature {
                 pos12.inverse_transform_point(&(clips.0).1),
                 feature_at(face1, (clips.0).2),
                 feature_at(face2, (clips.0).3),
-                ((clips.0).1 - (clips.0).0).dot(sep_axis1),
+                ((clips.0).1 - (clips.0).0).dot(*sep_axis1),
                 flipped,
             ));
 
@@ -204,7 +207,7 @@ impl PolygonalFeature {
                 pos12.inverse_transform_point(&(clips.1).1),
                 feature_at(face1, (clips.1).2),
                 feature_at(face2, (clips.1).3),
-                ((clips.1).1 - (clips.1).0).dot(sep_axis1),
+                ((clips.1).1 - (clips.1).0).dot(*sep_axis1),
                 flipped,
             ));
         }
@@ -212,9 +215,9 @@ impl PolygonalFeature {
 
     #[cfg(feature = "std")]
     fn contacts_face_face<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<Real>,
+        sep_axis1: &Vector,
         face2: &PolygonalFeature,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
@@ -227,53 +230,53 @@ impl PolygonalFeature {
         let basis = sep_axis1.orthonormal_basis();
         let projected_face1 = [
             Point2::new(
-                face1.vertices[0].coords.dot(&basis[0]),
-                face1.vertices[0].coords.dot(&basis[1]),
+                face1.vertices[0].as_vector().dot(basis[0]),
+                face1.vertices[0].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                face1.vertices[1].coords.dot(&basis[0]),
-                face1.vertices[1].coords.dot(&basis[1]),
+                face1.vertices[1].as_vector().dot(basis[0]),
+                face1.vertices[1].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                face1.vertices[2].coords.dot(&basis[0]),
-                face1.vertices[2].coords.dot(&basis[1]),
+                face1.vertices[2].as_vector().dot(basis[0]),
+                face1.vertices[2].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                face1.vertices[3].coords.dot(&basis[0]),
-                face1.vertices[3].coords.dot(&basis[1]),
+                face1.vertices[3].as_vector().dot(basis[0]),
+                face1.vertices[3].as_vector().dot(basis[1]),
             ),
         ];
 
         let vertices2_1 = [
-            pos12 * face2.vertices[0],
-            pos12 * face2.vertices[1],
-            pos12 * face2.vertices[2],
-            pos12 * face2.vertices[3],
+            pos12.transform_point(&face2.vertices[0]),
+            pos12.transform_point(&face2.vertices[1]),
+            pos12.transform_point(&face2.vertices[2]),
+            pos12.transform_point(&face2.vertices[3]),
         ];
         let projected_face2 = [
             Point2::new(
-                vertices2_1[0].coords.dot(&basis[0]),
-                vertices2_1[0].coords.dot(&basis[1]),
+                vertices2_1[0].as_vector().dot(basis[0]),
+                vertices2_1[0].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                vertices2_1[1].coords.dot(&basis[0]),
-                vertices2_1[1].coords.dot(&basis[1]),
+                vertices2_1[1].as_vector().dot(basis[0]),
+                vertices2_1[1].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                vertices2_1[2].coords.dot(&basis[0]),
-                vertices2_1[2].coords.dot(&basis[1]),
+                vertices2_1[2].as_vector().dot(basis[0]),
+                vertices2_1[2].as_vector().dot(basis[1]),
             ),
             Point2::new(
-                vertices2_1[3].coords.dot(&basis[0]),
-                vertices2_1[3].coords.dot(&basis[1]),
+                vertices2_1[3].as_vector().dot(basis[0]),
+                vertices2_1[3].as_vector().dot(basis[1]),
             ),
         ];
 
         // Also find all the vertices located inside of the other projected face.
         if face2.num_vertices > 2 {
             let normal2_1 =
-                (vertices2_1[2] - vertices2_1[1]).cross(&(vertices2_1[0] - vertices2_1[1]));
-            let denom = normal2_1.dot(sep_axis1);
+                (vertices2_1[2] - vertices2_1[1]).cross(vertices2_1[0] - vertices2_1[1]);
+            let denom = normal2_1.dot(*sep_axis1);
 
             if !relative_eq!(denom, 0.0) {
                 let last_index2 = face2.num_vertices as usize - 1;
@@ -296,9 +299,9 @@ impl PolygonalFeature {
 
                     // All the perp had the same sign: the point is inside of the other shapes projection.
                     // Output the contact.
-                    let dist = (vertices2_1[0] - face1.vertices[i]).dot(&normal2_1) / denom;
+                    let dist = (vertices2_1[0] - face1.vertices[i]).dot(normal2_1) / denom;
                     let local_p1 = face1.vertices[i];
-                    let local_p2_1 = face1.vertices[i] + dist * sep_axis1;
+                    let local_p2_1 = face1.vertices[i] + dist * *sep_axis1;
 
                     if dist <= prediction {
                         manifold.points.push(TrackedContact::flipped(
@@ -316,9 +319,9 @@ impl PolygonalFeature {
 
         if face1.num_vertices > 2 {
             let normal1 = (face1.vertices[2] - face1.vertices[1])
-                .cross(&(face1.vertices[0] - face1.vertices[1]));
+                .cross(face1.vertices[0] - face1.vertices[1]);
 
-            let denom = -normal1.dot(sep_axis1);
+            let denom = -normal1.dot(*sep_axis1);
             if !relative_eq!(denom, 0.0) {
                 let last_index1 = face1.num_vertices as usize - 1;
                 'point_loop2: for i in 0..face2.num_vertices as usize {
@@ -340,9 +343,9 @@ impl PolygonalFeature {
 
                     // All the perp had the same sign: the point is inside of the other shapes projection.
                     // Output the contact.
-                    let dist = (face1.vertices[0] - vertices2_1[i]).dot(&normal1) / denom;
+                    let dist = (face1.vertices[0] - vertices2_1[i]).dot(normal1) / denom;
                     let local_p2_1 = vertices2_1[i];
-                    let local_p1 = vertices2_1[i] - dist * sep_axis1;
+                    let local_p1 = vertices2_1[i] - dist * *sep_axis1;
 
                     if true {
                         // dist <= prediction {
@@ -380,9 +383,11 @@ impl PolygonalFeature {
                             face1.vertices[(i + 1) % face1.num_vertices],
                         );
                         let edge2 = (vertices2_1[j], vertices2_1[(j + 1) % face2.num_vertices]);
-                        let local_p1 = edge1.0 * (1.0 - bcoords.0) + edge1.1.coords * bcoords.0;
-                        let local_p2_1 = edge2.0 * (1.0 - bcoords.1) + edge2.1.coords * bcoords.1;
-                        let dist = (local_p2_1 - local_p1).dot(sep_axis1);
+                        let local_p1 =
+                            edge1.0 * (1.0 - bcoords.0) + edge1.1.as_vector() * bcoords.0;
+                        let local_p2_1 =
+                            edge2.0 * (1.0 - bcoords.1) + edge2.1.as_vector() * bcoords.1;
+                        let dist = (local_p2_1 - local_p1).dot(*sep_axis1);
 
                         if dist <= prediction {
                             manifold.points.push(TrackedContact::flipped(

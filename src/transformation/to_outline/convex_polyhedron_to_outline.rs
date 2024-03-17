@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::ConvexPolyhedron;
 use na::Point3;
 

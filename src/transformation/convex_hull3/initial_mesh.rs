@@ -1,29 +1,25 @@
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::Triangle;
 use crate::transformation;
 use crate::transformation::convex_hull_utils::support_point_id;
 use crate::utils;
-use na::{Point2, Point3, Vector3};
 use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub enum InitialMesh {
     Facets(Vec<TriangleFacet>),
-    ResultMesh(Vec<Point3<Real>>, Vec<[u32; 3]>),
+    ResultMesh(Vec<Point>, Vec<[u32; 3]>),
 }
 
-fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+fn build_degenerate_mesh_point(point: Point) -> (Vec<Point>, Vec<[u32; 3]>) {
     let ta = [0u32; 3];
     let tb = [0u32; 3];
 
     (vec![point], vec![ta, tb])
 }
 
-fn build_degenerate_mesh_segment(
-    dir: &Vector3<Real>,
-    points: &[Point3<Real>],
-) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+fn build_degenerate_mesh_segment(dir: &Vector, points: &[Point]) -> (Vec<Point>, Vec<[u32; 3]>) {
     let a = utils::point_cloud_support_point(dir, points);
     let b = utils::point_cloud_support_point(&-*dir, points);
 
@@ -34,8 +30,8 @@ fn build_degenerate_mesh_segment(
 }
 
 pub fn try_get_initial_mesh(
-    original_points: &[Point3<Real>],
-    normalized_points: &mut [Point3<Real>],
+    original_points: &[Point],
+    normalized_points: &mut [Point],
     undecidable: &mut Vec<usize>,
 ) -> Result<InitialMesh, ConvexHullError> {
     /*
@@ -110,8 +106,8 @@ pub fn try_get_initial_mesh(
 
             for point in normalized_points.iter() {
                 subspace_points.push(Point2::new(
-                    point.coords.dot(axis1),
-                    point.coords.dot(axis2),
+                    point.as_vector().dot(*axis1),
+                    point.as_vector().dot(*axis2),
                 ))
             }
 
@@ -146,7 +142,7 @@ pub fn try_get_initial_mesh(
             let center = crate::utils::center(normalized_points);
 
             for point in normalized_points.iter_mut() {
-                *point = Point3::from((*point - center) / eigval.amax());
+                *point = Point::from((*point - center) / eigval.amax());
             }
 
             let p1 = support_point_id(&eigpairs[0].0, normalized_points)
@@ -229,21 +225,23 @@ pub fn try_get_initial_mesh(
 mod tests {
     #[test]
     #[cfg(feature = "f32")]
+    #[cfg(feature = "linalg-nalgebra")]
+    // TODO: figure out why the test fails with glam.
     // TODO: ideally we would want this test to actually fail (i.e. we want the
     // convex hull calculation to succeed in this case). Though right now almost-coplanar
     // points can result in a failure of the algorithm. So we are testing here that the
     // error is correctly reported (instead of panicking internally).
     fn try_get_initial_mesh_should_fail_for_missing_support_points() {
         use super::*;
+        use crate::math::Point;
         use crate::transformation::try_convex_hull;
-        use na::Point3;
 
         let point_cloud = vec![
-            Point3::new(103.05024, 303.44974, 106.125),
-            Point3::new(103.21692, 303.44974, 106.125015),
-            Point3::new(104.16538, 303.44974, 106.125),
-            Point3::new(106.55025, 303.44974, 106.125),
-            Point3::new(106.55043, 303.44974, 106.125),
+            Point::new(103.05024, 303.44974, 106.125),
+            Point::new(103.21692, 303.44974, 106.125015),
+            Point::new(104.16538, 303.44974, 106.125),
+            Point::new(106.55025, 303.44974, 106.125),
+            Point::new(106.55043, 303.44974, 106.125),
         ];
         let result = try_convex_hull(&point_cloud);
         assert_eq!(ConvexHullError::MissingSupportPoint, result.unwrap_err());

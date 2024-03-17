@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::*;
 use crate::query::{QueryDispatcher, Ray, Unsupported, TOI};
 use crate::shape::{GenericHeightField, HeightFieldStorage, Shape};
 #[cfg(feature = "dim3")]
@@ -8,8 +8,8 @@ use crate::{bounding_volume::Aabb, query::RayCast};
 #[cfg(feature = "dim2")]
 pub fn time_of_impact_heightfield_shape<Storage, D: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     heightfield1: &GenericHeightField<Storage>,
     g2: &dyn Shape,
     max_toi: Real,
@@ -106,8 +106,8 @@ where
 #[cfg(feature = "dim3")]
 pub fn time_of_impact_heightfield_shape<Storage, D: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     heightfield1: &GenericHeightField<Storage>,
     g2: &dyn Shape,
     max_toi: Real,
@@ -283,8 +283,8 @@ where
 /// Time Of Impact between a moving shape and a heightfield.
 pub fn time_of_impact_shape_heightfield<Storage, D: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     g1: &dyn Shape,
     heightfield2: &GenericHeightField<Storage>,
     max_toi: Real,

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::partitioning::{GenericQbvh, IndexedData, Qbvh, QbvhStorage};
 use crate::shape::Shape;
 use crate::utils::DefaultStorage;
@@ -10,7 +10,7 @@ use crate::utils::DefaultStorage;
 #[cfg(feature = "std")]
 pub trait SimdCompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
-    fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape));
+    fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape));
 
     /// Gets the acceleration structure of the composite shape.
     fn qbvh(&self) -> &Qbvh<u32>;
@@ -24,7 +24,7 @@ pub trait TypedSimdCompositeShape {
     fn map_typed_part_at(
         &self,
         shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        f: impl FnMut(Option<&Isometry>, &Self::PartShape),
     );
 
     // TODO: we need this method because the compiler won't want
@@ -33,7 +33,7 @@ pub trait TypedSimdCompositeShape {
     fn map_untyped_part_at(
         &self,
         shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape),
+        f: impl FnMut(Option<&Isometry>, &dyn Shape),
     );
 
     fn typed_qbvh(&self) -> &GenericQbvh<Self::PartId, Self::QbvhStorage>;
@@ -48,16 +48,12 @@ impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
     fn map_typed_part_at(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape),
     ) {
         self.map_part_at(shape_id, &mut f)
     }
 
-    fn map_untyped_part_at(
-        &self,
-        shape_id: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape),
-    ) {
+    fn map_untyped_part_at(&self, shape_id: u32, mut f: impl FnMut(Option<&Isometry>, &dyn Shape)) {
         self.map_part_at(shape_id, &mut f)
     }
 

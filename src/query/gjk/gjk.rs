@@ -1,11 +1,11 @@
 //! The Gilbert–Johnson–Keerthi distance algorithm.
 
-use na::{self, ComplexField, Unit};
+use na::{self, ComplexField};
 
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 // use query::Proximity;
-use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::math::*;
 use crate::query::{self, Ray};
 
 use num::{Bounded, Zero};
@@ -19,22 +19,22 @@ pub enum GJKResult {
     ///
     /// Both points and vector are expressed in the local-space of the first geometry involved
     /// in the GJK execution.
-    ClosestPoints(Point<Real>, Point<Real>, Unit<Vector<Real>>),
+    ClosestPoints(Point, Point, UnitVector),
     /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
     ///
     /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
-    Proximity(Unit<Vector<Real>>),
+    Proximity(UnitVector),
     /// Result of the GJK algorithm when the origin is too far away from the polytope.
     ///
     /// The returned vector is expressed in the local-space of the first geomety involved in the
     /// GJK execution.
-    NoIntersection(Unit<Vector<Real>>),
+    NoIntersection(UnitVector),
 }
 
 /// The absolute tolerence used by the GJK algorithm.
 pub fn eps_tol() -> Real {
-    let _eps = crate::math::DEFAULT_EPSILON;
+    let _eps = DEFAULT_EPSILON;
     _eps * 10.0
 }
 
@@ -46,11 +46,7 @@ pub fn eps_tol() -> Real {
 /// the EPA algorithm failed to compute the projection.
 ///
 /// Return the projected point in the local-space of `g`.
-pub fn project_origin<G: ?Sized>(
-    m: &Isometry<Real>,
-    g: &G,
-    simplex: &mut VoronoiSimplex,
-) -> Option<Point<Real>>
+pub fn project_origin<G: ?Sized>(m: &Isometry, g: &G, simplex: &mut VoronoiSimplex) -> Option<Point>
 where
     G: SupportMap,
 {
@@ -84,7 +80,7 @@ where
 /// compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
 /// than `max_dist` but not inside `shape`.
 pub fn closest_points<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     max_dist: Real,
@@ -95,7 +91,7 @@ where
     G1: SupportMap,
     G2: SupportMap,
 {
-    let _eps = crate::math::DEFAULT_EPSILON;
+    let _eps = DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
@@ -104,7 +100,7 @@ where
 
     let mut old_dir;
 
-    if let Some(proj_dir) = Unit::try_new(proj.coords, 0.0) {
+    if let Some(proj_dir) = UnitVector::try_new(proj.into_vector(), 0.0) {
         old_dir = -proj_dir;
     } else {
         return GJKResult::Intersection;
@@ -117,7 +113,7 @@ where
     loop {
         let old_max_bound = max_bound;
 
-        if let Some((new_dir, dist)) = Unit::try_new_and_get(-proj.coords, _eps_tol) {
+        if let Some((new_dir, dist)) = UnitVector::try_new_and_get(-proj.as_vector(), _eps_tol) {
             dir = new_dir;
             max_bound = dist;
         } else {
@@ -135,7 +131,7 @@ where
         }
 
         let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
-        let min_bound = -dir.dot(&cso_point.point.coords);
+        let min_bound = -dir.dot(cso_point.point.as_vector());
 
         assert!(min_bound == min_bound);
 
@@ -190,7 +186,7 @@ pub fn cast_local_ray<G: ?Sized>(
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_toi: Real,
-) -> Option<(Real, Vector<Real>)>
+) -> Option<(Real, Vector)>
 where
     G: SupportMap,
 {
@@ -203,12 +199,12 @@ where
 ///
 /// The `dir` vector must be expressed in the local-space of the first shape.
 pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
-    dir: &Vector<Real>,
+    dir: &Vector,
     simplex: &mut VoronoiSimplex,
-) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
+) -> Option<(Real, Vector, Point, Point)>
 where
     G1: SupportMap,
     G2: SupportMap,
@@ -229,18 +225,18 @@ where
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
 fn minkowski_ray_cast<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     ray: &Ray,
     max_toi: Real,
     simplex: &mut VoronoiSimplex,
-) -> Option<(Real, Vector<Real>)>
+) -> Option<(Real, Vector)>
 where
     G1: SupportMap,
     G2: SupportMap,
 {
-    let _eps = crate::math::DEFAULT_EPSILON;
+    let _eps = DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
@@ -257,7 +253,7 @@ where
 
     // Initialize the simplex.
     let support_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
-    simplex.reset(support_point.translate(&-curr_ray.origin.coords));
+    simplex.reset(support_point.translate(&-curr_ray.origin.as_vector()));
 
     // FIXME: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
@@ -269,7 +265,7 @@ where
     loop {
         let old_max_bound = max_bound;
 
-        if let Some((new_dir, dist)) = Unit::try_new_and_get(-proj.coords, _eps_tol) {
+        if let Some((new_dir, dist)) = UnitVector::try_new_and_get(-proj.as_vector(), _eps_tol) {
             dir = new_dir;
             max_bound = dist;
         } else {
@@ -279,7 +275,7 @@ where
         let support_point = if max_bound >= old_max_bound {
             // Upper bounds inconsistencies. Consider the projection as a valid support point.
             last_chance = true;
-            CSOPoint::single_point(proj + curr_ray.origin.coords)
+            CSOPoint::single_point(proj + curr_ray.origin.as_vector())
         } else {
             CSOPoint::from_shapes(pos12, g1, g2, &dir)
         };
@@ -299,9 +295,9 @@ where
         //          > 0             |  > 0  | New higher bound.
         match query::details::ray_toi_with_halfspace(&support_point.point, &dir, &curr_ray) {
             Some(t) => {
-                if dir.dot(&curr_ray.dir) < 0.0 && t > 0.0 {
+                if dir.dot(curr_ray.dir) < 0.0 && t > 0.0 {
                     // new lower bound
-                    ldir = *dir;
+                    ldir = dir.into_inner();
                     ltoi += t;
 
                     // NOTE: we divide by ray_length instead of doing max_toi * ray_length
@@ -319,7 +315,7 @@ where
                 }
             }
             None => {
-                if dir.dot(&curr_ray.dir) > _eps_tol {
+                if dir.dot(curr_ray.dir) > _eps_tol {
                     // miss
                     return None;
                 }
@@ -330,7 +326,7 @@ where
             return None;
         }
 
-        let min_bound = -dir.dot(&(support_point.point.coords - curr_ray.origin.coords));
+        let min_bound = -dir.dot(support_point.point.as_vector() - curr_ray.origin.as_vector());
 
         assert!(min_bound == min_bound);
 
@@ -347,7 +343,7 @@ where
             }
         }
 
-        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.coords));
+        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.as_vector()));
         proj = simplex.project_origin_and_reduce();
 
         if simplex.dimension() == DIM {
@@ -365,14 +361,14 @@ where
     }
 }
 
-fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
+fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point, Point) {
     let mut res = (Point::origin(), Point::origin());
     if prev {
         for i in 0..simplex.prev_dimension() + 1 {
             let coord = simplex.prev_proj_coord(i);
             let point = simplex.prev_point(i);
-            res.0 += point.orig1.coords * coord;
-            res.1 += point.orig2.coords * coord;
+            res.0 += point.orig1.as_vector() * coord;
+            res.1 += point.orig2.as_vector() * coord;
         }
 
         res
@@ -380,8 +376,8 @@ fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
         for i in 0..simplex.dimension() + 1 {
             let coord = simplex.proj_coord(i);
             let point = simplex.point(i);
-            res.0 += point.orig1.coords * coord;
-            res.1 += point.orig2.coords * coord;
+            res.0 += point.orig1.as_vector() * coord;
+            res.1 += point.orig2.as_vector() * coord;
         }
 
         res

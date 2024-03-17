@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::*;
 use crate::query::gjk::{self, CSOPoint};
 use crate::query::{PointQuery, PointQueryWithLocation};
 use crate::shape::{
@@ -63,7 +63,7 @@ impl VoronoiSimplex {
                 let ab = self.vertices[1] - self.vertices[0];
                 let ac = pt - self.vertices[0];
 
-                if ab.cross(&ac).norm_squared() < gjk::eps_tol() {
+                if ab.cross(ac).norm_squared() < gjk::eps_tol() {
                     return false;
                 }
             }
@@ -71,9 +71,9 @@ impl VoronoiSimplex {
                 let ab = self.vertices[1] - self.vertices[0];
                 let ac = self.vertices[2] - self.vertices[0];
                 let ap = pt - self.vertices[0];
-                let n = ab.cross(&ac).normalize();
+                let n = ab.cross(ac).normalize();
 
-                if n.dot(&ap).abs() < gjk::eps_tol() {
+                if n.dot(ap).abs() < gjk::eps_tol() {
                     return false;
                 }
             }
@@ -114,7 +114,7 @@ impl VoronoiSimplex {
     /// Retruns the result of the projection or Point::origin() if the origin lies inside of the simplex.
     /// The state of the samplex before projection is saved, and can be retrieved using the methods prefixed
     /// by `prev_`.
-    pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
+    pub fn project_origin_and_reduce(&mut self) -> Point {
         if self.dim == 0 {
             self.proj[0] = 1.0;
             self.vertices[0].point
@@ -122,7 +122,7 @@ impl VoronoiSimplex {
             // FIXME: NLL
             let (proj, location) = {
                 let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-                seg.project_local_point_and_get_location(&Point::<Real>::origin(), true)
+                seg.project_local_point_and_get_location(&Point::origin(), true)
             };
 
             match location {
@@ -151,7 +151,7 @@ impl VoronoiSimplex {
                     self.vertices[1].point,
                     self.vertices[2].point,
                 );
-                tri.project_local_point_and_get_location(&Point::<Real>::origin(), true)
+                tri.project_local_point_and_get_location(&Point::origin(), true)
             };
 
             match location {
@@ -194,7 +194,7 @@ impl VoronoiSimplex {
                     self.vertices[2].point,
                     self.vertices[3].point,
                 );
-                tetr.project_local_point_and_get_location(&Point::<Real>::origin(), true)
+                tetr.project_local_point_and_get_location(&Point::origin(), true)
             };
 
             match location {
@@ -282,21 +282,19 @@ impl VoronoiSimplex {
     }
 
     /// Compute the projection of the origin on the boundary of this simplex.
-    pub fn project_origin(&mut self) -> Point<Real> {
+    pub fn project_origin(&mut self) -> Point {
         if self.dim == 0 {
             self.vertices[0].point
         } else if self.dim == 1 {
             let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-            seg.project_local_point(&Point::<Real>::origin(), true)
-                .point
+            seg.project_local_point(&Point::origin(), true).point
         } else if self.dim == 2 {
             let tri = Triangle::new(
                 self.vertices[0].point,
                 self.vertices[1].point,
                 self.vertices[2].point,
             );
-            tri.project_local_point(&Point::<Real>::origin(), true)
-                .point
+            tri.project_local_point(&Point::origin(), true).point
         } else {
             let tetr = Tetrahedron::new(
                 self.vertices[0].point,
@@ -304,13 +302,12 @@ impl VoronoiSimplex {
                 self.vertices[2].point,
                 self.vertices[3].point,
             );
-            tetr.project_local_point(&Point::<Real>::origin(), true)
-                .point
+            tetr.project_local_point(&Point::origin(), true).point
         }
     }
 
     /// Tests if the given point is already a vertex of this simplex.
-    pub fn contains_point(&self, pt: &Point<Real>) -> bool {
+    pub fn contains_point(&self, pt: &Point) -> bool {
         for i in 0..self.dim + 1 {
             if self.vertices[i].point == *pt {
                 return true;
@@ -335,7 +332,7 @@ impl VoronoiSimplex {
         let mut max_sq_len = 0.0;
 
         for i in 0..self.dim + 1 {
-            let norm = self.vertices[i].point.coords.norm_squared();
+            let norm = self.vertices[i].point.as_vector().norm_squared();
 
             if norm > max_sq_len {
                 max_sq_len = norm

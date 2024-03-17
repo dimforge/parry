@@ -1,5 +1,5 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
@@ -11,7 +11,6 @@ use crate::query::ContactManifold;
 use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape, SimdCompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::IsometryOpt;
 
 #[cfg(feature = "dim3")]
 use crate::query::contact_manifolds::InternalEdgesFixer;
@@ -67,8 +66,8 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 /// Computes the contact manifold between an heightfield and a composite shape.
 pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Isometry,
+    pos21: &Isometry,
     heightfield1: &HeightField,
     composite2: &dyn SimdCompositeShape,
     prediction: Real,

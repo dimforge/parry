@@ -1,9 +1,9 @@
-use crate::math::{Point, Real};
+use crate::math::*;
 use na;
 
 /// Computes the center of a set of point.
 #[inline]
-pub fn center(pts: &[Point<Real>]) -> Point<Real> {
+pub fn center(pts: &[Point]) -> Point {
     assert!(
         pts.len() >= 1,
         "Cannot compute the center of less than 1 point."
@@ -15,7 +15,7 @@ pub fn center(pts: &[Point<Real>]) -> Point<Real> {
     let mut res = *piter.next().unwrap() * denom;
 
     for pt in piter {
-        res += pt.coords * denom;
+        res += pt.as_vector() * denom;
     }
 
     res

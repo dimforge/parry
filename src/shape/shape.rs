@@ -1,6 +1,6 @@
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::query::{PointQuery, RayCast};
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;
@@ -21,7 +21,7 @@ use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
 #[cfg(feature = "std")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
-use na::{RealField, Unit};
+use na::RealField;
 use num::Zero;
 use num_derive::FromPrimitive;
 
@@ -282,11 +282,11 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn clone_box(&self) -> Box<dyn Shape>;
 
     /// Computes the [`Aabb`] of this shape with the given position.
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.compute_local_aabb().transform_by(position)
     }
     /// Computes the bounding-sphere of this shape with the given position.
-    fn compute_bounding_sphere(&self, position: &Isometry<Real>) -> BoundingSphere {
+    fn compute_bounding_sphere(&self, position: &Isometry) -> BoundingSphere {
         self.compute_local_bounding_sphere().transform_by(position)
     }
 
@@ -338,17 +338,13 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     // }
 
     /// The shape's normal at the given point located on a specific feature.
-    fn feature_normal_at_point(
-        &self,
-        _feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, _feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         None
     }
 
     /// Computes the swept [`Aabb`] of this shape, i.e., the space it would occupy by moving from
     /// the given start position to the given end position.
-    fn compute_swept_aabb(&self, start_pos: &Isometry<Real>, end_pos: &Isometry<Real>) -> Aabb {
+    fn compute_swept_aabb(&self, start_pos: &Isometry, end_pos: &Isometry) -> Aabb {
         let aabb1 = self.compute_aabb(start_pos);
         let aabb2 = self.compute_aabb(end_pos);
         aabb1.merged(&aabb2)
@@ -592,7 +588,7 @@ impl Shape for Ball {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -626,12 +622,8 @@ impl Shape for Ball {
 
     /// The shape's normal at the given point located on a specific feature.
     #[inline]
-    fn feature_normal_at_point(
-        &self,
-        _: FeatureId,
-        point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
-        Unit::try_new(point.coords, crate::math::DEFAULT_EPSILON)
+    fn feature_normal_at_point(&self, _: FeatureId, point: &Point) -> Option<UnitVector> {
+        UnitVector::try_new(point.into_vector(), DEFAULT_EPSILON)
     }
 }
 
@@ -649,7 +641,7 @@ impl Shape for Cuboid {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -670,7 +662,7 @@ impl Shape for Cuboid {
     }
 
     fn ccd_thickness(&self) -> Real {
-        self.half_extents.min()
+        self.half_extents.amin()
     }
 
     fn ccd_angular_thickness(&self) -> Real {
@@ -685,11 +677,7 @@ impl Shape for Cuboid {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         self.feature_normal(feature)
     }
 }
@@ -708,7 +696,7 @@ impl Shape for Capsule {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -759,7 +747,7 @@ impl Shape for Triangle {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -799,11 +787,7 @@ impl Shape for Triangle {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         self.feature_normal(feature)
     }
 }
@@ -822,7 +806,7 @@ impl Shape for Segment {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -858,11 +842,7 @@ impl Shape for Segment {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         self.feature_normal(feature)
     }
 }
@@ -881,7 +861,7 @@ impl Shape for Compound {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.local_aabb().transform_by(position)
     }
 
@@ -929,7 +909,7 @@ impl Shape for Polyline {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -975,7 +955,7 @@ impl Shape for TriMesh {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1022,7 +1002,7 @@ impl Shape for HeightField {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1064,7 +1044,7 @@ impl Shape for ConvexPolygon {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1086,7 +1066,7 @@ impl Shape for ConvexPolygon {
 
     fn ccd_thickness(&self) -> Real {
         // TODO: we should use the OBB instead.
-        self.compute_local_aabb().half_extents().min()
+        self.compute_local_aabb().half_extents().amin()
     }
 
     fn ccd_angular_thickness(&self) -> Real {
@@ -1103,11 +1083,7 @@ impl Shape for ConvexPolygon {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         self.feature_normal(feature)
     }
 }
@@ -1127,7 +1103,7 @@ impl Shape for ConvexPolyhedron {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1150,7 +1126,7 @@ impl Shape for ConvexPolyhedron {
 
     fn ccd_thickness(&self) -> Real {
         // TODO: we should use the OBB instead.
-        self.compute_local_aabb().half_extents().min()
+        self.compute_local_aabb().half_extents().amin()
     }
 
     fn ccd_angular_thickness(&self) -> Real {
@@ -1167,11 +1143,7 @@ impl Shape for ConvexPolyhedron {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point<Real>,
-    ) -> Option<Unit<Vector<Real>>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<UnitVector> {
         self.feature_normal(feature)
     }
 }
@@ -1191,7 +1163,7 @@ impl Shape for Cylinder {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1243,7 +1215,7 @@ impl Shape for Cone {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1297,7 +1269,7 @@ impl Shape for HalfSpace {
         self.local_bounding_sphere()
     }
 
-    fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+    fn compute_aabb(&self, position: &Isometry) -> Aabb {
         self.aabb(position)
     }
 
@@ -1342,7 +1314,7 @@ macro_rules! impl_shape_for_round_shape(
                 self.inner_shape.local_bounding_sphere().loosened(self.border_radius)
             }
 
-            fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
+            fn compute_aabb(&self, position: &Isometry) -> Aabb {
                 self.inner_shape.aabb(position).loosened(self.border_radius)
             }
 

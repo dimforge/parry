@@ -1,16 +1,15 @@
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
     ContactManifold, TrackedContact,
 };
 use crate::shape::{PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, Shape};
-use na::Unit;
 
 /// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap`
 /// trait, both represented as `Shape` trait-objects.
 pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -37,7 +36,7 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap` trait.
 pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     pfm1: &'a S1,
     border_radius1: Real,
     pfm2: &'a S2,
@@ -57,7 +56,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         return;
     }
 
-    let init_dir = Unit::try_new(manifold.local_n1, crate::math::DEFAULT_EPSILON);
+    let init_dir = UnitVector::try_new(manifold.local_n1, DEFAULT_EPSILON);
     let total_prediction = prediction + border_radius1 + border_radius2;
     let contact = query::details::contact_support_map_support_map_with_params(
         pos12,
@@ -103,7 +102,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                     pos12.inverse_transform_point(&p2_1),
                     PackedFeatureId::UNKNOWN, // TODO: We don't know what features are involved.
                     PackedFeatureId::UNKNOWN,
-                    (p2_1 - p1).dot(&dir),
+                    (p2_1 - p1).dot(dir),
                 );
                 manifold.points.push(contact);
             }
@@ -111,18 +110,18 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
             // Adjust points to take the radius into account.
             if border_radius1 != 0.0 || border_radius2 != 0.0 {
                 for contact in &mut manifold.points {
-                    contact.local_p1 += *local_n1 * border_radius1;
-                    contact.local_p2 += *local_n2 * border_radius2;
+                    contact.local_p1 += local_n1.into_inner() * border_radius1;
+                    contact.local_p2 += local_n2.into_inner() * border_radius2;
                     contact.dist -= border_radius1 + border_radius2;
                 }
             }
 
-            manifold.local_n1 = *local_n1;
-            manifold.local_n2 = *local_n2;
+            manifold.local_n1 = local_n1.into_inner();
+            manifold.local_n2 = local_n2.into_inner();
         }
         GJKResult::NoIntersection(dir) => {
             // Use the manifold normal as a cache.
-            manifold.local_n1 = *dir;
+            manifold.local_n1 = dir.into_inner();
         }
         _ => {
             // Reset the cached direction.

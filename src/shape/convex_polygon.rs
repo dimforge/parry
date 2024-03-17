@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
 use na::{self, ComplexField, RealField, Unit};
@@ -12,8 +12,8 @@ use na::{self, ComplexField, RealField, Unit};
 )]
 #[derive(Clone, Debug)]
 pub struct ConvexPolygon {
-    points: Vec<Point<Real>>,
-    normals: Vec<Unit<Vector<Real>>>,
+    points: Vec<Point>,
+    normals: Vec<UnitVector>,
 }
 
 impl ConvexPolygon {
@@ -21,7 +21,7 @@ impl ConvexPolygon {
     ///
     /// This explicitly computes the convex hull of the given set of points.
     /// Returns `None` if the convex hull computation failed.
-    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
+    pub fn from_convex_hull(points: &[Point]) -> Option<Self> {
         let vertices = crate::transformation::convex_hull(points);
         Self::from_convex_polyline(vertices)
     }
@@ -31,8 +31,8 @@ impl ConvexPolygon {
     ///
     /// Convexity of the input polyline is not checked.
     /// Returns `None` if all points form an almost flat line.
-    pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
-        let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
+    pub fn from_convex_polyline(mut points: Vec<Point>) -> Option<Self> {
+        let eps = ComplexField::sqrt(DEFAULT_EPSILON);
         let mut normals = Vec::with_capacity(points.len());
 
         // First, compute all normals.
@@ -43,7 +43,7 @@ impl ConvexPolygon {
 
         let mut nremoved = 0;
         // See if the first vertex must be removed.
-        if normals[0].dot(&*normals[normals.len() - 1]) > 1.0 - eps {
+        if normals[0].dot(normals[normals.len() - 1]) > 1.0 - eps {
             nremoved = 1;
         }
 
@@ -51,7 +51,7 @@ impl ConvexPolygon {
         // of collinearity of adjascent faces.
         for i2 in 1..points.len() {
             let i1 = i2 - 1;
-            if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
+            if normals[i1].dot(normals[i2]) > 1.0 - eps {
                 // Remove
                 nremoved += 1;
             } else {
@@ -73,13 +73,13 @@ impl ConvexPolygon {
 
     /// The vertices of this convex polygon.
     #[inline]
-    pub fn points(&self) -> &[Point<Real>] {
+    pub fn points(&self) -> &[Point] {
         &self.points
     }
 
     /// The normals of the edges of this convex polygon.
     #[inline]
-    pub fn normals(&self) -> &[Unit<Vector<Real>>] {
+    pub fn normals(&self) -> &[UnitVector] {
         &self.normals
     }
 
@@ -87,13 +87,13 @@ impl ConvexPolygon {
     ///
     /// Returns `None` if the result had degenerate normals (for example if
     /// the scaling factor along one axis is zero).
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+    pub fn scaled(mut self, scale: &Vector) -> Option<Self> {
         self.points
             .iter_mut()
-            .for_each(|pt| pt.coords.component_mul_assign(scale));
+            .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
 
         for n in &mut self.normals {
-            *n = Unit::try_new(n.component_mul(scale), 0.0)?;
+            *n = UnitVector::try_new(n.component_mul(scale), 0.0)?;
         }
 
         Some(self)
@@ -128,14 +128,14 @@ impl ConvexPolygon {
             };
             let normal_a = normals[i1];
             let direction = normal_a.into_inner() + normals[i2].into_inner();
-            points.push(self.points[i2] + (amount / direction.dot(&normal_a)) * direction);
+            points.push(self.points[i2] + (amount / direction.dot(normal_a)) * direction);
         }
 
         ConvexPolygon { points, normals }
     }
 
     /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
-    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    pub fn support_feature_id_toward(&self, local_dir: &UnitVector) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
         let ceps = ComplexField::cos(eps);
 
@@ -143,19 +143,19 @@ impl ConvexPolygon {
         for i in 0..self.normals.len() {
             let normal = &self.normals[i];
 
-            if normal.dot(local_dir.as_ref()) >= ceps {
+            if normal.dot(local_dir.into_inner()) >= ceps {
                 return FeatureId::Face(i as u32);
             }
         }
 
         // Support vertex.
         FeatureId::Vertex(
-            utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points) as u32,
+            utils::point_cloud_support_point_id(&local_dir.into_inner(), &self.points) as u32,
         )
     }
 
     /// The normal of the given feature.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<UnitVector> {
         match feature {
             FeatureId::Face(id) => Some(self.normals[id as usize]),
             FeatureId::Vertex(id2) => {
@@ -164,8 +164,8 @@ impl ConvexPolygon {
                 } else {
                     id2 as usize - 1
                 };
-                Some(Unit::new_normalize(
-                    *self.normals[id1] + *self.normals[id2 as usize],
+                Some(UnitVector::new_normalize(
+                    self.normals[id1].into_inner() + self.normals[id2 as usize].into_inner(),
                 ))
             }
             _ => None,
@@ -175,20 +175,20 @@ impl ConvexPolygon {
 
 impl SupportMap for ConvexPolygon {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
 
 impl PolygonalFeatureMap for ConvexPolygon {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
-        let cuboid = crate::shape::Cuboid::new(self.points[2].coords);
+    fn local_support_feature(&self, dir: &UnitVector, out_feature: &mut PolygonalFeature) {
+        let cuboid = crate::shape::Cuboid::new(self.points[2].into_vector());
         cuboid.local_support_feature(dir, out_feature);
         let mut best_face = 0;
-        let mut max_dot = self.normals[0].dot(dir);
+        let mut max_dot = self.normals[0].dot(dir.into_inner());
 
         for i in 1..self.normals.len() {
-            let dot = self.normals[i].dot(dir);
+            let dot = self.normals[i].dot(dir.into_inner());
 
             if dot > max_dot {
                 max_dot = dot;
@@ -209,7 +209,7 @@ impl PolygonalFeatureMap for ConvexPolygon {
 
 /*
 impl ConvexPolyhedron for ConvexPolygon {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         self.points[id.unwrap_vertex() as usize]
     }
 
@@ -229,8 +229,8 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Isometry,
+        dir: &UnitVector,
         out: &mut ConvexPolygonalFeature,
     ) {
         let ls_dir = m.inverse_transform_vector(dir);
@@ -252,8 +252,8 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Isometry,
+        dir: &UnitVector,
         _angle: Real,
         out: &mut ConvexPolygonalFeature,
     ) {
@@ -262,7 +262,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         self.support_face_toward(transform, dir, out)
     }
 
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    fn support_feature_id_toward(&self, local_dir: &UnitVector) -> FeatureId {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
         let ceps = ComplexField::cos(eps);
 
@@ -309,6 +309,6 @@ mod tests {
             .points()
             .iter()
             .zip(expected.iter())
-            .all(|(a, b)| (a.coords - b.coords).magnitude() < 0.001));
+            .all(|(a, b)| (a.as_vector() - b.as_vector()).magnitude() < 0.001));
     }
 }

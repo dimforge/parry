@@ -1,14 +1,13 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{Contact, QueryDispatcher};
 use crate::shape::{Shape, SimdCompositeShape};
-use crate::utils::IsometryOpt;
 
 /// Best contact between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn contact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &dyn Shape,
     prediction: Real,
@@ -48,7 +47,7 @@ where
 /// Best contact between a shape and a composite (`Mesh`, `Compound`) shape.
 pub fn contact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &G2,
     prediction: Real,

@@ -1,9 +1,8 @@
 use crate::bounding_volume::{Aabb, BoundingVolume, SimdAabb};
 #[cfg(feature = "dim3")]
 use crate::math::Vector;
-use crate::math::{Point, Real};
+use crate::math::*;
 use crate::partitioning::{CenterDataSplitter, QbvhProxy};
-use crate::simd::{SimdReal, SIMD_WIDTH};
 use simba::simd::{SimdBool, SimdValue};
 
 use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhNodeFlags};
@@ -510,7 +509,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         let center_denom = 1.0 / (indices.len() as Real);
 
         for i in &*indices {
-            let coords = workspace.aabbs[*i].center().coords;
+            let coords = workspace.aabbs[*i].center().into_vector();
             center += coords * center_denom;
         }
 

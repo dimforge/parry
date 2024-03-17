@@ -3,7 +3,7 @@
 //!
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::partitioning::Qbvh;
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
@@ -20,7 +20,7 @@ use crate::utils::DefaultStorage;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone)]
 pub struct Compound {
-    shapes: Vec<(Isometry<Real>, SharedShape)>,
+    shapes: Vec<(Isometry, SharedShape)>,
     qbvh: Qbvh<u32>,
     aabbs: Vec<Aabb>,
     aabb: Aabb,
@@ -31,7 +31,7 @@ impl Compound {
     ///
     /// Panics if the input vector is empty, of if some of the provided shapes
     /// are also composite shapes (nested composite shapes are not allowed).
-    pub fn new(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Compound {
+    pub fn new(shapes: Vec<(Isometry, SharedShape)>) -> Compound {
         assert!(
             !shapes.is_empty(),
             "A compound shape must contain at least one shape."
@@ -92,7 +92,7 @@ impl Compound {
 impl Compound {
     /// The shapes of this compound shape.
     #[inline]
-    pub fn shapes(&self) -> &[(Isometry<Real>, SharedShape)] {
+    pub fn shapes(&self) -> &[(Isometry, SharedShape)] {
         &self.shapes[..]
     }
 
@@ -123,7 +123,7 @@ impl Compound {
 
 impl SimdCompositeShape for Compound {
     #[inline]
-    fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape)) {
         if let Some(shape) = self.shapes.get(shape_id as usize) {
             f(Some(&shape.0), &*shape.1)
         }
@@ -141,22 +141,14 @@ impl TypedSimdCompositeShape for Compound {
     type QbvhStorage = DefaultStorage;
 
     #[inline(always)]
-    fn map_typed_part_at(
-        &self,
-        i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
-    ) {
+    fn map_typed_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &Self::PartShape)) {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
             f(Some(part_pos), &**part)
         }
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
-        &self,
-        i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
-    ) {
+    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &Self::PartShape)) {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
             f(Some(part_pos), &**part)
         }

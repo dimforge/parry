@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::na::{Point as SPoint, SVector};
 
 /// Closest points between two lines.
@@ -7,17 +7,17 @@ use crate::na::{Point as SPoint, SVector};
 /// `orig1 + dir1 * res.0` and `orig2 + dir2 * res.1`.
 #[inline]
 pub fn closest_points_line_line_parameters(
-    orig1: &Point<Real>,
-    dir1: &Vector<Real>,
-    orig2: &Point<Real>,
-    dir2: &Vector<Real>,
+    orig1: &Point,
+    dir1: &Vector,
+    orig2: &Point,
+    dir2: &Vector,
 ) -> (Real, Real) {
     let res = closest_points_line_line_parameters_eps(
-        orig1,
-        dir1,
-        orig2,
-        dir2,
-        crate::math::DEFAULT_EPSILON,
+        &(*orig1).into(),
+        &(*dir1).into(),
+        &(*orig2).into(),
+        &(*dir2).into(),
+        DEFAULT_EPSILON,
     );
     (res.0, res.1)
 }
@@ -75,11 +75,11 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_line_line(
-    orig1: &Point<Real>,
-    dir1: &Vector<Real>,
-    orig2: &Point<Real>,
-    dir2: &Vector<Real>,
-) -> (Point<Real>, Point<Real>) {
+    orig1: &Point,
+    dir1: &Vector,
+    orig2: &Point,
+    dir2: &Vector,
+) -> (Point, Point) {
     let (s, t) = closest_points_line_line_parameters(orig1, dir1, orig2, dir2);
     (*orig1 + *dir1 * s, *orig2 + *dir2 * t)
 }

@@ -1,7 +1,5 @@
-extern crate nalgebra as na;
-
-use na::Isometry3;
 use parry3d::bounding_volume::BoundingVolume;
+use parry3d::math::Isometry;
 use parry3d::shape::Ball;
 
 fn main() {
@@ -11,8 +9,8 @@ fn main() {
     let ball1 = Ball::new(0.5);
     let ball2 = Ball::new(1.0);
 
-    let ball1_pos = Isometry3::translation(0.0, 1.0, 0.0);
-    let ball2_pos = Isometry3::identity(); // Identity matrix.
+    let ball1_pos = Isometry::translation(0.0, 1.0, 0.0);
+    let ball2_pos = Isometry::identity(); // Identity matrix.
 
     /*
      * Compute their axis-aligned bounding boxes.

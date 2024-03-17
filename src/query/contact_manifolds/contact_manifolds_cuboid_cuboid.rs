@@ -1,12 +1,10 @@
-#[cfg(feature = "dim2")]
-use crate::math::Vector;
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::{sat, ContactManifold};
 use crate::shape::{Cuboid, PolygonalFeature, Shape};
 
 /// Computes the contact manifold between two cuboids represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default + Copy>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &dyn Shape,
     prediction: Real,
@@ -19,7 +17,7 @@ pub fn contact_manifold_cuboid_cuboid_shapes<ManifoldData, ContactData: Default 
 
 /// Computes the contact manifold between two cuboids.
 pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + Copy>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cuboid1: &'a Cuboid,
     cuboid2: &'a Cuboid,
     prediction: Real,
@@ -72,7 +70,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     let mut best_sep = sep1;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
-        best_sep = (sep2.0, pos12 * -sep2.1);
+        best_sep = (sep2.0, pos12.rotation * -sep2.1);
     } else if sep3.0 > sep1.0 {
         best_sep = sep3;
     }
@@ -82,7 +80,7 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     let old_manifold_points = manifold.points.clone();
     manifold.clear();
 
-    let local_n2 = pos21 * -best_sep.1;
+    let local_n2 = pos21.rotation * -best_sep.1;
 
     // Now the reference feature is from `cuboid1` and the best separation is `best_sep`.
     // Everything must be expressed in the local-space of `cuboid1` for contact clipping.

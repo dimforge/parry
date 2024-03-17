@@ -1,11 +1,10 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
-use na::Unit;
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -22,7 +21,7 @@ pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a convex shape and a ball.
 pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &'a S1,
     ball2: &'a Ball,
     prediction: Real,
@@ -32,15 +31,16 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     S1: ?Sized + Shape,
     ContactData: Default + Copy,
 {
-    let local_p2_1 = Point::from(pos12.translation.vector);
+    let local_p2_1 = Point::from(pos12.translation);
     let (proj, fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
     let dpos = local_p2_1 - proj.point;
 
     // local_n1 points from the surface towards our origin if defined, otherwise from the other
     // shape's origin towards our origin if defined, otherwise towards +x
-    let (mut local_n1, mut dist) = Unit::try_new_and_get(dpos, 0.0).unwrap_or_else(|| {
+    let (mut local_n1, mut dist) = UnitVector::try_new_and_get(dpos, 0.0).unwrap_or_else(|| {
         (
-            Unit::try_new(pos12.translation.vector, 0.0).unwrap_or_else(|| Vector::x_axis()),
+            UnitVector::try_new(pos12.translation.into_inner(), 0.0)
+                .unwrap_or_else(|| Vector::x_axis()),
             0.0,
         )
     });
@@ -51,7 +51,7 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     }
 
     if dist <= ball2.radius + prediction {
-        let local_n2 = pos12.inverse_transform_vector(&-*local_n1);
+        let local_n2 = pos12.inverse_transform_vector(&-local_n1.into_inner());
         let local_p2 = (local_n2 * ball2.radius).into();
         let contact_point = TrackedContact::flipped(
             proj.point,
@@ -72,9 +72,9 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
 
         if flipped {
             manifold.local_n1 = local_n2;
-            manifold.local_n2 = *local_n1;
+            manifold.local_n2 = local_n1.into_inner();
         } else {
-            manifold.local_n1 = *local_n1;
+            manifold.local_n1 = local_n1.into_inner();
             manifold.local_n2 = local_n2;
         }
     } else {

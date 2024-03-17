@@ -1,19 +1,19 @@
 #![allow(deprecated)] // Silence warning until we actually remove IntersectionCompositeShapeShapeBestFirstVisitor
 
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdVisitStatus, SimdVisitor,
 };
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::{DefaultStorage, IsometryOpt};
+use crate::utils::DefaultStorage;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &dyn Shape,
 ) -> bool
@@ -30,7 +30,7 @@ where
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
 pub fn intersection_test_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &G2,
 ) -> bool
@@ -46,7 +46,7 @@ pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: ?Sized + 'a
     ls_aabb2: SimdAabb,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
+    pos12: &'a Isometry,
     g1: &'a G1,
     g2: &'a dyn Shape,
 
@@ -61,7 +61,7 @@ where
     /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
         dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
+        pos12: &'a Isometry,
         g1: &'a G1,
         g2: &'a dyn Shape,
     ) -> IntersectionCompositeShapeShapeVisitor<'a, D, G1> {
@@ -121,11 +121,11 @@ where
 /// A visitor for checking if a composite-shape and a shape intersect.
 #[deprecated(note = "Use IntersectionCompositeShapeShapeVisitor instead.")]
 pub struct IntersectionCompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: Vector<SimdReal>,
-    msum_margin: Vector<SimdReal>,
+    msum_shift: SimdVector,
+    msum_margin: SimdVector,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
+    pos12: &'a Isometry,
     g1: &'a G1,
     g2: &'a dyn Shape,
 }
@@ -138,7 +138,7 @@ where
     /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
         dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
+        pos12: &'a Isometry,
         g1: &'a G1,
         g2: &'a dyn Shape,
     ) -> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1> {
@@ -146,8 +146,8 @@ where
 
         IntersectionCompositeShapeShapeBestFirstVisitor {
             dispatcher,
-            msum_shift: Vector::splat(-ls_aabb2.center().coords),
-            msum_margin: Vector::splat(ls_aabb2.half_extents()),
+            msum_shift: SimdVector::splat((-ls_aabb2.center().as_vector()).into()),
+            msum_margin: SimdVector::splat(ls_aabb2.half_extents().into()),
             pos12,
             g1,
             g2,

@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 
 pub fn inv(val: Real) -> Real {
     if val == 0.0 {

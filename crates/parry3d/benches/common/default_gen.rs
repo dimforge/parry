@@ -64,10 +64,10 @@ where
 
 impl DefaultGen for Cuboid
 where
-    Standard: Distribution<Vector<Real>>,
+    Standard: Distribution<Vector>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Cuboid {
-        Cuboid::new(rng.gen::<Vector<Real>>().abs())
+        Cuboid::new(rng.gen::<Vector>().abs())
     }
 }
 
@@ -100,7 +100,7 @@ where
 
 impl DefaultGen for Segment
 where
-    Standard: Distribution<Point<Real>>,
+    Standard: Distribution<Point>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Segment {
         Segment::new(rng.gen(), rng.gen())
@@ -109,7 +109,7 @@ where
 
 impl DefaultGen for Triangle
 where
-    Standard: Distribution<Point<Real>>,
+    Standard: Distribution<Point>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Triangle {
         Triangle::new(rng.gen(), rng.gen(), rng.gen())
@@ -118,7 +118,7 @@ where
 
 impl DefaultGen for ConvexHull
 where
-    Standard: Distribution<Point<Real>>,
+    Standard: Distribution<Point>,
 {
     fn generate<R: Rng>(rng: &mut R) -> ConvexHull {
         // It is recommended to have at most 100 points.
@@ -131,22 +131,22 @@ where
 
 impl DefaultGen for Ray
 where
-    Standard: Distribution<Vector<Real>>,
+    Standard: Distribution<Vector>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Ray {
         // The generate ray will always point to the origin.
-        let shift = rng.gen::<Vector<Real>>() * na::convert::<_, Real>(10.0f64);
+        let shift = rng.gen::<Vector>() * na::convert::<_, Real>(10.0f64);
         Ray::new(Point::origin() + shift, -shift)
     }
 }
 
 impl DefaultGen for Aabb
 where
-    Standard: Distribution<Vector<Real>>,
+    Standard: Distribution<Vector>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Aabb {
         // an Aabb centered at the origin.
-        let half_extents = rng.gen::<Vector<Real>>().abs();
+        let half_extents = rng.gen::<Vector>().abs();
         Aabb::new(
             Point::origin() + (-half_extents),
             Point::origin() + half_extents,

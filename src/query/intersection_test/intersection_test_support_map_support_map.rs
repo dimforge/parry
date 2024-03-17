@@ -1,12 +1,10 @@
-use na::{self, Unit};
-
-use crate::math::{Isometry, Real, Vector};
+use crate::math::*;
 use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::shape::SupportMap;
 
 /// Intersection test between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
 pub fn intersection_test_support_map_support_map<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
 ) -> bool
@@ -28,12 +26,12 @@ where
 ///
 /// This allows a more fine grained control other the underlying GJK algorithm.
 pub fn intersection_test_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     simplex: &mut VoronoiSimplex,
-    init_dir: Option<Unit<Vector<Real>>>,
-) -> (bool, Unit<Vector<Real>>)
+    init_dir: Option<UnitVector>,
+) -> (bool, UnitVector)
 where
     G1: SupportMap,
     G2: SupportMap,
@@ -41,7 +39,7 @@ where
     let dir = if let Some(init_dir) = init_dir {
         init_dir
     } else if let Some(init_dir) =
-        Unit::try_new(pos12.translation.vector, crate::math::DEFAULT_EPSILON)
+        UnitVector::try_new(pos12.translation.into_inner(), DEFAULT_EPSILON)
     {
         init_dir
     } else {

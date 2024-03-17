@@ -1,18 +1,16 @@
-extern crate nalgebra as na;
-
-use na::{Isometry3, Vector3};
 use parry3d::bounding_volume::BoundingVolume;
+use parry3d::math::{GlamVectorOps, Isometry, Vector};
 use parry3d::shape::Cuboid;
 
 fn main() {
     /*
      * Initialize the shapes.
      */
-    let cube1 = Cuboid::new(Vector3::repeat(0.5));
-    let cube2 = Cuboid::new(Vector3::new(0.5, 1.0, 0.5));
+    let cube1 = Cuboid::new(Vector::repeat(0.5));
+    let cube2 = Cuboid::new(Vector::new(0.5, 1.0, 0.5));
 
-    let cube1_pos = Isometry3::translation(0.0, 0.0, 1.0); // 1.0 along the `z` axis.
-    let cube2_pos = Isometry3::identity(); // Identity matrix.
+    let cube1_pos = Isometry::translation(0.0, 0.0, 1.0); // 1.0 along the `z` axis.
+    let cube2_pos = Isometry::identity(); // Identity matrix.
 
     /*
      * Compute their bounding spheres.

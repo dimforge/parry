@@ -1,11 +1,11 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::Real;
+use crate::math::SIMD_WIDTH;
+use crate::math::*;
 use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
 use crate::partitioning::{
     GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
 };
-use crate::simd::SIMD_WIDTH;
 use crate::utils::Array1;
 use crate::utils::WeightedValue;
 use num::Bounded;

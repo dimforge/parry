@@ -1,8 +1,7 @@
 //! Support mapping based Cone shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::shape::SupportMap;
-use na;
 use num::Zero;
 
 #[cfg(feature = "std")]
@@ -55,7 +54,7 @@ impl Cone {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         // NOTE: if the y scale is negative, the result cone points downwards,
@@ -64,7 +63,7 @@ impl Cone {
             // The scaled shape isn’t a cone.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -79,20 +78,20 @@ impl Cone {
 
 impl SupportMap for Cone {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let mut vres = *dir;
 
         vres[1] = 0.0;
 
         if vres.normalize_mut().is_zero() {
-            vres = na::zero();
+            vres = Vector::zeros();
             vres[1] = self.half_height.copysign(dir[1]);
         } else {
             vres = vres * self.radius;
             vres[1] = -self.half_height;
 
-            if dir.dot(&vres) < dir[1] * self.half_height {
-                vres = na::zero();
+            if dir.dot(vres) < dir[1] * self.half_height {
+                vres = Vector::zeros();
                 vres[1] = self.half_height
             }
         }

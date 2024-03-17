@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 
 #[derive(Copy, Clone)]

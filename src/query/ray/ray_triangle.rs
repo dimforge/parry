@@ -1,10 +1,8 @@
-use crate::math::Real;
-#[cfg(feature = "dim2")]
-use crate::math::Vector;
+use crate::math::*;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, Triangle};
 #[cfg(feature = "dim3")]
-use {crate::math::Point, na::Vector3};
+use na::Vector3;
 
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
@@ -22,9 +20,9 @@ impl RayCast for Triangle {
 
         if solid {
             // Check if ray starts in triangle
-            let perp_sign1 = edges[0].scaled_direction().perp(&(ray.origin - edges[0].a)) > 0.0;
-            let perp_sign2 = edges[1].scaled_direction().perp(&(ray.origin - edges[1].a)) > 0.0;
-            let perp_sign3 = edges[2].scaled_direction().perp(&(ray.origin - edges[2].a)) > 0.0;
+            let perp_sign1 = edges[0].scaled_direction().gcross(ray.origin - edges[0].a) > 0.0;
+            let perp_sign2 = edges[1].scaled_direction().gcross(ray.origin - edges[1].a) > 0.0;
+            let perp_sign3 = edges[2].scaled_direction().gcross(ray.origin - edges[2].a) > 0.0;
 
             if perp_sign1 == perp_sign2 && perp_sign1 == perp_sign3 {
                 return Some(RayIntersection::new(0.0, Vector::y(), FeatureId::Face(0)));
@@ -70,17 +68,17 @@ impl RayCast for Triangle {
 /// the intersection point are returned.
 #[cfg(feature = "dim3")]
 pub fn local_ray_intersection_with_triangle(
-    a: &Point<Real>,
-    b: &Point<Real>,
-    c: &Point<Real>,
+    a: &Point,
+    b: &Point,
+    c: &Point,
     ray: &Ray,
 ) -> Option<(RayIntersection, Vector3<Real>)> {
     let ab = *b - *a;
     let ac = *c - *a;
 
     // normal
-    let n = ab.cross(&ac);
-    let d = n.dot(&ray.dir);
+    let n = ab.cross(ac);
+    let d = n.dot(ray.dir);
 
     // the normal and the ray direction are parallel
     if d == 0.0 {
@@ -88,7 +86,7 @@ pub fn local_ray_intersection_with_triangle(
     }
 
     let ap = ray.origin - *a;
-    let t = ap.dot(&n);
+    let t = ap.dot(n);
 
     // the ray does not intersect the halfspace defined by the triangle
     if (t < 0.0 && d < 0.0) || (t > 0.0 && d > 0.0) {
@@ -102,7 +100,7 @@ pub fn local_ray_intersection_with_triangle(
     //
     // intersection: compute barycentric coordinates
     //
-    let e = -ray.dir.cross(&ap);
+    let e = -ray.dir.cross(ap);
 
     let mut v;
     let mut w;
@@ -110,13 +108,13 @@ pub fn local_ray_intersection_with_triangle(
     let normal;
 
     if t < 0.0 {
-        v = -ac.dot(&e);
+        v = -ac.dot(e);
 
         if v < 0.0 || v > d {
             return None;
         }
 
-        w = ab.dot(&e);
+        w = ab.dot(e);
 
         if w < 0.0 || v + w > d {
             return None;
@@ -128,13 +126,13 @@ pub fn local_ray_intersection_with_triangle(
         v = v * invd;
         w = w * invd;
     } else {
-        v = ac.dot(&e);
+        v = ac.dot(e);
 
         if v < 0.0 || v > d {
             return None;
         }
 
-        w = -ab.dot(&e);
+        w = -ab.dot(e);
 
         if w < 0.0 || v + w > d {
             return None;

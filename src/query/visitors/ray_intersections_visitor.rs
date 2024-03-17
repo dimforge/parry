@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Real, SimdReal, SIMD_WIDTH};
+use crate::math::*;
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::{Ray, SimdRay};
 use simba::simd::{SimdBool as _, SimdValue};

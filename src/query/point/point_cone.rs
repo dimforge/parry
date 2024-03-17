@@ -1,20 +1,22 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::*;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cone, FeatureId, Segment};
-use na;
+
+#[cfg(feature = "linalg-glam")]
+use glam::Vec3Swizzles;
 
 impl PointQuery for Cone {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         // Project on the basis.
-        let mut dir_from_basis_center = pt.coords.xz();
+        let mut dir_from_basis_center = pt.as_vector().xz();
         let planar_dist_from_basis_center = dir_from_basis_center.normalize_mut();
 
-        if planar_dist_from_basis_center <= crate::math::DEFAULT_EPSILON {
-            dir_from_basis_center = na::Vector2::x();
+        if planar_dist_from_basis_center <= DEFAULT_EPSILON {
+            dir_from_basis_center = Vector2::x();
         }
 
-        let projection_on_basis = Point::new(pt.coords.x, -self.half_height, pt.coords.z);
+        let projection_on_basis = Point::new(pt.as_vector().x, -self.half_height, pt.as_vector().z);
 
         if pt.y < -self.half_height && planar_dist_from_basis_center <= self.radius {
             // The projection is on the basis.
@@ -38,8 +40,8 @@ impl PointQuery for Cone {
         if pt.y >= -self.half_height
             && pt.y <= self.half_height
             && conic_side_segment_dir
-                .cross(&(pt - apex_point))
-                .dot(&conic_side_segment_dir.cross(&apex_to_basis_center))
+                .cross(*pt - apex_point)
+                .dot(conic_side_segment_dir.cross(apex_to_basis_center))
                 >= 0.0
         {
             if solid {
@@ -47,7 +49,7 @@ impl PointQuery for Cone {
             } else {
                 // We are inside of the cone, so the correct projection is
                 // either on the basis of the cone, or on the conic side.
-                if (proj.point - pt).norm_squared() > (projection_on_basis - pt).norm_squared() {
+                if distance_squared(proj.point, *pt) > distance_squared(projection_on_basis, *pt) {
                     PointProjection::new(true, projection_on_basis)
                 } else {
                     proj.is_inside = true;
@@ -62,10 +64,7 @@ impl PointQuery for Cone {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         // TODO: get the actual feature.
         (self.project_local_point(pt, false), FeatureId::Unknown)
     }

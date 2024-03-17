@@ -1,8 +1,7 @@
 //! Bounding sphere.
 
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Point, Real};
-use na;
+use crate::math::*;
 use num::Zero;
 
 #[cfg(feature = "rkyv")]
@@ -19,19 +18,19 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct BoundingSphere {
-    pub center: Point<Real>,
+    pub center: Point,
     pub radius: Real,
 }
 
 impl BoundingSphere {
     /// Creates a new bounding sphere.
-    pub fn new(center: Point<Real>, radius: Real) -> BoundingSphere {
+    pub fn new(center: Point, radius: Real) -> BoundingSphere {
         BoundingSphere { center, radius }
     }
 
     /// The bounding sphere center.
     #[inline]
-    pub fn center(&self) -> &Point<Real> {
+    pub fn center(&self) -> &Point {
         &self.center
     }
 
@@ -43,14 +42,14 @@ impl BoundingSphere {
 
     /// Transforms this bounding sphere by `m`.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> BoundingSphere {
-        BoundingSphere::new(m * self.center, self.radius)
+    pub fn transform_by(&self, m: &Isometry) -> BoundingSphere {
+        BoundingSphere::new(m.transform_point(&self.center), self.radius)
     }
 }
 
 impl BoundingVolume for BoundingSphere {
     #[inline]
-    fn center(&self) -> Point<Real> {
+    fn center(&self) -> Point {
         *self.center()
     }
 
@@ -82,8 +81,8 @@ impl BoundingVolume for BoundingSphere {
                 self.radius = other.radius
             }
         } else {
-            let s_center_dir = self.center.coords.dot(&dir);
-            let o_center_dir = other.center.coords.dot(&dir);
+            let s_center_dir = self.center.as_vector().dot(dir);
+            let o_center_dir = other.center.as_vector().dot(dir);
 
             let right;
             let left;
@@ -100,8 +99,8 @@ impl BoundingVolume for BoundingSphere {
                 left = other.center - dir * other.radius;
             }
 
-            self.center = na::center(&left, &right);
-            self.radius = na::distance(&right, &self.center);
+            self.center = center(left, right);
+            self.radius = distance(right, self.center);
         }
     }
 

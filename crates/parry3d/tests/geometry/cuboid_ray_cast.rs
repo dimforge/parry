@@ -17,7 +17,7 @@ where
         let rotation = if rng.rand_float() < 0.01 {
             UnitQuaternion::identity()
         } else {
-            na::Unit::try_new(
+            na::UnitVector::try_new(
                 na::Quaternion::new(
                     rng.rand_float(),
                     rng.rand_float(),

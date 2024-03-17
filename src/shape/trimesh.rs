@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::*;
 use crate::partitioning::QbvhStorage;
 use crate::partitioning::{GenericQbvh, Qbvh};
 use crate::shape::trimesh_storage::TriMeshStorage;
@@ -390,7 +390,7 @@ impl CudaTriMesh {
 #[cfg(feature = "std")]
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
+    pub fn new(vertices: Vec<Point>, indices: Vec<[u32; 3]>) -> Self {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
     }
 
@@ -422,11 +422,7 @@ impl TriMesh {
     }
 
     /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
-    pub fn with_flags(
-        vertices: Vec<Point<Real>>,
-        indices: Vec<[u32; 3]>,
-        flags: TriMeshFlags,
-    ) -> Self {
+    pub fn with_flags(vertices: Vec<Point>, indices: Vec<[u32; 3]>, flags: TriMeshFlags) -> Self {
         assert!(
             indices.len() > 0,
             "A triangle mesh must contain at least one triangle."
@@ -509,10 +505,10 @@ impl TriMesh {
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
-    pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
+    pub fn transform_vertices(&mut self, transform: &Isometry) {
         self.vertices
             .iter_mut()
-            .for_each(|pt| *pt = transform * *pt);
+            .for_each(|pt| *pt = transform.transform_point(&*pt));
         self.rebuild_qbvh();
 
         // The pseudo-normals must be rotated too.
@@ -521,20 +517,20 @@ impl TriMesh {
             pseudo_normals
                 .vertices_pseudo_normal
                 .iter_mut()
-                .for_each(|n| *n = transform * *n);
+                .for_each(|n| *n = transform.rotation * *n);
             pseudo_normals.edges_pseudo_normal.iter_mut().for_each(|n| {
-                n[0] = transform * n[0];
-                n[1] = transform * n[1];
-                n[2] = transform * n[2];
+                n[0] = transform.rotation * n[0];
+                n[1] = transform.rotation * n[1];
+                n[2] = transform.rotation * n[2];
             });
         }
     }
 
     /// Returns a scaled version of this triangle mesh.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.vertices
             .iter_mut()
-            .for_each(|pt| pt.coords.component_mul_assign(scale));
+            .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
 
         #[cfg(feature = "dim3")]
         if let Some(pn) = &mut self.pseudo_normals {
@@ -584,7 +580,7 @@ impl TriMesh {
     ///
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
-    pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_polygon(vertices: Vec<Point>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
     }
 
@@ -659,9 +655,9 @@ impl TriMesh {
         let mut triangle_set = HashSet::new();
 
         fn resolve_coord_id(
-            coord: &Point<Real>,
-            vtx_to_id: &mut HashMap<HashablePartialEq<Point<Real>>, u32>,
-            new_vertices: &mut Vec<Point<Real>>,
+            coord: &Point,
+            vtx_to_id: &mut HashMap<HashablePartialEq<Point>, u32>,
+            new_vertices: &mut Vec<Point>,
         ) -> u32 {
             let key = HashablePartialEq::new(coord.clone());
             let id = match vtx_to_id.entry(key) {
@@ -763,9 +759,9 @@ impl TriMesh {
                 let ang2 = (tri.a - tri.b).angle(&(tri.c - tri.b));
                 let ang3 = (tri.b - tri.c).angle(&(tri.a - tri.c));
 
-                vertices_pseudo_normal[idx[0] as usize] += *n * ang1;
-                vertices_pseudo_normal[idx[1] as usize] += *n * ang2;
-                vertices_pseudo_normal[idx[2] as usize] += *n * ang3;
+                vertices_pseudo_normal[idx[0] as usize] += n.into_inner() * ang1;
+                vertices_pseudo_normal[idx[1] as usize] += n.into_inner() * ang2;
+                vertices_pseudo_normal[idx[2] as usize] += n.into_inner() * ang3;
 
                 let edges = [
                     SortedPair::new(idx[0], idx[1]),
@@ -777,7 +773,7 @@ impl TriMesh {
                     let edge_n = edges_pseudo_normal
                         .entry(*edge)
                         .or_insert_with(Vector::zeros);
-                    *edge_n += *n; // NOTE: there is no need to multiply by the incident angle since it is always equal to PI for all the edges.
+                    *edge_n += n.into_inner(); // NOTE: there is no need to multiply by the incident angle since it is always equal to PI for all the edges.
                     let edge_mult = edges_multiplicity.entry(*edge).or_insert(0);
                     *edge_mult += 1;
                 }
@@ -1019,7 +1015,7 @@ impl<Storage: TriMeshStorage> GenericTriMesh<Storage> {
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
@@ -1151,7 +1147,7 @@ impl From<Cuboid> for TriMesh {
 
 #[cfg(feature = "std")]
 impl SimdCompositeShape for TriMesh {
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape)) {
         let tri = self.triangle(i);
         f(None, &tri)
     }
@@ -1167,17 +1163,13 @@ impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage
     type QbvhStorage = Storage::QbvhStorage;
 
     #[inline(always)]
-    fn map_typed_part_at(
-        &self,
-        i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
-    ) {
+    fn map_typed_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &Self::PartShape)) {
         let tri = self.triangle(i);
         f(None, &tri)
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry>, &dyn Shape)) {
         let tri = self.triangle(i);
         f(None, &tri)
     }

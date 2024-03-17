@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 use na::Point2;
 use num::Zero;
 

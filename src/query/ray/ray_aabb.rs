@@ -1,9 +1,7 @@
 use std::mem;
 
-use na;
-
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
+use crate::math::*;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::FeatureId;
 use num::Zero;
@@ -67,17 +65,12 @@ impl RayCast for Aabb {
     }
 }
 
-fn ray_aabb(
-    aabb: &Aabb,
-    ray: &Ray,
-    max_toi: Real,
-    solid: bool,
-) -> Option<(Real, Vector<Real>, isize)> {
+fn ray_aabb(aabb: &Aabb, ray: &Ray, max_toi: Real, solid: bool) -> Option<(Real, Vector, isize)> {
     use crate::query::clip;
     clip::clip_aabb_line(aabb, &ray.origin, &ray.dir).and_then(|(near, far)| {
         if near.0 < 0.0 {
             if solid {
-                Some((0.0, na::zero(), far.2))
+                Some((0.0, Vector::zeros(), far.2))
             } else if far.0 <= max_toi {
                 Some(far)
             } else {

@@ -1,6 +1,5 @@
 //! Support mapping based HalfSpace shape.
-use crate::math::{Real, Vector};
-use na::Unit;
+use crate::math::*;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -17,13 +16,13 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct HalfSpace {
     /// The halfspace planar boundary's outward normal.
-    pub normal: Unit<Vector<Real>>,
+    pub normal: UnitVector,
 }
 
 impl HalfSpace {
     /// Builds a new halfspace from its center and its normal.
     #[inline]
-    pub fn new(normal: Unit<Vector<Real>>) -> HalfSpace {
+    pub fn new(normal: UnitVector) -> HalfSpace {
         HalfSpace { normal }
     }
 
@@ -31,7 +30,7 @@ impl HalfSpace {
     ///
     /// Returns `None` if `self.normal` scaled by `scale` is zero (the scaled half-space
     /// degenerates to a single point).
-    pub fn scaled(self, scale: &Vector<Real>) -> Option<Self> {
-        Unit::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
+    pub fn scaled(self, scale: &Vector) -> Option<Self> {
+        UnitVector::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
     }
 }

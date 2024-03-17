@@ -1,15 +1,10 @@
-use crate::math::Real;
+use crate::math::*;
 use crate::shape::Capsule;
 use crate::transformation::utils;
-use na::{self, Point3};
 
 impl Capsule {
     /// Discretize the boundary of this capsule as a triangle-mesh.
-    pub fn to_trimesh(
-        &self,
-        ntheta_subdiv: u32,
-        nphi_subdiv: u32,
-    ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self, ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point>, Vec<[u32; 3]>) {
         let diameter = self.radius * 2.0;
         let height = self.half_height() * 2.0;
         let (vtx, idx) = canonical_capsule(diameter, height, ntheta_subdiv, nphi_subdiv);
@@ -23,7 +18,7 @@ pub(crate) fn canonical_capsule(
     cylinder_height: Real,
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
-) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+) -> (Vec<Point>, Vec<[u32; 3]>) {
     let (coords, indices) = super::ball_to_trimesh::unit_hemisphere(ntheta_subdiv, nphi_subdiv / 2);
     let mut bottom_coords = coords.clone();
     let mut bottom_indices = indices.clone();

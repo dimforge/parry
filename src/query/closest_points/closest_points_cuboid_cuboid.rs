@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::{sat, ClosestPoints, PointQuery};
 use crate::shape::{Cuboid, SupportMap};
 
 /// Closest points between two cuboids.
 #[inline]
 pub fn closest_points_cuboid_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
     margin: Real,
@@ -23,7 +23,7 @@ pub fn closest_points_cuboid_cuboid(
     }
 
     #[cfg(feature = "dim2")]
-    let sep3 = (-Real::MAX, crate::math::Vector::<Real>::y()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, crate::math::Vector::y()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, pos12);
     if sep3.0 > margin {
@@ -43,10 +43,10 @@ pub fn closest_points_cuboid_cuboid(
         // project the support point from cuboid2 on cuboid1 itself (not just the face).
         let pt2_1 = cuboid2.support_point(pos12, &-sep1.1);
         let proj1 = cuboid1.project_local_point(&pt2_1, true);
-        if na::distance_squared(&proj1.point, &pt2_1) > margin * margin {
+        if distance_squared(proj1.point, pt2_1) > margin * margin {
             return ClosestPoints::Disjoint;
         } else {
-            return ClosestPoints::WithinMargin(proj1.point, pos21 * pt2_1);
+            return ClosestPoints::WithinMargin(proj1.point, pos21.transform_point(&pt2_1));
         }
     }
 
@@ -60,10 +60,10 @@ pub fn closest_points_cuboid_cuboid(
         let pt1_2 = cuboid1.support_point(&pos21, &-sep2.1);
         let proj2 = cuboid2.project_local_point(&pt1_2, true);
 
-        if na::distance_squared(&proj2.point, &pt1_2) > margin * margin {
+        if distance_squared(proj2.point, pt1_2) > margin * margin {
             return ClosestPoints::Disjoint;
         } else {
-            return ClosestPoints::WithinMargin(pos12 * pt1_2, proj2.point);
+            return ClosestPoints::WithinMargin(pos12.transform_point(&pt1_2), proj2.point);
         }
     }
 
@@ -75,7 +75,7 @@ pub fn closest_points_cuboid_cuboid(
         // To compute the actual distance, we need to compute the closest
         // points between the two edges that generated the separating axis.
         let edge1 = cuboid1.local_support_edge_segment(sep3.1);
-        let edge2 = cuboid2.local_support_edge_segment(pos21 * -sep3.1);
+        let edge2 = cuboid2.local_support_edge_segment(pos21.rotation * -sep3.1);
         return super::closest_points_segment_segment(pos12, &edge1, &edge2, margin);
     }
 

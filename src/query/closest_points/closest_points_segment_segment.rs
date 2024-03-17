@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::*;
 use crate::query::ClosestPoints;
 use crate::shape::{Segment, SegmentPointLocation};
 
@@ -7,7 +7,7 @@ use na::{self, Point};
 /// Closest points between segments.
 #[inline]
 pub fn closest_points_segment_segment(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     seg1: &Segment,
     seg2: &Segment,
     margin: Real,
@@ -16,7 +16,7 @@ pub fn closest_points_segment_segment(
     let p1 = seg1.point_at(&loc1);
     let p2 = seg2.point_at(&loc2);
 
-    if na::distance_squared(&p1, &(pos12 * p2)) <= margin * margin {
+    if distance_squared(p1, pos12.transform_point(&p2)) <= margin * margin {
         ClosestPoints::WithinMargin(p1, p2)
     } else {
         ClosestPoints::Disjoint
@@ -27,12 +27,15 @@ pub fn closest_points_segment_segment(
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_segment_segment_with_locations(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     seg1: &Segment,
     seg2: &Segment,
 ) -> (SegmentPointLocation, SegmentPointLocation) {
     let seg2_1 = seg2.transformed(pos12);
-    closest_points_segment_segment_with_locations_nD((&seg1.a, &seg1.b), (&seg2_1.a, &seg2_1.b))
+    closest_points_segment_segment_with_locations_nD(
+        (&seg1.a.into(), &seg1.b.into()),
+        (&seg2_1.a.into(), &seg2_1.b.into()),
+    )
 }
 
 /// Segment-segment closest points computation in an arbitrary dimension.
@@ -57,7 +60,7 @@ pub fn closest_points_segment_segment_with_locations_nD<const D: usize>(
     let mut s;
     let mut t;
 
-    let _eps = crate::math::DEFAULT_EPSILON;
+    let _eps = DEFAULT_EPSILON;
     if a <= _eps && e <= _eps {
         s = _0;
         t = _0;

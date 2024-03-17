@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Point, Real, Rotation, Translation, Vector, DIM};
+use crate::math::*;
 use crate::shape::Cuboid;
 
 /// Computes an oriented bounding box for the given set of points.
 ///
 /// The returned OBB is not guaranteed to be the smallest enclosing OBB.
 /// Though it should be a pretty good on for most purposes.
-pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
+pub fn obb(pts: &[Point]) -> (Isometry, Cuboid) {
     let cov = crate::utils::cov(pts);
     let mut eigv = cov.symmetric_eigen().eigenvectors;
 
@@ -18,19 +18,21 @@ pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
 
     for pt in pts {
         for i in 0..DIM {
-            let dot = eigv.column(i).dot(&pt.coords);
+            let dot = eigv.column(i).dot(pt.as_vector());
             mins[i] = mins[i].min(dot);
             maxs[i] = maxs[i].max(dot);
         }
     }
 
-    #[cfg(feature = "dim2")]
+    #[cfg(all(feature = "dim2", feature = "linalg-glam"))]
+    let rot = eigv;
+    #[cfg(all(feature = "dim2", feature = "linalg-nalgebra"))]
     let rot = Rotation::from_rotation_matrix(&na::Rotation2::from_matrix_unchecked(eigv));
     #[cfg(feature = "dim3")]
-    let rot = Rotation::from_rotation_matrix(&na::Rotation3::from_matrix_unchecked(eigv));
+    let rot = Rotation::from_rotation_matrix(&RotationMatrix::from_matrix_unchecked(eigv));
 
     (
-        rot * Translation::from((maxs + mins) / 2.0),
+        Isometry::from_parts((rot * (maxs + mins) / 2.0).into(), rot),
         Cuboid::new((maxs - mins) / 2.0),
     )
 }

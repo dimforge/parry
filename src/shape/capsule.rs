@@ -1,6 +1,5 @@
-use crate::math::{Isometry, Point, Real, Rotation, Vector};
+use crate::math::*;
 use crate::shape::{Segment, SupportMap};
-use na::Unit;
 
 #[cfg(feature = "std")]
 use either::Either;
@@ -47,7 +46,7 @@ impl Capsule {
     }
 
     /// Creates a new capsule defined as the segment between `a` and `b` and with the given `radius`.
-    pub fn new(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
+    pub fn new(a: Point, b: Point, radius: Real) -> Self {
         let segment = Segment::new(a, b);
         Self { segment, radius }
     }
@@ -63,25 +62,29 @@ impl Capsule {
     }
 
     /// The center of this capsule.
-    pub fn center(&self) -> Point<Real> {
-        na::center(&self.segment.a, &self.segment.b)
+    pub fn center(&self) -> Point {
+        center(self.segment.a, self.segment.b)
     }
 
     /// Creates a new capsule equal to `self` with all its endpoints transformed by `pos`.
-    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
-        Self::new(pos * self.segment.a, pos * self.segment.b, self.radius)
+    pub fn transform_by(&self, pos: &Isometry) -> Self {
+        Self::new(
+            pos.transform_point(&self.segment.a),
+            pos.transform_point(&self.segment.b),
+            self.radius,
+        )
     }
 
     /// The transformation such that `t * Y` is collinear with `b - a` and `t * origin` equals
     /// the capsule's center.
-    pub fn canonical_transform(&self) -> Isometry<Real> {
-        let tra = self.center().coords;
+    pub fn canonical_transform(&self) -> Isometry {
+        let tra = self.center().into_vector();
         let rot = self.rotation_wrt_y();
         Isometry::from_parts(tra.into(), rot)
     }
 
     /// The rotation `r` such that `r * Y` is collinear with `b - a`.
-    pub fn rotation_wrt_y(&self) -> Rotation<Real> {
+    pub fn rotation_wrt_y(&self) -> Rotation {
         let mut dir = self.segment.b - self.segment.a;
         if dir.y < 0.0 {
             dir = -dir;
@@ -99,9 +102,9 @@ impl Capsule {
     }
 
     /// The transform `t` such that `t * Y` is collinear with `b - a` and such that `t * origin = (b + a) / 2.0`.
-    pub fn transform_wrt_y(&self) -> Isometry<Real> {
+    pub fn transform_wrt_y(&self) -> Isometry {
         let rot = self.rotation_wrt_y();
-        Isometry::from_parts(self.center().coords.into(), rot)
+        Isometry::from_parts(self.center().into_vector().into(), rot)
     }
 
     /// Computes a scaled version of this capsule.
@@ -113,14 +116,14 @@ impl Capsule {
     #[cfg(all(feature = "dim2", feature = "std"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
             // The scaled shape is not a capsule.
             let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
                 vtx,
             )?))
@@ -143,14 +146,14 @@ impl Capsule {
     #[cfg(all(feature = "dim3", feature = "std"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
             // The scaled shape is not a capsule.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
             vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+                .for_each(|pt| pt.as_vector_mut().component_mul_assign(scale));
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -166,16 +169,16 @@ impl Capsule {
 }
 
 impl SupportMap for Capsule {
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        let dir = Unit::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
+    fn local_support_point(&self, dir: &Vector) -> Point {
+        let dir = UnitVector::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
         self.local_support_point_toward(&dir)
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        if dir.dot(&self.segment.a.coords) > dir.dot(&self.segment.b.coords) {
-            self.segment.a + **dir * self.radius
+    fn local_support_point_toward(&self, dir: &UnitVector) -> Point {
+        if dir.dot(self.segment.a.as_vector()) > dir.dot(self.segment.b.as_vector()) {
+            self.segment.a + dir.into_inner() * self.radius
         } else {
-            self.segment.b + **dir * self.radius
+            self.segment.b + dir.into_inner() * self.radius
         }
     }
 }

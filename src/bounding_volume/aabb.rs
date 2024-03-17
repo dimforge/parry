@@ -1,9 +1,8 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM, TWO_DIM};
+use crate::math::*;
 use crate::shape::{Cuboid, SupportMap};
-use crate::utils::IsometryOps;
 use arrayvec::ArrayVec;
 use na;
 use num::Bounded;
@@ -26,8 +25,8 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct Aabb {
-    pub mins: Point<Real>,
-    pub maxs: Point<Real>,
+    pub mins: Point,
+    pub maxs: Point,
 }
 
 impl Aabb {
@@ -92,7 +91,7 @@ impl Aabb {
     ///   * `maxs` - position of the point with the highest coordinates. Each component of `mins`
     ///   must be smaller than the related components of `maxs`.
     #[inline]
-    pub fn new(mins: Point<Real>, maxs: Point<Real>) -> Aabb {
+    pub fn new(mins: Point, maxs: Point) -> Aabb {
         Aabb { mins, maxs }
     }
 
@@ -109,27 +108,27 @@ impl Aabb {
 
     /// Creates a new `Aabb` from its center and its half-extents.
     #[inline]
-    pub fn from_half_extents(center: Point<Real>, half_extents: Vector<Real>) -> Self {
+    pub fn from_half_extents(center: Point, half_extents: Vector) -> Self {
         Self::new(center - half_extents, center + half_extents)
     }
 
     /// Creates a new `Aabb` from a set of points.
     pub fn from_points<'a, I>(pts: I) -> Self
     where
-        I: IntoIterator<Item = &'a Point<Real>>,
+        I: IntoIterator<Item = &'a Point>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
 
     /// The center of this `Aabb`.
     #[inline]
-    pub fn center(&self) -> Point<Real> {
-        na::center(&self.mins, &self.maxs)
+    pub fn center(&self) -> Point {
+        center(self.mins, self.maxs)
     }
 
     /// The half extents of this `Aabb`.
     #[inline]
-    pub fn half_extents(&self) -> Vector<Real> {
+    pub fn half_extents(&self) -> Vector {
         let half: Real = na::convert::<f64, Real>(0.5);
         (self.maxs - self.mins) * half
     }
@@ -146,30 +145,30 @@ impl Aabb {
 
     /// The extents of this `Aabb`.
     #[inline]
-    pub fn extents(&self) -> Vector<Real> {
+    pub fn extents(&self) -> Vector {
         self.maxs - self.mins
     }
 
     /// Enlarges this `Aabb` so it also contains the point `pt`.
-    pub fn take_point(&mut self, pt: Point<Real>) {
-        self.mins = self.mins.coords.inf(&pt.coords).into();
-        self.maxs = self.maxs.coords.sup(&pt.coords).into();
+    pub fn take_point(&mut self, pt: Point) {
+        self.mins = self.mins.as_vector().inf(&pt.as_vector()).into();
+        self.maxs = self.maxs.as_vector().sup(&pt.as_vector()).into();
     }
 
     /// Computes the `Aabb` bounding `self` transformed by `m`.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Isometry) -> Self {
         let ls_center = self.center();
-        let center = m * ls_center;
+        let center = m.transform_point(&ls_center);
         let ws_half_extents = m.absolute_transform_vector(&self.half_extents());
 
         Aabb::new(center + (-ws_half_extents), center + ws_half_extents)
     }
 
     #[inline]
-    pub fn scaled(self, scale: &Vector<Real>) -> Self {
-        let a = self.mins.coords.component_mul(scale);
-        let b = self.maxs.coords.component_mul(scale);
+    pub fn scaled(self, scale: &Vector) -> Self {
+        let a = self.mins.as_vector().component_mul(scale);
+        let b = self.maxs.as_vector().component_mul(scale);
         Self {
             mins: a.inf(&b).into(),
             maxs: a.sup(&b).into(),
@@ -180,12 +179,12 @@ impl Aabb {
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
         let center = self.center();
-        let radius = na::distance(&self.mins, &self.maxs) * 0.5;
+        let radius = distance(self.mins, self.maxs) * 0.5;
         BoundingSphere::new(center, radius)
     }
 
     #[inline]
-    pub fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    pub fn contains_local_point(&self, point: &Point) -> bool {
         for i in 0..DIM {
             if point[i] < self.mins[i] || point[i] > self.maxs[i] {
                 return false;
@@ -198,8 +197,8 @@ impl Aabb {
     /// Computes the intersection of this `Aabb` and another one.
     pub fn intersection(&self, other: &Aabb) -> Option<Aabb> {
         let result = Aabb {
-            mins: Point::from(self.mins.coords.sup(&other.mins.coords)),
-            maxs: Point::from(self.maxs.coords.inf(&other.maxs.coords)),
+            mins: Point::from(self.mins.as_vector().sup(&other.mins.as_vector())),
+            maxs: Point::from(self.maxs.as_vector().inf(&other.maxs.as_vector())),
         };
 
         for i in 0..DIM {
@@ -279,7 +278,7 @@ impl Aabb {
     /// Computes the vertices of this `Aabb`.
     #[inline]
     #[cfg(feature = "dim2")]
-    pub fn vertices(&self) -> [Point<Real>; 4] {
+    pub fn vertices(&self) -> [Point; 4] {
         [
             Point::new(self.mins.x, self.mins.y),
             Point::new(self.mins.x, self.maxs.y),
@@ -291,7 +290,7 @@ impl Aabb {
     /// Computes the vertices of this `Aabb`.
     #[inline]
     #[cfg(feature = "dim3")]
-    pub fn vertices(&self) -> [Point<Real>; 8] {
+    pub fn vertices(&self) -> [Point; 8] {
         [
             Point::new(self.mins.x, self.mins.y, self.mins.z),
             Point::new(self.maxs.x, self.mins.y, self.mins.z),
@@ -367,42 +366,39 @@ impl Aabb {
     }
 
     /// Projects every point of `Aabb` on an arbitrary axis.
-    pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
+    pub fn project_on_axis(&self, axis: &UnitVector) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());
-        let shift = cuboid
-            .local_support_point_toward(axis)
-            .coords
-            .dot(axis)
-            .abs();
-        let center = self.center().coords.dot(axis);
+        let support_point = cuboid.local_support_point_toward(axis);
+        let shift = axis.dot(support_point.as_vector()).abs();
+        let center = axis.dot(self.center().as_vector());
         (center - shift, center + shift)
     }
 
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(all(feature = "std", feature = "linalg-nalgebra"))]
     pub fn intersects_spiral(
         &self,
-        point: &Point<Real>,
-        center: &Point<Real>,
-        axis: &UnitVector<Real>,
-        linvel: &Vector<Real>,
+        point: &Point,
+        center: &Point,
+        axis: &UnitVector,
+        linvel: &Vector,
         angvel: Real,
     ) -> bool {
         use crate::utils::WBasis;
         use crate::utils::{Interval, IntervalFunction};
 
         struct SpiralPlaneDistance {
-            center: Point<Real>,
-            tangents: [Vector<Real>; 2],
-            linvel: Vector<Real>,
+            center: Point,
+            tangents: [Vector; 2],
+            linvel: Vector,
             angvel: Real,
             point: na::Vector2<Real>,
-            plane: Vector<Real>,
+            plane: Vector,
             bias: Real,
         }
 
         impl SpiralPlaneDistance {
-            fn spiral_pt_at(&self, t: Real) -> Point<Real> {
+            fn spiral_pt_at(&self, t: Real) -> Point {
                 let angle = t * self.angvel;
 
                 // NOTE: we construct the rotation matrix explicitly here instead
@@ -451,13 +447,13 @@ impl Aabb {
         }
 
         let tangents = axis.orthonormal_basis();
-        let dpos = point - center;
+        let dpos = *point - *center;
         let mut distance_fn = SpiralPlaneDistance {
             center: *center,
             tangents,
             linvel: *linvel,
             angvel,
-            point: na::Vector2::new(dpos.dot(&tangents[0]), dpos.dot(&tangents[1])),
+            point: na::Vector2::new(dpos.dot(tangents[0]), dpos.dot(tangents[1])),
             plane: Vector::x(),
             bias: 0.0,
         };
@@ -476,7 +472,7 @@ impl Aabb {
         ];
 
         let range = self.project_on_axis(axis);
-        let range_bias = center.coords.dot(axis);
+        let range_bias = center.coords.dot(*axis);
         let interval = Interval::sort(range.0, range.1) - range_bias;
 
         for (bias, axis, i) in &planes {
@@ -512,18 +508,18 @@ impl Aabb {
 
 impl BoundingVolume for Aabb {
     #[inline]
-    fn center(&self) -> Point<Real> {
+    fn center(&self) -> Point {
         self.center()
     }
 
     #[inline]
     fn intersects(&self, other: &Aabb) -> bool {
-        na::partial_le(&self.mins, &other.maxs) && na::partial_ge(&self.maxs, &other.mins)
+        (0..DIM).all(|i| self.mins[i] <= other.maxs[i] && self.maxs[i] >= other.mins[i])
     }
 
     #[inline]
     fn contains(&self, other: &Aabb) -> bool {
-        na::partial_le(&self.mins, &other.mins) && na::partial_ge(&self.maxs, &other.maxs)
+        (0..DIM).all(|i| self.mins[i] <= other.mins[i] && self.maxs[i] >= other.maxs[i])
     }
 
     #[inline]
@@ -562,7 +558,7 @@ impl BoundingVolume for Aabb {
         self.mins = self.mins + Vector::repeat(amount);
         self.maxs = self.maxs + Vector::repeat(-amount);
         assert!(
-            na::partial_le(&self.mins, &self.maxs),
+            (0..DIM).any(|i| self.mins[i] > self.maxs[i]),
             "The tightening margin is to large."
         );
     }

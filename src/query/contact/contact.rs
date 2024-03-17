@@ -1,5 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
-use na::{self, Unit};
+use crate::math::*;
 use std::mem;
 
 #[cfg(feature = "rkyv")]
@@ -15,18 +14,18 @@ use rkyv::{bytecheck, CheckBytes};
 )]
 pub struct Contact {
     /// Position of the contact on the first object.
-    pub point1: Point<Real>,
+    pub point1: Point,
 
     /// Position of the contact on the second object.
-    pub point2: Point<Real>,
+    pub point2: Point,
 
     /// Contact normal, pointing towards the exterior of the first shape.
-    pub normal1: Unit<Vector<Real>>,
+    pub normal1: UnitVector,
 
     /// Contact normal, pointing towards the exterior of the second shape.
     ///
     /// If these contact data are expressed in world-space, this normal is equal to `-normal1`.
-    pub normal2: Unit<Vector<Real>>,
+    pub normal2: UnitVector,
 
     /// Distance between the two contact points.
     ///
@@ -38,10 +37,10 @@ impl Contact {
     /// Creates a new contact.
     #[inline]
     pub fn new(
-        point1: Point<Real>,
-        point2: Point<Real>,
-        normal1: Unit<Vector<Real>>,
-        normal2: Unit<Vector<Real>>,
+        point1: Point,
+        point2: Point,
+        normal1: UnitVector,
+        normal2: UnitVector,
         dist: Real,
     ) -> Self {
         Contact {
@@ -72,16 +71,16 @@ impl Contact {
     /// Transform the points and normals from this contact by
     /// the given transformations.
     #[inline]
-    pub fn transform_by_mut(&mut self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) {
-        self.point1 = pos1 * self.point1;
-        self.point2 = pos2 * self.point2;
-        self.normal1 = pos1 * self.normal1;
-        self.normal2 = pos2 * self.normal2;
+    pub fn transform_by_mut(&mut self, pos1: &Isometry, pos2: &Isometry) {
+        self.point1 = pos1.transform_point(&self.point1);
+        self.point2 = pos2.transform_point(&self.point2);
+        self.normal1 = pos1.rotation * self.normal1;
+        self.normal2 = pos2.rotation * self.normal2;
     }
 
     /// Transform `self.point1` and `self.normal1` by the `pos`.
-    pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {
-        self.point1 = pos * self.point1;
-        self.normal1 = pos * self.normal1;
+    pub fn transform1_by_mut(&mut self, pos: &Isometry) {
+        self.point1 = pos.transform_point(&self.point1);
+        self.normal1 = pos.rotation * self.normal1;
     }
 }

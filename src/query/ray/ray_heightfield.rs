@@ -1,4 +1,4 @@
-use crate::math::Real;
+use crate::math::*;
 #[cfg(feature = "dim2")]
 use crate::query;
 use crate::query::{Ray, RayCast, RayIntersection};
@@ -48,7 +48,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
             if s >= 0.0 && t >= 0.0 && t <= 1.0 {
                 // Cast succeeded on the first element!
                 let n = seg.normal().unwrap().into_inner();
-                let fid = if n.dot(&ray.dir) > 0.0 {
+                let fid = if n.dot(ray.dir) > 0.0 {
                     // The ray hit the back face.
                     curr + self.num_cells()
                 } else {
@@ -102,7 +102,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
 
                 if t >= 0.0 && t <= 1.0 && s <= max_toi {
                     let n = seg.normal().unwrap().into_inner();
-                    let fid = if n.dot(&ray.dir) > 0.0 {
+                    let fid = if n.dot(ray.dir) > 0.0 {
                         // The ray hit the back face.
                         curr + self.num_cells()
                     } else {

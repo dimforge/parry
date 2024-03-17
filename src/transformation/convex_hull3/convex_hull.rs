@@ -1,20 +1,17 @@
 use super::InitialMesh;
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::*;
 use crate::transformation::convex_hull_utils::indexed_support_point_nth;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
 use crate::utils;
-use na::{self, Point3};
 
 /// Computes the convex hull of a set of 3d points.
-pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+pub fn convex_hull(points: &[Point]) -> (Vec<Point>, Vec<[u32; 3]>) {
     try_convex_hull(points).unwrap()
 }
 
 /// Computes the convex hull of a set of 3d points.
-pub fn try_convex_hull(
-    points: &[Point3<Real>],
-) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {
+pub fn try_convex_hull(points: &[Point]) -> Result<(Vec<Point>, Vec<[u32; 3]>), ConvexHullError> {
     if points.is_empty() {
         return Ok((Vec::new(), Vec::new()));
     }
@@ -159,7 +156,7 @@ fn compute_silhouette(
     indirect_id: usize,
     point: usize,
     out_facets_and_idx: &mut Vec<(usize, usize)>,
-    points: &[Point3<Real>],
+    points: &[Point],
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
 ) {
@@ -203,7 +200,7 @@ fn compute_silhouette(
 }
 
 fn fix_silhouette_topology(
-    points: &[Point3<Real>],
+    points: &[Point],
     out_facets_and_idx: &mut Vec<(usize, usize)>,
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
@@ -301,7 +298,7 @@ fn fix_silhouette_topology(
 fn attach_and_push_facets(
     silhouette_loop_facets_and_idx: &[(usize, usize)],
     point: usize,
-    points: &[Point3<Real>],
+    points: &[Point],
     triangles: &mut Vec<TriangleFacet>,
     removed_facets: &[usize],
     undecidable: &mut Vec<usize>,
@@ -434,7 +431,7 @@ mod test {
 
         let chull = transformation::convex_hull(points.as_slice());
 
-        assert!(chull.coords.len() == 3);
+        assert!(chull.as_vector().len() == 3);
     }
 
     #[cfg(feature = "dim3")]
