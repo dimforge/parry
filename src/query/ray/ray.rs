@@ -68,12 +68,16 @@ impl Ray {
     archive(as = "Self")
 )]
 pub struct RayIntersection {
-    /// The time of impact of the ray with the object.  The exact contact point can be computed
+    /// The time of impact of the ray with the object. The exact contact point can be computed
     /// with: `ray.point_at(toi)` or equivalently `origin + dir * toi` where `origin` is the origin of the ray;
     /// `dir` is its direction and `toi` is the value of this field.
     pub toi: Real,
 
     /// The normal at the intersection point.
+    ///
+    /// If the origin of the ray is inside of the shape and the shape is not solid,
+    /// the normal will point towards the interior of the shape.
+    /// Otherwise, the normal points outward.
     ///
     /// If the `toi` is exactly zero, the normal might not be reliable.
     // XXX: use a Unit<Vector> instead.
