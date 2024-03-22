@@ -47,10 +47,14 @@ where
                 simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
 
                 gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(
-                    |(toi, normal)| {
+                    |(toi, outward_normal)| {
                         let toi = shift - toi;
                         if toi <= max_toi {
-                            Some(RayIntersection::new(toi, normal, FeatureId::Unknown))
+                            Some(RayIntersection::new(
+                                toi,
+                                -outward_normal,
+                                FeatureId::Unknown,
+                            ))
                         } else {
                             None
                         }
