@@ -559,7 +559,7 @@ impl Triangle {
 
     /// Reverse the orientation of this triangle by swapping b and c.
     pub fn reverse(&mut self) {
-        std::mem::swap(&mut self.b, &mut self.c);
+        mem::swap(&mut self.b, &mut self.c);
     }
 }
 
