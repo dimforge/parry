@@ -28,6 +28,7 @@ pub struct MassProperties {
     pub inv_mass: Real,
     /// The inverse of the principal angular inertia of the rigid-body.
     ///
+    /// The angular inertia is calculated relative to [`Self::local_com`].
     /// Components set to zero are assumed to be infinite along the corresponding principal axis.
     pub inv_principal_inertia_sqrt: AngVector<Real>,
     #[cfg(feature = "dim3")]
@@ -116,7 +117,7 @@ impl MassProperties {
         utils::inv(self.inv_mass)
     }
 
-    /// The angular inertia along the principal inertia axes of the rigid-body.
+    /// The angular inertia along the principal inertia axes and center of mass of the rigid-body.
     pub fn principal_inertia(&self) -> AngVector<Real> {
         #[cfg(feature = "dim2")]
         return utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
