@@ -339,6 +339,11 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         const MIN_CHANGED_DEPTH: u8 = 5; // TODO: find a good value
 
+        // PERF: if we have modifications past this depth, the QBVH has become very
+        //       unbalanced and a full rebuild is warranted.
+        // TODO: work on a way to reduce the risks of imbalance.
+        const FULL_REBUILD_DEPTH: u8 = 15;
+
         for root_child in self.nodes[0].children {
             if root_child < self.nodes.len() as u32 {
                 workspace.stack.push((root_child, 1));
@@ -346,7 +351,13 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         }
 
         // Collect empty slots and pseudo-leaves to sort.
+        let mut force_full_rebuild = false;
         while let Some((id, depth)) = workspace.stack.pop() {
+            if depth > FULL_REBUILD_DEPTH {
+                force_full_rebuild = true;
+                break;
+            }
+
             let node = &mut self.nodes[id as usize];
 
             if node.is_leaf() {
@@ -372,6 +383,18 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 workspace.aabbs.push(node.simd_aabb.to_merged_aabb());
                 workspace.is_leaf.push(false);
             }
+        }
+
+        if force_full_rebuild {
+            workspace.clear();
+            let all_leaves: Vec<_> = self
+                .proxies
+                .iter()
+                .filter_map(|proxy| self.node_aabb(proxy.node).map(|aabb| (proxy.data, aabb)))
+                .collect();
+
+            self.clear_and_rebuild(all_leaves.into_iter(), 0.0);
+            return;
         }
 
         workspace.to_sort.extend(0..workspace.orig_ids.len());
