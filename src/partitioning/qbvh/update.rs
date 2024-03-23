@@ -340,7 +340,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         const MIN_CHANGED_DEPTH: u8 = 5; // TODO: find a good value
 
         // PERF: if we have modifications past this depth, the QBVH has become very
-        //       unbalanced and a full rebuild is warranted.
+        //       unbalanced and a full rebuild is warranted. Note that for a perfectly
+        //       balanced tree to reach this threshold, it would have to contain
+        //       at least 4^15 = 1.073.741.824 leaves (i.e. very unlikely in most practical
+        //       use-cases).
         // TODO: work on a way to reduce the risks of imbalance.
         const FULL_REBUILD_DEPTH: u8 = 15;
 
