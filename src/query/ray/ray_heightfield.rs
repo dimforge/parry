@@ -194,7 +194,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
                 let x = self.x_at(cell.1 + 1);
                 ((x - ray.origin.x) / ray.dir.x, true)
             } else if ray.dir.x < 0.0 {
-                let x = self.x_at(cell.1 + 0);
+                let x = self.x_at(cell.1);
                 ((x - ray.origin.x) / ray.dir.x, false)
             } else {
                 (Real::max_value(), false)
@@ -204,7 +204,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
                 let z = self.z_at(cell.0 + 1);
                 ((z - ray.origin.z) / ray.dir.z, true)
             } else if ray.dir.z < 0.0 {
-                let z = self.z_at(cell.0 + 0);
+                let z = self.z_at(cell.0);
                 ((z - ray.origin.z) / ray.dir.z, false)
             } else {
                 (Real::max_value(), false)

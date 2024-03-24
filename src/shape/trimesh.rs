@@ -428,7 +428,7 @@ impl TriMesh {
         flags: TriMeshFlags,
     ) -> Self {
         assert!(
-            indices.len() > 0,
+            !indices.is_empty(),
             "A triangle mesh must contain at least one triangle."
         );
 
@@ -663,14 +663,14 @@ impl TriMesh {
             vtx_to_id: &mut HashMap<HashablePartialEq<Point<Real>>, u32>,
             new_vertices: &mut Vec<Point<Real>>,
         ) -> u32 {
-            let key = HashablePartialEq::new(coord.clone());
+            let key = HashablePartialEq::new(*coord);
             let id = match vtx_to_id.entry(key) {
                 Entry::Occupied(entry) => entry.into_mut(),
                 Entry::Vacant(entry) => entry.insert(new_vertices.len() as u32),
             };
 
             if *id == new_vertices.len() as u32 {
-                new_vertices.push(coord.clone());
+                new_vertices.push(*coord);
             }
 
             *id
@@ -1319,7 +1319,7 @@ where
             pseudo_normals: self.pseudo_normals.clone(),
             topology: self.topology.clone(),
             connected_components: self.connected_components.clone(),
-            flags: self.flags.clone(),
+            flags: self.flags,
         }
     }
 }

@@ -37,9 +37,10 @@ where
         if let Some(data) = b {
             let bitmask = mask.bitmask();
 
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    if !(self.callback)(data[ii].unwrap()) {
+            for (ii, data) in data.iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 {
+                    let Some(data) = data else { continue };
+                    if !(self.callback)(data) {
                         return SimdVisitStatus::ExitEarly;
                     }
                 }

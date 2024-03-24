@@ -581,7 +581,7 @@ impl dyn Shape {
 impl Shape for Ball {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -638,7 +638,7 @@ impl Shape for Ball {
 impl Shape for Cuboid {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -697,7 +697,7 @@ impl Shape for Cuboid {
 impl Shape for Capsule {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -748,7 +748,7 @@ impl Shape for Capsule {
 impl Shape for Triangle {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -811,7 +811,7 @@ impl Shape for Triangle {
 impl Shape for Segment {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1180,7 +1180,7 @@ impl Shape for ConvexPolyhedron {
 impl Shape for Cylinder {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1232,7 +1232,7 @@ impl Shape for Cylinder {
 impl Shape for Cone {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1286,7 +1286,7 @@ impl Shape for Cone {
 impl Shape for HalfSpace {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn compute_local_aabb(&self) -> Aabb {

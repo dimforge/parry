@@ -64,7 +64,7 @@ impl ConvexPolygon {
         points.truncate(new_length);
         normals.truncate(new_length);
 
-        if points.len() != 0 {
+        if !points.is_empty() {
             Some(ConvexPolygon { points, normals })
         } else {
             None

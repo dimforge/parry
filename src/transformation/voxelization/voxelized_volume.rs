@@ -257,57 +257,47 @@ impl VoxelizedVolume {
                             let aabb = Aabb::from_half_extents(pt, box_half_size);
 
                             #[cfg(feature = "dim2")]
+                            if !detect_self_intersections {
+                                let segment = crate::shape::Segment::from(tri_pts);
+                                let intersect =
+                                    query::details::intersection_test_aabb_segment(&aabb, &segment);
+
+                                if intersect {
+                                    if keep_voxel_to_primitives_map {
+                                        data.num_primitive_intersections += 1;
+                                        result.primitive_intersections.push((id, tri_id as u32));
+                                    }
+
+                                    *value = VoxelValue::PrimitiveOnSurface;
+                                }
+                            } else if let Some(params) =
+                                aabb.clip_line_parameters(&tri_pts[0], &(tri_pts[1] - tri_pts[0]))
                             {
-                                if !detect_self_intersections {
-                                    let segment = crate::shape::Segment::from(tri_pts);
-                                    let intersect = query::details::intersection_test_aabb_segment(
-                                        &aabb, &segment,
-                                    );
+                                let eps = 0.0; // -1.0e-6;
 
-                                    if intersect {
-                                        if keep_voxel_to_primitives_map {
-                                            data.num_primitive_intersections += 1;
-                                            result
-                                                .primitive_intersections
-                                                .push((id, tri_id as u32));
-                                        }
+                                assert!(params.0 <= params.1);
+                                if params.0 > 1.0 + eps || params.1 < 0.0 - eps {
+                                    continue;
+                                }
 
-                                        *value = VoxelValue::PrimitiveOnSurface;
-                                    }
+                                data.multiplicity += ((params.0 >= -eps && params.0 <= eps)
+                                    || (params.0 >= 1.0 - eps && params.0 <= 1.0 + eps))
+                                    as u32;
+                                data.multiplicity += ((params.1 >= -eps && params.1 <= eps)
+                                    || (params.1 >= 1.0 - eps && params.1 <= 1.0 + eps))
+                                    as u32;
+                                data.multiplicity += (params.0 > eps) as u32 * 2;
+                                data.multiplicity += (params.1 < 1.0 - eps) as u32 * 2;
+
+                                if keep_voxel_to_primitives_map {
+                                    data.num_primitive_intersections += 1;
+                                    result.primitive_intersections.push((id, tri_id as u32));
+                                }
+
+                                if data.multiplicity > 4 && lock_high_multiplicities {
+                                    *value = VoxelValue::PrimitiveOnSurfaceNoWalk;
                                 } else {
-                                    if let Some(params) = aabb.clip_line_parameters(
-                                        &tri_pts[0],
-                                        &(tri_pts[1] - tri_pts[0]),
-                                    ) {
-                                        let eps = 0.0; // -1.0e-6;
-
-                                        assert!(params.0 <= params.1);
-                                        if params.0 > 1.0 + eps || params.1 < 0.0 - eps {
-                                            continue;
-                                        }
-
-                                        data.multiplicity += ((params.0 >= -eps && params.0 <= eps)
-                                            || (params.0 >= 1.0 - eps && params.0 <= 1.0 + eps))
-                                            as u32;
-                                        data.multiplicity += ((params.1 >= -eps && params.1 <= eps)
-                                            || (params.1 >= 1.0 - eps && params.1 <= 1.0 + eps))
-                                            as u32;
-                                        data.multiplicity += (params.0 > eps) as u32 * 2;
-                                        data.multiplicity += (params.1 < 1.0 - eps) as u32 * 2;
-
-                                        if keep_voxel_to_primitives_map {
-                                            data.num_primitive_intersections += 1;
-                                            result
-                                                .primitive_intersections
-                                                .push((id, tri_id as u32));
-                                        }
-
-                                        if data.multiplicity > 4 && lock_high_multiplicities {
-                                            *value = VoxelValue::PrimitiveOnSurfaceNoWalk;
-                                        } else {
-                                            *value = VoxelValue::PrimitiveOnSurface;
-                                        }
-                                    }
+                                    *value = VoxelValue::PrimitiveOnSurface;
                                 }
                             };
 
@@ -777,18 +767,18 @@ impl VoxelizedVolume {
                         }
 
                         let s = vertices.len() as u32;
-                        indices.push([s + 0, s + 2, s + 1]);
-                        indices.push([s + 0, s + 3, s + 2]);
+                        indices.push([s, s + 2, s + 1]);
+                        indices.push([s, s + 3, s + 2]);
                         indices.push([s + 4, s + 5, s + 6]);
                         indices.push([s + 4, s + 6, s + 7]);
                         indices.push([s + 7, s + 6, s + 2]);
                         indices.push([s + 7, s + 2, s + 3]);
                         indices.push([s + 4, s + 1, s + 5]);
-                        indices.push([s + 4, s + 0, s + 1]);
+                        indices.push([s + 4, s, s + 1]);
                         indices.push([s + 6, s + 5, s + 1]);
                         indices.push([s + 6, s + 1, s + 2]);
-                        indices.push([s + 7, s + 0, s + 4]);
-                        indices.push([s + 7, s + 3, s + 0]);
+                        indices.push([s + 7, s, s + 4]);
+                        indices.push([s + 7, s + 3, s]);
                     }
                 }
             }
@@ -798,24 +788,24 @@ impl VoxelizedVolume {
     }
 }
 
-impl Into<VoxelSet> for VoxelizedVolume {
-    fn into(mut self) -> VoxelSet {
+impl From<VoxelizedVolume> for VoxelSet {
+    fn from(mut shape: VoxelizedVolume) -> Self {
         let mut curr_intersection_index = 0;
         let mut vset = VoxelSet::new();
         let mut vset_intersections = Vec::new();
-        vset.origin = self.origin;
-        vset.scale = self.scale;
+        vset.origin = shape.origin;
+        vset.scale = shape.scale;
 
         #[cfg(feature = "dim2")]
         let k1 = 1;
         #[cfg(feature = "dim3")]
-        let k1 = self.resolution[2];
+        let k1 = shape.resolution[2];
 
-        for i in 0..self.resolution[0] {
-            for j in 0..self.resolution[1] {
+        for i in 0..shape.resolution[0] {
+            for j in 0..shape.resolution[1] {
                 for k in 0..k1 {
-                    let id = self.voxel_index(i, j, k) as usize;
-                    let value = self.values[id];
+                    let id = shape.voxel_index(i, j, k) as usize;
+                    let value = shape.values[id];
                     #[cfg(feature = "dim2")]
                     let coords = Point::new(i, j);
                     #[cfg(feature = "dim3")]
@@ -825,30 +815,24 @@ impl Into<VoxelSet> for VoxelizedVolume {
                         let voxel = Voxel {
                             coords,
                             is_on_surface: false,
-                            intersections_range: (
-                                curr_intersection_index as usize,
-                                curr_intersection_index as usize,
-                            ),
+                            intersections_range: (curr_intersection_index, curr_intersection_index),
                         };
                         vset.voxels.push(voxel);
                     } else if value == VoxelValue::PrimitiveOnSurface {
                         let mut voxel = Voxel {
                             coords,
                             is_on_surface: true,
-                            intersections_range: (
-                                curr_intersection_index as usize,
-                                curr_intersection_index as usize,
-                            ),
+                            intersections_range: (curr_intersection_index, curr_intersection_index),
                         };
 
-                        if !self.primitive_intersections.is_empty() {
+                        if !shape.primitive_intersections.is_empty() {
                             let num_intersections =
-                                self.data[id].num_primitive_intersections as usize;
+                                shape.data[id].num_primitive_intersections as usize;
                             // We store the index where we should write the intersection on the
                             // vset into num_primitive_intersections. That way we can reuse it
                             // afterwards when copying the set of intersection into a single
                             // flat Vec.
-                            self.data[id].num_primitive_intersections =
+                            shape.data[id].num_primitive_intersections =
                                 curr_intersection_index as u32;
                             curr_intersection_index += num_intersections;
                             voxel.intersections_range.1 = curr_intersection_index;
@@ -860,10 +844,10 @@ impl Into<VoxelSet> for VoxelizedVolume {
             }
         }
 
-        if !self.primitive_intersections.is_empty() {
-            vset_intersections.resize(self.primitive_intersections.len(), 0);
-            for (voxel_id, prim_id) in self.primitive_intersections {
-                let num_inter = &mut self.data[voxel_id as usize].num_primitive_intersections;
+        if !shape.primitive_intersections.is_empty() {
+            vset_intersections.resize(shape.primitive_intersections.len(), 0);
+            for (voxel_id, prim_id) in shape.primitive_intersections {
+                let num_inter = &mut shape.data[voxel_id as usize].num_primitive_intersections;
                 vset_intersections[*num_inter as usize] = prim_id;
                 *num_inter += 1;
             }

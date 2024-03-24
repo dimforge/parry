@@ -1,3 +1,5 @@
+#![allow(clippy::excessive_precision)] // Clippy will complain in f32 mode, but we also need these consts for f64.
+
 use crate::math::Real;
 
 // pub(crate) const SIN_10_DEGREES: Real = 0.17364817766;

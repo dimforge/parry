@@ -88,7 +88,7 @@ impl SupportMap for Cone {
             vres = na::zero();
             vres[1] = self.half_height.copysign(dir[1]);
         } else {
-            vres = vres * self.radius;
+            vres *= self.radius;
             vres[1] = -self.half_height;
 
             if dir.dot(&vres) < dir[1] * self.half_height {

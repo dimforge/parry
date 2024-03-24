@@ -29,7 +29,7 @@ struct SubDetector {
 }
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct HeightFieldCompositeShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<(u32, u32), SubDetector>,
@@ -39,12 +39,7 @@ pub struct HeightFieldCompositeShapeContactManifoldsWorkspace {
 
 impl HeightFieldCompositeShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
-        Self {
-            timestamp: false,
-            sub_detectors: HashMap::default(),
-            #[cfg(feature = "dim3")]
-            internal_edges: InternalEdgesFixer::default(),
-        }
+        Self::default()
     }
 }
 
@@ -102,7 +97,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
         let ls_aabb1_2 = part1.compute_aabb(pos21).loosened(prediction);
         let mut leaf_fn2 = |leaf2: &u32| {
             composite2.map_part_at(*leaf2, &mut |part_pos2, part_shape2| {
-                let sub_detector = match workspace.sub_detectors.entry((leaf1 as u32, *leaf2)) {
+                let sub_detector = match workspace.sub_detectors.entry((leaf1, *leaf2)) {
                     Entry::Occupied(entry) => {
                         let sub_detector = entry.into_mut();
                         let manifold = old_manifolds[sub_detector.manifold_id].take();
@@ -121,10 +116,10 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
 
                         if flipped {
                             manifold.subshape1 = *leaf2;
-                            manifold.subshape2 = leaf1 as u32;
+                            manifold.subshape2 = leaf1;
                             manifold.subshape_pos1 = part_pos2.copied();
                         } else {
-                            manifold.subshape1 = leaf1 as u32;
+                            manifold.subshape1 = leaf1;
                             manifold.subshape2 = *leaf2;
                             manifold.subshape_pos2 = part_pos2.copied();
                         };

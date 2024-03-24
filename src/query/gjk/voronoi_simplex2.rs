@@ -15,6 +15,12 @@ pub struct VoronoiSimplex {
     dim: usize,
 }
 
+impl Default for VoronoiSimplex {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VoronoiSimplex {
     /// Crates a new empty simplex.
     pub fn new() -> VoronoiSimplex {

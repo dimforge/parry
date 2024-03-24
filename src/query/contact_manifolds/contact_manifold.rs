@@ -70,7 +70,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 /// A contact manifold between two shapes.
 ///
@@ -113,7 +113,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     where
         ManifoldData: Default,
     {
-        Self::with_data(0, 0, ManifoldData::default())
+        Self::default()
     }
 
     /// Create a new empty contact-manifold with the given associated data.
@@ -161,7 +161,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         manifolds: &mut Vec<Self>,
         data: &dyn Fn() -> ManifoldData,
     ) -> &'a mut Self {
-        if manifolds.len() == 0 {
+        if manifolds.is_empty() {
             let manifold_data = data();
             manifolds.push(ContactManifold::with_data((0, 0), manifold_data));
         }
@@ -194,7 +194,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         angle_dot_threshold: Real,
         dist_sq_threshold: Real,
     ) -> bool {
-        if self.points.len() == 0 {
+        if self.points.is_empty() {
             return false;
         }
 
@@ -267,7 +267,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
 
     /// Returns the contact with the smallest distance (i.e. the largest penetration depth).
     pub fn find_deepest_contact(&self) -> Option<&TrackedContact<ContactData>> {
-        let mut deepest = self.points.get(0)?;
+        let mut deepest = self.points.first()?;
 
         for pt in &self.points {
             if pt.dist < deepest.dist {

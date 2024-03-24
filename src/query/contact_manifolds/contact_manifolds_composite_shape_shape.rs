@@ -24,7 +24,7 @@ struct SubDetector {
 }
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CompositeShapeShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<u32, SubDetector>,
@@ -32,10 +32,7 @@ pub struct CompositeShapeShapeContactManifoldsWorkspace {
 
 impl CompositeShapeShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
-        Self {
-            timestamp: false,
-            sub_detectors: HashMap::default(),
-        }
+        Self::default()
     }
 }
 

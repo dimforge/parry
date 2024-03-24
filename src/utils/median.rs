@@ -4,7 +4,10 @@ use na;
 /// Computes the median of a set of values.
 #[inline]
 pub fn median(vals: &mut [Real]) -> Real {
-    assert!(vals.len() > 0, "Cannot compute the median of zero values.");
+    assert!(
+        !vals.is_empty(),
+        "Cannot compute the median of zero values."
+    );
 
     vals.sort_by(|a, b| a.partial_cmp(b).unwrap());
 

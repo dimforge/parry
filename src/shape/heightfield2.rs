@@ -139,7 +139,7 @@ impl HeightField {
     }
 
     /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
-    #[cfg(all(feature = "cuda"))]
+    #[cfg(feature = "cuda")]
     pub fn to_cuda(&self) -> CudaResult<CudaHeightField> {
         Ok(CudaHeightField {
             heights: CudaArray1::from_vector(&self.heights)?,
@@ -264,7 +264,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// Iterator through all the segments of this heightfield.
-    pub fn segments<'a>(&'a self) -> impl Iterator<Item = Segment> + 'a {
+    pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
         // FIXME: this is not very efficient since this wil
         // recompute shared points twice.
         (0..self.num_cells()).filter_map(move |i| self.segment_at(i))
@@ -281,7 +281,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let x0 = -0.5 + seg_length * (i as Real);
         let x1 = x0 + seg_length;
 
-        let y0 = self.heights[i + 0];
+        let y0 = self.heights[i];
         let y1 = self.heights[i + 1];
 
         let mut p0 = Point2::new(x0, y0);
@@ -339,7 +339,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             let x0 = -0.5 + seg_length * (i as Real);
             let x1 = x0 + seg_length;
 
-            let y0 = self.heights[i + 0];
+            let y0 = self.heights[i];
             let y1 = self.heights[i + 1];
 
             if (y0 > ref_maxs.y && y1 > ref_maxs.y) || (y0 < ref_mins.y && y1 < ref_mins.y) {

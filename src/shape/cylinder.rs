@@ -86,7 +86,7 @@ impl SupportMap for Cylinder {
         if vres.normalize_mut().is_zero() {
             vres = na::zero()
         } else {
-            vres = vres * self.radius;
+            vres *= self.radius;
         }
 
         vres[1] = self.half_height.copysign(dir[1]);

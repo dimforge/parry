@@ -40,10 +40,13 @@ where
         if let Some(data) = b {
             let bitmask = mask.bitmask();
 
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    if !(self.callback)(data[ii].unwrap()) {
-                        return SimdVisitStatus::ExitEarly;
+            #[allow(clippy::needless_range_loop)] // Easier to read for simd stuffs.
+            for (ii, data) in data.into_iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 {
+                    if let Some(data) = data {
+                        if !(self.callback)(data) {
+                            return SimdVisitStatus::ExitEarly;
+                        }
                     }
                 }
             }

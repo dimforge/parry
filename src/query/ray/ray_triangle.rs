@@ -34,8 +34,8 @@ impl RayCast for Triangle {
         let mut best = None;
         let mut smallest_toi = Real::MAX;
 
-        for i in 0..3 {
-            if let Some(inter) = edges[i].cast_local_ray_and_get_normal(ray, max_toi, solid) {
+        for edge in &edges {
+            if let Some(inter) = edge.cast_local_ray_and_get_normal(ray, max_toi, solid) {
                 if inter.toi < smallest_toi {
                     smallest_toi = inter.toi;
                     best = Some(inter);
@@ -125,8 +125,8 @@ pub fn local_ray_intersection_with_triangle(
         let invd = 1.0 / d;
         toi = -t * invd;
         normal = -n.normalize();
-        v = v * invd;
-        w = w * invd;
+        v *= invd;
+        w *= invd;
     } else {
         v = ac.dot(&e);
 
@@ -143,8 +143,8 @@ pub fn local_ray_intersection_with_triangle(
         let invd = 1.0 / d;
         toi = t * invd;
         normal = n.normalize();
-        v = v * invd;
-        w = w * invd;
+        v *= invd;
+        w *= invd;
     }
 
     Some((

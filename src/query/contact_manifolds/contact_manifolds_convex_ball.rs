@@ -40,7 +40,7 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     // shape's origin towards our origin if defined, otherwise towards +x
     let (mut local_n1, mut dist) = Unit::try_new_and_get(dpos, 0.0).unwrap_or_else(|| {
         (
-            Unit::try_new(pos12.translation.vector, 0.0).unwrap_or_else(|| Vector::x_axis()),
+            Unit::try_new(pos12.translation.vector, 0.0).unwrap_or_else(Vector::x_axis),
             0.0,
         )
     });

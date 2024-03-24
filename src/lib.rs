@@ -14,6 +14,10 @@ the rust programming language.
 #![warn(missing_docs)] // TODO: deny this
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
+#![allow(clippy::too_many_arguments)] // Maybe revisit this one later.
+#![allow(clippy::module_inception)]
+#![allow(clippy::manual_range_contains)] // This usually makes it way more verbose that it could be.
+#![allow(clippy::type_complexity)] // Complains about closures that are fairly simple.
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "rkyv"), deny(unused_qualifications))] // TODO: deny that everytime

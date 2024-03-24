@@ -61,14 +61,14 @@ where
         };
 
         if let (Some(data1), Some(data2)) = (left_data, right_data) {
-            for ii in 0..SIMD_WIDTH {
+            for (ii, data1) in data1.into_iter().enumerate() {
+                let Some(data1) = data1 else { continue };
                 let bitmask = mask[ii].bitmask();
 
-                for jj in 0..SIMD_WIDTH {
-                    if (bitmask & (1 << jj)) != 0 && data1[ii].is_some() && data2[jj].is_some() {
-                        if !(self.callback)(data1[ii].unwrap(), data2[jj].unwrap()) {
-                            return SimdSimultaneousVisitStatus::ExitEarly;
-                        }
+                for (jj, data2) in data2.into_iter().enumerate() {
+                    let Some(data2) = data2 else { continue };
+                    if (bitmask & (1 << jj)) != 0 && !(self.callback)(data1, data2) {
+                        return SimdSimultaneousVisitStatus::ExitEarly;
                     }
                 }
             }
@@ -110,12 +110,14 @@ where
         };
 
         if let (Some(data1), Some(data2)) = (left_data, right_data) {
-            for ii in 0..SIMD_WIDTH {
+            for (ii, data1) in data1.into_iter().enumerate() {
+                let Some(data1) = data1 else { continue };
                 let bitmask = mask[ii].bitmask();
 
-                for jj in 0..SIMD_WIDTH {
-                    if (bitmask & (1 << jj)) != 0 && data1[ii].is_some() && data2[jj].is_some() {
-                        if !(self.callback)(data1[ii].unwrap(), data2[jj].unwrap()) {
+                for (jj, data2) in data2.into_iter().enumerate() {
+                    let Some(data2) = data2 else { continue };
+                    if (bitmask & (1 << jj)) != 0 {
+                        if !(self.callback)(data1, data2) {
                             return (SimdSimultaneousVisitStatus::ExitEarly, ());
                         }
                     }

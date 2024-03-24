@@ -137,7 +137,7 @@ fn test_qbvh_random_operations(
             qbvh.check_topology();
         } else {
             // remove aabb
-            if added_aabb_indices.len() == 0 {
+            if added_aabb_indices.is_empty() {
                 continue;
             }
             let aabb_index =

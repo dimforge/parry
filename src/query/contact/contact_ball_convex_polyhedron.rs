@@ -49,7 +49,7 @@ pub fn contact_convex_polyhedron_ball(
         normal1 = shape1
             .feature_normal_at_point(f1, &proj.point)
             .or_else(|| Unit::try_new(proj.point.coords, crate::math::DEFAULT_EPSILON))
-            .unwrap_or_else(|| Vector::y_axis());
+            .unwrap_or_else(Vector::y_axis);
     }
 
     if dist <= prediction {

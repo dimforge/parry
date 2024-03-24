@@ -86,18 +86,18 @@ impl std::hash::Hasher for FxHasher32 {
         let mut hash = FxHasher32 { hash: self.hash };
         assert!(std::mem::size_of::<u32>() <= 8);
         while bytes.len() >= std::mem::size_of::<u32>() {
-            hash.add_to_hash(read_u32(bytes) as u32);
+            hash.add_to_hash(read_u32(bytes));
             bytes = &bytes[std::mem::size_of::<u32>()..];
         }
         if (std::mem::size_of::<u32>() > 4) && (bytes.len() >= 4) {
-            hash.add_to_hash(u32::from_ne_bytes(bytes[..4].try_into().unwrap()) as u32);
+            hash.add_to_hash(u32::from_ne_bytes(bytes[..4].try_into().unwrap()));
             bytes = &bytes[4..];
         }
         if (std::mem::size_of::<u32>() > 2) && bytes.len() >= 2 {
             hash.add_to_hash(u16::from_ne_bytes(bytes[..2].try_into().unwrap()) as u32);
             bytes = &bytes[2..];
         }
-        if (std::mem::size_of::<u32>() > 1) && bytes.len() >= 1 {
+        if (std::mem::size_of::<u32>() > 1) && !bytes.is_empty() {
             hash.add_to_hash(bytes[0] as u32);
         }
         self.hash = hash.hash;
@@ -115,7 +115,7 @@ impl std::hash::Hasher for FxHasher32 {
 
     #[inline]
     fn write_u32(&mut self, i: u32) {
-        self.add_to_hash(i as u32);
+        self.add_to_hash(i);
     }
 
     #[inline]

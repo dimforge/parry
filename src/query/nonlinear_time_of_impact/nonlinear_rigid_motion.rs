@@ -87,7 +87,7 @@ impl NonlinearRigidMotion {
     /// Appends a constant translation to this rigid-motion.
     #[must_use]
     pub fn append_translation(&self, tra: Vector<Real>) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         result.set_start(Translation::from(tra) * result.start);
         result
     }
@@ -95,7 +95,7 @@ impl NonlinearRigidMotion {
     /// Prepends a constant translation to this rigid-motion.
     #[must_use]
     pub fn prepend_translation(&self, tra: Vector<Real>) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         result.set_start(result.start * Translation::from(tra));
         result
     }
@@ -103,7 +103,7 @@ impl NonlinearRigidMotion {
     /// Appends a constant isometry to this rigid-motion.
     #[must_use]
     pub fn append(&self, iso: Isometry<Real>) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         result.set_start(iso * result.start);
         result
     }
@@ -111,7 +111,7 @@ impl NonlinearRigidMotion {
     /// Prepends a constant translation to this rigid-motion.
     #[must_use]
     pub fn prepend(&self, iso: Isometry<Real>) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         result.set_start(result.start * iso);
         result
     }

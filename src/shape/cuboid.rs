@@ -49,7 +49,11 @@ impl Cuboid {
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
-        ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
+        // FIXME: is this still correct with the f64 version?
+        #[allow(clippy::unnecessary_cast)] // Unnecessary for f32 but necessary for f64.
+        {
+            ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
+        }
     }
 
     /// Return the feature of this cuboid with a normal that maximizes
@@ -296,18 +300,17 @@ impl Cuboid {
                 let signs = id >> 2;
 
                 let mut dir: Vector<Real> = na::zero();
-                let _1: Real = na::one();
 
                 if signs & (1 << face1) != 0 {
-                    dir[face1 as usize] = -_1
+                    dir[face1 as usize] = -1.0
                 } else {
-                    dir[face1 as usize] = _1
+                    dir[face1 as usize] = 1.0
                 }
 
                 if signs & (1 << face2) != 0 {
-                    dir[face2 as usize] = -_1
+                    dir[face2 as usize] = -1.0
                 } else {
-                    dir[face2 as usize] = _1;
+                    dir[face2 as usize] = 1.0;
                 }
 
                 Some(Unit::new_normalize(dir))
@@ -315,12 +318,10 @@ impl Cuboid {
             FeatureId::Vertex(id) => {
                 let mut dir: Vector<Real> = na::zero();
                 for i in 0..3 {
-                    let _1: Real = na::one();
-
                     if id & (1 << i) != 0 {
-                        dir[i] = -_1;
+                        dir[i] = -1.0;
                     } else {
-                        dir[i] = _1
+                        dir[i] = 1.0
                     }
                 }
 

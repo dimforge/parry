@@ -30,7 +30,6 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
     }
 
     let pos21 = &pos12.inverse();
-    let pos12 = &*pos12;
 
     /*
      *

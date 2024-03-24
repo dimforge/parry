@@ -29,18 +29,17 @@ where
             return None;
         }
 
-        let status;
         let witness2 = support_point;
         let mut witness1 = ray.point_at(toi);
 
-        if support_point.coords.dot(&halfspace.normal) < 0.0 {
-            status = TOIStatus::Penetrating
+        let status = if support_point.coords.dot(&halfspace.normal) < 0.0 {
+            TOIStatus::Penetrating
         } else {
             // Project the witness point to the halfspace.
             // Note that witness2 is already in the halfspace's local-space.
             witness1 = witness1 - *halfspace.normal * witness1.coords.dot(&halfspace.normal);
-            status = TOIStatus::Converged
-        }
+            TOIStatus::Converged
+        };
 
         Some(TOI {
             toi,

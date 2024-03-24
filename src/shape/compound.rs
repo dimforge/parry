@@ -40,11 +40,11 @@ impl Compound {
         let mut leaves = Vec::new();
         let mut aabb = Aabb::new_invalid();
 
-        for (i, &(ref delta, ref shape)) in shapes.iter().enumerate() {
+        for (i, (delta, shape)) in shapes.iter().enumerate() {
             let bv = shape.compute_aabb(delta);
 
             aabb.merge(&bv);
-            aabbs.push(bv.clone());
+            aabbs.push(bv);
             leaves.push((i as u32, bv));
 
             if shape.as_composite_shape().is_some() {

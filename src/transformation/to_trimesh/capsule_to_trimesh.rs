@@ -36,30 +36,30 @@ pub(crate) fn canonical_capsule(
 
     // shift the top
     for coord in top_coords.iter_mut() {
-        coord.x = coord.x * caps_diameter;
+        coord.x *= caps_diameter;
         coord.y = coord.y * caps_diameter + half_height;
-        coord.z = coord.z * caps_diameter;
+        coord.z *= caps_diameter;
     }
 
     // flip + shift the bottom
     for coord in bottom_coords.iter_mut() {
-        coord.x = coord.x * caps_diameter;
+        coord.x *= caps_diameter;
         coord.y = -(coord.y * caps_diameter) - half_height;
-        coord.z = coord.z * caps_diameter;
+        coord.z *= caps_diameter;
     }
 
     // shift the top index buffer
     let base_top_coords = bottom_coords.len() as u32;
 
     for idx in top_indices.iter_mut() {
-        idx[0] = idx[0] + base_top_coords;
-        idx[1] = idx[1] + base_top_coords;
-        idx[2] = idx[2] + base_top_coords;
+        idx[0] += base_top_coords;
+        idx[1] += base_top_coords;
+        idx[2] += base_top_coords;
     }
 
     // merge all buffers
-    bottom_coords.extend(top_coords.into_iter());
-    bottom_indices.extend(top_indices.into_iter());
+    bottom_coords.extend(top_coords);
+    bottom_indices.extend(top_indices);
 
     // attach the two caps
     utils::push_ring_indices(0, base_top_coords, ntheta_subdiv, &mut bottom_indices);

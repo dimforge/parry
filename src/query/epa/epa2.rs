@@ -32,7 +32,7 @@ impl Eq for FaceId {}
 impl PartialOrd for FaceId {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.neg_dist.partial_cmp(&other.neg_dist)
+        Some(self.cmp(other))
     }
 }
 
@@ -110,6 +110,7 @@ impl Face {
 }
 
 /// The Expanding Polytope Algorithm in 2D.
+#[derive(Default)]
 pub struct EPA {
     vertices: Vec<CSOPoint>,
     faces: Vec<Face>,
@@ -119,11 +120,7 @@ pub struct EPA {
 impl EPA {
     /// Creates a new instance of the 2D Expanding Polytope Algorithm.
     pub fn new() -> Self {
-        EPA {
-            vertices: Vec::new(),
-            faces: Vec::new(),
-            heap: BinaryHeap::new(),
-        }
+        EPA::default()
     }
 
     fn reset(&mut self) {

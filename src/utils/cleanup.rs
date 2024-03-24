@@ -4,7 +4,7 @@ use std::iter;
 /// Given an index buffer, remove from `points` every point that is not indexed.
 pub fn remove_unused_points(points: &mut Vec<Point<Real>>, idx: &mut [[u32; 3]]) {
     let mut used: Vec<bool> = iter::repeat(false).take(points.len()).collect();
-    let mut remap: Vec<usize> = (0..points.len()).map(|i| i).collect();
+    let mut remap: Vec<usize> = (0..points.len()).collect();
     let used = &mut used[..];
     let remap = &mut remap[..];
 
@@ -21,7 +21,7 @@ pub fn remove_unused_points(points: &mut Vec<Point<Real>>, idx: &mut [[u32; 3]])
             remap[points.len()] = i;
             used[i] = used[points.len()];
         } else {
-            i = i + 1;
+            i += 1;
         }
     }
 

@@ -65,6 +65,12 @@ pub struct VoxelSet {
     pub(crate) primitive_classes: Arc<Vec<u32>>,
 }
 
+impl Default for VoxelSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VoxelSet {
     /// Creates a new empty set of voxels.
     pub fn new() -> Self {
@@ -142,6 +148,11 @@ impl VoxelSet {
 
     pub(crate) fn get_point(&self, voxel: Point<Real>) -> Point<Real> {
         self.origin + voxel.coords * self.scale
+    }
+
+    /// Does this voxel not contain any element?
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// The number of voxels in this set.
@@ -234,7 +245,7 @@ impl VoxelSet {
                 //   included in only one convex part. So instead of cutting it, just push the whole
                 //   triangle once.
                 let prim_class = self.primitive_classes.get(*prim_id as usize).copied();
-                if prim_class == Some(u32::MAX) || prim_class == None {
+                if prim_class == Some(u32::MAX) || prim_class.is_none() {
                     let aabb_center =
                         self.origin + voxel.coords.coords.map(|k| k as Real) * self.scale;
                     let aabb =
@@ -456,15 +467,13 @@ impl VoxelSet {
                         sp = 0;
                     }
                 }
+            } else if -d <= d0 {
+                self.map_voxel_points(&voxel, |p| negative_pts.push(p));
             } else {
-                if -d <= d0 {
+                sn += 1;
+                if sn == sampling {
                     self.map_voxel_points(&voxel, |p| negative_pts.push(p));
-                } else {
-                    sn += 1;
-                    if sn == sampling {
-                        self.map_voxel_points(&voxel, |p| negative_pts.push(p));
-                        sn = 0;
-                    }
+                    sn = 0;
                 }
             }
         }
@@ -541,13 +550,11 @@ impl VoxelSet {
                 } else {
                     positive_part.voxels.push(voxel);
                 }
+            } else if voxel.is_on_surface || -d <= d0 {
+                voxel.is_on_surface = true;
+                negative_part.voxels.push(voxel);
             } else {
-                if voxel.is_on_surface || -d <= d0 {
-                    voxel.is_on_surface = true;
-                    negative_part.voxels.push(voxel);
-                } else {
-                    negative_part.voxels.push(voxel);
-                }
+                negative_part.voxels.push(voxel);
             }
         }
     }
@@ -567,18 +574,18 @@ impl VoxelSet {
             if voxel.is_on_surface == is_on_surface {
                 self.map_voxel_points(voxel, |p| vertices.push(p));
 
-                indices.push([base_index + 0, base_index + 2, base_index + 1]);
-                indices.push([base_index + 0, base_index + 3, base_index + 2]);
+                indices.push([base_index, base_index + 2, base_index + 1]);
+                indices.push([base_index, base_index + 3, base_index + 2]);
                 indices.push([base_index + 4, base_index + 5, base_index + 6]);
                 indices.push([base_index + 4, base_index + 6, base_index + 7]);
                 indices.push([base_index + 7, base_index + 6, base_index + 2]);
                 indices.push([base_index + 7, base_index + 2, base_index + 3]);
                 indices.push([base_index + 4, base_index + 1, base_index + 5]);
-                indices.push([base_index + 4, base_index + 0, base_index + 1]);
+                indices.push([base_index + 4, base_index, base_index + 1]);
                 indices.push([base_index + 6, base_index + 5, base_index + 1]);
                 indices.push([base_index + 6, base_index + 1, base_index + 2]);
-                indices.push([base_index + 7, base_index + 0, base_index + 4]);
-                indices.push([base_index + 7, base_index + 3, base_index + 0]);
+                indices.push([base_index + 7, base_index, base_index + 4]);
+                indices.push([base_index + 7, base_index + 3, base_index]);
             }
         }
 

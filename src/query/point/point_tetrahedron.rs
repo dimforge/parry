@@ -46,9 +46,7 @@ impl PointQueryWithLocation for Tetrahedron {
         let ap_ac = ap.dot(&ac);
         let ap_ad = ap.dot(&ad);
 
-        let _0: Real = 0.0;
-
-        if ap_ab <= _0 && ap_ac <= _0 && ap_ad <= _0 {
+        if ap_ab <= 0.0 && ap_ac <= 0.0 && ap_ad <= 0.0 {
             // Voronoï region of `a`.
             let proj = PointProjection::new(false, self.a);
             return (proj, TetrahedronPointLocation::OnVertex(0));
@@ -62,7 +60,7 @@ impl PointQueryWithLocation for Tetrahedron {
         let bp_bd = bp.dot(&bd);
         let bp_ab = bp.dot(&ab);
 
-        if bp_bc <= _0 && bp_bd <= _0 && bp_ab >= _0 {
+        if bp_bc <= 0.0 && bp_bd <= 0.0 && bp_ab >= 0.0 {
             // Voronoï region of `b`.
             let proj = PointProjection::new(false, self.b);
             return (proj, TetrahedronPointLocation::OnVertex(1));
@@ -75,7 +73,7 @@ impl PointQueryWithLocation for Tetrahedron {
         let cp_bc = cp.dot(&bc);
         let cp_cd = cp.dot(&cd);
 
-        if cp_cd <= _0 && cp_bc >= _0 && cp_ac >= _0 {
+        if cp_cd <= 0.0 && cp_bc >= 0.0 && cp_ac >= 0.0 {
             // Voronoï region of `c`.
             let proj = PointProjection::new(false, self.c);
             return (proj, TetrahedronPointLocation::OnVertex(2));
@@ -87,7 +85,7 @@ impl PointQueryWithLocation for Tetrahedron {
         let dp_bd = dp.dot(&bd);
         let dp_ad = dp.dot(&ad);
 
-        if dp_ad >= _0 && dp_bd >= _0 && dp_cd >= _0 {
+        if dp_ad >= 0.0 && dp_bd >= 0.0 && dp_cd >= 0.0 {
             // Voronoï region of `d`.
             let proj = PointProjection::new(false, self.d);
             return (proj, TetrahedronPointLocation::OnVertex(3));
@@ -112,9 +110,6 @@ impl PointQueryWithLocation for Tetrahedron {
             Real,
             Option<(PointProjection, TetrahedronPointLocation)>,
         ) {
-            let _0: Real = 0.0;
-            let _1: Real = 1.0;
-
             let ab_ab = ap_ab - bp_ab;
 
             // NOTE: The following avoids the subsequent cross and dot products but are not
@@ -127,11 +122,11 @@ impl PointQueryWithLocation for Tetrahedron {
             let dabc = ap_x_ab.dot(nabc);
             let dabd = ap_x_ab.dot(nabd);
 
-            // TODO: the case where ab_ab == _0 is not well defined.
-            if ab_ab != _0 && dabc >= _0 && dabd >= _0 && ap_ab >= _0 && ap_ab <= ab_ab {
+            // TODO: the case where ab_ab == 0.0 is not well defined.
+            if ab_ab != 0.0 && dabc >= 0.0 && dabd >= 0.0 && ap_ab >= 0.0 && ap_ab <= ab_ab {
                 // Voronoi region of `ab`.
                 let u = ap_ab / ab_ab;
-                let bcoords = [_1 - u, u];
+                let bcoords = [1.0 - u, u];
                 let res = a + ab * u;
                 let proj = PointProjection::new(false, res);
                 (
@@ -258,12 +253,9 @@ impl PointQueryWithLocation for Tetrahedron {
             /* ap_ab: Real, bp_ab: Real, cp_ab: Real,
             ap_ac: Real, bp_ac: Real, cp_ac: Real, */
         ) -> Option<(PointProjection, TetrahedronPointLocation)> {
-            let _0: Real = 0.0;
-            let _1: Real = 1.0;
-
-            if dabc < _0 && dbca < _0 && dacb < _0 {
+            if dabc < 0.0 && dbca < 0.0 && dacb < 0.0 {
                 let n = ab.cross(ac); // TODO: is is possible to avoid this cross product?
-                if n.dot(ad) * n.dot(ap) < _0 {
+                if n.dot(ad) * n.dot(ap) < 0.0 {
                     // Voronoï region of the face.
 
                     // NOTE:
@@ -284,8 +276,8 @@ impl PointQueryWithLocation for Tetrahedron {
                     let vb = normal.dot(&cp.cross(ap));
 
                     let denom = va + vb + vc;
-                    assert!(denom != _0);
-                    let inv_denom = _1 / denom;
+                    assert!(denom != 0.0);
+                    let inv_denom = 1.0 / denom;
 
                     let bcoords = [va * inv_denom, vb * inv_denom, vc * inv_denom];
                     let res = a * bcoords[0] + b.coords * bcoords[1] + c.coords * bcoords[2];

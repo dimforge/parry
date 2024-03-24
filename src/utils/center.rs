@@ -5,7 +5,7 @@ use na;
 #[inline]
 pub fn center(pts: &[Point<Real>]) -> Point<Real> {
     assert!(
-        pts.len() >= 1,
+        !pts.is_empty(),
         "Cannot compute the center of less than 1 point."
     );
 

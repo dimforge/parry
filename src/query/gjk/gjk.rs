@@ -137,7 +137,7 @@ where
         let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
         let min_bound = -dir.dot(&cso_point.point.coords);
 
-        assert!(min_bound == min_bound);
+        assert!(min_bound.is_finite());
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
@@ -332,7 +332,7 @@ where
 
         let min_bound = -dir.dot(&(support_point.point.coords - curr_ray.origin.coords));
 
-        assert!(min_bound == min_bound);
+        assert!(min_bound.is_finite());
 
         if max_bound - min_bound <= _eps_rel * max_bound {
             // This is needed when using fixed-points to avoid missing

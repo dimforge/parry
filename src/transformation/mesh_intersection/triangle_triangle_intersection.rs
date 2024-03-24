@@ -57,14 +57,12 @@ pub fn triangle_triangle_intersection(
                 .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
         ];
 
-        for k in 0..3 {
-            if let Some(hit1) = &hits1[k] {
-                if hit1.0 < range1[0].0 {
-                    range1[0] = *hit1;
-                }
-                if hit1.0 > range1[1].0 {
-                    range1[1] = *hit1;
-                }
+        for hit1 in hits1.into_iter().flatten() {
+            if hit1.0 < range1[0].0 {
+                range1[0] = hit1;
+            }
+            if hit1.0 > range1[1].0 {
+                range1[1] = hit1;
             }
         }
 
@@ -82,14 +80,12 @@ pub fn triangle_triangle_intersection(
                 .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
         ];
 
-        for k in 0..3 {
-            if let Some(hit2) = &hits2[k] {
-                if hit2.0 < range2[0].0 {
-                    range2[0] = *hit2;
-                }
-                if hit2.0 > range2[1].0 {
-                    range2[1] = *hit2;
-                }
+        for hit2 in hits2.into_iter().flatten() {
+            if hit2.0 < range2[0].0 {
+                range2[0] = hit2;
+            }
+            if hit2.0 > range2[1].0 {
+                range2[1] = hit2;
             }
         }
 
@@ -199,15 +195,13 @@ pub fn triangle_triangle_intersection(
                 proj(tri1.c - tri2.a),
             ];
             let poly2 = [
-                proj(tri2.a - tri2.a),
+                proj(Vector::zeros()), // = proj(tri2.a - tri2.a)
                 proj(tri2.b - tri2.a),
                 proj(tri2.c - tri2.a),
             ];
 
             let convert_loc = |loc, pts: &[Point<Real>; 3]| match loc {
-                PolylinePointLocation::OnVertex(vid) => {
-                    (FeatureId::Vertex(vid as u32), pts[vid as usize])
-                }
+                PolylinePointLocation::OnVertex(vid) => (FeatureId::Vertex(vid as u32), pts[vid]),
                 PolylinePointLocation::OnEdge(vid1, vid2, bcoords) => (
                     match (vid1, vid2) {
                         (0, 1) | (1, 0) => FeatureId::Edge(0),
@@ -272,13 +266,11 @@ fn segment_plane_intersection(
 
     if scaled_toi < -EPS || scaled_toi > dir_norm + EPS {
         None
+    } else if scaled_toi <= EPS {
+        Some((segment.a, FeatureId::Vertex(vids.0)))
+    } else if scaled_toi >= dir_norm - EPS {
+        Some((segment.b, FeatureId::Vertex(vids.1)))
     } else {
-        if scaled_toi <= EPS {
-            Some((segment.a, FeatureId::Vertex(vids.0)))
-        } else if scaled_toi >= dir_norm - EPS {
-            Some((segment.b, FeatureId::Vertex(vids.1)))
-        } else {
-            Some((segment.a + dir * toi, FeatureId::Edge(eid)))
-        }
+        Some((segment.a + dir * toi, FeatureId::Edge(eid)))
     }
 }

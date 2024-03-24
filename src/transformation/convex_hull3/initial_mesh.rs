@@ -86,13 +86,13 @@ pub fn try_get_initial_mesh(
             break;
         }
 
-        dimension = dimension + 1;
+        dimension += 1;
     }
 
     match dimension {
         0 => {
             // The hull is a point.
-            let (vtx, idx) = build_degenerate_mesh_point(original_points[0].clone());
+            let (vtx, idx) = build_degenerate_mesh_point(original_points[0]);
             Ok(InitialMesh::ResultMesh(vtx, idx))
         }
         1 => {
@@ -120,10 +120,7 @@ pub fn try_get_initial_mesh(
 
             // Finalize the result, triangulating the polyline.
             let npoints = idx.len();
-            let coords = idx
-                .into_iter()
-                .map(|i| original_points[i].clone())
-                .collect();
+            let coords = idx.into_iter().map(|i| original_points[i]).collect();
             let mut triangles = Vec::with_capacity(npoints + npoints - 4);
 
             for id in 1u32..npoints as u32 - 1 {
@@ -182,7 +179,6 @@ pub fn try_get_initial_mesh(
 
                 // … and attribute visible points to each one of them.
                 // FIXME: refactor this with the two others.
-                let mut ignored = 0usize;
                 for point in 0..normalized_points.len() {
                     if normalized_points[point] == normalized_points[p1]
                         || normalized_points[point] == normalized_points[p2]
@@ -209,7 +205,6 @@ pub fn try_get_initial_mesh(
                         facets[furthest].add_visible_point(point, normalized_points);
                     } else {
                         undecidable.push(point);
-                        ignored = ignored + 1;
                     }
 
                     // If none of the facet can be seen from the point, it is naturally deleted.

@@ -4,7 +4,7 @@ use num::Zero;
 
 /// Tests if the given point is inside of a polygon with arbitrary orientation.
 pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
-    if poly.len() == 0 {
+    if poly.is_empty() {
         false
     } else {
         let mut sign = 0.0;

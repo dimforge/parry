@@ -36,7 +36,7 @@ pub use self::contact_manifolds_workspace::{
     ContactManifoldsWorkspace, TypedWorkspaceData, WorkspaceData,
 };
 
-pub(self) use {
+use {
     self::contact_manifolds_composite_shape_composite_shape::CompositeShapeCompositeShapeContactManifoldsWorkspace,
     self::contact_manifolds_composite_shape_shape::CompositeShapeShapeContactManifoldsWorkspace,
     self::contact_manifolds_heightfield_composite_shape::HeightFieldCompositeShapeContactManifoldsWorkspace,

@@ -11,12 +11,12 @@ pub trait AsBytes {
 }
 
 macro_rules! generic_as_bytes_impl(
-    ($t: ident, $dimension: expr) => (
-        impl<N: RealField> AsBytes for $t<N> {
+    ($T: ident, $dimension: expr) => (
+        impl<N: RealField> AsBytes for $T<N> {
             #[inline(always)]
-            fn as_bytes<'a>(&'a self) -> &'a [u8] {
+            fn as_bytes(&self) -> &[u8] {
                 unsafe {
-                    slice::from_raw_parts(mem::transmute(self), mem::size_of::<N>() * $dimension)
+                    slice::from_raw_parts(self as *const $T<N> as *const u8, mem::size_of::<N>() * $dimension)
                 }
             }
         }

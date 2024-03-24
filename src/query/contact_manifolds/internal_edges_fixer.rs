@@ -22,7 +22,7 @@ impl InternalEdgesFixer {
     #[cfg(feature = "dim2")]
     pub fn remove_invalid_contacts<ManifoldData, ContactData>(
         &mut self,
-        _manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+        _manifolds: &mut [ContactManifold<ManifoldData, ContactData>],
         _flipped: bool,
         _get_triangle: impl Fn(u32) -> Triangle,
         _get_triangle_indices: impl Fn(u32) -> [u32; 3],
@@ -36,7 +36,7 @@ impl InternalEdgesFixer {
     #[cfg(feature = "dim3")]
     pub fn remove_invalid_contacts<ManifoldData, ContactData>(
         &mut self,
-        manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+        manifolds: &mut [ContactManifold<ManifoldData, ContactData>],
         flipped: bool,
         get_triangle: impl Fn(u32) -> Triangle,
         get_triangle_indices: impl Fn(u32) -> [u32; 3],

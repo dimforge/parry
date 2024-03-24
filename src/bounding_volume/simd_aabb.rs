@@ -323,10 +323,10 @@ impl SimdAabb {
     /// result between `self.extract(i)` and `other.extract(j)`.
     pub fn intersects_permutations(&self, other: &SimdAabb) -> [SimdBool; SIMD_WIDTH] {
         let mut result = [SimdBool::splat(false); SIMD_WIDTH];
-        for ii in 0..SIMD_WIDTH {
+        for (ii, result) in result.iter_mut().enumerate() {
             // TODO: use SIMD-accelerated shuffling?
             let extracted = SimdAabb::splat(self.extract(ii));
-            result[ii] = extracted.intersects(other);
+            *result = extracted.intersects(other);
         }
 
         result

@@ -276,8 +276,10 @@ impl PolygonalFeature {
             let denom = normal2_1.dot(sep_axis1);
 
             if !relative_eq!(denom, 0.0) {
-                let last_index2 = face2.num_vertices as usize - 1;
-                'point_loop1: for i in 0..face1.num_vertices as usize {
+                let last_index2 = face2.num_vertices - 1;
+
+                #[allow(clippy::needless_range_loop)] // Would make it much more verbose.
+                'point_loop1: for i in 0..face1.num_vertices {
                     let p1 = projected_face1[i];
 
                     let mut sign = (projected_face2[0] - projected_face2[last_index2])
@@ -320,8 +322,8 @@ impl PolygonalFeature {
 
             let denom = -normal1.dot(sep_axis1);
             if !relative_eq!(denom, 0.0) {
-                let last_index1 = face1.num_vertices as usize - 1;
-                'point_loop2: for i in 0..face2.num_vertices as usize {
+                let last_index1 = face1.num_vertices - 1;
+                'point_loop2: for i in 0..face2.num_vertices {
                     let p2 = projected_face2[i];
 
                     let mut sign = (projected_face1[0] - projected_face1[last_index1])
