@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.13.7
 
 ### Modified
 

@@ -1,15 +1,15 @@
 [package]
-name    = "parry3d-f64"
-version = "0.13.6"
-authors = [ "Sébastien Crozet <developer@crozet.re>" ]
+name = "parry3d-f64"
+version = "0.13.7"
+authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust. 64-bits precision version."
 documentation = "https://parry.rs/docs"
 homepage = "https://parry.rs"
 repository = "https://github.com/dimforge/parry"
 readme = "README.md"
-keywords = [ "collision", "geometry", "distance", "ray", "convex" ]
-categories = [ "science", "game-development", "mathematics", "wasm"]
+keywords = ["collision", "geometry", "distance", "ray", "convex"]
+categories = ["science", "game-development", "mathematics", "wasm"]
 license = "Apache-2.0"
 edition = "2021"
 
@@ -17,54 +17,54 @@ edition = "2021"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = [ "required-features", "std" ]
-required-features = [ "dim3", "f64" ]
-std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
-dim3    = [ ]
-f64     = [ ]
-serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
-rkyv-serialize = [ "rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
-bytemuck-serialize = [ "bytemuck", "nalgebra/convert-bytemuck" ]
-simd-stable = [ "simba/wide", "simd-is-enabled" ]
-simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
-enhanced-determinism = [ "simba/libm_force", "indexmap" ]
-cuda   = [ "cust_core", "cust", "nalgebra/cuda" ]
-parallel = [ "rayon" ]
+default = ["required-features", "std"]
+required-features = ["dim3", "f64"]
+std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade"]
+dim3 = []
+f64 = []
+serde-serialize = ["serde", "nalgebra/serde-serialize"]
+rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
+bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
+simd-stable = ["simba/wide", "simd-is-enabled"]
+simd-nightly = ["simba/packed_simd", "simd-is-enabled"]
+enhanced-determinism = ["simba/libm_force", "indexmap"]
+cuda = ["cust_core", "cust", "nalgebra/cuda"]
+parallel = ["rayon"]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = [ ]
+simd-is-enabled = []
 
 [lib]
 name = "parry3d_f64"
 path = "../../src/lib.rs"
-required-features = [ "required-features" ]
+required-features = ["required-features"]
 
 [dependencies]
-either      = { version = "1", default-features = false }
-bitflags    = "1"
+either = { version = "1", default-features = false }
+bitflags = "1"
 downcast-rs = { version = "1", default-features = false }
 num-traits = { version = "0.2", default-features = false }
-smallvec   = "1"
-slab       = { version = "0.4", optional = true }
-arrayvec   = { version = "0.7", default-features = false }
-simba      = { version = "0.8", default-features = false }
-nalgebra   = { version = "0.32", default-features = false, features = [ "libm" ] }
-approx     = { version = "0.5", default-features = false }
-serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
-rkyv       = { version = "0.7.41", optional = true }
+smallvec = "1"
+slab = { version = "0.4", optional = true }
+arrayvec = { version = "0.7", default-features = false }
+simba = { version = "0.8", default-features = false }
+nalgebra = { version = "0.32", default-features = false, features = ["libm"] }
+approx = { version = "0.5", default-features = false }
+serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
+rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
-indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
+indexmap = { version = "1", features = ["serde-1"], optional = true }
 rustc-hash = { version = "1", optional = true }
-cust_core  = { version = "0.1", optional = true }
-spade      = { version = "2", optional = true } # Make this optional?
-rayon      = { version = "1", optional = true }
-bytemuck   = { version = "1", features = [ "derive" ], optional = true }
+cust_core = { version = "0.1", optional = true }
+spade = { version = "2", optional = true } # Make this optional?
+rayon = { version = "1", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
-cust       = { version = "0.3", optional = true }
+cust = { version = "0.3", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
-ptree    = "0.4.0"
-rand     = { version = "0.8" }
+ptree = "0.4.0"
+rand = { version = "0.8" }
