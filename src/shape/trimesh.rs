@@ -359,9 +359,9 @@ pub struct GenericTriMesh<Storage: TriMeshStorage> {
     flags: TriMeshFlags,
 }
 
-impl fmt::Debug for GenericTriMesh<DefaultStorage> {
+impl<Storage: TriMeshStorage> fmt::Debug for GenericTriMesh<Storage> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "GenericTriMesh<DefaultStorage>")
+        write!(f, "GenericTriMesh")
     }
 }
 
