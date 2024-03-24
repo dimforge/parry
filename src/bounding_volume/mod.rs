@@ -62,22 +62,3 @@ pub mod details {
     pub use super::aabb_utils::{local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb};
     pub use super::bounding_sphere_utils::point_cloud_bounding_sphere;
 }
-
-#[cfg(test)]
-mod quick_tests {
-    use super::*;
-    use crate::math::{Point, Vector};
-
-    #[test]
-    #[cfg(feature = "dim2")]
-    fn aabb_rescale_wrt_origin_2d() {
-        let x1 = Point::new(1.0, 1.0);
-        let x2 = Point::new(2.0, 2.0);
-        let scale = Vector::new(2.0, 2.0);
-        let aabb = Aabb::new(x1, x2);
-        let aabbp = aabb.scaled_wrt_center(&scale);
-        let xp1 = Point::new(0.5, 0.5);
-        let xp2 = Point::new(2.5, 2.5);
-        assert_eq!(aabbp, Aabb::new(xp1, xp2));
-    }
-}

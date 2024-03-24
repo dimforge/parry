@@ -1,3 +1,4 @@
+mod aabb_scale;
 mod ball_ball_toi;
 mod ball_triangle_toi;
 mod convex_hull;
