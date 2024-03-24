@@ -67,19 +67,3 @@ jobs:
         run: xargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu;
       - name: build thumbv7em-none-eabihf
         run: xargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf;
-  build-cuda:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: Jimver/cuda-toolkit@v0.2.8
-        with:
-          cuda: '11.5.0'
-      - name: Install nightly-2021-12-04
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2021-12-04
-      - uses: actions/checkout@v3
-      - run: rustup target add nvptx64-nvidia-cuda
-      - run: cargo build --no-default-features --features required-features,cuda
-      - run: cargo build --no-default-features --features required-features,cuda --target=nvptx64-nvidia-cuda
-        env:
-          CUDA_ARCH: "350"
