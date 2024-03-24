@@ -11,6 +11,10 @@
 
 - Fix a crash in `Qbvh::refit` that results from the QBVH tree becoming increasingly imbalanced.
 
+### Added
+
+- Add `Aabb::scaled_wrt_center` to scale an AABB while keeping its center unchanged.
+
 ## v0.13.6
 
 ### Fixed

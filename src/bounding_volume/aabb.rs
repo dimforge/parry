@@ -176,6 +176,23 @@ impl Aabb {
         }
     }
 
+    /// Returns an AABB with the same center as `self` but with extents scaled by `scale`.
+    ///
+    /// # Parameters
+    /// - `scale`: the scaling factor. It can be non-uniform and/or negative. The AABB being
+    ///            symmetric wrt. its center, a negative scale value has the same effect as scaling
+    ///            by its absolute value.
+    #[inline]
+    #[must_use]
+    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
+        let center = self.center();
+        // Multiply the extents by the scale. Negative scaling might modify the half-extent
+        // sign, so we take the absolute value. The AABB being symmetric that absolute value
+        // is  valid.
+        let half_extents = self.half_extents().component_mul(scale).abs();
+        Self::from_half_extents(center, half_extents)
+    }
+
     /// The smallest bounding sphere containing this `Aabb`.
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
