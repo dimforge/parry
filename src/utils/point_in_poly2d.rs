@@ -2,8 +2,11 @@ use crate::math::Real;
 use na::Point2;
 use num::Zero;
 
-/// Tests if the given point is inside of a polygon with arbitrary orientation.
-pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
+/// Tests if the given point is inside a convex polygon with arbitrary orientation.
+///
+/// The polygon is assumed to be closed, i.e., first and last point of the polygon are implicitly
+/// assumed to be connected by an edge.
+pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     if poly.is_empty() {
         false
     } else {
@@ -26,28 +29,32 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     }
 }
 
-/// Tests if the given point is inside of a polygon with arbitrary orientation, using a counting
-/// winding strategy.
+/// Tests if the given point is inside an arbitrary closed polygon with arbitrary orientation,
+/// using a counting winding strategy.
 ///
-/// This handles concave polygons.
-pub fn point_in_poly2d_winding(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
+/// The polygon is assumed to be closed, i.e., first and last point of the polygon are implicitly
+/// assumed to be connected by an edge.
+///
+/// This handles concave polygons. For a function dedicated to convex polygons, see [`point_in_convex_poly2d`].
+pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     if poly.is_empty() {
         return false;
     }
 
     let mut winding = 0i32;
+
     for (i, a) in poly.iter().enumerate() {
         let b = poly[(i + 1) % poly.len()];
         let seg_dir = b - a;
         let dpt = pt - a;
         let perp = dpt.perp(&seg_dir);
-        let w = match (dpt.y > 0.0, b.y > pt.y) {
+        winding += match (dpt.y > 0.0, b.y > pt.y) {
             (true, true) if perp < 0.0 => 1,
             (false, false) if perp > 0.0 => -1,
             _ => 0,
         };
-        winding += w;
     }
+
     winding != 0
 }
 
@@ -123,7 +130,6 @@ mod tests {
         ]
         .map(Point2::from);
         let pt = Point2::from([596.0181884765625, 427.9162902832031]);
-        assert!(!point_in_poly2d(&pt, &poly));
-        assert!(point_in_poly2d_winding(&pt, &poly));
+        assert!(point_in_poly2d(&pt, &poly));
     }
 }
