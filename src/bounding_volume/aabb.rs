@@ -543,8 +543,8 @@ impl BoundingVolume for Aabb {
     #[inline]
     fn loosen(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The loosening margin must be positive.");
-        self.mins = self.mins + Vector::repeat(-amount);
-        self.maxs = self.maxs + Vector::repeat(amount);
+        self.mins += Vector::repeat(-amount);
+        self.maxs += Vector::repeat(amount);
     }
 
     #[inline]
@@ -559,8 +559,8 @@ impl BoundingVolume for Aabb {
     #[inline]
     fn tighten(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The tightening margin must be positive.");
-        self.mins = self.mins + Vector::repeat(amount);
-        self.maxs = self.maxs + Vector::repeat(-amount);
+        self.mins += Vector::repeat(amount);
+        self.maxs += Vector::repeat(-amount);
         assert!(
             na::partial_le(&self.mins, &self.maxs),
             "The tightening margin is to large."

@@ -109,17 +109,14 @@ where
                                 .distance(&part_pos1.inv_mul(self.pos12), g1, self.g2);
                     });
 
-                    match dist {
-                        Ok(dist) => {
-                            if dist == 0.0 {
-                                return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, 0.0)));
-                            } else {
-                                weights[ii] = dist;
-                                mask[ii] = dist < best;
-                                results[ii] = Some((part_id, dist));
-                            }
+                    if let Ok(dist) = dist {
+                        if dist == 0.0 {
+                            return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, 0.0)));
+                        } else {
+                            weights[ii] = dist;
+                            mask[ii] = dist < best;
+                            results[ii] = Some((part_id, dist));
                         }
-                        Err(_) => {}
                     }
                 }
             }

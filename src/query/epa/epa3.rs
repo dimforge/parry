@@ -31,7 +31,7 @@ impl Eq for FaceId {}
 impl PartialOrd for FaceId {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.neg_dist.partial_cmp(&other.neg_dist)
+        Some(self.cmp(other))
     }
 }
 
@@ -159,6 +159,7 @@ impl SilhouetteEdge {
 }
 
 /// The Expanding Polytope Algorithm in 3D.
+#[derive(Default)]
 pub struct EPA {
     vertices: Vec<CSOPoint>,
     faces: Vec<Face>,
@@ -169,12 +170,7 @@ pub struct EPA {
 impl EPA {
     /// Creates a new instance of the 3D Expanding Polytope Algorithm.
     pub fn new() -> Self {
-        EPA {
-            vertices: Vec::new(),
-            faces: Vec::new(),
-            silhouette: Vec::new(),
-            heap: BinaryHeap::new(),
-        }
+        Self::default()
     }
 
     fn reset(&mut self) {
@@ -358,7 +354,7 @@ impl EPA {
 
             let first_new_face_id = self.faces.len();
 
-            if self.silhouette.len() == 0 {
+            if self.silhouette.is_empty() {
                 // FIXME: Something went very wrong because we failed to extract a silhouette…
                 return None;
             }
@@ -460,7 +456,7 @@ impl EPA {
                 );
             }
         }
-        println!("");
+        println!();
     }
 
     #[allow(dead_code)]

@@ -18,6 +18,7 @@ impl Cone {
 fn unit_cone_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
     let mut out_vtx = vec![Point3::new(-0.5, -0.5, 0.0), Point3::new(0.0, 0.5, 0.0)];
     let mut out_ptx = vec![];
+    #[allow(clippy::single_range_in_vec_init)] // The single range is on purpose.
     utils::apply_revolution(false, true, &[0..1], nsubdiv, &mut out_vtx, &mut out_ptx);
     (out_vtx, out_ptx)
 }

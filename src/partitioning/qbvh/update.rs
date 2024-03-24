@@ -114,7 +114,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
             // If we reached this point, we didn’t find room for our
             // new proxy. Create a new root to make more room.
-            let mut old_root = self.nodes[0].clone();
+            let mut old_root = self.nodes[0];
             old_root.parent = NodeIndex::new(0, 0);
 
             for child_id in old_root.children {
@@ -569,7 +569,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         let nid = if let Some(nid) = self.free_list.pop() {
             self.nodes[nid as usize] = node;
-            nid as u32
+            nid
         } else {
             let nid = self.nodes.len();
             self.nodes.push(node);

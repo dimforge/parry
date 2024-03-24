@@ -163,20 +163,18 @@ where
     let mut hit_triangles = |i, j| {
         if i >= 0 && j >= 0 {
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
-            for tri in [tri_a, tri_b] {
-                if let Some(tri) = tri {
-                    // TODO: pre-check using a ray-cast on the Aabbs first?
-                    if let Some(hit) = dispatcher.time_of_impact(
-                        pos12,
-                        vel12,
-                        &tri,
-                        g2,
-                        max_toi,
-                        stop_at_penetration,
-                    )? {
-                        if hit.toi < best_hit.map(|toi| toi.toi).unwrap_or(Real::MAX) {
-                            best_hit = Some(hit);
-                        }
+            for tri in [tri_a, tri_b].into_iter().flatten() {
+                // TODO: pre-check using a ray-cast on the Aabbs first?
+                if let Some(hit) = dispatcher.time_of_impact(
+                    pos12,
+                    vel12,
+                    &tri,
+                    g2,
+                    max_toi,
+                    stop_at_penetration,
+                )? {
+                    if hit.toi < best_hit.map(|toi| toi.toi).unwrap_or(Real::MAX) {
+                        best_hit = Some(hit);
                     }
                 }
             }
@@ -207,7 +205,7 @@ where
             let x = heightfield1.signed_x_at(cell.1 + 1);
             (x - ray.origin.x) / ray.dir.x
         } else if ray.dir.x < 0.0 {
-            let x = heightfield1.signed_x_at(cell.1 + 0);
+            let x = heightfield1.signed_x_at(cell.1);
             (x - ray.origin.x) / ray.dir.x
         } else {
             Real::MAX
@@ -217,7 +215,7 @@ where
             let z = heightfield1.signed_z_at(cell.0 + 1);
             (z - ray.origin.z) / ray.dir.z
         } else if ray.dir.z < 0.0 {
-            let z = heightfield1.signed_z_at(cell.0 + 0);
+            let z = heightfield1.signed_z_at(cell.0);
             (z - ray.origin.z) / ray.dir.z
         } else {
             Real::MAX

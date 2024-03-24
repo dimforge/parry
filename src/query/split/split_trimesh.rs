@@ -6,6 +6,7 @@ use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMesh
 use crate::transformation;
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
+use std::cmp::Ordering;
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
@@ -216,8 +217,8 @@ impl TriMesh {
                     let intersection_idx = intersect_edge(idx_a, idx_b);
 
                     // Compute the indices of the two triangles.
-                    let new_tri_a = [idx_c, idx_a, intersection_idx as u32];
-                    let new_tri_b = [idx_b, idx_c, intersection_idx as u32];
+                    let new_tri_a = [idx_c, idx_a, intersection_idx];
+                    let new_tri_b = [idx_b, idx_c, intersection_idx];
 
                     new_indices[tri_id] = new_tri_a;
                     new_indices.push(new_tri_b);
@@ -422,10 +423,10 @@ impl TriMesh {
         let mut add_segment_adjacencies = |idx_a: usize, idx_b| {
             assert!(idx_a <= index_adjacencies.len());
 
-            if idx_a < index_adjacencies.len() {
-                index_adjacencies[idx_a].push(idx_b);
-            } else if idx_a == index_adjacencies.len() {
-                index_adjacencies.push(vec![idx_b])
+            match idx_a.cmp(&index_adjacencies.len()) {
+                Ordering::Less => index_adjacencies[idx_a].push(idx_b),
+                Ordering::Equal => index_adjacencies.push(vec![idx_b]),
+                Ordering::Greater => {}
             }
         };
         let mut add_segment_adjacencies_symmetric = |idx_a: usize, idx_b| {

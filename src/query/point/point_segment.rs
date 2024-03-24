@@ -55,7 +55,6 @@ impl PointQueryWithLocation for Segment {
         let ap = pt - self.a;
         let ab_ap = ab.dot(&ap);
         let sqnab = ab.norm_squared();
-        let _1 = 1.0;
 
         let proj;
         let location;
@@ -73,7 +72,7 @@ impl PointQueryWithLocation for Segment {
 
             // Voronoï region of the segment interior.
             let u = ab_ap / sqnab;
-            let bcoords = [_1 - u, u];
+            let bcoords = [1.0 - u, u];
             location = SegmentPointLocation::OnEdge(bcoords);
             proj = self.a + ab * u;
         }

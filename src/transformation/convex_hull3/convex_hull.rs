@@ -45,7 +45,7 @@ pub fn try_convex_hull(
         silhouette_loop_facets_and_idx.clear();
 
         if !triangles[i].valid || triangles[i].affinely_dependent {
-            i = i + 1;
+            i += 1;
             continue;
         }
 
@@ -98,8 +98,8 @@ pub fn try_convex_hull(
                 // Due to inaccuracies, the silhouette could not be computed
                 // (the point seems to be visible from… every triangle).
                 let mut any_valid = false;
-                for j in i + 1..triangles.len() {
-                    if triangles[j].valid && !triangles[j].affinely_dependent {
+                for triangle in &triangles[i + 1..] {
+                    if triangle.valid && !triangle.affinely_dependent {
                         any_valid = true;
                     }
                 }
@@ -132,7 +132,7 @@ pub fn try_convex_hull(
             // }
         }
 
-        i = i + 1;
+        i += 1;
     }
 
     let mut idx = Vec::new();
@@ -292,7 +292,7 @@ fn fix_silhouette_topology(
             // }
         }
 
-        // println!("");
+        // println!();
     }
 
     Ok(())
@@ -313,9 +313,9 @@ fn attach_and_push_facets(
     let mut adj_facet: usize;
     let mut indirect_id: usize;
 
-    for i in 0..silhouette_loop_facets_and_idx.len() {
-        adj_facet = silhouette_loop_facets_and_idx[i].0;
-        indirect_id = silhouette_loop_facets_and_idx[i].1;
+    for silhouette_loop_facets_and_id in silhouette_loop_facets_and_idx {
+        adj_facet = silhouette_loop_facets_and_id.0;
+        indirect_id = silhouette_loop_facets_and_id.1;
 
         // print!(
         //     "[{}, {}] ",
@@ -331,17 +331,15 @@ fn attach_and_push_facets(
         );
         new_facets.push(facet);
     }
-    // println!("");
+    // println!();
 
     // Link the facets together.
     for i in 0..silhouette_loop_facets_and_idx.len() {
-        let prev_facet;
-
-        if i == 0 {
-            prev_facet = triangles.len() + silhouette_loop_facets_and_idx.len() - 1;
+        let prev_facet = if i == 0 {
+            triangles.len() + silhouette_loop_facets_and_idx.len() - 1
         } else {
-            prev_facet = triangles.len() + i - 1;
-        }
+            triangles.len() + i - 1
+        };
 
         let (middle_facet, middle_id) = silhouette_loop_facets_and_idx[i];
         let next_facet = triangles.len() + (i + 1) % silhouette_loop_facets_and_idx.len();
@@ -374,10 +372,10 @@ fn attach_and_push_facets(
                 }
             }
 
-            if furthest != usize::max_value() {
-                if new_facets[furthest].can_see_point(*visible_point, points) {
-                    new_facets[furthest].add_visible_point(*visible_point, points);
-                }
+            if furthest != usize::max_value()
+                && new_facets[furthest].can_see_point(*visible_point, points)
+            {
+                new_facets[furthest].add_visible_point(*visible_point, points);
             }
 
             // If none of the facet can be seen from the point, it is implicitly
@@ -408,7 +406,7 @@ fn attach_and_push_facets(
             new_facets[furthest].add_visible_point(undecidable_point, points);
             let _ = undecidable.swap_remove(i);
         } else {
-            i = i + 1;
+            i += 1;
         }
     }
 

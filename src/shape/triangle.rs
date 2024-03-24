@@ -95,11 +95,7 @@ impl TrianglePointLocation {
 
     /// Returns `true` if the point is located on the relative interior of the triangle.
     pub fn is_on_face(&self) -> bool {
-        if let TrianglePointLocation::OnFace(..) = *self {
-            true
-        } else {
-            false
-        }
+        matches!(*self, TrianglePointLocation::OnFace(..))
     }
 }
 
@@ -330,11 +326,11 @@ impl Triangle {
     #[inline]
     pub fn area(&self) -> Real {
         // Kahan's formula.
-        let mut a = na::distance(&self.a, &self.b);
-        let mut b = na::distance(&self.b, &self.c);
-        let mut c = na::distance(&self.c, &self.a);
+        let a = na::distance(&self.a, &self.b);
+        let b = na::distance(&self.b, &self.c);
+        let c = na::distance(&self.c, &self.a);
 
-        let (c, b, a) = utils::sort3(&mut a, &mut b, &mut c);
+        let (c, b, a) = utils::sort3(&a, &b, &c);
         let a = *a;
         let b = *b;
         let c = *c;
@@ -384,8 +380,7 @@ impl Triangle {
 
         let dab = a.dot(&b);
 
-        let _2: Real = na::convert::<f64, Real>(2.0);
-        let denom = _2 * (na * nb - dab * dab);
+        let denom = 2.0 * (na * nb - dab * dab);
 
         if denom.is_zero() {
             // The triangle is degenerate (the three points are colinear).
@@ -576,12 +571,10 @@ impl SupportMap for Triangle {
             } else {
                 self.c
             }
+        } else if d2 > d3 {
+            self.b
         } else {
-            if d2 > d3 {
-                self.b
-            } else {
-                self.c
-            }
+            self.c
         }
     }
 }

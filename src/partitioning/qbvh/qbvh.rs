@@ -46,7 +46,7 @@ impl IndexedData for u32 {
 
 impl IndexedData for u64 {
     fn default() -> Self {
-        u64::MAX as u64
+        u64::MAX
     }
     fn index(&self) -> usize {
         *self as usize
@@ -304,6 +304,13 @@ impl<LeafData: DeviceCopy> CudaQbvh<LeafData> {
             free_list: self.free_list.as_device_ptr(),
             proxies: self.proxies.as_device_ptr(),
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<LeafData: IndexedData> Default for Qbvh<LeafData> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

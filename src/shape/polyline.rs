@@ -169,7 +169,7 @@ impl Polyline {
         let vertices = self.vertices();
         let indices = self.indices();
 
-        if indices.len() == 0 {
+        if indices.is_empty() {
             // Polyline is empty, return empty Vec
             Vec::new()
         } else {
@@ -182,7 +182,7 @@ impl Polyline {
             let mut component_indices: Vec<[u32; 2]> = Vec::new();
 
             // Iterate over indices, building polylines as we go
-            for (i, idx) in indices.into_iter().enumerate() {
+            for (i, idx) in indices.iter().enumerate() {
                 component_vertices.push(vertices[idx[0] as usize]);
 
                 if idx[1] != start_node {
@@ -192,8 +192,8 @@ impl Polyline {
                     // Start node reached: build polyline and start next component
                     component_indices.push([(i - start_i) as u32, 0]);
                     components.push(Polyline::new(
-                        component_vertices.drain(..).collect(),
-                        Some(component_indices.drain(..).collect()),
+                        std::mem::take(&mut component_vertices),
+                        Some(std::mem::take(&mut component_indices)),
                     ));
 
                     if i + 1 < indices.len() {

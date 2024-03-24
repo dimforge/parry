@@ -344,8 +344,7 @@ impl ConvexPolyhedron {
             v.num_adj_faces_or_edge = 0;
         }
 
-        for face_id in 0..faces.len() {
-            let face = &faces[face_id];
+        for (face_id, face) in faces.iter().enumerate() {
             let first_vid = face.first_vertex_or_edge;
             let last_vid = face.first_vertex_or_edge + face.num_vertices_or_edges;
 

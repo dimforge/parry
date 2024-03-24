@@ -27,7 +27,7 @@ struct SubDetector {
 }
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct HeightFieldShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<u32, SubDetector>,
@@ -37,12 +37,7 @@ pub struct HeightFieldShapeContactManifoldsWorkspace {
 
 impl HeightFieldShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
-        Self {
-            timestamp: false,
-            sub_detectors: HashMap::default(),
-            #[cfg(feature = "dim3")]
-            internal_edges: InternalEdgesFixer::default(),
-        }
+        Self::default()
     }
 }
 

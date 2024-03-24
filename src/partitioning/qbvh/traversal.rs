@@ -1,3 +1,5 @@
+#![allow(clippy::needless_range_loop)] // This tends to make the traversal code much more verbose that necessary.
+
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
 use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
@@ -91,14 +93,12 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                     let bitmask = mask.bitmask();
 
                     for ii in 0..SIMD_WIDTH {
-                        if (bitmask & (1 << ii)) != 0 {
-                            if !node.is_leaf() {
-                                // Internal node, visit the child.
-                                // Un fortunately, we have this check because invalid Aabbs
-                                // return a hit as well.
-                                if node.children[ii] as usize <= self.nodes.len() {
-                                    stack.push(node.children[ii]);
-                                }
+                        if (bitmask & (1 << ii)) != 0 && !node.is_leaf() {
+                            // Internal node, visit the child.
+                            // Un fortunately, we have this check because invalid Aabbs
+                            // return a hit as well.
+                            if node.children[ii] as usize <= self.nodes.len() {
+                                stack.push(node.children[ii]);
                             }
                         }
                     }
@@ -297,10 +297,10 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             }
 
                             for jj in 0..SIMD_WIDTH {
-                                if (bitmask & (1 << jj)) != 0 {
-                                    if node2.children[jj] as usize <= qbvh2.nodes.len() {
-                                        stack.push((entry.0, node2.children[jj]));
-                                    }
+                                if (bitmask & (1 << jj)) != 0
+                                    && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                {
+                                    stack.push((entry.0, node2.children[jj]));
                                 }
                             }
                         }
@@ -308,10 +308,9 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             for ii in 0..SIMD_WIDTH {
                                 let bitmask = mask[ii].bitmask();
 
-                                if bitmask != 0 {
-                                    if node1.children[ii] as usize <= qbvh1.nodes.len() {
-                                        stack.push((node1.children[ii], entry.1));
-                                    }
+                                if bitmask != 0 && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                {
+                                    stack.push((node1.children[ii], entry.1));
                                 }
                             }
                         }
@@ -320,12 +319,11 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                                 let bitmask = mask[ii].bitmask();
 
                                 for jj in 0..SIMD_WIDTH {
-                                    if (bitmask & (1 << jj)) != 0 {
-                                        if node1.children[ii] as usize <= qbvh1.nodes.len()
-                                            && node2.children[jj] as usize <= qbvh2.nodes.len()
-                                        {
-                                            stack.push((node1.children[ii], node2.children[jj]));
-                                        }
+                                    if (bitmask & (1 << jj)) != 0
+                                        && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                        && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                    {
+                                        stack.push((node1.children[ii], node2.children[jj]));
                                     }
                                 }
                             }
@@ -397,10 +395,10 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             }
 
                             for jj in 0..SIMD_WIDTH {
-                                if (bitmask & (1 << jj)) != 0 {
-                                    if node2.children[jj] as usize <= qbvh2.nodes.len() {
-                                        stack.push((entry.0, node2.children[jj]));
-                                    }
+                                if (bitmask & (1 << jj)) != 0
+                                    && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                {
+                                    stack.push((entry.0, node2.children[jj]));
                                 }
                             }
                         }
@@ -408,10 +406,9 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             for ii in 0..SIMD_WIDTH {
                                 let bitmask = mask[ii].bitmask();
 
-                                if bitmask != 0 {
-                                    if node1.children[ii] as usize <= qbvh1.nodes.len() {
-                                        stack.push((node1.children[ii], entry.1));
-                                    }
+                                if bitmask != 0 && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                {
+                                    stack.push((node1.children[ii], entry.1));
                                 }
                             }
                         }
@@ -420,12 +417,11 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                                 let bitmask = mask[ii].bitmask();
 
                                 for jj in 0..SIMD_WIDTH {
-                                    if (bitmask & (1 << jj)) != 0 {
-                                        if node1.children[ii] as usize <= qbvh1.nodes.len()
-                                            && node2.children[jj] as usize <= qbvh2.nodes.len()
-                                        {
-                                            stack.push((node1.children[ii], node2.children[jj]));
-                                        }
+                                    if (bitmask & (1 << jj)) != 0
+                                        && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                        && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                    {
+                                        stack.push((node1.children[ii], node2.children[jj]));
                                     }
                                 }
                             }

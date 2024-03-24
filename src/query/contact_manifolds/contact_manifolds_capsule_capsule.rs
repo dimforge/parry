@@ -171,7 +171,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
             dist,
         );
 
-        if manifold.points.len() != 0 {
+        if !manifold.points.is_empty() {
             manifold.points[0].copy_geometry_from(contact);
         } else {
             manifold.points.push(contact);

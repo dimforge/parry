@@ -27,7 +27,7 @@ impl<T> Eq for WeightedValue<T> {}
 impl<T> PartialOrd for WeightedValue<T> {
     #[inline]
     fn partial_cmp(&self, other: &WeightedValue<T>) -> Option<Ordering> {
-        self.cost.partial_cmp(&other.cost)
+        Some(self.cmp(other))
     }
 }
 

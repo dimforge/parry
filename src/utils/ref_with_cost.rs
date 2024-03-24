@@ -22,7 +22,7 @@ impl<'a, Real: PartialEq, T> Eq for RefWithCost<'a, Real, T> {}
 impl<'a, Real: PartialOrd, T> PartialOrd for RefWithCost<'a, Real, T> {
     #[inline]
     fn partial_cmp(&self, other: &RefWithCost<'a, Real, T>) -> Option<Ordering> {
-        self.cost.partial_cmp(&other.cost)
+        Some(self.cmp(other))
     }
 }
 

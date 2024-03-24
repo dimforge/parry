@@ -129,13 +129,13 @@ pub fn intersect_meshes(
 
     // Grab all the trinangles from the intersections.
     for idx12 in &mut new_indices12 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(idx12[k]).or_insert_with(|| {
-                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, idx12[k]);
+        for id12 in idx12 {
+            let new_id = *index_map.entry(*id12).or_insert_with(|| {
+                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, *id12);
                 new_vertices.push(vtx);
                 new_vertices.len() - 1
             });
-            idx12[k] = new_id as u32;
+            *id12 = new_id as u32;
         }
     }
 
@@ -188,7 +188,7 @@ fn extract_connected_components(
         for edge in edges {
             if let Some(twin) = topo1.half_edges.get(edge.twin as usize) {
                 if !deleted_faces1.contains(&twin.face) {
-                    let tri1 = mesh1.triangle(twin.face as u32);
+                    let tri1 = mesh1.triangle(twin.face);
 
                     if flip2
                         ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center()))
@@ -291,8 +291,8 @@ impl Triangulation {
             .try_inverse()
             .unwrap_or(na::Matrix2::identity());
 
-        for k in 0..3 {
-            ref_proj[k] = normalization * ref_proj[k];
+        for ref_proj in &mut ref_proj {
+            *ref_proj = normalization * *ref_proj;
         }
 
         let vtx_handles = [
@@ -322,26 +322,23 @@ impl Triangulation {
         let mut proj =
             self.normalization * Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]));
 
-        match orig_fid {
-            FeatureId::Edge(i) => {
-                let a = self.ref_proj[i as usize];
-                let b = self.ref_proj[(i as usize + 1) % 3];
-                let ab = b - a;
-                let ap = proj - a;
-                let param = ab.dot(&ap) / ab.norm_squared();
-                let shift = Vector2::new(ab.y, -ab.x);
+        if let FeatureId::Edge(i) = orig_fid {
+            let a = self.ref_proj[i as usize];
+            let b = self.ref_proj[(i as usize + 1) % 3];
+            let ab = b - a;
+            let ap = proj - a;
+            let param = ab.dot(&ap) / ab.norm_squared();
+            let shift = Vector2::new(ab.y, -ab.x);
 
-                // NOTE: if we have intersections exactly on the edge, we nudge
-                //       their projection slightly outside of the triangle. That
-                //       way, the triangle’s edge gets split automatically by
-                //       the triangulation (or, rather, it will be split when we
-                //       add the contsraint involving that point).
-                // NOTE: this is not ideal though, so we should find a way to simply
-                //       delete spurious triangles that are outside of the intersection
-                //       curve.
-                proj = a + ab * param + shift * EPS * 10.0;
-            }
-            _ => {}
+            // NOTE: if we have intersections exactly on the edge, we nudge
+            //       their projection slightly outside of the triangle. That
+            //       way, the triangle’s edge gets split automatically by
+            //       the triangulation (or, rather, it will be split when we
+            //       add the contsraint involving that point).
+            // NOTE: this is not ideal though, so we should find a way to simply
+            //       delete spurious triangles that are outside of the intersection
+            //       curve.
+            proj = a + ab * param + shift * EPS * 10.0;
         }
 
         spade::Point2::new(proj.x, proj.y)
@@ -581,7 +578,7 @@ fn extract_result(
                 let vid = fids_to_unified_index(fids);
                 let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
 
-                idx[k] = vid as u32;
+                idx[k] = vid;
                 tri[k] = vertex;
             }
 
@@ -611,7 +608,7 @@ fn extract_result(
                 let vid = fids_to_unified_index(fids);
                 let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
 
-                idx[k] = vid as u32;
+                idx[k] = vid;
                 tri[k] = vertex;
             }
 

@@ -22,6 +22,12 @@ pub struct TriMeshShapeContactManifoldsWorkspace {
     internal_edges: InternalEdgesFixer,
 }
 
+impl Default for TriMeshShapeContactManifoldsWorkspace {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TriMeshShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
         Self {

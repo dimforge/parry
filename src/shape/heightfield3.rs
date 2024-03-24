@@ -311,7 +311,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// An iterator through all the triangles of this heightfield.
-    pub fn triangles<'a>(&'a self) -> impl Iterator<Item = Triangle> + 'a {
+    pub fn triangles(&self) -> impl Iterator<Item = Triangle> + '_ {
         HeightFieldTriangles {
             heightfield: self,
             curr: (0, 0),
@@ -320,8 +320,8 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-    pub fn triangles_around_point<'a>(
-        &'a self,
+    pub fn triangles_around_point(
+        &self,
         point: &Point3<Real>,
     ) -> HeightFieldRadialTriangles<Storage> {
         let center = self.closest_cell_at_point(point);
@@ -369,9 +369,9 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             return (None, None);
         }
 
-        let p00 = ((i + 0) + (j + 0) * self.heights.nrows()) as u32;
-        let p10 = ((i + 1) + (j + 0) * self.heights.nrows()) as u32;
-        let p01 = ((i + 0) + (j + 1) * self.heights.nrows()) as u32;
+        let p00 = (i + j * self.heights.nrows()) as u32;
+        let p10 = ((i + 1) + j * self.heights.nrows()) as u32;
+        let p01 = (i + (j + 1) * self.heights.nrows()) as u32;
         let p11 = ((i + 1) + (j + 1) * self.heights.nrows()) as u32;
 
         if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
@@ -432,9 +432,9 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let x0 = -0.5 + cell_width * (j as Real);
         let x1 = -0.5 + cell_width * ((j + 1) as Real);
 
-        let y00 = self.heights.get(i + 0, j + 0);
-        let y10 = self.heights.get(i + 1, j + 0);
-        let y01 = self.heights.get(i + 0, j + 1);
+        let y00 = self.heights.get(i, j);
+        let y10 = self.heights.get(i + 1, j);
+        let y01 = self.heights.get(i, j + 1);
         let y11 = self.heights.get(i + 1, j + 1);
 
         let mut p00 = Point3::new(x0, y00, z0);
@@ -577,14 +577,10 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                     } else {
                         FeatureId::Vertex([ij, ij + 1 + nrows, ij + nrows][ivertex as usize] as u32)
                     }
+                } else if left {
+                    FeatureId::Vertex([ij, ij + 1, ij + nrows][ivertex as usize] as u32)
                 } else {
-                    if left {
-                        FeatureId::Vertex([ij, ij + 1, ij + nrows][ivertex as usize] as u32)
-                    } else {
-                        FeatureId::Vertex(
-                            [ij + 1, ij + 1 + nrows, ij + nrows][ivertex as usize] as u32,
-                        )
-                    }
+                    FeatureId::Vertex([ij + 1, ij + 1 + nrows, ij + nrows][ivertex as usize] as u32)
                 }
             }
             FeatureId::Edge(iedge) => {
@@ -618,22 +614,20 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                         //
                         FeatureId::Edge([idiag, iright, itop][iedge as usize] as u32)
                     }
+                } else if left {
+                    // Triangle:
+                    // ___
+                    // | /
+                    // |/
+                    //
+                    FeatureId::Edge([ileft, idiag, itop][iedge as usize] as u32)
                 } else {
-                    if left {
-                        // Triangle:
-                        // ___
-                        // | /
-                        // |/
-                        //
-                        FeatureId::Edge([ileft, idiag, itop][iedge as usize] as u32)
-                    } else {
-                        // Triangle:
-                        //
-                        //  /|
-                        // /_|
-                        //
-                        FeatureId::Edge([ibottom, iright, idiag][iedge as usize] as u32)
-                    }
+                    // Triangle:
+                    //
+                    //  /|
+                    // /_|
+                    //
+                    FeatureId::Edge([ibottom, iright, idiag][iedge as usize] as u32)
                 }
             }
             FeatureId::Face(iface) => {
@@ -702,9 +696,9 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                 let x0 = -0.5 + cell_width * (j as Real);
                 let x1 = x0 + cell_width;
 
-                let y00 = self.heights.get(i + 0, j + 0);
-                let y10 = self.heights.get(i + 1, j + 0);
-                let y01 = self.heights.get(i + 0, j + 1);
+                let y00 = self.heights.get(i, j);
+                let y10 = self.heights.get(i + 1, j);
+                let y01 = self.heights.get(i, j + 1);
                 let y11 = self.heights.get(i + 1, j + 1);
 
                 if (y00 > ref_maxs.y && y10 > ref_maxs.y && y01 > ref_maxs.y && y11 > ref_maxs.y)
@@ -736,7 +730,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                     };
 
                     let tid = self.triangle_id(i, j, true);
-                    f(tid as u32, &tri1);
+                    f(tid, &tri1);
                 }
 
                 if !status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED) {
@@ -746,7 +740,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                         Triangle::new(p10, p11, p01)
                     };
                     let tid = self.triangle_id(i, j, false);
-                    f(tid as u32, &tri2);
+                    f(tid, &tri2);
                 }
             }
         }

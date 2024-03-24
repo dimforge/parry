@@ -12,6 +12,6 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// Computes the local-space [`Aabb`] of this heightfield.
     #[inline]
     pub fn local_aabb(&self) -> Aabb {
-        self.root_aabb().clone()
+        *self.root_aabb()
     }
 }
