@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Modified
+
+- The `point_in_poly2d` now handles arbitrary (convex and non-convex) polygons. The previous implementation
+  that only supported convex polygons has been renamed `point_in_convex_poly2d`.
+
 ### Fixed
 
 - Fix a crash in `Qbvh::refit` that results from the QBVH tree becoming increasingly imbalanced.
