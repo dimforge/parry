@@ -176,52 +176,20 @@ impl Aabb {
         }
     }
 
+    /// Returns an AABB with the same center as `self` but with extents scaled by `scale`.
+    ///
+    /// # Parameters
+    /// - `scale`: the scaling factor. It can be non-uniform and/or negative. The AABB being
+    ///            symmetric wrt. its center, a negative scale value has the same effect as scaling
+    ///            by its absolute value.
     #[inline]
-    #[cfg(feature = "dim2")]
     pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
-        let center: Point<Real> = na::center(&self.mins, &self.maxs);
-
-        let translated_min = na::Translation2::from(center)
-            .inverse()
-            .transform_point(&self.mins);
-        let translated_max = na::Translation2::from(center)
-            .inverse()
-            .transform_point(&self.maxs);
-
-        let transformed_min = translated_min.coords.component_mul(scale);
-        let transformed_max = translated_max.coords.component_mul(scale);
-
-        let a = center + transformed_min;
-        let b = center + transformed_max;
-
-        Self {
-            mins: a.inf(&b).into(),
-            maxs: a.sup(&b).into(),
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "dim3")]
-    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
-        let center: Point<Real> = na::center(&self.mins, &self.maxs);
-
-        let translated_min = na::Translation3::from(center)
-            .inverse()
-            .transform_point(&self.mins);
-        let translated_max = na::Translation3::from(center)
-            .inverse()
-            .transform_point(&self.maxs);
-
-        let transformed_min = translated_min.coords.component_mul(scale);
-        let transformed_max = translated_max.coords.component_mul(scale);
-
-        let a = center + transformed_min;
-        let b = center + transformed_max;
-
-        Self {
-            mins: a.inf(&b).into(),
-            maxs: a.sup(&b).into(),
-        }
+        let center = self.center();
+        // Multiply the extents by the scale. Negative scaling might modify the half-extent
+        // sign, so we take the absolute value. The AABB being symmetric that absolute value
+        // is  valid.
+        let half_extents = self.half_extents().component_mul(scale).abs();
+        Self::from_half_extents(center, half_extents)
     }
 
     /// The smallest bounding sphere containing this `Aabb`.
