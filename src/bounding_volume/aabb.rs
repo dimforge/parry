@@ -183,6 +183,7 @@ impl Aabb {
     ///            symmetric wrt. its center, a negative scale value has the same effect as scaling
     ///            by its absolute value.
     #[inline]
+    #[must_use]
     pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
         let center = self.center();
         // Multiply the extents by the scale. Negative scaling might modify the half-extent
