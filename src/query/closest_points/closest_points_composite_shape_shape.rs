@@ -115,7 +115,7 @@ where
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         let pts = self.dispatcher.closest_points(
                             &part_pos1.inv_mul(self.pos12),
                             g1,

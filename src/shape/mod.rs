@@ -45,6 +45,7 @@ pub use self::heightfield3::*;
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
+pub use self::triangle_pseudo_normals::TrianglePseudoNormals;
 pub use self::trimesh::*;
 pub use self::trimesh_storage::TriMeshStorage;
 
@@ -112,4 +113,5 @@ mod feature_id;
 mod polygonal_feature2d;
 #[cfg(feature = "std")]
 mod shared_shape;
+mod triangle_pseudo_normals;
 mod trimesh_storage;

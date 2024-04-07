@@ -5,6 +5,7 @@ use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
 
+use crate::query::details::NormalConstraints;
 use crate::utils::DefaultStorage;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
@@ -278,9 +279,13 @@ impl Polyline {
 }
 
 impl SimdCompositeShape for Polyline {
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(
+        &self,
+        i: u32,
+        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let tri = self.segment(i);
-        f(None, &tri)
+        f(None, &tri, None)
     }
 
     fn qbvh(&self) -> &Qbvh<u32> {
@@ -290,6 +295,7 @@ impl SimdCompositeShape for Polyline {
 
 impl TypedSimdCompositeShape for Polyline {
     type PartShape = Segment;
+    type PartNormalConstraints = ();
     type PartId = u32;
     type QbvhStorage = DefaultStorage;
 
@@ -297,16 +303,24 @@ impl TypedSimdCompositeShape for Polyline {
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&Self::PartNormalConstraints>,
+        ),
     ) {
         let seg = self.segment(i);
-        f(None, &seg)
+        f(None, &seg, None)
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_untyped_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let seg = self.segment(i);
-        f(None, &seg)
+        f(None, &seg, None)
     }
 
     fn typed_qbvh(&self) -> &Qbvh<u32> {

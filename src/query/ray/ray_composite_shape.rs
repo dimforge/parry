@@ -146,7 +146,7 @@ where
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
                     self.shape
-                        .map_typed_part_at(part_id, |part_pos, part_shape| {
+                        .map_typed_part_at(part_id, |part_pos, part_shape, _| {
                             let toi = if let Some(part_pos) = part_pos {
                                 part_shape.cast_ray(part_pos, self.ray, self.max_toi, self.solid)
                             } else {
@@ -225,7 +225,7 @@ where
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     self.shape
-                        .map_typed_part_at(*data[ii].unwrap(), |part_pos, part_shape| {
+                        .map_typed_part_at(*data[ii].unwrap(), |part_pos, part_shape, _| {
                             let result = if let Some(part_pos) = part_pos {
                                 part_shape.cast_ray_and_get_normal(
                                     part_pos,

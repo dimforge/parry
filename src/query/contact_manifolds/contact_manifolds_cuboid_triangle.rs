@@ -1,6 +1,7 @@
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
 use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
 use crate::query::{sat, ContactManifold};
 use crate::shape::PolygonalFeature;
 use crate::shape::{Cuboid, Shape, Triangle};
@@ -10,6 +11,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
+    normal_constraints1: Option<&dyn NormalConstraints>,
+    normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
 ) where
@@ -21,6 +24,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
             &pos12.inverse(),
             cuboid1,
             triangle2,
+            normal_constraints1,
+            normal_constraints2,
             prediction,
             manifold,
             false,
@@ -31,6 +36,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
             pos12,
             cuboid2,
             triangle1,
+            normal_constraints2,
+            normal_constraints1,
             prediction,
             manifold,
             true,
@@ -44,6 +51,8 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     pos21: &Isometry<Real>,
     cuboid1: &'a Cuboid,
     triangle2: &'a Triangle,
+    normal_constraints1: Option<&dyn NormalConstraints>,
+    normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
     flipped: bool,
@@ -94,26 +103,36 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
      * and get the polygons to clip.
      *
      */
-    let mut best_sep = sep1;
+    let mut normal1 = sep1.1;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
-        best_sep = (sep2.0, pos12 * -sep2.1);
+        normal1 = pos12 * -sep2.1;
     } else if sep3.0 > sep1.0 {
-        best_sep = sep3;
+        normal1 = sep3.1;
+    }
+
+    // Apply any normal constraint to the separating axis.
+    let mut normal2 = pos21 * -normal1;
+    if !(normal_constraints1, normal_constraints2).project_local_normals(
+        pos12,
+        &mut normal1,
+        &mut normal2,
+    ) {
+        manifold.clear();
+        return; // THe contact got completely discarded by normal correction.
     }
 
     let feature1;
     let feature2;
-    let normal2 = pos21 * -best_sep.1;
 
     #[cfg(feature = "dim2")]
     {
-        feature1 = cuboid1.support_face(best_sep.1);
+        feature1 = cuboid1.support_face(normal1);
         feature2 = triangle2.support_face(normal2);
     }
     #[cfg(feature = "dim3")]
     {
-        feature1 = cuboid1.support_face(best_sep.1);
+        feature1 = cuboid1.support_face(normal1);
         feature2 = PolygonalFeature::from(*triangle2);
     }
 
@@ -123,22 +142,14 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     manifold.clear();
 
     PolygonalFeature::contacts(
-        pos12,
-        pos21,
-        &best_sep.1,
-        &normal2,
-        &feature1,
-        &feature2,
-        prediction,
-        manifold,
-        flipped,
+        pos12, pos21, &normal1, &normal2, &feature1, &feature2, manifold, flipped,
     );
 
     if flipped {
         manifold.local_n1 = normal2;
-        manifold.local_n2 = best_sep.1;
+        manifold.local_n2 = normal1;
     } else {
-        manifold.local_n1 = best_sep.1;
+        manifold.local_n1 = normal1;
         manifold.local_n2 = normal2;
     }
 

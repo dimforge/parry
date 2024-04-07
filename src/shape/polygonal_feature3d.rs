@@ -80,17 +80,14 @@ impl PolygonalFeature {
         _sep_axis2: &Vector<Real>,
         feature1: &Self,
         feature2: &Self,
-        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
         match (feature1.num_vertices, feature2.num_vertices) {
-            (2, 2) => Self::contacts_edge_edge(
-                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
-            ),
-            _ => Self::contacts_face_face(
-                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
-            ),
+            (2, 2) => {
+                Self::contacts_edge_edge(pos12, feature1, sep_axis1, feature2, manifold, flipped)
+            }
+            _ => Self::contacts_face_face(pos12, feature1, sep_axis1, feature2, manifold, flipped),
         }
     }
 
@@ -100,7 +97,6 @@ impl PolygonalFeature {
         face1: &PolygonalFeature,
         sep_axis1: &Vector<Real>,
         face2: &PolygonalFeature,
-        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -160,16 +156,14 @@ impl PolygonalFeature {
                 let local_p2_1 = edge2.0 * bcoords2[0] + edge2.1.coords * bcoords2[1];
                 let dist = (local_p2_1 - local_p1).dot(sep_axis1);
 
-                if dist <= prediction {
-                    manifold.points.push(TrackedContact::flipped(
-                        local_p1,
-                        pos12.inverse_transform_point(&local_p2_1),
-                        face1.eids[0],
-                        face2.eids[0],
-                        dist,
-                        flipped,
-                    ));
-                }
+                manifold.points.push(TrackedContact::flipped(
+                    local_p1,
+                    pos12.inverse_transform_point(&local_p2_1),
+                    face1.eids[0],
+                    face2.eids[0],
+                    dist,
+                    flipped,
+                ));
 
                 return;
             }
@@ -216,7 +210,6 @@ impl PolygonalFeature {
         face1: &PolygonalFeature,
         sep_axis1: &Vector<Real>,
         face2: &PolygonalFeature,
-        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -302,16 +295,14 @@ impl PolygonalFeature {
                     let local_p1 = face1.vertices[i];
                     let local_p2_1 = face1.vertices[i] + dist * sep_axis1;
 
-                    if dist <= prediction {
-                        manifold.points.push(TrackedContact::flipped(
-                            local_p1,
-                            pos12.inverse_transform_point(&local_p2_1),
-                            face1.vids[i],
-                            face2.fid,
-                            dist,
-                            flipped,
-                        ));
-                    }
+                    manifold.points.push(TrackedContact::flipped(
+                        local_p1,
+                        pos12.inverse_transform_point(&local_p2_1),
+                        face1.vids[i],
+                        face2.fid,
+                        dist,
+                        flipped,
+                    ));
                 }
             }
         }
@@ -346,17 +337,14 @@ impl PolygonalFeature {
                     let local_p2_1 = vertices2_1[i];
                     let local_p1 = vertices2_1[i] - dist * sep_axis1;
 
-                    if true {
-                        // dist <= prediction {
-                        manifold.points.push(TrackedContact::flipped(
-                            local_p1,
-                            pos12.inverse_transform_point(&local_p2_1),
-                            face1.fid,
-                            face2.vids[i],
-                            dist,
-                            flipped,
-                        ));
-                    }
+                    manifold.points.push(TrackedContact::flipped(
+                        local_p1,
+                        pos12.inverse_transform_point(&local_p2_1),
+                        face1.fid,
+                        face2.vids[i],
+                        dist,
+                        flipped,
+                    ));
                 }
             }
         }
@@ -386,16 +374,14 @@ impl PolygonalFeature {
                         let local_p2_1 = edge2.0 * (1.0 - bcoords.1) + edge2.1.coords * bcoords.1;
                         let dist = (local_p2_1 - local_p1).dot(sep_axis1);
 
-                        if dist <= prediction {
-                            manifold.points.push(TrackedContact::flipped(
-                                local_p1,
-                                pos12.inverse_transform_point(&local_p2_1),
-                                face1.eids[i],
-                                face2.eids[j],
-                                dist,
-                                flipped,
-                            ));
-                        }
+                        manifold.points.push(TrackedContact::flipped(
+                            local_p1,
+                            pos12.inverse_transform_point(&local_p2_1),
+                            face1.eids[i],
+                            face2.eids[j],
+                            dist,
+                            flipped,
+                        ));
                     }
                 }
             }

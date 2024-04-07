@@ -3,6 +3,8 @@ use crate::math::{Isometry, Point, Real, Vector, DIM};
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
 use crate::shape::DeserializableTypedShape;
+#[cfg(feature = "dim3")]
+use crate::shape::HeightFieldFlags;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
     TriMesh, TriMeshFlags, Triangle, TypedShape,
@@ -355,18 +357,29 @@ impl SharedShape {
         })
     }
 
-    /// Initializes an heightfield shape defined by its set of height and a scale
+    /// Initializes a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
     pub fn heightfield(heights: na::DVector<Real>, scale: Vector<Real>) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
     }
 
-    /// Initializes an heightfield shape on the x-z plane defined by its set of height and a scale
+    /// Initializes a heightfield shape on the x-z plane defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim3")]
     pub fn heightfield(heights: na::DMatrix<Real>, scale: Vector<Real>) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
+    }
+
+    /// Initializes a heightfield shape on the x-z plane defined by its set of height, a scale
+    /// factor along each coordinate axis, and [`HeightFieldFlags`].
+    #[cfg(feature = "dim3")]
+    pub fn heightfield_with_flags(
+        heights: na::DMatrix<Real>,
+        scale: Vector<Real>,
+        flags: HeightFieldFlags,
+    ) -> Self {
+        SharedShape(Arc::new(HeightField::with_flags(heights, scale, flags)))
     }
 }
 

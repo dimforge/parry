@@ -99,7 +99,7 @@ where
                 if (bitmask & (1 << ii)) != 0 {
                     let Some(data) = data else { continue };
                     let part_id = *data;
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         found_intersection = self.dispatcher.intersection_test(
                             &part_pos1.inv_mul(self.pos12),
                             g1,
@@ -185,7 +185,7 @@ where
             for (ii, data) in data.into_iter().enumerate() {
                 if (bitmask & (1 << ii)) != 0 && data.is_some() {
                     let part_id = *data.unwrap();
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         found_intersection = self.dispatcher.intersection_test(
                             &part_pos1.inv_mul(self.pos12),
                             g1,

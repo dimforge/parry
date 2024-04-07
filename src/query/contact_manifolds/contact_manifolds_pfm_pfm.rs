@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Real};
+use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
@@ -13,6 +14,8 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
+    normal_constraints1: Option<&dyn NormalConstraints>,
+    normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
 ) where
@@ -27,8 +30,10 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
             pos12,
             pfm1,
             border_radius1,
+            normal_constraints1,
             pfm2,
             border_radius2,
+            normal_constraints2,
             prediction,
             manifold,
         );
@@ -40,8 +45,10 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     pos12: &Isometry<Real>,
     pfm1: &'a S1,
     border_radius1: Real,
+    normal_constraints1: Option<&dyn NormalConstraints>,
     pfm2: &'a S2,
     border_radius2: Real,
+    normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
 ) where
@@ -73,8 +80,18 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
     match contact {
         GJKResult::ClosestPoints(p1, p2_1, dir) => {
-            let local_n1 = dir;
-            let local_n2 = pos12.inverse_transform_unit_vector(&-dir);
+            let mut local_n1 = dir;
+            let mut local_n2 = pos12.inverse_transform_unit_vector(&-dir);
+
+            if !(normal_constraints1, normal_constraints2).project_local_normals(
+                pos12,
+                local_n1.as_mut_unchecked(),
+                local_n2.as_mut_unchecked(),
+            ) {
+                // The contact got completely discarded by the normal correction.
+                return;
+            }
+
             let mut feature1 = PolygonalFeature::default();
             let mut feature2 = PolygonalFeature::default();
             pfm1.local_support_feature(&local_n1, &mut feature1);
@@ -87,23 +104,20 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 &local_n2,
                 &feature1,
                 &feature2,
-                total_prediction,
                 manifold,
                 false,
             );
 
-            if (cfg!(feature = "dim2") && manifold.points.is_empty())
-                // TODO: this test is a workaround until we figure-out a way to
-                //       determine the feature ids for the GJK/EPA contact.
-                || pfm1.is_convex_polyhedron()
-                || pfm2.is_convex_polyhedron()
+            if (cfg!(feature = "dim3") || cfg!(feature = "dim2") && manifold.points.is_empty())
+                // If normal constraints changed the GJK direction, it is no longer valid so we cant use it for this additional contact.
+                && local_n1 == dir
             {
                 let contact = TrackedContact::new(
                     p1,
                     pos12.inverse_transform_point(&p2_1),
                     PackedFeatureId::UNKNOWN, // TODO: We don't know what features are involved.
                     PackedFeatureId::UNKNOWN,
-                    (p2_1 - p1).dot(&dir),
+                    (p2_1 - p1).dot(&local_n1),
                 );
                 manifold.points.push(contact);
             }

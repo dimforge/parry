@@ -46,7 +46,7 @@ impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
             for (ii, data) in data.into_iter().enumerate() {
                 if (bitmask & (1 << ii)) != 0 {
                     let Some(data) = data else { continue };
-                    self.shape.map_typed_part_at(*data, |part_pos, obj| {
+                    self.shape.map_typed_part_at(*data, |part_pos, obj, _| {
                         if obj.contains_local_point(&part_pos.inverse_transform_point(self.point)) {
                             self.found = true;
                         }

@@ -255,7 +255,7 @@ macro_rules! gen_visitor(
                         if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                             let mut is_inside = false;
                             let subshape_id = *data[ii].unwrap();
-                            self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape| {
+                            self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape, _| {
                                 let (proj $(, $extra_info)*) = if let Some(part_pos) = part_pos {
                                     part_shape.$project_point(
                                         part_pos,
