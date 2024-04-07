@@ -55,20 +55,19 @@ impl PolygonalFeature {
         sep_axis2: &Vector<Real>,
         feature1: &Self,
         feature2: &Self,
-        prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
         match (feature1.num_vertices == 2, feature2.num_vertices == 2) {
-            (true, true) => Self::face_face_contacts(
-                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
-            ),
-            (true, false) => Self::face_vertex_contacts(
-                pos12, feature1, sep_axis1, feature2, prediction, manifold, flipped,
-            ),
-            (false, true) => Self::face_vertex_contacts(
-                pos21, feature2, sep_axis2, feature1, prediction, manifold, !flipped,
-            ),
+            (true, true) => {
+                Self::face_face_contacts(pos12, feature1, sep_axis1, feature2, manifold, flipped)
+            }
+            (true, false) => {
+                Self::face_vertex_contacts(pos12, feature1, sep_axis1, feature2, manifold, flipped)
+            }
+            (false, true) => {
+                Self::face_vertex_contacts(pos21, feature2, sep_axis2, feature1, manifold, !flipped)
+            }
             (false, false) => unimplemented!(),
         }
     }
@@ -82,7 +81,6 @@ impl PolygonalFeature {
         face1: &Self,
         sep_axis1: &Vector<Real>,
         vertex2: &Self,
-        _prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -113,7 +111,6 @@ impl PolygonalFeature {
         face1: &Self,
         normal1: &Vector<Real>,
         face2: &Self,
-        _prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
     ) {
@@ -126,32 +123,26 @@ impl PolygonalFeature {
             let fids2 = [face2.vids[0], face2.fid, face2.vids[1]];
 
             let dist = (clip_a.1 - clip_a.0).dot(normal1);
-            if true {
-                // dist < prediction {
-                let contact = TrackedContact::flipped(
-                    clip_a.0,
-                    pos12.inverse_transform_point(&clip_a.1),
-                    fids1[clip_a.2],
-                    fids2[clip_a.3],
-                    dist,
-                    flipped,
-                );
-                manifold.points.push(contact);
-            }
+            let contact = TrackedContact::flipped(
+                clip_a.0,
+                pos12.inverse_transform_point(&clip_a.1),
+                fids1[clip_a.2],
+                fids2[clip_a.3],
+                dist,
+                flipped,
+            );
+            manifold.points.push(contact);
 
             let dist = (clip_b.1 - clip_b.0).dot(normal1);
-            if true {
-                // dist < prediction {
-                let contact = TrackedContact::flipped(
-                    clip_b.0,
-                    pos12.inverse_transform_point(&clip_b.1),
-                    fids1[clip_b.2],
-                    fids2[clip_b.3],
-                    dist,
-                    flipped,
-                );
-                manifold.points.push(contact);
-            }
+            let contact = TrackedContact::flipped(
+                clip_b.0,
+                pos12.inverse_transform_point(&clip_b.1),
+                fids1[clip_b.2],
+                fids2[clip_b.3],
+                dist,
+                flipped,
+            );
+            manifold.points.push(contact);
         }
     }
 }

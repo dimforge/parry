@@ -84,59 +84,66 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     let mut old_manifolds = std::mem::take(manifolds);
 
     let mut leaf1_fn = |leaf1: &u32| {
-        composite1.map_part_at(*leaf1, &mut |part_pos1, part_shape1| {
-            let sub_detector = match workspace.sub_detectors.entry(*leaf1) {
-                Entry::Occupied(entry) => {
-                    let sub_detector = entry.into_mut();
-                    let manifold = old_manifolds[sub_detector.manifold_id].take();
-                    sub_detector.manifold_id = manifolds.len();
-                    sub_detector.timestamp = new_timestamp;
-                    manifolds.push(manifold);
-                    sub_detector
+        composite1.map_part_at(
+            *leaf1,
+            &mut |part_pos1, part_shape1, normal_constraints1| {
+                let sub_detector = match workspace.sub_detectors.entry(*leaf1) {
+                    Entry::Occupied(entry) => {
+                        let sub_detector = entry.into_mut();
+                        let manifold = old_manifolds[sub_detector.manifold_id].take();
+                        sub_detector.manifold_id = manifolds.len();
+                        sub_detector.timestamp = new_timestamp;
+                        manifolds.push(manifold);
+                        sub_detector
+                    }
+                    Entry::Vacant(entry) => {
+                        let sub_detector = SubDetector {
+                            manifold_id: manifolds.len(),
+                            timestamp: new_timestamp,
+                        };
+
+                        let mut manifold = ContactManifold::new();
+
+                        if flipped {
+                            manifold.subshape1 = 0;
+                            manifold.subshape2 = *leaf1;
+                            manifold.subshape_pos2 = part_pos1.copied();
+                        } else {
+                            manifold.subshape1 = *leaf1;
+                            manifold.subshape2 = 0;
+                            manifold.subshape_pos1 = part_pos1.copied();
+                        };
+
+                        manifolds.push(manifold);
+                        entry.insert(sub_detector)
+                    }
+                };
+
+                let manifold = &mut manifolds[sub_detector.manifold_id];
+
+                if flipped {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos1.prepend_to(&pos21),
+                        shape2,
+                        part_shape1,
+                        None,
+                        normal_constraints1,
+                        prediction,
+                        manifold,
+                    );
+                } else {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos1.inv_mul(&pos12),
+                        part_shape1,
+                        shape2,
+                        normal_constraints1,
+                        None,
+                        prediction,
+                        manifold,
+                    );
                 }
-                Entry::Vacant(entry) => {
-                    let sub_detector = SubDetector {
-                        manifold_id: manifolds.len(),
-                        timestamp: new_timestamp,
-                    };
-
-                    let mut manifold = ContactManifold::new();
-
-                    if flipped {
-                        manifold.subshape1 = 0;
-                        manifold.subshape2 = *leaf1;
-                        manifold.subshape_pos2 = part_pos1.copied();
-                    } else {
-                        manifold.subshape1 = *leaf1;
-                        manifold.subshape2 = 0;
-                        manifold.subshape_pos1 = part_pos1.copied();
-                    };
-
-                    manifolds.push(manifold);
-                    entry.insert(sub_detector)
-                }
-            };
-
-            let manifold = &mut manifolds[sub_detector.manifold_id];
-
-            if flipped {
-                let _ = dispatcher.contact_manifold_convex_convex(
-                    &part_pos1.prepend_to(&pos21),
-                    shape2,
-                    part_shape1,
-                    prediction,
-                    manifold,
-                );
-            } else {
-                let _ = dispatcher.contact_manifold_convex_convex(
-                    &part_pos1.inv_mul(&pos12),
-                    part_shape1,
-                    shape2,
-                    prediction,
-                    manifold,
-                );
-            }
-        });
+            },
+        );
 
         true
     };

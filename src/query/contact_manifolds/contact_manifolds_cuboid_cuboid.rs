@@ -95,7 +95,6 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
         &local_n2,
         &feature1,
         &feature2,
-        prediction,
         manifold,
         false,
     );

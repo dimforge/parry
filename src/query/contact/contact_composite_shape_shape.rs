@@ -22,7 +22,7 @@ where
     let mut res = None::<Contact>;
 
     let mut leaf_callback = |i: &_| {
-        g1.map_part_at(*i, &mut |part_pos1, part1| {
+        g1.map_part_at(*i, &mut |part_pos1, part1, _| {
             if let Ok(Some(mut c)) =
                 dispatcher.contact(&part_pos1.inv_mul(pos12), part1, g2, prediction)
             {

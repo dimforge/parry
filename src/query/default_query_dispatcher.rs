@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::query::contact_manifolds::NormalConstraints;
 use crate::query::{
     self, details::NonlinearTOIMode, ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher,
     Unsupported, TOI,
@@ -525,6 +526,8 @@ where
                         pos12,
                         shape1,
                         shape2,
+                        None,
+                        None,
                         prediction,
                         &mut manifolds[0],
                     );
@@ -540,6 +543,8 @@ where
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> Result<(), Unsupported> {
@@ -563,12 +568,12 @@ where
                 contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold)
             }
             (_, ShapeType::Ball) | (ShapeType::Ball, _) => {
-                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, prediction, manifold)
+                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold)
             }
             // (ShapeType::Capsule, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Capsule) =>
             //     contact_manifold_cuboid_capsule_shapes(pos12, shape1, shape2, prediction, manifold),
             (ShapeType::Triangle, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Triangle) => {
-                contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, prediction, manifold)
+                contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2,  prediction, manifold)
             }
             (ShapeType::HalfSpace, _) => {
                 if let Some((pfm2, border_radius2)) = shape2.as_polygonal_feature_map() {
@@ -606,7 +611,7 @@ where
                     shape2.as_polygonal_feature_map(),
                 ) {
                     contact_manifold_pfm_pfm(
-                        pos12, pfm1.0, pfm1.1, pfm2.0, pfm2.1, prediction, manifold,
+                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold,
                     )
                 } else {
                     return Err(Unsupported);

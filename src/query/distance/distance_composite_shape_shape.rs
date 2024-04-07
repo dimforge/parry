@@ -103,7 +103,7 @@ where
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
                     let mut dist = Ok(0.0);
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         dist =
                             self.dispatcher
                                 .distance(&part_pos1.inv_mul(self.pos12), g1, self.g2);

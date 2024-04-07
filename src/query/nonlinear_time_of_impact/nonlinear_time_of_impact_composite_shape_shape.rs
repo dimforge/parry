@@ -155,7 +155,7 @@ where
                 if let Some(data) = data {
                     if toi.toi < best && data[ii].is_some() {
                         let part_id = *data[ii].unwrap();
-                        self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                        self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                             let toi = if let Some(part_pos1) = part_pos1 {
                                 self.dispatcher
                                     .nonlinear_time_of_impact(

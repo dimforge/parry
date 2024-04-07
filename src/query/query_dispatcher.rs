@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
+use crate::query::contact_manifolds::NormalConstraints;
 #[cfg(feature = "std")]
 use crate::query::{contact_manifolds::ContactManifoldsWorkspace, ContactManifold};
 use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, Unsupported, TOI};
@@ -30,6 +31,8 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> Result<(), Unsupported>;
@@ -222,6 +225,8 @@ where
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> ());

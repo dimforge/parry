@@ -10,9 +10,9 @@ use {crate::utils::CudaArray2, cust::error::CudaResult};
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
-use crate::shape::{FeatureId, Triangle};
+use crate::shape::{FeatureId, Triangle, TrianglePseudoNormals};
 use crate::utils::Array2;
-use na::Point3;
+use na::{Point3, Unit};
 
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
@@ -36,6 +36,28 @@ bitflags! {
         const RIGHT_TRIANGLE_REMOVED = 0b00000100;
         /// If this bit is set, both triangles of the concerned heightfield cell are removed.
         const CELL_REMOVED = Self::LEFT_TRIANGLE_REMOVED.bits | Self::RIGHT_TRIANGLE_REMOVED.bits;
+    }
+}
+
+bitflags::bitflags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    #[cfg_attr(
+        feature = "rkyv",
+        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+        archive(as = "Self"),
+    )]
+    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
+    #[repr(C)] // Needed for Cuda.
+    #[derive(Default)]
+    /// The status of the cell of an heightfield.
+    pub struct HeightFieldFlags: u8 {
+        /// If set, a special treatment will be applied to contact manifold calculation to eliminate
+        /// or fix contacts normals that could lead to incorrect bumps in physics simulation (especially
+        /// on flat surfaces).
+        ///
+        /// This is achieved by taking into account adjacent triangle normals when computing contact
+        /// points for a given triangle.
+        const FIX_INTERNAL_EDGES = 1 << 0;
     }
 }
 
@@ -81,6 +103,7 @@ pub struct GenericHeightField<Storage: HeightFieldStorage> {
     scale: Vector<Real>,
     aabb: Aabb,
     num_triangles: usize,
+    flags: HeightFieldFlags,
 }
 
 impl<Storage> Clone for GenericHeightField<Storage>
@@ -96,6 +119,7 @@ where
             scale: self.scale,
             aabb: self.aabb,
             num_triangles: self.num_triangles,
+            flags: self.flags,
         }
     }
 }
@@ -131,8 +155,17 @@ pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
 #[cfg(feature = "std")]
 impl HeightField {
-    /// Initializes a new heightfield with the given heights and a scaling factor.
+    /// Initializes a new heightfield with the given heights, scaling factor, and flags.
     pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {
+        Self::with_flags(heights, scale, HeightFieldFlags::empty())
+    }
+
+    /// Initializes a new heightfield with the given heights and a scaling factor.
+    pub fn with_flags(
+        heights: DMatrix<Real>,
+        scale: Vector<Real>,
+        flags: HeightFieldFlags,
+    ) -> Self {
         assert!(
             heights.nrows() > 1 && heights.ncols() > 1,
             "A heightfield heights must have at least 2 rows and columns."
@@ -157,6 +190,7 @@ impl HeightField {
             aabb,
             num_triangles,
             status,
+            flags,
         }
     }
 
@@ -169,6 +203,7 @@ impl HeightField {
             aabb: self.aabb,
             num_triangles: self.num_triangles,
             scale: self.scale,
+            oriented: self.oriented,
         })
     }
 }
@@ -334,7 +369,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         }
     }
 
-    /// Gets the the vertices of the triangle identified by `id`.
+    /// Gets the vertices of the triangle identified by `id`.
     pub fn triangle_at_id(&self, id: u32) -> Option<Triangle> {
         let (i, j, left) = self.split_triangle_id(id);
         if left {
@@ -476,6 +511,105 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             };
 
             (tri1, tri2)
+        }
+    }
+
+    /// Computes the pseudo-normals of the triangle identified by the given id.
+    ///
+    /// Returns `None` if the heightfield’s [`HeightfieldFlags::FIX_INTERNAL_EDGES`] isn’t set, or
+    /// if the triangle doesn’t exist due to it being removed by its status flag
+    /// (`HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED` or
+    /// `HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED`).
+    pub fn triangle_normal_constraints(&self, id: u32) -> Option<TrianglePseudoNormals> {
+        if self.flags.contains(HeightFieldFlags::FIX_INTERNAL_EDGES) {
+            let (i, j, left) = self.split_triangle_id(id);
+            let status = self.status.get(i, j);
+
+            let (tri_left, tri_right) = self.triangles_at(i, j);
+            let tri_normal = if left {
+                *tri_left?.normal()?
+            } else {
+                *tri_right?.normal()?
+            };
+
+            // TODO: we only compute bivectors where v is a specific direction
+            //       (+/-X, +/-Z, or a combination of both). So this bivector
+            //       calculation could be simplified/optimized quite a bit.
+            // Computes the pseudo-normal of an edge where the adjacent triangle is missing.
+            let bivector = |v: Vector<Real>| tri_normal.cross(&v).cross(&tri_normal).normalize();
+            // Pseudo-normal computed from an adjacent triangle’s normal and the current triangle’s normal.
+            let adj_pseudo_normal = |adj: Option<Triangle>| {
+                adj.map(|adj| adj.normal().map(|n| *n).unwrap_or(tri_normal))
+            };
+
+            let diag_dir = if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
+                Vector::new(-1.0, 0.0, 1.0)
+            } else {
+                Vector::new(1.0, 0.0, 1.0)
+            };
+
+            let (left_pseudo_normal, right_pseudo_normal) = if left {
+                let adj_left = adj_pseudo_normal(self.triangles_at(i.overflowing_sub(1).0, j).1)
+                    .unwrap_or_else(|| bivector(-Vector::z()));
+                let adj_right = adj_pseudo_normal(tri_right).unwrap_or_else(|| bivector(diag_dir));
+                (adj_left, adj_right)
+            } else {
+                let adj_left = adj_pseudo_normal(tri_left).unwrap_or_else(|| bivector(-diag_dir));
+                let adj_right = adj_pseudo_normal(self.triangles_at(i + 1, j).0)
+                    .unwrap_or_else(|| bivector(Vector::z()));
+                (adj_left, adj_right)
+            };
+
+            // The third neighbor depends on the combination of zigzag scheme
+            // and right/left position.
+            let top_or_bottom_pseudo_normal = if left
+                != status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION)
+            {
+                // The neighbor is below.
+                let ((bot_left, bot_right), bot_status) = if j > 0 {
+                    (self.triangles_at(i, j - 1), self.status.get(i, j - 1))
+                } else {
+                    ((None, None), HeightFieldCellStatus::empty())
+                };
+
+                let bot_tri = if bot_status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
+                    bot_left
+                } else {
+                    bot_right
+                };
+
+                adj_pseudo_normal(bot_tri).unwrap_or_else(|| bivector(-Vector::x()))
+            } else {
+                // The neighbor is above.
+                let ((top_left, top_right), top_status) = if j < self.heights.ncols() - 2 {
+                    (self.triangles_at(i, j + 1), self.status.get(i, j + 1))
+                } else {
+                    ((None, None), HeightFieldCellStatus::empty())
+                };
+
+                let top_tri = if top_status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
+                    top_right
+                } else {
+                    top_left
+                };
+
+                adj_pseudo_normal(top_tri).unwrap_or_else(|| bivector(Vector::x()))
+            };
+
+            // NOTE: the normalization can only succeed due to the heightfield’s definition.
+            let pseudo_normal1 = Unit::new_normalize((tri_normal + left_pseudo_normal) / 2.0);
+            let pseudo_normal2 = Unit::new_normalize((tri_normal + right_pseudo_normal) / 2.0);
+            let pseudo_normal3 =
+                Unit::new_normalize((tri_normal + top_or_bottom_pseudo_normal) / 2.0);
+
+            Some(TrianglePseudoNormals {
+                face: Unit::new_unchecked(tri_normal), // No need to re-normalize.
+                // TODO: the normals are given in no particular order. So they are **not**
+                //       guaranteed to be provided in the same order as the triangle’s edge.
+                edges: [pseudo_normal1, pseudo_normal2, pseudo_normal3],
+            })
+        } else {
+            None
         }
     }
 

@@ -3,12 +3,12 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::QbvhStorage;
 use crate::partitioning::{GenericQbvh, Qbvh};
 use crate::shape::trimesh_storage::TriMeshStorage;
-use crate::shape::{FeatureId, Shape, Triangle, TypedSimdCompositeShape};
+use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
 use std::fmt;
 
 use crate::utils::{Array1, DefaultStorage, HashablePartialEq};
 #[cfg(feature = "dim3")]
-use {crate::shape::Cuboid, crate::shape::HeightFieldStorage, crate::utils::SortedPair};
+use {crate::shape::Cuboid, crate::shape::HeightFieldStorage, crate::utils::SortedPair, na::Unit};
 
 #[cfg(feature = "std")]
 use {
@@ -25,6 +25,7 @@ use crate::utils::{CudaStorage, CudaStoragePtr};
 #[cfg(all(feature = "std", feature = "cuda"))]
 use {crate::utils::CudaArray1, cust::error::CudaResult};
 
+use crate::query::details::NormalConstraints;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
@@ -276,38 +277,46 @@ bitflags::bitflags! {
     #[repr(C)] // Needed for Cuda.
     #[derive(Default)]
     /// The status of the cell of an heightfield.
-    pub struct TriMeshFlags: u8 {
+    pub struct TriMeshFlags: u16 {
         /// If set, the half-edge topology of the trimesh will be computed if possible.
-        const HALF_EDGE_TOPOLOGY = 0b0000_0001;
+        const HALF_EDGE_TOPOLOGY = 1;
         /// If set, the half-edge topology and connected components of the trimesh will be computed if possible.
         ///
         /// Because of the way it is currently implemented, connected components can only be computed on
         /// a mesh where the half-edge topology computation succeeds. It will no longer be the case in the
         /// future once we decouple the computations.
-        const CONNECTED_COMPONENTS = 0b0000_0010;
+        const CONNECTED_COMPONENTS = 1 << 1;
         /// If set, any triangle that results in a failing half-hedge topology computation will be deleted.
-        const DELETE_BAD_TOPOLOGY_TRIANGLES = 0b0000_0100;
+        const DELETE_BAD_TOPOLOGY_TRIANGLES = 1 << 2;
         /// If set, the trimesh will be assumed to be oriented (with outward normals).
         ///
         /// The pseudo-normals of its vertices and edges will be computed.
-        const ORIENTED = 0b0000_1000;
+        const ORIENTED = 1 << 3;
         /// If set, the duplicate vertices of the trimesh will be merged.
         ///
         /// Two vertices with the exact same coordinates will share the same entry on the
         /// vertex buffer and the index buffer is adjusted accordingly.
-        const MERGE_DUPLICATE_VERTICES = 0b0001_0000;
+        const MERGE_DUPLICATE_VERTICES = 1 << 4;
         /// If set, the triangles sharing two vertices with identical index values will be removed.
         ///
         /// Because of the way it is currently implemented, this methods implies that duplicate
         /// vertices will be merged. It will no longer be the case in the future once we decouple
         /// the computations.
-        const DELETE_DEGENERATE_TRIANGLES = 0b0010_0000;
-        /// If set, two triangles sharing three vertices with identical index values (in any order) will be removed.
+        const DELETE_DEGENERATE_TRIANGLES = 1 << 5;
+        /// If set, two triangles sharing three vertices with identical index values (in any order)
+        /// will be removed.
         ///
         /// Because of the way it is currently implemented, this methods implies that duplicate
         /// vertices will be merged. It will no longer be the case in the future once we decouple
         /// the computations.
-        const DELETE_DUPLICATE_TRIANGLES = 0b0100_0000;
+        const DELETE_DUPLICATE_TRIANGLES = 1 << 6;
+        /// If set, a special treatment will be applied to contact manifold calculation to eliminate
+        /// or fix contacts normals that could lead to incorrect bumps in physics simulation
+        /// (especially on flat surfaces).
+        ///
+        /// This is achieved by taking into account adjacent triangle normals when computing contact
+        /// points for a given triangle.
+        const FIX_INTERNAL_EDGES = 1 << 7 | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
@@ -1064,6 +1073,39 @@ impl<Storage: TriMeshStorage> GenericTriMesh<Storage> {
         )
     }
 
+    /// Returns the pseudo-normals of one of this mesh’s triangles, if it was computed.
+    ///
+    /// This returns `None` if the pseudo-normals of this triangle were not computed.
+    /// To have its pseudo-normals computed, be sure to set the [`TriMeshFlags`] so that
+    /// they contain the [`TriMeshFlags::FIX_INTERNAL_EDGES`] flag.
+    #[cfg(feature = "dim3")]
+    pub fn triangle_normal_constraints(&self, i: u32) -> Option<TrianglePseudoNormals> {
+        if self.flags.contains(TriMeshFlags::FIX_INTERNAL_EDGES) {
+            let triangle = self.triangle(i);
+            let pseudo_normals = self.pseudo_normals.as_ref()?;
+            let edges_pseudo_normals = pseudo_normals.edges_pseudo_normal[i as usize];
+
+            // TODO: could the pseudo-normal be pre-normalized instead of having to renormalize
+            //       every time we need them?
+            Some(TrianglePseudoNormals {
+                face: triangle.normal()?,
+                edges: [
+                    Unit::try_new(edges_pseudo_normals[0], 1.0e-6)?,
+                    Unit::try_new(edges_pseudo_normals[1], 1.0e-6)?,
+                    Unit::try_new(edges_pseudo_normals[2], 1.0e-6)?,
+                ],
+            })
+        } else {
+            None
+        }
+    }
+
+    #[cfg(feature = "dim2")]
+    #[doc(hidden)]
+    pub fn triangle_normal_constraints(&self, _i: u32) -> Option<TrianglePseudoNormals> {
+        None
+    }
+
     /// The vertex buffer of this mesh.
     pub fn vertices(&self) -> &Storage::ArrayPoint {
         &self.vertices
@@ -1158,9 +1200,18 @@ impl From<Cuboid> for TriMesh {
 
 #[cfg(feature = "std")]
 impl SimdCompositeShape for TriMesh {
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(
+        &self,
+        i: u32,
+        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let tri = self.triangle(i);
-        f(None, &tri)
+        let normals = self.triangle_normal_constraints(i);
+        f(
+            None,
+            &tri,
+            normals.as_ref().map(|n| n as &dyn NormalConstraints),
+        )
     }
 
     fn qbvh(&self) -> &Qbvh<u32> {
@@ -1170,6 +1221,7 @@ impl SimdCompositeShape for TriMesh {
 
 impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage> {
     type PartShape = Triangle;
+    type PartNormalConstraints = TrianglePseudoNormals;
     type PartId = u32;
     type QbvhStorage = Storage::QbvhStorage;
 
@@ -1177,16 +1229,30 @@ impl<Storage: TriMeshStorage> TypedSimdCompositeShape for GenericTriMesh<Storage
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&Self::PartNormalConstraints>,
+        ),
     ) {
         let tri = self.triangle(i);
-        f(None, &tri)
+        let pseudo_normals = self.triangle_normal_constraints(i);
+        f(None, &tri, pseudo_normals.as_ref())
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_untyped_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let tri = self.triangle(i);
-        f(None, &tri)
+        let pseudo_normals = self.triangle_normal_constraints(i);
+        f(
+            None,
+            &tri,
+            pseudo_normals.as_ref().map(|n| n as &dyn NormalConstraints),
+        )
     }
 
     fn typed_qbvh(&self) -> &GenericQbvh<u32, Self::QbvhStorage> {
