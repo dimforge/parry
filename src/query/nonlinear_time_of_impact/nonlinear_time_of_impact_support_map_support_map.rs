@@ -198,7 +198,15 @@ where
                     break;
                 }
             }
-            ClosestPoints::Disjoint => unreachable!(),
+            ClosestPoints::Disjoint => {
+                // TODO: this case should be unreachable and needs some debugging
+                //       see: https://github.com/dimforge/parry/issues/176
+                log::error!(
+                    "Closest points not found despite setting the max distance to infinity."
+                );
+                result.status = TOIStatus::Failed;
+                break;
+            }
         }
     }
 
