@@ -70,12 +70,17 @@ impl<N: SimdRealField + Copy> SdpMatrix2<N> {
 
     /// Compute the inverse of this SDP matrix without performing any inversibility check.
     pub fn inverse_unchecked(&self) -> Self {
+        self.inverse_and_get_determinant_unchecked().0
+    }
+
+    /// Compute the inverse of this SDP matrix without performing any inversibility check.
+    pub fn inverse_and_get_determinant_unchecked(&self) -> (Self, N) {
         let determinant = self.m11 * self.m22 - self.m12 * self.m12;
         let m11 = self.m22 / determinant;
         let m12 = -self.m12 / determinant;
         let m22 = self.m11 / determinant;
 
-        Self { m11, m12, m22 }
+        (Self { m11, m12, m22 }, determinant)
     }
 
     /// Convert this SDP matrix to a regular matrix representation.
