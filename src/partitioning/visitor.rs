@@ -78,6 +78,39 @@ where
         (self)(bv, data)
     }
 }
+
+/// Trait implemented by visitor called during the traversal of a spatial partitioning data structure.
+pub trait SimdVisitorContext<LeafData, SimdBV, Context: Clone> {
+    /// Execute an operation on the content of a node of the spatial partitioning structure.
+    ///
+    /// Returns whether the traversal should continue on the node's children, if it should not continue
+    /// on those children, or if the whole traversal should be exited early. Also returns
+    /// a context, which may or may not be identical to the input context.
+    fn visit(
+        &mut self,
+        bv: &SimdBV,
+        data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
+        context: Context,
+    ) -> (SimdVisitStatus, Context);
+}
+
+impl<F, LeafData, SimdBV, Context: Clone> SimdVisitorContext<LeafData, SimdBV, Context> for F
+where
+    F: FnMut(
+        &SimdBV,
+        Option<[Option<&LeafData>; SIMD_WIDTH]>,
+        Context,
+    ) -> (SimdVisitStatus, Context),
+{
+    fn visit(
+        &mut self,
+        bv: &SimdBV,
+        data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
+        context: Context,
+    ) -> (SimdVisitStatus, Context) {
+        (self)(bv, data, context)
+    }
+}
 /// Trait implemented by visitor called during a simultaneous spatial partitioning data structure tarversal.
 pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
     /// Execute an operation on the content of two nodes, one from each structure.
