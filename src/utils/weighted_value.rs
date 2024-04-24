@@ -1,5 +1,5 @@
 use crate::math::Real;
-use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+use std::cmp::Ordering;
 
 #[derive(Copy, Clone)]
 pub struct WeightedValue<T> {

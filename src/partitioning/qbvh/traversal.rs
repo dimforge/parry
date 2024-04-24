@@ -2,7 +2,7 @@
 
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
-use crate::partitioning::visitor::{SimdSimultaneousVisitStatus, SimdVisitorContext};
+use crate::partitioning::visitor::{SimdSimultaneousVisitStatus, SimdVisitorWithContext};
 use crate::partitioning::{
     GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
@@ -115,12 +115,12 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
     /// # Return
     ///
     /// Returns `false` if the traversal exitted early, and `true` otherwise.
-    pub fn traverse_depth_first_context<Context: Clone>(
+    pub fn traverse_depth_first_with_context<Context: Clone>(
         &self,
-        visitor: &mut impl SimdVisitorContext<LeafData, SimdAabb, Context>,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
         context: Context,
     ) -> bool {
-        self.traverse_depth_first_node_with_stack_context(visitor, &mut Vec::new(), 0, context)
+        self.traverse_depth_first_node_with_stack_and_context(visitor, &mut Vec::new(), 0, context)
     }
 
     /// Performs a depth-first traversal on the BVH and propagates a context down,
@@ -130,9 +130,9 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
     /// # Return
     ///
     /// Returns `false` if the traversal exited early, and `true` otherwise.
-    pub fn traverse_depth_first_node_with_stack_context<Context: Clone>(
+    pub fn traverse_depth_first_node_with_stack_and_context<Context: Clone>(
         &self,
-        visitor: &mut impl SimdVisitorContext<LeafData, SimdAabb, Context>,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
         stack: &mut Vec<(u32, Context)>,
         start_node: u32,
         context: Context,
@@ -152,7 +152,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                 None
             };
 
-            let (visit_result, context) = visitor.visit(&node.simd_aabb, leaf_data, context);
+            let (visit_result, contexts) = visitor.visit(&node.simd_aabb, leaf_data, context);
             match visit_result {
                 SimdVisitStatus::ExitEarly => {
                     return false;
@@ -166,7 +166,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             // Un fortunately, we have this check because invalid Aabbs
                             // return a hit as well.
                             if node.children[ii] as usize <= self.nodes.len() {
-                                stack.push((node.children[ii], context.clone()));
+                                stack.push((node.children[ii], contexts[ii].clone()));
                             }
                         }
                     }

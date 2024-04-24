@@ -80,7 +80,7 @@ where
 }
 
 /// Trait implemented by visitor called during the traversal of a spatial partitioning data structure.
-pub trait SimdVisitorContext<LeafData, SimdBV, Context: Clone> {
+pub trait SimdVisitorWithContext<LeafData, SimdBV, Context: Clone> {
     /// Execute an operation on the content of a node of the spatial partitioning structure.
     ///
     /// Returns whether the traversal should continue on the node's children, if it should not continue
@@ -91,26 +91,24 @@ pub trait SimdVisitorContext<LeafData, SimdBV, Context: Clone> {
         bv: &SimdBV,
         data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
         context: Context,
-    ) -> (SimdVisitStatus, Context);
+    ) -> (SimdVisitStatus, [Context; SIMD_WIDTH]);
 }
 
-impl<F, LeafData, SimdBV, Context: Clone> SimdVisitorContext<LeafData, SimdBV, Context> for F
+impl<T, LeafData, SimdBV, Context: Clone> SimdVisitorWithContext<LeafData, SimdBV, Context> for T
 where
-    F: FnMut(
-        &SimdBV,
-        Option<[Option<&LeafData>; SIMD_WIDTH]>,
-        Context,
-    ) -> (SimdVisitStatus, Context),
+    T: SimdVisitor<LeafData, SimdBV>,
 {
     fn visit(
         &mut self,
         bv: &SimdBV,
         data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
         context: Context,
-    ) -> (SimdVisitStatus, Context) {
-        (self)(bv, data, context)
+    ) -> (SimdVisitStatus, [Context; SIMD_WIDTH]) {
+        let contexts = std::array::from_fn(|_| context.clone());
+        (self.visit(bv, data), contexts)
     }
 }
+
 /// Trait implemented by visitor called during a simultaneous spatial partitioning data structure tarversal.
 pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
     /// Execute an operation on the content of two nodes, one from each structure.

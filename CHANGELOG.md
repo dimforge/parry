@@ -2,6 +2,10 @@
 
 ## v0.13.7
 
+### Unreleased
+
+- Added new visitor logic to QBVH to allow parent nodes to pass a context to their children.
+
 ### Modified
 
 - The `point_in_poly2d` now handles arbitrary (convex and non-convex) polygons. The previous implementation
