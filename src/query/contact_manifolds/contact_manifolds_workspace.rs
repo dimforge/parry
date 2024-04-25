@@ -42,6 +42,7 @@ enum DeserializableWorkspaceData {
         CompositeShapeCompositeShapeContactManifoldsWorkspace,
     ),
     CompositeShapeShapeContactManifoldsWorkspace(CompositeShapeShapeContactManifoldsWorkspace),
+    #[allow(dead_code)] // The u32 is needed to match `TypedWorkspaceData`.
     Custom(u32),
 }
 
