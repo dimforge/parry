@@ -2,7 +2,7 @@
 
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
-use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
+use crate::partitioning::visitor::{SimdSimultaneousVisitStatus, SimdVisitorWithContext};
 use crate::partitioning::{
     GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
     SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
@@ -99,6 +99,74 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             // return a hit as well.
                             if node.children[ii] as usize <= self.nodes.len() {
                                 stack.push(node.children[ii]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Performs a depth-first traversal on the BVH. Passes a context from the
+    /// parent to the children.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    pub fn traverse_depth_first_with_context<Context: Clone>(
+        &self,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
+        context: Context,
+    ) -> bool {
+        self.traverse_depth_first_node_with_stack_and_context(visitor, &mut Vec::new(), 0, context)
+    }
+
+    /// Performs a depth-first traversal on the BVH and propagates a context down,
+    /// from the root to each of its descendants. The context can be modified
+    /// during the query.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
+    pub fn traverse_depth_first_node_with_stack_and_context<Context: Clone>(
+        &self,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
+        stack: &mut Vec<(u32, Context)>,
+        start_node: u32,
+        context: Context,
+    ) -> bool {
+        stack.clear();
+
+        if !self.nodes.is_empty() {
+            stack.push((start_node, context));
+        }
+        while let Some((entry, context)) = stack.pop() {
+            let node = &self.nodes[entry as usize];
+            let leaf_data = if node.is_leaf() {
+                Some(
+                    array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                )
+            } else {
+                None
+            };
+
+            let (visit_result, contexts) = visitor.visit(&node.simd_aabb, leaf_data, context);
+            match visit_result {
+                SimdVisitStatus::ExitEarly => {
+                    return false;
+                }
+                SimdVisitStatus::MaybeContinue(mask) => {
+                    let bitmask = mask.bitmask();
+
+                    for ii in 0..SIMD_WIDTH {
+                        if (bitmask & (1 << ii)) != 0 && !node.is_leaf() {
+                            // Internal node, visit the child.
+                            // Un fortunately, we have this check because invalid Aabbs
+                            // return a hit as well.
+                            if node.children[ii] as usize <= self.nodes.len() {
+                                stack.push((node.children[ii], contexts[ii].clone()));
                             }
                         }
                     }

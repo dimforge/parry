@@ -11,7 +11,7 @@ pub use self::qbvh::{
 pub use self::visitor::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor};
 pub use self::visitor::{
     SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitStatus,
-    SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
+    SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor, SimdVisitorWithContext,
 };
 
 /// A quaternary bounding-volume-hierarchy.

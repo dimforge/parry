@@ -221,6 +221,7 @@ pub(crate) enum DeserializableTypedShape {
     #[cfg(feature = "std")]
     RoundConvexPolygon(RoundConvexPolygon),
     /// A custom user-defined shape identified by a number.
+    #[allow(dead_code)] // The u32 is needed to match `TypedShape`.
     Custom(u32),
 }
 
