@@ -1,8 +1,9 @@
 # Change Log
 
-## Unreleased
+## v0.13.8
+### Added
 
-- Added `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during recursion.
+- Add `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during recursion.
 
 ## v0.13.7
 ### Modified
