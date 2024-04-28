@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.14.0
 
 ### Modified
 
@@ -27,11 +27,15 @@
 - Add `Aabb::intersects_moving_aabb` to perform a swept test between two moving aabbs.
 
 ## v0.13.8
+
 ### Added
 
-- Add `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during recursion.
+- Add `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the
+  related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during
+  recursion.
 
 ## v0.13.7
+
 ### Modified
 
 - The `point_in_poly2d` now handles arbitrary (convex and non-convex) polygons. The previous implementation
