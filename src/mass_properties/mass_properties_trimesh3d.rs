@@ -156,7 +156,7 @@ pub fn trimesh_signed_volume_and_center_of_mass(
     vertices: &[Point<Real>],
     indices: &[[u32; DIM]],
 ) -> (Real, Point<Real>) {
-    let geometric_center = Point::new(-10.0, -10.0, -10.0); // utils::center(vertices);
+    let geometric_center = crate::utils::center(vertices);
 
     let mut res = Point::origin();
     let mut vol = 0.0;
