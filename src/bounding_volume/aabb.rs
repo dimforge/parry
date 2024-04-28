@@ -202,7 +202,7 @@ impl Aabb {
         BoundingSphere::new(center, radius)
     }
 
-    /// Does this AABB contains a point expressed in the same coordinate frame as `self`.
+    /// Does this AABB contains a point expressed in the same coordinate frame as `self`?
     #[inline]
     pub fn contains_local_point(&self, point: &Point<Real>) -> bool {
         for i in 0..DIM {
@@ -214,7 +214,7 @@ impl Aabb {
         true
     }
 
-    /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`.
+    /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`?
     #[inline]
     pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector<Real>) -> bool {
         // Minkowski sum.
