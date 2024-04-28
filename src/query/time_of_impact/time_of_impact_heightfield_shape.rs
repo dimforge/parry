@@ -1,22 +1,21 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::{QueryDispatcher, Ray, Unsupported, TOI};
-use crate::shape::{GenericHeightField, HeightFieldStorage, Shape};
+use crate::shape::{HeightField, Shape};
 #[cfg(feature = "dim3")]
 use crate::{bounding_volume::Aabb, query::RayCast};
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
-pub fn time_of_impact_heightfield_shape<Storage, D: ?Sized>(
+pub fn time_of_impact_heightfield_shape<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
-    heightfield1: &GenericHeightField<Storage>,
+    heightfield1: &HeightField,
     g2: &dyn Shape,
     max_toi: Real,
     stop_at_penetration: bool,
 ) -> Result<Option<TOI>, Unsupported>
 where
-    Storage: HeightFieldStorage,
     D: QueryDispatcher,
 {
     let aabb2_1 = g2.compute_aabb(pos12);
@@ -104,17 +103,16 @@ where
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim3")]
-pub fn time_of_impact_heightfield_shape<Storage, D: ?Sized>(
+pub fn time_of_impact_heightfield_shape<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
-    heightfield1: &GenericHeightField<Storage>,
+    heightfield1: &HeightField,
     g2: &dyn Shape,
     max_toi: Real,
     stop_at_penetration: bool,
 ) -> Result<Option<TOI>, Unsupported>
 where
-    Storage: HeightFieldStorage,
     D: QueryDispatcher,
 {
     let aabb1 = heightfield1.local_aabb();
@@ -279,17 +277,16 @@ where
 }
 
 /// Time Of Impact between a moving shape and a heightfield.
-pub fn time_of_impact_shape_heightfield<Storage, D: ?Sized>(
+pub fn time_of_impact_shape_heightfield<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     g1: &dyn Shape,
-    heightfield2: &GenericHeightField<Storage>,
+    heightfield2: &HeightField,
     max_toi: Real,
     stop_at_penetration: bool,
 ) -> Result<Option<TOI>, Unsupported>
 where
-    Storage: HeightFieldStorage,
     D: QueryDispatcher,
 {
     Ok(time_of_impact_heightfield_shape(

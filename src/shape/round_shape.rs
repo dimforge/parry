@@ -8,7 +8,6 @@ use na::Unit;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 /// A shape with rounded borders.

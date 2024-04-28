@@ -3,7 +3,6 @@ use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
 use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
-use crate::utils::DefaultStorage;
 use simba::simd::SimdValue;
 
 /// Time Of Impact of a composite shape with any other shape, under a rigid motion (translation + rotation).
@@ -19,7 +18,7 @@ pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     let mut visitor = NonlinearTOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
@@ -50,7 +49,7 @@ pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G2: TypedSimdCompositeShape,
 {
     nonlinear_time_of_impact_composite_shape_shape(
         dispatcher,
@@ -82,7 +81,7 @@ pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?S
 impl<'a, D: ?Sized, G1: ?Sized> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     /// Initializes visitor used to determine the non-linear time of impact between
     /// a composite shape and another shape.
@@ -114,7 +113,7 @@ impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, TOI);
 

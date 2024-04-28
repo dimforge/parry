@@ -1,12 +1,12 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::contact_manifolds::NormalConstraints;
 use crate::query::{
     self, details::NonlinearTOIMode, ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher,
     Unsupported, TOI,
 };
 #[cfg(feature = "std")]
 use crate::query::{
-    contact_manifolds::ContactManifoldsWorkspace, query_dispatcher::PersistentQueryDispatcher,
+    contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
+    query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};

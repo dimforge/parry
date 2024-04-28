@@ -42,7 +42,15 @@ fn cuboids_large_size_ratio_issue_181() {
         let pos_ab = pos_a.inv_mul(&pos_b);
         let mut manifold: ContactManifold<(), ()> = ContactManifold::new();
         dispatcher
-            .contact_manifold_convex_convex(&pos_ab, &cuboid_a, &cuboid_b, 0.0, &mut manifold)
+            .contact_manifold_convex_convex(
+                &pos_ab,
+                &cuboid_a,
+                &cuboid_b,
+                None,
+                None,
+                0.0,
+                &mut manifold,
+            )
             .unwrap();
 
         if let Some(deepest) = manifold.find_deepest_contact() {

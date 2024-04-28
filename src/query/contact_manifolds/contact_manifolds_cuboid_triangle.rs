@@ -149,7 +149,6 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
         pos12, pos21, &normal1, &normal2, &feature1, &feature2, manifold, flipped,
     );
 
-
     if normal_constraints1.is_some() || normal_constraints2.is_some() {
         // HACK: some normal correction can lead to very incorrect penetration
         //       depth, e.g., if the other object extends very far toward that direction.
@@ -157,7 +156,9 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
         //       I haven’t found a good mathematically robust approach to account for
         //       that locally, so for now, we eliminate points that are large divergence
         //       relative to the unconstrained penetration distance.
-        manifold.points.retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
+        manifold
+            .points
+            .retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
     }
 
     if flipped {

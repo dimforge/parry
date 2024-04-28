@@ -1,17 +1,10 @@
-use crate::utils::DefaultStorage;
 #[cfg(feature = "std")]
 use na::DMatrix;
 use std::ops::Range;
 
-#[cfg(feature = "cuda")]
-use crate::utils::{CudaArrayPointer2, CudaStorage, CudaStoragePtr};
-#[cfg(all(feature = "std", feature = "cuda"))]
-use {crate::utils::CudaArray2, cust::error::CudaResult};
-
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
 use crate::shape::{FeatureId, Triangle, TrianglePseudoNormals};
-use crate::utils::Array2;
 use na::{Point3, Unit};
 
 #[cfg(not(feature = "std"))]
@@ -24,7 +17,6 @@ bitflags! {
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
         archive(as = "Self"),
 )]
-    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
     #[derive(Default)]
     /// The status of the cell of an heightfield.
     pub struct HeightFieldCellStatus: u8 {
@@ -46,8 +38,7 @@ bitflags::bitflags! {
         derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
         archive(as = "Self"),
     )]
-    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
-    #[repr(C)] // Needed for Cuda.
+    #[repr(C)]
     #[derive(Default)]
     /// The status of the cell of an heightfield.
     pub struct HeightFieldFlags: u8 {
@@ -61,97 +52,25 @@ bitflags::bitflags! {
     }
 }
 
-/// Trait describing all the types needed for storing an heightfield’s data.
-pub trait HeightFieldStorage {
-    /// Type of the array containing the heightfield’s heights.
-    type Heights: Array2<Item = Real>;
-    /// Type of the array containing the heightfield’s cells status.
-    type Status: Array2<Item = HeightFieldCellStatus>;
-}
-
-#[cfg(feature = "std")]
-impl HeightFieldStorage for DefaultStorage {
-    type Heights = DMatrix<Real>;
-    type Status = DMatrix<HeightFieldCellStatus>;
-}
-
-#[cfg(all(feature = "std", feature = "cuda"))]
-impl HeightFieldStorage for CudaStorage {
-    type Heights = CudaArray2<Real>;
-    type Status = CudaArray2<HeightFieldCellStatus>;
-}
-
-#[cfg(feature = "cuda")]
-impl HeightFieldStorage for CudaStoragePtr {
-    type Heights = CudaArrayPointer2<Real>;
-    type Status = CudaArrayPointer2<HeightFieldCellStatus>;
-}
-
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(
-    feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
-)]
-#[derive(Debug)]
-#[repr(C)] // Needed for Cuda.
-/// A 3D heightfield with a generic storage buffer for its height grid.
-pub struct GenericHeightField<Storage: HeightFieldStorage> {
-    heights: Storage::Heights,
-    status: Storage::Status,
+// TODO: Archive isn’t implemented for VecStorage yet.
+// #[cfg_attr(
+//     feature = "rkyv",
+//     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+//     archive(check_bytes)
+// )]
+#[derive(Debug, Clone)]
+#[repr(C)]
+/// A 3D heightfield.
+pub struct HeightField {
+    heights: DMatrix<Real>,
+    status: DMatrix<HeightFieldCellStatus>,
 
     scale: Vector<Real>,
     aabb: Aabb,
     num_triangles: usize,
     flags: HeightFieldFlags,
 }
-
-impl<Storage> Clone for GenericHeightField<Storage>
-where
-    Storage: HeightFieldStorage,
-    Storage::Heights: Clone,
-    Storage::Status: Clone,
-{
-    fn clone(&self) -> Self {
-        Self {
-            heights: self.heights.clone(),
-            status: self.status.clone(),
-            scale: self.scale,
-            aabb: self.aabb,
-            num_triangles: self.num_triangles,
-            flags: self.flags,
-        }
-    }
-}
-
-impl<Storage> Copy for GenericHeightField<Storage>
-where
-    Storage: HeightFieldStorage,
-    Storage::Heights: Copy,
-    Storage::Status: Copy,
-{
-}
-
-#[cfg(feature = "cuda")]
-unsafe impl<Storage> cust_core::DeviceCopy for GenericHeightField<Storage>
-where
-    Storage: HeightFieldStorage,
-    Storage::Heights: cust_core::DeviceCopy + Copy,
-    Storage::Status: cust_core::DeviceCopy + Copy,
-{
-}
-
-/// A 3D heightfield.
-#[cfg(feature = "std")]
-pub type HeightField = GenericHeightField<DefaultStorage>;
-
-/// A 3D heightfield stored in the CUDA memory, initializable from the host.
-#[cfg(all(feature = "std", feature = "cuda"))]
-pub type CudaHeightField = GenericHeightField<CudaStorage>;
-
-/// A 3D heightfield stored in the CUDA memory, accessible from within a Cuda kernel.
-#[cfg(feature = "cuda")]
-pub type CudaHeightFieldPtr = GenericHeightField<CudaStoragePtr>;
 
 #[cfg(feature = "std")]
 impl HeightField {
@@ -193,36 +112,9 @@ impl HeightField {
             flags,
         }
     }
-
-    /// Converts this RAM-based heightfield to an heightfield based on CUDA memory.
-    #[cfg(feature = "cuda")]
-    pub fn to_cuda(&self) -> CudaResult<CudaHeightField> {
-        Ok(CudaHeightField {
-            heights: CudaArray2::from_matrix(&self.heights)?,
-            status: CudaArray2::from_matrix(&self.status)?,
-            aabb: self.aabb,
-            num_triangles: self.num_triangles,
-            scale: self.scale,
-            oriented: self.oriented,
-        })
-    }
 }
 
-#[cfg(all(feature = "std", feature = "cuda"))]
-impl CudaHeightField {
-    /// Returns the heightfield usable from within a CUDA kernel.
-    pub fn as_device_ptr(&self) -> CudaHeightFieldPtr {
-        CudaHeightFieldPtr {
-            heights: self.heights.as_device_ptr(),
-            status: self.status.as_device_ptr(),
-            aabb: self.aabb,
-            num_triangles: self.num_triangles,
-            scale: self.scale,
-        }
-    }
-}
-
-impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
+impl HeightField {
     /// The number of rows of this heightfield.
     pub fn nrows(&self) -> usize {
         self.heights.nrows() - 1
@@ -355,10 +247,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-    pub fn triangles_around_point(
-        &self,
-        point: &Point3<Real>,
-    ) -> HeightFieldRadialTriangles<Storage> {
+    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles {
         let center = self.closest_cell_at_point(point);
         HeightFieldRadialTriangles {
             heightfield: self,
@@ -395,7 +284,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             return (None, None);
         }
 
-        let status = self.status.get(i, j);
+        let status = self.status[(i, j)];
 
         if status.contains(
             HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED
@@ -449,7 +338,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             return (None, None);
         }
 
-        let status = self.status.get(i, j);
+        let status = self.status[(i, j)];
 
         if status.contains(
             HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED
@@ -467,10 +356,10 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         let x0 = -0.5 + cell_width * (j as Real);
         let x1 = -0.5 + cell_width * ((j + 1) as Real);
 
-        let y00 = self.heights.get(i, j);
-        let y10 = self.heights.get(i + 1, j);
-        let y01 = self.heights.get(i, j + 1);
-        let y11 = self.heights.get(i + 1, j + 1);
+        let y00 = self.heights[(i, j)];
+        let y10 = self.heights[(i + 1, j)];
+        let y01 = self.heights[(i, j + 1)];
+        let y11 = self.heights[(i + 1, j + 1)];
 
         let mut p00 = Point3::new(x0, y00, z0);
         let mut p10 = Point3::new(x0, y10, z1);
@@ -523,7 +412,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     pub fn triangle_normal_constraints(&self, id: u32) -> Option<TrianglePseudoNormals> {
         if self.flags.contains(HeightFieldFlags::FIX_INTERNAL_EDGES) {
             let (i, j, left) = self.split_triangle_id(id);
-            let status = self.status.get(i, j);
+            let status = self.status[(i, j)];
 
             let (tri_left, tri_right) = self.triangles_at(i, j);
             let tri_normal = if left {
@@ -567,7 +456,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             {
                 // The neighbor is below.
                 let ((bot_left, bot_right), bot_status) = if j > 0 {
-                    (self.triangles_at(i, j - 1), self.status.get(i, j - 1))
+                    (self.triangles_at(i, j - 1), self.status[(i, j - 1)])
                 } else {
                     ((None, None), HeightFieldCellStatus::empty())
                 };
@@ -582,7 +471,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
             } else {
                 // The neighbor is above.
                 let ((top_left, top_right), top_status) = if j < self.heights.ncols() - 2 {
-                    (self.triangles_at(i, j + 1), self.status.get(i, j + 1))
+                    (self.triangles_at(i, j + 1), self.status[(i, j + 1)])
                 } else {
                     ((None, None), HeightFieldCellStatus::empty())
                 };
@@ -620,26 +509,26 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
 
     /// The status of the `(i, j)`-th cell.
     pub fn cell_status(&self, i: usize, j: usize) -> HeightFieldCellStatus {
-        self.status.get(i, j)
+        self.status[(i, j)]
     }
 
     /// Set the status of the `(i, j)`-th cell.
     pub fn set_cell_status(&mut self, i: usize, j: usize, status: HeightFieldCellStatus) {
-        self.status.set(i, j, status)
+        self.status[(i, j)] = status;
     }
 
     /// The statuses of all the cells of this heightfield.
-    pub fn cells_statuses(&self) -> &Storage::Status {
+    pub fn cells_statuses(&self) -> &DMatrix<HeightFieldCellStatus> {
         &self.status
     }
 
     /// The mutable statuses of all the cells of this heightfield.
-    pub fn cells_statuses_mut(&mut self) -> &mut Storage::Status {
+    pub fn cells_statuses_mut(&mut self) -> &mut DMatrix<HeightFieldCellStatus> {
         &mut self.status
     }
 
     /// The heights of this heightfield.
-    pub fn heights(&self) -> &Storage::Heights {
+    pub fn heights(&self) -> &DMatrix<Real> {
         &self.heights
     }
 
@@ -701,11 +590,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                 let nrows = self.heights.nrows();
                 let ij = i + j * nrows;
 
-                if self
-                    .status
-                    .get(i, j)
-                    .contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION)
-                {
+                if self.status[(i, j)].contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
                     if left {
                         FeatureId::Vertex([ij, ij + 1, ij + 1 + nrows][ivertex as usize] as u32)
                     } else {
@@ -728,11 +613,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                 let ileft = vshift + i + j * (nrows - 1);
                 let iright = ileft + nrows - 1;
 
-                if self
-                    .status
-                    .get(i, j)
-                    .contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION)
-                {
+                if self.status[(i, j)].contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
                     if left {
                         // Triangle:
                         //
@@ -818,7 +699,7 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
         // multiple times.
         for j in min_x..max_x {
             for i in min_z..max_z {
-                let status = self.status.get(i, j);
+                let status = self.status[(i, j)];
 
                 if status.contains(HeightFieldCellStatus::CELL_REMOVED) {
                     continue;
@@ -830,10 +711,10 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
                 let x0 = -0.5 + cell_width * (j as Real);
                 let x1 = x0 + cell_width;
 
-                let y00 = self.heights.get(i, j);
-                let y10 = self.heights.get(i + 1, j);
-                let y01 = self.heights.get(i, j + 1);
-                let y11 = self.heights.get(i + 1, j + 1);
+                let y00 = self.heights[(i, j)];
+                let y10 = self.heights[(i + 1, j)];
+                let y01 = self.heights[(i, j + 1)];
+                let y11 = self.heights[(i + 1, j + 1)];
 
                 if (y00 > ref_maxs.y && y10 > ref_maxs.y && y01 > ref_maxs.y && y11 > ref_maxs.y)
                     || (y00 < ref_mins.y
@@ -881,13 +762,13 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     }
 }
 
-struct HeightFieldTriangles<'a, Storage: HeightFieldStorage> {
-    heightfield: &'a GenericHeightField<Storage>,
+struct HeightFieldTriangles<'a> {
+    heightfield: &'a HeightField,
     curr: (usize, usize),
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a, Storage: HeightFieldStorage> Iterator for HeightFieldTriangles<'a, Storage> {
+impl<'a> Iterator for HeightFieldTriangles<'a> {
     type Item = Triangle;
 
     fn next(&mut self) -> Option<Triangle> {
@@ -916,15 +797,15 @@ impl<'a, Storage: HeightFieldStorage> Iterator for HeightFieldTriangles<'a, Stor
 }
 
 /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-pub struct HeightFieldRadialTriangles<'a, Storage: HeightFieldStorage> {
-    heightfield: &'a GenericHeightField<Storage>,
+pub struct HeightFieldRadialTriangles<'a> {
+    heightfield: &'a HeightField,
     center: (usize, usize),
     curr_radius: usize,
     curr_element: usize,
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a, Storage: HeightFieldStorage> HeightFieldRadialTriangles<'a, Storage> {
+impl<'a> HeightFieldRadialTriangles<'a> {
     /// Returns the next triangle in this iterator.
     ///
     /// Returns `None` no triangle closest than `max_dist` remain
