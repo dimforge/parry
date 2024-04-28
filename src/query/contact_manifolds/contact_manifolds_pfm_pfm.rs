@@ -82,6 +82,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         GJKResult::ClosestPoints(p1, p2_1, dir) => {
             let mut local_n1 = dir;
             let mut local_n2 = pos12.inverse_transform_unit_vector(&-dir);
+            let dist = (p2_1 - p1).dot(&local_n1);
 
             if !(normal_constraints1, normal_constraints2).project_local_normals(
                 pos12,
@@ -120,6 +121,16 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                     (p2_1 - p1).dot(&local_n1),
                 );
                 manifold.points.push(contact);
+            }
+
+            if normal_constraints1.is_some() || normal_constraints2.is_some() {
+                // HACK: some normal correction can lead to very incorrect penetration
+                //       depth, e.g., if the other object extends very far toward that direction.
+                //       This is caused by the locality of the convex/convex check.
+                //       I haven’t found a good mathematically robust approach to account for
+                //       that locally, so for now, we eliminate points that are large divergence
+                //       relative to the unconstrained penetration distance.
+                manifold.points.retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
             }
 
             // Adjust points to take the radius into account.

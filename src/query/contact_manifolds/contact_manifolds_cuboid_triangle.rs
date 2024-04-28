@@ -104,22 +104,26 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
      *
      */
     let mut normal1 = sep1.1;
+    let mut dist = sep1.0;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
         normal1 = pos12 * -sep2.1;
+        dist = sep2.0;
     } else if sep3.0 > sep1.0 {
         normal1 = sep3.1;
+        dist = sep3.0;
     }
 
     // Apply any normal constraint to the separating axis.
     let mut normal2 = pos21 * -normal1;
+
     if !(normal_constraints1, normal_constraints2).project_local_normals(
         pos12,
         &mut normal1,
         &mut normal2,
     ) {
         manifold.clear();
-        return; // THe contact got completely discarded by normal correction.
+        return; // The contact got completely discarded by normal correction.
     }
 
     let feature1;
@@ -144,6 +148,17 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     PolygonalFeature::contacts(
         pos12, pos21, &normal1, &normal2, &feature1, &feature2, manifold, flipped,
     );
+
+
+    if normal_constraints1.is_some() || normal_constraints2.is_some() {
+        // HACK: some normal correction can lead to very incorrect penetration
+        //       depth, e.g., if the other object extends very far toward that direction.
+        //       This is caused by the locality of the convex/convex check.
+        //       I haven’t found a good mathematically robust approach to account for
+        //       that locally, so for now, we eliminate points that are large divergence
+        //       relative to the unconstrained penetration distance.
+        manifold.points.retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
+    }
 
     if flipped {
         manifold.local_n1 = normal2;
