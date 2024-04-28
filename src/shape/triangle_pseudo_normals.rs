@@ -1,6 +1,8 @@
 use crate::math::{Real, UnitVector, Vector};
-use crate::query::details::NormalConstraints;
 use na::Vector3;
+
+#[cfg(feature = "std")]
+use crate::query::details::NormalConstraints;
 
 // NOTE: ideally, the normal cone should take into account the point where the normal cone is
 //       considered. But as long as we assume that the triangles are one-way we can get away with
@@ -26,6 +28,7 @@ pub struct TrianglePseudoNormals {
     pub edges: [UnitVector<Real>; 3],
 }
 
+#[cfg(feature = "std")]
 impl NormalConstraints for TrianglePseudoNormals {
     /// Projects the given direction to it is contained in the polygonal
     /// cone defined `self`.
@@ -90,6 +93,7 @@ impl NormalConstraints for TrianglePseudoNormals {
 }
 
 #[cfg(test)]
+#[cfg(feature = "dim3")]
 mod test {
     use crate::math::{Real, Vector};
     use crate::shape::TrianglePseudoNormals;

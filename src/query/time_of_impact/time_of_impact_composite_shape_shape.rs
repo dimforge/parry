@@ -3,7 +3,6 @@ use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH}
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{QueryDispatcher, Ray, SimdRay, TOI};
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::DefaultStorage;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Time Of Impact of a composite shape with any other shape, under translational movement.
@@ -18,7 +17,7 @@ pub fn time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     let mut visitor = TOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
@@ -46,7 +45,7 @@ pub fn time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
 ) -> Option<TOI>
 where
     D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G2: TypedSimdCompositeShape,
 {
     time_of_impact_composite_shape_shape(
         dispatcher,
@@ -78,7 +77,7 @@ pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a
 impl<'a, D: ?Sized, G1: ?Sized> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     /// Creates a new visitor used to find the time-of-impact between a composite shape and a shape.
     pub fn new(
@@ -112,7 +111,7 @@ impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
     D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    G1: TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, TOI);
 

@@ -130,7 +130,9 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 //       I haven’t found a good mathematically robust approach to account for
                 //       that locally, so for now, we eliminate points that are large divergence
                 //       relative to the unconstrained penetration distance.
-                manifold.points.retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
+                manifold
+                    .points
+                    .retain(|pt| dist >= 0.0 || pt.dist >= 0.0 || pt.dist >= dist * 5.0);
             }
 
             // Adjust points to take the radius into account.

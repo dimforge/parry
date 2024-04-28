@@ -1,5 +1,31 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+
+- Remove CUDA support to break free from the toolchain restriction required by cust.
+- Rework internal edges resolution using normal cones. This implies the modification of the
+  `SimdCompositeShape::map_part_at`, `TypedSimdCompositeShape::map_typed_part`, and
+  `TypedSimdCompositeShape::map_untyped_part` trait functions so that the closure argument takes
+  an extra argument for the (optional) normal constraints. This argument can be safely ignored
+  by user code unless applying the normal collection is relevant to your use-case.
+- Contact manifolds will now retain all contacts (including the ones further than the specified `prediction`
+  distance) whenever any contact is actually closer than this `prediction` distance.
+- Typo fix: renamed `TopologyError::BadAdjascentTrianglesOrientation` to `BadAdjacentTrianglesOrientation`.
+
+### Fixed
+
+- Fix contacts between convex shapes being occasionally ignored due to some rounding errors.
+- Remove crash when entering unreachable code in non-linear TOI calculation.
+- Fix accuracy issue in triangle-mesh center-of-mass calculation when the mesh isn’t manifold.
+
+### Added
+
+- Add `SdpMatrix2::inverse_and_get_determinant_unchecked`. This is useful for computing the
+  inverse in a AoSoA SIMD setting.
+- Add `Aabb::intersects_moving_aabb` to perform a swept test between two moving aabbs.
+
 ## v0.13.8
 ### Added
 

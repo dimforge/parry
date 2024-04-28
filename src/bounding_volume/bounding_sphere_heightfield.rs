@@ -1,8 +1,8 @@
 use crate::bounding_volume::BoundingSphere;
 use crate::math::{Isometry, Real};
-use crate::shape::{GenericHeightField, HeightFieldStorage};
+use crate::shape::HeightField;
 
-impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
+impl HeightField {
     /// Computes the world-space bounding sphere of this height-field, transformed by `pos`.
     #[inline]
     pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {

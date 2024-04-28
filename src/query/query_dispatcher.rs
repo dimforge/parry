@@ -1,7 +1,9 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::contact_manifolds::NormalConstraints;
 #[cfg(feature = "std")]
-use crate::query::{contact_manifolds::ContactManifoldsWorkspace, ContactManifold};
+use crate::query::{
+    contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
+    ContactManifold,
+};
 use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, Unsupported, TOI};
 use crate::shape::Shape;
 

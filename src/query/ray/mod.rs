@@ -22,6 +22,7 @@ mod ray_bounding_sphere;
 mod ray_composite_shape;
 mod ray_cuboid;
 mod ray_halfspace;
+#[cfg(feature = "std")]
 mod ray_heightfield;
 mod ray_round_shape;
 mod ray_support_map;

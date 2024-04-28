@@ -6,19 +6,13 @@ use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
-    FeatureId, GenericTriMesh, SegmentPointLocation, TriMeshStorage, TrianglePointLocation,
-    TypedSimdCompositeShape,
+    FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation, TypedSimdCompositeShape,
 };
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
-#[cfg(feature = "dim3")]
-use crate::utils::Array1;
-
-#[cfg(feature = "std")]
 use crate::shape::{Compound, Polyline};
 
-#[cfg(feature = "std")]
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -48,7 +42,7 @@ impl PointQuery for Polyline {
     }
 }
 
-impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
+impl PointQuery for TriMesh {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(point, solid).0
@@ -104,7 +98,6 @@ impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
     }
 }
 
-#[cfg(feature = "std")]
 impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -128,7 +121,6 @@ impl PointQuery for Compound {
     }
 }
 
-#[cfg(feature = "std")]
 impl PointQueryWithLocation for Polyline {
     type Location = (u32, SegmentPointLocation);
 
@@ -144,7 +136,7 @@ impl PointQueryWithLocation for Polyline {
     }
 }
 
-impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage> {
+impl PointQueryWithLocation for TriMesh {
     type Location = (u32, TrianglePointLocation);
 
     #[inline]
@@ -181,13 +173,13 @@ impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage>
                     }
                     TrianglePointLocation::OnEdge(i, _) => pseudo_normals
                         .edges_pseudo_normal
-                        .get_at(part_id as usize)
+                        .get(part_id as usize)
                         .map(|pn| pn[i as usize]),
                     TrianglePointLocation::OnVertex(i) => {
                         let idx = self.indices()[part_id as usize];
                         pseudo_normals
                             .vertices_pseudo_normal
-                            .get_at(idx[i as usize] as usize)
+                            .get(idx[i as usize] as usize)
                             .copied()
                     }
                 };
