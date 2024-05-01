@@ -61,8 +61,13 @@ impl PointQuery for TriMesh {
             return (proj, feature_id);
         }
 
+        #[cfg(feature = "dim3")]
+        let solid = false;
+        #[cfg(feature = "dim2")]
+        let solid = true;
+
         let mut visitor =
-            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
+            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, solid);
         let (proj, (id, _feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
         let feature_id = FeatureId::Face(id);
         (proj, feature_id)
