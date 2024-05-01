@@ -2,7 +2,11 @@ use parry2d::{math::Point, query::PointQuery, shape::Triangle};
 
 #[test]
 fn project_local_point_point_on_ab() {
-    let verts = [Point::new(2.0, 1.0), Point::new(0.0, 1.0), Point::new(1.0, 0.0)];
+    let verts = [
+        Point::new(2.0, 1.0),
+        Point::new(0.0, 1.0),
+        Point::new(1.0, 0.0),
+    ];
     let tri1 = Triangle::new(verts[0], verts[1], verts[2]);
     let tri2 = Triangle::new(verts[2], verts[0], verts[1]);
 
