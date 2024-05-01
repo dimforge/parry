@@ -61,10 +61,7 @@ impl PointQuery for TriMesh {
             return (proj, feature_id);
         }
 
-        #[cfg(feature = "dim3")]
-        let solid = false;
-        #[cfg(feature = "dim2")]
-        let solid = true;
+        let solid = cfg!(feature = "dim2");
 
         let mut visitor =
             PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, solid);
