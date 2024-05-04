@@ -20,7 +20,7 @@ fn main() {
     let ball_vel1 = Vector3::new(2.0, 2.0, 2.0);
     let ball_vel2 = Vector3::new(-0.5, -0.5, -0.5);
 
-    let toi_intersecting = query::time_of_impact(
+    let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
         &ball_vel1,
         &ball,
@@ -31,7 +31,7 @@ fn main() {
         true,
     )
     .unwrap();
-    let toi_will_touch = query::time_of_impact(
+    let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
         &ball_vel2,
         &ball,
@@ -42,7 +42,7 @@ fn main() {
         true,
     )
     .unwrap();
-    let toi_wont_touch = query::time_of_impact(
+    let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
         &ball_vel1,
         &ball,
@@ -54,7 +54,13 @@ fn main() {
     )
     .unwrap();
 
-    assert_eq!(toi_intersecting.map(|toi| toi.toi), Some(0.0));
-    assert!(toi_will_touch.is_some() && toi_will_touch.unwrap().toi > 0.0);
-    assert_eq!(toi_wont_touch.map(|toi| toi.toi), None);
+    assert_eq!(
+        toi_intersecting.map(|time_of_impact| time_of_impact.time_of_impact),
+        Some(0.0)
+    );
+    assert!(toi_will_touch.is_some() && toi_will_touch.unwrap().time_of_impact > 0.0);
+    assert_eq!(
+        toi_wont_touch.map(|time_of_impact| time_of_impact.time_of_impact),
+        None
+    );
 }

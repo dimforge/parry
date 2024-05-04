@@ -202,14 +202,18 @@ impl SimdAabb {
     }
 
     /// Casts a ray on all the Aabbs represented by `self`.
-    pub fn cast_local_ray(&self, ray: &SimdRay, max_toi: SimdReal) -> (SimdBool, SimdReal) {
+    pub fn cast_local_ray(
+        &self,
+        ray: &SimdRay,
+        max_time_of_impact: SimdReal,
+    ) -> (SimdBool, SimdReal) {
         let zero = SimdReal::zero();
         let one = SimdReal::one();
         let infinity = SimdReal::splat(Real::MAX);
 
         let mut hit = SimdBool::splat(true);
         let mut tmin = SimdReal::zero();
-        let mut tmax = max_toi;
+        let mut tmax = max_time_of_impact;
 
         // TODO: could this be optimized more considering we really just need a boolean answer?
         for i in 0usize..DIM {

@@ -19,7 +19,7 @@ fn ball_cuboid_toi() {
     let ball_vel1 = Vector3::new(2.0, 2.0, 2.0);
     let ball_vel2 = Vector3::new(-0.5, -0.5, -0.5);
 
-    let toi_intersecting = query::time_of_impact(
+    let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
         &ball_vel1,
         &ball,
@@ -30,8 +30,8 @@ fn ball_cuboid_toi() {
         true,
     )
     .unwrap()
-    .map(|toi| toi.toi);
-    let toi_will_touch = query::time_of_impact(
+    .map(|time_of_impact| time_of_impact.time_of_impact);
+    let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
         &ball_vel2,
         &ball,
@@ -42,8 +42,8 @@ fn ball_cuboid_toi() {
         true,
     )
     .unwrap()
-    .map(|toi| toi.toi);
-    let toi_wont_touch = query::time_of_impact(
+    .map(|time_of_impact| time_of_impact.time_of_impact);
+    let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
         &ball_vel1,
         &ball,
@@ -54,7 +54,7 @@ fn ball_cuboid_toi() {
         true,
     )
     .unwrap()
-    .map(|toi| toi.toi);
+    .map(|time_of_impact| time_of_impact.time_of_impact);
 
     assert_eq!(toi_intersecting, Some(0.0));
     assert!(relative_eq!(

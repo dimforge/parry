@@ -1,24 +1,25 @@
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real, Vector};
-use crate::query::{QueryDispatcher, Ray, Unsupported, TOI};
+use crate::query::details::ShapeCastOptions;
+use crate::query::{QueryDispatcher, Ray, ShapeCastHit, Unsupported};
 use crate::shape::{HeightField, Shape};
 #[cfg(feature = "dim3")]
 use crate::{bounding_volume::Aabb, query::RayCast};
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
-pub fn time_of_impact_heightfield_shape<D: ?Sized>(
+pub fn cast_shapes_heightfield_shape<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     heightfield1: &HeightField,
     g2: &dyn Shape,
-    max_toi: Real,
-    stop_at_penetration: bool,
-) -> Result<Option<TOI>, Unsupported>
+    options: ShapeCastOptions,
+) -> Result<Option<ShapeCastHit>, Unsupported>
 where
     D: QueryDispatcher,
 {
-    let aabb2_1 = g2.compute_aabb(pos12);
+    let aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), *vel12);
 
     let mut curr_range = heightfield1.unclamped_elements_range_in_local_aabb(&aabb2_1);
@@ -31,7 +32,7 @@ where
         curr_range.start -= 1;
     }
 
-    let mut best_hit = None::<TOI>;
+    let mut best_hit = None::<ShapeCastHit>;
 
     /*
      * Test the segment under the ray.
@@ -41,10 +42,12 @@ where
     for curr in clamped_curr_range {
         if let Some(seg) = heightfield1.segment_at(curr) {
             // TODO: pre-check using a ray-cast on the Aabbs first?
-            if let Some(hit) =
-                dispatcher.time_of_impact(pos12, vel12, &seg, g2, max_toi, stop_at_penetration)?
-            {
-                if hit.toi < best_hit.map(|toi| toi.toi).unwrap_or(Real::MAX) {
+            if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
+                if hit.time_of_impact
+                    < best_hit
+                        .map(|time_of_impact| time_of_impact.time_of_impact)
+                        .unwrap_or(Real::MAX)
+                {
                     best_hit = Some(hit);
                 }
             }
@@ -82,16 +85,18 @@ where
             curr_elt -= 1;
         }
 
-        if curr_param >= max_toi {
+        if curr_param >= options.max_time_of_impact {
             break;
         }
 
         if let Some(seg) = heightfield1.segment_at(curr_elt as usize) {
             // TODO: pre-check using a ray-cast on the Aabbs first?
-            if let Some(hit) =
-                dispatcher.time_of_impact(pos12, vel12, &seg, g2, max_toi, stop_at_penetration)?
-            {
-                if hit.toi < best_hit.map(|toi| toi.toi).unwrap_or(Real::MAX) {
+            if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
+                if hit.time_of_impact
+                    < best_hit
+                        .map(|time_of_impact| time_of_impact.time_of_impact)
+                        .unwrap_or(Real::MAX)
+                {
                     best_hit = Some(hit);
                 }
             }
@@ -103,29 +108,28 @@ where
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim3")]
-pub fn time_of_impact_heightfield_shape<D: ?Sized>(
+pub fn cast_shapes_heightfield_shape<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     heightfield1: &HeightField,
     g2: &dyn Shape,
-    max_toi: Real,
-    stop_at_penetration: bool,
-) -> Result<Option<TOI>, Unsupported>
+    options: ShapeCastOptions,
+) -> Result<Option<ShapeCastHit>, Unsupported>
 where
     D: QueryDispatcher,
 {
     let aabb1 = heightfield1.local_aabb();
-    let mut aabb2_1 = g2.compute_aabb(pos12);
+    let mut aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), *vel12);
 
     // Find the first hit between the aabbs.
     let hext2_1 = aabb2_1.half_extents();
     let msum = Aabb::new(aabb1.mins - hext2_1, aabb1.maxs + hext2_1);
-    if let Some(toi) = msum.cast_local_ray(&ray, max_toi, true) {
+    if let Some(time_of_impact) = msum.cast_local_ray(&ray, options.max_time_of_impact, true) {
         // Advance the aabb2 to the hit point.
-        aabb2_1.mins += ray.dir * toi;
-        aabb2_1.maxs += ray.dir * toi;
+        aabb2_1.mins += ray.dir * time_of_impact;
+        aabb2_1.maxs += ray.dir * time_of_impact;
     } else {
         return Ok(None);
     }
@@ -133,7 +137,7 @@ where
     let (mut curr_range_i, mut curr_range_j) =
         heightfield1.unclamped_elements_range_in_local_aabb(&aabb2_1);
     let (ncells_i, ncells_j) = heightfield1.num_cells_ij();
-    let mut best_hit = None::<TOI>;
+    let mut best_hit = None::<ShapeCastHit>;
 
     /*
      * Enlarge the ranges by 1 to account for any movement within one cell.
@@ -163,15 +167,12 @@ where
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
             for tri in [tri_a, tri_b].into_iter().flatten() {
                 // TODO: pre-check using a ray-cast on the Aabbs first?
-                if let Some(hit) = dispatcher.time_of_impact(
-                    pos12,
-                    vel12,
-                    &tri,
-                    g2,
-                    max_toi,
-                    stop_at_penetration,
-                )? {
-                    if hit.toi < best_hit.map(|toi| toi.toi).unwrap_or(Real::MAX) {
+                if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
+                    if hit.time_of_impact
+                        < best_hit
+                            .map(|time_of_impact| time_of_impact.time_of_impact)
+                            .unwrap_or(Real::MAX)
+                    {
                         best_hit = Some(hit);
                     }
                 }
@@ -219,7 +220,7 @@ where
             Real::MAX
         };
 
-        if toi_x > max_toi && toi_z > max_toi {
+        if toi_x > options.max_time_of_impact && toi_z > options.max_time_of_impact {
             break;
         }
 
@@ -277,26 +278,24 @@ where
 }
 
 /// Time Of Impact between a moving shape and a heightfield.
-pub fn time_of_impact_shape_heightfield<D: ?Sized>(
+pub fn cast_shapes_shape_heightfield<D: ?Sized>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     g1: &dyn Shape,
     heightfield2: &HeightField,
-    max_toi: Real,
-    stop_at_penetration: bool,
-) -> Result<Option<TOI>, Unsupported>
+    options: ShapeCastOptions,
+) -> Result<Option<ShapeCastHit>, Unsupported>
 where
     D: QueryDispatcher,
 {
-    Ok(time_of_impact_heightfield_shape(
+    Ok(cast_shapes_heightfield_shape(
         dispatcher,
         &pos12.inverse(),
         &-pos12.inverse_transform_vector(vel12),
         heightfield2,
         g1,
-        max_toi,
-        stop_at_penetration,
+        options,
     )?
-    .map(|toi| toi.swapped()))
+    .map(|time_of_impact| time_of_impact.swapped()))
 }

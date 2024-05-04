@@ -33,7 +33,7 @@ fn do_toi_test() -> Option<Real> {
     let vel_one = Vector3::new(SPEED, 0.0, 0.0);
     let vel_two = Vector3::new(0.0, 0.0, 0.0);
 
-    query::time_of_impact(
+    query::cast_shapes(
         &transform_one,
         &vel_one,
         &shape_one,
@@ -44,11 +44,11 @@ fn do_toi_test() -> Option<Real> {
         true,
     )
     .unwrap()
-    .map(|toi| toi.toi)
+    .map(|time_of_impact| time_of_impact.time_of_impact)
 }
 
 #[test]
 fn trimesh_trimesh_toi() {
-    let toi = do_toi_test();
-    assert_eq!(toi, Some(0.00998));
+    let time_of_impact = do_toi_test();
+    assert_eq!(time_of_impact, Some(0.00998));
 }

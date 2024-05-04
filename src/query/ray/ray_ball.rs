@@ -7,22 +7,22 @@ use num::Zero;
 
 impl RayCast for Ball {
     #[inline]
-    fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
         ray_toi_with_ball(&Point::origin(), self.radius, ray, solid)
             .1
-            .filter(|toi| *toi <= max_toi)
+            .filter(|time_of_impact| *time_of_impact <= max_time_of_impact)
     }
 
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         ray_toi_and_normal_with_ball(&Point::origin(), self.radius, ray, solid)
             .1
-            .filter(|int| int.toi <= max_toi)
+            .filter(|int| int.time_of_impact <= max_time_of_impact)
     }
 }
 

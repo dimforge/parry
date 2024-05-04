@@ -1,12 +1,14 @@
 use crate::bounding_volume::{BoundingSphere, SimdAabb};
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
-use crate::query::{self, details::NonlinearTOIMode, NonlinearRigidMotion, QueryDispatcher, TOI};
+use crate::query::{
+    self, details::NonlinearShapeCastMode, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit,
+};
 use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
 use simba::simd::SimdValue;
 
 /// Time Of Impact of a composite shape with any other shape, under a rigid motion (translation + rotation).
-pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn cast_shapes_nonlinear_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     g1: &G1,
@@ -15,7 +17,7 @@ pub fn nonlinear_time_of_impact_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     start_time: Real,
     end_time: Real,
     stop_at_penetration: bool,
-) -> Option<TOI>
+) -> Option<ShapeCastHit>
 where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
@@ -37,7 +39,7 @@ where
 }
 
 /// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
-pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn cast_shapes_nonlinear_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,
@@ -46,12 +48,12 @@ pub fn nonlinear_time_of_impact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     start_time: Real,
     end_time: Real,
     stop_at_penetration: bool,
-) -> Option<TOI>
+) -> Option<ShapeCastHit>
 where
     D: QueryDispatcher,
     G2: TypedSimdCompositeShape,
 {
-    nonlinear_time_of_impact_composite_shape_shape(
+    cast_shapes_nonlinear_composite_shape_shape(
         dispatcher,
         motion2,
         g2,
@@ -61,7 +63,7 @@ where
         end_time,
         stop_at_penetration,
     )
-    .map(|toi| toi.swapped())
+    .map(|time_of_impact| time_of_impact.swapped())
 }
 
 /// A visitor used to determine the non-linear time of impact between a composite shape and another shape.
@@ -115,7 +117,7 @@ where
     D: QueryDispatcher,
     G1: TypedSimdCompositeShape,
 {
-    type Result = (G1::PartId, TOI);
+    type Result = (G1::PartId, ShapeCastHit);
 
     #[inline]
     fn visit(
@@ -139,25 +141,27 @@ where
             let ball_motion1 = self.motion1.prepend_translation(center1.coords);
             let ball_motion2 = self.motion2.prepend_translation(self.sphere2.center.coords);
 
-            if let Some(toi) = query::details::nonlinear_time_of_impact_support_map_support_map(
-                self.dispatcher,
-                &ball_motion1,
-                &ball1,
-                &ball1,
-                &ball_motion2,
-                &ball2,
-                &ball2,
-                self.start_time,
-                self.end_time,
-                NonlinearTOIMode::StopAtPenetration,
-            ) {
+            if let Some(time_of_impact) =
+                query::details::cast_shapes_nonlinear_support_map_support_map(
+                    self.dispatcher,
+                    &ball_motion1,
+                    &ball1,
+                    &ball1,
+                    &ball_motion2,
+                    &ball2,
+                    &ball2,
+                    self.start_time,
+                    self.end_time,
+                    NonlinearShapeCastMode::StopAtPenetration,
+                )
+            {
                 if let Some(data) = data {
-                    if toi.toi < best && data[ii].is_some() {
+                    if time_of_impact.time_of_impact < best && data[ii].is_some() {
                         let part_id = *data[ii].unwrap();
                         self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
-                            let toi = if let Some(part_pos1) = part_pos1 {
+                            let time_of_impact = if let Some(part_pos1) = part_pos1 {
                                 self.dispatcher
-                                    .nonlinear_time_of_impact(
+                                    .cast_shapes_nonlinear(
                                         &self.motion1.prepend(*part_pos1),
                                         g1,
                                         self.motion2,
@@ -167,10 +171,10 @@ where
                                         self.stop_at_penetration,
                                     )
                                     .unwrap_or(None)
-                                    .map(|toi| toi.transform1_by(part_pos1))
+                                    .map(|time_of_impact| time_of_impact.transform1_by(part_pos1))
                             } else {
                                 self.dispatcher
-                                    .nonlinear_time_of_impact(
+                                    .cast_shapes_nonlinear(
                                         self.motion1,
                                         g1,
                                         self.motion2,
@@ -182,18 +186,18 @@ where
                                     .unwrap_or(None)
                             };
 
-                            // println!("Found toi: {:?}", toi);
+                            // println!("Found time_of_impact: {:?}", time_of_impact);
 
-                            if let Some(toi) = toi {
-                                weights[ii] = toi.toi;
-                                mask[ii] = toi.toi < best;
-                                results[ii] = Some((part_id, toi));
+                            if let Some(time_of_impact) = time_of_impact {
+                                weights[ii] = time_of_impact.time_of_impact;
+                                mask[ii] = time_of_impact.time_of_impact < best;
+                                results[ii] = Some((part_id, time_of_impact));
                             }
                         });
                     }
                 } else {
-                    weights[ii] = toi.toi;
-                    mask[ii] = toi.toi < best;
+                    weights[ii] = time_of_impact.time_of_impact;
+                    mask[ii] = time_of_impact.time_of_impact < best;
                 }
             }
         }

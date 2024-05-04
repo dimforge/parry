@@ -1,10 +1,11 @@
 use crate::math::{Isometry, Real, Vector};
+use crate::query::details::ShapeCastOptions;
 #[cfg(feature = "std")]
 use crate::query::{
     contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
     ContactManifold,
 };
-use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, Unsupported, TOI};
+use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, ShapeCastHit, Unsupported};
 use crate::shape::Shape;
 
 #[cfg(feature = "std")]
@@ -97,19 +98,19 @@ pub trait QueryDispatcher: Send + Sync {
     /// - `pos12`: the position of the second shape relative to the first shape.
     /// - `local_vel12`: the relative velocity between the two shapes, expressed in the local-space
     ///                  of the first shape. In other world: `pos1.inverse() * (vel2 - vel1)`.
-    /// - `g1`: the first shape involved in the TOI computation.
-    /// - `g2`: the second shape involved in the TOI computation.
-    /// - `max_toi`: the maximum allowed TOI. This method returns `None` if the time-of-impact
+    /// - `g1`: the first shape involved in the shape-cast.
+    /// - `g2`: the second shape involved in the shape-cast.
+    /// - `target_dist`: a hit will be returned as soon as the two shapes get closer than `target_dist`.
+    /// - `max_time_of_impact`: the maximum allowed travel time. This method returns `None` if the time-of-impact
     ///              detected is theater than this value.
-    fn time_of_impact(
+    fn cast_shapes(
         &self,
         pos12: &Isometry<Real>,
         local_vel12: &Vector<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
-        max_toi: Real,
-        stop_at_penetration: bool,
-    ) -> Result<Option<TOI>, Unsupported>;
+        options: ShapeCastOptions,
+    ) -> Result<Option<ShapeCastHit>, Unsupported>;
 
     /// Construct a `QueryDispatcher` that falls back on `other` for cases not handled by `self`
     fn chain<U: QueryDispatcher>(self, other: U) -> QueryDispatcherChain<Self, U>
@@ -130,12 +131,12 @@ pub trait QueryDispatcher: Send + Sync {
     /// * `end_time` - The end time of the interval where the motion takes place.
     /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
     ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
-    ///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
+    ///    result will have a `time_of_impact` equal to `start_time`. If `stop_at_penetration` is `false`
     ///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
     ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
     ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
     ///    at a time `> start_time` that could result in tunnelling.
-    fn nonlinear_time_of_impact(
+    fn cast_shapes_nonlinear(
         &self,
         motion1: &NonlinearRigidMotion,
         g1: &dyn Shape,
@@ -144,7 +145,7 @@ pub trait QueryDispatcher: Send + Sync {
         start_time: Real,
         end_time: Real,
         stop_at_penetration: bool,
-    ) -> Result<Option<TOI>, Unsupported>;
+    ) -> Result<Option<ShapeCastHit>, Unsupported>;
 }
 
 /// The composition of two dispatchers
@@ -187,16 +188,15 @@ where
         max_dist: Real,
     ) -> ClosestPoints);
 
-    chain_method!(time_of_impact(
+    chain_method!(cast_shapes(
         pos12: &Isometry<Real>,
         vel12: &Vector<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
-        max_toi: Real,
-        stop_at_penetration: bool,
-    ) -> Option<TOI>);
+        options: ShapeCastOptions,
+    ) -> Option<ShapeCastHit>);
 
-    chain_method!(nonlinear_time_of_impact(
+    chain_method!(cast_shapes_nonlinear(
         motion1: &NonlinearRigidMotion,
         g1: &dyn Shape,
         motion2: &NonlinearRigidMotion,
@@ -204,7 +204,7 @@ where
         start_time: Real,
         end_time: Real,
         stop_at_penetration: bool,
-    ) -> Option<TOI>);
+    ) -> Option<ShapeCastHit>);
 }
 
 #[cfg(feature = "std")]

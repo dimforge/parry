@@ -1,5 +1,5 @@
 use na::{self, Isometry3, Vector3};
-use parry3d::query::time_of_impact;
+use parry3d::query::cast_shapes;
 use parry3d::shape::Cuboid;
 
 /**
@@ -36,7 +36,7 @@ fn collide(v_y: f32) -> Option<f32> {
         true,
     )
     .unwrap()
-    .map(|toi| toi.toi)
+    .map(|time_of_impact| time_of_impact.time_of_impact)
 }
 
 #[test]
