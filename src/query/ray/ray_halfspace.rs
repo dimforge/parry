@@ -4,7 +4,7 @@ use crate::math::{Point, Real, Vector};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, HalfSpace};
 
-/// Computes the toi of an unbounded line with a halfspace described by its center and normal.
+/// Computes the time_of_impact of an unbounded line with a halfspace described by its center and normal.
 #[inline]
 pub fn line_toi_with_halfspace(
     halfspace_center: &Point<Real>,
@@ -22,7 +22,7 @@ pub fn line_toi_with_halfspace(
     }
 }
 
-/// Computes the toi of a ray with a halfspace described by its center and normal.
+/// Computes the time_of_impact of a ray with a halfspace described by its center and normal.
 #[inline]
 pub fn ray_toi_with_halfspace(
     center: &Point<Real>,
@@ -43,7 +43,7 @@ impl RayCast for HalfSpace {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         let dpos = -ray.origin;
@@ -57,7 +57,7 @@ impl RayCast for HalfSpace {
 
         let t = dot_normal_dpos / self.normal.dot(&ray.dir);
 
-        if t >= 0.0 && t <= max_toi {
+        if t >= 0.0 && t <= max_time_of_impact {
             let n = if dot_normal_dpos > 0.0 {
                 -self.normal
             } else {

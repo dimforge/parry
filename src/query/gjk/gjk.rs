@@ -189,13 +189,20 @@ pub fn cast_local_ray<G: ?Sized>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
-    max_toi: Real,
+    max_time_of_impact: Real,
 ) -> Option<(Real, Vector<Real>)>
 where
     G: SupportMap,
 {
     let g2 = ConstantOrigin;
-    minkowski_ray_cast(&Isometry::identity(), shape, &g2, ray, max_toi, simplex)
+    minkowski_ray_cast(
+        &Isometry::identity(),
+        shape,
+        &g2,
+        ray,
+        max_time_of_impact,
+        simplex,
+    )
 }
 
 /// Compute the normal and the distance that can travel `g1` along the direction
@@ -214,17 +221,19 @@ where
     G2: SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
-    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(|(toi, normal)| {
-        let witnesses = if !toi.is_zero() {
-            result(simplex, simplex.dimension() == DIM)
-        } else {
-            // If there is penetration, the witness points
-            // are undefined.
-            (Point::origin(), Point::origin())
-        };
+    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(
+        |(time_of_impact, normal)| {
+            let witnesses = if !time_of_impact.is_zero() {
+                result(simplex, simplex.dimension() == DIM)
+            } else {
+                // If there is penetration, the witness points
+                // are undefined.
+                (Point::origin(), Point::origin())
+            };
 
-        (toi, normal, witnesses.0, witnesses.1)
-    })
+            (time_of_impact, normal, witnesses.0, witnesses.1)
+        },
+    )
 }
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
@@ -233,7 +242,7 @@ fn minkowski_ray_cast<G1: ?Sized, G2: ?Sized>(
     g1: &G1,
     g2: &G2,
     ray: &Ray,
-    max_toi: Real,
+    max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
 ) -> Option<(Real, Vector<Real>)>
 where
@@ -304,10 +313,10 @@ where
                     ldir = *dir;
                     ltoi += t;
 
-                    // NOTE: we divide by ray_length instead of doing max_toi * ray_length
-                    // because the multiplication may cause an overflow if max_toi is set
+                    // NOTE: we divide by ray_length instead of doing max_time_of_impact * ray_length
+                    // because the multiplication may cause an overflow if max_time_of_impact is set
                     // to Real::max_value() by users that want to have an infinite ray.
-                    if ltoi / ray_length > max_toi {
+                    if ltoi / ray_length > max_time_of_impact {
                         return None;
                     }
 

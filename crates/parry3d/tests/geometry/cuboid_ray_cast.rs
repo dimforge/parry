@@ -37,7 +37,7 @@ where
                 ray, name, rotation
             ));
 
-        let point = ray.origin + ray.dir * intersection.toi;
+        let point = ray.origin + ray.dir * intersection.time_of_impact;
         let point_nudged_in = point + intersection.normal * -0.001;
         let point_nudged_out = point + intersection.normal * 0.001;
 
@@ -70,7 +70,7 @@ where
             shape
                 .cast_ray_and_get_normal(&position, &new_ray, std::f32::MAX, true)
                 .expect("recurring ray cast produced a different answer")
-                .toi
+                .time_of_impact
         );
     }
 }

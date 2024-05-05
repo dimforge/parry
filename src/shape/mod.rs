@@ -70,6 +70,8 @@ pub type RoundConvexPolyhedron = RoundShape<ConvexPolyhedron>;
 #[cfg(feature = "std")]
 pub type RoundConvexPolygon = RoundShape<ConvexPolygon>;
 
+pub(crate) use self::round_shape::RoundShapeRef;
+
 mod ball;
 mod capsule;
 #[cfg(feature = "std")]

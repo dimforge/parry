@@ -1,6 +1,6 @@
 use crate::math::Real;
 use crate::query::{
-    DefaultQueryDispatcher, NonlinearRigidMotion, QueryDispatcher, Unsupported, TOI,
+    DefaultQueryDispatcher, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit, Unsupported,
 };
 use crate::shape::Shape;
 
@@ -15,12 +15,12 @@ use crate::shape::Shape;
 /// * `end_time` - The end time of the interval where the motion takes place.
 /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
 ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
-///    result will have a `toi` equal to `start_time`. If `stop_at_penetration` is `false`
+///    result will have a `time_of_impact` equal to `start_time`. If `stop_at_penetration` is `false`
 ///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
 ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
 ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
 ///    at a time `> start_time` that could result in tunnelling.
-pub fn nonlinear_time_of_impact(
+pub fn cast_shapes_nonlinear(
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,
     motion2: &NonlinearRigidMotion,
@@ -28,8 +28,8 @@ pub fn nonlinear_time_of_impact(
     start_time: Real,
     end_time: Real,
     stop_at_penetration: bool,
-) -> Result<Option<TOI>, Unsupported> {
-    DefaultQueryDispatcher.nonlinear_time_of_impact(
+) -> Result<Option<ShapeCastHit>, Unsupported> {
+    DefaultQueryDispatcher.cast_shapes_nonlinear(
         motion1,
         g1,
         motion2,

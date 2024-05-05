@@ -3,34 +3,36 @@ use na::ComplexField; // for .abs()
 use na::{RealField, Unit};
 
 use crate::math::{Point, Real, Vector};
-use crate::query::{self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, TOIStatus, TOI};
+use crate::query::{
+    self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit, ShapeCastStatus,
+};
 use crate::shape::{Shape, SupportMap};
 use crate::utils::WCross;
 
 use crate::query::gjk::ConstantPoint;
 use num::Bounded;
 
-/// Enum specifying the behavior of TOI computation when there is a penetration at the starting time.
+/// Enum specifying the behavior of shape-casting when there is a penetration at the starting time.
 #[derive(Copy, Clone, Debug)]
-pub enum NonlinearTOIMode {
-    /// Stop TOI computation as soon as there is a penetration.
+pub enum NonlinearShapeCastMode {
+    /// Stop shape-casting as soon as there is a penetration.
     StopAtPenetration,
-    /// When there is a penetration, don't stop the TOI search if the relative velocity
+    /// When there is a penetration, don't stop the shape-cast if the relative velocity
     /// at the penetration points is negative (i.e. if the points are separating).
-    DirectionalTOI {
-        /// The sum of the `Shape::ccd_thickness` of both shapes involved in the TOI computation.
+    Directional {
+        /// The sum of the `Shape::ccd_thickness` of both shapes involved in the shape-cast.
         sum_linear_thickness: Real,
-        /// The max of the `Shape::ccd_angular_thickness` of both shapes involved in the TOI computation.
+        /// The max of the `Shape::ccd_angular_thickness` of both shapes involved in the shape-cast.
         max_angular_thickness: Real,
     },
 }
 
-impl NonlinearTOIMode {
-    /// Initializes a directional TOI mode.
+impl NonlinearShapeCastMode {
+    /// Initializes a directional `NonlinearShapeCastMode`.
     ///
-    /// With the "directional" TOI mode, the nonlinear TOI computation won't
+    /// With the "directional" shape-cast mode, the nonlinear shape-casting won't
     /// immediately stop if the shapes are already intersecting at `t = 0`.
-    /// Instead, it will search for the first time where a contact between
+    /// Instead, it will search for the first time when a contact between
     /// the shapes would result in a deeper penetration (with risk of tunnelling).
     /// This effectively checks the relative velocity of the shapes at their point
     /// of impact.
@@ -44,7 +46,7 @@ impl NonlinearTOIMode {
             .ccd_angular_thickness()
             .max(shape2.ccd_angular_thickness());
 
-        NonlinearTOIMode::DirectionalTOI {
+        NonlinearShapeCastMode::Directional {
             sum_linear_thickness,
             max_angular_thickness,
         }
@@ -53,7 +55,7 @@ impl NonlinearTOIMode {
 
 /// Compute the time of first impact between two support-map shapes following
 /// a nonlinear (with translations and rotations) motion.
-pub fn nonlinear_time_of_impact_support_map_support_map<D, SM1, SM2>(
+pub fn cast_shapes_nonlinear_support_map_support_map<D, SM1, SM2>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     sm1: &SM1,
@@ -63,8 +65,8 @@ pub fn nonlinear_time_of_impact_support_map_support_map<D, SM1, SM2>(
     g2: &dyn Shape,
     start_time: Real,
     end_time: Real,
-    mode: NonlinearTOIMode,
-) -> Option<TOI>
+    mode: NonlinearShapeCastMode,
+) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
     SM1: ?Sized + SupportMap,
@@ -85,7 +87,7 @@ where
         compute_toi(
             dispatcher, motion2, sm2, g2, motion1, sm1, g1, start_time, end_time, mode,
         )
-        .map(|toi| toi.swapped())
+        .map(|hit| hit.swapped())
     }
 }
 
@@ -100,8 +102,8 @@ pub fn compute_toi<D, SM1, SM2>(
     g2: &dyn Shape,
     start_time: Real,
     end_time: Real,
-    mode: NonlinearTOIMode,
-) -> Option<TOI>
+    mode: NonlinearShapeCastMode,
+) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
     SM1: ?Sized + SupportMap,
@@ -110,18 +112,18 @@ where
     let mut prev_min_t = start_time;
     let abs_tol: Real = query::gjk::eps_tol();
 
-    let mut result = TOI {
-        toi: start_time,
+    let mut result = ShapeCastHit {
+        time_of_impact: start_time,
         normal1: Vector::<Real>::x_axis(),
         normal2: Vector::<Real>::x_axis(),
         witness1: Point::<Real>::origin(),
         witness2: Point::<Real>::origin(),
-        status: TOIStatus::Penetrating,
+        status: ShapeCastStatus::PenetratingOrWithinTargetDist,
     };
 
     loop {
-        let pos1 = motion1.position_at_time(result.toi);
-        let pos2 = motion2.position_at_time(result.toi);
+        let pos1 = motion1.position_at_time(result.time_of_impact);
+        let pos2 = motion2.position_at_time(result.time_of_impact);
         let pos12 = pos1.inv_mul(&pos2);
 
         // TODO: use the _with_params version of the closest points query.
@@ -131,10 +133,10 @@ where
         {
             ClosestPoints::Intersecting => {
                 // println!(">> Intersecting.");
-                if result.toi == start_time {
-                    result.status = TOIStatus::Penetrating
+                if result.time_of_impact == start_time {
+                    result.status = ShapeCastStatus::PenetratingOrWithinTargetDist
                 } else {
-                    result.status = TOIStatus::Failed;
+                    result.status = ShapeCastStatus::Failed;
                 }
                 break;
             }
@@ -151,9 +153,9 @@ where
                     result.normal2 = pos12.inverse_transform_unit_vector(&-normal1);
 
                     let curr_range = BisectionRange {
-                        min_t: result.toi,
+                        min_t: result.time_of_impact,
                         max_t: end_time,
-                        curr_t: result.toi,
+                        curr_t: result.time_of_impact,
                     };
 
                     let (new_range, niter) =
@@ -162,7 +164,7 @@ where
                     //     "Bisection result: {:?}, normal1: {:?}, normal2: {:?}",
                     //     new_range, result.normal1, result.normal2
                     // );
-                    result.toi = new_range.curr_t;
+                    result.time_of_impact = new_range.curr_t;
 
                     if new_range.min_t - prev_min_t < abs_tol {
                         if new_range.max_t == end_time {
@@ -183,18 +185,18 @@ where
                             }
                         }
 
-                        result.status = TOIStatus::Converged;
+                        result.status = ShapeCastStatus::Converged;
                         break;
                     }
 
                     prev_min_t = new_range.min_t;
 
                     if niter == 0 {
-                        result.status = TOIStatus::Converged;
+                        result.status = ShapeCastStatus::Converged;
                         break;
                     }
                 } else {
-                    result.status = TOIStatus::Failed;
+                    result.status = ShapeCastStatus::Failed;
                     break;
                 }
             }
@@ -204,7 +206,7 @@ where
                 log::error!(
                     "Closest points not found despite setting the max distance to infinity."
                 );
-                result.status = TOIStatus::Failed;
+                result.status = ShapeCastStatus::Failed;
                 break;
             }
         }
@@ -212,17 +214,17 @@ where
 
     // In we started with a penetration, we need to compute a full contact manifold and
     // see if any of these contact points may result in tunnelling. If the is one, return
-    // that TOI instead. That way, object moving tangentially on a surface (always keeping
+    // that time of impact instead. That way, object moving tangentially on a surface (always keeping
     // a contact with it) won't report an useless impact.
     //
-    // Note that this must be done here instead of outside of the `nonlinear_time_of_impact`
+    // Note that this must be done here instead of outside of the `cast_shapes_nonlinear`
     // function so that this works properly with composite shapes.
     match mode {
-        NonlinearTOIMode::DirectionalTOI {
+        NonlinearShapeCastMode::Directional {
             sum_linear_thickness,
             max_angular_thickness,
         } => {
-            if (result.toi - start_time).abs() < 1.0e-5 {
+            if (result.time_of_impact - start_time).abs() < 1.0e-5 {
                 handle_penetration_at_start_time(
                     dispatcher,
                     motion1,
@@ -240,7 +242,7 @@ where
                 Some(result)
             }
         }
-        NonlinearTOIMode::StopAtPenetration => Some(result),
+        NonlinearShapeCastMode::StopAtPenetration => Some(result),
     }
 }
 
@@ -256,14 +258,14 @@ fn handle_penetration_at_start_time<D, SM1, SM2>(
     end_time: Real,
     sum_linear_thickness: Real,
     max_angular_thickness: Real,
-) -> Option<TOI>
+) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
     SM1: ?Sized + SupportMap,
     SM2: ?Sized + SupportMap,
 {
     // Because we are doing non-linear CCD, we need an iterative methode here.
-    // First we need to check if the `toi = start_time` is legitimate, i.e.,
+    // First we need to check if the `time_of_impact = start_time` is legitimate, i.e.,
     // if tunnelling will happen if we don't clamp the motion.
     //
     // If the contact isn't "legitimate" (i.e. if we have a separating velocity),
@@ -324,7 +326,7 @@ where
 
             // 1. Compute the relative velocity at that contact point.
             // 2. Check if this results in a potential tunnelling.
-            // 3. Use bisection to adjust the TOI to the time where a pair
+            // 3. Use bisection to adjust the shape-cast to the time where a pair
             //    of contact points potentially causing tunneling hit for the first time.
             let r1 = contact.point1 - motion1.local_center;
             let r2 = contact.point2 - motion2.local_center;
@@ -359,13 +361,13 @@ where
             if normal_vel * (end_time - next_time) > ccd_threshold {
                 // dbg!("D1");
 
-                let mut result = TOI {
-                    toi: next_time,
+                let mut result = ShapeCastHit {
+                    time_of_impact: next_time,
                     witness1: contact.point1,
                     witness2: contact.point2,
                     normal1: contact.normal1,
                     normal2: contact.normal2,
-                    status: TOIStatus::Converged,
+                    status: ShapeCastStatus::Converged,
                 };
 
                 if contact.dist > 0.0 {
@@ -388,9 +390,9 @@ where
 
                     // TODO: the bisection isn't always enough here. We should check that we
                     //       still have a contact now. If not, we should run the loop from
-                    //       nonlinear_time_of_impact_support_map_support_map again from this
+                    //       cast_shapes_nonlinear_support_map_support_map again from this
                     //       point forward.
-                    result.toi = new_range.curr_t;
+                    result.time_of_impact = new_range.curr_t;
                 } else {
                     // dbg!("Bissecting points");
                     // This is an acceptable impact. Now determine when
@@ -412,12 +414,12 @@ where
 
                     // TODO: the bisection isn't always enough here. We should check that we
                     //       still have a contact now. If not, we should run the loop from
-                    //       nonlinear_time_of_impact_support_map_support_map again from this
+                    //       cast_shapes_nonlinear_support_map_support_map again from this
                     //       point forward.
-                    result.toi = new_range.curr_t;
+                    result.time_of_impact = new_range.curr_t;
                 }
 
-                // println!("Fount new toi: {}", result.toi);
+                // println!("Fount new time_of_impact: {}", result.time_of_impact);
                 return Some(result);
             }
 
