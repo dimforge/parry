@@ -43,11 +43,7 @@ where
         if let Some(seg) = heightfield1.segment_at(curr) {
             // TODO: pre-check using a ray-cast on the Aabbs first?
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
-                if hit.time_of_impact
-                    < best_hit
-                        .map(|time_of_impact| time_of_impact.time_of_impact)
-                        .unwrap_or(Real::MAX)
-                {
+                if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
                 }
             }
@@ -92,11 +88,7 @@ where
         if let Some(seg) = heightfield1.segment_at(curr_elt as usize) {
             // TODO: pre-check using a ray-cast on the Aabbs first?
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
-                if hit.time_of_impact
-                    < best_hit
-                        .map(|time_of_impact| time_of_impact.time_of_impact)
-                        .unwrap_or(Real::MAX)
-                {
+                if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
                 }
             }
@@ -168,10 +160,7 @@ where
             for tri in [tri_a, tri_b].into_iter().flatten() {
                 // TODO: pre-check using a ray-cast on the Aabbs first?
                 if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
-                    if hit.time_of_impact
-                        < best_hit
-                            .map(|time_of_impact| time_of_impact.time_of_impact)
-                            .unwrap_or(Real::MAX)
+                    if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX)
                     {
                         best_hit = Some(hit);
                     }
@@ -297,5 +286,5 @@ where
         g1,
         options,
     )?
-    .map(|time_of_impact| time_of_impact.swapped()))
+    .map(|hit| hit.swapped()))
 }

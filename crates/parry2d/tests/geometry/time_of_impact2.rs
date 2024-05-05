@@ -51,18 +51,12 @@ fn ball_cuboid_toi() {
     )
     .unwrap();
 
-    assert_eq!(
-        toi_intersecting.map(|time_of_impact| time_of_impact.time_of_impact),
-        Some(0.0)
-    );
+    assert_eq!(toi_intersecting.map(|hit| hit.time_of_impact), Some(0.0));
     assert!(relative_eq!(
         toi_will_touch.unwrap().time_of_impact,
         ((2.0 as Real).sqrt() - 1.0) / (ball_vel2 - cuboid_vel2).norm()
     ));
-    assert_eq!(
-        toi_wont_touch.map(|time_of_impact| time_of_impact.time_of_impact),
-        None
-    );
+    assert_eq!(toi_wont_touch.map(|hit| hit.time_of_impact), None);
 }
 
 #[test]
@@ -76,7 +70,7 @@ fn cuboid_cuboid_toi_issue_214() {
     let vel1 = Vector2::new(1.0, 0.0);
     let vel2 = Vector2::new(0.0, 0.0);
 
-    let time_of_impact = query::cast_shapes(
+    let hit = query::cast_shapes(
         &pos1,
         &vel1,
         &shape1,
@@ -86,7 +80,7 @@ fn cuboid_cuboid_toi_issue_214() {
         ShapeCastOptions::default(),
     )
     .unwrap();
-    assert!(time_of_impact.is_some());
+    assert!(hit.is_some());
 }
 
 #[test]
@@ -107,7 +101,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
         Point2::new(1.0, 0.99999994)
     );
 
-    let time_of_impact = query::cast_shapes(
+    let hit = query::cast_shapes(
         &ball_isometry,
         &ball_velocity,
         &ball,
@@ -118,7 +112,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
     )
     .unwrap();
 
-    assert_eq!(time_of_impact.unwrap().time_of_impact, 0.5);
+    assert_eq!(hit.unwrap().time_of_impact, 0.5);
 }
 
 #[test]
@@ -139,7 +133,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
         Point2::new(1.0, 0.99999994)
     );
 
-    let time_of_impact = query::cast_shapes(
+    let hit = query::cast_shapes(
         &ball_isometry,
         &ball_velocity,
         &ball,
@@ -150,7 +144,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
     )
     .unwrap();
 
-    assert_eq!(time_of_impact.unwrap().time_of_impact, 0.49999994);
+    assert_eq!(hit.unwrap().time_of_impact, 0.49999994);
 }
 
 #[test]
@@ -171,7 +165,7 @@ fn cast_shapes_should_return_toi_for_rotated_segment_and_ball() {
         Point2::new(1.0, 0.99999994)
     );
 
-    let time_of_impact = query::cast_shapes(
+    let hit = query::cast_shapes(
         &segment_isometry,
         &segment_velocity,
         &segment,
@@ -182,5 +176,5 @@ fn cast_shapes_should_return_toi_for_rotated_segment_and_ball() {
     )
     .unwrap();
 
-    assert_eq!(time_of_impact.unwrap().time_of_impact, 0.5);
+    assert_eq!(hit.unwrap().time_of_impact, 0.5);
 }

@@ -80,5 +80,5 @@ where
         other,
         options,
     )
-    .map(|time_of_impact| time_of_impact.swapped())
+    .map(|hit| hit.swapped())
 }

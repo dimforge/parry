@@ -87,7 +87,7 @@ where
         compute_toi(
             dispatcher, motion2, sm2, g2, motion1, sm1, g1, start_time, end_time, mode,
         )
-        .map(|time_of_impact| time_of_impact.swapped())
+        .map(|hit| hit.swapped())
     }
 }
 

@@ -51,14 +51,8 @@ fn main() {
     )
     .unwrap();
 
-    assert_eq!(
-        toi_intersecting.map(|time_of_impact| time_of_impact.time_of_impact),
-        Some(0.0)
-    );
+    assert_eq!(toi_intersecting.map(|hit| hit.time_of_impact), Some(0.0));
     println!("Toi: {:?}", toi_will_touch);
     assert!(toi_will_touch.is_some() && toi_will_touch.unwrap().time_of_impact > 0.0);
-    assert_eq!(
-        toi_wont_touch.map(|time_of_impact| time_of_impact.time_of_impact),
-        None
-    );
+    assert_eq!(toi_wont_touch.map(|hit| hit.time_of_impact), None);
 }

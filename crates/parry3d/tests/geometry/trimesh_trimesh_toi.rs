@@ -43,7 +43,7 @@ fn do_toi_test() -> Option<Real> {
         ShapeCastOptions::default(),
     )
     .unwrap()
-    .map(|time_of_impact| time_of_impact.time_of_impact)
+    .map(|hit| hit.time_of_impact)
 }
 
 #[test]

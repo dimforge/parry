@@ -132,10 +132,10 @@ where
             for ii in 0..SIMD_WIDTH {
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
-                    let mut time_of_impact = None;
+                    let mut hit = None;
                     self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         if let Some(part_pos1) = part_pos1 {
-                            time_of_impact = self
+                            hit = self
                                 .dispatcher
                                 .cast_shapes(
                                     &part_pos1.inv_mul(self.pos12),
@@ -145,19 +145,19 @@ where
                                     self.options,
                                 )
                                 .unwrap_or(None)
-                                .map(|time_of_impact| time_of_impact.transform1_by(part_pos1));
+                                .map(|hit| hit.transform1_by(part_pos1));
                         } else {
-                            time_of_impact = self
+                            hit = self
                                 .dispatcher
                                 .cast_shapes(self.pos12, self.vel12, g1, self.g2, self.options)
                                 .unwrap_or(None);
                         }
                     });
 
-                    if let Some(time_of_impact) = time_of_impact {
-                        results[ii] = Some((part_id, time_of_impact));
-                        mask[ii] = time_of_impact.time_of_impact < best;
-                        weights[ii] = time_of_impact.time_of_impact;
+                    if let Some(hit) = hit {
+                        results[ii] = Some((part_id, hit));
+                        mask[ii] = hit.time_of_impact < best;
+                        weights[ii] = hit.time_of_impact;
                     }
                 }
             }

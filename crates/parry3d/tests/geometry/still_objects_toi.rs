@@ -35,7 +35,7 @@ fn collide(v_y: f32) -> Option<f32> {
         ShapeCastOptions::default(),
     )
     .unwrap()
-    .map(|time_of_impact| time_of_impact.time_of_impact)
+    .map(|hit| hit.time_of_impact)
 }
 
 #[test]

@@ -63,7 +63,7 @@ where
         end_time,
         stop_at_penetration,
     )
-    .map(|time_of_impact| time_of_impact.swapped())
+    .map(|hit| hit.swapped())
 }
 
 /// A visitor used to determine the non-linear time of impact between a composite shape and another shape.
@@ -141,25 +141,23 @@ where
             let ball_motion1 = self.motion1.prepend_translation(center1.coords);
             let ball_motion2 = self.motion2.prepend_translation(self.sphere2.center.coords);
 
-            if let Some(time_of_impact) =
-                query::details::cast_shapes_nonlinear_support_map_support_map(
-                    self.dispatcher,
-                    &ball_motion1,
-                    &ball1,
-                    &ball1,
-                    &ball_motion2,
-                    &ball2,
-                    &ball2,
-                    self.start_time,
-                    self.end_time,
-                    NonlinearShapeCastMode::StopAtPenetration,
-                )
-            {
+            if let Some(hit) = query::details::cast_shapes_nonlinear_support_map_support_map(
+                self.dispatcher,
+                &ball_motion1,
+                &ball1,
+                &ball1,
+                &ball_motion2,
+                &ball2,
+                &ball2,
+                self.start_time,
+                self.end_time,
+                NonlinearShapeCastMode::StopAtPenetration,
+            ) {
                 if let Some(data) = data {
-                    if time_of_impact.time_of_impact < best && data[ii].is_some() {
+                    if hit.time_of_impact < best && data[ii].is_some() {
                         let part_id = *data[ii].unwrap();
                         self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
-                            let time_of_impact = if let Some(part_pos1) = part_pos1 {
+                            let hit = if let Some(part_pos1) = part_pos1 {
                                 self.dispatcher
                                     .cast_shapes_nonlinear(
                                         &self.motion1.prepend(*part_pos1),
@@ -171,7 +169,7 @@ where
                                         self.stop_at_penetration,
                                     )
                                     .unwrap_or(None)
-                                    .map(|time_of_impact| time_of_impact.transform1_by(part_pos1))
+                                    .map(|hit| hit.transform1_by(part_pos1))
                             } else {
                                 self.dispatcher
                                     .cast_shapes_nonlinear(
@@ -188,16 +186,16 @@ where
 
                             // println!("Found time_of_impact: {:?}", time_of_impact);
 
-                            if let Some(time_of_impact) = time_of_impact {
-                                weights[ii] = time_of_impact.time_of_impact;
-                                mask[ii] = time_of_impact.time_of_impact < best;
-                                results[ii] = Some((part_id, time_of_impact));
+                            if let Some(hit) = hit {
+                                weights[ii] = hit.time_of_impact;
+                                mask[ii] = hit.time_of_impact < best;
+                                results[ii] = Some((part_id, hit));
                             }
                         });
                     }
                 } else {
-                    weights[ii] = time_of_impact.time_of_impact;
-                    mask[ii] = time_of_impact.time_of_impact < best;
+                    weights[ii] = hit.time_of_impact;
+                    mask[ii] = hit.time_of_impact < best;
                 }
             }
         }
