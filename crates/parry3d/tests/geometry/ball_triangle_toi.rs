@@ -1,7 +1,7 @@
 // Issue #123
 
 use na::{self, Isometry3, Point3, Vector3};
-use parry3d::query;
+use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::{Ball, Triangle};
 
 #[test]
@@ -18,7 +18,8 @@ fn ball_triangle_toi_infinite_loop_issue() {
     let vel1 = Vector3::new(0.0, 0.000000000000000000000000000000000000000006925, 0.0);
     let vel2 = Vector3::zeros();
 
-    let cast = query::cast_shapes(&m1, &vel1, &b, &m2, &vel2, &t, std::f32::MAX, true).unwrap();
+    let cast =
+        query::cast_shapes(&m1, &vel1, &b, &m2, &vel2, &t, ShapeCastOptions::default()).unwrap();
 
     println!("ShapeCastHit: {:?}", cast);
     assert!(cast.is_none()); // The provided velocity is too small.

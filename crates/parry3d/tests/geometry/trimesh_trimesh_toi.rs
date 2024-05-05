@@ -2,7 +2,7 @@
 
 use na::{zero, Isometry3, Point3, Vector3};
 use parry3d::math::Real;
-use parry3d::query;
+use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::TriMesh;
 
 fn build_pyramid() -> TriMesh {
@@ -40,8 +40,7 @@ fn do_toi_test() -> Option<Real> {
         &transform_two,
         &vel_two,
         &shape_two,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap()
     .map(|time_of_impact| time_of_impact.time_of_impact)

@@ -2,6 +2,14 @@
 
 ## unreleased
 
+### Added
+
+- Add `ShapeCastOptions` that includes two new options for (linear) shape-casting.
+  `ShapeCastOptions::target_distance` which will return a hit as soon as the moving
+  shapes are closer than this distance; and `compute_impact_geometry_on_penetration`
+  which forces the calculation of proper witness points and normals even if the shapes
+  are initially intersecting (`time_of_impact == 0.0`).
+
 ### Modified
 
 This version modifies many names related to shape-casting:
@@ -17,16 +25,12 @@ This version modifies many names related to shape-casting:
 - Rename `QueryDispatcher::time_of_impact` to `QueryDispatcher::cast_shapes`.
 - The (linear) shape-casting functions like `query::cast_shapes` (previously named
   `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
-  `stop_at_penetration` arguments. This `ShapeCastOptions` includes two new options:
-  `ShapeCastOptions::target_distance` which will return a hit as soon as the moving
-  shapes are closer than this distance; and `compute_impact_geometry_on_penetration`
-  which forces the calculation of proper witness points and normals even if the shapes
-  are initially intersecting (`toi == 0.0`, `time_of_impact == 0.0`).
+  `stop_at_penetration` arguments.
 - Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
 - Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_sahpes_nonlinear`.
 - Rename `NonlinearTOIMode` to `NonlinearShapeCastMode`, and `NonlinearTOIMode::DirectionalTOI` to
   `NonlinearShapeCastMode::Directional`.
-- rename `TimeOfImpactStatus::Penetrating` to `ShapeCastStatus::PenetratingOrWithinTargetDist`.
+- Rename `TimeOfImpactStatus::Penetrating` to `ShapeCastStatus::PenetratingOrWithinTargetDist`.
 
 ## v0.14.0
 

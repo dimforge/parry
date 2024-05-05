@@ -1,6 +1,6 @@
 use na::{self, Isometry3, Vector3};
 use parry3d::math::Real;
-use parry3d::query;
+use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::{Ball, Cuboid};
 
 #[test]
@@ -26,8 +26,7 @@ fn ball_cuboid_toi() {
         &cuboid_pos,
         &cuboid_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap()
     .map(|time_of_impact| time_of_impact.time_of_impact);
@@ -38,8 +37,7 @@ fn ball_cuboid_toi() {
         &cuboid_pos,
         &cuboid_vel2,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap()
     .map(|time_of_impact| time_of_impact.time_of_impact);
@@ -50,8 +48,7 @@ fn ball_cuboid_toi() {
         &cuboid_pos,
         &cuboid_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap()
     .map(|time_of_impact| time_of_impact.time_of_impact);

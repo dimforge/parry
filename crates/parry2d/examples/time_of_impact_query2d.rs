@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
 
 use na::{Isometry2, Vector2};
-use parry2d::math::Real;
 use parry2d::query;
+use parry2d::query::ShapeCastOptions;
 use parry2d::shape::{Ball, Cuboid};
 
 fn main() {
@@ -27,8 +27,7 @@ fn main() {
         &cuboid_pos,
         &box_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_will_touch = query::cast_shapes(
@@ -38,8 +37,7 @@ fn main() {
         &cuboid_pos,
         &box_vel2,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_wont_touch = query::cast_shapes(
@@ -49,8 +47,7 @@ fn main() {
         &cuboid_pos,
         &box_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
 

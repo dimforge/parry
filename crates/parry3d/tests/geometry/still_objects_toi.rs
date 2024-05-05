@@ -1,5 +1,5 @@
 use na::{self, Isometry3, Vector3};
-use parry3d::query::cast_shapes;
+use parry3d::query::{cast_shapes, ShapeCastOptions};
 use parry3d::shape::Cuboid;
 
 /**
@@ -25,15 +25,14 @@ fn collide(v_y: f32) -> Option<f32> {
     let vel2 = Vector3::zeros();
     let cuboid = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
 
-    time_of_impact(
+    cast_shapes(
         &pos1,
         &vel1,
         &cuboid,
         &pos2,
         &vel2,
         &cuboid,
-        std::f32::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap()
     .map(|time_of_impact| time_of_impact.time_of_impact)
