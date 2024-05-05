@@ -1,6 +1,6 @@
 # Change Log
 
-## unreleased
+## v0.15.0
 
 ### Added
 
@@ -27,7 +27,7 @@ This version modifies many names related to shape-casting:
   `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
   `stop_at_penetration` arguments.
 - Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
-- Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_sahpes_nonlinear`.
+- Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_shapes_nonlinear`.
 - Rename `NonlinearTOIMode` to `NonlinearShapeCastMode`, and `NonlinearTOIMode::DirectionalTOI` to
   `NonlinearShapeCastMode::Directional`.
 - Rename `TimeOfImpactStatus::Penetrating` to `ShapeCastStatus::PenetratingOrWithinTargetDist`.
