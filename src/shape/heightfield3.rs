@@ -40,7 +40,7 @@ bitflags::bitflags! {
     )]
     #[repr(C)]
     #[derive(Default)]
-    /// The status of the cell of an heightfield.
+    /// Flags controlling the behavior of some operations involving heightfields.
     pub struct HeightFieldFlags: u8 {
         /// If set, a special treatment will be applied to contact manifold calculation to eliminate
         /// or fix contacts normals that could lead to incorrect bumps in physics simulation (especially
@@ -525,6 +525,16 @@ impl HeightField {
     /// The mutable statuses of all the cells of this heightfield.
     pub fn cells_statuses_mut(&mut self) -> &mut DMatrix<HeightFieldCellStatus> {
         &mut self.status
+    }
+
+    /// The heightfield’s flags controlling internal-edges handling.
+    pub fn flags(&self) -> HeightFieldFlags {
+        self.flags
+    }
+
+    /// Sets the heightfield’s flags controlling internal-edges handling.
+    pub fn set_flags(&mut self, flags: HeightFieldFlags) {
+        self.flags = flags;
     }
 
     /// The heights of this heightfield.
