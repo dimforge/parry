@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.15.1
+
+### Fix
+
+- Fix a regression in ball vs. convex shape contact manifold calculation.
+
 ## v0.15.0
 
 ### Added
