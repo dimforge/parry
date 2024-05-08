@@ -6,7 +6,6 @@ use crate::math::Real;
 // pub(crate) const COS_10_DEGREES: Real = 0.98480775301;
 // pub(crate) const COS_45_DEGREES: Real = 0.70710678118;
 // pub(crate) const SIN_45_DEGREES: Real = COS_45_DEGREES;
-pub(crate) const COS_0_DOT_1_DEGREES: Real = 0.99999847691;
 pub(crate) const COS_1_DEGREES: Real = 0.99984769515;
 // pub(crate) const COS_5_DEGREES: Real = 0.99619469809;
 pub(crate) const COS_FRAC_PI_8: Real = 0.92387953251;

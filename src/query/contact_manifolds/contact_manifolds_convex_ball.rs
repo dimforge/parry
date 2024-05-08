@@ -1,8 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
-use crate::query::{ContactManifold, TrackedContact};
+use crate::query::{ContactManifold, Ray, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
-use crate::utils::COS_0_DOT_1_DEGREES;
 use na::Unit;
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
@@ -57,8 +56,9 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     ContactData: Default + Copy,
 {
     let local_p2_1 = Point::from(pos12.translation.vector);
-    let (proj, fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
-    let dpos = local_p2_1 - proj.point;
+    let (proj, mut fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
+    let mut local_p1 = proj.point;
+    let dpos = local_p2_1 - local_p1;
 
     // local_n1 points from the surface towards our origin if defined, otherwise from the other
     // shape's origin towards our origin if defined, otherwise towards +x
@@ -88,19 +88,35 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
             return;
         }
 
-        // Todo: have this check part of project_normals.
-        // Don’t allow over-correction for spheres.
-        let correction_dot_angle = uncorrected_local_n2.dot(&local_n2);
-        if uncorrected_local_n2.dot(&local_n2) < COS_0_DOT_1_DEGREES {
-            manifold.clear();
-            return;
+        let local_p2 = (local_n2 * ball2.radius).into();
+
+        // If a correction happened, adjust the contact point on the first body.
+        if uncorrected_local_n2 != local_n2 {
+            let ray1 = Ray::new(
+                pos12.translation.vector.into(),
+                if proj.is_inside {
+                    *local_n1
+                } else {
+                    -*local_n1
+                },
+            );
+
+            if let Some(hit) = shape1.cast_local_ray_and_get_normal(&ray1, Real::MAX, false) {
+                local_p1 = ray1.point_at(hit.time_of_impact);
+                dist = if proj.is_inside {
+                    -hit.time_of_impact
+                } else {
+                    hit.time_of_impact
+                };
+                fid1 = hit.feature;
+            } else {
+                manifold.clear();
+                return;
+            }
         }
 
-        dist *= correction_dot_angle;
-
-        let local_p2 = (local_n2 * ball2.radius).into();
         let contact_point = TrackedContact::flipped(
-            proj.point,
+            local_p1,
             local_p2,
             fid1.into(),
             PackedFeatureId::face(0),
