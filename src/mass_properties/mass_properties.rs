@@ -102,7 +102,7 @@ impl MassProperties {
         let _ = principal_inertia_local_frame.renormalize();
 
         // Drop negative eigenvalues.
-        let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { 0.0 } else { e });
+        let principal_inertia = eigen.eigenvalues.map(|e| e.max(0.0));
 
         Self::with_principal_inertia_frame(
             local_com,
