@@ -37,7 +37,7 @@ fn project_local_point_and_get_feature_projects_correctly_from_outside() {
     let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]);
 
     {
-        let query_pt = Point2::new(-1.0, 0.0); // Inside the top-right triangle (index 1)
+        let query_pt = Point2::new(-1.0, 0.0); // Left from the bottom-left triangle (index 0)
 
         let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
 
@@ -52,7 +52,7 @@ fn project_local_point_and_get_feature_projects_correctly_from_outside() {
         assert_eq!(feat.unwrap_face(), correct_tri_idx);
     }
     {
-        let query_pt = Point2::new(0.5, 2.0); // Inside the top-right triangle (index 1)
+        let query_pt = Point2::new(0.5, 2.0); // Above the top-right triangle (index 1)
 
         let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
 

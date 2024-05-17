@@ -60,6 +60,9 @@ impl PointQueryWithLocation for Triangle {
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
+        // To understand the ideas, consider reading the slides below
+        // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
+
         let a = self.a;
         let b = self.b;
         let c = self.c;
