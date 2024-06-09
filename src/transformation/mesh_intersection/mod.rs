@@ -1,4 +1,4 @@
-pub use self::mesh_intersection::intersect_meshes;
+pub use self::mesh_intersection::{intersect_meshes, tracked_intersection};
 pub use self::mesh_intersection_error::MeshIntersectionError;
 use triangle_triangle_intersection::*;
 

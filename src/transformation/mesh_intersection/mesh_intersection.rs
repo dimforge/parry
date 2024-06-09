@@ -19,6 +19,27 @@ pub fn intersect_meshes(
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
+    let res = tracked_intersection(pos1, mesh1, flip1, pos2, mesh2, flip2);
+    match res {
+        Ok(Some((mesh, _tracks))) => Ok(Some(mesh)),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
+
+
+/// Computes the intersection of two meshes, returns additional tracking meta
+///
+/// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
+/// The result mesh vertex coordinates are given in the local-space of `mesh1`.
+pub fn tracked_intersection(
+    pos1: &Isometry<Real>,
+    mesh1: &TriMesh,
+    flip1: bool,
+    pos2: &Isometry<Real>,
+    mesh2: &TriMesh,
+    flip2: bool,
+) -> Result<Option<(TriMesh, Vec<usize>)>, MeshIntersectionError> {
     if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
     }
@@ -79,6 +100,7 @@ pub fn intersect_meshes(
 
     let mut new_vertices12 = vec![];
     let mut new_indices12 = vec![];
+    let mut new_indices21 = vec![];
 
     cut_and_triangulate_intersections(
         &pos12,
@@ -88,6 +110,7 @@ pub fn intersect_meshes(
         flip2,
         &mut new_vertices12,
         &mut new_indices12,
+        &mut new_indices21,
         &mut intersections,
     );
 
@@ -127,7 +150,7 @@ pub fn intersect_meshes(
         }
     }
 
-    // Grab all the trinangles from the intersections.
+    // Grab all the trinangles from intersection1.
     for idx12 in &mut new_indices12 {
         for id12 in idx12 {
             let new_id = *index_map.entry(*id12).or_insert_with(|| {
@@ -139,6 +162,18 @@ pub fn intersect_meshes(
         }
     }
 
+    // Grab all the trinangles from intersection2.
+    for idx21 in &mut new_indices21 {
+        for k in 0..3 {
+            let new_id = *index_map.entry(idx21[k]).or_insert_with(|| {
+                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, idx21[k]);
+                new_vertices.push(vtx);
+                new_vertices.len() - 1
+            });
+            idx21[k] = new_id as u32;
+        }
+    }
+
     if flip1 {
         new_indices1.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
@@ -147,11 +182,13 @@ pub fn intersect_meshes(
         new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
     }
 
+    let tracks = vec![new_indices1.len(), new_indices2.len(), new_indices12.len(), new_indices21.len()];
     new_indices1.append(&mut new_indices2);
     new_indices1.append(&mut new_indices12);
+    new_indices1.append(&mut new_indices21);
 
     if !new_indices1.is_empty() {
-        Ok(Some(TriMesh::new(new_vertices, new_indices1)))
+        Ok(Some((TriMesh::new(new_vertices, new_indices1), tracks)))
     } else {
         Ok(None)
     }
@@ -353,6 +390,7 @@ fn cut_and_triangulate_intersections(
     flip2: bool,
     new_vertices12: &mut Vec<Point<Real>>,
     new_indices12: &mut Vec<[u32; 3]>,
+    new_indices21: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
 ) {
     let mut triangulations1 = HashMap::new();
@@ -483,6 +521,7 @@ fn cut_and_triangulate_intersections(
         &triangulations2,
         new_vertices12,
         new_indices12,
+        new_indices21,
     );
 }
 
@@ -533,6 +572,7 @@ fn extract_result(
     triangulations2: &HashMap<u32, Triangulation>,
     new_vertices12: &mut Vec<Point<Real>>,
     new_indices12: &mut Vec<[u32; 3]>,
+    new_indices21: &mut Vec<[u32; 3]>,
 ) {
     // Base ids for indexing in the first mesh vertices, second mesh vertices, and new vertices, as if they
     // are part of a single big array.
@@ -629,7 +669,7 @@ fn extract_result(
                 if flip2 {
                     idx.swap(1, 2);
                 }
-                new_indices12.push(idx);
+                new_indices21.push(idx);
             }
         }
     }
