@@ -5,6 +5,70 @@ use parry2d::query::details::ShapeCastOptions;
 use parry2d::shape::{Ball, Cuboid, Polyline, Segment};
 
 #[test]
+fn ball_ball_intersecting_toi() {
+    let ball1 = Ball::new(1.0);
+    let ball2 = Ball::new(2.0);
+
+    let ball1_pos_intersecting = Isometry2::new(Vector2::new(1.0, 1.0), 0.0);
+    let ball2_pos = Isometry2::identity();
+
+    let ball1_vel_separating = Vector2::new(1.0, 2.0);
+    let ball1_vel_penetrating = Vector2::new(1.0, -2.0);
+    let ball2_vel = Vector2::zeros();
+
+    let toi_separating = query::cast_shapes(
+        &ball1_pos_intersecting,
+        &ball1_vel_separating,
+        &ball1,
+        &ball2_pos,
+        &ball2_vel,
+        &ball2,
+        ShapeCastOptions::default(),
+    )
+    .unwrap();
+
+    let toi_penetrating_ignore_pen = query::cast_shapes(
+        &ball1_pos_intersecting,
+        &ball1_vel_penetrating,
+        &ball1,
+        &ball2_pos,
+        &ball2_vel,
+        &ball2,
+        ShapeCastOptions {
+            stop_at_penetration: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    let toi_separating_ignore_pen = query::cast_shapes(
+        &ball1_pos_intersecting,
+        &ball1_vel_separating,
+        &ball1,
+        &ball2_pos,
+        &ball2_vel,
+        &ball2,
+        ShapeCastOptions {
+            stop_at_penetration: false,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(toi_separating.map(|hit| hit.time_of_impact), Some(0.0));
+
+    assert_eq!(
+        toi_penetrating_ignore_pen.map(|hit| hit.time_of_impact),
+        Some(0.0),
+    );
+
+    assert_eq!(
+        toi_separating_ignore_pen.map(|hit| hit.time_of_impact),
+        None
+    );
+}
+
+#[test]
 fn ball_cuboid_toi() {
     let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));
     let ball = Ball::new(1.0);
