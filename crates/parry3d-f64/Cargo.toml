@@ -22,7 +22,7 @@ required-features = ["dim3", "f64"]
 std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade"]
 dim3 = []
 f64 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize"]
+serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
 rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
@@ -41,7 +41,7 @@ required-features = ["required-features"]
 
 [dependencies]
 either = { version = "1", default-features = false }
-bitflags = "1"
+bitflags = "2.3"
 downcast-rs = { version = "1", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 smallvec = "1"
