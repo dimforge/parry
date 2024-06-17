@@ -358,7 +358,7 @@ fn attach_and_push_facets(
                 continue;
             }
 
-            let mut furthest = usize::max_value();
+            let mut furthest = usize::MAX;
             let mut furthest_dist = 0.0;
 
             for (i, curr_facet) in new_facets.iter_mut().enumerate() {
@@ -372,8 +372,7 @@ fn attach_and_push_facets(
                 }
             }
 
-            if furthest != usize::max_value()
-                && new_facets[furthest].can_see_point(*visible_point, points)
+            if furthest != usize::MAX && new_facets[furthest].can_see_point(*visible_point, points)
             {
                 new_facets[furthest].add_visible_point(*visible_point, points);
             }
@@ -387,7 +386,7 @@ fn attach_and_push_facets(
     let mut i = 0;
 
     while i != undecidable.len() {
-        let mut furthest = usize::max_value();
+        let mut furthest = usize::MAX;
         let mut furthest_dist = 0.0;
         let undecidable_point = undecidable[i];
 
@@ -402,7 +401,7 @@ fn attach_and_push_facets(
             }
         }
 
-        if furthest != usize::max_value() {
+        if furthest != usize::MAX {
             new_facets[furthest].add_visible_point(undecidable_point, points);
             let _ = undecidable.swap_remove(i);
         } else {
