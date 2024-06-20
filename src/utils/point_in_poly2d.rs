@@ -48,7 +48,7 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
         let seg_dir = b - a;
         let dpt = pt - a;
         let perp = dpt.perp(&seg_dir);
-        winding += match (dpt.y > 0.0, b.y > pt.y) {
+        winding += match (dpt.y >= 0.0, b.y > pt.y) {
             (true, true) if perp < 0.0 => 1,
             (false, false) if perp > 0.0 => -1,
             _ => 0,
@@ -61,6 +61,7 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shape::Ball;
 
     #[test]
     fn point_in_poly2d_concave() {
@@ -131,5 +132,19 @@ mod tests {
         .map(Point2::from);
         let pt = Point2::from([596.0181884765625, 427.9162902832031]);
         assert!(point_in_poly2d(&pt, &poly));
+    }
+
+    #[test]
+    fn point_in_poly2d_concave_exact_vertex_bug() {
+        let poly = Ball::new(1.0).to_polyline(10);
+        assert!(point_in_poly2d(&Point2::origin(), &poly));
+        assert!(point_in_poly2d(&Point2::new(-0.25, 0.0), &poly));
+        assert!(point_in_poly2d(&Point2::new(0.25, 0.0), &poly));
+        assert!(point_in_poly2d(&Point2::new(0.0, -0.25), &poly));
+        assert!(point_in_poly2d(&Point2::new(0.0, 0.25), &poly));
+        assert!(!point_in_poly2d(&Point2::new(-2.0, 0.0), &poly));
+        assert!(!point_in_poly2d(&Point2::new(2.0, 0.0), &poly));
+        assert!(!point_in_poly2d(&Point2::new(0.0, -2.0), &poly));
+        assert!(!point_in_poly2d(&Point2::new(0.0, 2.0), &poly));
     }
 }
