@@ -152,7 +152,7 @@ pub fn try_get_initial_mesh(
                 .ok_or(ConvexHullError::MissingSupportPoint)?;
 
             let mut max_area = 0.0;
-            let mut p3 = usize::max_value();
+            let mut p3 = usize::MAX;
 
             for (i, point) in normalized_points.iter().enumerate() {
                 let area =
@@ -164,7 +164,7 @@ pub fn try_get_initial_mesh(
                 }
             }
 
-            if p3 == usize::max_value() {
+            if p3 == usize::MAX {
                 Err(ConvexHullError::InternalError("no triangle found."))
             } else {
                 // Build two facets with opposite normals
@@ -187,7 +187,7 @@ pub fn try_get_initial_mesh(
                         continue;
                     }
 
-                    let mut furthest = usize::max_value();
+                    let mut furthest = usize::MAX;
                     let mut furthest_dist = 0.0;
 
                     for (i, curr_facet) in facets.iter().enumerate() {
@@ -201,7 +201,7 @@ pub fn try_get_initial_mesh(
                         }
                     }
 
-                    if furthest != usize::max_value() {
+                    if furthest != usize::MAX {
                         facets[furthest].add_visible_point(point, normalized_points);
                     } else {
                         undecidable.push(point);
