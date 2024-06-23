@@ -126,7 +126,11 @@ impl Face {
         } else if self.pts[1] == id {
             2
         } else {
-            assert_eq!(self.pts[2], id);
+            log::debug!(
+                "Hit unexpected state in EPA: found index {}, expected: {}.",
+                self.pts[2],
+                id
+            );
             0
         }
     }
