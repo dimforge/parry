@@ -115,7 +115,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
         new_local_aabb2.mins -= extra_margin;
         new_local_aabb2.maxs += extra_margin;
 
-        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // FIXME: what would be the best value?
+        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // TODO: what would be the best value?
         std::mem::swap(
             &mut workspace.old_interferences,
             &mut workspace.interferences,

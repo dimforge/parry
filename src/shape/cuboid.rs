@@ -48,7 +48,7 @@ impl Cuboid {
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
-        // FIXME: is this still correct with the f64 version?
+        // TODO: is this still correct with the f64 version?
         #[allow(clippy::unnecessary_cast)] // Unnecessary for f32 but necessary for f64.
         {
             ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
@@ -94,7 +94,7 @@ impl Cuboid {
     /// the dot product with `local_dir`.
     #[cfg(feature = "dim3")]
     pub fn support_feature(&self, local_dir: Vector<Real>) -> PolygonalFeature {
-        // FIXME: this should actually return the feature.
+        // TODO: this should actually return the feature.
         // And we should change all the callers of this method to use
         // `.support_face` instead of this method to preserve their old behavior.
         self.support_face(local_dir)
@@ -498,7 +498,7 @@ impl ConvexPolyhedron for Cuboid {
         let mut iamax = 0;
         let mut amax = local_dir[0].abs();
 
-        // FIXME: we should use nalgebra's iamax method.
+        // TODO: we should use nalgebra's iamax method.
         for i in 1..DIM {
             let candidate = local_dir[i].abs();
             if candidate > amax {

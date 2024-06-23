@@ -153,7 +153,7 @@ impl TriMesh {
                 if intersection_features.0 == FeatureId::Unknown {
                     intersection_features.0 = fid;
                 } else {
-                    // FIXME: this assertion may fire if the triangle is coplanar with the edge?
+                    // TODO: this assertion may fire if the triangle is coplanar with the edge?
                     // assert_eq!(intersection_features.1, FeatureId::Unknown);
                     intersection_features.1 = fid;
                 }
@@ -462,7 +462,7 @@ impl TriMesh {
                 if intersection_features.0 == FeatureId::Unknown {
                     intersection_features.0 = fid;
                 } else {
-                    // FIXME: this assertion may fire if the triangle is coplanar with the edge?
+                    // TODO: this assertion may fire if the triangle is coplanar with the edge?
                     // assert_eq!(intersection_features.1, FeatureId::Unknown);
                     intersection_features.1 = fid;
                 }

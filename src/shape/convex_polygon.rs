@@ -260,7 +260,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         out: &mut ConvexPolygonalFeature,
     ) {
         out.clear();
-        // FIXME: actualy find the support feature.
+        // TODO: actualy find the support feature.
         self.support_face_toward(transform, dir, out)
     }
 

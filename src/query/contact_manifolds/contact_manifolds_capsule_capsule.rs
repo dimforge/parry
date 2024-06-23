@@ -43,7 +43,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
     );
 
     // We do this clone to perform contact tracking and transfer impulses.
-    // FIXME: find a more efficient way of doing this.
+    // TODO: find a more efficient way of doing this.
     let old_manifold_points = manifold.points.clone();
     manifold.clear();
 

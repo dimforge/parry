@@ -99,7 +99,7 @@ where
     let _eps_tol: Real = eps_tol();
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
 
     let mut old_dir;
@@ -268,7 +268,7 @@ where
     let support_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
     simplex.reset(support_point.translate(&-curr_ray.origin.coords));
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
     let mut max_bound = Real::max_value();
     let mut dir;
@@ -346,7 +346,7 @@ where
         if max_bound - min_bound <= _eps_rel * max_bound {
             // This is needed when using fixed-points to avoid missing
             // some castes.
-            // FIXME: I feel like we should always return `Some` in
+            // TODO: I feel like we should always return `Some` in
             // this case, even with floating-point numbers. Though it
             // has not been sufficinetly tested with floats yet to be sure.
             if cfg!(feature = "improved_fixed_point_support") {

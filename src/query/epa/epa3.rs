@@ -355,7 +355,7 @@ impl EPA {
             let first_new_face_id = self.faces.len();
 
             if self.silhouette.is_empty() {
-                // FIXME: Something went very wrong because we failed to extract a silhouette…
+                // TODO: Something went very wrong because we failed to extract a silhouette…
                 return None;
             }
 
@@ -364,7 +364,7 @@ impl EPA {
                     let new_face_id = self.faces.len();
                     let new_face;
 
-                    // FIXME: NLL
+                    // TODO: NLL
                     {
                         let face_adj = &mut self.faces[edge.face_id];
                         let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
@@ -383,7 +383,7 @@ impl EPA {
                         let pt = self.vertices[self.faces[new_face_id].pts[0]].point.coords;
                         let dist = self.faces[new_face_id].normal.dot(&pt);
                         if dist < curr_dist {
-                            // FIXME: if we reach this point, there were issues due to
+                            // TODO: if we reach this point, there were issues due to
                             // numerical errors.
                             let points = face.closest_points(&self.vertices);
                             return Some((points.0, points.1, face.normal));

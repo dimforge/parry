@@ -6,15 +6,15 @@ use crate::shape::SupportMap;
 use na::Unit;
 
 /// Closest points between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
-pub fn closest_points_support_map_support_map<G1: ?Sized, G2: ?Sized>(
+pub fn closest_points_support_map_support_map<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
     prediction: Real,
 ) -> ClosestPoints
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     match closest_points_support_map_support_map_with_params(
         pos12,
@@ -36,7 +36,7 @@ where
 /// Closest points between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
 ///
 /// This allows a more fine grained control other the underlying GJK algorigtm.
-pub fn closest_points_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized>(
+pub fn closest_points_support_map_support_map_with_params<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -45,11 +45,11 @@ pub fn closest_points_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized
     init_dir: Option<Vector<Real>>,
 ) -> GJKResult
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let dir = match init_dir {
-        // FIXME: or pos12.translation.vector (without the minus sign) ?
+        // TODO: or pos12.translation.vector (without the minus sign) ?
         None => -pos12.translation.vector,
         Some(dir) => dir,
     };

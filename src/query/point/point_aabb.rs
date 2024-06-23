@@ -140,7 +140,7 @@ impl PointQuery for Aabb {
         if solid || !shift.is_zero() {
             shift.norm()
         } else {
-            // FIXME: optimize that.
+            // TODO: optimize that.
             -na::distance(pt, &self.project_local_point(pt, solid).point)
         }
     }

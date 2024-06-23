@@ -3,7 +3,7 @@ use crate::utils;
 use na::{self, ComplexField};
 
 /// Computes the bounding sphere of a set of point, given its center.
-// FIXME: return a bounding sphere?
+// TODO: return a bounding sphere?
 #[inline]
 pub fn point_cloud_bounding_sphere_with_center(
     pts: &[Point<Real>],
@@ -23,7 +23,7 @@ pub fn point_cloud_bounding_sphere_with_center(
 }
 
 /// Computes a bounding sphere of the specified set of point.
-// FIXME: return a bounding sphere?
+// TODO: return a bounding sphere?
 #[inline]
 pub fn point_cloud_bounding_sphere(pts: &[Point<Real>]) -> (Point<Real>, Real) {
     point_cloud_bounding_sphere_with_center(pts, utils::center(pts))

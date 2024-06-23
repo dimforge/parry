@@ -32,7 +32,7 @@ impl PointQuery for Polyline {
         (proj, polyline_feature)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
@@ -70,7 +70,7 @@ impl PointQuery for TriMesh {
         (proj, feature_id)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {

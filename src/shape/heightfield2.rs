@@ -162,7 +162,7 @@ impl HeightField {
 
     /// Iterator through all the segments of this heightfield.
     pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
-        // FIXME: this is not very efficient since this wil
+        // TODO: this is not very efficient since this wil
         // recompute shared points twice.
         (0..self.num_cells()).filter_map(move |i| self.segment_at(i))
     }
@@ -226,7 +226,7 @@ impl HeightField {
         let min_x = self.quantize_floor(ref_mins.x, seg_length);
         let max_x = self.quantize_ceil(ref_maxs.x, seg_length);
 
-        // FIXME: find a way to avoid recomputing the same vertices
+        // TODO: find a way to avoid recomputing the same vertices
         // multiple times.
         for i in min_x..max_x {
             if self.is_segment_removed(i) {

@@ -43,7 +43,7 @@ where
                 let shift = (supp - ray.origin).dot(&ndir) + eps;
                 let new_ray = Ray::new(ray.origin + ndir * shift, -ray.dir);
 
-                // FIXME: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
+                // TODO: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
                 simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
 
                 gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(
