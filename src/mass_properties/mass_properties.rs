@@ -510,7 +510,7 @@ impl approx::RelativeEq for MassProperties {
 #[cfg(test)]
 mod test {
     use super::MassProperties;
-    use crate::math::Point;
+    use crate::math::{AngVector, Point};
     #[cfg(feature = "dim3")]
     use crate::math::{Rotation, Vector};
     use crate::shape::{Ball, Capsule, Shape};
@@ -574,11 +574,15 @@ mod test {
         assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = 1.0e-6);
 
+        // NOTE: converting the inverse inertia matrices don’t work well here because
+        //       tiny inertia value originating from the subtraction can result in a non-zero
+        //       (but large) inverse.
         assert_relative_eq!(
-            ((m1m2m3 - m1) - m2) - m3,
-            MassProperties::zero(),
+            (((m1m2m3 - m1) - m2) - m3).principal_inertia(),
+            AngVector::zero(),
             epsilon = 1.0e-6
         );
+        assert_relative_eq!((((m1m2m3 - m1) - m2) - m3).mass(), 0.0, epsilon = 1.0e-6);
     }
 
     #[test]
