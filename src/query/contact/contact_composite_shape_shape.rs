@@ -46,7 +46,7 @@ where
 }
 
 /// Best contact between a shape and a composite (`Mesh`, `Compound`) shape.
-pub fn contact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn contact_shape_composite_shape<D, G2>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &dyn Shape,
@@ -54,8 +54,8 @@ pub fn contact_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     prediction: Real,
 ) -> Option<Contact>
 where
-    D: QueryDispatcher,
-    G2: SimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + SimdCompositeShape,
 {
     contact_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, prediction)
         .map(|c| c.flipped())

@@ -1,3 +1,5 @@
+#![allow(clippy::multiple_bound_locations)] // for impl_downcast
+
 use downcast_rs::{impl_downcast, DowncastSync};
 
 use crate::query::contact_manifolds::{
