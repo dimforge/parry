@@ -4,16 +4,13 @@ use crate::query::{Ray, RayCast, ShapeCastHit, ShapeCastStatus};
 use crate::shape::{HalfSpace, RoundShapeRef, SupportMap};
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
-pub fn cast_shapes_halfspace_support_map<G: ?Sized>(
+pub fn cast_shapes_halfspace_support_map<G: ?Sized + SupportMap>(
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     halfspace: &HalfSpace,
     other: &G,
     options: ShapeCastOptions,
-) -> Option<ShapeCastHit>
-where
-    G: SupportMap,
-{
+) -> Option<ShapeCastHit> {
     // TODO: add method to get only the local support point.
     // This would avoid the `inverse_transform_point` later.
     if !options.stop_at_penetration && vel12.dot(&halfspace.normal) > 0.0 {
@@ -63,16 +60,13 @@ where
 }
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
-pub fn cast_shapes_support_map_halfspace<G: ?Sized>(
+pub fn cast_shapes_support_map_halfspace<G: ?Sized + SupportMap>(
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     other: &G,
     halfspace: &HalfSpace,
     options: ShapeCastOptions,
-) -> Option<ShapeCastHit>
-where
-    G: SupportMap,
-{
+) -> Option<ShapeCastHit> {
     cast_shapes_halfspace_support_map(
         &pos12.inverse(),
         &-pos12.inverse_transform_vector(vel12),

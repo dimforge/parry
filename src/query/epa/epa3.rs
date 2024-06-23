@@ -188,15 +188,12 @@ impl EPA {
     /// the EPA algorithm failed to compute the projection.
     ///
     /// Return the projected point in the local-space of `g`.
-    pub fn project_origin<G: ?Sized>(
+    pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
         m: &Isometry<Real>,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>>
-    where
-        G: SupportMap,
-    {
+    ) -> Option<Point<Real>> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -205,7 +202,7 @@ impl EPA {
     ///
     /// The origin is assumed to be located inside of the shape.
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
-    pub fn closest_points<G1: ?Sized, G2: ?Sized>(
+    pub fn closest_points<G1, G2>(
         &mut self,
         pos12: &Isometry<Real>,
         g1: &G1,
@@ -213,8 +210,8 @@ impl EPA {
         simplex: &VoronoiSimplex,
     ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
     where
-        G1: SupportMap,
-        G2: SupportMap,
+        G1: ?Sized + SupportMap,
+        G2: ?Sized + SupportMap,
     {
         let _eps = crate::math::DEFAULT_EPSILON;
         let _eps_tol = _eps * 100.0;
