@@ -19,7 +19,7 @@ maintenance = { status = "actively-developed" }
 [features]
 default = ["required-features", "std"]
 required-features = ["dim3", "f32"]
-std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade"]
+std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade", "thiserror"]
 dim3 = []
 f32 = []
 serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
@@ -54,15 +54,15 @@ approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
-indexmap = { version = "2", features = [ "serde" ], optional = true }
+indexmap = { version = "2", features = ["serde"], optional = true }
 rustc-hash = { version = "1", optional = true }
 cust_core = { version = "0.1", optional = true }
 spade = { version = "2", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
-ordered-float = "4"
-thiserror = "1"
+ordered-float = { version = "4", default-features = false }
+thiserror = { version = "1", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
