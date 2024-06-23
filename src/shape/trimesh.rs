@@ -187,17 +187,19 @@ impl TriMeshTopology {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
+)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// The status of the cell of an heightfield.
+pub struct TriMeshFlags(u16);
+
 bitflags::bitflags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[cfg_attr(
-        feature = "rkyv",
-        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self"),
-    )]
-    #[repr(C)]
-    #[derive(Default)]
-    /// The status of the cell of an heightfield.
-    pub struct TriMeshFlags: u16 {
+    impl TriMeshFlags: u16 {
         /// If set, the half-edge topology of the trimesh will be computed if possible.
         const HALF_EDGE_TOPOLOGY = 1;
         /// If set, the half-edge topology and connected components of the trimesh will be computed if possible.
