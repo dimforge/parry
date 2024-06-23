@@ -32,7 +32,7 @@ where
     G1: SupportMap,
     G2: SupportMap,
 {
-    // FIXME: or m2.translation - m1.translation ?
+    // TODO: or m2.translation - m1.translation ?
     let dir = init_dir.unwrap_or_else(|| -pos12.translation.vector);
 
     if let Some(dir) = Unit::try_new(dir, crate::math::DEFAULT_EPSILON) {
@@ -50,6 +50,6 @@ where
         GJKResult::Intersection => 0.0,
         GJKResult::ClosestPoints(p1, p2, _) => na::distance(&p1, &p2),
         GJKResult::Proximity(_) => unreachable!(),
-        GJKResult::NoIntersection(_) => 0.0, // FIXME: GJK did not converge.
+        GJKResult::NoIntersection(_) => 0.0, // TODO: GJK did not converge.
     }
 }

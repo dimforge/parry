@@ -1,10 +1,9 @@
 use log::error;
 use na::Point2;
 use ordered_float::OrderedFloat;
-use std::cmp::Ordering;
 
 use crate::math::Real;
-use crate::shape::{Segment, SegmentPointLocation, Triangle, TriangleOrientation};
+use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::hashmap::HashMap;
 use crate::utils::{self, SegmentsIntersection};
 
@@ -293,6 +292,8 @@ pub enum PolygonsIntersectionError {
 
 /// Compute intersections between two polygons that may be non-convex but that must not self-intersect.
 ///
+/// The input polygons are assumed to not self-intersect, and to be oriented counter-clockwise.
+///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
 /// If two `None` are given to the `out` closure, then one connected component of the intersection
 /// polygon is complete.
@@ -319,6 +320,8 @@ pub fn polygons_intersection_points(
 }
 
 /// Compute intersections between two polygons that may be non-convex but that must not self-intersect.
+///
+/// The input polygons are assumed to not self-intersect, and to be oriented counter-clockwise.
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
 /// If two `None` are given to the `out` closure, then one connected component of the intersection
@@ -350,8 +353,6 @@ pub fn polygons_intersection(
 
             // We found an intersection we haven’t visited yet, traverse the loop, alternating
             // between poly1 and poly2 when reaching an intersection.
-            let mut num_points_emitted = 0; // Guard against infinite loops if the polygon isn’t well-formed.
-
             let [a1, b1] = segment(inter.edges[0], poly1);
             let [a2, b2] = segment(inter.edges[1], poly2);
             let poly_to_traverse = match Triangle::orientation2d(&a1, &b1, &a2, EPS) {
@@ -362,7 +363,7 @@ pub fn polygons_intersection(
                         TriangleOrientation::Clockwise => 0,
                         TriangleOrientation::CounterClockwise => 1,
                         TriangleOrientation::Degenerate => {
-                            error!("Unhandled edge-edge overlap case.");
+                            log::debug!("Unhandled edge-edge overlap case.");
                             0
                         }
                     }
@@ -515,14 +516,11 @@ fn compute_sorted_edge_intersections(
                     inter2.entry(i2).or_default().push(intersection);
                     id += 1;
                 }
-                SegmentsIntersection::Segment {
-                    first_loc1,
-                    first_loc2,
-                    second_loc1,
-                    second_loc2,
-                } => {
+                SegmentsIntersection::Segment { .. } => {
                     // TODO
-                    error!("Collinear segment-segment intersections not properly handled yet.");
+                    log::debug!(
+                        "Collinear segment-segment intersections not properly handled yet."
+                    );
                 }
             }
         }

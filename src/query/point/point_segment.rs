@@ -77,7 +77,7 @@ impl PointQueryWithLocation for Segment {
             proj = self.a + ab * u;
         }
 
-        // FIXME: is this acceptable?
+        // TODO: is this acceptable?
         let inside = relative_eq!(proj, *pt);
 
         (PointProjection::new(inside, proj), location)

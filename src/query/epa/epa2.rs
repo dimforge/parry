@@ -321,7 +321,7 @@ impl EPA {
                 if f.1 {
                     let dist = f.0.normal.dot(&f.0.proj.coords);
                     if dist < curr_dist {
-                        // FIXME: if we reach this point, there were issues due to
+                        // TODO: if we reach this point, there were issues due to
                         // numerical errors.
                         let cpts = f.0.closest_points(&self.vertices);
                         return Some((cpts.0, cpts.1, f.0.normal));

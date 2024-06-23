@@ -16,7 +16,7 @@ where
     let mut basis = na::zero::<Vector<Real>>();
 
     for d in 0..DIM {
-        // FIXME: this could be further improved iterating on `m`'s columns, and passing
+        // TODO: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
         basis[d] = 1.0;
         max[d] = i.support_point(m, &basis)[d];
@@ -40,7 +40,7 @@ where
     let mut basis = na::zero::<Vector<Real>>();
 
     for d in 0..DIM {
-        // FIXME: this could be further improved iterating on `m`'s columns, and passing
+        // TODO: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
         basis[d] = 1.0;
         max[d] = i.local_support_point(&basis)[d];

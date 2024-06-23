@@ -56,7 +56,7 @@ impl BoundingVolume for BoundingSphere {
 
     #[inline]
     fn intersects(&self, other: &BoundingSphere) -> bool {
-        // FIXME: refactor that with the code from narrow_phase::ball_ball::collide(...) ?
+        // TODO: refactor that with the code from narrow_phase::ball_ball::collide(...) ?
         let delta_pos = other.center - self.center;
         let distance_squared = delta_pos.norm_squared();
         let sum_radius = self.radius + other.radius;

@@ -374,7 +374,7 @@ impl ConvexPolyhedron {
             vertices_adj_to_face,
         };
 
-        // FIXME: for debug.
+        // TODO: for debug.
         // res.check_geometry();
 
         Some(res)

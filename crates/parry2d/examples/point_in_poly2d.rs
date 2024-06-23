@@ -1,7 +1,5 @@
 use macroquad::prelude::*;
 use nalgebra::{Point2, UnitComplex, Vector2};
-use parry2d::shape::Ball;
-use parry2d::transformation::polygons_intersection_points;
 use parry2d::utils::point_in_poly2d;
 
 const RENDER_SCALE: f32 = 30.0;
@@ -14,7 +12,7 @@ async fn main() {
     let animation_rotation = UnitComplex::new(0.02);
     let spikes_render_pos = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
 
-    for i in 0.. {
+    loop {
         clear_background(BLACK);
 
         /*

@@ -11,7 +11,6 @@ async fn main() {
     let mut animated_spikes = spikes.clone();
 
     let star = star_polygon();
-    let mut animated_star = star.clone();
 
     let animation_scale = 2.0;
     let animation_rotation = UnitComplex::new(0.008);
@@ -23,7 +22,10 @@ async fn main() {
         clear_background(BLACK);
 
         /*
-         * Compute polygon intersections.
+         *
+         * Compute the rotated/scaled polygons, and compute their intersection with the original
+         * polygon.
+         *
          */
         animated_spikes
             .iter_mut()
@@ -38,10 +40,13 @@ async fn main() {
                     * ((i as f32 / 100.0).sin().abs() * animation_scale)
             })
             .collect();
+
         let star_intersections = polygons_intersection_points(&star, &animated_star);
 
         /*
+         *
          * Render the polygons and their intersections.
+         *
          */
         draw_polygon(&spikes, RENDER_SCALE, spikes_render_pos, BLUE);
         draw_polygon(&animated_spikes, RENDER_SCALE, spikes_render_pos, GREEN);
@@ -60,9 +65,8 @@ async fn main() {
             for intersection in intersections {
                 draw_polygon(&intersection, RENDER_SCALE, spikes_render_pos, RED);
             }
-        } else {
-            eprintln!("Entered infinite loop.");
         }
+
         if let Ok(intersections) = star_intersections {
             draw_text(
                 &format!("# star intersections: {}", intersections.len()),
@@ -74,8 +78,6 @@ async fn main() {
             for intersection in intersections {
                 draw_polygon(&intersection, RENDER_SCALE, star_render_pos, RED);
             }
-        } else {
-            eprintln!("Entered infinite loop.");
         }
 
         next_frame().await

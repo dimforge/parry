@@ -13,7 +13,7 @@ use test::Bencher;
 #[macro_use]
 mod macros;
 
-// FIXME: will the randomness of `solid` and `max_time_of_impact` affect too much the benchmark?
+// TODO: will the randomness of `solid` and `max_time_of_impact` affect too much the benchmark?
 bench_method!(
     bench_ray_against_ball,
     cast_ray,

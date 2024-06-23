@@ -178,7 +178,7 @@ pub fn try_get_initial_mesh(
                 let mut facets = vec![f1, f2];
 
                 // … and attribute visible points to each one of them.
-                // FIXME: refactor this with the two others.
+                // TODO: refactor this with the two others.
                 for point in 0..normalized_points.len() {
                     if normalized_points[point] == normalized_points[p1]
                         || normalized_points[point] == normalized_points[p2]

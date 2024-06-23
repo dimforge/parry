@@ -709,7 +709,7 @@ impl HeightField {
         let max_x = self.quantize_ceil(ref_maxs.x, cell_width, ncells_x);
         let max_z = self.quantize_ceil(ref_maxs.z, cell_height, ncells_z);
 
-        // FIXME: find a way to avoid recomputing the same vertices
+        // TODO: find a way to avoid recomputing the same vertices
         // multiple times.
         for j in min_x..max_x {
             for i in min_z..max_z {

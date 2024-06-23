@@ -148,7 +148,7 @@ where
                 if let Some((normal1, dist)) =
                     Unit::try_new_and_get(pos12 * p2 - p1, crate::math::DEFAULT_EPSILON)
                 {
-                    // FIXME: do the "inverse transform unit vector" only when we are about to return.
+                    // TODO: do the "inverse transform unit vector" only when we are about to return.
                     result.normal1 = normal1;
                     result.normal2 = pos12.inverse_transform_unit_vector(&-normal1);
 
@@ -203,7 +203,7 @@ where
             ClosestPoints::Disjoint => {
                 // TODO: this case should be unreachable and needs some debugging
                 //       see: https://github.com/dimforge/parry/issues/176
-                log::error!(
+                log::debug!(
                     "Closest points not found despite setting the max distance to infinity."
                 );
                 result.status = ShapeCastStatus::Failed;
