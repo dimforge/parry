@@ -12,6 +12,8 @@ pub use self::polygon_intersection::{
     convex_polygons_intersection, convex_polygons_intersection_points, polygons_intersection,
     polygons_intersection_points,
 };
+#[cfg(feature = "dim2")]
+mod triangulate_delaunay;
 
 mod convex_hull2;
 #[cfg(feature = "dim3")]
@@ -39,3 +41,5 @@ mod to_polyline;
 #[cfg(feature = "dim3")]
 mod to_trimesh;
 pub mod utils;
+#[cfg(feature = "dim2")]
+pub use triangulate_delaunay::triangulate_delaunay;
