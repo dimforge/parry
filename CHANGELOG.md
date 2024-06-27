@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Fix
+
+- Fix occasional crash in mesh/mesh intersection if some of the vertex coordinates are very small.
+
 ## v0.16.0
 
 ### Fix

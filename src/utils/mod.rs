@@ -29,6 +29,8 @@ pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersect
 pub(crate) use self::sort::sort2;
 pub(crate) use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
+#[cfg(all(feature = "dim3", feature = "std"))]
+pub(crate) use self::spade::sanitize_point;
 pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
 
@@ -59,5 +61,7 @@ mod sdp_matrix;
 mod segments_intersection;
 mod sort;
 mod sorted_pair;
+#[cfg(all(feature = "dim3", feature = "std"))]
+mod spade;
 mod weighted_value;
 mod wops;
