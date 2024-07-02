@@ -10,6 +10,42 @@ use crate::shape::Shape;
 
 #[cfg(feature = "std")]
 /// A query dispatcher for queries relying on spatial coherence, including contact-manifold computation.
+///
+/// Third-party crates adding custom shapes should implement
+/// this trait to allow pair-wise queries between the added shape and other shapes.
+///
+/// The `root_dispatcher` argument is a reference to the root dispatcher of the composite dispatcher.
+/// This is necessary to support recursive dispatching for composite shapes.
+pub trait PersistentQueryDispatcherComposite<ManifoldData = (), ContactData = ()>:
+    QueryDispatcherComposite
+{
+    fn contact_manifolds(
+        &self,
+        root_dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+        manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+        workspace: &mut Option<ContactManifoldsWorkspace>,
+    ) -> Result<(), Unsupported>;
+
+    fn contact_manifold_convex_convex(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
+        prediction: Real,
+        manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    ) -> Result<(), Unsupported>;
+}
+
+#[cfg(feature = "std")]
+/// A query dispatcher for queries relying on spatial coherence, including contact-manifold computation.
+///
+/// This trait should not be implemented. Instead, implement the [`PersistentQueryDispatcherComposite`] trait.
 pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryDispatcher {
     /// Compute all the contacts between two shapes.
     ///
@@ -41,10 +77,109 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
     ) -> Result<(), Unsupported>;
 }
 
+impl<T, ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData> for T
+where
+    T: PersistentQueryDispatcherComposite<ManifoldData, ContactData>,
+{
+    fn contact_manifolds(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+        manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
+        workspace: &mut Option<ContactManifoldsWorkspace>,
+    ) -> Result<(), Unsupported> {
+        <Self as PersistentQueryDispatcherComposite<ManifoldData, ContactData>>::contact_manifolds(
+            self, self, pos12, g1, g2, prediction, manifolds, workspace,
+        )
+    }
+
+    fn contact_manifold_convex_convex(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
+        prediction: Real,
+        manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    ) -> Result<(), Unsupported> {
+        <Self as PersistentQueryDispatcherComposite<ManifoldData, ContactData>>::contact_manifold_convex_convex(self, pos12, g1, g2, normal_constraints1, normal_constraints2, prediction, manifold)
+    }
+}
+
 /// Dispatcher for pairwise queries.
 ///
-/// Custom implementations allow crates that support an abstract `QueryDispatcher` to handle custom
-/// shapes.
+/// Third-party crates adding custom shapes should implement
+/// this trait to allow pair-wise queries between the added shape and other shapes.
+///
+/// The `pos12` argument to most queries is the transform from the local space of `g2` to that of
+/// `g1`.
+///
+/// The `root_dispatcher` argument is a reference to the root dispatcher of the composite dispatcher.
+/// This is necessary to support recursive dispatching for composite shapes.
+pub trait QueryDispatcherComposite: Send + Sync {
+    fn intersection_test(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+    ) -> Result<bool, Unsupported>;
+
+    fn distance(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+    ) -> Result<Real, Unsupported>;
+
+    fn contact(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+    ) -> Result<Option<Contact>, Unsupported>;
+
+    fn closest_points(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        max_dist: Real,
+    ) -> Result<ClosestPoints, Unsupported>;
+
+    fn cast_shapes(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        pos12: &Isometry<Real>,
+        local_vel12: &Vector<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        options: ShapeCastOptions,
+    ) -> Result<Option<ShapeCastHit>, Unsupported>;
+
+    fn cast_shapes_nonlinear(
+        &self,
+        root_dispatcher: &dyn QueryDispatcher,
+        motion1: &NonlinearRigidMotion,
+        g1: &dyn Shape,
+        motion2: &NonlinearRigidMotion,
+        g2: &dyn Shape,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
+    ) -> Result<Option<ShapeCastHit>, Unsupported>;
+}
+
+/// Dispatcher for pairwise queries.
+///
+/// This trait should not be implemented. Instead, implement the [`QueryDispatcherComposite`] trait.
 ///
 /// The `pos12` argument to most queries is the transform from the local space of `g2` to that of
 /// `g1`.
@@ -113,7 +248,7 @@ pub trait QueryDispatcher: Send + Sync {
     ) -> Result<Option<ShapeCastHit>, Unsupported>;
 
     /// Construct a `QueryDispatcher` that falls back on `other` for cases not handled by `self`
-    fn chain<U: QueryDispatcher>(self, other: U) -> QueryDispatcherChain<Self, U>
+    fn chain<U: QueryDispatcherComposite>(self, other: U) -> QueryDispatcherChain<Self, U>
     where
         Self: Sized,
     {
@@ -148,6 +283,88 @@ pub trait QueryDispatcher: Send + Sync {
     ) -> Result<Option<ShapeCastHit>, Unsupported>;
 }
 
+impl<T: QueryDispatcherComposite> QueryDispatcher for T {
+    fn intersection_test(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+    ) -> Result<bool, Unsupported> {
+        <Self as QueryDispatcherComposite>::intersection_test(self, self, pos12, g1, g2)
+    }
+
+    fn distance(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+    ) -> Result<Real, Unsupported> {
+        <Self as QueryDispatcherComposite>::distance(self, self, pos12, g1, g2)
+    }
+
+    fn contact(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        prediction: Real,
+    ) -> Result<Option<Contact>, Unsupported> {
+        <Self as QueryDispatcherComposite>::contact(self, self, pos12, g1, g2, prediction)
+    }
+
+    fn closest_points(
+        &self,
+        pos12: &Isometry<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        max_dist: Real,
+    ) -> Result<ClosestPoints, Unsupported> {
+        <Self as QueryDispatcherComposite>::closest_points(self, self, pos12, g1, g2, max_dist)
+    }
+
+    fn cast_shapes(
+        &self,
+        pos12: &Isometry<Real>,
+        local_vel12: &Vector<Real>,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+        options: ShapeCastOptions,
+    ) -> Result<Option<ShapeCastHit>, Unsupported> {
+        <Self as QueryDispatcherComposite>::cast_shapes(
+            self,
+            self,
+            pos12,
+            local_vel12,
+            g1,
+            g2,
+            options,
+        )
+    }
+
+    fn cast_shapes_nonlinear(
+        &self,
+        motion1: &NonlinearRigidMotion,
+        g1: &dyn Shape,
+        motion2: &NonlinearRigidMotion,
+        g2: &dyn Shape,
+        start_time: Real,
+        end_time: Real,
+        stop_at_penetration: bool,
+    ) -> Result<Option<ShapeCastHit>, Unsupported> {
+        <Self as QueryDispatcherComposite>::cast_shapes_nonlinear(
+            self,
+            self,
+            motion1,
+            g1,
+            motion2,
+            g2,
+            start_time,
+            end_time,
+            stop_at_penetration,
+        )
+    }
+}
+
 /// The composition of two dispatchers
 pub struct QueryDispatcherChain<T, U>(T, U);
 
@@ -161,20 +378,23 @@ macro_rules! chain_method {
     }
 }
 
-impl<T, U> QueryDispatcher for QueryDispatcherChain<T, U>
+impl<T, U> QueryDispatcherComposite for QueryDispatcherChain<T, U>
 where
-    T: QueryDispatcher,
-    U: QueryDispatcher,
+    T: QueryDispatcherComposite,
+    U: QueryDispatcherComposite,
 {
     chain_method!(intersection_test(
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> bool);
 
-    chain_method!(distance(pos12: &Isometry<Real>, g1: &dyn Shape, g2: &dyn Shape,) -> Real);
+    chain_method!(distance(
+        root_dispatcher: &dyn QueryDispatcher, pos12: &Isometry<Real>, g1: &dyn Shape, g2: &dyn Shape,) -> Real);
 
     chain_method!(contact(
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
@@ -182,6 +402,7 @@ where
     ) -> Option<Contact>);
 
     chain_method!(closest_points(
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
@@ -189,6 +410,7 @@ where
     ) -> ClosestPoints);
 
     chain_method!(cast_shapes(
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         vel12: &Vector<Real>,
         g1: &dyn Shape,
@@ -197,6 +419,7 @@ where
     ) -> Option<ShapeCastHit>);
 
     chain_method!(cast_shapes_nonlinear(
+        root_dispatcher: &dyn QueryDispatcher,
         motion1: &NonlinearRigidMotion,
         g1: &dyn Shape,
         motion2: &NonlinearRigidMotion,
@@ -208,13 +431,14 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<ManifoldData, ContactData, T, U> PersistentQueryDispatcher<ManifoldData, ContactData>
+impl<ManifoldData, ContactData, T, U> PersistentQueryDispatcherComposite<ManifoldData, ContactData>
     for QueryDispatcherChain<T, U>
 where
-    T: PersistentQueryDispatcher<ManifoldData, ContactData>,
-    U: PersistentQueryDispatcher<ManifoldData, ContactData>,
+    T: PersistentQueryDispatcherComposite<ManifoldData, ContactData>,
+    U: PersistentQueryDispatcherComposite<ManifoldData, ContactData>,
 {
     chain_method!(contact_manifolds(
+        root_dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
         pos12: &Isometry<Real>,
         g1: &dyn Shape,
         g2: &dyn Shape,
