@@ -366,6 +366,7 @@ impl<T: QueryDispatcherComposite> QueryDispatcher for T {
 }
 
 /// The composition of two dispatchers
+#[derive(Clone, Copy, Debug)]
 pub struct QueryDispatcherChain<T, U>(T, U);
 
 macro_rules! chain_method {

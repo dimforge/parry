@@ -15,7 +15,7 @@ use crate::query::{
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
 /// A dispatcher that exposes built-in queries
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DefaultQueryDispatcher;
 
 impl QueryDispatcherComposite for DefaultQueryDispatcher {
