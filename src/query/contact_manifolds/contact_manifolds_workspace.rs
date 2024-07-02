@@ -67,7 +67,7 @@ impl DeserializableWorkspaceData {
             DeserializableWorkspaceData::CompositeShapeShapeContactManifoldsWorkspace(w) => {
                 Some(ContactManifoldsWorkspace(Box::new(w)))
             }
-            DeserializableWorkspaceData::Custom(_) => None,
+            DeserializableWorkspaceData::Custom => None,
         }
     }
 }
