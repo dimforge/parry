@@ -25,6 +25,7 @@ use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
 #[cfg(feature = "std")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
+use either::Either::{Left, Right};
 use na::{RealField, Unit};
 use num::Zero;
 use num_derive::FromPrimitive;
@@ -332,6 +333,9 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape>;
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>>;
+
     /// Computes the [`Aabb`] of this shape with the given position.
     fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
         self.compute_local_aabb().transform_by(position)
@@ -635,6 +639,12 @@ impl Shape for Ball {
         Box::new(*self)
     }
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        let scaled = self.scaled(scale, num_subdivisions)?;
+        Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -690,6 +700,11 @@ impl Shape for Cuboid {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.scaled(scale)))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -751,6 +766,12 @@ impl Shape for Capsule {
         Box::new(*self)
     }
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        let scaled = self.scaled(scale, num_subdivisions)?;
+        Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -800,6 +821,11 @@ impl Shape for Triangle {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.scaled(scale)))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -865,6 +891,11 @@ impl Shape for Segment {
         Box::new(*self)
     }
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.scaled(scale)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -924,6 +955,26 @@ impl Shape for Compound {
         Box::new(self.clone())
     }
 
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        use super::SharedShape;
+
+        let scaled: Vec<_> = self
+            .shapes()
+            .iter()
+            .map(|(pos, shape)| {
+                let scaled_shape = shape.clone_scaled(scale, num_subdivisions)?;
+                Some((
+                    Isometry::from_parts(
+                        (pos.translation.vector.component_mul(scale)).into(),
+                        pos.rotation,
+                    ),
+                    SharedShape(scaled_shape.into()),
+                ))
+            })
+            .collect::<Option<Vec<_>>>()?;
+        Some(Box::new(Compound::new(scaled)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         *self.local_aabb()
     }
@@ -972,6 +1023,10 @@ impl Shape for Polyline {
         Box::new(self.clone())
     }
 
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         *self.local_aabb()
     }
@@ -1016,6 +1071,10 @@ impl Shape for Polyline {
 impl Shape for TriMesh {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
+    }
+
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1065,6 +1124,10 @@ impl Shape for HeightField {
         Box::new(self.clone())
     }
 
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -1105,6 +1168,10 @@ impl Shape for HeightField {
 impl Shape for ConvexPolygon {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
+    }
+
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)?))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1168,6 +1235,10 @@ impl Shape for ConvexPolygon {
 impl Shape for ConvexPolyhedron {
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(self.clone())
+    }
+
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)?))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1234,6 +1305,12 @@ impl Shape for Cylinder {
         Box::new(*self)
     }
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        let scaled = self.scaled(scale, num_subdivisions)?;
+        Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -1284,6 +1361,12 @@ impl Shape for Cone {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape> {
         Box::new(*self)
+    }
+
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        let scaled = self.scaled(scale, num_subdivisions)?;
+        Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1340,6 +1423,11 @@ impl Shape for HalfSpace {
         Box::new(*self)
     }
 
+    #[cfg(feature = "std")]
+    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)?))
+    }
+
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()
     }
@@ -1378,11 +1466,16 @@ impl Shape for HalfSpace {
 }
 
 macro_rules! impl_shape_for_round_shape(
-    ($($S: ty, $Tag: ident);*) => {$(
+    ($S: ty, $Tag: ident, $t: tt) => {
         impl Shape for RoundShape<$S> {
             #[cfg(feature = "std")]
             fn clone_box(&self) -> Box<dyn Shape> {
                 Box::new(self.clone())
+            }
+
+            #[cfg(feature = "std")]
+            fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+                $t(self, scale, num_subdivisions)
             }
 
             fn compute_local_aabb(&self) -> Aabb {
@@ -1431,22 +1524,108 @@ macro_rules! impl_shape_for_round_shape(
                 Some((&self.inner_shape as &dyn PolygonalFeatureMap, self.border_radius))
             }
         }
-    )*}
+    }
 );
 
 impl_shape_for_round_shape!(
-    Cuboid, RoundCuboid;
-    Triangle, RoundTriangle
+    Cuboid,
+    RoundCuboid,
+    (|this: &Self, scale: &Vector<Real>, _num_subdivisions: u32| {
+        let shape = RoundShape {
+            border_radius: this.border_radius,
+            inner_shape: this.inner_shape.scaled(scale),
+        };
+        Some(Box::new(shape) as Box<dyn Shape>)
+    })
 );
+
+impl_shape_for_round_shape!(
+    Triangle,
+    RoundTriangle,
+    (|this: &Self, scale: &Vector<Real>, _num_subdivisions: u32| {
+        let shape = RoundShape {
+            border_radius: this.border_radius,
+            inner_shape: this.inner_shape.scaled(scale),
+        };
+        Some(Box::new(shape) as Box<dyn Shape>)
+    })
+);
+
 #[cfg(feature = "dim2")]
 #[cfg(feature = "std")]
-impl_shape_for_round_shape!(ConvexPolygon, RoundConvexPolygon);
+impl_shape_for_round_shape!(
+    ConvexPolygon,
+    RoundConvexPolygon,
+    (|this: &Self, scale: &Vector<Real>, _num_subdivisions: u32| {
+        let shape = RoundShape {
+            border_radius: this.border_radius,
+            inner_shape: this.inner_shape.clone().scaled(scale)?,
+        };
+        Some(Box::new(shape) as Box<dyn Shape>)
+    })
+);
+
 #[cfg(feature = "dim3")]
 impl_shape_for_round_shape!(
-    Cylinder, RoundCylinder;
-    Cone, RoundCone
+    Cylinder,
+    RoundCylinder,
+    (|this: &Self, scale: &Vector<Real>, num_subdivisions: u32| {
+        Some(
+            this.inner_shape
+                .scaled(scale, num_subdivisions)?
+                .either::<_, _, Box<dyn Shape>>(
+                    |inner_shape| {
+                        Box::new(RoundShape {
+                            border_radius: this.border_radius,
+                            inner_shape,
+                        })
+                    },
+                    |inner_shape| {
+                        Box::new(RoundShape {
+                            border_radius: this.border_radius,
+                            inner_shape,
+                        })
+                    },
+                ),
+        )
+    })
+);
+#[cfg(feature = "dim3")]
+impl_shape_for_round_shape!(
+    Cone,
+    RoundCone,
+    (|this: &Self, scale: &Vector<Real>, num_subdivisions: u32| {
+        Some(
+            this.inner_shape
+                .scaled(scale, num_subdivisions)?
+                .either::<_, _, Box<dyn Shape>>(
+                    |inner_shape| {
+                        Box::new(RoundShape {
+                            border_radius: this.border_radius,
+                            inner_shape,
+                        })
+                    },
+                    |inner_shape| {
+                        Box::new(RoundShape {
+                            border_radius: this.border_radius,
+                            inner_shape,
+                        })
+                    },
+                ),
+        )
+    })
 );
 
 #[cfg(feature = "dim3")]
 #[cfg(feature = "std")]
-impl_shape_for_round_shape!(ConvexPolyhedron, RoundConvexPolyhedron);
+impl_shape_for_round_shape!(
+    ConvexPolyhedron,
+    RoundConvexPolyhedron,
+    (|this: &Self, scale: &Vector<Real>, _num_subdivisions: u32| {
+        let shape = RoundShape {
+            border_radius: this.border_radius,
+            inner_shape: this.inner_shape.clone().scaled(scale)?,
+        };
+        Some(Box::new(shape) as Box<dyn Shape>)
+    })
+);
