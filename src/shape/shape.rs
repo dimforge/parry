@@ -150,7 +150,7 @@ pub enum TypedShape<'a> {
     #[cfg(feature = "dim2")]
     #[cfg(feature = "std")]
     RoundConvexPolygon(&'a RoundConvexPolygon),
-    /// A custom user-defined shape with a type identified by a number.
+    /// A custom user-defined shape.
     Custom(&'a dyn Shape),
 }
 impl Debug for TypedShape<'_> {
@@ -188,10 +188,14 @@ impl Debug for TypedShape<'_> {
             Self::RoundCone(arg0) => f.debug_tuple("RoundCone").field(arg0).finish(),
             #[cfg(feature = "dim3")]
             #[cfg(feature = "std")]
-            Self::RoundConvexPolyhedron(arg0) => f.debug_tuple("RoundConvexPolyhedron").field(arg0).finish(),
+            Self::RoundConvexPolyhedron(arg0) => {
+                f.debug_tuple("RoundConvexPolyhedron").field(arg0).finish()
+            }
             #[cfg(feature = "dim2")]
             #[cfg(feature = "std")]
-            Self::RoundConvexPolygon(arg0) => f.debug_tuple("RoundConvexPolygon").field(arg0).finish(),
+            Self::RoundConvexPolygon(arg0) => {
+                f.debug_tuple("RoundConvexPolygon").field(arg0).finish()
+            }
             Self::Custom(_) => f.debug_tuple("Custom").finish(),
         }
     }
@@ -263,9 +267,9 @@ pub(crate) enum DeserializableTypedShape {
     #[cfg(feature = "dim2")]
     #[cfg(feature = "std")]
     RoundConvexPolygon(RoundConvexPolygon),
-    /// A custom user-defined shape identified by a number.
-    #[allow(dead_code)] // The u32 is needed to match `TypedShape`.
-    Custom(u32),
+    /// A custom user-defined shape.
+    #[allow(dead_code)]
+    Custom,
 }
 
 #[cfg(feature = "serde-serialize")]
@@ -309,7 +313,7 @@ impl DeserializableTypedShape {
             #[cfg(feature = "dim2")]
             #[cfg(feature = "std")]
             DeserializableTypedShape::RoundConvexPolygon(s) => Some(SharedShape::new(s)),
-            DeserializableTypedShape::Custom(_) => None,
+            DeserializableTypedShape::Custom => None,
         }
     }
 }
