@@ -26,7 +26,7 @@ pub enum TypedWorkspaceData<'a> {
     /// A composite shape vs. shape workspace.
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
     /// A custom workspace.
-    Custom(u32),
+    Custom,
 }
 
 // NOTE: must match the TypedWorkspaceData enum.
@@ -42,8 +42,8 @@ enum DeserializableWorkspaceData {
         CompositeShapeCompositeShapeContactManifoldsWorkspace,
     ),
     CompositeShapeShapeContactManifoldsWorkspace(CompositeShapeShapeContactManifoldsWorkspace),
-    #[allow(dead_code)] // The u32 is needed to match `TypedWorkspaceData`.
-    Custom(u32),
+    #[allow(dead_code)]
+    Custom,
 }
 
 #[cfg(feature = "serde-serialize")]
