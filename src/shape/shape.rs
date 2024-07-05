@@ -25,7 +25,6 @@ use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
 #[cfg(feature = "std")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon};
 use downcast_rs::{impl_downcast, DowncastSync};
-use either::Either::{Left, Right};
 use na::{RealField, Unit};
 use num::Zero;
 use num_derive::FromPrimitive;
