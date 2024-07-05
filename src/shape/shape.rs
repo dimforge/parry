@@ -151,7 +151,7 @@ pub enum TypedShape<'a> {
     #[cfg(feature = "std")]
     RoundConvexPolygon(&'a RoundConvexPolygon),
     /// A custom user-defined shape.
-    #[serde(skip)]
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     Custom(&'a dyn Shape),
 }
 impl Debug for TypedShape<'_> {
