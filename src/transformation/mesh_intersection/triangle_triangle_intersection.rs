@@ -35,8 +35,8 @@ pub fn triangle_triangle_intersection(
     tri1: &Triangle,
     tri2: &Triangle,
 ) -> Option<TriangleTriangleIntersection> {
-    let normal1 = tri1.normal()?;
-    let normal2 = tri2.normal()?;
+    let normal1 = robust_triangle_normal(&tri1);
+    let normal2 = robust_triangle_normal(&tri2);
 
     if let Some(intersection_dir) = normal1.cross(&normal2).try_normalize(1.0e-6) {
         let mut range1 = [
@@ -248,6 +248,52 @@ pub fn triangle_triangle_intersection(
             None
         }
     }
+}
+
+fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<f64> {
+    let pts = [tri.a.coords, tri.b.coords, tri.c.coords];
+    let best_vertex = select_angle_closest_to_90(&pts);
+
+    let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
+    let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
+
+    // TODO: verify if this is actually necessary or if we can get away with the cross product directly.
+    let (e1, e2) = planar_gram_schmidt(d1, d2);
+
+    e1.cross(&e2)
+}
+
+fn planar_gram_schmidt(
+    v1: na::Vector3<f64>,
+    v2: na::Vector3<f64>,
+) -> (na::Vector3<f64>, na::Vector3<f64>) {
+    let u1 = v1;
+    let u2 = v2 - (v2.dot(&u1) / u1.norm_squared()) * u1;
+
+    let e1 = u1.normalize();
+    let e2 = u2.normalize();
+
+    (e1, e2)
+}
+
+fn select_angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
+    let n = points.len();
+
+    let mut best_cos = 2.0;
+    let mut selected_i = 0;
+    for i in 0..points.len() {
+        let d1 = (points[i] - points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
+
+        let cos = d1.dot(&d2);
+
+        if cos.abs() < best_cos {
+            best_cos = cos.abs();
+            selected_i = i;
+        }
+    }
+
+    selected_i
 }
 
 fn segment_plane_intersection(

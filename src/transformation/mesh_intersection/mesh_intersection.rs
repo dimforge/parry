@@ -1,11 +1,20 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection, EPS};
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
-use crate::shape::{FeatureId, TriMesh, Triangle};
-use crate::utils::WBasis;
-use na::{Point2, Vector2};
+use crate::shape::{FeatureId, GenericTriMesh, TriMesh, Triangle};
+use crate::utils::{hashmap, DefaultStorage, WBasis};
+use core::f64::consts::PI;
+use na::{constraint, ComplexField, Point2, Point3, Vector2, Vector3};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
+use std::collections::BTreeMap;
 use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+// Dbg
+use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
+use rstar::RTree;
+
+const EPSILON: f64 = f64::EPSILON * 100.0;
+// const EPSILON: f64 = 0.001;
 
 /// Computes the intersection of two meshes.
 ///
@@ -19,6 +28,13 @@ pub fn intersect_meshes(
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
+    mesh_to_obj(&mesh1, &PathBuf::from("input1.obj"));
+    mesh_to_obj(&mesh2, &PathBuf::from("input2.obj"));
+
+    // NOTE: remove this, used for debugging only.
+    mesh1.assert_half_edge_topology_is_valid();
+    mesh2.assert_half_edge_topology_is_valid();
+
     if mesh1.topology().is_none() || mesh2.topology().is_none() {
         return Err(MeshIntersectionError::MissingTopology);
     }
@@ -27,18 +43,14 @@ pub fn intersect_meshes(
         return Err(MeshIntersectionError::MissingPseudoNormals);
     }
 
-    // NOTE: remove this, used for debugging only.
-    mesh1.assert_half_edge_topology_is_valid();
-    mesh2.assert_half_edge_topology_is_valid();
-
     let pos12 = pos1.inv_mul(pos2);
 
     // 1: collect all the potential triangle-triangle intersections.
-    let mut intersections = vec![];
+    let mut intersection_candidates = vec![];
     let mut visitor = BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(
         pos12,
         |tri1: &u32, tri2: &u32| {
-            intersections.push((*tri1, *tri2));
+            intersection_candidates.push((*tri1, *tri2));
             true
         },
     );
@@ -50,14 +62,39 @@ pub fn intersect_meshes(
     let mut new_indices1 = vec![];
     let mut new_indices2 = vec![];
 
-    for (fid1, fid2) in &intersections {
+    let mut dbg_intersections = vec![];
+    let mut intersections = vec![];
+    for (fid1, fid2) in &intersection_candidates {
         let tri1 = mesh1.triangle(*fid1);
         let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
 
         if super::triangle_triangle_intersection(&tri1, &tri2).is_some() {
+            intersections.push((*fid1, *fid2));
             let _ = deleted_faces1.insert(*fid1);
             let _ = deleted_faces2.insert(*fid2);
+
+            dbg_intersections.push(tri1.a);
+            dbg_intersections.push(tri1.b);
+            dbg_intersections.push(tri1.c);
+
+            dbg_intersections.push(tri2.a);
+            dbg_intersections.push(tri2.b);
+            dbg_intersections.push(tri2.c);
         }
+    }
+
+    let n = dbg_intersections.len();
+    if !intersections.is_empty() {
+        mesh_to_obj(
+            &TriMesh::new(
+                dbg_intersections,
+                (0..n)
+                    .step_by(3)
+                    .map(|i| [i as u32, (i + 1) as u32, (i + 2) as u32])
+                    .collect(),
+            ),
+            &PathBuf::from(format!("intersections_{}.obj", intersections.len())),
+        );
     }
 
     extract_connected_components(
@@ -77,84 +114,121 @@ pub fn intersect_meshes(
         &mut new_indices2,
     );
 
-    let mut new_vertices12 = vec![];
-    let mut new_indices12 = vec![];
+    let mut point_set = RTree::<TreePoint, _>::new();
+    let mut topology_indices = Vec::new();
 
-    cut_and_triangulate_intersections(
-        &pos12,
-        mesh1,
-        flip1,
-        mesh2,
-        flip2,
-        &mut new_vertices12,
-        &mut new_indices12,
-        &mut intersections,
+    {
+        let mut insert_point =
+            |position: Vector3<f64>| insert_into_set(position, &mut point_set, EPSILON) as u32;
+        // Add the inside vertices and triangles from mesh1
+        for mut face in new_indices1 {
+            if flip1 {
+                face.swap(0, 1);
+            }
+            topology_indices.push([
+                insert_point(mesh1.vertices()[face[0] as usize].coords),
+                insert_point(mesh1.vertices()[face[1] as usize].coords),
+                insert_point(mesh1.vertices()[face[2] as usize].coords),
+            ]);
+        }
+
+        // Add the inside vertices and triangles from mesh2
+        for mut face in new_indices2 {
+            if flip2 {
+                face.swap(0, 1);
+            }
+
+            topology_indices.push([
+                insert_point(mesh2.vertices()[face[0] as usize].coords),
+                insert_point(mesh2.vertices()[face[1] as usize].coords),
+                insert_point(mesh2.vertices()[face[2] as usize].coords),
+            ]);
+        }
+    }
+
+    let mut dbg_vertices: Vec<_> = point_set.iter().copied().collect();
+    dbg_vertices.sort_by(|a, b| a.id.cmp(&b.id));
+
+    mesh_to_obj(
+        &TriMesh::new(
+            dbg_vertices.iter().map(|p| Point3::from(p.point)).collect(),
+            topology_indices.clone(),
+        ),
+        &PathBuf::from("stage1_merging.obj"),
     );
 
-    let old_vertices1 = mesh1.vertices();
-    let old_vertices2 = mesh2.vertices();
+    // For each intersecting triangle, get their intersection points.
+    let mut constraints1 = std::collections::BTreeMap::new();
+    let mut constraints2 = std::collections::BTreeMap::new();
 
-    // At this point, we know what triangles we want from the first mesh,
-    // and the ones we want from the second mesh. Now we need to build the
-    // vertex buffer and adjust the indices accordingly.
-    let mut new_vertices = vec![];
+    for (fid1, fid2) in &intersections {
+        let tri1 = mesh1.triangle(*fid1);
+        let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
 
-    // Maps from unified index to the final vertex index.
-    let mut index_map = HashMap::new();
-    let base_id2 = mesh1.vertices().len() as u32;
+        let list1 = constraints1.entry(fid1).or_insert(vec![]);
+        let list2 = constraints2.entry(fid2).or_insert(vec![]);
 
-    // Grab all the triangles from the connected component extracted from the first mesh.
-    for idx1 in &mut new_indices1 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(idx1[k]).or_insert_with(|| {
-                let vtx = old_vertices1[idx1[k] as usize];
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            idx1[k] = new_id as u32;
+        let intersection = super::triangle_triangle_intersection(&tri1, &tri2);
+        if intersection.is_some() {
+            match intersection.unwrap() {
+                TriangleTriangleIntersection::Segment { a, b } => {
+                    // For both triangles, add the points in the intersection
+                    // and their associated edge to the set.
+                    // Note this necessarily introduces duplicate points to the
+                    // set that need to be filtered out.
+                    list1.push([a.p1, b.p1]);
+                    list2.push([a.p1, b.p1]);
+                }
+                TriangleTriangleIntersection::Polygon(polygon) => {
+                    panic!()
+                }
+            }
         }
     }
 
-    // Grab all the triangles from the connected component extracted from the second mesh.
-    for idx2 in &mut new_indices2 {
-        for k in 0..3 {
-            let new_id = *index_map.entry(base_id2 + idx2[k]).or_insert_with(|| {
-                let vtx = pos12 * old_vertices2[idx2[k] as usize];
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            idx2[k] = new_id as u32;
-        }
-    }
+    merge_triangle_sets(
+        mesh1,
+        mesh2,
+        &constraints1,
+        &pos12,
+        flip2,
+        &mut point_set,
+        &mut topology_indices,
+    );
 
-    // Grab all the trinangles from the intersections.
-    for idx12 in &mut new_indices12 {
-        for id12 in idx12 {
-            let new_id = *index_map.entry(*id12).or_insert_with(|| {
-                let vtx = unified_vertex(mesh1, mesh2, &new_vertices12, &pos12, *id12);
-                new_vertices.push(vtx);
-                new_vertices.len() - 1
-            });
-            *id12 = new_id as u32;
-        }
-    }
+    let dbg_vertices: Vec<_> = point_set.iter().copied().collect();
+    let pts: Vec<_> = dbg_vertices.iter().map(|p| Point3::from(p.point)).collect();
+    let (_, d) = find_closest_distinct_points(&pts);
 
-    if flip1 {
-        new_indices1.iter_mut().for_each(|idx| idx.swap(1, 2));
-    }
+    let mut dbg_vertices: Vec<_> = point_set.iter().copied().collect();
+    dbg_vertices.sort_by(|a, b| a.id.cmp(&b.id));
+    mesh_to_obj(
+        &TriMesh::new(
+            dbg_vertices.iter().map(|p| Point3::from(p.point)).collect(),
+            topology_indices.clone(),
+        ),
+        &PathBuf::from("stage2_merging.obj"),
+    );
 
-    if flip2 {
-        new_indices2.iter_mut().for_each(|idx| idx.swap(1, 2));
-    }
+    merge_triangle_sets(
+        mesh2,
+        mesh1,
+        &constraints2,
+        &Isometry::identity(),
+        flip1,
+        &mut point_set,
+        &mut topology_indices,
+    );
 
-    new_indices1.append(&mut new_indices2);
-    new_indices1.append(&mut new_indices12);
-
-    if !new_indices1.is_empty() {
-        Ok(Some(TriMesh::new(new_vertices, new_indices1)))
-    } else {
-        Ok(None)
-    }
+    let mut dbg_vertices: Vec<_> = point_set.iter().copied().collect();
+    dbg_vertices.sort_by(|a, b| a.id.cmp(&b.id));
+    mesh_to_obj(
+        &TriMesh::new(
+            dbg_vertices.iter().map(|p| Point3::from(p.point)).collect(),
+            topology_indices,
+        ),
+        &PathBuf::from("stage3_merging.obj"),
+    );
 }
 
 fn extract_connected_components(
@@ -330,11 +404,12 @@ impl Triangulation {
             let param = ab.dot(&ap) / ab.norm_squared();
             let shift = Vector2::new(ab.y, -ab.x);
 
+            // Why not use `insert_and_split`?
             // NOTE: if we have intersections exactly on the edge, we nudge
             //       their projection slightly outside of the triangle. That
             //       way, the triangle’s edge gets split automatically by
             //       the triangulation (or, rather, it will be split when we
-            //       add the contsraint involving that point).
+            //       add the constraint involving that point).
             // NOTE: this is not ideal though, so we should find a way to simply
             //       delete spurious triangles that are outside of the intersection
             //       curve.
@@ -351,8 +426,8 @@ fn cut_and_triangulate_intersections(
     flip1: bool,
     mesh2: &TriMesh,
     flip2: bool,
-    new_vertices12: &mut Vec<Point<Real>>,
-    new_indices12: &mut Vec<[u32; 3]>,
+    merged_vertices: &mut Vec<Point<Real>>,
+    merged_indices: &mut Vec<[u32; 3]>,
     intersections: &mut Vec<(u32, u32)>,
 ) {
     let mut triangulations1 = HashMap::new();
@@ -362,6 +437,7 @@ fn cut_and_triangulate_intersections(
     let mut spade_infos = [HashMap::new(), HashMap::new()];
     let mut spade_handle_to_intersection = [HashMap::new(), HashMap::new()];
 
+    let mut dbg_points = Vec::new();
     for (i1, i2) in intersections.drain(..) {
         let tris = [mesh1.triangle(i1), mesh2.triangle(i2).transformed(pos12)];
         let vids = [mesh1.indices()[i1 as usize], mesh2.indices()[i2 as usize]];
@@ -424,6 +500,11 @@ fn cut_and_triangulate_intersections(
                     let key_a = (fa_1, fa_2);
                     let key_b = (fb_1, fb_2);
 
+                    dbg_points.push(inter_a.p1);
+                    dbg_points.push(inter_a.p2);
+                    dbg_points.push(inter_b.p1);
+                    dbg_points.push(inter_b.p2);
+
                     let ins_a = *intersection_points
                         .entry(key_a)
                         .or_insert([inter_a.p1, inter_a.p2]);
@@ -471,6 +552,9 @@ fn cut_and_triangulate_intersections(
         }
     }
 
+    if !dbg_points.is_empty() {
+        points_to_obj(&dbg_points, &PathBuf::from("inter_points.obj"));
+    }
     extract_result(
         pos12,
         mesh1,
@@ -481,8 +565,8 @@ fn cut_and_triangulate_intersections(
         &intersection_points,
         &triangulations1,
         &triangulations2,
-        new_vertices12,
-        new_indices12,
+        merged_vertices,
+        merged_indices,
     );
 }
 
@@ -505,7 +589,7 @@ fn convert_fid(mesh: &TriMesh, tri: u32, fid: FeatureId) -> FeatureId {
 fn unified_vertex(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    new_vertices12: &[Point<Real>],
+    merged_vertices: &[Point<Real>],
     pos12: &Isometry<Real>,
     vid: u32,
 ) -> Point<Real> {
@@ -517,7 +601,7 @@ fn unified_vertex(
     } else if vid < base_id12 {
         pos12 * mesh2.vertices()[(vid - base_id2) as usize]
     } else {
-        new_vertices12[(vid - base_id12) as usize]
+        merged_vertices[(vid - base_id12) as usize]
     }
 }
 
@@ -531,8 +615,8 @@ fn extract_result(
     intersection_points: &HashMap<(FeatureId, FeatureId), [Point<Real>; 2]>,
     triangulations1: &HashMap<u32, Triangulation>,
     triangulations2: &HashMap<u32, Triangulation>,
-    new_vertices12: &mut Vec<Point<Real>>,
-    new_indices12: &mut Vec<[u32; 3]>,
+    merged_vertices: &mut Vec<Point<Real>>,
+    merged_indices: &mut Vec<[u32; 3]>,
 ) {
     // Base ids for indexing in the first mesh vertices, second mesh vertices, and new vertices, as if they
     // are part of a single big array.
@@ -543,7 +627,7 @@ fn extract_result(
     let mut vertex_remaping = HashMap::new();
 
     // Generate the new points and setup the mapping between indices from
-    // the second mesh, to vertices from the first mash (for cases of vertex/vertex intersections).
+    // the second mesh, to vertices from the first mesh (for cases of vertex/vertex intersections).
     for (fids, pts) in intersection_points.iter() {
         match *fids {
             (FeatureId::Vertex(vid1), FeatureId::Vertex(vid2)) => {
@@ -552,8 +636,8 @@ fn extract_result(
             (FeatureId::Vertex(_), _) | (_, FeatureId::Vertex(_)) => {}
             _ => {
                 let _ = added_vertices.entry(fids).or_insert_with(|| {
-                    new_vertices12.push(pts[0]);
-                    new_vertices12.len() as u32 - 1
+                    merged_vertices.push(pts[0]);
+                    merged_vertices.len() as u32 - 1
                 });
             }
         }
@@ -568,18 +652,23 @@ fn extract_result(
         _ => base_id12 + added_vertices[&fids],
     };
 
+    let mut dbg_triangles = Vec::new();
     for (tri_id, triangulation) in triangulations1.iter() {
         for face in triangulation.delaunay.inner_faces() {
             let vtx = face.vertices();
             let mut tri = [Point::origin(); 3];
             let mut idx = [0; 3];
+
+            let mut dbg_pts = Vec::new();
             for k in 0..3 {
                 let fids = spade_handle_to_intersection[0][&(*tri_id, vtx[k].fix())];
                 let vid = fids_to_unified_index(fids);
-                let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
+                let vertex = unified_vertex(mesh1, mesh2, merged_vertices, pos12, vid);
 
                 idx[k] = vid;
                 tri[k] = vertex;
+
+                dbg_pts.push(vertex);
             }
 
             let tri = Triangle::from(tri);
@@ -590,13 +679,26 @@ fn extract_result(
                 && ((flip2 ^ projection.is_inside)
                     || (projection.point - center).norm() <= EPS * 10.0)
             {
+                dbg_triangles.extend(dbg_pts);
                 if flip1 {
                     idx.swap(1, 2);
                 }
-                new_indices12.push(idx);
+                merged_indices.push(idx);
             }
         }
     }
+
+    let n = dbg_triangles.len();
+    mesh_to_obj(
+        &TriMesh::new(
+            dbg_triangles,
+            (0..n)
+                .step_by(3)
+                .map(|i| [i as u32, (i + 1) as u32, (i + 2) as u32])
+                .collect(),
+        ),
+        &PathBuf::from(format!("sorted_intersections_{}.obj", n)),
+    );
 
     for (tri_id, triangulation) in triangulations2.iter() {
         for face in triangulation.delaunay.inner_faces() {
@@ -606,7 +708,7 @@ fn extract_result(
             for k in 0..3 {
                 let fids = spade_handle_to_intersection[1][&(*tri_id, vtx[k].fix())];
                 let vid = fids_to_unified_index(fids);
-                let vertex = unified_vertex(mesh1, mesh2, new_vertices12, pos12, vid);
+                let vertex = unified_vertex(mesh1, mesh2, merged_vertices, pos12, vid);
 
                 idx[k] = vid;
                 tri[k] = vertex;
@@ -629,7 +731,482 @@ fn extract_result(
                 if flip2 {
                     idx.swap(1, 2);
                 }
-                new_indices12.push(idx);
+                merged_indices.push(idx);
+            }
+        }
+    }
+}
+
+fn test_triangle_crossing(
+    tri: &Triangle,
+    pos12: &Isometry<Real>,
+    mesh: &GenericTriMesh<DefaultStorage>,
+) -> usize {
+    let projections = [
+        mesh.project_point(pos12, &tri.a, false),
+        mesh.project_point(pos12, &tri.b, false),
+        mesh.project_point(pos12, &tri.c, false),
+    ];
+    let distances = [
+        (projections[0].point - tri.a).norm(),
+        (projections[1].point - tri.b).norm(),
+        (projections[2].point - tri.c).norm(),
+    ];
+    let inside_tests = [
+        projections[0].is_inside || distances[0] <= EPS * 10.0,
+        projections[1].is_inside || distances[1] <= EPS * 10.0,
+        projections[2].is_inside || distances[2] <= EPS * 10.0,
+    ];
+    let inside_count: usize = inside_tests.iter().map(|b| *b as usize).sum();
+
+    inside_count
+}
+
+fn syncretize_triangulation(
+    tri: &Triangle,
+    constraints: &[[Point3<f64>; 2]],
+) -> (Triangulation, Vec<Point3<f64>>) {
+    let mut constraints = constraints.to_vec();
+
+    let epsilon = EPSILON * 10.0;
+    // Add the triangle points to the triangulation.
+    let mut point_set = RTree::<TreePoint, _>::new();
+    let _ = insert_into_set(tri.a.coords, &mut point_set, epsilon);
+    let _ = insert_into_set(tri.b.coords, &mut point_set, epsilon);
+    let _ = insert_into_set(tri.c.coords, &mut point_set, epsilon);
+
+    // Sometimes, points on the edge of a triangle are slightly off, and this makes
+    // spade think that there is a super thin triangle. Project points close to an edge
+    // onto the edge to get better performance.
+    let triangle = [tri.a.coords, tri.b.coords, tri.c.coords];
+    for point_pair in constraints.iter_mut() {
+        let p1 = point_pair[0];
+        let p2 = point_pair[1];
+
+        for i in 0..3 {
+            let q1 = triangle[i];
+            let q2 = triangle[(i + 1) % 3];
+
+            let proj1 = project_point_to_segment(&p1.coords, &[q1, q2]);
+            if (p1.coords - proj1).norm() < epsilon {
+                point_pair[0] = Point3::from(proj1);
+            }
+
+            let proj2 = project_point_to_segment(&p2.coords, &[q1, q2]);
+            if (p2.coords - proj2).norm() < epsilon {
+                point_pair[1] = Point3::from(proj2);
+            }
+        }
+    }
+
+    // Generate edge, taking care to merge duplicate vertices.
+    let mut edges = Vec::new();
+    for point_pair in constraints {
+        let p1_id = insert_into_set(point_pair[0].coords, &mut point_set, EPSILON);
+        let p2_id = insert_into_set(point_pair[1].coords, &mut point_set, EPSILON);
+
+        edges.push([p1_id, p2_id]);
+    }
+
+    let mut points: Vec<_> = point_set.iter().cloned().collect();
+    points.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let tri_points = [tri.a.coords, tri.b.coords, tri.c.coords];
+    let best_source = select_angle_closest_to_90(&tri_points);
+    let d1 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
+    let d2 = tri_points[(best_source + 2) % 3] - tri_points[(best_source + 1) % 3];
+    let (e1, e2) = planar_gram_schmidt(d1, d2);
+    let project = |p: &Vector3<f64>| spade::Point2::new(e1.dot(p), e2.dot(p));
+
+    // Project points into 2D and triangulate the resulting set.
+    let mut triangulation = Triangulation::new(*tri);
+
+    let planar_points: Vec<_> = points
+        .iter()
+        .copied()
+        .map(|point| {
+            let point_proj = project(&point.point); //triangulation.project(Point3::from(point.point), FeatureId::Unknown);
+            spade::Point2::new(point_proj.x, point_proj.y)
+        })
+        .collect();
+    let cdt_triangulation =
+        ConstrainedDelaunayTriangulation::<spade::Point2<f64>>::bulk_load_cdt_stable(
+            planar_points,
+            edges,
+        )
+        .unwrap();
+    debug_assert!(cdt_triangulation.vertices().len() == points.len());
+    triangulation.delaunay = cdt_triangulation;
+
+    let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
+    (triangulation, points)
+}
+
+fn mesh_to_obj(mesh: &TriMesh, path: &PathBuf) {
+    let mut file = std::fs::File::create(path).unwrap();
+
+    ObjData {
+        position: mesh
+            .vertices()
+            .into_iter()
+            .map(|v| [v.x as f32, v.y as f32, v.z as f32])
+            .collect(),
+        objects: vec![Object {
+            groups: vec![Group {
+                polys: mesh
+                    .indices()
+                    .into_iter()
+                    .map(|tri| {
+                        SimplePolygon(vec![
+                            IndexTuple(tri[0] as usize, None, None),
+                            IndexTuple(tri[1] as usize, None, None),
+                            IndexTuple(tri[2] as usize, None, None),
+                        ])
+                    })
+                    .collect(),
+                name: "".to_string(),
+                index: 0,
+                material: None,
+            }],
+            name: "".to_string(),
+        }],
+        ..Default::default()
+    }
+    .write_to_buf(&mut file)
+    .unwrap();
+}
+
+fn points_to_obj(mesh: &[Point3<f64>], path: &PathBuf) {
+    use std::io::Write;
+    let mut file = std::fs::File::create(path).unwrap();
+
+    for p in mesh {
+        writeln!(file, "v {} {} {}", p.x, p.y, p.z).unwrap();
+    }
+}
+
+fn points_and_edges_to_obj(mesh: &[Point3<f64>], edges: &[[usize; 2]], path: &PathBuf) {
+    use std::io::Write;
+    let mut file = std::fs::File::create(path).unwrap();
+
+    for p in mesh {
+        writeln!(file, "v {} {} {}", p.x, p.y, p.z).unwrap();
+    }
+
+    for e in edges {
+        writeln!(file, "l {} {}", e[0] + 1, e[1] + 1).unwrap();
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+struct TreePoint {
+    point: Vector3<f64>,
+    id: usize,
+}
+
+impl rstar::Point for TreePoint {
+    type Scalar = f64;
+    const DIMENSIONS: usize = 3;
+
+    fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
+        TreePoint {
+            point: Vector3::new(generator(0), generator(1), generator(2)),
+            id: usize::MAX,
+        }
+    }
+
+    fn nth(&self, index: usize) -> Self::Scalar {
+        match index {
+            0 => self.point.x,
+            1 => self.point.y,
+            2 => self.point.z,
+            _ => unreachable!(),
+        }
+    }
+
+    fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
+        match index {
+            0 => &mut self.point.x,
+            1 => &mut self.point.y,
+            2 => &mut self.point.z,
+            _ => unreachable!(),
+        }
+    }
+}
+
+fn insert_into_set(
+    position: Vector3<f64>,
+    point_set: &mut RTree<TreePoint>,
+    epsilon: f64,
+) -> usize {
+    let point_count = point_set.size();
+    let point_to_insert = TreePoint {
+        point: position,
+        id: point_count,
+    };
+
+    match point_set.nearest_neighbor(&point_to_insert) {
+        Some(tree_point) => {
+            if (tree_point.point - position).norm_squared() <= epsilon {
+                return tree_point.id;
+            } else {
+                point_set.insert(point_to_insert);
+                debug_assert!(point_set.size() == point_count + 1);
+                return point_count;
+            }
+        }
+        None => {
+            point_set.insert(point_to_insert);
+            debug_assert!(point_set.size() == point_count + 1);
+            return point_count;
+        }
+    }
+}
+
+fn spade_to_tri_mesh(delaunay: &ConstrainedDelaunayTriangulation<spade::Point2<Real>>) -> TriMesh {
+    let pts = delaunay
+        .vertices()
+        .map(|v| {
+            let p = v.position();
+            Point3::<f64>::new(p.x, p.y, 0.0)
+        })
+        .collect::<Vec<_>>();
+    let topology = delaunay
+        .inner_faces()
+        .map(|f| {
+            [
+                f.vertices()[0].index() as u32,
+                f.vertices()[1].index() as u32,
+                f.vertices()[2].index() as u32,
+            ]
+        })
+        .collect();
+
+    TriMesh::new(pts, topology)
+}
+
+fn find_closest_distinct_points(points: &[Point3<f64>]) -> ([Point3<f64>; 2], f64) {
+    let mut distance = f64::MAX;
+    let mut pair_points = [points[0], points[1]];
+    for i in 0..points.len() {
+        for j in 0..points.len() {
+            if i == j {
+                continue;
+            }
+
+            let d = (points[i].coords - points[j].coords).norm();
+
+            if d < distance {
+                distance = d;
+                pair_points[0] = points[i];
+                pair_points[1] = points[j];
+            }
+        }
+    }
+
+    (pair_points, distance)
+}
+
+fn select_angle_closest_to_90(points: &[Vector3<f64>]) -> usize {
+    let n = points.len();
+
+    let mut best_cos = 2.0;
+    let mut selected_i = 0;
+    for i in 0..points.len() {
+        let d1 = (points[i] - points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
+
+        let cos = d1.dot(&d2);
+
+        if cos.abs() < best_cos {
+            best_cos = cos.abs();
+            selected_i = i;
+        }
+    }
+
+    selected_i
+}
+
+fn smallest_angle(points: &[Vector3<f64>]) -> f64 {
+    let n = points.len();
+
+    let mut worst_cos = 2.0;
+    for i in 0..points.len() {
+        let d1 = (points[i] - points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
+
+        let cos = d1.dot(&d2);
+
+        if cos < worst_cos {
+            worst_cos = cos.abs();
+        }
+    }
+
+    worst_cos.acos() * 180. / PI
+}
+
+fn planar_gram_schmidt(v1: Vector3<f64>, v2: Vector3<f64>) -> (Vector3<f64>, Vector3<f64>) {
+    let u1 = v1;
+    let u2 = v2 - (v2.dot(&u1) / u1.norm_squared()) * u1;
+
+    let e1 = u1.normalize();
+    let e2 = u2.normalize();
+
+    (e1, e2)
+}
+
+fn project_point_to_segment(point: &Vector3<f64>, segment: &[Vector3<f64>; 2]) -> Vector3<f64> {
+    let dir = segment[1] - segment[0];
+    let local = point - segment[0];
+
+    let norm = dir.norm();
+    // restrict the result to the segment portion of the line.
+    let coeff = (dir.dot(&local) / norm).clamp(0., norm);
+
+    segment[0] + coeff * dir.normalize()
+}
+
+fn project_to_triangle(point: &Vector3<f64>, tri: &Triangle) -> (Vector3<f64>, f64) {
+    let points = [tri.a.coords, tri.b.coords, tri.c.coords];
+
+    let mut selected_point = Vector3::default();
+    let mut distance = f64::MAX;
+    for i in 0..3 {
+        let proj = project_point_to_segment(point, &[points[i], points[(i + 1) % 3]]);
+        let d = (proj - point).norm();
+
+        if d < distance {
+            distance = d;
+            selected_point = proj;
+        }
+    }
+
+    (selected_point, distance)
+}
+
+fn largest_side(tri: &Triangle) -> f64 {
+    let mut side = (tri.a.coords - tri.b.coords).norm();
+    side = side.max((tri.b.coords - tri.c.coords).norm());
+    side = side.max((tri.c.coords - tri.a.coords).norm());
+    side
+}
+
+fn closest_vertex(point: &Vector3<f64>, tri: &Triangle) -> (Vector3<f64>, f64) {
+    let points = [tri.a.coords, tri.b.coords, tri.c.coords];
+
+    let mut selected_point = Vector3::default();
+    let mut distance = f64::MAX;
+    for i in 0..3 {
+        let d = (points[i] - point).norm();
+
+        if d < distance {
+            distance = d;
+            selected_point = points[i];
+        }
+    }
+
+    (selected_point, distance)
+}
+
+/// No matter how smart we are about computing intersections. It is always possible
+/// to create ultra thin triangles when a point lies on an edge of a tirangle. These
+/// are degenerate and need to be terminated with extreme prejudice.
+fn is_triangle_degenerate(
+    triangle: &[Vector3<f64>; 3],
+    epsilon_degrees: f64,
+    epsilon_distance: f64,
+) -> bool {
+    if smallest_angle(triangle) < epsilon_degrees {
+        return true;
+    }
+
+    let mut shortest_side = f64::MAX;
+    for i in 0..3 {
+        let p1 = triangle[i];
+        let p2 = triangle[(i + 1) % 3];
+
+        shortest_side = shortest_side.min((p1 - p2).norm());
+    }
+
+    let mut worse_projection_distance = f64::MAX;
+    for i in 0..3 {
+        let dir = triangle[(i + 1) % 3] - triangle[(i + 2) % 3];
+        if dir.norm() < epsilon_distance {
+            return true;
+        }
+
+        let dir = dir.normalize();
+        let proj = (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3];
+
+        worse_projection_distance = worse_projection_distance.min((proj - triangle[i]).norm());
+    }
+
+    if worse_projection_distance < epsilon_distance {
+        return true;
+    }
+
+    false
+}
+
+fn merge_triangle_sets(
+    mesh1: &GenericTriMesh<DefaultStorage>,
+    mesh2: &GenericTriMesh<DefaultStorage>,
+    triangle_constraints: &BTreeMap<&u32, Vec<[Point3<f64>; 2]>>,
+    pos12: &Isometry<Real>,
+    flip2: bool,
+    mut point_set: &mut RTree<TreePoint>,
+    topology_indices: &mut Vec<[u32; 3]>,
+) {
+    // For each triangle, and each constraint edge associated to that triangle,
+    // make a triangulation of the face and sort wether or not each generated
+    // sub-triangle is part of the intersection.
+    // For each sub-triangle that is part of the intersection, add them to the
+    // output mesh.
+    for (triangle_id, constraints) in triangle_constraints.iter() {
+        let tri = mesh1.triangle(**triangle_id);
+
+        let (triangulation, points) = syncretize_triangulation(&tri, &constraints);
+
+        for face in triangulation.delaunay.inner_faces() {
+            let verts = face.vertices();
+            let p1 = points[verts[0].index()];
+            let p2 = points[verts[1].index()];
+            let p3 = points[verts[2].index()];
+
+            // Sometimes the triangulation is messed up due to numerical errors. If
+            // a triangle does not survive this test. You can bet it should be put out
+            // of its misery.
+            if is_triangle_degenerate(&[p1.coords, p2.coords, p3.coords], 0.005, EPSILON) {
+                continue;
+            }
+
+            let center = Triangle {
+                a: p1,
+                b: p2,
+                c: p3,
+            }
+            .center();
+
+            if flip2 ^ (mesh2.contains_local_point(&pos12.inverse_transform_point(&center))) {
+                topology_indices.push([
+                    insert_into_set(p1.coords, &mut point_set, EPSILON) as u32,
+                    insert_into_set(p2.coords, &mut point_set, EPSILON) as u32,
+                    insert_into_set(p3.coords, &mut point_set, EPSILON) as u32,
+                ]);
+
+                if flip2 {
+                    topology_indices.last_mut().unwrap().swap(0, 1)
+                }
+
+                let id1 = topology_indices.last().unwrap()[0];
+                let id2 = topology_indices.last().unwrap()[1];
+                let id3 = topology_indices.last().unwrap()[2];
+
+                // If this triggers, yell at Camilo because his algorithm is
+                // disfunctional.
+                if id1 == id2 || id1 == id3 || id2 == id3 {
+                    panic!();
+                }
             }
         }
     }

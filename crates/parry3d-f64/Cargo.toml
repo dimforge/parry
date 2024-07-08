@@ -60,9 +60,12 @@ cust_core = { version = "0.1", optional = true }
 spade = { version = "2", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
+rstar = "0.12.0"
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust = { version = "0.3", optional = true }
+
+obj = "0.10.2"
 
 [dev-dependencies]
 oorandom = "11"

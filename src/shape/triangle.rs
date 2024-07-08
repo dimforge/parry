@@ -233,6 +233,8 @@ impl Triangle {
     /// product).
     #[inline]
     pub fn scaled_normal(&self) -> Vector<Real> {
+        // Note: on thin triangles this can cause numerical issues. A more robust
+        // way to do this is to look for the incident angle closest to 90 degrees.
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         ab.cross(&ac)
