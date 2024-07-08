@@ -1,0 +1,13 @@
+[package]
+name = "bevy_examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.14.0", default-features = false, features = [
+    "bevy_gizmos",
+    "bevy_sprite",
+    "bevy_winit",
+] }
+parry2d = { version = "0.16.1", path = "../parry2d" }
+nalgebra = { version = "0.33.0", features = ["convert-glam027"] }
