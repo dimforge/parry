@@ -45,8 +45,8 @@ pub enum TopologyError {
 }
 
 #[cfg(feature = "std")]
-impl std::fmt::Display for TopologyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for TopologyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::BadTriangle(fid) => {
                 f.pad(&format!("the triangle {fid} has at least two identical vertices."))
@@ -236,21 +236,6 @@ impl TriMeshTopology<CudaStorage> {
             faces: self.faces.as_device_ptr(),
             half_edges: self.half_edges.as_device_ptr(),
         }
-    }
-}
-
-impl<Storage: TriMeshStorage> TriMeshTopology<Storage> {
-    #[cfg(feature = "dim3")]
-    pub(crate) fn face_half_edges_ids(&self, fid: u32) -> [u32; 3] {
-        let first_half_edge = self.faces[fid as usize].half_edge;
-
-        let mut result = [first_half_edge; 3];
-        for k in 1..3 {
-            let half_edge = self.half_edges[result[k - 1] as usize];
-            result[k] = half_edge.next;
-        }
-
-        result
     }
 }
 

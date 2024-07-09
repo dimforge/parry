@@ -250,38 +250,26 @@ pub fn triangle_triangle_intersection(
     }
 }
 
+/// Smarter, but more expensive, mechanism to find a triangle normal.
 fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<f64> {
     let pts = [tri.a.coords, tri.b.coords, tri.c.coords];
-    let best_vertex = select_angle_closest_to_90(&pts);
+    let best_vertex = angle_closest_to_90(&pts);
 
     let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
     let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
 
-    // TODO: verify if this is actually necessary or if we can get away with the cross product directly.
-    let (e1, e2) = planar_gram_schmidt(d1, d2);
-
-    e1.cross(&e2)
+    d1.cross(&d2).normalize()
 }
 
-fn planar_gram_schmidt(
-    v1: na::Vector3<f64>,
-    v2: na::Vector3<f64>,
-) -> (na::Vector3<f64>, na::Vector3<f64>) {
-    let u1 = v1;
-    let u2 = v2 - (v2.dot(&u1) / u1.norm_squared()) * u1;
-
-    let e1 = u1.normalize();
-    let e2 = u2.normalize();
-
-    (e1, e2)
-}
-
-fn select_angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
+/// Find the index of a vertex in a poly line, such that the two
+/// edges incident in that vertex form the angle closest to 90
+/// degrees in the poly line.
+pub fn angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
     let n = points.len();
 
     let mut best_cos = 2.0;
     let mut selected_i = 0;
-    for i in 0..points.len() {
+    for i in 0..n {
         let d1 = (points[i] - points[(i + 1) % n]).normalize();
         let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
 
