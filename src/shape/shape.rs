@@ -332,8 +332,13 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     #[cfg(feature = "std")]
     fn clone_box(&self) -> Box<dyn Shape>;
 
+    /// Creates a new shape scaled by `scale`.
+    /// 
+    /// In some cases, the resulting shape doesn’t have the same type as Self. For example,
+    /// if a non-uniform scale is provided and Self as a [`Ball`], then the result will be discretized
+    /// (based on the `num_subdivisions` parameter) as a [`ConvexPolyhedron`] (in 3D) or [`ConvexPolygon`] (in 2D).
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>>;
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>>;
 
     /// Computes the [`Aabb`] of this shape with the given position.
     fn compute_aabb(&self, position: &Isometry<Real>) -> Aabb {
@@ -372,7 +377,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
         false
     }
 
-    /// Convents this shape into its support mapping, if it has one.
+    /// Converts this shape into its support mapping, if it has one.
     fn as_support_map(&self) -> Option<&dyn SupportMap> {
         None
     }
@@ -639,7 +644,7 @@ impl Shape for Ball {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         let scaled = self.scaled(scale, num_subdivisions)?;
         Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
     }
@@ -702,7 +707,7 @@ impl Shape for Cuboid {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.scaled(scale)))
     }
 
@@ -766,7 +771,7 @@ impl Shape for Capsule {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         let scaled = self.scaled(scale, num_subdivisions)?;
         Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
     }
@@ -823,7 +828,7 @@ impl Shape for Triangle {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.scaled(scale)))
     }
 
@@ -891,7 +896,7 @@ impl Shape for Segment {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.scaled(scale)))
     }
 
@@ -954,14 +959,14 @@ impl Shape for Compound {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         use super::SharedShape;
 
         let scaled: Vec<_> = self
             .shapes()
             .iter()
             .map(|(pos, shape)| {
-                let scaled_shape = shape.clone_scaled(scale, num_subdivisions)?;
+                let scaled_shape = shape.dyn_scaled(scale, num_subdivisions)?;
                 Some((
                     Isometry::from_parts(
                         (pos.translation.vector.component_mul(scale)).into(),
@@ -1022,7 +1027,7 @@ impl Shape for Polyline {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)))
     }
 
@@ -1072,7 +1077,7 @@ impl Shape for TriMesh {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)))
     }
 
@@ -1123,7 +1128,7 @@ impl Shape for HeightField {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)))
     }
 
@@ -1169,7 +1174,7 @@ impl Shape for ConvexPolygon {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)?))
     }
 
@@ -1236,7 +1241,7 @@ impl Shape for ConvexPolyhedron {
         Box::new(self.clone())
     }
 
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)?))
     }
 
@@ -1305,7 +1310,7 @@ impl Shape for Cylinder {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         let scaled = self.scaled(scale, num_subdivisions)?;
         Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
     }
@@ -1363,7 +1368,7 @@ impl Shape for Cone {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         let scaled = self.scaled(scale, num_subdivisions)?;
         Some(scaled.either::<_, _, Box<dyn Shape>>(|x| Box::new(x), |x| Box::new(x)))
     }
@@ -1423,7 +1428,7 @@ impl Shape for HalfSpace {
     }
 
     #[cfg(feature = "std")]
-    fn clone_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+    fn dyn_scaled(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
         Some(Box::new(self.clone().scaled(scale)?))
     }
 
@@ -1473,7 +1478,7 @@ macro_rules! impl_shape_for_round_shape(
             }
 
             #[cfg(feature = "std")]
-            fn clone_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+            fn dyn_scaled(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>> {
                 $t(self, scale, num_subdivisions)
             }
 
