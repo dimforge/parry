@@ -1,18 +1,18 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::math::{Isometry, Real};
+use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{GenericTriMesh, TriMesh, Triangle};
 use crate::transformation::mesh_intersection::angle_closest_to_90;
 use crate::utils::DefaultStorage;
 use core::f64::consts::PI;
 use na::{Point3, Vector3};
+use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
+use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::PathBuf;
-// Dbg
-use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
-use rstar::RTree;
 
 /// Metadata that specifies thresholds to use when making construction choices
 /// in mesh intersections.
@@ -111,7 +111,6 @@ pub fn intersect_meshes_with_metadata(
     let mut new_indices2 = vec![];
 
     // 2: Identify all triangles that do actually intersect.
-    let mut dbg_intersections = vec![];
     let mut intersections = vec![];
     for (fid1, fid2) in &intersection_candidates {
         let tri1 = mesh1.triangle(*fid1);
@@ -121,18 +120,10 @@ pub fn intersect_meshes_with_metadata(
             intersections.push((*fid1, *fid2));
             let _ = deleted_faces1.insert(*fid1);
             let _ = deleted_faces2.insert(*fid2);
-
-            dbg_intersections.push(tri1.a);
-            dbg_intersections.push(tri1.b);
-            dbg_intersections.push(tri1.c);
-
-            dbg_intersections.push(tri2.a);
-            dbg_intersections.push(tri2.b);
-            dbg_intersections.push(tri2.c);
         }
     }
 
-    // 3: Grab all triangles that are inside the other mesh but tdo not intersect it.
+    // 3: Grab all triangles that are inside the other mesh but do not intersect it.
     extract_connected_components(
         &pos12,
         mesh1,
@@ -175,7 +166,6 @@ pub fn intersect_meshes_with_metadata(
             if flip2 {
                 face.swap(0, 1);
             }
-
             topology_indices.push([
                 insert_point(mesh2.vertices()[face[0] as usize].coords),
                 insert_point(mesh2.vertices()[face[1] as usize].coords),
@@ -211,8 +201,8 @@ pub fn intersect_meshes_with_metadata(
                         let a = polygon[i];
                         let b = polygon[(i + 1) % polygon.len()];
 
+                        // Triangles overlap in space, so only one constraint is needed.
                         list1.push([a.p1, b.p1]);
-                        list2.push([a.p1, b.p1]);
                     }
                 }
             }
@@ -227,22 +217,24 @@ pub fn intersect_meshes_with_metadata(
         mesh2,
         &constraints1,
         &pos12,
+        flip1,
         flip2,
         &meta_data,
         &mut point_set,
         &mut topology_indices,
-    );
+    )?;
 
     merge_triangle_sets(
         mesh2,
         mesh1,
         &constraints2,
         &Isometry::identity(),
+        flip2,
         flip1,
         &meta_data,
         &mut point_set,
         &mut topology_indices,
-    );
+    )?;
 
     // 7: Sort the ouput points by insertion order.
     let mut vertices: Vec<_> = point_set.iter().copied().collect();
@@ -408,9 +400,10 @@ fn syncretize_triangulation(
 
     let tri_points = [tri.a.coords, tri.b.coords, tri.c.coords];
     let best_source = angle_closest_to_90(&tri_points);
-    let d1 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
-    let d2 = tri_points[(best_source + 2) % 3] - tri_points[(best_source + 1) % 3];
+    let d1 = tri_points[(best_source + 2) % 3] - tri_points[(best_source + 1) % 3];
+    let d2 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
     let (e1, e2) = planar_gram_schmidt(d1, d2);
+
     let project = |p: &Vector3<f64>| spade::Point2::new(e1.dot(p), e2.dot(p));
 
     // Project points into 2D and triangulate the resulting set.
@@ -643,13 +636,14 @@ fn merge_triangle_sets(
     mesh2: &GenericTriMesh<DefaultStorage>,
     triangle_constraints: &BTreeMap<&u32, Vec<[Point3<f64>; 2]>>,
     pos12: &Isometry<Real>,
+    flip1: bool,
     flip2: bool,
     metadata: &MeshIntersectionMetadata,
     mut point_set: &mut RTree<TreePoint>,
     topology_indices: &mut Vec<[u32; 3]>,
-) {
+) -> Result<(), MeshIntersectionError> {
     // For each triangle, and each constraint edge associated to that triangle,
-    // make a triangulation of the face and sort wether or not each generated
+    // make a triangulation of the face and sort whether or not each generated
     // sub-triangle is part of the intersection.
     // For each sub-triangle that is part of the intersection, add them to the
     // output mesh.
@@ -687,14 +681,18 @@ fn merge_triangle_sets(
             .center();
 
             let epsilon = metadata.global_insertion_epsilon;
-            if flip2 ^ (mesh2.contains_local_point(&pos12.inverse_transform_point(&center))) {
+            let projection = mesh2
+                .project_local_point_and_get_location(&pos12.inverse_transform_point(&center), true)
+                .0;
+
+            if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
                 topology_indices.push([
                     insert_into_set(p1.coords, &mut point_set, epsilon) as u32,
                     insert_into_set(p2.coords, &mut point_set, epsilon) as u32,
                     insert_into_set(p3.coords, &mut point_set, epsilon) as u32,
                 ]);
 
-                if flip2 {
+                if flip1 {
                     topology_indices.last_mut().unwrap().swap(0, 1)
                 }
 
@@ -705,9 +703,228 @@ fn merge_triangle_sets(
                 // If this triggers, yell at Camilo because his algorithm is
                 // disfunctional.
                 if id1 == id2 || id1 == id3 || id2 == id3 {
-                    panic!();
+                    return Err(MeshIntersectionError::DuplicateVertices);
                 }
             }
         }
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::shape::TriMeshFlags;
+
+    use super::*;
+    use obj::Obj;
+
+    #[test]
+    fn test_same_mesh_intersection() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/low_poly_bunny.obj")
+            .unwrap();
+
+        let mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let res = intersect_meshes(
+            &Isometry::identity(),
+            &mesh,
+            false,
+            &Isometry::identity(),
+            &mesh,
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        _mesh_to_obj(&res, &PathBuf::from("same_test.obj"))
+    }
+
+    #[test]
+    fn test_offset_cylinder_intersection() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/offset_cylinder.obj")
+            .unwrap();
+
+        let offset_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/center_cylinder.obj")
+            .unwrap();
+
+        let center_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let res = intersect_meshes(
+            &Isometry::identity(),
+            &center_mesh,
+            false,
+            &Isometry::identity(),
+            &offset_mesh,
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        _mesh_to_obj(&res, &PathBuf::from("offset_test.obj"))
+    }
+
+    #[test]
+    fn test_stair_bar_intersection() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/stairs.obj").unwrap();
+
+        let stair_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/bar.obj").unwrap();
+
+        let bar_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let res = intersect_meshes(
+            &Isometry::identity(),
+            &stair_mesh,
+            false,
+            &Isometry::identity(),
+            &bar_mesh,
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        _mesh_to_obj(&res, &PathBuf::from("stair_test.obj"))
+    }
+
+    #[test]
+    fn test_complex_intersection() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/low_poly_bunny.obj")
+            .unwrap();
+
+        let bunny_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../src/transformation/mesh_intersection/test_data/poly_cylinder.obj")
+            .unwrap();
+
+        let cylinder_mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let res = intersect_meshes(
+            &Isometry::identity(),
+            &bunny_mesh,
+            false,
+            &Isometry::identity(),
+            &cylinder_mesh,
+            true,
+        )
+        .unwrap()
+        .unwrap();
+
+        _mesh_to_obj(&res, &PathBuf::from("complex_test.obj"))
     }
 }
