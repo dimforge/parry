@@ -35,8 +35,8 @@ pub fn triangle_triangle_intersection(
     tri1: &Triangle,
     tri2: &Triangle,
 ) -> Option<TriangleTriangleIntersection> {
-    let normal1 = robust_triangle_normal(&tri1);
-    let normal2 = robust_triangle_normal(&tri2);
+    let normal1 = robust_triangle_normal(tri1);
+    let normal2 = robust_triangle_normal(tri2);
 
     if let Some(intersection_dir) = normal1.cross(&normal2).try_normalize(1.0e-6) {
         let mut range1 = [
@@ -251,7 +251,7 @@ pub fn triangle_triangle_intersection(
 }
 
 /// Smarter, but more expensive, mechanism to find a triangle normal.
-fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<f64> {
+fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<Real> {
     let pts = [tri.a.coords, tri.b.coords, tri.c.coords];
     let best_vertex = angle_closest_to_90(&pts);
 
@@ -264,7 +264,7 @@ fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<f64> {
 /// Find the index of a vertex in a poly line, such that the two
 /// edges incident in that vertex form the angle closest to 90
 /// degrees in the poly line.
-pub(crate) fn angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
+pub(crate) fn angle_closest_to_90(points: &[na::Vector3<Real>]) -> usize {
     let n = points.len();
 
     let mut best_cos = 2.0;

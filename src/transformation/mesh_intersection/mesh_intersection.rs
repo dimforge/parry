@@ -20,23 +20,23 @@ use std::path::PathBuf;
 pub struct MeshIntersectionMetadata {
     /// The smallest angle (in degrees) that will be tolerated. A triangle with
     /// a smaller angle is considered degenerate and will be deleted.
-    pub angle_epsilon: f64,
+    pub angle_epsilon: Real,
     /// The maximum distance at which two points are considered to overlap in space
     /// if `||p1 - p2|| < global_insertion_epsilon` then p1 and p2 are considered
     /// to be the same point.
-    pub global_insertion_epsilon: f64,
+    pub global_insertion_epsilon: Real,
     /// A multiplier coefficient to scale `global_insertion_epsilon` when checking for
     /// point duplicatin within a single triangle. Inside of an individual triangle
     /// the distance at wich two points are considered to be the same is
     /// `global_insertion_epsilon * local_insertion_epsilon_mod`.
-    pub local_insertion_epsilon_mod: f64,
+    pub local_insertion_epsilon_mod: Real,
 }
 
 impl Default for MeshIntersectionMetadata {
     fn default() -> Self {
         Self {
             angle_epsilon: 0.005, // degrees
-            global_insertion_epsilon: f64::EPSILON * 100.0,
+            global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_mod: 10.,
         }
     }
@@ -147,7 +147,7 @@ pub fn intersect_meshes_with_metadata(
     let mut point_set = RTree::<TreePoint, _>::new();
     let mut topology_indices = Vec::new();
     {
-        let mut insert_point = |position: Point3<f64>| {
+        let mut insert_point = |position: Point3<Real>| {
             insert_into_set(position, &mut point_set, meta_data.global_insertion_epsilon) as u32
         };
         // Add the inside vertices and triangles from mesh1
@@ -350,11 +350,11 @@ fn extract_connected_components(
 
 fn syncretize_triangulation(
     tri: &Triangle,
-    constraints: &[[Point3<f64>; 2]],
-    epsilon: f64,
+    constraints: &[[Point3<Real>; 2]],
+    epsilon: Real,
 ) -> (
     ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    Vec<Point3<f64>>,
+    Vec<Point3<Real>>,
 ) {
     let mut constraints = constraints.to_vec();
     // Add the triangle points to the triangulation.
@@ -405,7 +405,7 @@ fn syncretize_triangulation(
     let d2 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
     let (e1, e2) = planar_gram_schmidt(d1, d2);
 
-    let project = |p: &Vector3<f64>| spade::Point2::new(e1.dot(p), e2.dot(p));
+    let project = |p: &Vector3<Real>| spade::Point2::new(e1.dot(p), e2.dot(p));
 
     // Project points into 2D and triangulate the resulting set.
     let planar_points: Vec<_> = points
@@ -417,7 +417,7 @@ fn syncretize_triangulation(
         })
         .collect();
     let cdt_triangulation =
-        ConstrainedDelaunayTriangulation::<spade::Point2<f64>>::bulk_load_cdt_stable(
+        ConstrainedDelaunayTriangulation::<spade::Point2<Real>>::bulk_load_cdt_stable(
             planar_points,
             edges,
         )
@@ -430,7 +430,7 @@ fn syncretize_triangulation(
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
 #[cfg(feature = "wavefront")]
-fn _points_to_obj(mesh: &[Point3<f64>], path: &PathBuf) {
+fn _points_to_obj(mesh: &[Point3<Real>], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
 
@@ -441,7 +441,7 @@ fn _points_to_obj(mesh: &[Point3<f64>], path: &PathBuf) {
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
 #[cfg(feature = "wavefront")]
-fn _points_and_edges_to_obj(mesh: &[Point3<f64>], edges: &[[usize; 2]], path: &PathBuf) {
+fn _points_and_edges_to_obj(mesh: &[Point3<Real>], edges: &[[usize; 2]], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
 
@@ -456,12 +456,12 @@ fn _points_and_edges_to_obj(mesh: &[Point3<f64>], edges: &[[usize; 2]], path: &P
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct TreePoint {
-    point: Point3<f64>,
+    point: Point3<Real>,
     id: usize,
 }
 
 impl rstar::Point for TreePoint {
-    type Scalar = f64;
+    type Scalar = Real;
     const DIMENSIONS: usize = 3;
 
     fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
@@ -490,7 +490,11 @@ impl rstar::Point for TreePoint {
     }
 }
 
-fn insert_into_set(position: Point3<f64>, point_set: &mut RTree<TreePoint>, epsilon: f64) -> usize {
+fn insert_into_set(
+    position: Point3<Real>,
+    point_set: &mut RTree<TreePoint>,
+    epsilon: Real,
+) -> usize {
     let point_count = point_set.size();
     let point_to_insert = TreePoint {
         point: position,
@@ -500,22 +504,22 @@ fn insert_into_set(position: Point3<f64>, point_set: &mut RTree<TreePoint>, epsi
     match point_set.nearest_neighbor(&point_to_insert) {
         Some(tree_point) => {
             if (tree_point.point - position).norm_squared() <= epsilon {
-                return tree_point.id;
+                tree_point.id
             } else {
                 point_set.insert(point_to_insert);
                 debug_assert!(point_set.size() == point_count + 1);
-                return point_count;
+                point_count
             }
         }
         None => {
             point_set.insert(point_to_insert);
             debug_assert!(point_set.size() == point_count + 1);
-            return point_count;
+            point_count
         }
     }
 }
 
-fn smallest_angle(points: &[Point3<f64>]) -> f64 {
+fn smallest_angle(points: &[Point3<Real>]) -> Real {
     let n = points.len();
 
     let mut worst_cos = 2.0;
@@ -530,10 +534,10 @@ fn smallest_angle(points: &[Point3<f64>]) -> f64 {
         }
     }
 
-    worst_cos.acos() * 180. / PI
+    worst_cos.acos() * 180. / PI as Real
 }
 
-fn planar_gram_schmidt(v1: Vector3<f64>, v2: Vector3<f64>) -> (Vector3<f64>, Vector3<f64>) {
+fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, Vector3<Real>) {
     let u1 = v1;
     let u2 = v2 - (v2.dot(&u1) / u1.norm_squared()) * u1;
 
@@ -543,7 +547,7 @@ fn planar_gram_schmidt(v1: Vector3<f64>, v2: Vector3<f64>) -> (Vector3<f64>, Vec
     (e1, e2)
 }
 
-fn project_point_to_segment(point: &Vector3<f64>, segment: &[Vector3<f64>; 2]) -> Vector3<f64> {
+fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2]) -> Vector3<Real> {
     let dir = segment[1] - segment[0];
     let local = point - segment[0];
 
@@ -558,15 +562,15 @@ fn project_point_to_segment(point: &Vector3<f64>, segment: &[Vector3<f64>; 2]) -
 /// to create ultra thin triangles when a point lies on an edge of a tirangle. These
 /// are degenerate and need to be terminated with extreme prejudice.
 fn is_triangle_degenerate(
-    triangle: &[Point3<f64>; 3],
-    epsilon_degrees: f64,
-    epsilon_distance: f64,
+    triangle: &[Point3<Real>; 3],
+    epsilon_degrees: Real,
+    epsilon_distance: Real,
 ) -> bool {
     if smallest_angle(triangle) < epsilon_degrees {
         return true;
     }
 
-    let mut shortest_side = f64::MAX;
+    let mut shortest_side = Real::MAX;
     for i in 0..3 {
         let p1 = triangle[i];
         let p2 = triangle[(i + 1) % 3];
@@ -574,7 +578,7 @@ fn is_triangle_degenerate(
         shortest_side = shortest_side.min((p1 - p2).norm());
     }
 
-    let mut worse_projection_distance = f64::MAX;
+    let mut worse_projection_distance = Real::MAX;
     for i in 0..3 {
         let dir = triangle[(i + 1) % 3] - triangle[(i + 2) % 3];
         if dir.norm() < epsilon_distance {
@@ -599,7 +603,7 @@ fn is_triangle_degenerate(
 fn merge_triangle_sets(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    triangle_constraints: &BTreeMap<&u32, Vec<[Point3<f64>; 2]>>,
+    triangle_constraints: &BTreeMap<&u32, Vec<[Point3<Real>; 2]>>,
     pos12: &Isometry<Real>,
     flip1: bool,
     flip2: bool,
@@ -617,7 +621,7 @@ fn merge_triangle_sets(
 
         let (delaunay, points) = syncretize_triangulation(
             &tri,
-            &constraints,
+            constraints,
             metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_mod,
         );
 
@@ -651,9 +655,9 @@ fn merge_triangle_sets(
 
             if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
                 topology_indices.push([
-                    insert_into_set(p1, &mut point_set, epsilon) as u32,
-                    insert_into_set(p2, &mut point_set, epsilon) as u32,
-                    insert_into_set(p3, &mut point_set, epsilon) as u32,
+                    insert_into_set(p1, point_set, epsilon) as u32,
+                    insert_into_set(p2, point_set, epsilon) as u32,
+                    insert_into_set(p3, point_set, epsilon) as u32,
                 ]);
 
                 if flip1 {
