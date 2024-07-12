@@ -20,17 +20,16 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub struct Tetrahedron {
-    /// The tetrahedron first point.
+    /// The tetrahedron's first point.
     pub a: Point<Real>,
-    /// The tetrahedron first point.
+    /// The tetrahedron's second point.
     pub b: Point<Real>,
-    /// The tetrahedron first point.
+    /// The tetrahedron's third point.
     pub c: Point<Real>,
-    /// The tetrahedron first point.
+    /// The tetrahedron's fourth point.
     pub d: Point<Real>,
 }
 
@@ -41,7 +40,7 @@ pub enum TetrahedronPointLocation {
     OnVertex(u32),
     /// The point lies on an edge.
     ///
-    /// The 0-st edge is the segment AB.
+    /// The 0-th edge is the segment AB.
     /// The 1-st edge is the segment AC.
     /// The 2-nd edge is the segment AD.
     /// The 3-rd edge is the segment BC.
@@ -106,7 +105,7 @@ impl TetrahedronPointLocation {
 }
 
 impl Tetrahedron {
-    /// Creates a tetrahedron from three points.
+    /// Creates a tetrahedron from four points.
     #[inline]
     pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>, d: Point<Real>) -> Tetrahedron {
         Tetrahedron { a, b, c, d }
@@ -151,7 +150,7 @@ impl Tetrahedron {
 
     /// Returns the i-th edge of this tetrahedron.
     ///
-    /// The 0-st edge is the segment AB.
+    /// The 0-th edge is the segment AB.
     /// The 1-st edge is the segment AC.
     /// The 2-nd edge is the segment AD.
     /// The 3-rd edge is the segment BC.
@@ -171,7 +170,7 @@ impl Tetrahedron {
 
     /// Returns the indices of the vertices of the i-th edge of this tetrahedron.
     ///
-    /// The 0-st edge is the segment AB.
+    /// The 0-th edge is the segment AB.
     /// The 1-st edge is the segment AC.
     /// The 2-nd edge is the segment AD.
     /// The 3-rd edge is the segment BC.
@@ -217,8 +216,8 @@ impl Tetrahedron {
 
     /// Computes the signed volume of this tetrahedron.
     ///
-    /// If it is positive, `p4` is on the half-space pointed by the normal of the oriented triangle
-    /// `(p1, p2, p3)`.
+    /// If it is positive, `p4` is on the half-space pointed by the normal
+    /// of the oriented triangle `(p1, p2, p3)`.
     #[inline]
     pub fn signed_volume(&self) -> Real {
         let p1p2 = self.b - self.a;

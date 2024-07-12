@@ -294,9 +294,9 @@ fn segment_plane_intersection(
     let dir = segment.b - segment.a;
     let dir_norm = dir.norm();
 
-    let toi =
+    let time_of_impact =
         query::details::line_toi_with_halfspace(plane_center, plane_normal, &segment.a, &dir)?;
-    let scaled_toi = toi * dir_norm;
+    let scaled_toi = time_of_impact * dir_norm;
 
     if scaled_toi < -EPS || scaled_toi > dir_norm + EPS {
         None
@@ -305,6 +305,6 @@ fn segment_plane_intersection(
     } else if scaled_toi >= dir_norm - EPS {
         Some((segment.b, FeatureId::Vertex(vids.1)))
     } else {
-        Some((segment.a + dir * toi, FeatureId::Edge(eid)))
+        Some((segment.a + dir * time_of_impact, FeatureId::Edge(eid)))
     }
 }

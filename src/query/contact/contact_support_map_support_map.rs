@@ -7,15 +7,15 @@ use crate::shape::SupportMap;
 use na::Unit;
 
 /// Contact between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
-pub fn contact_support_map_support_map<G1: ?Sized, G2: ?Sized>(
+pub fn contact_support_map_support_map<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
     prediction: Real,
 ) -> Option<Contact>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let simplex = &mut VoronoiSimplex::new();
     match contact_support_map_support_map_with_params(pos12, g1, g2, prediction, simplex, None) {
@@ -37,7 +37,7 @@ where
 /// The vector-typed result is the vector that should be passed as `init` for
 /// subsequent executions of the algorithm. It is also the contact
 /// normal (that points toward the outside of the first solid).
-pub fn contact_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized>(
+pub fn contact_support_map_support_map_with_params<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -46,8 +46,8 @@ pub fn contact_support_map_support_map_with_params<G1: ?Sized, G2: ?Sized>(
     init_dir: Option<Unit<Vector<Real>>>,
 ) -> GJKResult
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let dir = if let Some(init_dir) = init_dir {
         init_dir

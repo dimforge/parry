@@ -1,20 +1,10 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::{Real, Vector};
-use crate::partitioning::qbvh::storage::QbvhStorage;
-use crate::utils::DefaultStorage;
-use bitflags::bitflags;
 
 use na::SimdValue;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
-#[cfg(all(feature = "std", feature = "cuda"))]
-use {crate::utils::CudaArray1, cust::error::CudaResult};
-#[cfg(feature = "cuda")]
-use {
-    crate::utils::{CudaStorage, CudaStoragePtr},
-    cust_core::DeviceCopy,
-};
 
 /// A data to which an index is associated.
 pub trait IndexedData: Copy {
@@ -64,7 +54,6 @@ pub type SimdNodeIndex = u32;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// The index of one specific node of a Qbvh.
 pub struct NodeIndex {
     /// The index of the SIMD node containing the addressed node.
@@ -90,17 +79,18 @@ impl NodeIndex {
     }
 }
 
-bitflags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[cfg_attr(
-        feature = "rkyv",
-        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self")
-    )]
-    #[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
-    #[derive(Default)]
-    /// The status of a QBVH node.
-    pub struct QbvhNodeFlags: u8 {
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
+)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// The status of a QBVH node.
+pub struct QbvhNodeFlags(u8);
+
+bitflags::bitflags! {
+    impl QbvhNodeFlags: u8 {
         /// If this bit is set, the node is a leaf.
         const LEAF = 0b0001;
         /// If this bit is set, this node was recently changed.
@@ -120,7 +110,6 @@ bitflags! {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct QbvhNode {
     /// The Aabbs of the qbvh nodes represented by this node.
     pub simd_aabb: SimdAabb,
@@ -194,7 +183,6 @@ impl QbvhNode {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 /// Combination of a leaf data and its associated node’s index.
 pub struct QbvhProxy<LeafData> {
     /// Index of the leaf node the leaf data is associated to.
@@ -235,86 +223,22 @@ impl<LeafData> QbvhProxy<LeafData> {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[repr(C)] // Needed for Cuda.
-#[derive(Debug)]
-pub struct GenericQbvh<LeafData, Storage: QbvhStorage<LeafData>> {
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct Qbvh<LeafData> {
     pub(super) root_aabb: Aabb,
-    pub(super) nodes: Storage::Nodes,
-    pub(super) dirty_nodes: Storage::ArrayU32,
-    pub(super) free_list: Storage::ArrayU32,
-    pub(super) proxies: Storage::ArrayProxies,
+    pub(super) nodes: Vec<QbvhNode>,
+    pub(super) dirty_nodes: Vec<u32>,
+    pub(super) free_list: Vec<u32>,
+    pub(super) proxies: Vec<QbvhProxy<LeafData>>,
 }
 
-/// A quaternary bounding-volume-hierarchy.
-///
-/// This is a bounding-volume-hierarchy where each node has either four children or none.
-pub type Qbvh<LeafData> = GenericQbvh<LeafData, DefaultStorage>;
-#[cfg(feature = "cuda")]
-/// A Qbvh stored in CUDA memory.
-pub type CudaQbvh<LeafData> = GenericQbvh<LeafData, CudaStorage>;
-#[cfg(feature = "cuda")]
-/// A Qbvh accessible from CUDA kernels.
-pub type CudaQbvhPtr<LeafData> = GenericQbvh<LeafData, CudaStoragePtr>;
-
-impl<LeafData, Storage> Clone for GenericQbvh<LeafData, Storage>
-where
-    Storage: QbvhStorage<LeafData>,
-    Storage::Nodes: Clone,
-    Storage::ArrayU32: Clone,
-    Storage::ArrayProxies: Clone,
-{
-    fn clone(&self) -> Self {
-        Self {
-            root_aabb: self.root_aabb,
-            nodes: self.nodes.clone(),
-            dirty_nodes: self.dirty_nodes.clone(),
-            free_list: self.free_list.clone(),
-            proxies: self.proxies.clone(),
-        }
-    }
-}
-
-impl<LeafData, Storage> Copy for GenericQbvh<LeafData, Storage>
-where
-    Storage: QbvhStorage<LeafData>,
-    Storage::Nodes: Copy,
-    Storage::ArrayU32: Copy,
-    Storage::ArrayProxies: Copy,
-{
-}
-
-#[cfg(feature = "cuda")]
-unsafe impl<LeafData, Storage> DeviceCopy for GenericQbvh<LeafData, Storage>
-where
-    Storage: QbvhStorage<LeafData>,
-    Storage::Nodes: DeviceCopy,
-    Storage::ArrayU32: DeviceCopy,
-    Storage::ArrayProxies: DeviceCopy,
-{
-}
-
-#[cfg(all(feature = "std", feature = "cuda"))]
-impl<LeafData: DeviceCopy> CudaQbvh<LeafData> {
-    /// Returns the qbvh usable from within a CUDA kernel.
-    pub fn as_device_ptr(&self) -> CudaQbvhPtr<LeafData> {
-        GenericQbvh {
-            root_aabb: self.root_aabb,
-            nodes: self.nodes.as_device_ptr(),
-            dirty_nodes: self.dirty_nodes.as_device_ptr(),
-            free_list: self.free_list.as_device_ptr(),
-            proxies: self.proxies.as_device_ptr(),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
 impl<LeafData: IndexedData> Default for Qbvh<LeafData> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-#[cfg(feature = "std")]
 impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Initialize an empty Qbvh.
     pub fn new() -> Self {
@@ -325,21 +249,6 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             free_list: Vec::new(),
             proxies: Vec::new(),
         }
-    }
-
-    /// Converts this RAM-based qbvh to an qbvh based on CUDA memory.
-    #[cfg(feature = "cuda")]
-    pub fn to_cuda(&self) -> CudaResult<CudaQbvh<LeafData>>
-    where
-        LeafData: DeviceCopy,
-    {
-        Ok(CudaQbvh {
-            root_aabb: self.root_aabb,
-            nodes: CudaArray1::new(&self.nodes)?,
-            dirty_nodes: CudaArray1::new(&self.dirty_nodes)?,
-            free_list: CudaArray1::new(&self.free_list)?,
-            proxies: CudaArray1::new(&self.proxies)?,
-        })
     }
 
     /// Iterates mutably through all the leaf data in this Qbvh.
@@ -405,7 +314,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     }
 }
 
-impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData, Storage> {
+impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// The Aabb of the root of this tree.
     pub fn root_aabb(&self) -> &Aabb {
         &self.root_aabb

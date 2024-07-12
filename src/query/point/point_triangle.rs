@@ -60,6 +60,9 @@ impl PointQueryWithLocation for Triangle {
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
+        // To understand the ideas, consider reading the slides below
+        // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
+
         let a = self.a;
         let b = self.b;
         let c = self.c;
@@ -252,8 +255,8 @@ impl PointQueryWithLocation for Triangle {
 
             let bc = c - b;
             let d_ab = ap.norm_squared() - (ab.norm_squared() * v * v);
-            let d_ac = ap.norm_squared() - (ac.norm_squared() * u * u);
-            let d_bc = bp.norm_squared() - (bc.norm_squared() * w * w);
+            let d_ac = ap.norm_squared() - (ac.norm_squared() * w * w);
+            let d_bc = bp.norm_squared() - (bc.norm_squared() * u * u);
 
             let proj;
             let loc;

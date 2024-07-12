@@ -13,13 +13,13 @@ jobs:
   check-fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check formatting
         run: cargo fmt -- --check
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Clippy
         run: cargo clippy
   build-native:
@@ -27,7 +27,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: sudo apt-get install -y cmake libxcb-composite0-dev
       - name: Build parry2d
         run: cargo build --verbose -p parry2d;
@@ -46,7 +46,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rustup target add wasm32-unknown-unknown
       - name: build parry2d
         run: cd crates/parry2d && cargo build --verbose --target wasm32-unknown-unknown;
@@ -55,7 +55,7 @@ jobs:
   build-no-std:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install latest nightly
         uses: dtolnay/rust-toolchain@master
         with:

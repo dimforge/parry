@@ -1,11 +1,104 @@
 # Change Log
 
-## v0.13.8
+## v0.16.1
+
+### Fix
+
+- Fix occasional crash in mesh/mesh intersection if some of the vertex coordinates are very small.
+
+## v0.16.0
+
+### Fix
+
+- Fix edge case where some of the principal angular inertia are clamped to zero
+  for decimeter-sized objects.
+- Have ball-ball shape casting take into account the `stop_on_penetration` flags.
+- Don’t panic in EPA for a corner case that needs some additional debugging. Show a debug log instead.
+
 ### Added
 
-- Add `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during recursion.
+- Implement concave polygons intersections: `polygons_intersection_points`, `polygon_intersection`.
+
+### Modified
+
+- Update `bitflags` to version ^2.3
+- Update `nalgebra` to 0.33.
+- Update `indexmap` to 2.
+
+## v0.15.1
+
+### Fix
+
+- Fix a regression in ball vs. convex shape contact manifold calculation.
+
+## v0.15.0
+
+### Added
+
+- Add `ShapeCastOptions` that includes two new options for (linear) shape-casting.
+  `ShapeCastOptions::target_distance` which will return a hit as soon as the moving
+  shapes are closer than this distance; and `compute_impact_geometry_on_penetration`
+  which forces the calculation of proper witness points and normals even if the shapes
+  are initially intersecting (`time_of_impact == 0.0`).
+
+### Modified
+
+This version modifies many names related to shape-casting:
+
+- Renamed `TOI` to `ShapeCastHit`.
+- Renamed `TOIStatus` to `ShapeCastStatus`.
+- Rename `RayIntersection::toi` to `RayIntersection::time_of_impact`.
+- More generally, all occurrences of the word `toi` have been replaced by `time_of_impact`
+  for better clarity.
+- Rename `query::time_of_impact` to `query::cast_shapes`. More generally, all the
+  functions prefixed with `time_of_impact_` (e.g. `time_of_impact_ball_ball`) are
+  now prefixed with `cast_shapes_` (e.g. `cast_shapes_ball_ball`).
+- Rename `QueryDispatcher::time_of_impact` to `QueryDispatcher::cast_shapes`.
+- The (linear) shape-casting functions like `query::cast_shapes` (previously named
+  `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
+  `stop_at_penetration` arguments.
+- Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
+- Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_shapes_nonlinear`.
+- Rename `NonlinearTOIMode` to `NonlinearShapeCastMode`, and `NonlinearTOIMode::DirectionalTOI` to
+  `NonlinearShapeCastMode::Directional`.
+- Rename `TimeOfImpactStatus::Penetrating` to `ShapeCastStatus::PenetratingOrWithinTargetDist`.
+
+## v0.14.0
+
+### Modified
+
+- Remove CUDA support to break free from the toolchain restriction required by cust.
+- Rework internal edges resolution using normal cones. This implies the modification of the
+  `SimdCompositeShape::map_part_at`, `TypedSimdCompositeShape::map_typed_part`, and
+  `TypedSimdCompositeShape::map_untyped_part` trait functions so that the closure argument takes
+  an extra argument for the (optional) normal constraints. This argument can be safely ignored
+  by user code unless applying the normal collection is relevant to your use-case.
+- Contact manifolds will now retain all contacts (including the ones further than the specified `prediction`
+  distance) whenever any contact is actually closer than this `prediction` distance.
+- Typo fix: renamed `TopologyError::BadAdjascentTrianglesOrientation` to `BadAdjacentTrianglesOrientation`.
+
+### Fixed
+
+- Fix contacts between convex shapes being occasionally ignored due to some rounding errors.
+- Remove crash when entering unreachable code in non-linear TOI calculation.
+- Fix accuracy issue in triangle-mesh center-of-mass calculation when the mesh isn’t manifold.
+
+### Added
+
+- Add `SdpMatrix2::inverse_and_get_determinant_unchecked`. This is useful for computing the
+  inverse in a AoSoA SIMD setting.
+- Add `Aabb::intersects_moving_aabb` to perform a swept test between two moving aabbs.
+
+## v0.13.8
+
+### Added
+
+- Add `Qbvh::traverse_depth_first_with_context`,  `Qbvh::traverse_depth_first_node_with_stack_and_context`, and the
+  related `SimdVisitorWithContext` trait to allow parent nodes to pass a custom context to its children during
+  recursion.
 
 ## v0.13.7
+
 ### Modified
 
 - The `point_in_poly2d` now handles arbitrary (convex and non-convex) polygons. The previous implementation

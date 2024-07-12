@@ -15,7 +15,7 @@ impl RayCast for Triangle {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         let edges = self.edges();
@@ -35,9 +35,10 @@ impl RayCast for Triangle {
         let mut smallest_toi = Real::MAX;
 
         for edge in &edges {
-            if let Some(inter) = edge.cast_local_ray_and_get_normal(ray, max_toi, solid) {
-                if inter.toi < smallest_toi {
-                    smallest_toi = inter.toi;
+            if let Some(inter) = edge.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            {
+                if inter.time_of_impact < smallest_toi {
+                    smallest_toi = inter.time_of_impact;
                     best = Some(inter);
                 }
             }
@@ -51,12 +52,12 @@ impl RayCast for Triangle {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         _: bool,
     ) -> Option<RayIntersection> {
         let inter = local_ray_intersection_with_triangle(&self.a, &self.b, &self.c, ray)?.0;
 
-        if inter.toi <= max_toi {
+        if inter.time_of_impact <= max_time_of_impact {
             Some(inter)
         } else {
             None
@@ -106,7 +107,7 @@ pub fn local_ray_intersection_with_triangle(
 
     let mut v;
     let mut w;
-    let toi;
+    let time_of_impact;
     let normal;
 
     if t < 0.0 {
@@ -123,7 +124,7 @@ pub fn local_ray_intersection_with_triangle(
         }
 
         let invd = 1.0 / d;
-        toi = -t * invd;
+        time_of_impact = -t * invd;
         normal = -n.normalize();
         v *= invd;
         w *= invd;
@@ -141,14 +142,14 @@ pub fn local_ray_intersection_with_triangle(
         }
 
         let invd = 1.0 / d;
-        toi = t * invd;
+        time_of_impact = t * invd;
         normal = n.normalize();
         v *= invd;
         w *= invd;
     }
 
     Some((
-        RayIntersection::new(toi, normal, FeatureId::Face(fid)),
+        RayIntersection::new(time_of_impact, normal, FeatureId::Face(fid)),
         Vector3::new(-v - w + 1.0, v, w),
     ))
 }

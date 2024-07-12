@@ -38,9 +38,11 @@ pub fn clip_halfspace_polygon(
             let prev_pt = &polygon[prev_i];
             let ray = Ray::new(*prev_pt, pt - prev_pt);
 
-            if let Some(toi) = query::details::ray_toi_with_halfspace(center, normal, &ray) {
-                if toi > 0.0 && toi < 1.0 {
-                    result.push(ray.origin + ray.dir * toi)
+            if let Some(time_of_impact) =
+                query::details::ray_toi_with_halfspace(center, normal, &ray)
+            {
+                if time_of_impact > 0.0 && time_of_impact < 1.0 {
+                    result.push(ray.origin + ray.dir * time_of_impact)
                 }
             }
 

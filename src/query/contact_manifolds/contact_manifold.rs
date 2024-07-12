@@ -182,7 +182,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         // const DOT_THRESHOLD: Real = 0.crate::COS_10_DEGREES;
         // const DOT_THRESHOLD: Real = crate::utils::COS_5_DEGREES;
         const DOT_THRESHOLD: Real = crate::utils::COS_1_DEGREES;
-        const DIST_SQ_THRESHOLD: Real = 1.0e-6; // FIXME: this should not be hard-coded.
+        const DIST_SQ_THRESHOLD: Real = 1.0e-6; // TODO: this should not be hard-coded.
         self.try_update_contacts_eps(pos12, DOT_THRESHOLD, DIST_SQ_THRESHOLD)
     }
 

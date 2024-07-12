@@ -2,17 +2,22 @@ use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::math::{Isometry, Real};
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
+use crate::shape::{FeatureId, TriMesh, Triangle};
 use crate::shape::{GenericTriMesh, TriMesh, Triangle};
 use crate::transformation::mesh_intersection::angle_closest_to_90;
 use crate::utils::DefaultStorage;
+use crate::utils::{self, WBasis};
 use core::f64::consts::PI;
+use na::{Point2, Vector2};
 use na::{Point3, Vector3};
 #[cfg(feature = "wavefront")]
 use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
 use rstar::RTree;
+use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use spade::{ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 

@@ -25,7 +25,6 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(PartialEq, Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Triangle {

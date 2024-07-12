@@ -49,15 +49,15 @@ impl CSOPoint {
     }
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the unit direction `dir`.
-    pub fn from_shapes_toward<G1: ?Sized, G2: ?Sized>(
+    pub fn from_shapes_toward<G1, G2>(
         pos12: &Isometry<Real>,
         g1: &G1,
         g2: &G2,
         dir: &Unit<Vector<Real>>,
     ) -> Self
     where
-        G1: SupportMap,
-        G2: SupportMap,
+        G1: ?Sized + SupportMap,
+        G2: ?Sized + SupportMap,
     {
         let sp1 = g1.local_support_point_toward(dir);
         let sp2 = g2.support_point_toward(pos12, &-*dir);
@@ -66,15 +66,10 @@ impl CSOPoint {
     }
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the direction `dir`.
-    pub fn from_shapes<G1: ?Sized, G2: ?Sized>(
-        pos12: &Isometry<Real>,
-        g1: &G1,
-        g2: &G2,
-        dir: &Vector<Real>,
-    ) -> Self
+    pub fn from_shapes<G1, G2>(pos12: &Isometry<Real>, g1: &G1, g2: &G2, dir: &Vector<Real>) -> Self
     where
-        G1: SupportMap,
-        G2: SupportMap,
+        G1: ?Sized + SupportMap,
+        G2: ?Sized + SupportMap,
     {
         let sp1 = g1.local_support_point(dir);
         let sp2 = g2.support_point(pos12, &-*dir);

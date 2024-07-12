@@ -6,15 +6,12 @@ use crate::shape::HalfSpace;
 use crate::shape::SupportMap;
 
 /// Time Of Impact of a halfspace with a support-mapped shape under a rigid motion (translation + rotation).
-pub fn nonlinear_time_of_impact_halfspace_support_map<G: ?Sized>(
+pub fn cast_shapes_nonlinear_halfspace_support_map<G: ?Sized + SupportMap>(
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     halfspace: &HalfSpace,
     other: &G,
-) -> Option
-where
-    G: SupportMap,
-{
+) -> Option {
     /*
     let halfspace_normal = mhalfspace * halfspace.normal();
     let mut curr = 0.0;
@@ -35,14 +32,11 @@ where
 }
 
 /// Time Of Impact of a halfspace with a support-mapped shape under a rigid motion (translation + rotation).
-pub fn nonlinear_time_of_impact_support_map_halfspace<G: ?Sized>(
+pub fn cast_shapes_nonlinear_support_map_halfspace<G: ?Sized + SupportMap>(
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     other: &G,
     halfspace: &HalfSpace,
-) -> Option
-where
-    G: SupportMap,
-{
-    nonlinear_time_of_impact_halfspace_support_map(pos12, vel12, halfspace, other)
+) -> Option {
+    cast_shapes_nonlinear_halfspace_support_map(pos12, vel12, halfspace, other)
 }

@@ -14,7 +14,6 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
 pub struct Ray {
     /// Starting point of the ray.
@@ -69,18 +68,18 @@ impl Ray {
 )]
 pub struct RayIntersection {
     /// The time of impact of the ray with the object. The exact contact point can be computed
-    /// with: `ray.point_at(toi)` or equivalently `origin + dir * toi` where `origin` is the origin of the ray;
-    /// `dir` is its direction and `toi` is the value of this field.
-    pub toi: Real,
+    /// with: `ray.point_at(time_of_impact)` or equivalently `origin + dir * time_of_impact` where `origin` is the origin of the ray;
+    /// `dir` is its direction and `time_of_impact` is the value of this field.
+    pub time_of_impact: Real,
 
     /// The normal at the intersection point.
     ///
-    /// If the origin of the ray is inside of the shape and the shape is not solid,
+    /// If the origin of the ray is inside the shape and the shape is not solid,
     /// the normal will point towards the interior of the shape.
     /// Otherwise, the normal points outward.
     ///
-    /// If the `toi` is exactly zero, the normal might not be reliable.
-    // XXX: use a Unit<Vector> instead.
+    /// If the `time_of_impact` is exactly zero, the normal might not be reliable.
+    // TODO: use a Unit<Vector> instead.
     pub normal: Vector<Real>,
 
     /// Feature at the intersection point.
@@ -91,9 +90,9 @@ impl RayIntersection {
     #[inline]
     /// Creates a new `RayIntersection`.
     #[cfg(feature = "dim3")]
-    pub fn new(toi: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
+    pub fn new(time_of_impact: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
         RayIntersection {
-            toi,
+            time_of_impact,
             normal,
             feature,
         }
@@ -102,9 +101,9 @@ impl RayIntersection {
     #[inline]
     /// Creates a new `RayIntersection`.
     #[cfg(feature = "dim2")]
-    pub fn new(toi: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
+    pub fn new(time_of_impact: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
         RayIntersection {
-            toi,
+            time_of_impact,
             normal,
             feature,
         }
@@ -113,7 +112,7 @@ impl RayIntersection {
     #[inline]
     pub fn transform_by(&self, transform: &Isometry<Real>) -> Self {
         RayIntersection {
-            toi: self.toi,
+            time_of_impact: self.time_of_impact,
             normal: transform * self.normal,
             feature: self.feature,
         }
@@ -123,29 +122,35 @@ impl RayIntersection {
 /// Traits of objects which can be transformed and tested for intersection with a ray.
 pub trait RayCast {
     /// Computes the time of impact between this transform shape and a ray.
-    fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
-        self.cast_local_ray_and_get_normal(ray, max_toi, solid)
-            .map(|inter| inter.toi)
+    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+        self.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|inter| inter.time_of_impact)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection>;
 
     /// Tests whether a ray intersects this transformed shape.
     #[inline]
-    fn intersects_local_ray(&self, ray: &Ray, max_toi: Real) -> bool {
-        self.cast_local_ray(ray, max_toi, true).is_some()
+    fn intersects_local_ray(&self, ray: &Ray, max_time_of_impact: Real) -> bool {
+        self.cast_local_ray(ray, max_time_of_impact, true).is_some()
     }
 
     /// Computes the time of impact between this transform shape and a ray.
-    fn cast_ray(&self, m: &Isometry<Real>, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
+    fn cast_ray(
+        &self,
+        m: &Isometry<Real>,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+    ) -> Option<Real> {
         let ls_ray = ray.inverse_transform_by(m);
-        self.cast_local_ray(&ls_ray, max_toi, solid)
+        self.cast_local_ray(&ls_ray, max_time_of_impact, solid)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
@@ -153,18 +158,18 @@ pub trait RayCast {
         &self,
         m: &Isometry<Real>,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         let ls_ray = ray.inverse_transform_by(m);
-        self.cast_local_ray_and_get_normal(&ls_ray, max_toi, solid)
+        self.cast_local_ray_and_get_normal(&ls_ray, max_time_of_impact, solid)
             .map(|inter| inter.transform_by(m))
     }
 
     /// Tests whether a ray intersects this transformed shape.
     #[inline]
-    fn intersects_ray(&self, m: &Isometry<Real>, ray: &Ray, max_toi: Real) -> bool {
+    fn intersects_ray(&self, m: &Isometry<Real>, ray: &Ray, max_time_of_impact: Real) -> bool {
         let ls_ray = ray.inverse_transform_by(m);
-        self.intersects_local_ray(&ls_ray, max_toi)
+        self.intersects_local_ray(&ls_ray, max_time_of_impact)
     }
 }

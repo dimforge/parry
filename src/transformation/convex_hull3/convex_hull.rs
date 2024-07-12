@@ -49,7 +49,7 @@ pub fn try_convex_hull(
             continue;
         }
 
-        // FIXME: use triangles[i].furthest_point instead.
+        // TODO: use triangles[i].furthest_point instead.
         let pt_id = indexed_support_point_id(
             &triangles[i].normal,
             &normalized_points[..],
@@ -86,7 +86,7 @@ pub fn try_convex_hull(
             )?;
 
             // Check that the silhouette is valid.
-            // FIXME: remove this debug code.
+            // TODO: remove this debug code.
             // {
             //     for (facet, id) in &silhouette_loop_facets_and_idx {
             //         assert!(triangles[*facet].valid);
@@ -110,7 +110,7 @@ pub fn try_convex_hull(
                     ));
                 }
 
-                // FIXME: this is very harsh.
+                // TODO: this is very harsh.
                 triangles[i].valid = true;
                 break;
             }
@@ -208,7 +208,7 @@ fn fix_silhouette_topology(
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
 ) -> Result<(), ConvexHullError> {
-    // FIXME: don't allocate this everytime.
+    // TODO: don't allocate this everytime.
     let mut workspace = vec![0; points.len()];
     let mut needs_fixing = false;
 
@@ -351,14 +351,14 @@ fn attach_and_push_facets(
     }
 
     // Assign to each facets some of the points which can see it.
-    // FIXME: refactor this with the others.
+    // TODO: refactor this with the others.
     for curr_facet in removed_facets.iter() {
         for visible_point in triangles[*curr_facet].visible_points.iter() {
             if points[*visible_point] == points[point] {
                 continue;
             }
 
-            let mut furthest = usize::max_value();
+            let mut furthest = usize::MAX;
             let mut furthest_dist = 0.0;
 
             for (i, curr_facet) in new_facets.iter_mut().enumerate() {
@@ -372,8 +372,7 @@ fn attach_and_push_facets(
                 }
             }
 
-            if furthest != usize::max_value()
-                && new_facets[furthest].can_see_point(*visible_point, points)
+            if furthest != usize::MAX && new_facets[furthest].can_see_point(*visible_point, points)
             {
                 new_facets[furthest].add_visible_point(*visible_point, points);
             }
@@ -387,7 +386,7 @@ fn attach_and_push_facets(
     let mut i = 0;
 
     while i != undecidable.len() {
-        let mut furthest = usize::max_value();
+        let mut furthest = usize::MAX;
         let mut furthest_dist = 0.0;
         let undecidable_point = undecidable[i];
 
@@ -402,7 +401,7 @@ fn attach_and_push_facets(
             }
         }
 
-        if furthest != usize::max_value() {
+        if furthest != usize::MAX {
             new_facets[furthest].add_visible_point(undecidable_point, points);
             let _ = undecidable.swap_remove(i);
         } else {
@@ -411,7 +410,7 @@ fn attach_and_push_facets(
     }
 
     // Push facets.
-    // FIXME: can we avoid the tmp vector `new_facets` ?
+    // TODO: can we avoid the tmp vector `new_facets` ?
     triangles.append(&mut new_facets);
 }
 

@@ -126,7 +126,14 @@ impl Face {
         } else if self.pts[1] == id {
             2
         } else {
-            assert_eq!(self.pts[2], id);
+            if self.pts[2] != id {
+                log::debug!(
+                    "Hit unexpected state in EPA: found index {}, expected: {}.",
+                    self.pts[2],
+                    id
+                );
+            }
+
             0
         }
     }
@@ -188,15 +195,12 @@ impl EPA {
     /// the EPA algorithm failed to compute the projection.
     ///
     /// Return the projected point in the local-space of `g`.
-    pub fn project_origin<G: ?Sized>(
+    pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
         m: &Isometry<Real>,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>>
-    where
-        G: SupportMap,
-    {
+    ) -> Option<Point<Real>> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -205,7 +209,7 @@ impl EPA {
     ///
     /// The origin is assumed to be located inside of the shape.
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
-    pub fn closest_points<G1: ?Sized, G2: ?Sized>(
+    pub fn closest_points<G1, G2>(
         &mut self,
         pos12: &Isometry<Real>,
         g1: &G1,
@@ -213,8 +217,8 @@ impl EPA {
         simplex: &VoronoiSimplex,
     ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
     where
-        G1: SupportMap,
-        G2: SupportMap,
+        G1: ?Sized + SupportMap,
+        G2: ?Sized + SupportMap,
     {
         let _eps = crate::math::DEFAULT_EPSILON;
         let _eps_tol = _eps * 100.0;
@@ -355,7 +359,7 @@ impl EPA {
             let first_new_face_id = self.faces.len();
 
             if self.silhouette.is_empty() {
-                // FIXME: Something went very wrong because we failed to extract a silhouette…
+                // TODO: Something went very wrong because we failed to extract a silhouette…
                 return None;
             }
 
@@ -364,7 +368,7 @@ impl EPA {
                     let new_face_id = self.faces.len();
                     let new_face;
 
-                    // FIXME: NLL
+                    // TODO: NLL
                     {
                         let face_adj = &mut self.faces[edge.face_id];
                         let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
@@ -383,7 +387,7 @@ impl EPA {
                         let pt = self.vertices[self.faces[new_face_id].pts[0]].point.coords;
                         let dist = self.faces[new_face_id].normal.dot(&pt);
                         if dist < curr_dist {
-                            // FIXME: if we reach this point, there were issues due to
+                            // TODO: if we reach this point, there were issues due to
                             // numerical errors.
                             let points = face.closest_points(&self.vertices);
                             return Some((points.0, points.1, face.normal));

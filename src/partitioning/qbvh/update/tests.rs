@@ -4,8 +4,7 @@ use std::borrow::Cow;
 use crate::{
     bounding_volume::Aabb,
     math::{Point, Real},
-    partitioning::{GenericQbvh, Qbvh},
-    utils::DefaultStorage,
+    partitioning::Qbvh,
 };
 
 use super::QbvhUpdateWorkspace;
@@ -323,14 +322,14 @@ impl<'q> ptree::TreeItem for QbvhTreeIterator<'q> {
 
 #[derive(Clone)]
 struct QbvhTreeIterator<'q> {
-    qbvh: &'q GenericQbvh<usize, DefaultStorage>,
+    qbvh: &'q Qbvh<usize>,
     node: u32,
     aabb: Aabb,
     child_of_leaf: bool,
 }
 
 impl<'q> QbvhTreeIterator<'q> {
-    fn new(qbvh: &'q GenericQbvh<usize, DefaultStorage>) -> Self {
+    fn new(qbvh: &'q Qbvh<usize>) -> Self {
         let aabb = *qbvh.root_aabb();
         let child_of_leaf = qbvh.raw_nodes().is_empty();
 

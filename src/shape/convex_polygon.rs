@@ -32,9 +32,11 @@ impl ConvexPolygon {
     /// Convexity of the input polyline is not checked.
     /// Returns `None` if all points form an almost flat line.
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
+        if points.is_empty() {
+            return None;
+        }
         let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
         let mut normals = Vec::with_capacity(points.len());
-
         // First, compute all normals.
         for i1 in 0..points.len() {
             let i2 = (i1 + 1) % points.len();
@@ -64,7 +66,7 @@ impl ConvexPolygon {
         points.truncate(new_length);
         normals.truncate(new_length);
 
-        if !points.is_empty() {
+        if points.len() > 2 {
             Some(ConvexPolygon { points, normals })
         } else {
             None
@@ -258,7 +260,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         out: &mut ConvexPolygonalFeature,
     ) {
         out.clear();
-        // FIXME: actualy find the support feature.
+        // TODO: actualy find the support feature.
         self.support_face_toward(transform, dir, out)
     }
 

@@ -2,8 +2,6 @@
 
 pub use self::ball::Ball;
 pub use self::capsule::Capsule;
-#[doc(inline)]
-pub use self::composite_shape::TypedSimdCompositeShape;
 pub use self::cuboid::Cuboid;
 pub use self::feature_id::{FeatureId, PackedFeatureId};
 pub use self::half_space::HalfSpace;
@@ -20,7 +18,9 @@ pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 
 #[cfg(feature = "std")]
 pub use self::{
-    composite_shape::SimdCompositeShape, compound::Compound, polyline::Polyline,
+    composite_shape::{SimdCompositeShape, TypedSimdCompositeShape},
+    compound::Compound,
+    polyline::Polyline,
     shared_shape::SharedShape,
 };
 
@@ -28,6 +28,7 @@ pub use self::{
 #[cfg(feature = "std")]
 pub use self::convex_polygon::ConvexPolygon;
 #[cfg(feature = "dim2")]
+#[cfg(feature = "std")]
 pub use self::heightfield2::*;
 #[cfg(feature = "dim2")]
 pub use self::polygonal_feature2d::PolygonalFeature;
@@ -40,13 +41,15 @@ pub use self::convex_polyhedron::ConvexPolyhedron;
 #[cfg(feature = "dim3")]
 pub use self::cylinder::Cylinder;
 #[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
 pub use self::heightfield3::*;
 #[cfg(feature = "dim3")]
 pub use self::polygonal_feature3d::PolygonalFeature;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
+pub use self::triangle_pseudo_normals::TrianglePseudoNormals;
+#[cfg(feature = "std")]
 pub use self::trimesh::*;
-pub use self::trimesh_storage::TriMeshStorage;
 
 /// A cylinder dilated by a sphere (so it has round corners).
 #[cfg(feature = "dim3")]
@@ -67,8 +70,11 @@ pub type RoundConvexPolyhedron = RoundShape<ConvexPolyhedron>;
 #[cfg(feature = "std")]
 pub type RoundConvexPolygon = RoundShape<ConvexPolygon>;
 
+pub(crate) use self::round_shape::RoundShapeRef;
+
 mod ball;
 mod capsule;
+#[cfg(feature = "std")]
 #[doc(hidden)]
 pub mod composite_shape;
 #[cfg(feature = "std")]
@@ -89,6 +95,7 @@ mod triangle;
 #[cfg(feature = "std")]
 mod convex_polygon;
 #[cfg(feature = "dim2")]
+#[cfg(feature = "std")]
 mod heightfield2;
 
 #[cfg(feature = "dim3")]
@@ -99,12 +106,14 @@ mod convex_polyhedron;
 #[cfg(feature = "dim3")]
 mod cylinder;
 #[cfg(feature = "dim3")]
+#[cfg(feature = "std")]
 mod heightfield3;
 #[cfg(feature = "dim3")]
 mod polygonal_feature3d;
 mod polygonal_feature_map;
 #[cfg(feature = "dim3")]
 mod tetrahedron;
+#[cfg(feature = "std")]
 pub(crate) mod trimesh;
 // TODO: move this elsewhere?
 mod feature_id;
@@ -112,4 +121,4 @@ mod feature_id;
 mod polygonal_feature2d;
 #[cfg(feature = "std")]
 mod shared_shape;
-mod trimesh_storage;
+mod triangle_pseudo_normals;

@@ -3,7 +3,8 @@ use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::{ContactManifoldsWorkspace, InternalEdgesFixer};
+use crate::query::contact_manifolds::ContactManifoldsWorkspace;
+use crate::query::details::NormalConstraints;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 use crate::shape::{Shape, TriMesh};
@@ -19,7 +20,6 @@ pub struct TriMeshShapeContactManifoldsWorkspace {
     interferences: Vec<u32>,
     local_aabb2: Aabb,
     old_interferences: Vec<u32>,
-    internal_edges: InternalEdgesFixer,
 }
 
 impl Default for TriMeshShapeContactManifoldsWorkspace {
@@ -34,7 +34,6 @@ impl TriMeshShapeContactManifoldsWorkspace {
             interferences: Vec::new(),
             local_aabb2: Aabb::new_invalid(),
             old_interferences: Vec::new(),
-            internal_edges: InternalEdgesFixer::default(),
         }
     }
 }
@@ -116,7 +115,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
         new_local_aabb2.mins -= extra_margin;
         new_local_aabb2.maxs += extra_margin;
 
-        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // FIXME: what would be the best value?
+        let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // TODO: what would be the best value?
         std::mem::swap(
             &mut workspace.old_interferences,
             &mut workspace.interferences,
@@ -187,32 +186,33 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 
         let manifold = &mut manifolds[i];
         let triangle1 = trimesh1.triangle(*triangle_id);
+        let triangle_normals1 = trimesh1.triangle_normal_constraints(*triangle_id);
+        let normal_constraints1 = triangle_normals1
+            .as_ref()
+            .map(|proj| proj as &dyn NormalConstraints);
 
         if flipped {
             let _ = dispatcher.contact_manifold_convex_convex(
                 &pos12.inverse(),
                 shape2,
                 &triangle1,
+                None,
+                normal_constraints1,
                 prediction,
                 manifold,
             );
         } else {
-            let _ = dispatcher
-                .contact_manifold_convex_convex(pos12, &triangle1, shape2, prediction, manifold);
+            let _ = dispatcher.contact_manifold_convex_convex(
+                pos12,
+                &triangle1,
+                shape2,
+                normal_constraints1,
+                None,
+                prediction,
+                manifold,
+            );
         }
     }
-
-    /*
-     *
-     * Deal with internal edges.
-     *
-     */
-    workspace.internal_edges.remove_invalid_contacts(
-        manifolds,
-        flipped,
-        |id| trimesh1.triangle(id),
-        |id| trimesh1.indices()[id as usize],
-    );
 }
 
 impl WorkspaceData for TriMeshShapeContactManifoldsWorkspace {

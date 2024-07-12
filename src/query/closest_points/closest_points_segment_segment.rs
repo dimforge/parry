@@ -23,7 +23,7 @@ pub fn closest_points_segment_segment(
     }
 }
 
-// FIXME: use this specialized procedure for distance/interference/contact determination as well.
+// TODO: use this specialized procedure for distance/interference/contact determination as well.
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_segment_segment_with_locations(

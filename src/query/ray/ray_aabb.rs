@@ -9,9 +9,9 @@ use crate::shape::FeatureId;
 use num::Zero;
 
 impl RayCast for Aabb {
-    fn cast_local_ray(&self, ray: &Ray, max_toi: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
         let mut tmin: Real = 0.0;
-        let mut tmax: Real = max_toi;
+        let mut tmax: Real = max_time_of_impact;
 
         for i in 0usize..DIM {
             if ray.dir[i].is_zero() {
@@ -52,10 +52,10 @@ impl RayCast for Aabb {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        ray_aabb(self, ray, max_toi, solid).map(|(t, n, i)| {
+        ray_aabb(self, ray, max_time_of_impact, solid).map(|(t, n, i)| {
             let feature = if i < 0 {
                 FeatureId::Face((-i) as u32 - 1 + 3)
             } else {
@@ -70,7 +70,7 @@ impl RayCast for Aabb {
 fn ray_aabb(
     aabb: &Aabb,
     ray: &Ray,
-    max_toi: Real,
+    max_time_of_impact: Real,
     solid: bool,
 ) -> Option<(Real, Vector<Real>, isize)> {
     use crate::query::clip;
@@ -78,12 +78,12 @@ fn ray_aabb(
         if near.0 < 0.0 {
             if solid {
                 Some((0.0, na::zero(), far.2))
-            } else if far.0 <= max_toi {
+            } else if far.0 <= max_time_of_impact {
                 Some(far)
             } else {
                 None
             }
-        } else if near.0 <= max_toi {
+        } else if near.0 <= max_time_of_impact {
             Some(near)
         } else {
             None

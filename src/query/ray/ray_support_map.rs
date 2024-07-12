@@ -18,24 +18,21 @@ use crate::shape::{Cone, Cylinder};
 use num::Zero;
 
 /// Cast a ray on a shape using the GJK algorithm.
-pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized>(
+pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized + SupportMap>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
-    max_toi: Real,
+    max_time_of_impact: Real,
     solid: bool,
-) -> Option<RayIntersection>
-where
-    G: SupportMap,
-{
+) -> Option<RayIntersection> {
     let supp = shape.local_support_point(&-ray.dir);
     simplex.reset(CSOPoint::single_point(supp - ray.origin.coords));
 
-    let inter = gjk::cast_local_ray(shape, simplex, ray, max_toi);
+    let inter = gjk::cast_local_ray(shape, simplex, ray, max_time_of_impact);
 
     if !solid {
-        inter.and_then(|(toi, normal)| {
-            if toi.is_zero() {
+        inter.and_then(|(time_of_impact, normal)| {
+            if time_of_impact.is_zero() {
                 // the ray is inside of the shape.
                 let ndir = ray.dir.normalize();
                 let supp = shape.local_support_point(&ndir);
@@ -43,15 +40,15 @@ where
                 let shift = (supp - ray.origin).dot(&ndir) + eps;
                 let new_ray = Ray::new(ray.origin + ndir * shift, -ray.dir);
 
-                // FIXME: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
+                // TODO: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
                 simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
 
                 gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(
-                    |(toi, outward_normal)| {
-                        let toi = shift - toi;
-                        if toi <= max_toi {
+                    |(time_of_impact, outward_normal)| {
+                        let time_of_impact = shift - time_of_impact;
+                        if time_of_impact <= max_time_of_impact {
                             Some(RayIntersection::new(
-                                toi,
+                                time_of_impact,
                                 -outward_normal,
                                 FeatureId::Unknown,
                             ))
@@ -61,11 +58,17 @@ where
                     },
                 )
             } else {
-                Some(RayIntersection::new(toi, normal, FeatureId::Unknown))
+                Some(RayIntersection::new(
+                    time_of_impact,
+                    normal,
+                    FeatureId::Unknown,
+                ))
             }
         })
     } else {
-        inter.map(|(toi, normal)| RayIntersection::new(toi, normal, FeatureId::Unknown))
+        inter.map(|(time_of_impact, normal)| {
+            RayIntersection::new(time_of_impact, normal, FeatureId::Unknown)
+        })
     }
 }
 
@@ -74,14 +77,14 @@ impl RayCast for Cylinder {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
-            max_toi,
+            max_time_of_impact,
             solid,
         )
     }
@@ -92,14 +95,14 @@ impl RayCast for Cone {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
-            max_toi,
+            max_time_of_impact,
             solid,
         )
     }
@@ -109,14 +112,14 @@ impl RayCast for Capsule {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
-            max_toi,
+            max_time_of_impact,
             solid,
         )
     }
@@ -128,14 +131,14 @@ impl RayCast for ConvexPolyhedron {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
-            max_toi,
+            max_time_of_impact,
             solid,
         )
     }
@@ -147,14 +150,14 @@ impl RayCast for ConvexPolygon {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
-            max_toi,
+            max_time_of_impact,
             solid,
         )
     }
@@ -165,7 +168,7 @@ impl RayCast for Segment {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         #[cfg(feature = "dim2")]
@@ -195,11 +198,15 @@ impl RayCast for Segment {
 
                     match (dist1 >= 0.0, dist2 >= 0.0) {
                         (true, true) => {
-                            let toi = dist1.min(dist2) / ray.dir.norm_squared();
-                            if toi > max_toi {
+                            let time_of_impact = dist1.min(dist2) / ray.dir.norm_squared();
+                            if time_of_impact > max_time_of_impact {
                                 None
                             } else if dist1 <= dist2 {
-                                Some(RayIntersection::new(toi, normal, FeatureId::Vertex(0)))
+                                Some(RayIntersection::new(
+                                    time_of_impact,
+                                    normal,
+                                    FeatureId::Vertex(0),
+                                ))
                             } else {
                                 Some(RayIntersection::new(
                                     dist2 / ray.dir.norm_squared(),
@@ -221,7 +228,7 @@ impl RayCast for Segment {
                     // The rays never intersect.
                     None
                 }
-            } else if s >= 0.0 && s <= max_toi && t >= 0.0 && t <= 1.0 {
+            } else if s >= 0.0 && s <= max_time_of_impact && t >= 0.0 && t <= 1.0 {
                 let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
                 if normal.dot(&ray.dir) > 0.0 {
@@ -242,7 +249,7 @@ impl RayCast for Segment {
                 self,
                 &mut VoronoiSimplex::new(),
                 ray,
-                max_toi,
+                max_time_of_impact,
                 solid,
             )
         }
