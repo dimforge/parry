@@ -7,11 +7,13 @@ use crate::transformation::mesh_intersection::angle_closest_to_90;
 use crate::utils::DefaultStorage;
 use core::f64::consts::PI;
 use na::{Point3, Vector3};
+#[cfg(feature = "wavefront")]
 use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
+#[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
 /// Metadata that specifies thresholds to use when making construction choices
@@ -146,7 +148,7 @@ pub fn intersect_meshes_with_metadata(
     let mut point_set = RTree::<TreePoint, _>::new();
     let mut topology_indices = Vec::new();
     {
-        let mut insert_point = |position: Vector3<f64>| {
+        let mut insert_point = |position: Point3<f64>| {
             insert_into_set(position, &mut point_set, meta_data.global_insertion_epsilon) as u32
         };
         // Add the inside vertices and triangles from mesh1
@@ -155,9 +157,9 @@ pub fn intersect_meshes_with_metadata(
                 face.swap(0, 1);
             }
             topology_indices.push([
-                insert_point(mesh1.vertices()[face[0] as usize].coords),
-                insert_point(mesh1.vertices()[face[1] as usize].coords),
-                insert_point(mesh1.vertices()[face[2] as usize].coords),
+                insert_point(mesh1.vertices()[face[0] as usize]),
+                insert_point(mesh1.vertices()[face[1] as usize]),
+                insert_point(mesh1.vertices()[face[2] as usize]),
             ]);
         }
 
@@ -167,9 +169,9 @@ pub fn intersect_meshes_with_metadata(
                 face.swap(0, 1);
             }
             topology_indices.push([
-                insert_point(mesh2.vertices()[face[0] as usize].coords),
-                insert_point(mesh2.vertices()[face[1] as usize].coords),
-                insert_point(mesh2.vertices()[face[2] as usize].coords),
+                insert_point(mesh2.vertices()[face[0] as usize]),
+                insert_point(mesh2.vertices()[face[1] as usize]),
+                insert_point(mesh2.vertices()[face[2] as usize]),
             ]);
         }
     }
@@ -358,9 +360,9 @@ fn syncretize_triangulation(
     let mut constraints = constraints.to_vec();
     // Add the triangle points to the triangulation.
     let mut point_set = RTree::<TreePoint, _>::new();
-    let _ = insert_into_set(tri.a.coords, &mut point_set, epsilon);
-    let _ = insert_into_set(tri.b.coords, &mut point_set, epsilon);
-    let _ = insert_into_set(tri.c.coords, &mut point_set, epsilon);
+    let _ = insert_into_set(tri.a, &mut point_set, epsilon);
+    let _ = insert_into_set(tri.b, &mut point_set, epsilon);
+    let _ = insert_into_set(tri.c, &mut point_set, epsilon);
 
     // Sometimes, points on the edge of a triangle are slightly off, and this makes
     // spade think that there is a super thin triangle. Project points close to an edge
@@ -389,8 +391,8 @@ fn syncretize_triangulation(
     // Generate edge, taking care to merge duplicate vertices.
     let mut edges = Vec::new();
     for point_pair in constraints {
-        let p1_id = insert_into_set(point_pair[0].coords, &mut point_set, epsilon);
-        let p2_id = insert_into_set(point_pair[1].coords, &mut point_set, epsilon);
+        let p1_id = insert_into_set(point_pair[0], &mut point_set, epsilon);
+        let p2_id = insert_into_set(point_pair[1], &mut point_set, epsilon);
 
         edges.push([p1_id, p2_id]);
     }
@@ -407,12 +409,11 @@ fn syncretize_triangulation(
     let project = |p: &Vector3<f64>| spade::Point2::new(e1.dot(p), e2.dot(p));
 
     // Project points into 2D and triangulate the resulting set.
-
     let planar_points: Vec<_> = points
         .iter()
         .copied()
         .map(|point| {
-            let point_proj = project(&point.point);
+            let point_proj = project(&point.point.coords);
             spade::Point2::new(point_proj.x, point_proj.y)
         })
         .collect();
@@ -428,42 +429,8 @@ fn syncretize_triangulation(
     (cdt_triangulation, points)
 }
 
-// I heavily recommend that this is left here in case one needs to debug the above code.
-fn _mesh_to_obj(mesh: &TriMesh, path: &PathBuf) {
-    let mut file = std::fs::File::create(path).unwrap();
-
-    ObjData {
-        position: mesh
-            .vertices()
-            .into_iter()
-            .map(|v| [v.x as f32, v.y as f32, v.z as f32])
-            .collect(),
-        objects: vec![Object {
-            groups: vec![Group {
-                polys: mesh
-                    .indices()
-                    .into_iter()
-                    .map(|tri| {
-                        SimplePolygon(vec![
-                            IndexTuple(tri[0] as usize, None, None),
-                            IndexTuple(tri[1] as usize, None, None),
-                            IndexTuple(tri[2] as usize, None, None),
-                        ])
-                    })
-                    .collect(),
-                name: "".to_string(),
-                index: 0,
-                material: None,
-            }],
-            name: "".to_string(),
-        }],
-        ..Default::default()
-    }
-    .write_to_buf(&mut file)
-    .unwrap();
-}
-
-// I heavily recommend that this is left here in case one needs to debug the above code.
+// We heavily recommend that this is left here in case one needs to debug the above code.
+#[cfg(feature = "wavefront")]
 fn _points_to_obj(mesh: &[Point3<f64>], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
@@ -473,7 +440,8 @@ fn _points_to_obj(mesh: &[Point3<f64>], path: &PathBuf) {
     }
 }
 
-// I heavily recommend that this is left here in case one needs to debug the above code.
+// We heavily recommend that this is left here in case one needs to debug the above code.
+#[cfg(feature = "wavefront")]
 fn _points_and_edges_to_obj(mesh: &[Point3<f64>], edges: &[[usize; 2]], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
@@ -489,7 +457,7 @@ fn _points_and_edges_to_obj(mesh: &[Point3<f64>], edges: &[[usize; 2]], path: &P
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct TreePoint {
-    point: Vector3<f64>,
+    point: Point3<f64>,
     id: usize,
 }
 
@@ -499,7 +467,7 @@ impl rstar::Point for TreePoint {
 
     fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
         TreePoint {
-            point: Vector3::new(generator(0), generator(1), generator(2)),
+            point: Point3::new(generator(0), generator(1), generator(2)),
             id: usize::MAX,
         }
     }
@@ -523,11 +491,7 @@ impl rstar::Point for TreePoint {
     }
 }
 
-fn insert_into_set(
-    position: Vector3<f64>,
-    point_set: &mut RTree<TreePoint>,
-    epsilon: f64,
-) -> usize {
+fn insert_into_set(position: Point3<f64>, point_set: &mut RTree<TreePoint>, epsilon: f64) -> usize {
     let point_count = point_set.size();
     let point_to_insert = TreePoint {
         point: position,
@@ -552,13 +516,13 @@ fn insert_into_set(
     }
 }
 
-fn smallest_angle(points: &[Vector3<f64>]) -> f64 {
+fn smallest_angle(points: &[Point3<f64>]) -> f64 {
     let n = points.len();
 
     let mut worst_cos = 2.0;
     for i in 0..points.len() {
-        let d1 = (points[i] - points[(i + 1) % n]).normalize();
-        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
+        let d1 = (points[i].coords - points[(i + 1) % n].coords).normalize();
+        let d2 = (points[(i + 2) % n].coords - points[(i + 1) % n].coords).normalize();
 
         let cos = d1.dot(&d2);
 
@@ -595,7 +559,7 @@ fn project_point_to_segment(point: &Vector3<f64>, segment: &[Vector3<f64>; 2]) -
 /// to create ultra thin triangles when a point lies on an edge of a tirangle. These
 /// are degenerate and need to be terminated with extreme prejudice.
 fn is_triangle_degenerate(
-    triangle: &[Vector3<f64>; 3],
+    triangle: &[Point3<f64>; 3],
     epsilon_degrees: f64,
     epsilon_distance: f64,
 ) -> bool {
@@ -619,9 +583,11 @@ fn is_triangle_degenerate(
         }
 
         let dir = dir.normalize();
-        let proj = (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3];
+        let proj =
+            (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3].coords;
 
-        worse_projection_distance = worse_projection_distance.min((proj - triangle[i]).norm());
+        worse_projection_distance =
+            worse_projection_distance.min((proj - triangle[i].coords).norm());
     }
 
     if worse_projection_distance < epsilon_distance {
@@ -663,10 +629,9 @@ fn merge_triangle_sets(
             let p3 = points[verts[2].index()];
 
             // Sometimes the triangulation is messed up due to numerical errors. If
-            // a triangle does not survive this test. You can bet it should be put out
-            // of its misery.
+            // a triangle does not survive this test it should be deleted.
             if is_triangle_degenerate(
-                &[p1.coords, p2.coords, p3.coords],
+                &[p1, p2, p3],
                 metadata.angle_epsilon,
                 metadata.global_insertion_epsilon,
             ) {
@@ -687,9 +652,9 @@ fn merge_triangle_sets(
 
             if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
                 topology_indices.push([
-                    insert_into_set(p1.coords, &mut point_set, epsilon) as u32,
-                    insert_into_set(p2.coords, &mut point_set, epsilon) as u32,
-                    insert_into_set(p3.coords, &mut point_set, epsilon) as u32,
+                    insert_into_set(p1, &mut point_set, epsilon) as u32,
+                    insert_into_set(p2, &mut point_set, epsilon) as u32,
+                    insert_into_set(p3, &mut point_set, epsilon) as u32,
                 ]);
 
                 if flip1 {
@@ -715,10 +680,14 @@ fn merge_triangle_sets(
 #[cfg(test)]
 mod tests {
     use crate::shape::TriMeshFlags;
+    #[cfg(feature = "wavefront")]
+    use crate::transformation::wavefront::*;
 
     use super::*;
+    #[cfg(feature = "wavefront")]
     use obj::Obj;
 
+    #[cfg(feature = "wavefront")]
     #[test]
     fn test_same_mesh_intersection() {
         let Obj {
@@ -753,9 +722,10 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        _mesh_to_obj(&res, &PathBuf::from("same_test.obj"))
+        mesh.to_obj_file(&PathBuf::from("same_test.obj"));
     }
 
+    #[cfg(feature = "wavefront")]
     #[test]
     fn test_offset_cylinder_intersection() {
         let Obj {
@@ -811,9 +781,10 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        _mesh_to_obj(&res, &PathBuf::from("offset_test.obj"))
+        res.to_obj_file(&PathBuf::from("offset_test.obj"));
     }
 
+    #[cfg(feature = "wavefront")]
     #[test]
     fn test_stair_bar_intersection() {
         let Obj {
@@ -867,9 +838,10 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        _mesh_to_obj(&res, &PathBuf::from("stair_test.obj"))
+        res.to_obj_file(&PathBuf::from("stair_test.obj"));
     }
 
+    #[cfg(feature = "wavefront")]
     #[test]
     fn test_complex_intersection() {
         let Obj {
@@ -925,6 +897,6 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        _mesh_to_obj(&res, &PathBuf::from("complex_test.obj"))
+        res.to_obj_file(&PathBuf::from("complex_test.obj"));
     }
 }

@@ -264,7 +264,7 @@ fn robust_triangle_normal(tri: &Triangle) -> na::Vector3<f64> {
 /// Find the index of a vertex in a poly line, such that the two
 /// edges incident in that vertex form the angle closest to 90
 /// degrees in the poly line.
-pub fn angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
+pub(crate) fn angle_closest_to_90(points: &[na::Vector3<f64>]) -> usize {
     let n = points.len();
 
     let mut best_cos = 2.0;

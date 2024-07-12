@@ -30,6 +30,7 @@ simd-nightly = ["simba/packed_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 cuda = ["cust_core", "cust", "nalgebra/cuda"]
 parallel = ["rayon"]
+wavefront = ["obj"]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -61,7 +62,7 @@ spade = { version = "2", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 rstar = "0.12.0"
-obj = "0.10.2"
+obj = { version = "0.10.2", optional = true }
 
 [target.'cfg(not(target_os = "cuda"))'.dependencies]
 cust = { version = "0.3", optional = true }
