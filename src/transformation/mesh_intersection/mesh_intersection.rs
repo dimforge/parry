@@ -2,22 +2,16 @@ use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::math::{Isometry, Real};
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
-use crate::shape::{FeatureId, TriMesh, Triangle};
-use crate::shape::{GenericTriMesh, TriMesh, Triangle};
+use crate::shape::{TriMesh, Triangle};
 use crate::transformation::mesh_intersection::angle_closest_to_90;
-use crate::utils::DefaultStorage;
-use crate::utils::{self, WBasis};
 use core::f64::consts::PI;
-use na::{Point2, Vector2};
 use na::{Point3, Vector3};
 #[cfg(feature = "wavefront")]
 use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
 use rstar::RTree;
-use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use spade::{ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
-use std::collections::{HashMap, HashSet};
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
@@ -603,8 +597,8 @@ fn is_triangle_degenerate(
 }
 
 fn merge_triangle_sets(
-    mesh1: &GenericTriMesh<DefaultStorage>,
-    mesh2: &GenericTriMesh<DefaultStorage>,
+    mesh1: &TriMesh,
+    mesh2: &TriMesh,
     triangle_constraints: &BTreeMap<&u32, Vec<[Point3<f64>; 2]>>,
     pos12: &Isometry<Real>,
     flip1: bool,
@@ -670,8 +664,7 @@ fn merge_triangle_sets(
                 let id2 = topology_indices.last().unwrap()[1];
                 let id3 = topology_indices.last().unwrap()[2];
 
-                // If this triggers, yell at Camilo because his algorithm is
-                // disfunctional.
+                // This should *never* trigger.
                 if id1 == id2 || id1 == id3 || id2 == id3 {
                     return Err(MeshIntersectionError::DuplicateVertices);
                 }

@@ -37,10 +37,6 @@ pub enum TopologyError {
     },
 }
 
-<<<<<<< HEAD
-#[cfg(feature = "std")]
-=======
->>>>>>> origin/master
 impl fmt::Display for TopologyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
