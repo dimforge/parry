@@ -679,17 +679,14 @@ fn merge_triangle_sets(
     Ok(())
 }
 
+#[cfg(feature = "wavefront")]
 #[cfg(test)]
 mod tests {
-    use crate::shape::TriMeshFlags;
-    #[cfg(feature = "wavefront")]
-    use crate::transformation::wavefront::*;
 
     use super::*;
-    #[cfg(feature = "wavefront")]
+    use crate::transformation::wavefront::*;
     use obj::Obj;
 
-    #[cfg(feature = "wavefront")]
     #[test]
     fn test_same_mesh_intersection() {
         let Obj {
@@ -727,7 +724,6 @@ mod tests {
         mesh.to_obj_file(&PathBuf::from("same_test.obj"));
     }
 
-    #[cfg(feature = "wavefront")]
     #[test]
     fn test_offset_cylinder_intersection() {
         let Obj {
@@ -786,7 +782,6 @@ mod tests {
         res.to_obj_file(&PathBuf::from("offset_test.obj"));
     }
 
-    #[cfg(feature = "wavefront")]
     #[test]
     fn test_stair_bar_intersection() {
         let Obj {
@@ -843,7 +838,6 @@ mod tests {
         res.to_obj_file(&PathBuf::from("stair_test.obj"));
     }
 
-    #[cfg(feature = "wavefront")]
     #[test]
     fn test_complex_intersection() {
         let Obj {
