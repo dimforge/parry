@@ -608,7 +608,7 @@ fn merge_triangle_sets(
     flip1: bool,
     flip2: bool,
     metadata: &MeshIntersectionMetadata,
-    mut point_set: &mut RTree<TreePoint>,
+    point_set: &mut RTree<TreePoint>,
     topology_indices: &mut Vec<[u32; 3]>,
 ) -> Result<(), MeshIntersectionError> {
     // For each triangle, and each constraint edge associated to that triangle,
