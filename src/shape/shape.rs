@@ -1,6 +1,7 @@
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::num::Float;
 use crate::query::{PointQuery, RayCast};
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;
