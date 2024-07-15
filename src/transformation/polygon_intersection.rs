@@ -437,7 +437,7 @@ pub fn polygons_intersection(
                             out(None, Some(location))
                         };
 
-                        if let Some(first_intersection) = edge_inters.get(0) {
+                        if let Some(first_intersection) = edge_inters.first() {
                             // Jump on the first intersection and move on to the other polygon.
                             to_traverse.poly = (to_traverse.poly + 1) % 2;
                             to_traverse.edge = first_intersection.edges[to_traverse.poly];
@@ -455,12 +455,12 @@ pub fn polygons_intersection(
 
     // If there are no intersection, check if one polygon is inside the other.
     if intersections[0].is_empty() {
-        if utils::point_in_poly2d(&poly1[0], &poly2) {
+        if utils::point_in_poly2d(&poly1[0], poly2) {
             for pt_id in 0..poly1.len() {
                 out(Some(PolylinePointLocation::OnVertex(pt_id)), None)
             }
             out(None, None);
-        } else if utils::point_in_poly2d(&poly2[0], &poly1) {
+        } else if utils::point_in_poly2d(&poly2[0], poly1) {
             for pt_id in 0..poly2.len() {
                 out(None, Some(PolylinePointLocation::OnVertex(pt_id)))
             }

@@ -98,16 +98,12 @@ pub fn triangle_triangle_intersection(
 
         let a = if range2[0].0 > range1[0].0 + EPS {
             TriangleTriangleIntersectionPoint { p1: range2[0].1 }
-        } else if range2[0].0 < range1[0].0 - EPS {
-            TriangleTriangleIntersectionPoint { p1: range1[0].1 }
         } else {
             TriangleTriangleIntersectionPoint { p1: range1[0].1 }
         };
 
         let b = if range2[1].0 < range1[1].0 - EPS {
             TriangleTriangleIntersectionPoint { p1: range2[1].1 }
-        } else if range2[1].0 > range1[1].0 + EPS {
-            TriangleTriangleIntersectionPoint { p1: range1[1].1 }
         } else {
             TriangleTriangleIntersectionPoint { p1: range1[1].1 }
         };
