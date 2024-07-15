@@ -21,7 +21,7 @@ impl fmt::Display for MeshIntersectionError {
             }
             Self::TriTriError => f.pad("internal failure while intersecting two triangles"),
             Self::DuplicateVertices => f.pad("internal failure while merging faces resulting from intersections"),
-            Self::TriangulationError => f.pad("internal failure while triangulating an interseciton face"),
+            Self::TriangulationError => f.pad("internal failure while triangulating an intersection face"),
         }
     }
 }
