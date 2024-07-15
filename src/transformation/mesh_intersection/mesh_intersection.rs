@@ -524,15 +524,14 @@ fn insert_into_set(
 fn smallest_angle(points: &[Point3<Real>]) -> Real {
     let n = points.len();
 
-    let mut worst_cos = 2.0;
+    let mut worst_cos = -2.0;
     for i in 0..points.len() {
         let d1 = (points[i].coords - points[(i + 1) % n].coords).normalize();
         let d2 = (points[(i + 2) % n].coords - points[(i + 1) % n].coords).normalize();
 
         let cos = d1.dot(&d2);
-
-        if cos < worst_cos {
-            worst_cos = cos.abs();
+        if cos > worst_cos {
+            worst_cos = cos;
         }
     }
 
@@ -554,7 +553,7 @@ fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2])
     let local = point - segment[0];
 
     let norm = dir.norm();
-    // restrict the result to the segment portion of the line.
+    // Restrict the result to the segment portion of the line.
     let coeff = (dir.dot(&local) / norm).clamp(0., norm);
 
     segment[0] + coeff * dir.normalize()
@@ -595,11 +594,7 @@ fn is_triangle_degenerate(
             worse_projection_distance.min((proj - triangle[i].coords).norm());
     }
 
-    if worse_projection_distance < epsilon_distance {
-        return true;
-    }
-
-    false
+    worse_projection_distance < epsilon_distance
 }
 
 fn merge_triangle_sets(
