@@ -666,7 +666,9 @@ fn merge_triangle_sets(
 
                 let [id1, id2, id3] = topology_indices.last().unwrap();
 
-                // This should *never* trigger.
+                // This should *never* trigger. If it does
+                // it means the code has created a triangle with duplicate vertices,
+                // which means we encountered an unaccounted for edge case.
                 if id1 == id2 || id1 == id3 || id2 == id3 {
                     return Err(MeshIntersectionError::DuplicateVertices);
                 }

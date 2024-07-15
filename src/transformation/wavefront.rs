@@ -1,5 +1,5 @@
 use crate::shape::TriMesh;
-use obj::*;
+use obj::{Group, IndexTuple, ObjData, ObjError, Object, SimplePolygon};
 use std::path::PathBuf;
 
 impl TriMesh {
