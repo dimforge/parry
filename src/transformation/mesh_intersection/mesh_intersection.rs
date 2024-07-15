@@ -9,7 +9,7 @@ use na::{Point3, Vector3};
 #[cfg(feature = "wavefront")]
 use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
 use rstar::RTree;
-use spade::{ConstrainedDelaunayTriangulation, Triangulation as _};
+use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 #[cfg(feature = "wavefront")]
@@ -352,10 +352,13 @@ fn triangulate_constraints_and_merge_duplicates(
     tri: &Triangle,
     constraints: &[[Point3<Real>; 2]],
     epsilon: Real,
-) -> (
-    ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    Vec<Point3<Real>>,
-) {
+) -> Result<
+    (
+        ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
+        Vec<Point3<Real>>,
+    ),
+    InsertionError,
+> {
     let mut constraints = constraints.to_vec();
     // Add the triangle points to the triangulation.
     let mut point_set = RTree::<TreePoint, _>::new();
@@ -420,12 +423,11 @@ fn triangulate_constraints_and_merge_duplicates(
         ConstrainedDelaunayTriangulation::<spade::Point2<Real>>::bulk_load_cdt_stable(
             planar_points,
             edges,
-        )
-        .unwrap();
+        )?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
-    (cdt_triangulation, points)
+    Ok((cdt_triangulation, points))
 }
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
@@ -619,11 +621,14 @@ fn merge_triangle_sets(
     for (triangle_id, constraints) in triangle_constraints.iter() {
         let tri = mesh1.triangle(**triangle_id);
 
-        let (delaunay, points) = triangulate_constraints_and_merge_duplicates(
+        let (delaunay, points) = match triangulate_constraints_and_merge_duplicates(
             &tri,
             constraints,
             metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_mod,
-        );
+        ) {
+            Ok(v) => v,
+            Err(_) => return Err(MeshIntersectionError::TriangulationError),
+        };
 
         for face in delaunay.inner_faces() {
             let verts = face.vertices();

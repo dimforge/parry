@@ -7,6 +7,7 @@ pub enum MeshIntersectionError {
     MissingPseudoNormals,
     TriTriError,
     DuplicateVertices,
+    TriangulationError,
 }
 
 impl fmt::Display for MeshIntersectionError {
