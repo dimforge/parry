@@ -3,7 +3,6 @@ use crate::math::{Isometry, Real};
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::shape::angle_closest_to_90;
-use crate::shape::TriMeshFlags;
 use crate::shape::{TriMesh, Triangle};
 use core::f64::consts::PI;
 use na::{Point3, Vector3};
@@ -685,6 +684,7 @@ mod tests {
     use super::*;
     use crate::transformation::wavefront::*;
     use obj::Obj;
+    use crate::shape::TriMeshFlags;
 
     #[test]
     fn test_same_mesh_intersection() {
@@ -703,7 +703,7 @@ mod tests {
             objects[0].groups[0]
                 .polys
                 .iter()
-                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u3use crate::shape::TriMeshFlags;2])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
         );
@@ -843,7 +843,7 @@ mod tests {
             ..
         } = Obj::load("../../test_data/low_poly_bunny.obj").unwrap();
 
-        let bunny_mesh = TriMesh::with_flags(
+        let bunny_mesh = TriMesh::with_flags(use crate::shape::TriMeshFlags;
             position
                 .iter()
                 .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
