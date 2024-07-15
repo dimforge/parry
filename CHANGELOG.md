@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+
+- `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
+
 ## v0.16.1
 
 ### Fix

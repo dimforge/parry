@@ -1,3 +1,5 @@
+use core::fmt::Debug;
+
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Isometry, Point, Real, Vector};
@@ -85,7 +87,7 @@ pub enum ShapeType {
     Custom,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize))]
 /// Enum representing the shape with its actual type
 pub enum TypedShape<'a> {
@@ -126,8 +128,6 @@ pub enum TypedShape<'a> {
     #[cfg(feature = "dim3")]
     /// A cone shape.
     Cone(&'a Cone),
-    // /// A custom shape type.
-    // Custom(u8),
     /// A cuboid with rounded corners.
     RoundCuboid(&'a RoundCuboid),
     /// A triangle with rounded corners.
@@ -150,8 +150,56 @@ pub enum TypedShape<'a> {
     #[cfg(feature = "dim2")]
     #[cfg(feature = "std")]
     RoundConvexPolygon(&'a RoundConvexPolygon),
-    /// A custom user-defined shape with a type identified by a number.
-    Custom(u32),
+    /// A custom user-defined shape.
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
+    Custom(&'a dyn Shape),
+}
+impl Debug for TypedShape<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Ball(arg0) => f.debug_tuple("Ball").field(arg0).finish(),
+            Self::Cuboid(arg0) => f.debug_tuple("Cuboid").field(arg0).finish(),
+            Self::Capsule(arg0) => f.debug_tuple("Capsule").field(arg0).finish(),
+            Self::Segment(arg0) => f.debug_tuple("Segment").field(arg0).finish(),
+            Self::Triangle(arg0) => f.debug_tuple("Triangle").field(arg0).finish(),
+            #[cfg(feature = "std")]
+            Self::TriMesh(arg0) => f.debug_tuple("TriMesh").field(arg0).finish(),
+            #[cfg(feature = "std")]
+            Self::Polyline(arg0) => f.debug_tuple("Polyline").field(arg0).finish(),
+            Self::HalfSpace(arg0) => f.debug_tuple("HalfSpace").field(arg0).finish(),
+            #[cfg(feature = "std")]
+            Self::HeightField(arg0) => f.debug_tuple("HeightField").field(arg0).finish(),
+            #[cfg(feature = "std")]
+            Self::Compound(arg0) => f.debug_tuple("Compound").field(arg0).finish(),
+            #[cfg(feature = "dim2")]
+            #[cfg(feature = "std")]
+            Self::ConvexPolygon(arg0) => f.debug_tuple("ConvexPolygon").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            #[cfg(feature = "std")]
+            Self::ConvexPolyhedron(arg0) => f.debug_tuple("ConvexPolyhedron").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            Self::Cylinder(arg0) => f.debug_tuple("Cylinder").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            Self::Cone(arg0) => f.debug_tuple("Cone").field(arg0).finish(),
+            Self::RoundCuboid(arg0) => f.debug_tuple("RoundCuboid").field(arg0).finish(),
+            Self::RoundTriangle(arg0) => f.debug_tuple("RoundTriangle").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            Self::RoundCylinder(arg0) => f.debug_tuple("RoundCylinder").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            Self::RoundCone(arg0) => f.debug_tuple("RoundCone").field(arg0).finish(),
+            #[cfg(feature = "dim3")]
+            #[cfg(feature = "std")]
+            Self::RoundConvexPolyhedron(arg0) => {
+                f.debug_tuple("RoundConvexPolyhedron").field(arg0).finish()
+            }
+            #[cfg(feature = "dim2")]
+            #[cfg(feature = "std")]
+            Self::RoundConvexPolygon(arg0) => {
+                f.debug_tuple("RoundConvexPolygon").field(arg0).finish()
+            }
+            Self::Custom(_) => f.debug_tuple("Custom").finish(),
+        }
+    }
 }
 
 #[cfg(feature = "serde-serialize")]
@@ -220,9 +268,9 @@ pub(crate) enum DeserializableTypedShape {
     #[cfg(feature = "dim2")]
     #[cfg(feature = "std")]
     RoundConvexPolygon(RoundConvexPolygon),
-    /// A custom user-defined shape identified by a number.
-    #[allow(dead_code)] // The u32 is needed to match `TypedShape`.
-    Custom(u32),
+    /// A custom user-defined shape.
+    #[allow(dead_code)]
+    Custom,
 }
 
 #[cfg(feature = "serde-serialize")]
@@ -266,7 +314,7 @@ impl DeserializableTypedShape {
             #[cfg(feature = "dim2")]
             #[cfg(feature = "std")]
             DeserializableTypedShape::RoundConvexPolygon(s) => Some(SharedShape::new(s)),
-            DeserializableTypedShape::Custom(_) => None,
+            DeserializableTypedShape::Custom => None,
         }
     }
 }
