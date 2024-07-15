@@ -28,7 +28,7 @@ pub trait SupportMap {
         transform * self.local_support_point(&local_dir)
     }
 
-    /// Same as `self.support_point` except that `dir` is normalized.
+    /// Same as [`SupportMap::support_point`] except that `dir` is normalized.
     fn support_point_toward(
         &self,
         transform: &Isometry<Real>,

@@ -146,7 +146,7 @@ pub struct TopoHalfEdge {
     pub next: u32,
     /// This half-edge twin on the adjacent triangle.
     ///
-    /// This is `u32::MAX` if there is no twin.
+    /// This is [`u32::MAX`] if there is no twin.
     pub twin: u32,
     /// The first vertex of this edge.
     pub vertex: u32,
@@ -433,7 +433,7 @@ impl TriMesh {
         *self = TriMesh::with_flags(vertices, indices, self.flags);
     }
 
-    /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
+    /// Create a [`TriMesh`] from a set of points assumed to describe a counter-clockwise non-convex polygon.
     ///
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
@@ -912,7 +912,7 @@ impl TriMesh {
 
     /// Returns the pseudo-normals of one of this mesh’s triangles, if it was computed.
     ///
-    /// This returns `None` if the pseudo-normals of this triangle were not computed.
+    /// This returns [`None`] if the pseudo-normals of this triangle were not computed.
     /// To have its pseudo-normals computed, be sure to set the [`TriMeshFlags`] so that
     /// they contain the [`TriMeshFlags::FIX_INTERNAL_EDGES`] flag.
     #[cfg(feature = "dim3")]

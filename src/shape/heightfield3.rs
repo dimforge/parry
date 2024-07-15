@@ -335,8 +335,8 @@ impl HeightField {
 
     /// The two triangles at the cell (i, j) of this heightfield.
     ///
-    /// Returns `None` fore triangles that have been removed because of their user-defined status
-    /// flags (described by the `HeightFieldCellStatus` bitfield).
+    /// Returns [`None`] fore triangles that have been removed because of their user-defined status
+    /// flags (described by the [`HeightFieldCellStatus`] bitfield).
     pub fn triangles_at(&self, i: usize, j: usize) -> (Option<Triangle>, Option<Triangle>) {
         if i >= self.heights.nrows() - 1 || j >= self.heights.ncols() - 1 {
             return (None, None);
@@ -409,10 +409,10 @@ impl HeightField {
 
     /// Computes the pseudo-normals of the triangle identified by the given id.
     ///
-    /// Returns `None` if the heightfield’s [`HeightfieldFlags::FIX_INTERNAL_EDGES`] isn’t set, or
+    /// Returns [`None`] if the heightfield’s [`HeightFieldFlags::FIX_INTERNAL_EDGES`] isn’t set, or
     /// if the triangle doesn’t exist due to it being removed by its status flag
-    /// (`HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED` or
-    /// `HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED`).
+    /// ([`HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED`] or
+    /// [`HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED`]).
     pub fn triangle_normal_constraints(&self, id: u32) -> Option<TrianglePseudoNormals> {
         if self.flags.contains(HeightFieldFlags::FIX_INTERNAL_EDGES) {
             let (i, j, left) = self.split_triangle_id(id);

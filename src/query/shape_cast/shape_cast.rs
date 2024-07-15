@@ -20,7 +20,7 @@ pub enum ShapeCastStatus {
     /// it is often fine to interpret this case as a success.
     Failed,
     /// The two shape already overlap, or are separated by a distance smaller than
-    /// [`ShapeCastOptions::target_dist`] at the time 0.
+    /// [`ShapeCastOptions::target_distance`] at the time 0.
     ///
     /// The witness points and normals provided by the `ShapeCastHit` will have unreliable values unless
     /// [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `true` when calling

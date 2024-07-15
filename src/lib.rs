@@ -231,18 +231,18 @@ mod simd {
     use simba::simd::AutoBoolx4;
     /// The number of lanes of a SIMD number.
     pub const SIMD_WIDTH: usize = 4;
-    /// SIMD_WIDTH - 1
+    /// [`SIMD_WIDTH`] - 1
     pub const SIMD_LAST_INDEX: usize = 3;
 
-    /// A SIMD float with SIMD_WIDTH lanes.
+    /// A SIMD float with [`SIMD_WIDTH`] lanes.
     #[cfg(feature = "f32")]
     pub type SimdReal = simba::simd::AutoF32x4;
 
-    /// A SIMD float with SIMD_WIDTH lanes.
+    /// A SIMD float with [`SIMD_WIDTH`] lanes.
     #[cfg(feature = "f64")]
     pub type SimdReal = simba::simd::AutoF64x4;
 
-    /// A SIMD bool with SIMD_WIDTH lanes.
+    /// A SIMD bool with [`SIMD_WIDTH`] lanes.
     pub type SimdBool = AutoBoolx4;
 }
 
@@ -260,6 +260,6 @@ mod simd {
 
     /// The number of lanes of a SIMD number.
     pub const SIMD_WIDTH: usize = 4;
-    /// SIMD_WIDTH - 1
+    /// [`SIMD_WIDTH`] - 1
     pub const SIMD_LAST_INDEX: usize = 3;
 }
