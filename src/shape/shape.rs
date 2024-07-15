@@ -1271,7 +1271,7 @@ impl Shape for Cone {
     }
 
     fn ccd_angular_thickness(&self) -> Real {
-        let apex_half_angle = self.radius.atan2(self.half_height);
+        let apex_half_angle = RealField::atan2(self.radius, self.half_height);
         assert!(apex_half_angle >= 0.0);
         let basis_angle = Real::frac_pi_2() - apex_half_angle;
         basis_angle.min(apex_half_angle * 2.0)
