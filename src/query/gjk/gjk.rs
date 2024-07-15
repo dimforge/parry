@@ -46,14 +46,11 @@ pub fn eps_tol() -> Real {
 /// the EPA algorithm failed to compute the projection.
 ///
 /// Return the projected point in the local-space of `g`.
-pub fn project_origin<G: ?Sized>(
+pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry<Real>,
     g: &G,
     simplex: &mut VoronoiSimplex,
-) -> Option<Point<Real>>
-where
-    G: SupportMap,
-{
+) -> Option<Point<Real>> {
     match closest_points(
         &m.inverse(),
         g,
@@ -83,7 +80,7 @@ where
 /// `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
 /// compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
 /// than `max_dist` but not inside `shape`.
-pub fn closest_points<G1: ?Sized, G2: ?Sized>(
+pub fn closest_points<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -92,14 +89,14 @@ pub fn closest_points<G1: ?Sized, G2: ?Sized>(
     simplex: &mut VoronoiSimplex,
 ) -> GJKResult
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
 
     let mut old_dir;
@@ -185,15 +182,12 @@ where
 }
 
 /// Casts a ray on a support map using the GJK algorithm.
-pub fn cast_local_ray<G: ?Sized>(
+pub fn cast_local_ray<G: ?Sized + SupportMap>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_time_of_impact: Real,
-) -> Option<(Real, Vector<Real>)>
-where
-    G: SupportMap,
-{
+) -> Option<(Real, Vector<Real>)> {
     let g2 = ConstantOrigin;
     minkowski_ray_cast(
         &Isometry::identity(),
@@ -209,7 +203,7 @@ where
 /// `dir` so that `g1` and `g2` just touch.
 ///
 /// The `dir` vector must be expressed in the local-space of the first shape.
-pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
+pub fn directional_distance<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -217,8 +211,8 @@ pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
     simplex: &mut VoronoiSimplex,
 ) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
     minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(
@@ -237,7 +231,7 @@ where
 }
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
-fn minkowski_ray_cast<G1: ?Sized, G2: ?Sized>(
+fn minkowski_ray_cast<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -246,8 +240,8 @@ fn minkowski_ray_cast<G1: ?Sized, G2: ?Sized>(
     simplex: &mut VoronoiSimplex,
 ) -> Option<(Real, Vector<Real>)>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
@@ -268,7 +262,7 @@ where
     let support_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
     simplex.reset(support_point.translate(&-curr_ray.origin.coords));
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
     let mut max_bound = Real::max_value();
     let mut dir;
@@ -346,7 +340,7 @@ where
         if max_bound - min_bound <= _eps_rel * max_bound {
             // This is needed when using fixed-points to avoid missing
             // some castes.
-            // FIXME: I feel like we should always return `Some` in
+            // TODO: I feel like we should always return `Some` in
             // this case, even with floating-point numbers. Though it
             // has not been sufficinetly tested with floats yet to be sure.
             if cfg!(feature = "improved_fixed_point_support") {

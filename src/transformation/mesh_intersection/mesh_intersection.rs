@@ -2,7 +2,7 @@ use super::{MeshIntersectionError, TriangleTriangleIntersection, EPS};
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{FeatureId, TriMesh, Triangle};
-use crate::utils::WBasis;
+use crate::utils::{self, WBasis};
 use na::{Point2, Vector2};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::collections::{HashMap, HashSet};
@@ -297,13 +297,22 @@ impl Triangulation {
 
         let vtx_handles = [
             delaunay
-                .insert(spade::Point2::new(ref_proj[0].x, ref_proj[0].y))
+                .insert(utils::sanitize_point(spade::Point2::new(
+                    ref_proj[0].x,
+                    ref_proj[0].y,
+                )))
                 .unwrap(),
             delaunay
-                .insert(spade::Point2::new(ref_proj[1].x, ref_proj[1].y))
+                .insert(utils::sanitize_point(spade::Point2::new(
+                    ref_proj[1].x,
+                    ref_proj[1].y,
+                )))
                 .unwrap(),
             delaunay
-                .insert(spade::Point2::new(ref_proj[2].x, ref_proj[2].y))
+                .insert(utils::sanitize_point(spade::Point2::new(
+                    ref_proj[2].x,
+                    ref_proj[2].y,
+                )))
                 .unwrap(),
         ];
 
@@ -401,7 +410,10 @@ fn cut_and_triangulate_intersections(
                         .entry(spade_key)
                         .or_insert_with(|| {
                             let point2d = triangulations[i].project(pt[i], orig_fid[i]);
-                            let handle = triangulations[i].delaunay.insert(point2d).unwrap();
+                            let handle = triangulations[i]
+                                .delaunay
+                                .insert(utils::sanitize_point(point2d))
+                                .unwrap();
                             let _ =
                                 spade_handle_to_intersection[i].insert((tri_ids[i], handle), key);
                             SpadeInfo { handle }

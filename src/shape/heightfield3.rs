@@ -10,16 +10,18 @@ use na::{Point3, Unit};
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
 
-bitflags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[cfg_attr(
-        feature = "rkyv",
-        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self"),
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
 )]
-    #[derive(Default)]
-    /// The status of the cell of an heightfield.
-    pub struct HeightFieldCellStatus: u8 {
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// The status of the cell of an heightfield.
+pub struct HeightFieldCellStatus(u8);
+
+bitflags::bitflags! {
+    impl HeightFieldCellStatus: u8 {
         /// If this bit is set, the concerned heightfield cell is subdivided using a Z pattern.
         const ZIGZAG_SUBDIVISION = 0b00000001;
         /// If this bit is set, the leftmost triangle of the concerned heightfield cell is removed.
@@ -27,21 +29,23 @@ bitflags! {
         /// If this bit is set, the rightmost triangle of the concerned heightfield cell is removed.
         const RIGHT_TRIANGLE_REMOVED = 0b00000100;
         /// If this bit is set, both triangles of the concerned heightfield cell are removed.
-        const CELL_REMOVED = Self::LEFT_TRIANGLE_REMOVED.bits | Self::RIGHT_TRIANGLE_REMOVED.bits;
+        const CELL_REMOVED = Self::LEFT_TRIANGLE_REMOVED.bits() | Self::RIGHT_TRIANGLE_REMOVED.bits();
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
+)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// Flags controlling the behavior of some operations involving heightfields.
+pub struct HeightFieldFlags(u8);
+
 bitflags::bitflags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[cfg_attr(
-        feature = "rkyv",
-        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self"),
-    )]
-    #[repr(C)]
-    #[derive(Default)]
-    /// Flags controlling the behavior of some operations involving heightfields.
-    pub struct HeightFieldFlags: u8 {
+    impl HeightFieldFlags: u8 {
         /// If set, a special treatment will be applied to contact manifold calculation to eliminate
         /// or fix contacts normals that could lead to incorrect bumps in physics simulation (especially
         /// on flat surfaces).
@@ -705,7 +709,7 @@ impl HeightField {
         let max_x = self.quantize_ceil(ref_maxs.x, cell_width, ncells_x);
         let max_z = self.quantize_ceil(ref_maxs.z, cell_height, ncells_z);
 
-        // FIXME: find a way to avoid recomputing the same vertices
+        // TODO: find a way to avoid recomputing the same vertices
         // multiple times.
         for j in min_x..max_x {
             for i in min_z..max_z {

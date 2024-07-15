@@ -59,9 +59,6 @@ extern crate core as std;
 extern crate serde;
 #[macro_use]
 extern crate approx;
-#[macro_use]
-#[cfg(feature = "dim3")]
-extern crate bitflags;
 extern crate num_traits as num;
 
 pub extern crate either;
@@ -252,12 +249,12 @@ mod simd {
 #[cfg(feature = "simd-is-enabled")]
 mod simd {
     #[cfg(all(feature = "simd-nightly", feature = "f32"))]
-    pub use simba::simd::{f32x4 as SimdReal, m32x4 as SimdBool};
+    pub use simba::simd::{f32x4 as SimdReal, mask32x4 as SimdBool};
     #[cfg(all(feature = "simd-stable", feature = "f32"))]
     pub use simba::simd::{WideBoolF32x4 as SimdBool, WideF32x4 as SimdReal};
 
     #[cfg(all(feature = "simd-nightly", feature = "f64"))]
-    pub use simba::simd::{f64x4 as SimdReal, m64x4 as SimdBool};
+    pub use simba::simd::{f64x4 as SimdReal, mask64x4 as SimdBool};
     #[cfg(all(feature = "simd-stable", feature = "f64"))]
     pub use simba::simd::{WideBoolF64x4 as SimdBool, WideF64x4 as SimdReal};
 

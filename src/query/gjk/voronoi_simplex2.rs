@@ -98,7 +98,7 @@ impl VoronoiSimplex {
             self.proj[0] = 1.0;
             self.vertices[0].point
         } else if self.dim == 1 {
-            // FIXME: NLL
+            // TODO: NLL
             let (proj, location) = {
                 let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
                 seg.project_local_point_and_get_location(&Point::<Real>::origin(), true)
@@ -123,7 +123,7 @@ impl VoronoiSimplex {
             proj.point
         } else {
             assert!(self.dim == 2);
-            // FIXME: NLL
+            // TODO: NLL
             let (proj, location) = {
                 let tri = Triangle::new(
                     self.vertices[0].point,

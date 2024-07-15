@@ -1,6 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::{Real, Vector};
-use bitflags::bitflags;
 
 use na::SimdValue;
 
@@ -80,16 +79,18 @@ impl NodeIndex {
     }
 }
 
-bitflags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[cfg_attr(
-        feature = "rkyv",
-        derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-        archive(as = "Self")
-    )]
-    #[derive(Default)]
-    /// The status of a QBVH node.
-    pub struct QbvhNodeFlags: u8 {
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(as = "Self")
+)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// The status of a QBVH node.
+pub struct QbvhNodeFlags(u8);
+
+bitflags::bitflags! {
+    impl QbvhNodeFlags: u8 {
         /// If this bit is set, the node is a leaf.
         const LEAF = 0b0001;
         /// If this bit is set, this node was recently changed.

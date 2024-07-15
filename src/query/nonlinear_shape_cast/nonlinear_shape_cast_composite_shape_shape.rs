@@ -8,7 +8,7 @@ use crate::shape::{Ball, Shape, TypedSimdCompositeShape};
 use simba::simd::SimdValue;
 
 /// Time Of Impact of a composite shape with any other shape, under a rigid motion (translation + rotation).
-pub fn cast_shapes_nonlinear_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn cast_shapes_nonlinear_composite_shape_shape<D, G1>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     g1: &G1,
@@ -19,8 +19,8 @@ pub fn cast_shapes_nonlinear_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     stop_at_penetration: bool,
 ) -> Option<ShapeCastHit>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     let mut visitor = NonlinearTOICompositeShapeShapeBestFirstVisitor::new(
         dispatcher,
@@ -39,7 +39,7 @@ where
 }
 
 /// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
-pub fn cast_shapes_nonlinear_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn cast_shapes_nonlinear_shape_composite_shape<D, G2>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,
@@ -50,8 +50,8 @@ pub fn cast_shapes_nonlinear_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     stop_at_penetration: bool,
 ) -> Option<ShapeCastHit>
 where
-    D: QueryDispatcher,
-    G2: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + TypedSimdCompositeShape,
 {
     cast_shapes_nonlinear_composite_shape_shape(
         dispatcher,
@@ -80,10 +80,10 @@ pub struct NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?S
     g2: &'a dyn Shape,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
+impl<'a, D, G1> NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     /// Initializes visitor used to determine the non-linear time of impact between
     /// a composite shape and another shape.
@@ -111,11 +111,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for NonlinearTOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, ShapeCastHit);
 

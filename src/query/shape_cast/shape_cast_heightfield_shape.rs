@@ -8,17 +8,14 @@ use crate::{bounding_volume::Aabb, query::RayCast};
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
-pub fn cast_shapes_heightfield_shape<D: ?Sized>(
+pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     heightfield1: &HeightField,
     g2: &dyn Shape,
     options: ShapeCastOptions,
-) -> Result<Option<ShapeCastHit>, Unsupported>
-where
-    D: QueryDispatcher,
-{
+) -> Result<Option<ShapeCastHit>, Unsupported> {
     let aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), *vel12);
 
@@ -100,17 +97,14 @@ where
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim3")]
-pub fn cast_shapes_heightfield_shape<D: ?Sized>(
+pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     heightfield1: &HeightField,
     g2: &dyn Shape,
     options: ShapeCastOptions,
-) -> Result<Option<ShapeCastHit>, Unsupported>
-where
-    D: QueryDispatcher,
-{
+) -> Result<Option<ShapeCastHit>, Unsupported> {
     let aabb1 = heightfield1.local_aabb();
     let mut aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), *vel12);
@@ -267,17 +261,14 @@ where
 }
 
 /// Time Of Impact between a moving shape and a heightfield.
-pub fn cast_shapes_shape_heightfield<D: ?Sized>(
+pub fn cast_shapes_shape_heightfield<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     g1: &dyn Shape,
     heightfield2: &HeightField,
     options: ShapeCastOptions,
-) -> Result<Option<ShapeCastHit>, Unsupported>
-where
-    D: QueryDispatcher,
-{
+) -> Result<Option<ShapeCastHit>, Unsupported> {
     Ok(cast_shapes_heightfield_shape(
         dispatcher,
         &pos12.inverse(),

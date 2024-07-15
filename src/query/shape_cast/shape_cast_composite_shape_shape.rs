@@ -7,7 +7,7 @@ use crate::shape::{Shape, TypedSimdCompositeShape};
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Time Of Impact of a composite shape with any other shape, under translational movement.
-pub fn cast_shapes_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn cast_shapes_composite_shape_shape<D, G1>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
@@ -16,8 +16,8 @@ pub fn cast_shapes_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     options: ShapeCastOptions,
 ) -> Option<ShapeCastHit>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     let mut visitor =
         TOICompositeShapeShapeBestFirstVisitor::new(dispatcher, pos12, vel12, g1, g2, options);
@@ -27,7 +27,7 @@ where
 }
 
 /// Time Of Impact of any shape with a composite shape, under translational movement.
-pub fn cast_shapes_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn cast_shapes_shape_composite_shape<D, G2>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
@@ -36,8 +36,8 @@ pub fn cast_shapes_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     options: ShapeCastOptions,
 ) -> Option<ShapeCastHit>
 where
-    D: QueryDispatcher,
-    G2: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + TypedSimdCompositeShape,
 {
     cast_shapes_composite_shape_shape(
         dispatcher,
@@ -64,10 +64,10 @@ pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a
     options: ShapeCastOptions,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
+impl<'a, D, G1> TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     /// Creates a new visitor used to find the time-of-impact between a composite shape and a shape.
     pub fn new(
@@ -97,11 +97,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for TOICompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, ShapeCastHit);
 

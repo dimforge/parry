@@ -271,7 +271,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
     /// Retrieve all the data of the nodes with Aabbs intersecting
     /// the given Aabb:
-    // FIXME: implement a visitor pattern to merge intersect_aabb
+    // TODO: implement a visitor pattern to merge intersect_aabb
     // and intersect_ray into a single method.
     pub fn intersect_aabb(&self, aabb: &Aabb, out: &mut Vec<LeafData>) {
         if self.nodes.is_empty() {

@@ -24,7 +24,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
     points
 }
 
-// FIXME: remove that in favor of `push_xy_circle` ?
+// TODO: remove that in favor of `push_xy_circle` ?
 /// Pushes a discretized counterclockwise circle to a buffer.
 #[cfg(feature = "dim3")]
 #[inline]

@@ -59,11 +59,11 @@ impl PointQuery for HeightField {
         &self,
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        // FIXME: compute the feature properly.
+        // TODO: compute the feature properly.
         (self.project_local_point(point, false), FeatureId::Unknown)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, _point: &Point<Real>) -> bool {

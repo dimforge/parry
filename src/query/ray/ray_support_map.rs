@@ -18,16 +18,13 @@ use crate::shape::{Cone, Cylinder};
 use num::Zero;
 
 /// Cast a ray on a shape using the GJK algorithm.
-pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized>(
+pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized + SupportMap>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_time_of_impact: Real,
     solid: bool,
-) -> Option<RayIntersection>
-where
-    G: SupportMap,
-{
+) -> Option<RayIntersection> {
     let supp = shape.local_support_point(&-ray.dir);
     simplex.reset(CSOPoint::single_point(supp - ray.origin.coords));
 
@@ -43,7 +40,7 @@ where
                 let shift = (supp - ray.origin).dot(&ndir) + eps;
                 let new_ray = Ray::new(ray.origin + ndir * shift, -ray.dir);
 
-                // FIXME: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
+                // TODO: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
                 simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
 
                 gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(

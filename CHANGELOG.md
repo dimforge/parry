@@ -6,6 +6,31 @@
 
 - `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
 
+## v0.16.1
+
+### Fix
+
+- Fix occasional crash in mesh/mesh intersection if some of the vertex coordinates are very small.
+
+## v0.16.0
+
+### Fix
+
+- Fix edge case where some of the principal angular inertia are clamped to zero
+  for decimeter-sized objects.
+- Have ball-ball shape casting take into account the `stop_on_penetration` flags.
+- Don’t panic in EPA for a corner case that needs some additional debugging. Show a debug log instead.
+
+### Added
+
+- Implement concave polygons intersections: `polygons_intersection_points`, `polygon_intersection`.
+
+### Modified
+
+- Update `bitflags` to version ^2.3
+- Update `nalgebra` to 0.33.
+- Update `indexmap` to 2.
+
 ## v0.15.1
 
 ### Fix

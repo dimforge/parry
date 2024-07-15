@@ -9,7 +9,7 @@ use crate::shape::{RoundShapeRef, SupportMap};
 use num::Zero;
 
 /// Time of impacts between two support-mapped shapes under translational movement.
-pub fn cast_shapes_support_map_support_map<G1: ?Sized, G2: ?Sized>(
+pub fn cast_shapes_support_map_support_map<G1, G2>(
     pos12: &Isometry<Real>,
     vel12: &Vector<Real>,
     g1: &G1,
@@ -17,8 +17,8 @@ pub fn cast_shapes_support_map_support_map<G1: ?Sized, G2: ?Sized>(
     options: ShapeCastOptions,
 ) -> Option<ShapeCastHit>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let gjk_result = if options.target_distance > 0.0 {
         let round_g1 = RoundShapeRef {

@@ -45,6 +45,10 @@ pub fn cast_shapes_ball_ball(
             witness2 = Point::from(*normal2 * b2.radius);
         }
 
+        if !options.stop_at_penetration && time_of_impact < 1.0e-5 && normal1.dot(vel12) >= 0.0 {
+            return None;
+        }
+
         let status = if inside && center.coords.norm_squared() < rsum * rsum {
             ShapeCastStatus::PenetratingOrWithinTargetDist
         } else {

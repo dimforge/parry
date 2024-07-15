@@ -8,7 +8,7 @@ use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Closest points between a composite shape and any other shape.
-pub fn closest_points_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn closest_points_composite_shape_shape<D, G1>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &G1,
@@ -16,8 +16,8 @@ pub fn closest_points_composite_shape_shape<D: ?Sized, G1: ?Sized>(
     margin: Real,
 ) -> ClosestPoints
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     let mut visitor =
         CompositeShapeAgainstShapeClosestPointsVisitor::new(dispatcher, pos12, g1, g2, margin);
@@ -30,7 +30,7 @@ where
 }
 
 /// Closest points between a shape and a composite shape.
-pub fn closest_points_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn closest_points_shape_composite_shape<D, G2>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &dyn Shape,
@@ -38,8 +38,8 @@ pub fn closest_points_shape_composite_shape<D: ?Sized, G2: ?Sized>(
     margin: Real,
 ) -> ClosestPoints
 where
-    D: QueryDispatcher,
-    G2: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + TypedSimdCompositeShape,
 {
     closest_points_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, margin).flipped()
 }
@@ -56,10 +56,10 @@ pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Si
     g2: &'a dyn Shape,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
+impl<'a, D, G1> CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     /// Initializes a visitor for computing the closest points between a composite-shape and a shape.
     pub fn new(
@@ -83,11 +83,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, ClosestPoints);
 

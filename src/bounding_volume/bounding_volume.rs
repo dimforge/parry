@@ -6,7 +6,7 @@ use crate::math::{Point, Real};
 /// intersection, inclusion test. Two bounding volume must also be mergeable into a bigger bounding
 /// volume.
 pub trait BoundingVolume {
-    // FIXME: keep that ? What about non-spacial bounding volumes (e.g. bounding cones, curvature
+    // TODO: keep that ? What about non-spacial bounding volumes (e.g. bounding cones, curvature
     // bounds, etc.) ?
     /// Returns a point inside of this bounding volume. This is ideally its center.
     fn center(&self) -> Point<Real>;
