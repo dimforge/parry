@@ -18,7 +18,7 @@ use std::path::PathBuf;
 /// Metadata that specifies thresholds to use when making construction choices
 /// in mesh intersections.
 pub struct MeshIntersectionTolerances {
-    /// The smallest angle (in degrees) that will be tolerated. A triangle with
+    /// The smallest angle (in radians) that will be tolerated. A triangle with
     /// a smaller angle is considered degenerate and will be deleted.
     pub angle_epsilon: Real,
     /// The maximum distance at which two points are considered to overlap in space.
@@ -35,7 +35,7 @@ pub struct MeshIntersectionTolerances {
 impl Default for MeshIntersectionTolerances {
     fn default() -> Self {
         Self {
-            angle_epsilon: 0.005, // degrees
+            angle_epsilon: 0.005 * PI as Real / 180., // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_mod: 10.,
         }
@@ -534,7 +534,7 @@ fn smallest_angle(points: &[Point3<Real>]) -> Real {
         }
     }
 
-    worst_cos.acos() * 180. / PI as Real
+    worst_cos.acos()
 }
 
 fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, Vector3<Real>) {
@@ -563,10 +563,10 @@ fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2])
 /// are degenerate and need to be terminated with extreme prejudice.
 fn is_triangle_degenerate(
     triangle: &[Point3<Real>; 3],
-    epsilon_degrees: Real,
+    epsilon_angle: Real,
     epsilon_distance: Real,
 ) -> bool {
-    if smallest_angle(triangle) < epsilon_degrees {
+    if smallest_angle(triangle) < epsilon_angle {
         return true;
     }
 

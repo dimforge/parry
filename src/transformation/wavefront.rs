@@ -1,11 +1,7 @@
 use crate::shape::TriMesh;
-
-#[cfg(feature = "wavefront")]
 use obj::*;
-#[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
-#[cfg(feature = "wavefront")]
 impl TriMesh {
     pub fn to_obj_file(&self, path: &PathBuf) -> Result<(), ObjError> {
         let mut file = std::fs::File::create(path).unwrap();

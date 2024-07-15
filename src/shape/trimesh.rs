@@ -172,28 +172,6 @@ pub struct TriMeshTopology {
     pub half_edges: Vec<TopoHalfEdge>,
 }
 
-#[cfg(all(feature = "std", feature = "cuda"))]
-impl TriMeshTopology<CudaStorage> {
-    fn as_device_ptr(&self) -> TriMeshTopology<CudaStoragePtr> {
-        TriMeshTopology {
-            vertices: self.vertices.as_device_ptr(),
-            faces: self.faces.as_device_ptr(),
-            half_edges: self.half_edges.as_device_ptr(),
-        }
-    }
-}
-
-#[cfg(all(feature = "std", feature = "cuda"))]
-impl TriMeshTopology<DefaultStorage> {
-    fn to_cuda(&self) -> CudaResult<TriMeshTopology<CudaStorage>> {
-        Ok(TriMeshTopology {
-            vertices: CudaArray1::new(&self.vertices)?,
-            faces: CudaArray1::new(&self.faces)?,
-            half_edges: CudaArray1::new(&self.half_edges)?,
-        })
-    }
-}
-
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",

@@ -1,6 +1,5 @@
-# Blender v3.0.1 OBJ File: ''
-# www.blender.org
-o Cylinder.001
+# Author: Camilo Talero
+# License: CC0
 v -0.010000 -1.010000 -1.780000
 v -0.010000 0.990000 -1.780000
 v 0.185090 -1.010000 -1.760785
