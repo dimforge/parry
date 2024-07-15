@@ -682,9 +682,9 @@ fn merge_triangle_sets(
 mod tests {
 
     use super::*;
+    use crate::shape::TriMeshFlags;
     use crate::transformation::wavefront::*;
     use obj::Obj;
-    use crate::shape::TriMeshFlags;
 
     #[test]
     fn test_same_mesh_intersection() {
@@ -703,7 +703,7 @@ mod tests {
             objects[0].groups[0]
                 .polys
                 .iter()
-                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u3use crate::shape::TriMeshFlags;2])
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
         );
@@ -843,7 +843,7 @@ mod tests {
             ..
         } = Obj::load("../../test_data/low_poly_bunny.obj").unwrap();
 
-        let bunny_mesh = TriMesh::with_flags(use crate::shape::TriMeshFlags;
+        let bunny_mesh = TriMesh::with_flags(
             position
                 .iter()
                 .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
