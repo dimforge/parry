@@ -5,6 +5,9 @@ use crate::shape::{FeatureId, SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
+#[cfg(feature = "dim3")]
+use crate::shape::shape::angle_closest_to_90;
+
 use na::{self, ComplexField, Unit};
 use num::Zero;
 #[cfg(feature = "dim3")]
@@ -230,13 +233,33 @@ impl Triangle {
     ///
     /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
+    /// Note: on thin triangles this can cause numerical issues. A more robust
+    /// way to do this is to look for the incident angle closest to 90 degrees.
     #[inline]
     pub fn scaled_normal(&self) -> Vector<Real> {
-        // Note: on thin triangles this can cause numerical issues. A more robust
-        // way to do this is to look for the incident angle closest to 90 degrees.
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         ab.cross(&ac)
+    }
+
+    /// Smarter, but more expensive, mechanism to find a triangle normal.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_scaled_normal(&self) -> na::Vector3<Real> {
+        let pts = [self.a.coords, self.b.coords, self.c.coords];
+        let best_vertex = angle_closest_to_90(&pts);
+
+        let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
+        let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
+
+        d1.cross(&d2)
+    }
+
+    /// Similar to `robust_scaled_normal`, but returns the unit length normal.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_normal(&self) -> na::Vector3<Real> {
+        self.robust_scaled_normal().normalize()
     }
 
     /// Computes the extents of this triangle on the given direction.

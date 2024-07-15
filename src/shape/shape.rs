@@ -1400,3 +1400,28 @@ impl_shape_for_round_shape!(
 #[cfg(feature = "dim3")]
 #[cfg(feature = "std")]
 impl_shape_for_round_shape!(ConvexPolyhedron, RoundConvexPolyhedron);
+
+/// Find the index of a vertex in a poly line, such that the two
+/// edges incident in that vertex form the angle closest to 90
+/// degrees in the poly line.
+#[cfg(feature = "dim3")]
+pub(crate) fn angle_closest_to_90(points: &[na::Vector3<Real>]) -> usize {
+    let n = points.len();
+
+    let mut best_cos = 2.0;
+    let mut selected_i = 0;
+    for i in 0..n {
+        let d1 = (points[i] - points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
+
+        let cos = d1.dot(&d2);
+
+        let cos_abs = cos.abs();
+        if cos_abs < best_cos {
+            best_cos = cos_abs;
+            selected_i = i;
+        }
+    }
+
+    selected_i
+}
