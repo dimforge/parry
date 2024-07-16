@@ -30,7 +30,7 @@ pub struct MeshIntersectionTolerances {
     /// 
     /// Inside of an individual triangle the distance at which two points are considered
     /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
-    pub local_insertion_epsilon_mod: Real,
+    pub local_insertion_epsilon_scale: Real,
 }
 
 impl Default for MeshIntersectionTolerances {
