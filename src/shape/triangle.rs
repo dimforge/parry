@@ -255,7 +255,7 @@ impl Triangle {
         d1.cross(&d2)
     }
 
-    /// Similar to `robust_scaled_normal`, but returns the unit length normal.
+    /// Similar to [`Triangle::robust_scaled_normal`], but returns the unit length normal.
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn robust_normal(&self) -> na::Vector3<Real> {
