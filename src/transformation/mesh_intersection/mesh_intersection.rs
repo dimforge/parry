@@ -552,7 +552,7 @@ fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2])
 
 /// No matter how smart we are about computing intersections. It is always possible
 /// to create ultra thin triangles when a point lies on an edge of a tirangle. These
-/// are degenerate and need to be terminated with extreme prejudice.
+/// are degenerate and need to be removed.
 fn is_triangle_degenerate(
     triangle: &[Point3<Real>; 3],
     epsilon_angle: Real,
