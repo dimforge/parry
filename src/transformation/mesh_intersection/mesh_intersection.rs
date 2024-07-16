@@ -25,10 +25,11 @@ pub struct MeshIntersectionTolerances {
     /// If `||p1 - p2|| < global_insertion_epsilon` then p1 and p2 are considered
     /// to be the same point.
     pub global_insertion_epsilon: Real,
-    /// A multiplier coefficient to scale `global_insertion_epsilon` when checking for
-    /// point duplicatin within a single triangle. Inside of an individual triangle
-    /// the distance at wich two points are considered to be the same is
-    /// `global_insertion_epsilon * local_insertion_epsilon_mod`.
+    /// A multiplier coefficient to scale [`Self::global_insertion_epsilon`] when checking for
+    /// point duplication within a single triangle.
+    /// 
+    /// Inside of an individual triangle the distance at which two points are considered
+    /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
     pub local_insertion_epsilon_mod: Real,
 }
 
