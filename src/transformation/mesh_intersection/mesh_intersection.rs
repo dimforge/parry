@@ -582,7 +582,7 @@ fn is_triangle_degenerate(
             (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3].coords;
 
         worse_projection_distance =
-            worse_projection_distance.min((proj - triangle[i].coords).norm());
+            worse_projection_distance.min((proj - triangle[i]).norm());
     }
 
     worse_projection_distance < epsilon_distance
