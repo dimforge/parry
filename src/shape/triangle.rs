@@ -233,8 +233,9 @@ impl Triangle {
     ///
     /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
-    /// Note: on thin triangles this can cause numerical issues. A more robust
-    /// way to do this is to look for the incident angle closest to 90 degrees.
+    /// Note that on thin triangles the calculated normals can suffer from numerical issues.
+    /// For a more robust (but more computationally expensive) normal calculation, see
+    /// [`Triangle::robust_scaled_normal`].
     #[inline]
     pub fn scaled_normal(&self) -> Vector<Real> {
         let ab = self.b - self.a;
