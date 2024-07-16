@@ -539,7 +539,7 @@ fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, 
     (e1, e2)
 }
 
-fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2]) -> Vector3<Real> {
+fn project_point_to_segment(point: &Point3<Real>, segment: &[Point3<Real>; 2]) -> Point3<Real> {
     let dir = segment[1] - segment[0];
     let local = point - segment[0];
 
