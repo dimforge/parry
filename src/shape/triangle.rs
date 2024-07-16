@@ -242,7 +242,11 @@ impl Triangle {
         ab.cross(&ac)
     }
 
-    /// Smarter, but more expensive, mechanism to find a triangle normal.
+    /// Find a triangle normal more robustly than with [`Triangle::scaled_normal`].
+    ///
+    /// Thin triangles can cause numerical issues when computing its normal. This method accounts
+    /// for these numerical issues more robustly than [`Triangle::scaled_normal`], but is more
+    /// computationally expensive.
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn robust_scaled_normal(&self) -> na::Vector3<Real> {
