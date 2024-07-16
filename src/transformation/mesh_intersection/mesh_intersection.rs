@@ -79,7 +79,6 @@ pub fn intersect_meshes_with_tolerances(
     flip2: bool,
     meta_data: MeshIntersectionTolerances,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
-    // NOTE: remove this, used for debugging only.
     if cfg!(debug_assertions) {
         mesh1.assert_half_edge_topology_is_valid();
         mesh2.assert_half_edge_topology_is_valid();
