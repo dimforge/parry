@@ -27,7 +27,7 @@ pub struct MeshIntersectionTolerances {
     pub global_insertion_epsilon: Real,
     /// A multiplier coefficient to scale [`Self::global_insertion_epsilon`] when checking for
     /// point duplication within a single triangle.
-    /// 
+    ///
     /// Inside of an individual triangle the distance at which two points are considered
     /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
     pub local_insertion_epsilon_scale: Real,
@@ -38,7 +38,7 @@ impl Default for MeshIntersectionTolerances {
         Self {
             angle_epsilon: 0.005 * PI as Real / 180., // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
-            local_insertion_epsilon_mod: 10.,
+            local_insertion_epsilon_scale: 10.,
         }
     }
 }
@@ -378,13 +378,13 @@ fn triangulate_constraints_and_merge_duplicates(
             let q1 = triangle[i];
             let q2 = triangle[(i + 1) % 3];
 
-            let proj1 = project_point_to_segment(&p1.coords, &[q1, q2]);
-            if (p1.coords - proj1).norm() < epsilon {
+            let proj1 = project_point_to_segment(&p1, &[q1.into(), q2.into()]);
+            if (p1 - proj1).norm() < epsilon {
                 point_pair[0] = Point3::from(proj1);
             }
 
-            let proj2 = project_point_to_segment(&p2.coords, &[q1, q2]);
-            if (p2.coords - proj2).norm() < epsilon {
+            let proj2 = project_point_to_segment(&p2, &[q1.into(), q2.into()]);
+            if (p2 - proj2).norm() < epsilon {
                 point_pair[1] = Point3::from(proj2);
             }
         }
@@ -475,11 +475,10 @@ impl rstar::Point for TreePoint {
 
     fn nth(&self, index: usize) -> Self::Scalar {
         self.point[index]
-        }
     }
 
     fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
-        &mut self.point[i]
+        &mut self.point[index]
     }
 }
 
@@ -517,8 +516,8 @@ fn smallest_angle(points: &[Point3<Real>]) -> Real {
 
     let mut worst_cos = -2.0;
     for i in 0..points.len() {
-        let d1 = (points[i]- points[(i + 1) % n]).normalize();
-        let d2 = (points[(i + 2) % n]- points[(i + 1) % n]).normalize();
+        let d1 = (points[i] - points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
 
         let cos = d1.dot(&d2);
         if cos > worst_cos {
@@ -578,11 +577,9 @@ fn is_triangle_degenerate(
         }
 
         let dir = dir.normalize();
-        let proj =
-            triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
+        let proj = triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
 
-        worse_projection_distance =
-            worse_projection_distance.min((proj - triangle[i]).norm());
+        worse_projection_distance = worse_projection_distance.min((proj - triangle[i]).norm());
     }
 
     worse_projection_distance < epsilon_distance
@@ -607,11 +604,12 @@ fn merge_triangle_sets(
     for (triangle_id, constraints) in triangle_constraints.iter() {
         let tri = mesh1.triangle(**triangle_id);
 
-        let (delaunay, points) = match triangulate_constraints_and_merge_duplicates(
+        let (delaunay, points) = triangulate_constraints_and_merge_duplicates(
             &tri,
             constraints,
-            metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_mod,
-        ).ok_or(MeshIntersectionError::TriangulationError)?;
+            metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_scale,
+        )
+        .or(Err(MeshIntersectionError::TriangulationError))?;
 
         for face in delaunay.inner_faces() {
             let verts = face.vertices();
