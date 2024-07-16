@@ -579,7 +579,7 @@ fn is_triangle_degenerate(
 
         let dir = dir.normalize();
         let proj =
-            (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3].coords;
+            triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
 
         worse_projection_distance =
             worse_projection_distance.min((proj - triangle[i]).norm());
