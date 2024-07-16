@@ -30,7 +30,7 @@ pub struct MeshIntersectionTolerances {
     /// 
     /// Inside of an individual triangle the distance at which two points are considered
     /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
-    pub local_insertion_epsilon_mod: Real,
+    pub local_insertion_epsilon_scale: Real,
 }
 
 impl Default for MeshIntersectionTolerances {
@@ -79,7 +79,6 @@ pub fn intersect_meshes_with_tolerances(
     flip2: bool,
     meta_data: MeshIntersectionTolerances,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
-    // NOTE: remove this, used for debugging only.
     if cfg!(debug_assertions) {
         mesh1.assert_half_edge_topology_is_valid();
         mesh2.assert_half_edge_topology_is_valid();
@@ -475,21 +474,12 @@ impl rstar::Point for TreePoint {
     }
 
     fn nth(&self, index: usize) -> Self::Scalar {
-        match index {
-            0 => self.point.x,
-            1 => self.point.y,
-            2 => self.point.z,
-            _ => unreachable!(),
+        self.point[index]
         }
     }
 
     fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
-        match index {
-            0 => &mut self.point.x,
-            1 => &mut self.point.y,
-            2 => &mut self.point.z,
-            _ => unreachable!(),
-        }
+        &mut self.point[i]
     }
 }
 
@@ -527,8 +517,8 @@ fn smallest_angle(points: &[Point3<Real>]) -> Real {
 
     let mut worst_cos = -2.0;
     for i in 0..points.len() {
-        let d1 = (points[i].coords - points[(i + 1) % n].coords).normalize();
-        let d2 = (points[(i + 2) % n].coords - points[(i + 1) % n].coords).normalize();
+        let d1 = (points[i]- points[(i + 1) % n]).normalize();
+        let d2 = (points[(i + 2) % n]- points[(i + 1) % n]).normalize();
 
         let cos = d1.dot(&d2);
         if cos > worst_cos {
@@ -549,7 +539,7 @@ fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, 
     (e1, e2)
 }
 
-fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2]) -> Vector3<Real> {
+fn project_point_to_segment(point: &Point3<Real>, segment: &[Point3<Real>; 2]) -> Point3<Real> {
     let dir = segment[1] - segment[0];
     let local = point - segment[0];
 
@@ -562,7 +552,7 @@ fn project_point_to_segment(point: &Vector3<Real>, segment: &[Vector3<Real>; 2])
 
 /// No matter how smart we are about computing intersections. It is always possible
 /// to create ultra thin triangles when a point lies on an edge of a tirangle. These
-/// are degenerate and need to be terminated with extreme prejudice.
+/// are degenerate and need to be removed.
 fn is_triangle_degenerate(
     triangle: &[Point3<Real>; 3],
     epsilon_angle: Real,
@@ -589,10 +579,10 @@ fn is_triangle_degenerate(
 
         let dir = dir.normalize();
         let proj =
-            (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir + triangle[(i + 2) % 3].coords;
+            triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
 
         worse_projection_distance =
-            worse_projection_distance.min((proj - triangle[i].coords).norm());
+            worse_projection_distance.min((proj - triangle[i]).norm());
     }
 
     worse_projection_distance < epsilon_distance
@@ -621,10 +611,7 @@ fn merge_triangle_sets(
             &tri,
             constraints,
             metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_mod,
-        ) {
-            Ok(v) => v,
-            Err(_) => return Err(MeshIntersectionError::TriangulationError),
-        };
+        ).ok_or(MeshIntersectionError::TriangulationError)?;
 
         for face in delaunay.inner_faces() {
             let verts = face.vertices();
@@ -683,7 +670,6 @@ fn merge_triangle_sets(
 #[cfg(feature = "wavefront")]
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::shape::TriMeshFlags;
     use crate::transformation::wavefront::*;
