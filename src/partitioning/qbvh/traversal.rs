@@ -27,7 +27,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     ///
     /// # Return
     ///
-    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAabb>) -> bool {
         self.traverse_depth_first_node(visitor, 0)
     }
@@ -36,7 +36,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     ///
     /// # Return
     ///
-    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_node(
         &self,
         visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
@@ -113,7 +113,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     ///
     /// # Return
     ///
-    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_with_context<Context: Clone>(
         &self,
         visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,

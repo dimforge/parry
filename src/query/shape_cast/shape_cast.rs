@@ -94,7 +94,7 @@ impl ShapeCastHit {
 pub struct ShapeCastOptions {
     /// The maximum time-of-impacts that can be computed.
     ///
-    /// Any impact ocurring after this time will be ignored.
+    /// Any impact occurring after this time will be ignored.
     pub max_time_of_impact: Real,
     /// The shapes will be considered as impacting as soon as their distance is smaller or
     /// equal to this target distance. Must be positive or zero.

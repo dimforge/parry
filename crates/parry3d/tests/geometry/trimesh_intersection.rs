@@ -34,7 +34,7 @@ fn trimesh_plane_edge_intersection() {
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
     if let IntersectResult::Intersect(line) = result {
-        // Need to check points individually since order is not garunteed
+        // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
         assert!(vertices.contains(&Point3::new(-1.5, -0.75, 0.5)));
@@ -52,7 +52,7 @@ fn trimesh_plane_vertex_intersection() {
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
     if let IntersectResult::Intersect(line) = result {
-        // Need to check points individually since order is not garunteed
+        // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
         assert!(vertices.contains(&Point3::new(-2.0, -1.0, 0.0)));
@@ -70,7 +70,7 @@ fn trimesh_plane_mixed_intersection() {
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
     if let IntersectResult::Intersect(line) = result {
-        // Need to check points individually since order is not garunteed
+        // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 4);
         assert!(vertices.contains(&Point3::new(0.0, 2.0, 0.0)));
@@ -90,7 +90,7 @@ fn trimesh_plane_multi_intersection() {
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
     if let IntersectResult::Intersect(line) = result {
-        // Need to check points individually since order is not garunteed
+        // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 6);
 

@@ -264,7 +264,7 @@ where
     SM1: ?Sized + SupportMap,
     SM2: ?Sized + SupportMap,
 {
-    // Because we are doing non-linear CCD, we need an iterative methode here.
+    // Because we are doing non-linear CCD, we need an iterative method here.
     // First we need to check if the `time_of_impact = start_time` is legitimate, i.e.,
     // if tunnelling will happen if we don't clamp the motion.
     //

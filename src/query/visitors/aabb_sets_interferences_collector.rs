@@ -11,7 +11,7 @@ pub struct AabbSetsInterferencesCollector<'a, T: 'a> {
     /// A tolerance applied to the interference tests.
     ///
     /// Aabb pairs closer than `tolerance` will be reported as intersecting.
-    pub tolerence: Real,
+    pub tolerance: Real,
     /// The data contained by the nodes with bounding volumes intersecting `self.bv`.
     pub collector: &'a mut Vec<(T, T)>,
 }
@@ -20,13 +20,13 @@ impl<'a, T> AabbSetsInterferencesCollector<'a, T> {
     /// Creates a new `AabbSetsInterferencesCollector`.
     #[inline]
     pub fn new(
-        tolerence: Real,
+        tolerance: Real,
         ls_m2: &'a Isometry<Real>,
         ls_m2_abs_rot: &'a Matrix<Real>,
         collector: &'a mut Vec<(T, T)>,
     ) -> AabbSetsInterferencesCollector<'a, T> {
         AabbSetsInterferencesCollector {
-            tolerence,
+            tolerance,
             ls_m2,
             ls_m2_abs_rot,
             collector,
@@ -45,7 +45,7 @@ impl<'a, T> AabbSetsInterferencesCollector<'a, T> {
 //     ) -> VisitStatus {
 //         let ls_right_bv = Aabb::from_half_extents(
 //             self.ls_m2 * right_bv.center(),
-//             self.ls_m2_abs_rot * right_bv.half_extents() + Vector::repeat(self.tolerence),
+//             self.ls_m2_abs_rot * right_bv.half_extents() + Vector::repeat(self.tolerance),
 //         );
 //
 //         if left_bv.intersects(&ls_right_bv) {

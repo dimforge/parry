@@ -50,7 +50,7 @@ impl ConvexPolygon {
         }
 
         // Second, find vertices that can be removed because
-        // of collinearity of adjascent faces.
+        // of collinearity of adjacent faces.
         for i2 in 1..points.len() {
             let i1 = i2 - 1;
             if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
@@ -260,7 +260,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         out: &mut ConvexPolygonalFeature,
     ) {
         out.clear();
-        // TODO: actualy find the support feature.
+        // TODO: actually find the support feature.
         self.support_face_toward(transform, dir, out)
     }
 

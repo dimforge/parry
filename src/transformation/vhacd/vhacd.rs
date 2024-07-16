@@ -452,7 +452,7 @@ impl VHACD {
         }
     }
 
-    // Returns a vector such that `result[i]` gives the index of the the voxelized convex part that
+    // Returns a vector such that `result[i]` gives the index of the voxelized convex part that
     // intersects it.
     //
     // If multiple convex parts intersect the same primitive, then `result[i]` is set to `u32::MAX`.
