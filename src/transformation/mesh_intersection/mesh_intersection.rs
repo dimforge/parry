@@ -611,10 +611,7 @@ fn merge_triangle_sets(
             &tri,
             constraints,
             metadata.global_insertion_epsilon * metadata.local_insertion_epsilon_mod,
-        ) {
-            Ok(v) => v,
-            Err(_) => return Err(MeshIntersectionError::TriangulationError),
-        };
+        ).ok_or(MeshIntersectionError::TriangulationError)?;
 
         for face in delaunay.inner_faces() {
             let verts = face.vertices();
