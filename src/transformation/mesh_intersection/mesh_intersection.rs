@@ -480,12 +480,7 @@ impl rstar::Point for TreePoint {
     }
 
     fn nth_mut(&mut self, index: usize) -> &mut Self::Scalar {
-        match index {
-            0 => &mut self.point.x,
-            1 => &mut self.point.y,
-            2 => &mut self.point.z,
-            _ => unreachable!(),
-        }
+        &mut self.point[i]
     }
 }
 
