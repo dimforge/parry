@@ -475,11 +475,7 @@ impl rstar::Point for TreePoint {
     }
 
     fn nth(&self, index: usize) -> Self::Scalar {
-        match index {
-            0 => self.point.x,
-            1 => self.point.y,
-            2 => self.point.z,
-            _ => unreachable!(),
+        self.point[index]
         }
     }
 
