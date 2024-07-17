@@ -63,6 +63,7 @@ bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
 ordered-float = { version = "4", default-features = false }
 thiserror = { version = "1", optional = true }
+rstar = "0.12.0"
 
 [dev-dependencies]
 oorandom = "11"
