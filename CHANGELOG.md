@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-## v0.16.2
-
 ### Added
 
 - Add `Triangle::robust_scaled_normal` and `Triangle::robust_normal` as a more robust way to compute the triangles
@@ -12,7 +10,10 @@
 
 ### Modified
 
-- Improved the general stability of mesh/mesh intersection.
+- `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
+- Significantly improved the general stability of mesh/mesh intersection calculation.
+
+## v0.16.1
 
 ### Fix
 
