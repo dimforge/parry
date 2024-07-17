@@ -89,10 +89,8 @@ mod real {
 pub mod math {
     pub use super::real::*;
     pub use super::simd::*;
-    use na::{
-        Isometry3, Matrix3, Point3, Translation3, UnitQuaternion, UnitVector3, Vector3, Vector6,
-        U3, U6,
-    };
+    pub use na::{Isometry3, Matrix3, Point3, Translation3, UnitVector3, Vector3};
+    use na::{UnitQuaternion, Vector6, U3, U6};
 
     /// The default tolerance used for geometric operations.
     pub const DEFAULT_EPSILON: Real = Real::EPSILON;
@@ -113,19 +111,19 @@ pub mod math {
     pub type AngDim = U3;
 
     /// The point type.
-    pub type Point<N> = Point3<N>;
+    pub use Point3 as Point;
 
     /// The angular vector type.
     pub type AngVector<N> = Vector3<N>;
 
     /// The vector type.
-    pub type Vector<N> = Vector3<N>;
+    pub use Vector3 as Vector;
 
     /// The unit vector type.
-    pub type UnitVector<N> = UnitVector3<N>;
+    pub use UnitVector3 as UnitVector;
 
     /// The matrix type.
-    pub type Matrix<N> = Matrix3<N>;
+    pub use Matrix3 as Matrix;
 
     /// The vector type with dimension `SpatialDim × 1`.
     pub type SpatialVector<N> = Vector6<N>;
@@ -134,13 +132,13 @@ pub mod math {
     pub type Orientation<N> = Vector3<N>;
 
     /// The transformation matrix type.
-    pub type Isometry<N> = Isometry3<N>;
+    pub use Isometry3 as Isometry;
 
     /// The rotation matrix type.
     pub type Rotation<N> = UnitQuaternion<N>;
 
     /// The translation type.
-    pub type Translation<N> = Translation3<N>;
+    pub use Translation3 as Translation;
 
     /// The angular inertia of a rigid body.
     pub type AngularInertia<N> = crate::utils::SdpMatrix3<N>;
@@ -155,7 +153,7 @@ pub mod math {
     pub type SpacialVector<N> = Vector6<N>;
 
     /// A 3D symmetric-definite-positive matrix.
-    pub type SdpMatrix<N> = crate::utils::SdpMatrix3<N>;
+    pub use crate::utils::SdpMatrix3 as SdpMatrix;
 }
 
 /// Compilation flags dependent aliases for mathematical types.
@@ -163,10 +161,8 @@ pub mod math {
 pub mod math {
     pub use super::real::*;
     pub use super::simd::*;
-    use na::{
-        Isometry2, Matrix2, Point2, Translation2, UnitComplex, UnitVector2, Vector1, Vector2,
-        Vector3, U1, U2,
-    };
+    pub use na::{Isometry2, Matrix2, Point2, Translation2, UnitVector2, Vector2};
+    use na::{UnitComplex, Vector1, Vector3, U1, U2};
 
     /// The default tolerance used for geometric operations.
     pub const DEFAULT_EPSILON: Real = Real::EPSILON;
@@ -184,31 +180,31 @@ pub mod math {
     pub type AngDim = U1;
 
     /// The point type.
-    pub type Point<N> = Point2<N>;
+    pub use Point2 as Point;
 
     /// The angular vector type.
     pub type AngVector<N> = N;
 
     /// The vector type.
-    pub type Vector<N> = Vector2<N>;
+    pub use Vector2 as Vector;
 
     /// The unit vector type.
-    pub type UnitVector<N> = UnitVector2<N>;
+    pub use UnitVector2 as UnitVector;
 
     /// The matrix type.
-    pub type Matrix<N> = Matrix2<N>;
+    pub use Matrix2 as Matrix;
 
     /// The orientation type.
     pub type Orientation<N> = Vector1<N>;
 
     /// The transformation matrix type.
-    pub type Isometry<N> = Isometry2<N>;
+    pub use Isometry2 as Isometry;
 
     /// The rotation matrix type.
     pub type Rotation<N> = UnitComplex<N>;
 
     /// The translation type.
-    pub type Translation<N> = Translation2<N>;
+    pub use Translation2 as Translation;
 
     /// The angular inertia of a rigid body.
     pub type AngularInertia<N> = N;
@@ -223,7 +219,7 @@ pub mod math {
     pub type SpacialVector<N> = Vector3<N>;
 
     /// A 2D symmetric-definite-positive matrix.
-    pub type SdpMatrix<N> = crate::utils::SdpMatrix2<N>;
+    pub use crate::utils::SdpMatrix2 as SdpMatrix;
 }
 
 #[cfg(not(feature = "simd-is-enabled"))]
