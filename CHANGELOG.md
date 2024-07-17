@@ -1,6 +1,18 @@
 # Change Log
 
-## v0.16.1
+## Unreleased
+
+## v0.16.2
+
+### Added
+
+- Add `Triangle::robust_scaled_normal` and `Triangle::robust_normal` as a more robust way to compute the triangles
+  normal for thin triangles that generally cause numerical instabilities.
+- Add `Triangle::angle_closest_to_90` to find the triangle’s vertex with an angle closest to 90 degree.
+
+### Modified
+
+- Improved the general stability of mesh/mesh intersection.
 
 ### Fix
 
