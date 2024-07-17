@@ -407,22 +407,19 @@ fn triangulate_constraints_and_merge_duplicates(
     let d2 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
     let (e1, e2) = planar_gram_schmidt(d1, d2);
 
-    let project = |p: &Vector3<Real>| spade::Point2::new(e1.dot(p), e2.dot(p));
+    let project = |p: &Point3<Real>| spade::Point2::new(e1.dot(&p.coords), e2.dot(&p.coords));
 
     // Project points into 2D and triangulate the resulting set.
     let planar_points: Vec<_> = points
         .iter()
         .copied()
         .map(|point| {
-            let point_proj = project(&point.point.coords);
-            spade::Point2::new(point_proj.x, point_proj.y)
+            let point_proj = project(&point.point);
+            utils::sanitize_spade_point(point_proj)
         })
         .collect();
     let cdt_triangulation =
-        ConstrainedDelaunayTriangulation::<spade::Point2<Real>>::bulk_load_cdt_stable(
-            planar_points,
-            edges,
-        )?;
+        ConstrainedDelaunayTriangulation::bulk_load_cdt_stable(planar_points, edges)?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
