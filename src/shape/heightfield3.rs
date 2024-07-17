@@ -409,7 +409,7 @@ impl HeightField {
 
     /// Computes the pseudo-normals of the triangle identified by the given id.
     ///
-    /// Returns `None` if the heightfield’s [`HeightfieldFlags::FIX_INTERNAL_EDGES`] isn’t set, or
+    /// Returns `None` if the heightfield’s [`HeightFieldFlags::FIX_INTERNAL_EDGES`] isn’t set, or
     /// if the triangle doesn’t exist due to it being removed by its status flag
     /// (`HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED` or
     /// `HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED`).
