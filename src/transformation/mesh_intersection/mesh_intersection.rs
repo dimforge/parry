@@ -3,7 +3,7 @@ use crate::math::{Isometry, Real};
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{TriMesh, Triangle};
-use core::f64::consts::PI;
+use crate::utils;
 use na::{Point3, Vector3};
 #[cfg(feature = "wavefront")]
 use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
@@ -35,7 +35,7 @@ pub struct MeshIntersectionTolerances {
 impl Default for MeshIntersectionTolerances {
     fn default() -> Self {
         Self {
-            angle_epsilon: 0.005 * PI as Real / 180., // 0.005 degrees
+            angle_epsilon: (0.005 as Real).to_radians(), // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_scale: 10.,
         }
@@ -368,21 +368,21 @@ fn triangulate_constraints_and_merge_duplicates(
     // Sometimes, points on the edge of a triangle are slightly off, and this makes
     // spade think that there is a super thin triangle. Project points close to an edge
     // onto the edge to get better results.
-    let triangle = [tri.a.coords, tri.b.coords, tri.c.coords];
+    let tri_vtx = tri.vertices();
     for point_pair in constraints.iter_mut() {
         let p1 = point_pair[0];
         let p2 = point_pair[1];
 
         for i in 0..3 {
-            let q1 = triangle[i];
-            let q2 = triangle[(i + 1) % 3];
+            let q1 = tri_vtx[i];
+            let q2 = tri_vtx[(i + 1) % 3];
 
-            let proj1 = project_point_to_segment(&p1, &[q1.into(), q2.into()]);
+            let proj1 = project_point_to_segment(&p1, &[q1, q2]);
             if (p1 - proj1).norm() < epsilon {
                 point_pair[0] = Point3::from(proj1);
             }
 
-            let proj2 = project_point_to_segment(&p2, &[q1.into(), q2.into()]);
+            let proj2 = project_point_to_segment(&p2, &[q1, q2]);
             if (p2 - proj2).norm() < epsilon {
                 point_pair[1] = Point3::from(proj2);
             }
@@ -676,7 +676,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/low_poly_bunny.obj").unwrap();
+        } = Obj::load("../../assets/tests/low_poly_bunny.obj").unwrap();
 
         let mesh = TriMesh::with_flags(
             position
@@ -712,7 +712,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/offset_cylinder.obj").unwrap();
+        } = Obj::load("../../assets/tests/offset_cylinder.obj").unwrap();
 
         let offset_mesh = TriMesh::with_flags(
             position
@@ -732,7 +732,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/center_cylinder.obj").unwrap();
+        } = Obj::load("../../assets/tests/center_cylinder.obj").unwrap();
 
         let center_mesh = TriMesh::with_flags(
             position
@@ -768,7 +768,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/stairs.obj").unwrap();
+        } = Obj::load("../../assets/tests/stairs.obj").unwrap();
 
         let stair_mesh = TriMesh::with_flags(
             position
@@ -788,7 +788,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/bar.obj").unwrap();
+        } = Obj::load("../../assets/tests/bar.obj").unwrap();
 
         let bar_mesh = TriMesh::with_flags(
             position
@@ -824,7 +824,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/low_poly_bunny.obj").unwrap();
+        } = Obj::load("../../assets/tests/low_poly_bunny.obj").unwrap();
 
         let bunny_mesh = TriMesh::with_flags(
             position
@@ -844,7 +844,7 @@ mod tests {
                 position, objects, ..
             },
             ..
-        } = Obj::load("../../test_data/poly_cylinder.obj").unwrap();
+        } = Obj::load("../../assets/tests/poly_cylinder.obj").unwrap();
 
         let cylinder_mesh = TriMesh::with_flags(
             position
