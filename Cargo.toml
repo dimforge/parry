@@ -2,6 +2,13 @@
 members = ["crates/parry2d", "crates/parry3d", "crates/parry2d-f64", "crates/parry3d-f64"]
 resolver = "2"
 
+[workspace.lints]
+rust.unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("dim2", "dim3", "f32", "f64"))',
+    # This one should be investigated as to why it exists, not hooked up, etc.
+    'cfg(feature, values("improved_fixed_point_support"))',
+] }
+
 [patch.crates-io]
 parry2d = { path = "crates/parry2d" }
 parry3d = { path = "crates/parry3d" }
