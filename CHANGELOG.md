@@ -7,6 +7,7 @@
 - Add `Triangle::robust_scaled_normal` and `Triangle::robust_normal` as a more robust way to compute the triangles
   normal for thin triangles that generally cause numerical instabilities.
 - Add `Triangle::angle_closest_to_90` to find the triangle’s vertex with an angle closest to 90 degree.
+- Add the `wavefront` feature that enables `TriMesh::to_obj_file` for exporting a mesh as an obj file.
 
 ### Modified
 
