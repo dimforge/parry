@@ -2,7 +2,6 @@ use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::math::{Isometry, Real};
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
-use crate::shape::shape::angle_closest_to_90;
 use crate::shape::{TriMesh, Triangle};
 use core::f64::consts::PI;
 use na::{Point3, Vector3};
@@ -402,8 +401,8 @@ fn triangulate_constraints_and_merge_duplicates(
     let mut points: Vec<_> = point_set.iter().cloned().collect();
     points.sort_by(|a, b| a.id.cmp(&b.id));
 
-    let tri_points = [tri.a.coords, tri.b.coords, tri.c.coords];
-    let best_source = angle_closest_to_90(&tri_points);
+    let tri_points = tri.vertices();
+    let best_source = tri.angle_closest_to_90();
     let d1 = tri_points[(best_source + 2) % 3] - tri_points[(best_source + 1) % 3];
     let d2 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
     let (e1, e2) = planar_gram_schmidt(d1, d2);

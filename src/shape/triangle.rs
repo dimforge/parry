@@ -5,9 +5,6 @@ use crate::shape::{FeatureId, SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
-#[cfg(feature = "dim3")]
-use crate::shape::shape::angle_closest_to_90;
-
 use na::{self, ComplexField, Unit};
 use num::Zero;
 #[cfg(feature = "dim3")]
@@ -251,9 +248,8 @@ impl Triangle {
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn robust_scaled_normal(&self) -> na::Vector3<Real> {
-        let pts = [self.a.coords, self.b.coords, self.c.coords];
-        let best_vertex = angle_closest_to_90(&pts);
-
+        let pts = self.vertices();
+        let best_vertex = self.angle_closest_to_90();
         let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
         let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
 
@@ -579,6 +575,29 @@ impl Triangle {
         } else {
             TriangleOrientation::Degenerate
         }
+    }
+
+    /// Find the index of a vertex in this triangle, such that the two
+    /// edges incident in that vertex form the angle closest to 90
+    /// degrees in the triangle.
+    pub fn angle_closest_to_90(&self) -> usize {
+        let points = self.vertices();
+        let mut best_cos = 2.0;
+        let mut selected_i = 0;
+
+        for i in 0..3 {
+            let d1 = (points[i] - points[(i + 1) % 3]).normalize();
+            let d2 = (points[(i + 2) % 3] - points[(i + 1) % 3]).normalize();
+
+            let cos_abs = d1.dot(&d2).abs();
+
+            if cos_abs < best_cos {
+                best_cos = cos_abs;
+                selected_i = i;
+            }
+        }
+
+        selected_i
     }
 
     /// Reverse the orientation of this triangle by swapping b and c.
