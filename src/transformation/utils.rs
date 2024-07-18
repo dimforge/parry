@@ -179,7 +179,7 @@ pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std:
 /// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
 /// The `start` and `end` point are not pushed to `out_vtx`.
 ///
-/// ALso pushes to `out_idx` the appropriate index buffer to form the arc (including attaches to
+/// Also pushes to `out_idx` the appropriate index buffer to form the arc (including attaches to
 /// the `start` and `end` points).
 #[cfg(feature = "dim3")]
 pub fn push_arc_and_idx(

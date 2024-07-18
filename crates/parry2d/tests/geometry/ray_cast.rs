@@ -54,7 +54,7 @@ fn collinear_raycast_starting_above_segment() {
 }
 
 #[test]
-fn perpendicular_raycast_starting_behind_sement() {
+fn perpendicular_raycast_starting_behind_segment() {
     let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
     let ray = Ray::new(Point2::new(-1.0, 0.0), Vector2::new(1.0, 0.0));
     assert!(segment.intersects_local_ray(&ray, std::f32::MAX));

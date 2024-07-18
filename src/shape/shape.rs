@@ -206,7 +206,7 @@ impl Debug for TypedShape<'_> {
 
 #[cfg(feature = "serde-serialize")]
 #[derive(Deserialize)]
-// NOTE: tha this enum MUST match the `TypedShape` enum.
+// NOTE: This enum MUST match the `TypedShape` enum.
 /// Enum representing the shape with its actual type
 pub(crate) enum DeserializableTypedShape {
     /// A ball shape.

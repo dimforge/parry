@@ -27,12 +27,12 @@ pub enum GJKResult {
     Proximity(Unit<Vector<Real>>),
     /// Result of the GJK algorithm when the origin is too far away from the polytope.
     ///
-    /// The returned vector is expressed in the local-space of the first geomety involved in the
+    /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
     NoIntersection(Unit<Vector<Real>>),
 }
 
-/// The absolute tolerence used by the GJK algorithm.
+/// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
     _eps * 10.0
@@ -342,7 +342,7 @@ where
             // some castes.
             // TODO: I feel like we should always return `Some` in
             // this case, even with floating-point numbers. Though it
-            // has not been sufficinetly tested with floats yet to be sure.
+            // has not been sufficiently tested with floats yet to be sure.
             if cfg!(feature = "improved_fixed_point_support") {
                 return Some((ltoi / ray_length, ldir));
             } else {

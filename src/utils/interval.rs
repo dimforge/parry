@@ -149,7 +149,7 @@ impl<T> Interval<T> {
         self.0 <= t && self.1 >= t
     }
 
-    /// The width of this inverval.
+    /// The width of this interval.
     #[must_use]
     pub fn width(self) -> T::Output
     where
@@ -168,7 +168,7 @@ impl<T> Interval<T> {
         (self.0 + self.1) / two
     }
 
-    /// Splits this interval at its mitpoint.
+    /// Splits this interval at its midpoint.
     #[must_use]
     pub fn split(self) -> [Self; 2]
     where

@@ -824,7 +824,7 @@ impl<'a> HeightFieldRadialTriangles<'a> {
     ///
     /// Returns `None` no triangle closest than `max_dist` remain
     /// to be yielded. The `max_dist` can be modified at each iteration
-    /// as long as the the new value is smaller or equal to the previous value.
+    /// as long as the new value is smaller or equal to the previous value.
     pub fn next(&mut self, max_dist: Real) -> Option<Triangle> {
         let max_rad = if max_dist == Real::MAX {
             usize::MAX

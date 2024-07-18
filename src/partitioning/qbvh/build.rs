@@ -45,7 +45,7 @@ pub trait QbvhDataSplitter<LeafData> {
 /// along the split axis.
 pub struct CenterDataSplitter {
     /// If all the Aabb centers have the same coordinate values along the splitting axis
-    /// setting this to `true` will allow the spliter to split the Aabb set into two
+    /// setting this to `true` will allow the splitter to split the Aabb set into two
     /// subsets arbitrarily.
     pub enable_fallback_split: bool,
 }
@@ -135,7 +135,7 @@ where
         indices_workspace: &'idx mut Vec<usize>,
         mut proxies: BuilderProxies<LeafData>,
     ) -> [&'idx mut [usize]; 4] {
-        // 1. Snap the spliting point to one fo the Aabb min/max,
+        // 1. Snap the splitting point to one of the Aabb min/max,
         // such that at least one Aabb isn’t split along each dimension.
         let mut split_pt = Point::from(Vector::repeat(-Real::MAX));
         let mut split_pt_right = Point::from(Vector::repeat(Real::MAX));

@@ -47,7 +47,7 @@ pub enum TrianglePointLocation {
     /// The 1-st edge is the segment BC.
     /// The 2-nd edge is the segment AC.
     // XXX: it appears the conversion of edge indexing here does not match the
-    // convension of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
+    // convention of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
     OnEdge(u32, [Real; 2]),
     /// The point lies on the triangle interior.
     ///
@@ -101,9 +101,9 @@ impl TrianglePointLocation {
 /// Orientation of a triangle.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TriangleOrientation {
-    /// Orientation with a clockwise orientaiton, i.e., with a positive signed area.
+    /// Orientation with a clockwise orientation, i.e., with a positive signed area.
     Clockwise,
-    /// Orientation with a clockwise orientaiton, i.e., with a negative signed area.
+    /// Orientation with a clockwise orientation, i.e., with a negative signed area.
     CounterClockwise,
     /// Degenerate triangle.
     Degenerate,

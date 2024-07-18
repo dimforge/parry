@@ -12,6 +12,7 @@
 ### Modified
 
 - `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
+- `AabbSetsInterferencesCollector::tolerence` is now spelled correctly as `tolerance`.
 - `Real` is now exposed through a `use` statement,
   so that an indirection is removed in documentation:
   previous occurrences of `Real` now show `f32` or `f64`.
@@ -176,7 +177,7 @@ This version was yanked. See the release notes for 0.13.3 instead.
 ### Modified
 
 - About `rkyv` support: most POD structs (`Aabb`, `Ball`, `Cuboid`, etc.) are now archived as themselves instead of
-  being archived as different types (for example `Aabb` is archived as `Aabb` itself istead of `ArchivedAabb`).
+  being archived as different types (for example `Aabb` is archived as `Aabb` itself instead of `ArchivedAabb`).
 
 ### Added
 

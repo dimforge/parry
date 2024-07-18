@@ -27,7 +27,7 @@ use rkyv::{bytecheck, CheckBytes};
 pub struct Cylinder {
     /// The half-height of the cylinder.
     pub half_height: Real,
-    /// The radius fo the cylinder.
+    /// The radius of the cylinder.
     pub radius: Real,
 }
 

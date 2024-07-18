@@ -147,7 +147,7 @@ impl HeightField {
         }
     }
 
-    /// Height of the heightfield a the given point after vertical projection on the heightfield surface.
+    /// Height of the heightfield at the given point after vertical projection on the heightfield surface.
     pub fn height_at_point(&self, pt: &Point2<Real>) -> Option<Real> {
         let cell = self.cell_at_point(pt)?;
         let seg = self.segment_at(cell)?;
@@ -162,7 +162,7 @@ impl HeightField {
 
     /// Iterator through all the segments of this heightfield.
     pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
-        // TODO: this is not very efficient since this wil
+        // TODO: this is not very efficient since this will
         // recompute shared points twice.
         (0..self.num_cells()).filter_map(move |i| self.segment_at(i))
     }
