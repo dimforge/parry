@@ -39,3 +39,6 @@ mod to_polyline;
 #[cfg(feature = "dim3")]
 mod to_trimesh;
 pub mod utils;
+
+#[cfg(feature = "wavefront")]
+pub mod wavefront;

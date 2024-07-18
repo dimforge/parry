@@ -230,11 +230,37 @@ impl Triangle {
     ///
     /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
+    /// Note that on thin triangles the calculated normals can suffer from numerical issues.
+    /// For a more robust (but more computationally expensive) normal calculation, see
+    /// [`Triangle::robust_scaled_normal`].
     #[inline]
     pub fn scaled_normal(&self) -> Vector<Real> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         ab.cross(&ac)
+    }
+
+    /// Find a triangle normal more robustly than with [`Triangle::scaled_normal`].
+    ///
+    /// Thin triangles can cause numerical issues when computing its normal. This method accounts
+    /// for these numerical issues more robustly than [`Triangle::scaled_normal`], but is more
+    /// computationally expensive.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_scaled_normal(&self) -> na::Vector3<Real> {
+        let pts = self.vertices();
+        let best_vertex = self.angle_closest_to_90();
+        let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
+        let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
+
+        d1.cross(&d2)
+    }
+
+    /// Similar to [`Triangle::robust_scaled_normal`], but returns the unit length normal.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_normal(&self) -> na::Vector3<Real> {
+        self.robust_scaled_normal().normalize()
     }
 
     /// Computes the extents of this triangle on the given direction.
@@ -549,6 +575,29 @@ impl Triangle {
         } else {
             TriangleOrientation::Degenerate
         }
+    }
+
+    /// Find the index of a vertex in this triangle, such that the two
+    /// edges incident in that vertex form the angle closest to 90
+    /// degrees in the triangle.
+    pub fn angle_closest_to_90(&self) -> usize {
+        let points = self.vertices();
+        let mut best_cos = 2.0;
+        let mut selected_i = 0;
+
+        for i in 0..3 {
+            let d1 = (points[i] - points[(i + 1) % 3]).normalize();
+            let d2 = (points[(i + 2) % 3] - points[(i + 1) % 3]).normalize();
+
+            let cos_abs = d1.dot(&d2).abs();
+
+            if cos_abs < best_cos {
+                best_cos = cos_abs;
+                selected_i = i;
+            }
+        }
+
+        selected_i
     }
 
     /// Reverse the orientation of this triangle by swapping b and c.
