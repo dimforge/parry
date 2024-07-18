@@ -5,6 +5,9 @@
 ### Modified
 
 - `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
+- `Real` is now exposed through a `use` statement,
+  so that an indirection is removed in documentation:
+  previous occurrences of `Real` now show `f32` or `f64`.
 
 ## v0.16.1
 
