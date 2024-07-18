@@ -1,8 +1,7 @@
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
 use parry2d::query::{Ray, RayCast};
-use parry2d::shape::{Ball, TriMesh};
-use parry2d::transformation::polygons_intersection_points;
+use parry2d::shape::{Ball, Cuboid, TriMesh};
 
 const RENDER_SCALE: f32 = 30.0;
 
@@ -16,7 +15,6 @@ async fn main() {
     let animation_rotation = UnitComplex::new(0.008);
 
     let spikes_render_pos = Point2::new(300.0, 300.0);
-    let star_render_pos = Point2::new(600.0, 300.0);
 
     for i in 0.. {
         clear_background(BLACK);
@@ -37,17 +35,30 @@ async fn main() {
                 * ((i as f32 / 100.0).sin().abs() * animation_scale)
         });
 
-        let trimesh = TriMesh::from_polygon(animated_spikes.clone()).unwrap();
+        //let trimesh = TriMesh::from_polygon(animated_spikes.clone()).unwrap();
+        let trimesh = Cuboid::new(Vector2::new(2.0, 2.0));
         let ray = Ray::new(
-            spikes_render_pos.into(),
-            animation_rotation.powf(-i as f32) * Vector2::y(),
+            (Vector2::new(12.0, 0.0)).into(),
+            animation_rotation.powf(i as f32 * 2f32) * Vector2::y(),
         );
-        let toi = trimesh.cast_ray(&Isometry2::identity(), &ray, std::f32::MAX, false);
+        let toi = trimesh.cast_ray(&Isometry2::identity(), &ray, std::f32::MAX, true);
 
         if let Some(toi) = toi {
-            drawline_from_to(ray.origin, ray.origin + ray.dir * toi, GREEN);
+            drawline_from_to(
+                ray.origin,
+                ray.origin + ray.dir * toi,
+                GREEN,
+                RENDER_SCALE,
+                spikes_render_pos,
+            );
         } else {
-            drawline_from_to(ray.origin, ray.origin + ray.dir * 1000f32, RED);
+            drawline_from_to(
+                ray.origin,
+                ray.origin + ray.dir * 1000f32,
+                RED,
+                RENDER_SCALE,
+                spikes_render_pos,
+            );
         }
 
         /*
@@ -55,9 +66,14 @@ async fn main() {
          * Render the polygons and their intersections.
          *
          */
-        draw_polygon(&trimesh.vertices(), RENDER_SCALE, spikes_render_pos, GREEN);
+        draw_polygon(
+            &trimesh.to_polyline(),
+            RENDER_SCALE,
+            spikes_render_pos,
+            GREEN,
+        );
 
-        draw_polygon(&animated_star, RENDER_SCALE, star_render_pos, GREEN);
+        draw_polygon(&animated_star, RENDER_SCALE, spikes_render_pos, GREEN);
 
         next_frame().await
     }
@@ -106,6 +122,14 @@ fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: 
     }
 }
 
-fn drawline_from_to(from: Point2<f32>, to: Point2<f32>, color: Color) {
+fn drawline_from_to(
+    from: Point2<f32>,
+    to: Point2<f32>,
+    color: Color,
+    scale: f32,
+    shift: Point2<f32>,
+) {
+    let from = from * scale + shift.coords;
+    let to = to * scale + shift.coords;
     draw_line(from.x, from.y, to.x, to.y, 2.0, color);
 }
