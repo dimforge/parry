@@ -1,15 +1,13 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{
-    self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
-    QueryDispatcher, ShapeCastHit, Unsupported,
+    self, details::NonlinearShapeCastMode, query_dispatcher::QueryDispatcherComposite,
+    ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit, Unsupported,
 };
 #[cfg(feature = "std")]
 use crate::query::{
     contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
-    query_dispatcher::{
-        PersistentQueryDispatcher, PersistentQueryDispatcherComposite, QueryDispatcherComposite,
-    },
+    query_dispatcher::{PersistentQueryDispatcher, PersistentQueryDispatcherComposite},
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
