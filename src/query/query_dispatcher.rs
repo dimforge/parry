@@ -85,6 +85,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
     ) -> Result<(), Unsupported>;
 }
 
+#[cfg(feature = "std")]
 impl<T, ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData> for T
 where
     T: PersistentQueryDispatcherComposite<ManifoldData, ContactData>,
