@@ -10,10 +10,7 @@ use num::Zero;
 use std::mem;
 
 #[cfg(feature = "dim3")]
-use {
-    crate::shape::{self, FeatureId},
-    std::f64,
-};
+use {crate::shape::FeatureId, std::f64};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
