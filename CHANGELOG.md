@@ -8,6 +8,7 @@
   normal for thin triangles that generally cause numerical instabilities.
 - Add `Triangle::angle_closest_to_90` to find the triangle’s vertex with an angle closest to 90 degree.
 - Add the `wavefront` feature that enables `TriMesh::to_obj_file` for exporting a mesh as an obj file.
+- Add `Shape::scale_dyn` for scaling a shape as a trait-object.
 
 ### Modified
 
@@ -17,6 +18,8 @@
   so that an indirection is removed in documentation:
   previous occurrences of `Real` now show `f32` or `f64`.
 - Significantly improved the general stability of mesh/mesh intersection calculation.
+- Rename `Shape::clone_box` to `Shape::clone_dyn` (the `clone_box` method still exists but has been
+  deprecated).
 
 ## v0.16.1
 
