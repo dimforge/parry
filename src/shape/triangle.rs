@@ -1,15 +1,20 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::{ SupportMap};
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
 use na::{self, ComplexField, Unit};
 use num::Zero;
-#[cfg(feature = "dim3")]
-use std::f64;
 use std::mem;
+
+
+#[cfg(feature = "dim3")]
+use {
+    std::f64,
+    crate::shape::{self, FeatureId},
+};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
@@ -138,6 +143,7 @@ impl Triangle {
     /// The normal points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
         Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
     }
@@ -232,10 +238,10 @@ impl Triangle {
     /// product).
     ///
     /// Note that on thin triangles the calculated normals can suffer from numerical issues.
-    #[cfg_attr(feature = "dim3", doc = "For a more robust (but more computationally")]
-    #[cfg_attr(feature = "dim3", doc = "expensive) normal calculation, see")]
-    #[cfg_attr(feature = "dim3", doc = "[`Triangle::robust_scaled_normal`].")]
+    /// For a more robust (but more computationally expensive) normal calculation, see
+    /// [`Triangle::robust_scaled_normal`].
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn scaled_normal(&self) -> Vector<Real> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
@@ -537,6 +543,7 @@ impl Triangle {
     }
 
     /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim3")]
     pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
         self.normal()
     }
