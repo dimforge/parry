@@ -1,7 +1,7 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{ SupportMap};
+use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
@@ -9,11 +9,10 @@ use na::{self, ComplexField, Unit};
 use num::Zero;
 use std::mem;
 
-
 #[cfg(feature = "dim3")]
 use {
-    std::f64,
     crate::shape::{self, FeatureId},
+    std::f64,
 };
 
 #[cfg(feature = "dim2")]
