@@ -57,7 +57,7 @@ num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
 rustc-hash = { version = "2", optional = true }
 cust_core = { version = "0.1", optional = true }
-spade = { version = "2", optional = true } # Make this optional?
+spade = { version = "2.9", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 rstar = "0.12.0"
