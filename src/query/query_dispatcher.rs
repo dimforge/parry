@@ -120,6 +120,7 @@ where
 /// The `root_dispatcher` argument is a reference to the root dispatcher of the composite dispatcher.
 /// This is necessary to support recursive dispatching for composite shapes.
 pub trait QueryDispatcherComposite: Send + Sync {
+    /// Tests whether two shapes are intersecting.
     fn intersection_test(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
@@ -128,6 +129,9 @@ pub trait QueryDispatcherComposite: Send + Sync {
         g2: &dyn Shape,
     ) -> Result<bool, Unsupported>;
 
+    /// Computes the minimum distance separating two shapes.
+    ///
+    /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
@@ -136,6 +140,9 @@ pub trait QueryDispatcherComposite: Send + Sync {
         g2: &dyn Shape,
     ) -> Result<Real, Unsupported>;
 
+    /// Computes one pair of contact points point between two shapes.
+    ///
+    /// Returns `None` if the objects are separated by a distance greater than `prediction`.
     fn contact(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
@@ -145,6 +152,9 @@ pub trait QueryDispatcherComposite: Send + Sync {
         prediction: Real,
     ) -> Result<Option<Contact>, Unsupported>;
 
+    /// Computes the pair of closest points between two shapes.
+    ///
+    /// Returns `ClosestPoints::Disjoint` if the objects are separated by a distance greater than `max_dist`.
     fn closest_points(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
@@ -154,6 +164,20 @@ pub trait QueryDispatcherComposite: Send + Sync {
         max_dist: Real,
     ) -> Result<ClosestPoints, Unsupported>;
 
+    /// Computes the smallest time when two shapes under translational movement are separated by a
+    /// distance smaller or equal to `distance`.
+    ///
+    /// Returns `0.0` if the objects are touching or penetrating.
+    ///
+    /// # Parameters
+    /// - `pos12`: the position of the second shape relative to the first shape.
+    /// - `local_vel12`: the relative velocity between the two shapes, expressed in the local-space
+    ///                  of the first shape. In other world: `pos1.inverse() * (vel2 - vel1)`.
+    /// - `g1`: the first shape involved in the shape-cast.
+    /// - `g2`: the second shape involved in the shape-cast.
+    /// - `target_dist`: a hit will be returned as soon as the two shapes get closer than `target_dist`.
+    /// - `max_time_of_impact`: the maximum allowed travel time. This method returns `None` if the time-of-impact
+    ///              detected is theater than this value.
     fn cast_shapes(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
@@ -164,6 +188,22 @@ pub trait QueryDispatcherComposite: Send + Sync {
         options: ShapeCastOptions,
     ) -> Result<Option<ShapeCastHit>, Unsupported>;
 
+    /// Computes the smallest time of impact of two shapes under translational and rotational movement.
+    ///
+    /// # Parameters
+    /// * `motion1` - The motion of the first shape.
+    /// * `g1` - The first shape involved in the query.
+    /// * `motion2` - The motion of the second shape.
+    /// * `g2` - The second shape involved in the query.
+    /// * `start_time` - The starting time of the interval where the motion takes place.
+    /// * `end_time` - The end time of the interval where the motion takes place.
+    /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
+    ///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
+    ///    result will have a `time_of_impact` equal to `start_time`. If `stop_at_penetration` is `false`
+    ///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
+    ///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
+    ///    that normal) then the nonlinear shape-casting will attempt to find another impact,
+    ///    at a time `> start_time` that could result in tunnelling.
     fn cast_shapes_nonlinear(
         &self,
         root_dispatcher: &dyn QueryDispatcher,
