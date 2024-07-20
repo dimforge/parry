@@ -19,6 +19,13 @@ use crate::shape::Shape;
 pub trait PersistentQueryDispatcherComposite<ManifoldData = (), ContactData = ()>:
     QueryDispatcherComposite
 {
+    /// Compute all the contacts between two shapes.
+    ///
+    /// The output is written into `manifolds` and `context`. Both can persist
+    /// between multiple calls to `contacts` by re-using the result of the previous
+    /// call to `contacts`. This persistence can significantly improve collision
+    /// detection performances by allowing the underlying algorithms to exploit
+    /// spatial and temporal coherence.
     fn contact_manifolds(
         &self,
         root_dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
@@ -30,6 +37,7 @@ pub trait PersistentQueryDispatcherComposite<ManifoldData = (), ContactData = ()
         workspace: &mut Option<ContactManifoldsWorkspace>,
     ) -> Result<(), Unsupported>;
 
+    /// Computes the contact-manifold between two convex shapes.
     fn contact_manifold_convex_convex(
         &self,
         pos12: &Isometry<Real>,
