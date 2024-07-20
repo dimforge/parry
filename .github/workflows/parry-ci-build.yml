@@ -67,3 +67,15 @@ jobs:
         run: xargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu;
       - name: build thumbv7em-none-eabihf
         run: xargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf;
+  build-doc:
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - name: install stable Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+            toolchain: stable
+      - name: cargo doc
+        run: cargo doc --workspace --features bytemuck-serialize,serde-serialize,rkyv-serialize,parallel --no-deps --document-private-items

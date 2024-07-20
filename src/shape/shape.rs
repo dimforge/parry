@@ -347,7 +347,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     ///
     /// In some cases, the resulting shape doesn’t have the same type as Self. For example,
     /// if a non-uniform scale is provided and Self as a [`Ball`], then the result will be discretized
-    /// (based on the `num_subdivisions` parameter) as a [`ConvexPolyhedron`] (in 3D) or [`ConvexPolygon`] (in 2D).
+    /// (based on the `num_subdivisions` parameter) as a `ConvexPolyhedron` (in 3D) or `ConvexPolygon` (in 2D).
     #[cfg(feature = "std")]
     fn scale_dyn(&self, scale: &Vector<Real>, num_subdivisions: u32) -> Option<Box<dyn Shape>>;
 
