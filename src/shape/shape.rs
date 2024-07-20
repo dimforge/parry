@@ -344,7 +344,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn clone_dyn(&self) -> Box<dyn Shape>;
 
     /// Scales this shape by `scale` into a boxed trait-object.
-    /// 
+    ///
     /// In some cases, the resulting shape doesn’t have the same type as Self. For example,
     /// if a non-uniform scale is provided and Self as a [`Ball`], then the result will be discretized
     /// (based on the `num_subdivisions` parameter) as a [`ConvexPolyhedron`] (in 3D) or [`ConvexPolygon`] (in 2D).
