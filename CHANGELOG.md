@@ -20,6 +20,7 @@
 - Significantly improved the general stability of mesh/mesh intersection calculation.
 - Rename `Shape::clone_box` to `Shape::clone_dyn` (the `clone_box` method still exists but has been
   deprecated).
+- Make `try_convex_hull` return an error instead of panicking if less than 3 input points are given.
 
 ## v0.16.1
 
