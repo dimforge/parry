@@ -51,7 +51,7 @@ impl SharedShape {
     /// and a mutable reference to that instance is returned.
     pub fn make_mut(&mut self) -> &mut dyn Shape {
         if Arc::get_mut(&mut self.0).is_none() {
-            let unique_self = self.0.clone_box();
+            let unique_self = self.0.clone_dyn();
             self.0 = unique_self.into();
         }
         Arc::get_mut(&mut self.0).unwrap()
