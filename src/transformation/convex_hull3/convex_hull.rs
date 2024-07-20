@@ -15,8 +15,8 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 pub fn try_convex_hull(
     points: &[Point3<Real>],
 ) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {
-    if points.len() < 2 {
-        return Ok((Vec::new(), Vec::new()));
+    if points.len() < 3 {
+        return Err(ConvexHullError::IncompleteInput);
     }
 
     // print_buildable_vec("input", points);
