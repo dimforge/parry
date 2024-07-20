@@ -893,10 +893,13 @@ impl Shape for Triangle {
 
     fn feature_normal_at_point(
         &self,
-        feature: FeatureId,
+        _feature: FeatureId,
         _point: &Point<Real>,
     ) -> Option<Unit<Vector<Real>>> {
-        self.feature_normal(feature)
+        #[cfg(feature = "dim2")]
+        return None;
+        #[cfg(feature = "dim3")]
+        return self.feature_normal(_feature);
     }
 }
 
