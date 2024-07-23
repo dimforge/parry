@@ -19,11 +19,28 @@ maintenance = { status = "actively-developed" }
 [features]
 default = ["required-features", "std"]
 required-features = ["dim2", "f32"]
-std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade", "thiserror"]
+std = [
+    "nalgebra/std",
+    "slab",
+    "rustc-hash",
+    "simba/std",
+    "arrayvec/std",
+    "spade",
+    "thiserror",
+]
 dim2 = []
 f32 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize", "arrayvec/serde", "bitflags/serde"]
-rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
+serde-serialize = [
+    "serde",
+    "nalgebra/serde-serialize",
+    "arrayvec/serde",
+    "bitflags/serde",
+]
+rkyv-serialize = [
+    "rkyv/validation",
+    "nalgebra/rkyv-serialize",
+    "simba/rkyv-serialize",
+]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
@@ -69,3 +86,93 @@ oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
 macroquad = "0.4"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+[[example]]
+name = "aabb2d.rs"
+path = "examples/aabb2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "ball2d.rs"
+path = "examples/ball2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "bounding_sphere2d.rs"
+path = "examples/bounding_sphere2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "contact_query2d.rs"
+path = "examples/contact_query2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex2d.rs"
+path = "examples/convex2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_hull2d.rs"
+path = "examples/convex_hull2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_try_new2d.rs"
+path = "examples/convex_try_new2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cuboid2d.rs"
+path = "examples/cuboid2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "distance_query2d.rs"
+path = "examples/distance_query2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane2d.rs"
+path = "examples/plane2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "point_in_poly2d.rs"
+path = "examples/point_in_poly2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "polygons_intersection2d.rs"
+path = "examples/polygons_intersection2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "polyline2d.rs"
+path = "examples/polyline2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "proximity_query2d.rs"
+path = "examples/proximity_query2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_point_query2d.rs"
+path = "examples/solid_point_query2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_ray_cast2d.rs"
+path = "examples/solid_ray_cast2d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "time_of_impact_query2d.rs"
+path = "examples/time_of_impact_query2d.rs.rs"
+doc-scrape-examples = true
