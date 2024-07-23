@@ -19,11 +19,23 @@ maintenance = { status = "actively-developed" }
 [features]
 default = ["required-features", "std"]
 required-features = ["dim3", "f32"]
-std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade", "thiserror"]
+std = [
+    "nalgebra/std",
+    "slab",
+    "rustc-hash",
+    "simba/std",
+    "arrayvec/std",
+    "spade",
+    "thiserror",
+]
 dim3 = []
 f32 = []
 serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
-rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
+rkyv-serialize = [
+    "rkyv/validation",
+    "nalgebra/rkyv-serialize",
+    "simba/rkyv-serialize",
+]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
 
 simd-stable = ["simba/wide", "simd-is-enabled"]
@@ -68,3 +80,109 @@ thiserror = { version = "1", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+[[example]]
+name = "aabb3d.rs"
+path = "examples/aabb3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "ball3d.rs"
+path = "examples/ball3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "bounding_sphere3d.rs"
+path = "examples/bounding_sphere3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "capsule.rs"
+path = "examples/capsule.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cone.rs"
+path = "examples/cone.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "contact_query3d.rs"
+path = "examples/contact_query3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex3d.rs"
+path = "examples/convex3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_hull3d.rs"
+path = "examples/convex_hull3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_try_new3d.rs"
+path = "examples/convex_try_new3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cuboid3d.rs"
+path = "examples/cuboid3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cylinder.rs"
+path = "examples/cylinder.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "distance_query3d.rs"
+path = "examples/distance_query3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "getting_started.rs"
+path = "examples/getting_started.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "mesh3d.rs"
+path = "examples/mesh3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane3d.rs"
+path = "examples/plane3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "polyline3d.rs"
+path = "examples/polyline3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "proximity_query3d.rs"
+path = "examples/proximity_query3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_point_query3d.rs"
+path = "examples/solid_point_query3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_ray_cast3d.rs"
+path = "examples/solid_ray_cast3d.rs.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "time_of_impact_query3d.rs"
+path = "examples/time_of_impact_query3d.rs.rs"
+doc-scrape-examples = true
+
