@@ -8,7 +8,7 @@ write_examples() {
 
     find $examples_path -type f -iname '*.rs' -print0 | 
     while IFS= read -r -d '' line; do 
-        example=$(basename ${line})
+        example=$(basename ${line} .rs)
         echo "[[example]]" >> $output_path
         echo "name = \"$example\"" >> $output_path
         echo "path = \"examples/$example.rs\"" >> $output_path
@@ -18,6 +18,4 @@ write_examples() {
 }
 
 write_examples ./crates/parry2d/examples ./crates/parry2d/Cargo.toml
-write_examples ./crates/parry2d/examples ./crates/parry2d-f64/Cargo.toml
 write_examples ./crates/parry3d/examples ./crates/parry3d/Cargo.toml
-write_examples ./crates/parry3d/examples ./crates/parry3d-f64/Cargo.toml

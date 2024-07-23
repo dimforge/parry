@@ -87,102 +87,102 @@ all-features = true
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [[example]]
-name = "aabb3d.rs"
-path = "examples/aabb3d.rs.rs"
+name = "aabb3d"
+path = "examples/aabb3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "ball3d.rs"
-path = "examples/ball3d.rs.rs"
+name = "ball3d"
+path = "examples/ball3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "bounding_sphere3d.rs"
-path = "examples/bounding_sphere3d.rs.rs"
+name = "bounding_sphere3d"
+path = "examples/bounding_sphere3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "capsule.rs"
-path = "examples/capsule.rs.rs"
+name = "capsule"
+path = "examples/capsule.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "cone.rs"
-path = "examples/cone.rs.rs"
+name = "cone"
+path = "examples/cone.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "contact_query3d.rs"
-path = "examples/contact_query3d.rs.rs"
+name = "contact_query3d"
+path = "examples/contact_query3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex3d.rs"
-path = "examples/convex3d.rs.rs"
+name = "convex3d"
+path = "examples/convex3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex_hull3d.rs"
-path = "examples/convex_hull3d.rs.rs"
+name = "convex_hull3d"
+path = "examples/convex_hull3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex_try_new3d.rs"
-path = "examples/convex_try_new3d.rs.rs"
+name = "convex_try_new3d"
+path = "examples/convex_try_new3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "cuboid3d.rs"
-path = "examples/cuboid3d.rs.rs"
+name = "cuboid3d"
+path = "examples/cuboid3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "cylinder.rs"
-path = "examples/cylinder.rs.rs"
+name = "cylinder"
+path = "examples/cylinder.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "distance_query3d.rs"
-path = "examples/distance_query3d.rs.rs"
+name = "distance_query3d"
+path = "examples/distance_query3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "getting_started.rs"
-path = "examples/getting_started.rs.rs"
+name = "getting_started"
+path = "examples/getting_started.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "mesh3d.rs"
-path = "examples/mesh3d.rs.rs"
+name = "mesh3d"
+path = "examples/mesh3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "plane3d.rs"
-path = "examples/plane3d.rs.rs"
+name = "plane3d"
+path = "examples/plane3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "polyline3d.rs"
-path = "examples/polyline3d.rs.rs"
+name = "polyline3d"
+path = "examples/polyline3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "proximity_query3d.rs"
-path = "examples/proximity_query3d.rs.rs"
+name = "proximity_query3d"
+path = "examples/proximity_query3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "solid_point_query3d.rs"
-path = "examples/solid_point_query3d.rs.rs"
+name = "solid_point_query3d"
+path = "examples/solid_point_query3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "solid_ray_cast3d.rs"
-path = "examples/solid_ray_cast3d.rs.rs"
+name = "solid_ray_cast3d"
+path = "examples/solid_ray_cast3d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "time_of_impact_query3d.rs"
-path = "examples/time_of_impact_query3d.rs.rs"
+name = "time_of_impact_query3d"
+path = "examples/time_of_impact_query3d.rs"
 doc-scrape-examples = true
 

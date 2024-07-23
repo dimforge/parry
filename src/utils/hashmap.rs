@@ -5,6 +5,7 @@
 use indexmap::IndexMap as StdHashMap;
 #[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
 use std::collections::HashMap as StdHashMap;
+use std::mem::size_of;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
@@ -84,20 +85,20 @@ impl std::hash::Hasher for FxHasher32 {
     fn write(&mut self, mut bytes: &[u8]) {
         let read_u32 = |bytes: &[u8]| u32::from_ne_bytes(bytes[..4].try_into().unwrap());
         let mut hash = FxHasher32 { hash: self.hash };
-        assert!(std::mem::size_of::<u32>() <= 8);
-        while bytes.len() >= std::mem::size_of::<u32>() {
+        assert!(size_of::<u32>() <= 8);
+        while bytes.len() >= size_of::<u32>() {
             hash.add_to_hash(read_u32(bytes));
-            bytes = &bytes[std::mem::size_of::<u32>()..];
+            bytes = &bytes[size_of::<u32>()..];
         }
-        if (std::mem::size_of::<u32>() > 4) && (bytes.len() >= 4) {
+        if (size_of::<u32>() > 4) && (bytes.len() >= 4) {
             hash.add_to_hash(u32::from_ne_bytes(bytes[..4].try_into().unwrap()));
             bytes = &bytes[4..];
         }
-        if (std::mem::size_of::<u32>() > 2) && bytes.len() >= 2 {
+        if (size_of::<u32>() > 2) && bytes.len() >= 2 {
             hash.add_to_hash(u16::from_ne_bytes(bytes[..2].try_into().unwrap()) as u32);
             bytes = &bytes[2..];
         }
-        if (std::mem::size_of::<u32>() > 1) && !bytes.is_empty() {
+        if (size_of::<u32>() > 1) && !bytes.is_empty() {
             hash.add_to_hash(bytes[0] as u32);
         }
         self.hash = hash.hash;
