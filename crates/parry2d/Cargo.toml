@@ -93,86 +93,87 @@ all-features = true
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [[example]]
-name = "aabb2d.rs"
-path = "examples/aabb2d.rs.rs"
+name = "aabb2d"
+path = "examples/aabb2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "ball2d.rs"
-path = "examples/ball2d.rs.rs"
+name = "ball2d"
+path = "examples/ball2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "bounding_sphere2d.rs"
-path = "examples/bounding_sphere2d.rs.rs"
+name = "bounding_sphere2d"
+path = "examples/bounding_sphere2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "contact_query2d.rs"
-path = "examples/contact_query2d.rs.rs"
+name = "contact_query2d"
+path = "examples/contact_query2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex2d.rs"
-path = "examples/convex2d.rs.rs"
+name = "convex2d"
+path = "examples/convex2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex_hull2d.rs"
-path = "examples/convex_hull2d.rs.rs"
+name = "convex_hull2d"
+path = "examples/convex_hull2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "convex_try_new2d.rs"
-path = "examples/convex_try_new2d.rs.rs"
+name = "convex_try_new2d"
+path = "examples/convex_try_new2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "cuboid2d.rs"
-path = "examples/cuboid2d.rs.rs"
+name = "cuboid2d"
+path = "examples/cuboid2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "distance_query2d.rs"
-path = "examples/distance_query2d.rs.rs"
+name = "distance_query2d"
+path = "examples/distance_query2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "plane2d.rs"
-path = "examples/plane2d.rs.rs"
+name = "plane2d"
+path = "examples/plane2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "point_in_poly2d.rs"
-path = "examples/point_in_poly2d.rs.rs"
+name = "point_in_poly2d"
+path = "examples/point_in_poly2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "polygons_intersection2d.rs"
-path = "examples/polygons_intersection2d.rs.rs"
+name = "polygons_intersection2d"
+path = "examples/polygons_intersection2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "polyline2d.rs"
-path = "examples/polyline2d.rs.rs"
+name = "polyline2d"
+path = "examples/polyline2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "proximity_query2d.rs"
-path = "examples/proximity_query2d.rs.rs"
+name = "proximity_query2d"
+path = "examples/proximity_query2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "solid_point_query2d.rs"
-path = "examples/solid_point_query2d.rs.rs"
+name = "solid_point_query2d"
+path = "examples/solid_point_query2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "solid_ray_cast2d.rs"
-path = "examples/solid_ray_cast2d.rs.rs"
+name = "solid_ray_cast2d"
+path = "examples/solid_ray_cast2d.rs"
 doc-scrape-examples = true
 
 [[example]]
-name = "time_of_impact_query2d.rs"
-path = "examples/time_of_impact_query2d.rs.rs"
+name = "time_of_impact_query2d"
+path = "examples/time_of_impact_query2d.rs"
 doc-scrape-examples = true
+
