@@ -5,8 +5,8 @@ resolver = "2"
 [workspace.lints]
 rust.unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(feature, values("dim2", "dim3", "f32", "f64"))',
-    # This one should be investigated as to why it exists, not hooked up, etc.
-    'cfg(feature, values("improved_fixed_point_support"))',
+    # "wavefront" is only used for 3D crates.
+    'cfg(feature, values("wavefront"))',
 ] }
 
 [patch.crates-io]
