@@ -334,7 +334,7 @@ impl EPA {
 
             niter += 1;
             eprintln!("Iteration {}: curr_dist = {}, candidate_max_dist = {} max_dist = {}, support_point_id = {}", niter, curr_dist, candidate_max_dist, max_dist, support_point_id);
-            if niter > 10000 {
+            if niter > 100 {
                 return None;
             }
         }
