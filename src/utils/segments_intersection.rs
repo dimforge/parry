@@ -148,7 +148,7 @@ fn parallel_intersection(
 // Assumes the three points are collinear.
 fn between(a: &Point2<Real>, b: &Point2<Real>, c: &Point2<Real>) -> Option<SegmentPointLocation> {
     // If ab not vertical, check betweenness on x; else on y.
-    // TODO: handle cases wher we actually are on a vertex (to return OnEdge instead of OnVertex)?
+    // TODO: handle cases where we actually are on a vertex (to return OnEdge instead of OnVertex)?
     if a.x != b.x {
         if a.x <= c.x && c.x <= b.x {
             let bcoord = (c.x - a.x) / (b.x - a.x);

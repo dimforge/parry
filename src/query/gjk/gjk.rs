@@ -27,12 +27,12 @@ pub enum GJKResult {
     Proximity(Unit<Vector<Real>>),
     /// Result of the GJK algorithm when the origin is too far away from the polytope.
     ///
-    /// The returned vector is expressed in the local-space of the first geomety involved in the
+    /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
     NoIntersection(Unit<Vector<Real>>),
 }
 
-/// The absolute tolerence used by the GJK algorithm.
+/// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
     _eps * 10.0
@@ -76,10 +76,10 @@ pub fn project_origin<G: ?Sized + SupportMap>(
 /// * simplex - the simplex to be used by the GJK algorithm. It must be already initialized
 ///             with at least one point on the shape boundary.
 /// * exact_dist - if `false`, the gjk will stop as soon as it can prove that the origin is at
-/// a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
-/// `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
-/// compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
-/// than `max_dist` but not inside `shape`.
+///   a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
+///   `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
+///   compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
+///   than `max_dist` but not inside `shape`.
 pub fn closest_points<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
@@ -342,7 +342,7 @@ where
             // some castes.
             // TODO: I feel like we should always return `Some` in
             // this case, even with floating-point numbers. Though it
-            // has not been sufficinetly tested with floats yet to be sure.
+            // has not been sufficiently tested with floats yet to be sure.
             if cfg!(feature = "improved_fixed_point_support") {
                 return Some((ltoi / ray_length, ldir));
             } else {

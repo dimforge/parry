@@ -1,6 +1,6 @@
 [package]
 name = "parry2d"
-version = "0.16.1"
+version = "0.17.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "2 dimensional collision detection library in Rust."
@@ -16,6 +16,9 @@ edition = "2021"
 [badges]
 maintenance = { status = "actively-developed" }
 
+[lints]
+workspace = true
+
 [features]
 default = ["required-features", "std"]
 required-features = ["dim2", "f32"]
@@ -29,6 +32,8 @@ simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
+alloc = []
+improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.

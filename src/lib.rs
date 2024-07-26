@@ -77,11 +77,11 @@ pub mod utils;
 mod real {
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f64")]
-    pub type Real = f64;
+    pub use f64 as Real;
 
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f32")]
-    pub type Real = f32;
+    pub use f32 as Real;
 }
 
 /// Compilation flags dependent aliases for mathematical types.

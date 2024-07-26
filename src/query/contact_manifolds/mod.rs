@@ -35,7 +35,7 @@ pub use self::contact_manifolds_trimesh_shape::{
 pub use self::contact_manifolds_workspace::{
     ContactManifoldsWorkspace, TypedWorkspaceData, WorkspaceData,
 };
-pub use self::normals_contraint::{NormalConstraints, NormalConstraintsPair};
+pub use self::normals_constraint::{NormalConstraints, NormalConstraintsPair};
 
 use {
     self::contact_manifolds_composite_shape_composite_shape::CompositeShapeCompositeShapeContactManifoldsWorkspace,
@@ -60,4 +60,4 @@ mod contact_manifolds_heightfield_shape;
 mod contact_manifolds_pfm_pfm;
 mod contact_manifolds_trimesh_shape;
 mod contact_manifolds_workspace;
-mod normals_contraint;
+mod normals_constraint;

@@ -109,16 +109,16 @@ impl VoronoiSimplex {
         self.prev_proj[i]
     }
 
-    /// The i-th point of the simplex before the last call to `projet_origin_and_reduce`.
+    /// The i-th point of the simplex before the last call to `project_origin_and_reduce`.
     pub fn prev_point(&self, i: usize) -> &CSOPoint {
         assert!(i <= self.prev_dim, "Index out of bounds.");
         &self.vertices[self.prev_vertices[i]]
     }
 
-    /// Projets the origin on the boundary of this simplex and reduces `self` the smallest subsimplex containing the origin.
+    /// Projects the origin on the boundary of this simplex and reduces `self` the smallest subsimplex containing the origin.
     ///
-    /// Retruns the result of the projection or Point::origin() if the origin lies inside of the simplex.
-    /// The state of the samplex before projection is saved, and can be retrieved using the methods prefixed
+    /// Returns the result of the projection or `Point::origin()` if the origin lies inside of the simplex.
+    /// The state of the simplex before projection is saved, and can be retrieved using the methods prefixed
     /// by `prev_`.
     pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
         if self.dim == 0 {

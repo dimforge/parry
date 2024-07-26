@@ -1,15 +1,16 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
 use na::{self, ComplexField, Unit};
 use num::Zero;
-#[cfg(feature = "dim3")]
-use std::f64;
 use std::mem;
+
+#[cfg(feature = "dim3")]
+use {crate::shape::FeatureId, std::f64};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
@@ -47,7 +48,7 @@ pub enum TrianglePointLocation {
     /// The 1-st edge is the segment BC.
     /// The 2-nd edge is the segment AC.
     // XXX: it appears the conversion of edge indexing here does not match the
-    // convension of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
+    // convention of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
     OnEdge(u32, [Real; 2]),
     /// The point lies on the triangle interior.
     ///
@@ -101,9 +102,9 @@ impl TrianglePointLocation {
 /// Orientation of a triangle.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TriangleOrientation {
-    /// Orientation with a clockwise orientaiton, i.e., with a positive signed area.
+    /// Orientation with a clockwise orientation, i.e., with a positive signed area.
     Clockwise,
-    /// Orientation with a clockwise orientaiton, i.e., with a negative signed area.
+    /// Orientation with a clockwise orientation, i.e., with a negative signed area.
     CounterClockwise,
     /// Degenerate triangle.
     Degenerate,
@@ -138,6 +139,7 @@ impl Triangle {
     /// The normal points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
         Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
     }
@@ -230,10 +232,12 @@ impl Triangle {
     ///
     /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
+    ///
     /// Note that on thin triangles the calculated normals can suffer from numerical issues.
     /// For a more robust (but more computationally expensive) normal calculation, see
     /// [`Triangle::robust_scaled_normal`].
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn scaled_normal(&self) -> Vector<Real> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
@@ -535,6 +539,7 @@ impl Triangle {
     }
 
     /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim3")]
     pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
         self.normal()
     }

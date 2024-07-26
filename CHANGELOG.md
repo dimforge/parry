@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.17.0
 
 ### Added
 
@@ -8,11 +8,20 @@
   normal for thin triangles that generally cause numerical instabilities.
 - Add `Triangle::angle_closest_to_90` to find the triangle’s vertex with an angle closest to 90 degree.
 - Add the `wavefront` feature that enables `TriMesh::to_obj_file` for exporting a mesh as an obj file.
+- Add `Shape::scale_dyn` for scaling a shape as a trait-object.
 
 ### Modified
 
 - `TypedShape::Custom(u32)` is now `TypedShape::Custom(&dyn Shape)`.
+- `AabbSetsInterferencesCollector::tolerence` is now spelled correctly as `tolerance`.
+- `Real` is now exposed through a `use` statement,
+  so that an indirection is removed in documentation:
+  previous occurrences of `Real` now show `f32` or `f64`.
 - Significantly improved the general stability of mesh/mesh intersection calculation.
+- Rename `Shape::clone_box` to `Shape::clone_dyn` (the `clone_box` method still exists but has been
+  deprecated).
+- Make `try_convex_hull` return an error instead of panicking if less than 3 input points are given.
+- Make `Triangle::normal` and `Triangle::scaled_normal` only available in 3D instead of panicking in 2D.
 
 ## v0.16.1
 
@@ -173,7 +182,7 @@ This version was yanked. See the release notes for 0.13.3 instead.
 ### Modified
 
 - About `rkyv` support: most POD structs (`Aabb`, `Ball`, `Cuboid`, etc.) are now archived as themselves instead of
-  being archived as different types (for example `Aabb` is archived as `Aabb` itself istead of `ArchivedAabb`).
+  being archived as different types (for example `Aabb` is archived as `Aabb` itself instead of `ArchivedAabb`).
 
 ### Added
 

@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.16.1"
+version = "0.17.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -16,6 +16,9 @@ edition = "2021"
 [badges]
 maintenance = { status = "actively-developed" }
 
+[lints]
+workspace = true
+
 [features]
 default = ["required-features", "std"]
 required-features = ["dim3", "f32"]
@@ -30,6 +33,9 @@ simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
+wavefront = ["obj"]
+alloc = []
+improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -57,13 +63,14 @@ num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
 rustc-hash = { version = "2", optional = true }
 cust_core = { version = "0.1", optional = true }
-spade = { version = "2", optional = true } # Make this optional?
+spade = { version = "2.9", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
 ordered-float = { version = "4", default-features = false }
 thiserror = { version = "1", optional = true }
 rstar = "0.12.0"
+obj = { version = "0.10.2", optional = true }
 
 [dev-dependencies]
 oorandom = "11"

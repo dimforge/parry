@@ -20,7 +20,7 @@ pub enum ShapeCastStatus {
     /// it is often fine to interpret this case as a success.
     Failed,
     /// The two shape already overlap, or are separated by a distance smaller than
-    /// [`ShapeCastOptions::target_dist`] at the time 0.
+    /// [`ShapeCastOptions::target_distance`] at the time 0.
     ///
     /// The witness points and normals provided by the `ShapeCastHit` will have unreliable values unless
     /// [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `true` when calling
@@ -94,7 +94,7 @@ impl ShapeCastHit {
 pub struct ShapeCastOptions {
     /// The maximum time-of-impacts that can be computed.
     ///
-    /// Any impact ocurring after this time will be ignored.
+    /// Any impact occurring after this time will be ignored.
     pub max_time_of_impact: Real,
     /// The shapes will be considered as impacting as soon as their distance is smaller or
     /// equal to this target distance. Must be positive or zero.
@@ -136,7 +136,8 @@ impl Default for ShapeCastOptions {
 /// Computes the smallest time when two shapes under translational movement are separated by a
 /// distance smaller or equal to `distance`.
 ///
-/// Returns `0.0` if the objects are touching or closer than `target_dist`, or penetrating.
+/// Returns `0.0` if the objects are touching or closer than `options.target_distance`,
+/// or penetrating.
 pub fn cast_shapes(
     pos1: &Isometry<Real>,
     vel1: &Vector<Real>,

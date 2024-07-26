@@ -205,7 +205,7 @@ impl EPA {
             .map(|(p, _, _)| p)
     }
 
-    /// Projects the origin on a shape unsing the EPA algorithm.
+    /// Projects the origin on a shape using the EPA algorithm.
     ///
     /// The origin is assumed to be located inside of the shape.
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.

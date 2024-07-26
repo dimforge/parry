@@ -577,7 +577,7 @@ impl TriMesh {
     /// - Be manifold (closed, no t-junctions, etc.)
     /// - Be oriented with outward normals.
     ///
-    /// If the the trimesh is correctly oriented, but is manifold everywhere except at its boundaries,
+    /// If the trimesh is correctly oriented, but is manifold everywhere except at its boundaries,
     /// then the computed pseudo-normals will provide correct point-containment test results except
     /// for points closest to the boundary of the mesh.
     ///
