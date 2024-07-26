@@ -362,6 +362,9 @@ where
         }
 
         niter += 1;
+        if niter % 1000 == 0 {
+            eprintln!("Iteration {}: dir = {:?}, min_bound = {}, max_bound = {} old_max_bound = {}", niter, dir, max_bound, min_bound, old_max_bound);
+        }
         if niter == 10000 {
             return None;
         }
