@@ -334,7 +334,7 @@ impl EPA {
 
             niter += 1;
             if niter % 1000 == 0 {
-                eprintln!("Iteration {}: dir = {:?}, max_bound = {}, min_bound = {}", niter, dir, max_bound, min_bound);
+                eprintln!("Iteration {}: dir = {:?}, max_dist = {}, curr_dist = {} support_point_id = {} candidate_max_dist = {}", niter, dir, max_dist, curr_dist, support_point_id, candidate_max_dist);
             }
             if niter > 10000 {
                 return None;
