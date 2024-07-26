@@ -5,7 +5,7 @@ use parry2d::shape::{Cuboid, TriMesh};
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::polygons_intersection_points")]
+#[macroquad::main("parry2d::query::RayCast")]
 async fn main() {
     let animation_scale = 2.0;
     let animation_rotation = UnitComplex::new(0.008);
