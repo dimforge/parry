@@ -9,7 +9,6 @@ const RENDER_SCALE: f32 = 30.0;
 async fn main() {
     let animation_scale = 2.0;
     let animation_rotation = UnitComplex::new(0.008);
-
     let spikes_render_pos = Point2::new(300.0, 300.0);
 
     for i in 1.. {
