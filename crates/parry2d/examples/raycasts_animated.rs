@@ -32,7 +32,7 @@ async fn main() {
          *
          */
         let ray = Ray::new(
-            (Vector2::new(2.0, 1.0)).into(),
+            Point2::new(2.0, 1.0),
             animation_rotation.powf(i as f32 * 2f32) * Vector2::y(),
         );
         let toi = trimesh.cast_ray(&Isometry2::identity(), &ray, std::f32::MAX, true);
