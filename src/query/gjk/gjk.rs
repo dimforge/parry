@@ -101,7 +101,7 @@ where
 
     let mut old_dir;
 
-    if let Some(proj_dir) = Unit::try_new(proj.coords, 0.0) {
+    if let Some(proj_dir) = Unit::try_new(proj.coords, _eps_tol) {
         old_dir = -proj_dir;
     } else {
         return GJKResult::Intersection;
@@ -160,7 +160,7 @@ where
 
         old_dir = dir;
         proj = simplex.project_origin_and_reduce();
-
+        eprintln!("Iteration {}: dir = {:?}, min_bound = {}, max_bound = {} old_max_bound = {}", niter, dir, max_bound, min_bound, old_max_bound);
         if simplex.dimension() == DIM {
             if min_bound >= _eps_tol {
                 if exact_dist {
@@ -175,7 +175,7 @@ where
             }
         }
         niter += 1;
-            eprintln!("Iteration {}: dir = {:?}, min_bound = {}, max_bound = {} old_max_bound = {}", niter, dir, max_bound, min_bound, old_max_bound);
+            
         if niter == 10000 {
             return GJKResult::NoIntersection(Vector::x_axis());
         }
