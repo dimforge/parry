@@ -66,7 +66,7 @@ async fn main() {
 
         /*
          *
-         * Render the polygons and their intersections.
+         * Render the cuboid.
          *
          */
         draw_polygon(&trimesh.vertices(), RENDER_SCALE, spikes_render_pos, GREEN);
