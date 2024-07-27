@@ -164,7 +164,7 @@ impl EPA {
         G2: ?Sized + SupportMap,
     {
         let _eps: Real = crate::math::DEFAULT_EPSILON;
-        let _eps_tol = _eps * 100.0;
+        let _eps_tol = _eps * 1000.0;
 
         self.reset();
 
