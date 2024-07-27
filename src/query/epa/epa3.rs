@@ -418,7 +418,9 @@ impl EPA {
 
             niter += 1;
             if niter > 100 {
-                return None;
+                // if we reached this point, our algorithm didn't converge to what precision we wanted.
+                // still return an intersection point, as it's probably close enough.
+                break;
             }
         }
 
