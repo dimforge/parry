@@ -94,6 +94,7 @@ impl VoronoiSimplex {
     /// The state of the simplex before projection is saved, and can be retrieved using the methods prefixed
     /// by `prev_`.
     pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
+        eprintln!("project_origin_and_reduce {}", self.dim);
         if self.dim == 0 {
             self.proj[0] = 1.0;
             self.vertices[0].point
