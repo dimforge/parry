@@ -21,7 +21,7 @@
 - Rename `Shape::clone_box` to `Shape::clone_dyn` (the `clone_box` method still exists but has been
   deprecated).
 - Make `try_convex_hull` return an error instead of panicking if less than 3 input points are given.
-- Make `Triangle::normal` and `Triangle::scaled_normal` only available in 3D insead of panicking in 2D.
+- Make `Triangle::normal` and `Triangle::scaled_normal` only available in 3D instead of panicking in 2D.
 
 ## v0.16.1
 

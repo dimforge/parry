@@ -218,6 +218,7 @@ impl Polyline {
     ///   `num_indices == self.indices.len()`.
     /// - This polyline is oriented counter-clockwise.
     /// - In 3D, the polyline is assumed to be fully coplanar, on a plane with normal given by
+    ///
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,

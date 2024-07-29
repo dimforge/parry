@@ -90,7 +90,7 @@ impl Aabb {
     /// # Arguments:
     ///   * `mins` - position of the point with the smallest coordinates.
     ///   * `maxs` - position of the point with the highest coordinates. Each component of `mins`
-    ///   must be smaller than the related components of `maxs`.
+    ///     must be smaller than the related components of `maxs`.
     #[inline]
     pub fn new(mins: Point<Real>, maxs: Point<Real>) -> Aabb {
         Aabb { mins, maxs }
