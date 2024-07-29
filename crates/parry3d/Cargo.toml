@@ -83,8 +83,7 @@ ptree = "0.4.0"
 rand = { version = "0.8" }
 
 [package.metadata.docs.rs]
-rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
-all-features = true
+rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [[example]]
@@ -186,4 +185,3 @@ doc-scrape-examples = true
 name = "time_of_impact_query3d"
 path = "examples/time_of_impact_query3d.rs"
 doc-scrape-examples = true
-
