@@ -161,7 +161,6 @@ where
         old_dir = dir;
         proj = simplex.project_origin_and_reduce();
 
-
         if simplex.dimension() == DIM {
             if min_bound >= _eps_tol {
                 if exact_dist {

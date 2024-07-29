@@ -344,7 +344,8 @@ impl EPA {
             if max_dist - curr_dist < _eps_tol ||
                 // Accept the intersection as the algorithm is stuck and no new points will be found
                 // This happens because of numerical stability issue
-                ((curr_dist - old_dist).abs() < _eps && candidate_max_dist < max_dist) {
+                ((curr_dist - old_dist).abs() < _eps && candidate_max_dist < max_dist)
+            {
                 let best_face = &self.faces[best_face_id.id];
                 let points = best_face.closest_points(&self.vertices);
                 return Some((points.0, points.1, best_face.normal));
