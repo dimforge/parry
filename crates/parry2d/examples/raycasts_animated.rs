@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
+use nalgebra::{Isometry2, Point2, Unit, UnitComplex, Vector2};
 use parry2d::math::Isometry;
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::Cuboid;
@@ -10,11 +10,11 @@ const RENDER_SCALE: f32 = 30.0;
 async fn main() {
     let animation_scale = 1.4;
     let animation_rotation = 0.04;
-    let cube_render_pos = Point2::new(300.0, 300.0);
 
     for i in 1.. {
         clear_background(BLACK);
 
+        let screen_shift = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
         /*
          *
          * Compute the scaled cuboid.
@@ -22,7 +22,10 @@ async fn main() {
          */
         let cube =
             Cuboid::new(Vector2::new(2.0, 2.0) * ((i as f32 / 50.0).sin().abs() * animation_scale));
-        let rotation = Isometry2::rotation(0.008_f32 * i as f32);
+        let cube_pose = Isometry2 {
+            rotation: Unit::from_angle(0.008 * i as f32),
+            translation: Point2::new(0.0, 0.0).into(),
+        };
         /*
          *
          * Prepare a Raycast and compute its result against the shape.
@@ -32,22 +35,22 @@ async fn main() {
             Point2::new(2.0, 2.0),
             UnitComplex::new(animation_rotation * i as f32) * -Vector2::x(),
         );
-        let toi = cube.cast_ray(&rotation, &ray, std::f32::MAX, true);
+        let toi = cube.cast_ray(&cube_pose, &ray, std::f32::MAX, true);
 
         /*
          *
-         * Render the raycast's result.c
+         * Render the raycast's result.
          *
          */
         if let Some(toi) = toi {
             if toi == 0f32 {
-                draw_point(ray.origin, RENDER_SCALE, cube_render_pos, YELLOW);
+                draw_point(ray.origin, RENDER_SCALE, screen_shift, YELLOW);
             } else {
                 drawline_from_to(
                     ray.origin,
                     ray.origin + ray.dir * toi,
                     RENDER_SCALE,
-                    cube_render_pos,
+                    screen_shift,
                     GREEN,
                 );
             }
@@ -56,7 +59,7 @@ async fn main() {
                 ray.origin,
                 ray.origin + ray.dir * 1000f32,
                 RENDER_SCALE,
-                cube_render_pos,
+                screen_shift,
                 RED,
             );
         }
@@ -68,9 +71,9 @@ async fn main() {
          */
         draw_polygon(
             &cube.to_polyline(),
-            &rotation,
+            &cube_pose,
             RENDER_SCALE,
-            cube_render_pos,
+            screen_shift,
             GREEN,
         );
 
@@ -80,19 +83,19 @@ async fn main() {
 
 fn draw_polygon(
     polygon: &[Point2<f32>],
-    rotation: &Isometry<f32>,
+    pose: &Isometry<f32>,
     scale: f32,
     shift: Point2<f32>,
     color: Color,
 ) {
     for i in 0..polygon.len() {
-        let a = rotation * polygon[i];
-        let b = rotation * polygon[(i + 1) % polygon.len()];
+        let a = pose * (scale * polygon[i]);
+        let b = pose * (scale * polygon[(i + 1) % polygon.len()]);
         draw_line(
-            a.x * scale + shift.x,
-            a.y * scale + shift.y,
-            b.x * scale + shift.x,
-            b.y * scale + shift.y,
+            a.x + shift.x,
+            a.y + shift.y,
+            b.x + shift.x,
+            b.y + shift.y,
             2.0,
             color,
         );
