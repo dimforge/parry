@@ -52,7 +52,7 @@ async fn main() {
                 color: WHITE,
             })
             .collect(),
-        indices: indices.as_flattened().iter().map(|v| *v as u16).collect(),
+        indices: indices.iter().flatten().map(|v| *v as u16).collect(),
         texture: None,
     };
     let trimesh = TriMesh::new(points, indices);
@@ -111,7 +111,7 @@ async fn main() {
             IntersectResult::Negative => {
                 set_default_camera();
                 draw_text(
-                    format!("No intersection found, the plane goes below the shape.").as_str(),
+                    format!("No intersection found, the shape is below the plane.").as_str(),
                     10.0,
                     48.0 + 18.0,
                     30.0,
@@ -121,7 +121,7 @@ async fn main() {
             IntersectResult::Positive => {
                 set_default_camera();
                 draw_text(
-                    format!("No intersection found, the plane goes above the shape.").as_str(),
+                    format!("No intersection found, the shape is above the plane.").as_str(),
                     10.0,
                     48.0 + 18.0,
                     30.0,
