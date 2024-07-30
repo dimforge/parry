@@ -17,9 +17,6 @@ cd $currdir
 
 ### Publish the 2D f64 version.
 sed 's#\.\./\.\./src#src#g' crates/parry2d-f64/Cargo.toml > $tmp/Cargo.toml
-rm -rf $tmp/examples
-cp -r crates/parry2d/examples $tmp/examples
-find $tmp/examples | xargs sed 's/parry2d:/parry2d_f64:/g
 cd $tmp && cargo publish
 cd $currdir
 
@@ -34,8 +31,6 @@ cd $currdir
 
 ### Publish the 3D f64 version.
 sed 's#\.\./\.\./src#src#g' crates/parry3d-f64/Cargo.toml > $tmp/Cargo.toml
-rm -rf $tmp/examples
-cp -r crates/parry3d/examples $tmp/examples
 cp -r LICENSE README.md $tmp/.
 cd $tmp && cargo publish
 
