@@ -7,8 +7,6 @@ use indexmap::IndexMap as StdHashMap;
 use std::collections::HashMap as StdHashMap;
 use std::mem::size_of;
 
-use std::mem::size_of;
-
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
 pub fn serialize_hashmap_capacity<S: serde::Serializer, K, V, H: std::hash::BuildHasher>(
