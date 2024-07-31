@@ -1,9 +1,21 @@
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
+
 use macroquad::models::Vertex;
 use macroquad::prelude::*;
 use nalgebra::{Point3, Vector3};
 use parry3d::math::{Isometry, Real};
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
+
+fn lissajous_3d(t: f32) -> Vec3 {
+    // Some hardcoded parameters to have a pleasing lissajous trajectory.
+    let (a, b, c, delta_x, delta_y, delta_z) = (3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6);
+
+    let x = (a * t + delta_x).sin();
+    let y = (b * t + delta_y).sin();
+    let z = (c * t + delta_z).sin();
+    Vec3::new(x, y, z) * 0.75f32
+}
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
@@ -31,31 +43,20 @@ async fn main() {
         indices: indices.iter().flatten().map(|v| *v as u16).collect(),
         texture: None,
     };
-    let trimesh = TriMesh::with_flags(
-        points.clone(),
-        indices.clone(),
-        TriMeshFlags::ORIENTED
-            | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES
-            | TriMeshFlags::FIX_INTERNAL_EDGES,
-    );
+    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
     for _i in 1.. {
         clear_background(BLACK);
 
         let elapsed_time = get_time() as f32;
         let slow_elapsed_time = elapsed_time / 3.0;
 
-        let point_to_project = Vec3::new(
-            slow_elapsed_time.sin(),
-            slow_elapsed_time.cos() * 1.5,
-            (elapsed_time - slow_elapsed_time).cos(),
-        ) * slow_elapsed_time.sin().abs();
+        let point_to_project = lissajous_3d(slow_elapsed_time);
         let projected_point = trimesh.project_point(
             &Isometry::identity(),
             &na_from_mquad(point_to_project),
             true,
         );
 
-        let slow_elapsed_time = slow_elapsed_time / 2.0;
         // Going 3d!
         set_camera(&Camera3D {
             position: Vec3::new(
@@ -63,8 +64,8 @@ async fn main() {
                 slow_elapsed_time.sin(),
                 slow_elapsed_time.cos() * 5.0,
             ),
-            up: Vec3::new(0f32, 1f32, 0f32),
-            target: Vec3::new(0.5f32, 0f32, 0.5f32),
+            up: Vec3::Y,
+            target: Vec3::ZERO,
             ..Default::default()
         });
 
@@ -111,7 +112,7 @@ async fn main() {
             mquad_from_na(projected_point.point),
             color,
         );
-        // Mesh is rendered in the back.
+        // Mesh is rendered in the back, so we can see the other graphics elements
         draw_mesh(&mesh);
 
         next_frame().await
