@@ -47,7 +47,7 @@ async fn main() {
         vertices: points
             .iter()
             .map(|p| Vertex {
-                position: Vec3::new(p.x, p.y, p.z),
+                position: mquad_from_na(*p),
                 uv: Vec2::new(p.x, p.y),
                 color: WHITE,
             })
@@ -98,12 +98,7 @@ async fn main() {
                 draw_polyline(
                     points
                         .segments()
-                        .map(|s| {
-                            (
-                                Vec3::new(s.a.x, s.a.y, s.a.z),
-                                Vec3::new(s.b.x, s.b.y, s.b.z),
-                            )
-                        })
+                        .map(|s| (mquad_from_na(s.a), mquad_from_na(s.b)))
                         .collect(),
                     Color::new(0f32, 1f32, 0f32, 1f32),
                 );
@@ -137,6 +132,10 @@ fn draw_polyline(polygon: Vec<(Vec3, Vec3)>, color: Color) {
     for i in 0..polygon.len() {
         let a = polygon[i].0;
         let b = polygon[i].1;
-        draw_line_3d(Vec3::new(a.x, a.y, a.z), Vec3::new(b.x, b.y, b.z), color);
+        draw_line_3d(a, b, color);
     }
+}
+
+fn mquad_from_na(a: Point3<Real>) -> Vec3 {
+    Vec3::new(a.x, a.y, a.z)
 }
