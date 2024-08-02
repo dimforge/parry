@@ -22,10 +22,7 @@ async fn main() {
          */
         let cube =
             Cuboid::new(Vector2::new(2.0, 2.0) * ((i as f32 / 50.0).sin().abs() * animation_scale));
-        let cube_pose = Isometry2 {
-            rotation: Unit::from_angle(0.008 * i as f32),
-            translation: Point2::new(0.0, 0.0).into(),
-        };
+        let cube_pose = Isometry2::rotation(0.008 * i as f32);
         /*
          *
          * Prepare a Raycast and compute its result against the shape.
