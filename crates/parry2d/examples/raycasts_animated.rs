@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use nalgebra::{Isometry2, Point2, Unit, UnitComplex, Vector2};
+use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
 use parry2d::math::Isometry;
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::Cuboid;
