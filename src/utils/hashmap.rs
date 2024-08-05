@@ -5,7 +5,6 @@
 use indexmap::IndexMap as StdHashMap;
 #[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
 use std::collections::HashMap as StdHashMap;
-
 use std::mem::size_of;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.

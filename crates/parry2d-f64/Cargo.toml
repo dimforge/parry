@@ -22,11 +22,28 @@ workspace = true
 [features]
 default = ["required-features", "std"]
 required-features = ["dim2", "f64"]
-std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade", "thiserror"]
+std = [
+    "nalgebra/std",
+    "slab",
+    "rustc-hash",
+    "simba/std",
+    "arrayvec/std",
+    "spade",
+    "thiserror",
+]
 dim2 = []
 f64 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize", "arrayvec/serde", "bitflags/serde"]
-rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
+serde-serialize = [
+    "serde",
+    "nalgebra/serde-serialize",
+    "arrayvec/serde",
+    "bitflags/serde",
+]
+rkyv-serialize = [
+    "rkyv/validation",
+    "nalgebra/rkyv-serialize",
+    "simba/rkyv-serialize",
+]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
