@@ -38,26 +38,21 @@ fn main() {
 async fn main_loop(ctx: macroquad::Context) {
     init_gizmos(&ctx);
 
-    //
-    // This is useful to test for https://github.com/dimforge/parry/pull/248
-    let _points = vec![
-        Point3::from([0.0, 0.0, 0.0]),
-        Point3::from([0.0, 0.0, 1.0]),
-        Point3::from([1.0, 0.0, 0.0]),
-        Point3::from([1.0, 0.0, 1.0]),
-    ];
-    let _indices: Vec<[u32; 3]> = vec![[0, 1, 2], [1, 3, 2]];
-
     let (points, indices) = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
 
     let mut scene = ctx.new_scene();
 
     let quad_gl = QuadGl::new(ctx.quad_ctx.clone());
 
-    let cpu_mesh = mquad_mesh_from_parry(&indices, &points);
+    let mut cpu_mesh = mquad_mesh_from_parry(&indices, &points);
 
     // No clone on CpuMesh :'(
-    let cpu_mesh2 = mquad_mesh_from_parry(&indices, &points);
+    let cpu_mesh2 = CpuMesh(
+        cpu_mesh.0.clone(),
+        cpu_mesh.1.clone(),
+        cpu_mesh.2.clone(),
+        cpu_mesh.3.clone(),
+    );
 
     let mut mesh = quad_gl.mesh(cpu_mesh, None);
 
@@ -65,7 +60,7 @@ async fn main_loop(ctx: macroquad::Context) {
         ctx.quad_ctx.lock().unwrap().as_mut(),
         vec![],
         Some(FRAGMENT),
-        Some(VERTEX),
+        None,
     );
 
     scene.add_model(&mesh);
@@ -91,19 +86,6 @@ async fn main_loop(ctx: macroquad::Context) {
         ctx.clear_screen(color::BLACK);
         canvas.clear();
 
-        // To show vertices winding order, I display each edge of each faces sequentially.
-        let current_edge_index = (elapsed_time / 3.0) as usize;
-        let current_face_index = current_edge_index / 3;
-        let first_vertice_index = current_face_index * 3;
-        let first_point = first_vertice_index + current_edge_index % 3;
-        let second_point = first_vertice_index + (current_edge_index + 1) % 3;
-        // No color lines :(
-        gizmos_add_line(
-            false,
-            cpu_mesh2.0[first_point % cpu_mesh2.0.len()],
-            cpu_mesh2.0[second_point % cpu_mesh2.0.len()],
-        );
-
         let slow_elapsed_time = elapsed_time / 10.0;
 
         let point_to_project = lissajous_3d(slow_elapsed_time);
@@ -119,7 +101,7 @@ async fn main_loop(ctx: macroquad::Context) {
             slow_elapsed_time.cos() * 5.0,
         );
 
-        camera.position = Vec3::new(-1.0, 2.5, -4.0);
+        //camera.position = Vec3::new(-1.0, 2.5, -4.0);
 
         /*
          *
@@ -171,6 +153,7 @@ async fn main_loop(ctx: macroquad::Context) {
 
         scene.draw(&camera);
         draw_gizmos(&camera);
+
         canvas.draw();
 
         next_frame().await
@@ -184,7 +167,6 @@ fn mquad_mesh_from_parry(indices: &Vec<[u32; 3]>, points: &Vec<Point3<Real>>) ->
     let mesh = compute_mesh_with_normals_per_face(&m_vertices, &m_indices);
 
     let nb_vertices = mesh.vertices.len();
-    dbg!(&mesh.vertices, &mesh.indices);
     let cpu_mesh = CpuMesh(
         mesh.vertices,
         vec![vec2(0.0, 0.0); nb_vertices],
@@ -223,12 +205,10 @@ pub fn compute_mesh_with_normals_per_face(vertices: &Vec<Vec3>, indices: &Vec<u1
             normals.push(normal);
         }
     }
+    let vertices_count = result_vertices.len();
     MeshData {
         vertices: result_vertices,
-        indices: (0..vertices.len() * 3)
-            .into_iter()
-            .map(|i| i as u16)
-            .collect(),
+        indices: (0..vertices_count).into_iter().map(|i| i as u16).collect(),
         normals,
     }
 }
@@ -247,7 +227,7 @@ void main() {
     vec3 norm = normalize(out_normal);
     vec3 lightDir = normalize(vec3(1.0, -1.0, 0.5));
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * vec3(1.0) + vec3(0.2,0.2,0.2);
+    vec3 diffuse = diff * vec3(1.0) + vec3(0.3);
 
     gl_FragColor = vec4(diffuse,1.);
 }
