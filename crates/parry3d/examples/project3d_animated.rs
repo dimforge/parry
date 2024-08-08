@@ -1,20 +1,16 @@
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
 use macroquad::gizmos::{draw_gizmos, gizmos_add_line, init_gizmos};
-use macroquad::math::{vec2, vec3, Vec2, Vec3};
-use macroquad::miniquad;
+use macroquad::math::{vec2, vec3, Mat4, Vec2, Vec3};
 use macroquad::quad_gl::camera::{Camera, Projection};
 use macroquad::quad_gl::models::CpuMesh;
 use macroquad::quad_gl::QuadGl;
-use macroquad::{
-    quad_gl::{
-        camera::Environment,
-        color::{self, Color},
-        scene::Shader,
-        ui::{hash, widgets},
-    },
-    window::next_frame,
+use macroquad::quad_gl::{
+    camera::Environment,
+    color::{self},
+    scene::Shader,
 };
+use macroquad::window::{next_frame, screen_height, screen_width};
 
 use nalgebra::{Point3, Vector3};
 use parry3d::math::{Isometry, Real};
@@ -23,12 +19,12 @@ use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
 fn lissajous_3d(t: f32) -> Vec3 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
-    let (a, b, c, delta_x, delta_y, delta_z) = (3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6);
+    let (a, b, c, delta_x, delta_y, delta_z) = (1.0, 3.0, 2.0, FRAC_PI_4, FRAC_PI_2, FRAC_PI_4);
 
     let x = (a * t + delta_x).sin();
     let y = (b * t + delta_y).sin();
     let z = (c * t + delta_z).sin();
-    Vec3::new(x, y, z) * 0.75f32
+    Vec3::new(x, y, z) * 0.8f32
 }
 
 fn main() {
@@ -38,21 +34,13 @@ fn main() {
 async fn main_loop(ctx: macroquad::Context) {
     init_gizmos(&ctx);
 
-    let (points, indices) = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
+    let (points, indices) = Cuboid::new(Vector3::new(0.5, 0.5, 0.8)).to_trimesh();
 
     let mut scene = ctx.new_scene();
 
     let quad_gl = QuadGl::new(ctx.quad_ctx.clone());
 
-    let mut cpu_mesh = mquad_mesh_from_parry(&indices, &points);
-
-    // No clone on CpuMesh :'(
-    let cpu_mesh2 = CpuMesh(
-        cpu_mesh.0.clone(),
-        cpu_mesh.1.clone(),
-        cpu_mesh.2.clone(),
-        cpu_mesh.3.clone(),
-    );
+    let cpu_mesh = mquad_mesh_from_parry(&indices, &points);
 
     let mut mesh = quad_gl.mesh(cpu_mesh, None);
 
@@ -109,24 +97,34 @@ async fn main_loop(ctx: macroquad::Context) {
          *
          */
 
-        /*
         let color = if projected_point.is_inside {
             color::RED
         } else {
             color::YELLOW
         };
 
-        draw_line_3d(
+        gizmos_add_line(
+            false,
             point_to_project,
             mquad_from_na(projected_point.point),
-            color,
         );
-        draw_sphere(point_to_project, 0.1, None, color);
+        // not working
+        //let point = camera
+        //    .proj_view()
+        //    .0
+        //    .project_point3(point_to_project.xy);
+        //let point = vec2(
+        //    (point.x / 2. + 0.5) * screen_width(),
+        //    (0.5 - point.y / 2.) * screen_height(),
+        //);
 
-        draw_line_3d(
+        //canvas.draw_circle(point.x, point.y, 10.0, color);
+        //draw_sphere(point_to_project, 0.1, None, color);
+
+        gizmos_add_line(
+            false,
             point_to_project,
             mquad_from_na(projected_point.point),
-            color,
         );
 
         // fixed point inside
@@ -141,13 +139,13 @@ async fn main_loop(ctx: macroquad::Context) {
         } else {
             color::YELLOW
         };
-        draw_sphere(point_to_project, 0.1, None, color);
+        //draw_sphere(point_to_project, 0.1, None, color);
 
-        draw_line_3d(
+        gizmos_add_line(
+            false,
             point_to_project,
             mquad_from_na(projected_point.point),
-            color,
-        );*/
+        );
 
         ctx.root_ui().draw(&mut canvas);
 
@@ -229,6 +227,6 @@ void main() {
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * vec3(1.0) + vec3(0.3);
 
-    gl_FragColor = vec4(diffuse,1.);
+    gl_FragColor = vec4(diffuse,0.5);
 }
 "#;
