@@ -88,4 +88,4 @@ obj = { version = "0.10.2", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
-macroquad = "*"
+macroquad = { git = "https://github.com/not-fl3/macroquad.git", branch = "reimagine" }

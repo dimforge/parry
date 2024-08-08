@@ -22,11 +22,28 @@ workspace = true
 [features]
 default = ["required-features", "std"]
 required-features = ["dim2", "f32"]
-std = ["nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade", "thiserror"]
+std = [
+    "nalgebra/std",
+    "slab",
+    "rustc-hash",
+    "simba/std",
+    "arrayvec/std",
+    "spade",
+    "thiserror",
+]
 dim2 = []
 f32 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize", "arrayvec/serde", "bitflags/serde"]
-rkyv-serialize = ["rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize"]
+serde-serialize = [
+    "serde",
+    "nalgebra/serde-serialize",
+    "arrayvec/serde",
+    "bitflags/serde",
+]
+rkyv-serialize = [
+    "rkyv/validation",
+    "nalgebra/rkyv-serialize",
+    "simba/rkyv-serialize",
+]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
@@ -73,4 +90,4 @@ simba = { version = "0.9", default-features = false }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
-macroquad = "0.4"
+macroquad = { git = "https://github.com/not-fl3/macroquad.git", branch = "reimagine" }
