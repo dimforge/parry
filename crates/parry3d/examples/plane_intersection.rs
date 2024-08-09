@@ -7,7 +7,7 @@ use parry3d::shape::{Cuboid, TriMesh};
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
-    let trimesh = Cuboid::new(Vector3::new(1.0, 1.0, 1.0)).to_trimesh();
+    let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
 
     let camera_pos = Vec3::new(-1.5f32, 2.5f32, -3f32);
 
@@ -26,7 +26,7 @@ async fn main() {
 
         // Get the intersection polyline.
         let intersection_result = trimesh.intersection_with_local_plane(
-            &UnitVector3::new_normalize(Vector3::<Real>::new(
+            &UnitVector3::new_normalize(Vector3::new(
                 up_plane_vector.x,
                 up_plane_vector.y,
                 up_plane_vector.z,
