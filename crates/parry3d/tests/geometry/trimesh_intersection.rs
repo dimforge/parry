@@ -121,3 +121,27 @@ fn trimesh_plane_below() {
 
     assert!(matches!(result, IntersectResult::Negative));
 }
+
+#[test]
+fn trimesh_plane_simple() {
+    let points = vec![
+        Point3::from([0.0, 0.0, 0.0]),
+        Point3::from([0.0, 0.0, 1.0]),
+        Point3::from([1.0, 0.0, 0.0]),
+        Point3::from([1.0, 0.0, 1.0]),
+    ];
+    let indices = vec![[0, 1, 2], [1, 3, 2]];
+    let trimesh = TriMesh::new(points, indices);
+    let colid = trimesh.intersection_with_local_plane(&Vector3::<Real>::x_axis(), 0.5, 0.0005);
+    match colid {
+        IntersectResult::Intersect(points) => {
+            println!("polyline {:#?}", points);
+        }
+        IntersectResult::Negative => {
+            println!("positif");
+        }
+        IntersectResult::Positive => {
+            println!("negatif");
+        }
+    }
+}
