@@ -56,17 +56,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install latest nightly
+      - name: Install stable Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
-          components: rustfmt
-      - name: install xargo
-        run: cp .github/Xargo.toml .; rustup component add rust-src; cargo install -f xargo;
+          toolchain: stable
+          targets: "x86_64-unknown-linux-gnu,thumbv7em-none-eabihf"
       - name: build x86_64-unknown-linux-gnu
-        run: xargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu;
+        run: cargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu
       - name: build thumbv7em-none-eabihf
-        run: xargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf;
+        run: cargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf
   build-doc:
     runs-on: ubuntu-latest
     env:
