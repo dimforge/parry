@@ -175,7 +175,8 @@ where
             }
         }
         niter += 1;
-        if niter == 10000 {
+
+        if niter == 100 {
             return GJKResult::NoIntersection(Vector::x_axis());
         }
     }
@@ -362,7 +363,7 @@ where
         }
 
         niter += 1;
-        if niter == 10000 {
+        if niter == 100 {
             return None;
         }
     }
