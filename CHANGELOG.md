@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+
+- Improve convergence of epa algorithm in degenerate configurations.
+
 ## v0.17.0
 
 ### Added
