@@ -88,7 +88,7 @@ obj = { version = "0.10.2", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
-macroquad = "0.4"
+macroquad = "0.4.12"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
