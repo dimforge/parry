@@ -88,7 +88,8 @@ fn mquad_mesh_from_points(trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>), camera_p
             .map(|p| Vertex {
                 position: mquad_from_na(*p),
                 uv: Vec2::new(p.x, p.y),
-                color: DARKGRAY,
+                color: DARKGRAY.into(),
+                normal: Vec4::ZERO,
             })
             .collect(),
         indices.iter().flatten().map(|v| *v as u16).collect(),
@@ -125,14 +126,15 @@ fn mquad_compute_normals(points: &Vec<Vertex>, indices: &Vec<u16>, cam_pos: Vec3
 
         for &i in indices.iter() {
             let mut color = points[i as usize].color;
-            color.r *= brightness_mod;
-            color.g *= brightness_mod;
-            color.b *= brightness_mod;
+            color[0] = (color[0] as f32 * brightness_mod) as u8;
+            color[1] = (color[1] as f32 * brightness_mod) as u8;
+            color[2] = (color[2] as f32 * brightness_mod) as u8;
 
             vertices.push(Vertex {
                 position: points[i as usize].position,
                 uv: Vec2::ZERO,
                 color: color,
+                normal: Vec4::ZERO,
             });
         }
     }
