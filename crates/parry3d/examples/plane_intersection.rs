@@ -1,7 +1,5 @@
-use macroquad::models::Vertex;
 use macroquad::prelude::*;
-use nalgebra::{Point3, UnitVector3, Vector3};
-use parry3d::math::Real;
+use nalgebra::{UnitVector3, Vector3};
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
 
@@ -80,67 +78,4 @@ async fn main() {
         }
         next_frame().await
     }
-}
-
-fn mquad_mesh_from_points(trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>), camera_pos: Vec3) -> Mesh {
-    let (points, indices) = trimesh;
-    // Transform the parry mesh into a mquad Mesh
-    let (mquad_points, mquad_indices) = (
-        points
-            .iter()
-            .map(|p| Vertex {
-                position: mquad_from_na(*p),
-                uv: Vec2::new(p.x, p.y),
-                color: DARKGRAY.into(),
-                normal: Vec4::ZERO,
-            })
-            .collect(),
-        indices.iter().flatten().map(|v| *v as u16).collect(),
-    );
-
-    // Macroquad does support adding normals to vertices, but we´d have to provide shaders for them.
-    // so we're baking a color into these vertices.
-    // See https://github.com/not-fl3/macroquad/issues/321.
-
-    // Compute the normal of each vertex, making them unique
-    let vertices: Vec<Vertex> = mquad_compute_normals(&mquad_points, &mquad_indices, camera_pos);
-    // Regenerate the index for each vertex.
-    let indices: Vec<u16> = (0..vertices.len() * 3)
-        .into_iter()
-        .map(|i| i as u16)
-        .collect();
-    let mesh = Mesh {
-        vertices,
-        indices,
-        texture: None,
-    };
-    mesh
-}
-
-fn mquad_compute_normals(points: &Vec<Vertex>, indices: &Vec<u16>, cam_pos: Vec3) -> Vec<Vertex> {
-    let mut vertices: Vec<Vertex> = Vec::<Vertex>::new();
-    for indices in indices.chunks(3) {
-        let v0 = &points[indices[0] as usize];
-        let v1 = &points[indices[1] as usize];
-        let v2 = &points[indices[2] as usize];
-        let normal = (v0.position - v2.position)
-            .cross(v1.position - v2.position)
-            .normalize();
-        let brightness_mod = 0.2 + (0.8 / 2.) * (normal.dot(cam_pos) + 1.);
-
-        for &i in indices.iter() {
-            let mut color = points[i as usize].color;
-            color[0] = (color[0] as f32 * brightness_mod) as u8;
-            color[1] = (color[1] as f32 * brightness_mod) as u8;
-            color[2] = (color[2] as f32 * brightness_mod) as u8;
-
-            vertices.push(Vertex {
-                position: points[i as usize].position,
-                uv: Vec2::ZERO,
-                color: color,
-                normal: Vec4::ZERO,
-            });
-        }
-    }
-    vertices
 }

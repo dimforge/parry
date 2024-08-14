@@ -10,21 +10,14 @@ use common_macroquad::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
-    let (points, indices) = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
+    let trimesh = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
 
-    let mesh = Mesh {
-        vertices: points
-            .iter()
-            .map(|p| Vertex {
-                position: mquad_from_na(*p),
-                uv: Vec2::new(p.x, p.y),
-                color: [210, 210, 210, 150],
-                normal: vec4(0.0, 0.0, 0.0, 0.0),
-            })
-            .collect(),
-        indices: indices.iter().flatten().map(|v| *v as u16).collect(),
-        texture: None,
-    };
+    let mesh = mquad_mesh_from_points(
+        &trimesh,
+        Vec3::new(1f32, 3f32, 3f32),
+        Color::from_rgba(200, 200, 200, 150),
+    );
+    let (points, indices) = trimesh;
     let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
     for _i in 1.. {
         clear_background(BLACK);
