@@ -95,13 +95,9 @@ async fn main() {
             color,
         );
 
-        // fixed point inside
+        // fixed point inside the shape
         let point_to_project = Vec3::ZERO;
-        let projected_point = trimesh.project_point(
-            &Isometry::identity(),
-            &na_from_mquad(point_to_project),
-            true,
-        );
+        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
         let color = if projected_point.is_inside {
             RED
         } else {
