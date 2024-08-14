@@ -1,34 +1,15 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
-
 use macroquad::models::Vertex;
 use macroquad::prelude::*;
-use nalgebra::{Point3, Vector3};
-use parry3d::math::{Isometry, Real};
+use nalgebra::Vector3;
+use parry3d::math::Isometry;
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
-fn lissajous_3d(t: f32) -> Vec3 {
-    // Some hardcoded parameters to have a pleasing lissajous trajectory.
-    let (a, b, c, delta_x, delta_y, delta_z) = (3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6);
-
-    let x = (a * t + delta_x).sin();
-    let y = (b * t + delta_y).sin();
-    let z = (c * t + delta_z).sin();
-    Vec3::new(x, y, z) * 0.75f32
-}
+mod common_macroquad;
+use common_macroquad::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
-    //
-    // This is useful to test for https://github.com/dimforge/parry/pull/248
-    let _points = vec![
-        Point3::from([0.0, 0.0, 0.0]),
-        Point3::from([0.0, 0.0, 1.0]),
-        Point3::from([1.0, 0.0, 0.0]),
-        Point3::from([1.0, 0.0, 1.0]),
-    ];
-    let _indices: Vec<[u32; 3]> = vec![[0, 1, 2], [1, 3, 2]];
-
     let (points, indices) = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
 
     let mesh = Mesh {
@@ -115,12 +96,4 @@ async fn main() {
 
         next_frame().await
     }
-}
-
-fn mquad_from_na(a: Point3<Real>) -> Vec3 {
-    Vec3::new(a.x, a.y, a.z)
-}
-
-fn na_from_mquad(a: Vec3) -> Point3<Real> {
-    Point3::new(a.x, a.y, a.z)
 }

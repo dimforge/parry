@@ -5,6 +5,9 @@ use parry3d::math::Real;
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
 
+mod common_macroquad;
+use common_macroquad::*;
+
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
     let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
@@ -64,15 +67,15 @@ async fn main() {
                     Color::new(0f32, 1f32, 0f32, 1f32),
                 );
                 set_default_camera();
-                draw_text("Intersection found!");
+                easy_draw_text("Intersection found!");
             }
             IntersectResult::Negative => {
                 set_default_camera();
-                draw_text("No intersection found, the shape is below the plane.");
+                easy_draw_text("No intersection found, the shape is below the plane.");
             }
             IntersectResult::Positive => {
                 set_default_camera();
-                draw_text("No intersection found, the shape is above the plane.");
+                easy_draw_text("No intersection found, the shape is above the plane.");
             }
         }
         next_frame().await
@@ -95,7 +98,8 @@ fn mquad_mesh_from_points(trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>), camera_p
         indices.iter().flatten().map(|v| *v as u16).collect(),
     );
 
-    // Macroquad doesn´t support adding normals to vertices, so we'll bake a color into these vertices.
+    // Macroquad does support adding normals to vertices, but we´d have to provide shaders for them.
+    // so we're baking a color into these vertices.
     // See https://github.com/not-fl3/macroquad/issues/321.
 
     // Compute the normal of each vertex, making them unique
@@ -139,20 +143,4 @@ fn mquad_compute_normals(points: &Vec<Vertex>, indices: &Vec<u16>, cam_pos: Vec3
         }
     }
     vertices
-}
-
-fn draw_polyline(polygon: Vec<(Vec3, Vec3)>, color: Color) {
-    for i in 0..polygon.len() {
-        let a = polygon[i].0;
-        let b = polygon[i].1;
-        draw_line_3d(a, b, color);
-    }
-}
-
-fn mquad_from_na(a: Point3<Real>) -> Vec3 {
-    Vec3::new(a.x, a.y, a.z)
-}
-
-fn draw_text(text: &str) {
-    macroquad::text::draw_text(text, 10.0, 48.0 + 18.0, 30.0, WHITE);
 }
