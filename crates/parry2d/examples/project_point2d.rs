@@ -78,7 +78,7 @@ async fn main() {
             color,
         );
 
-        // fixed point inside the shape
+        // fixed local point inside the shape
         let point_to_project = Vec2::ZERO;
         let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
         let color = if projected_point.is_inside {
@@ -86,11 +86,13 @@ async fn main() {
         } else {
             YELLOW
         };
-        draw_circle(point_to_project.x, point_to_project.y, 2f32, color);
+        // convert to "world" space
+        let point_to_project = point_to_project * scale + offset;
+        draw_circle(point_to_project.x, point_to_project.y, 10f32, color);
 
         draw_line_2d(
             point_to_project,
-            mquad_from_na(projected_point.point),
+            mquad_from_na(projected_point.point) * scale + offset,
             color,
         );
         // Mesh is rendered in the back, so we can see the other graphics elements
