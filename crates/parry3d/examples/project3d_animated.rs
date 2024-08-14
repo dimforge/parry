@@ -37,7 +37,8 @@ async fn main() {
             .map(|p| Vertex {
                 position: mquad_from_na(*p),
                 uv: Vec2::new(p.x, p.y),
-                color: Color::new(0.9, 0.9, 0.9, 0.7),
+                color: [210, 210, 210, 150],
+                normal: vec4(0.0, 0.0, 0.0, 0.0),
             })
             .collect(),
         indices: indices.iter().flatten().map(|v| *v as u16).collect(),
@@ -57,12 +58,13 @@ async fn main() {
             true,
         );
 
+        let slow_elapsed_time = slow_elapsed_time * 0.7;
         // Going 3d!
         set_camera(&Camera3D {
             position: Vec3::new(
-                slow_elapsed_time.sin() * 5.0,
+                slow_elapsed_time.sin() * 3.0,
                 slow_elapsed_time.sin(),
-                slow_elapsed_time.cos() * 5.0,
+                slow_elapsed_time.cos() * 3.0,
             ),
             up: Vec3::Y,
             target: Vec3::ZERO,
