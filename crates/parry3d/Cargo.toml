@@ -88,4 +88,112 @@ obj = { version = "0.10.2", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
-macroquad = "*"
+macroquad = "0.4.12"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+# The following listing is to allow for examples to be scraped,
+# see https://doc.rust-lang.org/rustdoc/scraped-examples.html#scraped-examples for details.
+# To help with generating this list, see the script `write_examples.sh`
+
+[[example]]
+name = "aabb3d"
+path = "examples/aabb3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "ball3d"
+path = "examples/ball3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "bounding_sphere3d"
+path = "examples/bounding_sphere3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "capsule"
+path = "examples/capsule.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cone"
+path = "examples/cone.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "contact_query3d"
+path = "examples/contact_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex3d"
+path = "examples/convex3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_hull3d"
+path = "examples/convex_hull3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_try_new3d"
+path = "examples/convex_try_new3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cuboid3d"
+path = "examples/cuboid3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cylinder"
+path = "examples/cylinder.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "distance_query3d"
+path = "examples/distance_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "getting_started"
+path = "examples/getting_started.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "mesh3d"
+path = "examples/mesh3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane3d"
+path = "examples/plane3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "polyline3d"
+path = "examples/polyline3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "proximity_query3d"
+path = "examples/proximity_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_point_query3d"
+path = "examples/solid_point_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_ray_cast3d"
+path = "examples/solid_ray_cast3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "time_of_impact_query3d"
+path = "examples/time_of_impact_query3d.rs"
+doc-scrape-examples = true

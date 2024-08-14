@@ -275,6 +275,7 @@ impl EPA {
         let mut niter = 0;
         let mut max_dist = Real::max_value();
         let mut best_face_id = *self.heap.peek().unwrap();
+        let mut old_dist = 0.0;
 
         /*
          * Run the expansion.
@@ -300,11 +301,17 @@ impl EPA {
 
             let curr_dist = -face_id.neg_dist;
 
-            if max_dist - curr_dist < _eps_tol {
+            if max_dist - curr_dist < _eps_tol ||
+                // Accept the intersection as the algorithm is stuck and no new points will be found
+                // This happens because of numerical stability issue
+                ((curr_dist - old_dist).abs() < _eps && candidate_max_dist < max_dist)
+            {
                 let best_face = &self.faces[best_face_id.id];
                 let cpts = best_face.closest_points(&self.vertices);
                 return Some((cpts.0, cpts.1, best_face.normal));
             }
+
+            old_dist = curr_dist;
 
             let pts1 = [face.pts[0], support_point_id];
             let pts2 = [support_point_id, face.pts[1]];
@@ -333,8 +340,10 @@ impl EPA {
             }
 
             niter += 1;
-            if niter > 10000 {
-                return None;
+            if niter > 100 {
+                // if we reached this point, our algorithm didn't converge to what precision we wanted.
+                // still return an intersection point, as it's probably close enough.
+                break;
             }
         }
 
