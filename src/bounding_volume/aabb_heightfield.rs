@@ -1,8 +1,8 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Real};
-use crate::shape::{GenericHeightField, HeightFieldStorage};
+use crate::shape::HeightField;
 
-impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
+impl HeightField {
     /// Computes the world-space [`Aabb`] of this heightfield, transformed by `pos`.
     #[inline]
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
@@ -12,6 +12,6 @@ impl<Storage: HeightFieldStorage> GenericHeightField<Storage> {
     /// Computes the local-space [`Aabb`] of this heightfield.
     #[inline]
     pub fn local_aabb(&self) -> Aabb {
-        self.root_aabb().clone()
+        *self.root_aabb()
     }
 }

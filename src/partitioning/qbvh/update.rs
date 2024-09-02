@@ -114,7 +114,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
             // If we reached this point, we didn’t find room for our
             // new proxy. Create a new root to make more room.
-            let mut old_root = self.nodes[0].clone();
+            let mut old_root = self.nodes[0];
             old_root.parent = NodeIndex::new(0, 0);
 
             for child_id in old_root.children {
@@ -339,6 +339,14 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         const MIN_CHANGED_DEPTH: u8 = 5; // TODO: find a good value
 
+        // PERF: if we have modifications past this depth, the QBVH has become very
+        //       unbalanced and a full rebuild is warranted. Note that for a perfectly
+        //       balanced tree to reach this threshold, it would have to contain
+        //       at least 4^15 = 1.073.741.824 leaves (i.e. very unlikely in most practical
+        //       use-cases).
+        // TODO: work on a way to reduce the risks of imbalance.
+        const FULL_REBUILD_DEPTH: u8 = 15;
+
         for root_child in self.nodes[0].children {
             if root_child < self.nodes.len() as u32 {
                 workspace.stack.push((root_child, 1));
@@ -346,7 +354,13 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         }
 
         // Collect empty slots and pseudo-leaves to sort.
+        let mut force_full_rebuild = false;
         while let Some((id, depth)) = workspace.stack.pop() {
+            if depth > FULL_REBUILD_DEPTH {
+                force_full_rebuild = true;
+                break;
+            }
+
             let node = &mut self.nodes[id as usize];
 
             if node.is_leaf() {
@@ -372,6 +386,18 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 workspace.aabbs.push(node.simd_aabb.to_merged_aabb());
                 workspace.is_leaf.push(false);
             }
+        }
+
+        if force_full_rebuild {
+            workspace.clear();
+            let all_leaves: Vec<_> = self
+                .proxies
+                .iter()
+                .filter_map(|proxy| self.node_aabb(proxy.node).map(|aabb| (proxy.data, aabb)))
+                .collect();
+
+            self.clear_and_rebuild(all_leaves.into_iter(), 0.0);
+            return;
         }
 
         workspace.to_sort.extend(0..workspace.orig_ids.len());
@@ -543,7 +569,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
 
         let nid = if let Some(nid) = self.free_list.pop() {
             self.nodes[nid as usize] = node;
-            nid as u32
+            nid
         } else {
             let nid = self.nodes.len();
             self.nodes.push(node);

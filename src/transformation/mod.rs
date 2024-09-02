@@ -9,7 +9,8 @@ pub use self::convex_hull3::{check_convex_hull, convex_hull, try_convex_hull, Co
 #[cfg(feature = "dim3")]
 pub use self::mesh_intersection::intersect_meshes;
 pub use self::polygon_intersection::{
-    convex_polygons_intersection, convex_polygons_intersection_points,
+    convex_polygons_intersection, convex_polygons_intersection_points, polygons_intersection,
+    polygons_intersection_points,
 };
 
 mod convex_hull2;
@@ -38,3 +39,6 @@ mod to_polyline;
 #[cfg(feature = "dim3")]
 mod to_trimesh;
 pub mod utils;
+
+#[cfg(feature = "wavefront")]
+pub mod wavefront;

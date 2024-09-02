@@ -1,3 +1,5 @@
+#![allow(clippy::multiple_bound_locations)] // for impl_downcast
+
 use downcast_rs::{impl_downcast, DowncastSync};
 
 use crate::query::contact_manifolds::{
@@ -26,7 +28,7 @@ pub enum TypedWorkspaceData<'a> {
     /// A composite shape vs. shape workspace.
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
     /// A custom workspace.
-    Custom(u32),
+    Custom,
 }
 
 // NOTE: must match the TypedWorkspaceData enum.
@@ -42,7 +44,8 @@ enum DeserializableWorkspaceData {
         CompositeShapeCompositeShapeContactManifoldsWorkspace,
     ),
     CompositeShapeShapeContactManifoldsWorkspace(CompositeShapeShapeContactManifoldsWorkspace),
-    Custom(u32),
+    #[allow(dead_code)]
+    Custom,
 }
 
 #[cfg(feature = "serde-serialize")]
@@ -64,7 +67,7 @@ impl DeserializableWorkspaceData {
             DeserializableWorkspaceData::CompositeShapeShapeContactManifoldsWorkspace(w) => {
                 Some(ContactManifoldsWorkspace(Box::new(w)))
             }
-            DeserializableWorkspaceData::Custom(_) => None,
+            DeserializableWorkspaceData::Custom => None,
         }
     }
 }

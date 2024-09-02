@@ -6,19 +6,13 @@ use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
-    FeatureId, GenericTriMesh, SegmentPointLocation, TriMeshStorage, TrianglePointLocation,
-    TypedSimdCompositeShape,
+    FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation, TypedSimdCompositeShape,
 };
 use na;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
-#[cfg(feature = "dim3")]
-use crate::utils::Array1;
-
-#[cfg(feature = "std")]
 use crate::shape::{Compound, Polyline};
 
-#[cfg(feature = "std")]
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -38,7 +32,7 @@ impl PointQuery for Polyline {
         (proj, polyline_feature)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
@@ -48,7 +42,7 @@ impl PointQuery for Polyline {
     }
 }
 
-impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
+impl PointQuery for TriMesh {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(point, solid).0
@@ -67,14 +61,16 @@ impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
             return (proj, feature_id);
         }
 
+        let solid = cfg!(feature = "dim2");
+
         let mut visitor =
-            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
+            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, solid);
         let (proj, (id, _feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
         let feature_id = FeatureId::Face(id);
         (proj, feature_id)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
@@ -104,7 +100,6 @@ impl<Storage: TriMeshStorage> PointQuery for GenericTriMesh<Storage> {
     }
 }
 
-#[cfg(feature = "std")]
 impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
@@ -128,7 +123,6 @@ impl PointQuery for Compound {
     }
 }
 
-#[cfg(feature = "std")]
 impl PointQueryWithLocation for Polyline {
     type Location = (u32, SegmentPointLocation);
 
@@ -144,7 +138,7 @@ impl PointQueryWithLocation for Polyline {
     }
 }
 
-impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage> {
+impl PointQueryWithLocation for TriMesh {
     type Location = (u32, TrianglePointLocation);
 
     #[inline]
@@ -181,13 +175,13 @@ impl<Storage: TriMeshStorage> PointQueryWithLocation for GenericTriMesh<Storage>
                     }
                     TrianglePointLocation::OnEdge(i, _) => pseudo_normals
                         .edges_pseudo_normal
-                        .get_at(part_id as usize)
+                        .get(part_id as usize)
                         .map(|pn| pn[i as usize]),
                     TrianglePointLocation::OnVertex(i) => {
                         let idx = self.indices()[part_id as usize];
                         pseudo_normals
                             .vertices_pseudo_normal
-                            .get_at(idx[i as usize] as usize)
+                            .get(idx[i as usize] as usize)
                             .copied()
                     }
                 };
@@ -255,7 +249,7 @@ macro_rules! gen_visitor(
                         if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                             let mut is_inside = false;
                             let subshape_id = *data[ii].unwrap();
-                            self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape| {
+                            self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape, _| {
                                 let (proj $(, $extra_info)*) = if let Some(part_pos) = part_pos {
                                     part_shape.$project_point(
                                         part_pos,

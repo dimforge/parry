@@ -1,15 +1,16 @@
 //! Definition of the triangle shape.
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::shape::{FeatureId, SupportMap};
+use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
 use na::{self, ComplexField, Unit};
 use num::Zero;
-#[cfg(feature = "dim3")]
-use std::f64;
 use std::mem;
+
+#[cfg(feature = "dim3")]
+use {crate::shape::FeatureId, std::f64};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
@@ -25,7 +26,6 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(PartialEq, Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Triangle {
@@ -48,7 +48,7 @@ pub enum TrianglePointLocation {
     /// The 1-st edge is the segment BC.
     /// The 2-nd edge is the segment AC.
     // XXX: it appears the conversion of edge indexing here does not match the
-    // convension of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
+    // convention of edge indexing for the `fn edge` method (from the ConvexPolyhedron impl).
     OnEdge(u32, [Real; 2]),
     /// The point lies on the triangle interior.
     ///
@@ -95,20 +95,16 @@ impl TrianglePointLocation {
 
     /// Returns `true` if the point is located on the relative interior of the triangle.
     pub fn is_on_face(&self) -> bool {
-        if let TrianglePointLocation::OnFace(..) = *self {
-            true
-        } else {
-            false
-        }
+        matches!(*self, TrianglePointLocation::OnFace(..))
     }
 }
 
 /// Orientation of a triangle.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TriangleOrientation {
-    /// Orientation with a clockwise orientaiton, i.e., with a positive signed area.
+    /// Orientation with a clockwise orientation, i.e., with a positive signed area.
     Clockwise,
-    /// Orientation with a clockwise orientaiton, i.e., with a negative signed area.
+    /// Orientation with a clockwise orientation, i.e., with a negative signed area.
     CounterClockwise,
     /// Degenerate triangle.
     Degenerate,
@@ -143,6 +139,7 @@ impl Triangle {
     /// The normal points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
         Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
     }
@@ -235,11 +232,39 @@ impl Triangle {
     ///
     /// The vector points such that it is collinear to `AB × AC` (where `×` denotes the cross
     /// product).
+    ///
+    /// Note that on thin triangles the calculated normals can suffer from numerical issues.
+    /// For a more robust (but more computationally expensive) normal calculation, see
+    /// [`Triangle::robust_scaled_normal`].
     #[inline]
+    #[cfg(feature = "dim3")]
     pub fn scaled_normal(&self) -> Vector<Real> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         ab.cross(&ac)
+    }
+
+    /// Find a triangle normal more robustly than with [`Triangle::scaled_normal`].
+    ///
+    /// Thin triangles can cause numerical issues when computing its normal. This method accounts
+    /// for these numerical issues more robustly than [`Triangle::scaled_normal`], but is more
+    /// computationally expensive.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_scaled_normal(&self) -> na::Vector3<Real> {
+        let pts = self.vertices();
+        let best_vertex = self.angle_closest_to_90();
+        let d1 = pts[(best_vertex + 2) % 3] - pts[(best_vertex + 1) % 3];
+        let d2 = pts[best_vertex] - pts[(best_vertex + 1) % 3];
+
+        d1.cross(&d2)
+    }
+
+    /// Similar to [`Triangle::robust_scaled_normal`], but returns the unit length normal.
+    #[inline]
+    #[cfg(feature = "dim3")]
+    pub fn robust_normal(&self) -> na::Vector3<Real> {
+        self.robust_scaled_normal().normalize()
     }
 
     /// Computes the extents of this triangle on the given direction.
@@ -330,11 +355,11 @@ impl Triangle {
     #[inline]
     pub fn area(&self) -> Real {
         // Kahan's formula.
-        let mut a = na::distance(&self.a, &self.b);
-        let mut b = na::distance(&self.b, &self.c);
-        let mut c = na::distance(&self.c, &self.a);
+        let a = na::distance(&self.a, &self.b);
+        let b = na::distance(&self.b, &self.c);
+        let c = na::distance(&self.c, &self.a);
 
-        let (c, b, a) = utils::sort3(&mut a, &mut b, &mut c);
+        let (c, b, a) = utils::sort3(&a, &b, &c);
         let a = *a;
         let b = *b;
         let c = *c;
@@ -384,8 +409,7 @@ impl Triangle {
 
         let dab = a.dot(&b);
 
-        let _2: Real = na::convert::<f64, Real>(2.0);
-        let denom = _2 * (na * nb - dab * dab);
+        let denom = 2.0 * (na * nb - dab * dab);
 
         if denom.is_zero() {
             // The triangle is degenerate (the three points are colinear).
@@ -515,6 +539,7 @@ impl Triangle {
     }
 
     /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim3")]
     pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
         self.normal()
     }
@@ -557,9 +582,32 @@ impl Triangle {
         }
     }
 
+    /// Find the index of a vertex in this triangle, such that the two
+    /// edges incident in that vertex form the angle closest to 90
+    /// degrees in the triangle.
+    pub fn angle_closest_to_90(&self) -> usize {
+        let points = self.vertices();
+        let mut best_cos = 2.0;
+        let mut selected_i = 0;
+
+        for i in 0..3 {
+            let d1 = (points[i] - points[(i + 1) % 3]).normalize();
+            let d2 = (points[(i + 2) % 3] - points[(i + 1) % 3]).normalize();
+
+            let cos_abs = d1.dot(&d2).abs();
+
+            if cos_abs < best_cos {
+                best_cos = cos_abs;
+                selected_i = i;
+            }
+        }
+
+        selected_i
+    }
+
     /// Reverse the orientation of this triangle by swapping b and c.
     pub fn reverse(&mut self) {
-        std::mem::swap(&mut self.b, &mut self.c);
+        mem::swap(&mut self.b, &mut self.c);
     }
 }
 
@@ -576,12 +624,10 @@ impl SupportMap for Triangle {
             } else {
                 self.c
             }
+        } else if d2 > d3 {
+            self.b
         } else {
-            if d2 > d3 {
-                self.b
-            } else {
-                self.c
-            }
+            self.c
         }
     }
 }

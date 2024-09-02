@@ -11,9 +11,6 @@ use crate::shape::Capsule;
 use crate::shape::{HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 
-#[cfg(feature = "dim3")]
-use crate::query::contact_manifolds::InternalEdgesFixer;
-
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -27,22 +24,15 @@ struct SubDetector {
 }
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct HeightFieldShapeContactManifoldsWorkspace {
     timestamp: bool,
     sub_detectors: HashMap<u32, SubDetector>,
-    #[cfg(feature = "dim3")]
-    internal_edges: InternalEdgesFixer,
 }
 
 impl HeightFieldShapeContactManifoldsWorkspace {
     pub fn new() -> Self {
-        Self {
-            timestamp: false,
-            sub_detectors: HashMap::default(),
-            #[cfg(feature = "dim3")]
-            internal_edges: InternalEdgesFixer::default(),
-        }
+        Self::default()
     }
 }
 
@@ -161,11 +151,20 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
 
         let manifold = &mut manifolds[sub_detector.manifold_id];
 
+        #[cfg(feature = "dim2")]
+        let pseudo_normals = None::<()>;
+        #[cfg(feature = "dim3")]
+        let pseudo_normals = heightfield1.triangle_normal_constraints(i);
+
+        let normal_constraints1 = pseudo_normals.as_ref().map(|pn| pn as &_);
+
         if flipped {
             let _ = dispatcher.contact_manifold_convex_convex(
                 &pos12.inverse(),
                 shape2,
                 &sub_shape1,
+                None,
+                normal_constraints1,
                 prediction,
                 manifold,
             );
@@ -174,6 +173,8 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
                 pos12,
                 &sub_shape1,
                 shape2,
+                normal_constraints1,
+                None,
                 prediction,
                 manifold,
             );
@@ -183,16 +184,6 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
     workspace
         .sub_detectors
         .retain(|_, detector| detector.timestamp == new_timestamp);
-
-    #[cfg(feature = "dim3")]
-    {
-        workspace.internal_edges.remove_invalid_contacts(
-            manifolds,
-            flipped,
-            |id| heightfield1.triangle_at_id(id).unwrap(),
-            |id| heightfield1.triangle_vids_at_id(id).unwrap(),
-        )
-    }
 }
 
 impl WorkspaceData for HeightFieldShapeContactManifoldsWorkspace {

@@ -25,10 +25,10 @@ impl RoundCuboid {
 
         let mut idx = vec![];
         for i in 0..6 {
-            idx.push([i * 4 + 0, i * 4 + 1]);
+            idx.push([i * 4, i * 4 + 1]);
             idx.push([i * 4 + 1, i * 4 + 2]);
             idx.push([i * 4 + 2, i * 4 + 3]);
-            idx.push([i * 4 + 3, i * 4 + 0]);
+            idx.push([i * 4 + 3, i * 4]);
         }
 
         let arcs = [

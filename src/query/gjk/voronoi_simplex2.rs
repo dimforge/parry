@@ -15,6 +15,12 @@ pub struct VoronoiSimplex {
     dim: usize,
 }
 
+impl Default for VoronoiSimplex {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VoronoiSimplex {
     /// Crates a new empty simplex.
     pub fn new() -> VoronoiSimplex {
@@ -76,23 +82,23 @@ impl VoronoiSimplex {
         self.prev_proj[i]
     }
 
-    /// The i-th point of the simplex before the last call to `projet_origin_and_reduce`.
+    /// The i-th point of the simplex before the last call to `project_origin_and_reduce`.
     pub fn prev_point(&self, i: usize) -> &CSOPoint {
         assert!(i <= self.prev_dim, "Index out of bounds.");
         &self.vertices[self.prev_vertices[i]]
     }
 
-    /// Projets the origin on the boundary of this simplex and reduces `self` the smallest subsimplex containing the origin.
+    /// Projects the origin on the boundary of this simplex and reduces `self` the smallest subsimplex containing the origin.
     ///
-    /// Retruns the result of the projection or Point::origin() if the origin lies inside of the simplex.
-    /// The state of the samplex before projection is saved, and can be retrieved using the methods prefixed
+    /// Returns the result of the projection or Point::origin() if the origin lies inside of the simplex.
+    /// The state of the simplex before projection is saved, and can be retrieved using the methods prefixed
     /// by `prev_`.
     pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
         if self.dim == 0 {
             self.proj[0] = 1.0;
             self.vertices[0].point
         } else if self.dim == 1 {
-            // FIXME: NLL
+            // TODO: NLL
             let (proj, location) = {
                 let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
                 seg.project_local_point_and_get_location(&Point::<Real>::origin(), true)
@@ -117,7 +123,7 @@ impl VoronoiSimplex {
             proj.point
         } else {
             assert!(self.dim == 2);
-            // FIXME: NLL
+            // TODO: NLL
             let (proj, location) = {
                 let tri = Triangle::new(
                     self.vertices[0].point,

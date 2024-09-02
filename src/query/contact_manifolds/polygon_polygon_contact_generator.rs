@@ -92,7 +92,7 @@ fn generate_contacts<'a>(
             ((support_face2 * 2 + clip_b.3) % (len2 * 2)) as u8,
         );
 
-        if manifold.points.len() != 0 {
+        if !manifold.points.is_empty() {
             assert_eq!(manifold.points.len(), 2);
 
             // We already had 2 points in the previous iteration.

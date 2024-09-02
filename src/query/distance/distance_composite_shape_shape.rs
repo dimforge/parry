@@ -3,19 +3,19 @@ use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::{DefaultStorage, IsometryOpt};
+use crate::utils::IsometryOpt;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Smallest distance between a composite shape and any other shape.
-pub fn distance_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn distance_composite_shape_shape<D, G1>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &dyn Shape,
 ) -> Real
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     let mut visitor = CompositeShapeAgainstAnyDistanceVisitor::new(dispatcher, pos12, g1, g2);
     g1.typed_qbvh()
@@ -26,15 +26,15 @@ where
 }
 
 /// Smallest distance between a shape and a composite shape.
-pub fn distance_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn distance_shape_composite_shape<D, G2>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &dyn Shape,
     g2: &G2,
 ) -> Real
 where
-    D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + TypedSimdCompositeShape,
 {
     distance_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
@@ -71,11 +71,11 @@ impl<'a, D: ?Sized, G1: ?Sized + 'a> CompositeShapeAgainstAnyDistanceVisitor<'a,
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for CompositeShapeAgainstAnyDistanceVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, Real);
 
@@ -103,23 +103,20 @@ where
                 if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
                     let part_id = *data[ii].unwrap();
                     let mut dist = Ok(0.0);
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         dist =
                             self.dispatcher
                                 .distance(&part_pos1.inv_mul(self.pos12), g1, self.g2);
                     });
 
-                    match dist {
-                        Ok(dist) => {
-                            if dist == 0.0 {
-                                return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, 0.0)));
-                            } else {
-                                weights[ii] = dist;
-                                mask[ii] = dist < best;
-                                results[ii] = Some((part_id, dist));
-                            }
+                    if let Ok(dist) = dist {
+                        if dist == 0.0 {
+                            return SimdBestFirstVisitStatus::ExitEarly(Some((part_id, 0.0)));
+                        } else {
+                            weights[ii] = dist;
+                            mask[ii] = dist < best;
+                            results[ii] = Some((part_id, dist));
                         }
-                        Err(_) => {}
                     }
                 }
             }

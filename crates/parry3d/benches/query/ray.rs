@@ -13,14 +13,14 @@ use test::Bencher;
 #[macro_use]
 mod macros;
 
-// FIXME: will the randomness of `solid` and `max_toi` affect too much the benchmark?
+// TODO: will the randomness of `solid` and `max_time_of_impact` affect too much the benchmark?
 bench_method!(
     bench_ray_against_ball,
     cast_ray,
     b: Ball,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -30,7 +30,7 @@ bench_method!(
     c: Cuboid,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -40,7 +40,7 @@ bench_method!(
     c: Capsule,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -50,7 +50,7 @@ bench_method!(
     c: Cone,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -60,7 +60,7 @@ bench_method!(
     c: Cylinder,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -70,7 +70,7 @@ bench_method!(
     a: Aabb,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -80,7 +80,7 @@ bench_method!(
     b: BoundingSphere,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -90,7 +90,7 @@ bench_method!(
     b: Ball,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -100,7 +100,7 @@ bench_method!(
     c: Cuboid,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -110,7 +110,7 @@ bench_method!(
     c: Capsule,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -120,7 +120,7 @@ bench_method!(
     c: Cone,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -130,7 +130,7 @@ bench_method!(
     c: Cylinder,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -140,7 +140,7 @@ bench_method!(
     c: Segment,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -150,7 +150,7 @@ bench_method!(
     c: Triangle,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -160,7 +160,7 @@ bench_method!(
     c: ConvexHull,
     pos: Isometry3<f32>,
     ray: Ray,
-    max_toi: f32,
+    max_time_of_impact: f32,
     solid: bool
 );
 
@@ -170,6 +170,6 @@ bench_method_gen!(
     m: TriMesh = generate_trimesh_around_origin,
     pos: Isometry3<f32> = generate,
     ray: Ray = generate,
-    max_toi: f32 = generate,
+    max_time_of_impact: f32 = generate,
     solid: bool = generate
 );

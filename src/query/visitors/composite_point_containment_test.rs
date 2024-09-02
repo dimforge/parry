@@ -43,16 +43,14 @@ impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
         if let Some(data) = b {
             let bitmask = mask.bitmask();
 
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.shape
-                        .map_typed_part_at(*data[ii].unwrap(), |part_pos, obj| {
-                            if obj
-                                .contains_local_point(&part_pos.inverse_transform_point(self.point))
-                            {
-                                self.found = true;
-                            }
-                        });
+            for (ii, data) in data.into_iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 {
+                    let Some(data) = data else { continue };
+                    self.shape.map_typed_part_at(*data, |part_pos, obj, _| {
+                        if obj.contains_local_point(&part_pos.inverse_transform_point(self.point)) {
+                            self.found = true;
+                        }
+                    });
 
                     if self.found {
                         return SimdVisitStatus::ExitEarly;

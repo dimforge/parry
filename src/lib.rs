@@ -14,6 +14,10 @@ the rust programming language.
 #![warn(missing_docs)] // TODO: deny this
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
+#![allow(clippy::too_many_arguments)] // Maybe revisit this one later.
+#![allow(clippy::module_inception)]
+#![allow(clippy::manual_range_contains)] // This usually makes it way more verbose that it could be.
+#![allow(clippy::type_complexity)] // Complains about closures that are fairly simple.
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "rkyv"), deny(unused_qualifications))] // TODO: deny that everytime
@@ -55,9 +59,6 @@ extern crate core as std;
 extern crate serde;
 #[macro_use]
 extern crate approx;
-#[macro_use]
-#[cfg(feature = "dim3")]
-extern crate bitflags;
 extern crate num_traits as num;
 
 pub extern crate either;
@@ -76,11 +77,11 @@ pub mod utils;
 mod real {
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f64")]
-    pub type Real = f64;
+    pub use f64 as Real;
 
     /// The scalar type used throughout this crate.
     #[cfg(feature = "f32")]
-    pub type Real = f32;
+    pub use f32 as Real;
 }
 
 /// Compilation flags dependent aliases for mathematical types.
@@ -248,12 +249,12 @@ mod simd {
 #[cfg(feature = "simd-is-enabled")]
 mod simd {
     #[cfg(all(feature = "simd-nightly", feature = "f32"))]
-    pub use simba::simd::{f32x4 as SimdReal, m32x4 as SimdBool};
+    pub use simba::simd::{f32x4 as SimdReal, mask32x4 as SimdBool};
     #[cfg(all(feature = "simd-stable", feature = "f32"))]
     pub use simba::simd::{WideBoolF32x4 as SimdBool, WideF32x4 as SimdReal};
 
     #[cfg(all(feature = "simd-nightly", feature = "f64"))]
-    pub use simba::simd::{f64x4 as SimdReal, m64x4 as SimdBool};
+    pub use simba::simd::{f64x4 as SimdReal, mask64x4 as SimdBool};
     #[cfg(all(feature = "simd-stable", feature = "f64"))]
     pub use simba::simd::{WideBoolF64x4 as SimdBool, WideF64x4 as SimdReal};
 

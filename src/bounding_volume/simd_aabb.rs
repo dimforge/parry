@@ -12,7 +12,6 @@ use simba::simd::{SimdPartialOrd, SimdValue};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 pub struct SimdAabb {
     /// The min coordinates of the Aabbs.
     pub mins: Point<SimdReal>,
@@ -203,14 +202,18 @@ impl SimdAabb {
     }
 
     /// Casts a ray on all the Aabbs represented by `self`.
-    pub fn cast_local_ray(&self, ray: &SimdRay, max_toi: SimdReal) -> (SimdBool, SimdReal) {
+    pub fn cast_local_ray(
+        &self,
+        ray: &SimdRay,
+        max_time_of_impact: SimdReal,
+    ) -> (SimdBool, SimdReal) {
         let zero = SimdReal::zero();
         let one = SimdReal::one();
         let infinity = SimdReal::splat(Real::MAX);
 
         let mut hit = SimdBool::splat(true);
         let mut tmin = SimdReal::zero();
-        let mut tmax = max_toi;
+        let mut tmax = max_time_of_impact;
 
         // TODO: could this be optimized more considering we really just need a boolean answer?
         for i in 0usize..DIM {
@@ -323,10 +326,10 @@ impl SimdAabb {
     /// result between `self.extract(i)` and `other.extract(j)`.
     pub fn intersects_permutations(&self, other: &SimdAabb) -> [SimdBool; SIMD_WIDTH] {
         let mut result = [SimdBool::splat(false); SIMD_WIDTH];
-        for ii in 0..SIMD_WIDTH {
+        for (ii, result) in result.iter_mut().enumerate() {
             // TODO: use SIMD-accelerated shuffling?
             let extracted = SimdAabb::splat(self.extract(ii));
-            result[ii] = extracted.intersects(other);
+            *result = extracted.intersects(other);
         }
 
         result

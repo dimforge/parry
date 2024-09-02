@@ -32,7 +32,7 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
     let mut edges = HashMap::default();
 
     struct EdgeData {
-        adjascent_triangles: [usize; 2],
+        adjacent_triangles: [usize; 2],
     }
 
     // println!(
@@ -65,11 +65,11 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
             match edges.entry(edge_key) {
                 Entry::Vacant(e) => {
                     let _ = e.insert(EdgeData {
-                        adjascent_triangles: [itri, usize::MAX],
+                        adjacent_triangles: [itri, usize::MAX],
                     });
                 }
                 Entry::Occupied(mut e) => {
-                    if e.get().adjascent_triangles[1] != usize::MAX {
+                    if e.get().adjacent_triangles[1] != usize::MAX {
                         panic!(
                             "Detected t-junction for triangle {}, edge: {:?}.",
                             itri,
@@ -77,14 +77,14 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
                         );
                     }
 
-                    e.get_mut().adjascent_triangles[1] = itri;
+                    e.get_mut().adjacent_triangles[1] = itri;
                 }
             }
         }
     }
 
     for edge in &edges {
-        if edge.1.adjascent_triangles[1] == usize::MAX {
+        if edge.1.adjacent_triangles[1] == usize::MAX {
             panic!("Detected unfinished triangle.");
         }
     }

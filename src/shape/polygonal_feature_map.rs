@@ -41,7 +41,7 @@ impl PolygonalFeatureMap for Triangle {
 
 impl PolygonalFeatureMap for Cuboid {
     fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
-        *out_feature = self.support_face(**dir).into();
+        *out_feature = self.support_face(**dir);
     }
 }
 

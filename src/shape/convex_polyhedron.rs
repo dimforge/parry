@@ -101,13 +101,13 @@ pub struct ConvexPolyhedron {
     vertices: Vec<Vertex>,
     faces: Vec<Face>,
     edges: Vec<Edge>,
-    // Faces adjascent to a vertex.
+    // Faces adjacent to a vertex.
     faces_adj_to_vertex: Vec<u32>,
-    // Edges adjascent to a vertex.
+    // Edges adjacent to a vertex.
     edges_adj_to_vertex: Vec<u32>,
-    // Edges adjascent to a face.
+    // Edges adjacent to a face.
     edges_adj_to_face: Vec<u32>,
-    // Vertices adjascent to a face.
+    // Vertices adjacent to a face.
     vertices_adj_to_face: Vec<u32>,
 }
 
@@ -128,7 +128,7 @@ impl ConvexPolyhedron {
     ///
     /// # Return
     ///
-    /// Retruns `None` if he given solid is not manifold (contains t-junctions, not closed, etc.)
+    /// Returns `None` if the given solid is not manifold (contains t-junctions, not closed, etc.)
     pub fn from_convex_mesh(
         points: Vec<Point<Real>>,
         indices: &[[u32; DIM]],
@@ -337,15 +337,14 @@ impl ConvexPolyhedron {
         faces_adj_to_vertex.resize(total_num_adj_faces as usize, 0);
         edges_adj_to_vertex.resize(total_num_adj_faces as usize, 0);
 
-        // Reset the number of adjascent faces.
-        // It will be set againt to the right value as
-        // the adjascent face list is filled.
+        // Reset the number of adjacent faces.
+        // It will be set again to the right value as
+        // the adjacent face list is filled.
         for v in &mut vertices {
             v.num_adj_faces_or_edge = 0;
         }
 
-        for face_id in 0..faces.len() {
-            let face = &faces[face_id];
+        for (face_id, face) in faces.iter().enumerate() {
             let first_vid = face.first_vertex_or_edge;
             let last_vid = face.first_vertex_or_edge + face.num_vertices_or_edges;
 
@@ -375,7 +374,7 @@ impl ConvexPolyhedron {
             vertices_adj_to_face,
         };
 
-        // FIXME: for debug.
+        // TODO: for debug.
         // res.check_geometry();
 
         Some(res)

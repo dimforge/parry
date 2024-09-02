@@ -6,8 +6,7 @@ pub fn point_cloud_support_point_id(dir: &Vector<Real>, points: &[Point<Real>]) 
     let mut best_pt = 0;
     let mut best_dot = points[0].coords.dot(dir);
 
-    for i in 1..points.len() {
-        let p = &points[i];
+    for (i, p) in points.iter().enumerate().skip(1) {
         let dot = p.coords.dot(dir);
 
         if dot > best_dot {

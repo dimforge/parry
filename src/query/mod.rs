@@ -7,8 +7,8 @@
 //! * [`distance()`] to compute the distance between two shapes.
 //! * [`contact()`] to compute one pair of contact points between two shapes, including penetrating contact.
 //! * [`intersection_test()`] to determine if two shapes are intersecting or not.
-//! * [`time_of_impact()`] to determine when two shapes undergoing translational motions hit for the first time.
-//! * [`nonlinear_time_of_impact()`] to determine when two shapes undergoing continuous rigid motions hit for the first time.
+//! * [`cast_shapes()`] to determine when two shapes undergoing translational motions hit for the first time.
+//! * [`cast_shapes_nonlinear()`] to determine when two shapes undergoing continuous rigid motions hit for the first time.
 //!
 //! Ray-casting and point-projection can be achieved by importing traits:
 //!
@@ -35,14 +35,14 @@ pub use self::default_query_dispatcher::DefaultQueryDispatcher;
 pub use self::distance::distance;
 pub use self::error::Unsupported;
 pub use self::intersection_test::intersection_test;
-pub use self::nonlinear_time_of_impact::{nonlinear_time_of_impact, NonlinearRigidMotion};
+pub use self::nonlinear_shape_cast::{cast_shapes_nonlinear, NonlinearRigidMotion};
 pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
 #[cfg(feature = "std")]
 pub use self::query_dispatcher::PersistentQueryDispatcher;
 pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
+pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
 pub use self::split::{IntersectResult, SplitResult};
-pub use self::time_of_impact::{time_of_impact, TOIStatus, TOI};
 
 mod clip;
 pub mod closest_points;
@@ -56,13 +56,14 @@ pub mod epa;
 mod error;
 pub mod gjk;
 mod intersection_test;
-mod nonlinear_time_of_impact;
+mod nonlinear_shape_cast;
 pub mod point;
 mod query_dispatcher;
 mod ray;
 pub mod sat;
+mod shape_cast;
 mod split;
-mod time_of_impact;
+#[cfg(feature = "std")]
 pub mod visitors;
 
 /// Queries dedicated to specific pairs of shapes.
@@ -74,8 +75,8 @@ pub mod details {
     pub use super::contact_manifolds::*;
     pub use super::distance::*;
     pub use super::intersection_test::*;
-    pub use super::nonlinear_time_of_impact::*;
+    pub use super::nonlinear_shape_cast::*;
     pub use super::point::*;
     pub use super::ray::*;
-    pub use super::time_of_impact::*;
+    pub use super::shape_cast::*;
 }

@@ -1,71 +1,199 @@
 [package]
-name    = "parry3d"
-version = "0.13.6"
-authors = [ "Sébastien Crozet <developer@crozet.re>" ]
+name = "parry3d"
+version = "0.17.0"
+authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
 documentation = "https://parry.rs/docs"
 homepage = "https://parry.rs"
 repository = "https://github.com/dimforge/parry"
 readme = "README.md"
-keywords = [ "collision", "geometry", "distance", "ray", "convex" ]
-categories = [ "science", "game-development", "mathematics", "wasm"]
+keywords = ["collision", "geometry", "distance", "ray", "convex"]
+categories = ["science", "game-development", "mathematics", "wasm"]
 license = "Apache-2.0"
 edition = "2021"
 
 [badges]
 maintenance = { status = "actively-developed" }
 
-[features]
-default = [ "required-features", "std" ]
-required-features = [ "dim3", "f32" ]
-std     = [ "nalgebra/std", "slab", "rustc-hash", "simba/std", "arrayvec/std", "spade" ]
-dim3    = [ ]
-f32     = [ ]
-serde-serialize = [ "serde", "nalgebra/serde-serialize" ]
-rkyv-serialize = [ "rkyv/validation", "nalgebra/rkyv-serialize", "simba/rkyv-serialize" ]
-bytemuck-serialize = [ "bytemuck", "nalgebra/convert-bytemuck" ]
+[lints]
+workspace = true
 
-simd-stable = [ "simba/wide", "simd-is-enabled" ]
-simd-nightly = [ "simba/packed_simd", "simd-is-enabled" ]
-enhanced-determinism = [ "simba/libm_force", "indexmap" ]
-cuda   = [ "cust_core", "cust", "nalgebra/cuda" ]
-parallel = [ "rayon" ]
+[features]
+default = ["required-features", "std"]
+required-features = ["dim3", "f32"]
+std = [
+    "nalgebra/std",
+    "slab",
+    "rustc-hash",
+    "simba/std",
+    "arrayvec/std",
+    "spade",
+    "thiserror",
+]
+dim3 = []
+f32 = []
+serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
+rkyv-serialize = [
+    "rkyv/validation",
+    "nalgebra/rkyv-serialize",
+    "simba/rkyv-serialize",
+]
+bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
+
+simd-stable = ["simba/wide", "simd-is-enabled"]
+simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
+enhanced-determinism = ["simba/libm_force", "indexmap"]
+parallel = ["rayon"]
+wavefront = ["obj"]
+alloc = []
+improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = [ ]
+simd-is-enabled = []
 
 [lib]
 name = "parry3d"
 path = "../../src/lib.rs"
-required-features = [ "required-features" ]
+required-features = ["required-features"]
 
 [dependencies]
-either      = { version = "1", default-features = false }
-bitflags    = "1"
+either = { version = "1", default-features = false }
+bitflags = "2.3"
 downcast-rs = { version = "1", default-features = false }
 num-traits = { version = "0.2", default-features = false }
-smallvec   = "1"
-slab       = { version = "0.4", optional = true }
-arrayvec   = { version = "0.7", default-features = false }
-simba      = { version = "0.8", default-features = false }
-nalgebra   = { version = "0.32", default-features = false, features = [ "libm" ] }
-approx     = { version = "0.5", default-features = false }
-serde      = { version = "1.0", optional = true, features = ["derive", "rc"]}
-rkyv       = { version = "0.7.41", optional = true }
+smallvec = "1"
+slab = { version = "0.4", optional = true }
+arrayvec = { version = "0.7", default-features = false }
+simba = { version = "0.9", default-features = false }
+nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
+approx = { version = "0.5", default-features = false }
+serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
+rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
-indexmap   = { version = "1", features = [ "serde-1" ], optional = true }
-rustc-hash = { version = "1", optional = true }
-cust_core  = { version = "0.1", optional = true }
-spade      = { version = "2", optional = true } # Make this optional?
-rayon      = { version = "1", optional = true }
-bytemuck   = { version = "1", features = [ "derive" ], optional = true }
-
-[target.'cfg(not(target_os = "cuda"))'.dependencies]
-cust       = { version = "0.3", optional = true }
+indexmap = { version = "2", features = ["serde"], optional = true }
+rustc-hash = { version = "2", optional = true }
+cust_core = { version = "0.1", optional = true }
+spade = { version = "2.9", optional = true } # Make this optional?
+rayon = { version = "1", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
+log = "0.4"
+ordered-float = { version = "4", default-features = false }
+thiserror = { version = "1", optional = true }
+rstar = "0.12.0"
+obj = { version = "0.10.2", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
-ptree    = "0.4.0"
-rand     = { version = "0.8" }
+ptree = "0.4.0"
+rand = { version = "0.8" }
+macroquad = "0.4.12"
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+
+# The following listing is to allow for examples to be scraped,
+# see https://doc.rust-lang.org/rustdoc/scraped-examples.html#scraped-examples for details.
+# To help with generating this list, see the script `write_examples.sh`
+
+[[example]]
+name = "aabb3d"
+path = "examples/aabb3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "ball3d"
+path = "examples/ball3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "bounding_sphere3d"
+path = "examples/bounding_sphere3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "capsule"
+path = "examples/capsule.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cone"
+path = "examples/cone.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "contact_query3d"
+path = "examples/contact_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex3d"
+path = "examples/convex3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_hull3d"
+path = "examples/convex_hull3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "convex_try_new3d"
+path = "examples/convex_try_new3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cuboid3d"
+path = "examples/cuboid3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "cylinder"
+path = "examples/cylinder.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "distance_query3d"
+path = "examples/distance_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "getting_started"
+path = "examples/getting_started.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "mesh3d"
+path = "examples/mesh3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane3d"
+path = "examples/plane3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "polyline3d"
+path = "examples/polyline3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "proximity_query3d"
+path = "examples/proximity_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_point_query3d"
+path = "examples/solid_point_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "solid_ray_cast3d"
+path = "examples/solid_ray_cast3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "time_of_impact_query3d"
+path = "examples/time_of_impact_query3d.rs"
+doc-scrape-examples = true

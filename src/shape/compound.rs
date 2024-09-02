@@ -5,12 +5,12 @@
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::math::{Isometry, Real};
 use crate::partitioning::Qbvh;
+use crate::query::details::NormalConstraints;
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
-use crate::utils::DefaultStorage;
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -18,7 +18,7 @@ use crate::utils::DefaultStorage;
 /// the main way of creating a concave shape from convex parts. Each parts can have its own
 /// delta transformation to shift or rotate it with regard to the other shapes.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Compound {
     shapes: Vec<(Isometry<Real>, SharedShape)>,
     qbvh: Qbvh<u32>,
@@ -40,11 +40,11 @@ impl Compound {
         let mut leaves = Vec::new();
         let mut aabb = Aabb::new_invalid();
 
-        for (i, &(ref delta, ref shape)) in shapes.iter().enumerate() {
+        for (i, (delta, shape)) in shapes.iter().enumerate() {
             let bv = shape.compute_aabb(delta);
 
             aabb.merge(&bv);
-            aabbs.push(bv.clone());
+            aabbs.push(bv);
             leaves.push((i as u32, bv));
 
             if shape.as_composite_shape().is_some() {
@@ -123,9 +123,13 @@ impl Compound {
 
 impl SimdCompositeShape for Compound {
     #[inline]
-    fn map_part_at(&self, shape_id: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(
+        &self,
+        shape_id: u32,
+        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         if let Some(shape) = self.shapes.get(shape_id as usize) {
-            f(Some(&shape.0), &*shape.1)
+            f(Some(&shape.0), &*shape.1, None)
         }
     }
 
@@ -137,17 +141,21 @@ impl SimdCompositeShape for Compound {
 
 impl TypedSimdCompositeShape for Compound {
     type PartShape = dyn Shape;
+    type PartNormalConstraints = ();
     type PartId = u32;
-    type QbvhStorage = DefaultStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&Self::PartNormalConstraints>,
+        ),
     ) {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
-            f(Some(part_pos), &**part)
+            f(Some(part_pos), &**part, None)
         }
     }
 
@@ -155,10 +163,10 @@ impl TypedSimdCompositeShape for Compound {
     fn map_untyped_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape, Option<&dyn NormalConstraints>),
     ) {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
-            f(Some(part_pos), &**part)
+            f(Some(part_pos), &**part, None)
         }
     }
 

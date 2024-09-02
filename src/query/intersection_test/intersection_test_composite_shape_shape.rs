@@ -7,19 +7,19 @@ use crate::partitioning::{
 };
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
-use crate::utils::{DefaultStorage, IsometryOpt};
+use crate::utils::IsometryOpt;
 use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
-pub fn intersection_test_composite_shape_shape<D: ?Sized, G1: ?Sized>(
+pub fn intersection_test_composite_shape_shape<D, G1>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &dyn Shape,
 ) -> bool
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     let mut visitor = IntersectionCompositeShapeShapeVisitor::new(dispatcher, pos12, g1, g2);
 
@@ -28,15 +28,15 @@ where
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
-pub fn intersection_test_shape_composite_shape<D: ?Sized, G2: ?Sized>(
+pub fn intersection_test_shape_composite_shape<D, G2>(
     dispatcher: &D,
     pos12: &Isometry<Real>,
     g1: &dyn Shape,
     g2: &G2,
 ) -> bool
 where
-    D: QueryDispatcher,
-    G2: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G2: ?Sized + TypedSimdCompositeShape,
 {
     intersection_test_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }
@@ -53,10 +53,10 @@ pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: ?Sized + 'a
     found_intersection: bool,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> IntersectionCompositeShapeShapeVisitor<'a, D, G1>
+impl<'a, D, G1> IntersectionCompositeShapeShapeVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
@@ -78,11 +78,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdVisitor<G1::PartId, SimdAabb>
     for IntersectionCompositeShapeShapeVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     fn visit(
         &mut self,
@@ -95,10 +95,11 @@ where
             let bitmask = mask.bitmask();
             let mut found_intersection = false;
 
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    let part_id = *data[ii].unwrap();
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+            for (ii, data) in data.into_iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 {
+                    let Some(data) = data else { continue };
+                    let part_id = *data;
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         found_intersection = self.dispatcher.intersection_test(
                             &part_pos1.inv_mul(self.pos12),
                             g1,
@@ -130,10 +131,10 @@ pub struct IntersectionCompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?S
     g2: &'a dyn Shape,
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1>
+impl<'a, D, G1> IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
@@ -155,11 +156,11 @@ where
     }
 }
 
-impl<'a, D: ?Sized, G1: ?Sized> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
     for IntersectionCompositeShapeShapeBestFirstVisitor<'a, D, G1>
 where
-    D: QueryDispatcher,
-    G1: TypedSimdCompositeShape<QbvhStorage = DefaultStorage>,
+    D: ?Sized + QueryDispatcher,
+    G1: ?Sized + TypedSimdCompositeShape,
 {
     type Result = (G1::PartId, bool);
 
@@ -181,10 +182,10 @@ where
             let bitmask = mask.bitmask();
             let mut found_intersection = false;
 
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    let part_id = *data[ii].unwrap();
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1| {
+            for (ii, data) in data.into_iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 && data.is_some() {
+                    let part_id = *data.unwrap();
+                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
                         found_intersection = self.dispatcher.intersection_test(
                             &part_pos1.inv_mul(self.pos12),
                             g1,

@@ -5,11 +5,11 @@ use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
 
-use crate::utils::DefaultStorage;
+use crate::query::details::NormalConstraints;
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // for .abs()
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -169,7 +169,7 @@ impl Polyline {
         let vertices = self.vertices();
         let indices = self.indices();
 
-        if indices.len() == 0 {
+        if indices.is_empty() {
             // Polyline is empty, return empty Vec
             Vec::new()
         } else {
@@ -182,7 +182,7 @@ impl Polyline {
             let mut component_indices: Vec<[u32; 2]> = Vec::new();
 
             // Iterate over indices, building polylines as we go
-            for (i, idx) in indices.into_iter().enumerate() {
+            for (i, idx) in indices.iter().enumerate() {
                 component_vertices.push(vertices[idx[0] as usize]);
 
                 if idx[1] != start_node {
@@ -192,8 +192,8 @@ impl Polyline {
                     // Start node reached: build polyline and start next component
                     component_indices.push([(i - start_i) as u32, 0]);
                     components.push(Polyline::new(
-                        component_vertices.drain(..).collect(),
-                        Some(component_indices.drain(..).collect()),
+                        std::mem::take(&mut component_vertices),
+                        Some(std::mem::take(&mut component_indices)),
                     ));
 
                     if i + 1 < indices.len() {
@@ -218,6 +218,8 @@ impl Polyline {
     ///   `num_indices == self.indices.len()`.
     /// - This polyline is oriented counter-clockwise.
     /// - In 3D, the polyline is assumed to be fully coplanar, on a plane with normal given by
+    ///   `axis`.
+    ///
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,
@@ -278,9 +280,13 @@ impl Polyline {
 }
 
 impl SimdCompositeShape for Polyline {
-    fn map_part_at(&self, i: u32, f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_part_at(
+        &self,
+        i: u32,
+        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let tri = self.segment(i);
-        f(None, &tri)
+        f(None, &tri, None)
     }
 
     fn qbvh(&self) -> &Qbvh<u32> {
@@ -290,23 +296,31 @@ impl SimdCompositeShape for Polyline {
 
 impl TypedSimdCompositeShape for Polyline {
     type PartShape = Segment;
+    type PartNormalConstraints = ();
     type PartId = u32;
-    type QbvhStorage = DefaultStorage;
 
     #[inline(always)]
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape),
+        mut f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&Self::PartNormalConstraints>,
+        ),
     ) {
         let seg = self.segment(i);
-        f(None, &seg)
+        f(None, &seg, None)
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(&self, i: u32, mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape)) {
+    fn map_untyped_part_at(
+        &self,
+        i: u32,
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+    ) {
         let seg = self.segment(i);
-        f(None, &seg)
+        f(None, &seg, None)
     }
 
     fn typed_qbvh(&self) -> &Qbvh<u32> {

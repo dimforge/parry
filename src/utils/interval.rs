@@ -77,17 +77,15 @@ pub fn find_root_intervals_to<T: RealField + Copy>(
 
         let prev_width = candidate.width();
 
-        for new_candidate in new_candidates.iter() {
-            if let Some(new_candidate) = new_candidate {
-                if new_candidate.width() > prev_width * na::convert(0.75) {
-                    // If the new candidate range is still quite big compared to
-                    // new candidate, split it to accelerate the search.
-                    let [a, b] = new_candidate.split();
-                    push_candidate(a, recursion, results, candidates);
-                    push_candidate(b, recursion, results, candidates);
-                } else {
-                    push_candidate(*new_candidate, recursion, results, candidates);
-                }
+        for new_candidate in new_candidates.iter().flatten() {
+            if new_candidate.width() > prev_width * na::convert(0.75) {
+                // If the new candidate range is still quite big compared to
+                // new candidate, split it to accelerate the search.
+                let [a, b] = new_candidate.split();
+                push_candidate(a, recursion, results, candidates);
+                push_candidate(b, recursion, results, candidates);
+            } else {
+                push_candidate(*new_candidate, recursion, results, candidates);
             }
         }
     }
@@ -151,7 +149,7 @@ impl<T> Interval<T> {
         self.0 <= t && self.1 >= t
     }
 
-    /// The width of this inverval.
+    /// The width of this interval.
     #[must_use]
     pub fn width(self) -> T::Output
     where
@@ -170,7 +168,7 @@ impl<T> Interval<T> {
         (self.0 + self.1) / two
     }
 
-    /// Splits this interval at its mitpoint.
+    /// Splits this interval at its midpoint.
     #[must_use]
     pub fn split(self) -> [Self; 2]
     where
@@ -359,14 +357,12 @@ where
             } else {
                 Interval(a1 * b2, a2 * b2)
             }
+        } else if b2 <= T::zero() {
+            Interval(a2 * b1, a1 * b2)
+        } else if b1 < T::zero() {
+            Interval(a2 * b1, a2 * b2)
         } else {
-            if b2 <= T::zero() {
-                Interval(a2 * b1, a1 * b2)
-            } else if b1 < T::zero() {
-                Interval(a2 * b1, a2 * b2)
-            } else {
-                Interval(a1 * b1, a2 * b2)
-            }
+            Interval(a1 * b1, a2 * b2)
         }
     }
 }
@@ -403,38 +399,32 @@ where
                 }
             } else if a1 <= T::zero() {
                 (Interval(-infinity, infinity), None)
+            } else if b2 == T::zero() {
+                (Interval(-infinity, a1 / b1), None)
+            } else if b1 != T::zero() {
+                (
+                    Interval(-infinity, a1 / b1),
+                    Some(Interval(a1 / b2, infinity)),
+                )
             } else {
-                if b2 == T::zero() {
-                    (Interval(-infinity, a1 / b1), None)
-                } else if b1 != T::zero() {
-                    (
-                        Interval(-infinity, a1 / b1),
-                        Some(Interval(a1 / b2, infinity)),
-                    )
-                } else {
-                    (Interval(a1 / b2, infinity), None)
-                }
+                (Interval(a1 / b2, infinity), None)
             }
+        } else if a2 <= T::zero() {
+            if b2 < T::zero() {
+                (Interval(a2 / b1, a1 / b2), None)
+            } else {
+                (Interval(a1 / b1, a2 / b2), None)
+            }
+        } else if a1 < T::zero() {
+            if b2 < T::zero() {
+                (Interval(a2 / b2, a1 / b2), None)
+            } else {
+                (Interval(a1 / b1, a2 / b1), None)
+            }
+        } else if b2 < T::zero() {
+            (Interval(a2 / b2, a1 / b1), None)
         } else {
-            if a2 <= T::zero() {
-                if b2 < T::zero() {
-                    (Interval(a2 / b1, a1 / b2), None)
-                } else {
-                    (Interval(a1 / b1, a2 / b2), None)
-                }
-            } else if a1 < T::zero() {
-                if b2 < T::zero() {
-                    (Interval(a2 / b2, a1 / b2), None)
-                } else {
-                    (Interval(a1 / b1, a2 / b1), None)
-                }
-            } else {
-                if b2 < T::zero() {
-                    (Interval(a2 / b2, a1 / b1), None)
-                } else {
-                    (Interval(a1 / b2, a2 / b1), None)
-                }
-            }
+            (Interval(a1 / b2, a2 / b1), None)
         }
     }
 }

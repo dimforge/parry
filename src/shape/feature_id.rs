@@ -12,7 +12,7 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(as = "Self")
 )]
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum FeatureId {
     /// Shape-dependent identifier of a vertex.
     Vertex(u32),
@@ -23,13 +23,8 @@ pub enum FeatureId {
     Face(u32),
     // XXX: remove this variant.
     /// Unknown identifier.
+    #[default]
     Unknown,
-}
-
-impl Default for FeatureId {
-    fn default() -> Self {
-        FeatureId::Unknown
-    }
 }
 
 impl FeatureId {

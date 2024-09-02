@@ -27,12 +27,12 @@ pub enum GJKResult {
     Proximity(Unit<Vector<Real>>),
     /// Result of the GJK algorithm when the origin is too far away from the polytope.
     ///
-    /// The returned vector is expressed in the local-space of the first geomety involved in the
+    /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
     NoIntersection(Unit<Vector<Real>>),
 }
 
-/// The absolute tolerence used by the GJK algorithm.
+/// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
     _eps * 10.0
@@ -46,14 +46,11 @@ pub fn eps_tol() -> Real {
 /// the EPA algorithm failed to compute the projection.
 ///
 /// Return the projected point in the local-space of `g`.
-pub fn project_origin<G: ?Sized>(
+pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry<Real>,
     g: &G,
     simplex: &mut VoronoiSimplex,
-) -> Option<Point<Real>>
-where
-    G: SupportMap,
-{
+) -> Option<Point<Real>> {
     match closest_points(
         &m.inverse(),
         g,
@@ -79,11 +76,11 @@ where
 /// * simplex - the simplex to be used by the GJK algorithm. It must be already initialized
 ///             with at least one point on the shape boundary.
 /// * exact_dist - if `false`, the gjk will stop as soon as it can prove that the origin is at
-/// a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
-/// `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
-/// compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
-/// than `max_dist` but not inside `shape`.
-pub fn closest_points<G1: ?Sized, G2: ?Sized>(
+///   a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
+///   `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
+///   compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
+///   than `max_dist` but not inside `shape`.
+pub fn closest_points<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -92,14 +89,14 @@ pub fn closest_points<G1: ?Sized, G2: ?Sized>(
     simplex: &mut VoronoiSimplex,
 ) -> GJKResult
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
 
     let mut old_dir;
@@ -137,7 +134,7 @@ where
         let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
         let min_bound = -dir.dot(&cso_point.point.coords);
 
-        assert!(min_bound == min_bound);
+        assert!(min_bound.is_finite());
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
@@ -178,31 +175,36 @@ where
             }
         }
         niter += 1;
-        if niter == 10000 {
+
+        if niter == 100 {
             return GJKResult::NoIntersection(Vector::x_axis());
         }
     }
 }
 
 /// Casts a ray on a support map using the GJK algorithm.
-pub fn cast_local_ray<G: ?Sized>(
+pub fn cast_local_ray<G: ?Sized + SupportMap>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
-    max_toi: Real,
-) -> Option<(Real, Vector<Real>)>
-where
-    G: SupportMap,
-{
+    max_time_of_impact: Real,
+) -> Option<(Real, Vector<Real>)> {
     let g2 = ConstantOrigin;
-    minkowski_ray_cast(&Isometry::identity(), shape, &g2, ray, max_toi, simplex)
+    minkowski_ray_cast(
+        &Isometry::identity(),
+        shape,
+        &g2,
+        ray,
+        max_time_of_impact,
+        simplex,
+    )
 }
 
 /// Compute the normal and the distance that can travel `g1` along the direction
 /// `dir` so that `g1` and `g2` just touch.
 ///
 /// The `dir` vector must be expressed in the local-space of the first shape.
-pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
+pub fn directional_distance<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
@@ -210,35 +212,37 @@ pub fn directional_distance<G1: ?Sized, G2: ?Sized>(
     simplex: &mut VoronoiSimplex,
 ) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
-    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(|(toi, normal)| {
-        let witnesses = if !toi.is_zero() {
-            result(simplex, simplex.dimension() == DIM)
-        } else {
-            // If there is penetration, the witness points
-            // are undefined.
-            (Point::origin(), Point::origin())
-        };
+    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(
+        |(time_of_impact, normal)| {
+            let witnesses = if !time_of_impact.is_zero() {
+                result(simplex, simplex.dimension() == DIM)
+            } else {
+                // If there is penetration, the witness points
+                // are undefined.
+                (Point::origin(), Point::origin())
+            };
 
-        (toi, normal, witnesses.0, witnesses.1)
-    })
+            (time_of_impact, normal, witnesses.0, witnesses.1)
+        },
+    )
 }
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
-fn minkowski_ray_cast<G1: ?Sized, G2: ?Sized>(
+fn minkowski_ray_cast<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
     ray: &Ray,
-    max_toi: Real,
+    max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
 ) -> Option<(Real, Vector<Real>)>
 where
-    G1: SupportMap,
-    G2: SupportMap,
+    G1: ?Sized + SupportMap,
+    G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = eps_tol();
@@ -259,7 +263,7 @@ where
     let support_point = CSOPoint::from_shapes(pos12, g1, g2, &dir);
     simplex.reset(support_point.translate(&-curr_ray.origin.coords));
 
-    // FIXME: reset the simplex if it is empty?
+    // TODO: reset the simplex if it is empty?
     let mut proj = simplex.project_origin_and_reduce();
     let mut max_bound = Real::max_value();
     let mut dir;
@@ -304,10 +308,10 @@ where
                     ldir = *dir;
                     ltoi += t;
 
-                    // NOTE: we divide by ray_length instead of doing max_toi * ray_length
-                    // because the multiplication may cause an overflow if max_toi is set
+                    // NOTE: we divide by ray_length instead of doing max_time_of_impact * ray_length
+                    // because the multiplication may cause an overflow if max_time_of_impact is set
                     // to Real::max_value() by users that want to have an infinite ray.
-                    if ltoi / ray_length > max_toi {
+                    if ltoi / ray_length > max_time_of_impact {
                         return None;
                     }
 
@@ -332,14 +336,14 @@ where
 
         let min_bound = -dir.dot(&(support_point.point.coords - curr_ray.origin.coords));
 
-        assert!(min_bound == min_bound);
+        assert!(min_bound.is_finite());
 
         if max_bound - min_bound <= _eps_rel * max_bound {
             // This is needed when using fixed-points to avoid missing
             // some castes.
-            // FIXME: I feel like we should always return `Some` in
+            // TODO: I feel like we should always return `Some` in
             // this case, even with floating-point numbers. Though it
-            // has not been sufficinetly tested with floats yet to be sure.
+            // has not been sufficiently tested with floats yet to be sure.
             if cfg!(feature = "improved_fixed_point_support") {
                 return Some((ltoi / ray_length, ldir));
             } else {
@@ -359,7 +363,7 @@ where
         }
 
         niter += 1;
-        if niter == 10000 {
+        if niter == 100 {
             return None;
         }
     }

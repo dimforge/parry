@@ -4,7 +4,7 @@ use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use simba::simd::{SimdBool as _, SimdValue};
 use std::marker::PhantomData;
 
-// FIXME: add a point cost fn.
+// TODO: add a point cost fn.
 
 /// Spatial partitioning structure visitor collecting nodes that may contain a given point.
 pub struct PointIntersectionsVisitor<'a, T, F> {
@@ -39,9 +39,11 @@ where
 
         if let Some(data) = b {
             let bitmask = mask.bitmask();
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    if !(self.callback)(data[ii].unwrap()) {
+
+            for (ii, data) in data.iter().enumerate() {
+                if (bitmask & (1 << ii)) != 0 {
+                    let Some(data) = data else { continue };
+                    if !(self.callback)(data) {
                         return SimdVisitStatus::ExitEarly;
                     }
                 }

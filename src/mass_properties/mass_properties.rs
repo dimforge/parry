@@ -28,6 +28,7 @@ pub struct MassProperties {
     pub inv_mass: Real,
     /// The inverse of the principal angular inertia of the rigid-body.
     ///
+    /// The angular inertia is calculated relative to [`Self::local_com`].
     /// Components set to zero are assumed to be infinite along the corresponding principal axis.
     pub inv_principal_inertia_sqrt: AngVector<Real>,
     #[cfg(feature = "dim3")]
@@ -101,7 +102,7 @@ impl MassProperties {
         let _ = principal_inertia_local_frame.renormalize();
 
         // Drop negative eigenvalues.
-        let principal_inertia = eigen.eigenvalues.map(|e| if e < EPSILON { 0.0 } else { e });
+        let principal_inertia = eigen.eigenvalues.map(|e| e.max(0.0));
 
         Self::with_principal_inertia_frame(
             local_com,
@@ -116,7 +117,7 @@ impl MassProperties {
         utils::inv(self.inv_mass)
     }
 
-    /// The angular inertia along the principal inertia axes of the rigid-body.
+    /// The angular inertia along the principal inertia axes and center of mass of the rigid-body.
     pub fn principal_inertia(&self) -> AngVector<Real> {
         #[cfg(feature = "dim2")]
         return utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
@@ -509,7 +510,7 @@ impl approx::RelativeEq for MassProperties {
 #[cfg(test)]
 mod test {
     use super::MassProperties;
-    use crate::math::Point;
+    use crate::math::{AngVector, Point};
     #[cfg(feature = "dim3")]
     use crate::math::{Rotation, Vector};
     use crate::shape::{Ball, Capsule, Shape};
@@ -573,11 +574,15 @@ mod test {
         assert_relative_eq!(m1m2m3 - m1 - m3, m2, epsilon = 1.0e-6);
         assert_relative_eq!(m1m2m3 - m2 - m3, m1, epsilon = 1.0e-6);
 
+        // NOTE: converting the inverse inertia matrices don’t work well here because
+        //       tiny inertia value originating from the subtraction can result in a non-zero
+        //       (but large) inverse.
         assert_relative_eq!(
-            ((m1m2m3 - m1) - m2) - m3,
-            MassProperties::zero(),
+            (((m1m2m3 - m1) - m2) - m3).principal_inertia(),
+            AngVector::zero(),
             epsilon = 1.0e-6
         );
+        assert_relative_eq!((((m1m2m3 - m1) - m2) - m3).mass(), 0.0, epsilon = 1.0e-6);
     }
 
     #[test]

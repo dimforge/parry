@@ -54,7 +54,7 @@ fn collinear_raycast_starting_above_segment() {
 }
 
 #[test]
-fn perpendicular_raycast_starting_behind_sement() {
+fn perpendicular_raycast_starting_behind_segment() {
     let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
     let ray = Ray::new(Point2::new(-1.0, 0.0), Vector2::new(1.0, 0.0));
     assert!(segment.intersects_local_ray(&ray, std::f32::MAX));
@@ -102,7 +102,7 @@ fn raycast_starting_outside_of_triangle() {
         .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
         .expect("No intersection");
 
-    assert_ne!(intersect.toi, 0.0);
+    assert_ne!(intersect.time_of_impact, 0.0);
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn raycast_starting_inside_of_triangle() {
         .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
         .expect("No intersection");
 
-    assert_eq!(intersect.toi, 0.0);
+    assert_eq!(intersect.time_of_impact, 0.0);
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn raycast_starting_on_edge_of_triangle() {
         .cast_local_ray_and_get_normal(&ray, std::f32::MAX, true)
         .expect("No intersection");
 
-    assert_eq!(intersect.toi, 0.0);
+    assert_eq!(intersect.time_of_impact, 0.0);
 }
 
 ///    Ray Target

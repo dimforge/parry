@@ -60,11 +60,12 @@ impl PointQueryWithLocation for Triangle {
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
+        // To understand the ideas, consider reading the slides below
+        // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf
+
         let a = self.a;
         let b = self.b;
         let c = self.c;
-
-        let _1 = 1.0;
 
         let ab = b - a;
         let ac = c - a;
@@ -184,7 +185,7 @@ impl PointQueryWithLocation for Triangle {
             ProjectionInfo::OnAB => {
                 // Voronoï region of `ab`.
                 let v = ab_ap / ab.norm_squared();
-                let bcoords = [_1 - v, v];
+                let bcoords = [1.0 - v, v];
 
                 let res = a + ab * v;
                 return (
@@ -195,7 +196,7 @@ impl PointQueryWithLocation for Triangle {
             ProjectionInfo::OnAC => {
                 // Voronoï region of `ac`.
                 let w = ac_ap / ac.norm_squared();
-                let bcoords = [_1 - w, w];
+                let bcoords = [1.0 - w, w];
 
                 let res = a + ac * w;
                 return (
@@ -206,7 +207,7 @@ impl PointQueryWithLocation for Triangle {
             ProjectionInfo::OnBC => {
                 // Voronoï region of `bc`.
                 let w = bc.dot(&bp) / bc.norm_squared();
-                let bcoords = [_1 - w, w];
+                let bcoords = [1.0 - w, w];
 
                 let res = b + bc * w;
                 return (
@@ -221,10 +222,10 @@ impl PointQueryWithLocation for Triangle {
                     // may result in the denominator being zero
                     // when the triangle is nearly degenerate.
                     if va + vb + vc != 0.0 {
-                        let denom = _1 / (va + vb + vc);
+                        let denom = 1.0 / (va + vb + vc);
                         let v = vb * denom;
                         let w = vc * denom;
-                        let bcoords = [_1 - v - w, v, w];
+                        let bcoords = [1.0 - v - w, v, w];
                         let res = a + ab * v + ac * w;
 
                         return (
@@ -254,8 +255,8 @@ impl PointQueryWithLocation for Triangle {
 
             let bc = c - b;
             let d_ab = ap.norm_squared() - (ab.norm_squared() * v * v);
-            let d_ac = ap.norm_squared() - (ac.norm_squared() * u * u);
-            let d_bc = bp.norm_squared() - (bc.norm_squared() * w * w);
+            let d_ac = ap.norm_squared() - (ac.norm_squared() * w * w);
+            let d_bc = bp.norm_squared() - (bc.norm_squared() * u * u);
 
             let proj;
             let loc;
@@ -263,27 +264,25 @@ impl PointQueryWithLocation for Triangle {
             if d_ab < d_ac {
                 if d_ab < d_bc {
                     // ab
-                    let bcoords = [_1 - v, v];
+                    let bcoords = [1.0 - v, v];
                     proj = a + ab * v;
                     loc = TrianglePointLocation::OnEdge(0, bcoords);
                 } else {
                     // bc
-                    let bcoords = [_1 - u, u];
+                    let bcoords = [1.0 - u, u];
                     proj = b + bc * u;
                     loc = TrianglePointLocation::OnEdge(1, bcoords);
                 }
+            } else if d_ac < d_bc {
+                // ac
+                let bcoords = [1.0 - w, w];
+                proj = a + ac * w;
+                loc = TrianglePointLocation::OnEdge(2, bcoords);
             } else {
-                if d_ac < d_bc {
-                    // ac
-                    let bcoords = [_1 - w, w];
-                    proj = a + ac * w;
-                    loc = TrianglePointLocation::OnEdge(2, bcoords);
-                } else {
-                    // bc
-                    let bcoords = [_1 - u, u];
-                    proj = b + bc * u;
-                    loc = TrianglePointLocation::OnEdge(1, bcoords);
-                }
+                // bc
+                let bcoords = [1.0 - u, u];
+                proj = b + bc * u;
+                loc = TrianglePointLocation::OnEdge(1, bcoords);
             }
 
             (PointProjection::new(true, proj), loc)

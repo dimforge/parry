@@ -1,11 +1,13 @@
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::query::details::ShapeCastOptions;
 use crate::query::{
-    self, details::NonlinearTOIMode, ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher,
-    Unsupported, TOI,
+    self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
+    QueryDispatcher, ShapeCastHit, Unsupported,
 };
 #[cfg(feature = "std")]
 use crate::query::{
-    contact_manifolds::ContactManifoldsWorkspace, query_dispatcher::PersistentQueryDispatcher,
+    contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
+    query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
@@ -267,96 +269,88 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         }
     }
 
-    fn time_of_impact(
+    fn cast_shapes(
         &self,
         pos12: &Isometry<Real>,
         local_vel12: &Vector<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
-        max_toi: Real,
-        stop_at_penetration: bool,
-    ) -> Result<Option<TOI>, Unsupported> {
+        options: ShapeCastOptions,
+    ) -> Result<Option<ShapeCastHit>, Unsupported> {
         if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
-            Ok(query::details::time_of_impact_ball_ball(
+            Ok(query::details::cast_shapes_ball_ball(
                 pos12,
                 local_vel12,
                 b1,
                 b2,
-                max_toi,
+                options,
             ))
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
-            Ok(query::details::time_of_impact_halfspace_support_map(
+            Ok(query::details::cast_shapes_halfspace_support_map(
                 pos12,
                 local_vel12,
                 p1,
                 s2,
-                max_toi,
-                stop_at_penetration,
+                options,
             ))
         } else if let (Some(s1), Some(p2)) =
             (shape1.as_support_map(), shape2.as_shape::<HalfSpace>())
         {
-            Ok(query::details::time_of_impact_support_map_halfspace(
+            Ok(query::details::cast_shapes_support_map_halfspace(
                 pos12,
                 local_vel12,
                 s1,
                 p2,
-                max_toi,
-                stop_at_penetration,
+                options,
             ))
         } else {
             #[cfg(feature = "std")]
             if let Some(heightfield1) = shape1.as_heightfield() {
-                return query::details::time_of_impact_heightfield_shape(
+                return query::details::cast_shapes_heightfield_shape(
                     self,
                     pos12,
                     local_vel12,
                     heightfield1,
                     shape2,
-                    max_toi,
-                    stop_at_penetration,
+                    options,
                 );
             } else if let Some(heightfield2) = shape1.as_heightfield() {
-                return query::details::time_of_impact_shape_heightfield(
+                return query::details::cast_shapes_shape_heightfield(
                     self,
                     pos12,
                     local_vel12,
                     shape1,
                     heightfield2,
-                    max_toi,
-                    stop_at_penetration,
+                    options,
                 );
             } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map())
             {
-                return Ok(query::details::time_of_impact_support_map_support_map(
+                return Ok(query::details::cast_shapes_support_map_support_map(
                     pos12,
                     local_vel12,
                     s1,
                     s2,
-                    max_toi,
-                    stop_at_penetration,
+                    options,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
-                return Ok(query::details::time_of_impact_composite_shape_shape(
+                return Ok(query::details::cast_shapes_composite_shape_shape(
                     self,
                     pos12,
                     local_vel12,
                     c1,
                     shape2,
-                    max_toi,
-                    stop_at_penetration,
+                    options,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
-                return Ok(query::details::time_of_impact_shape_composite_shape(
+                return Ok(query::details::cast_shapes_shape_composite_shape(
                     self,
                     pos12,
                     local_vel12,
                     shape1,
                     c2,
-                    max_toi,
-                    stop_at_penetration,
+                    options,
                 ));
             }
 
@@ -364,7 +358,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         }
     }
 
-    fn nonlinear_time_of_impact(
+    fn cast_shapes_nonlinear(
         &self,
         motion1: &NonlinearRigidMotion,
         shape1: &dyn Shape,
@@ -373,53 +367,49 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         start_time: Real,
         end_time: Real,
         stop_at_penetration: bool,
-    ) -> Result<Option<TOI>, Unsupported> {
+    ) -> Result<Option<ShapeCastHit>, Unsupported> {
         if let (Some(sm1), Some(sm2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             let mode = if stop_at_penetration {
-                NonlinearTOIMode::StopAtPenetration
+                NonlinearShapeCastMode::StopAtPenetration
             } else {
-                NonlinearTOIMode::directional_toi(shape1, shape2)
+                NonlinearShapeCastMode::directional_toi(shape1, shape2)
             };
 
             Ok(
-                query::details::nonlinear_time_of_impact_support_map_support_map(
+                query::details::cast_shapes_nonlinear_support_map_support_map(
                     self, motion1, sm1, shape1, motion2, sm2, shape2, start_time, end_time, mode,
                 ),
             )
         } else {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
-                return Ok(
-                    query::details::nonlinear_time_of_impact_composite_shape_shape(
-                        self,
-                        motion1,
-                        c1,
-                        motion2,
-                        shape2,
-                        start_time,
-                        end_time,
-                        stop_at_penetration,
-                    ),
-                );
+                return Ok(query::details::cast_shapes_nonlinear_composite_shape_shape(
+                    self,
+                    motion1,
+                    c1,
+                    motion2,
+                    shape2,
+                    start_time,
+                    end_time,
+                    stop_at_penetration,
+                ));
             } else if let Some(c2) = shape2.as_composite_shape() {
-                return Ok(
-                    query::details::nonlinear_time_of_impact_shape_composite_shape(
-                        self,
-                        motion1,
-                        shape1,
-                        motion2,
-                        c2,
-                        start_time,
-                        end_time,
-                        stop_at_penetration,
-                    ),
-                );
+                return Ok(query::details::cast_shapes_nonlinear_shape_composite_shape(
+                    self,
+                    motion1,
+                    shape1,
+                    motion2,
+                    c2,
+                    start_time,
+                    end_time,
+                    stop_at_penetration,
+                ));
             }
             /* } else if let (Some(p1), Some(s2)) = (shape1.as_shape::<HalfSpace>(), shape2.as_support_map()) {
-            //        query::details::nonlinear_time_of_impact_halfspace_support_map(m1, vel1, p1, m2, vel2, s2)
+            //        query::details::cast_shapes_nonlinear_halfspace_support_map(m1, vel1, p1, m2, vel2, s2)
                     unimplemented!()
                 } else if let (Some(s1), Some(p2)) = (shape1.as_support_map(), shape2.as_shape::<HalfSpace>()) {
-            //        query::details::nonlinear_time_of_impact_support_map_halfspace(m1, vel1, s1, m2, vel2, p2)
+            //        query::details::cast_shapes_nonlinear_support_map_halfspace(m1, vel1, s1, m2, vel2, p2)
                     unimplemented!() */
 
             Err(Unsupported)
@@ -525,6 +515,8 @@ where
                         pos12,
                         shape1,
                         shape2,
+                        None,
+                        None,
                         prediction,
                         &mut manifolds[0],
                     );
@@ -540,6 +532,8 @@ where
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
+        normal_constraints1: Option<&dyn NormalConstraints>,
+        normal_constraints2: Option<&dyn NormalConstraints>,
         prediction: Real,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
     ) -> Result<(), Unsupported> {
@@ -563,12 +557,12 @@ where
                 contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold)
             }
             (_, ShapeType::Ball) | (ShapeType::Ball, _) => {
-                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, prediction, manifold)
+                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold)
             }
             // (ShapeType::Capsule, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Capsule) =>
             //     contact_manifold_cuboid_capsule_shapes(pos12, shape1, shape2, prediction, manifold),
             (ShapeType::Triangle, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Triangle) => {
-                contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, prediction, manifold)
+                contact_manifold_cuboid_triangle_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2,  prediction, manifold)
             }
             (ShapeType::HalfSpace, _) => {
                 if let Some((pfm2, border_radius2)) = shape2.as_polygonal_feature_map() {
@@ -606,7 +600,7 @@ where
                     shape2.as_polygonal_feature_map(),
                 ) {
                     contact_manifold_pfm_pfm(
-                        pos12, pfm1.0, pfm1.1, pfm2.0, pfm2.1, prediction, manifold,
+                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold,
                     )
                 } else {
                     return Err(Unsupported);

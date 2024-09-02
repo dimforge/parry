@@ -1,11 +1,11 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
-use crate::shape::{FeatureId, GenericHeightField, HeightFieldStorage, TrianglePointLocation};
+use crate::shape::{FeatureId, HeightField, TrianglePointLocation};
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // For sqrt.
 
-impl<Storage: HeightFieldStorage> PointQuery for GenericHeightField<Storage> {
+impl PointQuery for HeightField {
     fn project_local_point_with_max_dist(
         &self,
         pt: &Point<Real>,
@@ -59,11 +59,11 @@ impl<Storage: HeightFieldStorage> PointQuery for GenericHeightField<Storage> {
         &self,
         point: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        // FIXME: compute the feature properly.
+        // TODO: compute the feature properly.
         (self.project_local_point(point, false), FeatureId::Unknown)
     }
 
-    // FIXME: implement distance_to_point too?
+    // TODO: implement distance_to_point too?
 
     #[inline]
     fn contains_local_point(&self, _point: &Point<Real>) -> bool {
@@ -71,7 +71,7 @@ impl<Storage: HeightFieldStorage> PointQuery for GenericHeightField<Storage> {
     }
 }
 
-impl<Storage: HeightFieldStorage> PointQueryWithLocation for GenericHeightField<Storage> {
+impl PointQueryWithLocation for HeightField {
     type Location = (usize, TrianglePointLocation);
 
     #[inline]

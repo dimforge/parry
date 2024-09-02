@@ -24,7 +24,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
     points
 }
 
-// FIXME: remove that in favor of `push_xy_circle` ?
+// TODO: remove that in favor of `push_xy_circle` ?
 /// Pushes a discretized counterclockwise circle to a buffer.
 #[cfg(feature = "dim3")]
 #[inline]
@@ -34,10 +34,10 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
     for _ in 0..nsubdiv {
         out.push(Point::new(
             ComplexField::cos(curr_theta) * radius,
-            y.clone(),
+            y,
             ComplexField::sin(curr_theta) * radius,
         ));
-        curr_theta = curr_theta + dtheta;
+        curr_theta += dtheta;
     }
 }
 
@@ -55,7 +55,7 @@ pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point
         pt_coords[1] = ComplexField::sin(curr_theta) * radius;
         out.push(Point::from(pt_coords));
 
-        curr_theta = curr_theta + dtheta;
+        curr_theta += dtheta;
     }
 }
 
@@ -149,7 +149,7 @@ pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<
 #[cfg(feature = "dim3")]
 #[inline]
 pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<[u32; DIM]>) {
-    out.push([ul.clone(), dl, dr.clone()]);
+    out.push([ul, dl, dr]);
     out.push([dr, ur, ul]);
 }
 
@@ -179,7 +179,7 @@ pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std:
 /// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
 /// The `start` and `end` point are not pushed to `out_vtx`.
 ///
-/// ALso pushes to `out_idx` the appropriate index buffer to form the arc (including attaches to
+/// Also pushes to `out_idx` the appropriate index buffer to form the arc (including attaches to
 /// the `start` and `end` points).
 #[cfg(feature = "dim3")]
 pub fn push_arc_and_idx(
@@ -273,7 +273,7 @@ pub fn apply_revolution(
 ) {
     use na::RealField;
     let ang_increment = Real::two_pi() / (nsubdivs as Real);
-    let angs = [
+    let angles = [
         ang_increment * (nsubdivs / 4) as Real,
         ang_increment * (nsubdivs / 2) as Real,
         ang_increment * ((3 * nsubdivs) / 4) as Real,
@@ -295,9 +295,9 @@ pub fn apply_revolution(
     }
 
     // Push rotated profiles.
-    for i in 0..3 {
+    for angle in angles {
         let base = out_vtx.len() as u32;
-        let rot = na::UnitQuaternion::new(Vector::y() * angs[i]);
+        let rot = na::UnitQuaternion::new(Vector::y() * angle);
 
         if collapse_bottom {
             out_idx.push([0, base]);

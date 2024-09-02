@@ -1,8 +1,7 @@
 extern crate nalgebra as na;
 
 use na::{Isometry3, Vector3};
-use parry3d::math::Real;
-use parry3d::query;
+use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::{Ball, Cuboid};
 
 fn main() {
@@ -20,41 +19,38 @@ fn main() {
     let ball_vel1 = Vector3::new(2.0, 2.0, 2.0);
     let ball_vel2 = Vector3::new(-0.5, -0.5, -0.5);
 
-    let toi_intersecting = query::time_of_impact(
+    let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
         &ball_vel1,
         &ball,
         &cuboid_pos,
         &cuboid_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
-    let toi_will_touch = query::time_of_impact(
+    let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
         &ball_vel2,
         &ball,
         &cuboid_pos,
         &cuboid_vel2,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
-    let toi_wont_touch = query::time_of_impact(
+    let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
         &ball_vel1,
         &ball,
         &cuboid_pos,
         &cuboid_vel1,
         &cuboid,
-        Real::MAX,
-        true,
+        ShapeCastOptions::default(),
     )
     .unwrap();
 
-    assert_eq!(toi_intersecting.map(|toi| toi.toi), Some(0.0));
-    assert!(toi_will_touch.is_some() && toi_will_touch.unwrap().toi > 0.0);
-    assert_eq!(toi_wont_touch.map(|toi| toi.toi), None);
+    assert_eq!(toi_intersecting.map(|hit| hit.time_of_impact), Some(0.0));
+    assert!(toi_will_touch.is_some() && toi_will_touch.unwrap().time_of_impact > 0.0);
+    assert_eq!(toi_wont_touch.map(|hit| hit.time_of_impact), None);
 }

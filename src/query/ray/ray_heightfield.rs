@@ -4,25 +4,25 @@ use crate::query;
 use crate::query::{Ray, RayCast, RayIntersection};
 #[cfg(feature = "dim2")]
 use crate::shape::FeatureId;
-use crate::shape::{GenericHeightField, HeightFieldStorage};
+use crate::shape::HeightField;
 
 #[cfg(feature = "dim2")]
-impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
+impl RayCast for HeightField {
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         _: bool,
     ) -> Option<RayIntersection> {
         let aabb = self.local_aabb();
         let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
 
-        if min_t > max_toi {
+        if min_t > max_time_of_impact {
             return None;
         }
 
-        max_t = max_t.min(max_toi);
+        max_t = max_t.min(max_time_of_impact);
 
         let clip_ray_a = ray.point_at(min_t);
 
@@ -100,7 +100,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
                     &seg.scaled_direction(),
                 );
 
-                if t >= 0.0 && t <= 1.0 && s <= max_toi {
+                if t >= 0.0 && t <= 1.0 && s <= max_time_of_impact {
                     let n = seg.normal().unwrap().into_inner();
                     let fid = if n.dot(&ray.dir) > 0.0 {
                         // The ray hit the back face.
@@ -119,19 +119,19 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
 }
 
 #[cfg(feature = "dim3")]
-impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
+impl RayCast for HeightField {
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
         use num_traits::Bounded;
 
         let aabb = self.local_aabb();
         let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
-        max_t = max_t.min(max_toi);
+        max_t = max_t.min(max_time_of_impact);
         let clip_ray_a = ray.point_at(min_t);
         let mut cell = match self.cell_at_point(&clip_ray_a) {
             Some(cell) => cell,
@@ -157,14 +157,14 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
             let tris = self.triangles_at(cell.0, cell.1);
             let inter1 = tris
                 .0
-                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_toi, solid));
+                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
             let inter2 = tris
                 .1
-                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_toi, solid));
+                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
 
             match (inter1, inter2) {
                 (Some(mut inter1), Some(mut inter2)) => {
-                    if inter1.toi < inter2.toi {
+                    if inter1.time_of_impact < inter2.time_of_impact {
                         inter1.feature =
                             self.convert_triangle_feature_id(cell.0, cell.1, true, inter1.feature);
                         return Some(inter1);
@@ -194,7 +194,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
                 let x = self.x_at(cell.1 + 1);
                 ((x - ray.origin.x) / ray.dir.x, true)
             } else if ray.dir.x < 0.0 {
-                let x = self.x_at(cell.1 + 0);
+                let x = self.x_at(cell.1);
                 ((x - ray.origin.x) / ray.dir.x, false)
             } else {
                 (Real::max_value(), false)
@@ -204,7 +204,7 @@ impl<Storage: HeightFieldStorage> RayCast for GenericHeightField<Storage> {
                 let z = self.z_at(cell.0 + 1);
                 ((z - ray.origin.z) / ray.dir.z, true)
             } else if ray.dir.z < 0.0 {
-                let z = self.z_at(cell.0 + 0);
+                let z = self.z_at(cell.0);
                 ((z - ray.origin.z) / ray.dir.z, false)
             } else {
                 (Real::max_value(), false)

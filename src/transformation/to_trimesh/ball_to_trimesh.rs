@@ -33,7 +33,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
             ComplexField::sin(curr_phi),
             &mut coords,
         );
-        curr_phi = curr_phi + dphi;
+        curr_phi += dphi;
     }
 
     coords.push(Point::new(0.0, 1.0, 0.0));
@@ -83,7 +83,7 @@ pub(crate) fn unit_hemisphere(
             ComplexField::sin(curr_phi),
             &mut coords,
         );
-        curr_phi = curr_phi + dphi;
+        curr_phi += dphi;
     }
 
     coords.push(Point::new(0.0, 1.0, 0.0));

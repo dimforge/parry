@@ -43,7 +43,7 @@ pub fn contact_manifold_ball_ball<ManifoldData, ContactData: Default + Copy>(
         let fid = PackedFeatureId::face(0);
         let contact = TrackedContact::new(local_p1.into(), local_p2.into(), fid, fid, dist);
 
-        if manifold.points.len() != 0 {
+        if !manifold.points.is_empty() {
             manifold.points[0].copy_geometry_from(contact);
         } else {
             manifold.points.push(contact);

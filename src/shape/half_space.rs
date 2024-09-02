@@ -13,7 +13,6 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[repr(C)]
 pub struct HalfSpace {
     /// The halfspace planar boundary's outward normal.

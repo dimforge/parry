@@ -3,14 +3,17 @@ use crate::math::{Isometry, Point, Real, Vector, DIM};
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
 use crate::shape::DeserializableTypedShape;
+#[cfg(feature = "dim3")]
+use crate::shape::HeightFieldFlags;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, TriMeshFlags, Triangle,
+    TriMesh, TriMeshFlags, Triangle, TypedShape,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
 use na::Unit;
+use std::fmt;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -31,6 +34,13 @@ impl AsRef<dyn Shape> for SharedShape {
     }
 }
 
+impl fmt::Debug for SharedShape {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let typed_shape: TypedShape = (*self.0).as_typed_shape();
+        write!(f, "SharedShape ( Arc<{:?}> )", typed_shape)
+    }
+}
+
 impl SharedShape {
     /// Wraps the given shape as a shared shape.
     pub fn new(shape: impl Shape) -> Self {
@@ -41,7 +51,7 @@ impl SharedShape {
     /// and a mutable reference to that instance is returned.
     pub fn make_mut(&mut self) -> &mut dyn Shape {
         if Arc::get_mut(&mut self.0).is_none() {
-            let unique_self = self.0.clone_box();
+            let unique_self = self.0.clone_dyn();
             self.0 = unique_self.into();
         }
         Arc::get_mut(&mut self.0).unwrap()
@@ -347,18 +357,29 @@ impl SharedShape {
         })
     }
 
-    /// Initializes an heightfield shape defined by its set of height and a scale
+    /// Initializes a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
     pub fn heightfield(heights: na::DVector<Real>, scale: Vector<Real>) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
     }
 
-    /// Initializes an heightfield shape on the x-z plane defined by its set of height and a scale
+    /// Initializes a heightfield shape on the x-z plane defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim3")]
     pub fn heightfield(heights: na::DMatrix<Real>, scale: Vector<Real>) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
+    }
+
+    /// Initializes a heightfield shape on the x-z plane defined by its set of height, a scale
+    /// factor along each coordinate axis, and [`HeightFieldFlags`].
+    #[cfg(feature = "dim3")]
+    pub fn heightfield_with_flags(
+        heights: na::DMatrix<Real>,
+        scale: Vector<Real>,
+        flags: HeightFieldFlags,
+    ) -> Self {
+        SharedShape(Arc::new(HeightField::with_flags(heights, scale, flags)))
     }
 }
 

@@ -21,7 +21,6 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Cuboid {
@@ -49,7 +48,11 @@ impl Cuboid {
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
     pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
-        ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
+        // TODO: is this still correct with the f64 version?
+        #[allow(clippy::unnecessary_cast)] // Unnecessary for f32 but necessary for f64.
+        {
+            ((vertex.x.to_bits() >> 31) & 0b001 | (vertex.y.to_bits() >> 30) & 0b010) as u32
+        }
     }
 
     /// Return the feature of this cuboid with a normal that maximizes
@@ -91,7 +94,7 @@ impl Cuboid {
     /// the dot product with `local_dir`.
     #[cfg(feature = "dim3")]
     pub fn support_feature(&self, local_dir: Vector<Real>) -> PolygonalFeature {
-        // FIXME: this should actually return the feature.
+        // TODO: this should actually return the feature.
         // And we should change all the callers of this method to use
         // `.support_face` instead of this method to preserve their old behavior.
         self.support_face(local_dir)
@@ -296,18 +299,17 @@ impl Cuboid {
                 let signs = id >> 2;
 
                 let mut dir: Vector<Real> = na::zero();
-                let _1: Real = na::one();
 
                 if signs & (1 << face1) != 0 {
-                    dir[face1 as usize] = -_1
+                    dir[face1 as usize] = -1.0
                 } else {
-                    dir[face1 as usize] = _1
+                    dir[face1 as usize] = 1.0
                 }
 
                 if signs & (1 << face2) != 0 {
-                    dir[face2 as usize] = -_1
+                    dir[face2 as usize] = -1.0
                 } else {
-                    dir[face2 as usize] = _1;
+                    dir[face2 as usize] = 1.0;
                 }
 
                 Some(Unit::new_normalize(dir))
@@ -315,12 +317,10 @@ impl Cuboid {
             FeatureId::Vertex(id) => {
                 let mut dir: Vector<Real> = na::zero();
                 for i in 0..3 {
-                    let _1: Real = na::one();
-
                     if id & (1 << i) != 0 {
-                        dir[i] = -_1;
+                        dir[i] = -1.0;
                     } else {
-                        dir[i] = _1
+                        dir[i] = 1.0
                     }
                 }
 
@@ -498,7 +498,7 @@ impl ConvexPolyhedron for Cuboid {
         let mut iamax = 0;
         let mut amax = local_dir[0].abs();
 
-        // FIXME: we should use nalgebra's iamax method.
+        // TODO: we should use nalgebra's iamax method.
         for i in 1..DIM {
             let candidate = local_dir[i].abs();
             if candidate > amax {

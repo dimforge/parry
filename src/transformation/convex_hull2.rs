@@ -27,7 +27,7 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
     let mut i = 0;
     while i != segments.len() {
         if !segments[i].valid {
-            i = i + 1;
+            i += 1;
             continue;
         }
 
@@ -44,21 +44,21 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
                 segments[i].prev,
                 segments[i].next,
                 point,
-                &points[..],
+                points,
                 &mut segments,
                 i,
                 &mut undecidable_points,
             );
         }
 
-        i = i + 1;
+        i += 1;
     }
 
     let mut idx = Vec::new();
     let mut curr_facet = 0;
 
     while !segments[curr_facet].valid {
-        curr_facet = curr_facet + 1
+        curr_facet += 1
     }
 
     let first_facet = curr_facet;
@@ -178,7 +178,7 @@ fn attach_and_push_facets2(
             new_facet2.visible_points.push(undecidable[i]);
             let _ = undecidable.swap_remove(i);
         } else {
-            i = i + 1;
+            i += 1;
         }
     }
 

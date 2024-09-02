@@ -15,8 +15,8 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 pub fn try_convex_hull(
     points: &[Point3<Real>],
 ) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {
-    if points.is_empty() {
-        return Ok((Vec::new(), Vec::new()));
+    if points.len() < 3 {
+        return Err(ConvexHullError::IncompleteInput);
     }
 
     // print_buildable_vec("input", points);
@@ -45,11 +45,11 @@ pub fn try_convex_hull(
         silhouette_loop_facets_and_idx.clear();
 
         if !triangles[i].valid || triangles[i].affinely_dependent {
-            i = i + 1;
+            i += 1;
             continue;
         }
 
-        // FIXME: use triangles[i].furthest_point instead.
+        // TODO: use triangles[i].furthest_point instead.
         let pt_id = indexed_support_point_id(
             &triangles[i].normal,
             &normalized_points[..],
@@ -86,7 +86,7 @@ pub fn try_convex_hull(
             )?;
 
             // Check that the silhouette is valid.
-            // FIXME: remove this debug code.
+            // TODO: remove this debug code.
             // {
             //     for (facet, id) in &silhouette_loop_facets_and_idx {
             //         assert!(triangles[*facet].valid);
@@ -98,8 +98,8 @@ pub fn try_convex_hull(
                 // Due to inaccuracies, the silhouette could not be computed
                 // (the point seems to be visible from… every triangle).
                 let mut any_valid = false;
-                for j in i + 1..triangles.len() {
-                    if triangles[j].valid && !triangles[j].affinely_dependent {
+                for triangle in &triangles[i + 1..] {
+                    if triangle.valid && !triangle.affinely_dependent {
                         any_valid = true;
                     }
                 }
@@ -110,7 +110,7 @@ pub fn try_convex_hull(
                     ));
                 }
 
-                // FIXME: this is very harsh.
+                // TODO: this is very harsh.
                 triangles[i].valid = true;
                 break;
             }
@@ -132,7 +132,7 @@ pub fn try_convex_hull(
             // }
         }
 
-        i = i + 1;
+        i += 1;
     }
 
     let mut idx = Vec::new();
@@ -208,7 +208,7 @@ fn fix_silhouette_topology(
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
 ) -> Result<(), ConvexHullError> {
-    // FIXME: don't allocate this everytime.
+    // TODO: don't allocate this everytime.
     let mut workspace = vec![0; points.len()];
     let mut needs_fixing = false;
 
@@ -292,7 +292,7 @@ fn fix_silhouette_topology(
             // }
         }
 
-        // println!("");
+        // println!();
     }
 
     Ok(())
@@ -313,9 +313,9 @@ fn attach_and_push_facets(
     let mut adj_facet: usize;
     let mut indirect_id: usize;
 
-    for i in 0..silhouette_loop_facets_and_idx.len() {
-        adj_facet = silhouette_loop_facets_and_idx[i].0;
-        indirect_id = silhouette_loop_facets_and_idx[i].1;
+    for silhouette_loop_facets_and_id in silhouette_loop_facets_and_idx {
+        adj_facet = silhouette_loop_facets_and_id.0;
+        indirect_id = silhouette_loop_facets_and_id.1;
 
         // print!(
         //     "[{}, {}] ",
@@ -331,17 +331,15 @@ fn attach_and_push_facets(
         );
         new_facets.push(facet);
     }
-    // println!("");
+    // println!();
 
     // Link the facets together.
     for i in 0..silhouette_loop_facets_and_idx.len() {
-        let prev_facet;
-
-        if i == 0 {
-            prev_facet = triangles.len() + silhouette_loop_facets_and_idx.len() - 1;
+        let prev_facet = if i == 0 {
+            triangles.len() + silhouette_loop_facets_and_idx.len() - 1
         } else {
-            prev_facet = triangles.len() + i - 1;
-        }
+            triangles.len() + i - 1
+        };
 
         let (middle_facet, middle_id) = silhouette_loop_facets_and_idx[i];
         let next_facet = triangles.len() + (i + 1) % silhouette_loop_facets_and_idx.len();
@@ -353,14 +351,14 @@ fn attach_and_push_facets(
     }
 
     // Assign to each facets some of the points which can see it.
-    // FIXME: refactor this with the others.
+    // TODO: refactor this with the others.
     for curr_facet in removed_facets.iter() {
         for visible_point in triangles[*curr_facet].visible_points.iter() {
             if points[*visible_point] == points[point] {
                 continue;
             }
 
-            let mut furthest = usize::max_value();
+            let mut furthest = usize::MAX;
             let mut furthest_dist = 0.0;
 
             for (i, curr_facet) in new_facets.iter_mut().enumerate() {
@@ -374,10 +372,9 @@ fn attach_and_push_facets(
                 }
             }
 
-            if furthest != usize::max_value() {
-                if new_facets[furthest].can_see_point(*visible_point, points) {
-                    new_facets[furthest].add_visible_point(*visible_point, points);
-                }
+            if furthest != usize::MAX && new_facets[furthest].can_see_point(*visible_point, points)
+            {
+                new_facets[furthest].add_visible_point(*visible_point, points);
             }
 
             // If none of the facet can be seen from the point, it is implicitly
@@ -389,7 +386,7 @@ fn attach_and_push_facets(
     let mut i = 0;
 
     while i != undecidable.len() {
-        let mut furthest = usize::max_value();
+        let mut furthest = usize::MAX;
         let mut furthest_dist = 0.0;
         let undecidable_point = undecidable[i];
 
@@ -404,16 +401,16 @@ fn attach_and_push_facets(
             }
         }
 
-        if furthest != usize::max_value() {
+        if furthest != usize::MAX {
             new_facets[furthest].add_visible_point(undecidable_point, points);
             let _ = undecidable.swap_remove(i);
         } else {
-            i = i + 1;
+            i += 1;
         }
     }
 
     // Push facets.
-    // FIXME: can we avoid the tmp vector `new_facets` ?
+    // TODO: can we avoid the tmp vector `new_facets` ?
     triangles.append(&mut new_facets);
 }
 

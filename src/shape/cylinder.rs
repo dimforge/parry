@@ -22,13 +22,12 @@ use rkyv::{bytecheck, CheckBytes};
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-#[cfg_attr(feature = "cuda", derive(cust_core::DeviceCopy))]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Cylinder {
     /// The half-height of the cylinder.
     pub half_height: Real,
-    /// The radius fo the cylinder.
+    /// The radius of the cylinder.
     pub radius: Real,
 }
 
@@ -86,7 +85,7 @@ impl SupportMap for Cylinder {
         if vres.normalize_mut().is_zero() {
             vres = na::zero()
         } else {
-            vres = vres * self.radius;
+            vres *= self.radius;
         }
 
         vres[1] = self.half_height.copysign(dir[1]);

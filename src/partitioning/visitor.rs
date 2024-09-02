@@ -1,6 +1,7 @@
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
-use crate::partitioning::qbvh::QbvhNode;
-use crate::partitioning::SimdNodeIndex;
+
+#[cfg(all(feature = "std", feature = "parallel"))]
+use crate::partitioning::{qbvh::QbvhNode, SimdNodeIndex};
 
 /// The next action to be taken by a BVH traversal algorithm after having visited a node with some data.
 pub enum SimdBestFirstVisitStatus<Res> {
@@ -78,6 +79,22 @@ where
         (self)(bv, data)
     }
 }
+
+/// Trait implemented by visitor called during the traversal of a spatial partitioning data structure.
+pub trait SimdVisitorWithContext<LeafData, SimdBV, Context: Clone> {
+    /// Execute an operation on the content of a node of the spatial partitioning structure.
+    ///
+    /// Returns whether the traversal should continue on the node's children, if it should not continue
+    /// on those children, or if the whole traversal should be exited early. Also returns
+    /// a context, which may or may not be identical to the input context.
+    fn visit(
+        &mut self,
+        bv: &SimdBV,
+        data: Option<[Option<&LeafData>; SIMD_WIDTH]>,
+        context: Context,
+    ) -> (SimdVisitStatus, [Context; SIMD_WIDTH]);
+}
+
 /// Trait implemented by visitor called during a simultaneous spatial partitioning data structure tarversal.
 pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
     /// Execute an operation on the content of two nodes, one from each structure.
@@ -100,6 +117,7 @@ pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
  */
 
 /// Trait implemented by visitor called during the parallel traversal of a spatial partitioning data structure.
+#[cfg(all(feature = "std", feature = "parallel"))]
 pub trait ParallelSimdVisitor<LeafData>: Sync {
     /// Execute an operation on the content of a node of the spatial partitioning structure.
     ///
@@ -113,6 +131,7 @@ pub trait ParallelSimdVisitor<LeafData>: Sync {
     ) -> SimdVisitStatus;
 }
 
+#[cfg(all(feature = "std", feature = "parallel"))]
 impl<F, LeafData> ParallelSimdVisitor<LeafData> for F
 where
     F: Sync + Fn(&QbvhNode, Option<[Option<&LeafData>; SIMD_WIDTH]>) -> SimdVisitStatus,
@@ -129,7 +148,7 @@ where
 
 /// Trait implemented by visitor called during a parallel simultaneous spatial partitioning
 /// data structure traversal.
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "std", feature = "parallel"))]
 pub trait ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>: Sync {
     /// Visitor state data that will be passed down the recursion.
     type Data: Copy + Sync + Default;

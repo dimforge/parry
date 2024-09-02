@@ -56,7 +56,7 @@ impl BoundingVolume for BoundingSphere {
 
     #[inline]
     fn intersects(&self, other: &BoundingSphere) -> bool {
-        // FIXME: refactor that with the code from narrow_phase::ball_ball::collide(...) ?
+        // TODO: refactor that with the code from narrow_phase::ball_ball::collide(...) ?
         let delta_pos = other.center - self.center;
         let distance_squared = delta_pos.norm_squared();
         let sum_radius = self.radius + other.radius;
@@ -85,20 +85,17 @@ impl BoundingVolume for BoundingSphere {
             let s_center_dir = self.center.coords.dot(&dir);
             let o_center_dir = other.center.coords.dot(&dir);
 
-            let right;
-            let left;
-
-            if s_center_dir + self.radius > o_center_dir + other.radius {
-                right = self.center + dir * self.radius;
+            let right = if s_center_dir + self.radius > o_center_dir + other.radius {
+                self.center + dir * self.radius
             } else {
-                right = other.center + dir * other.radius;
-            }
+                other.center + dir * other.radius
+            };
 
-            if -s_center_dir + self.radius > -o_center_dir + other.radius {
-                left = self.center - dir * self.radius;
+            let left = if -s_center_dir + self.radius > -o_center_dir + other.radius {
+                self.center - dir * self.radius
             } else {
-                left = other.center - dir * other.radius;
-            }
+                other.center - dir * other.radius
+            };
 
             self.center = na::center(&left, &right);
             self.radius = na::distance(&right, &self.center);
@@ -107,7 +104,7 @@ impl BoundingVolume for BoundingSphere {
 
     #[inline]
     fn merged(&self, other: &BoundingSphere) -> BoundingSphere {
-        let mut res = self.clone();
+        let mut res = *self;
 
         res.merge(other);
 
@@ -117,7 +114,7 @@ impl BoundingVolume for BoundingSphere {
     #[inline]
     fn loosen(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The loosening margin must be positive.");
-        self.radius = self.radius + amount
+        self.radius += amount
     }
 
     #[inline]
@@ -130,7 +127,7 @@ impl BoundingVolume for BoundingSphere {
     fn tighten(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The tightening margin must be positive.");
         assert!(amount <= self.radius, "The tightening margin is to large.");
-        self.radius = self.radius - amount
+        self.radius -= amount
     }
 
     #[inline]

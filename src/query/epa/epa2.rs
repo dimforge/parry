@@ -32,7 +32,7 @@ impl Eq for FaceId {}
 impl PartialOrd for FaceId {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.neg_dist.partial_cmp(&other.neg_dist)
+        Some(self.cmp(other))
     }
 }
 
@@ -110,6 +110,7 @@ impl Face {
 }
 
 /// The Expanding Polytope Algorithm in 2D.
+#[derive(Default)]
 pub struct EPA {
     vertices: Vec<CSOPoint>,
     faces: Vec<Face>,
@@ -119,11 +120,7 @@ pub struct EPA {
 impl EPA {
     /// Creates a new instance of the 2D Expanding Polytope Algorithm.
     pub fn new() -> Self {
-        EPA {
-            vertices: Vec::new(),
-            faces: Vec::new(),
-            heap: BinaryHeap::new(),
-        }
+        EPA::default()
     }
 
     fn reset(&mut self) {
@@ -141,15 +138,12 @@ impl EPA {
     /// the EPA algorithm failed to compute the projection.
     ///
     /// Return the projected point in the local-space of `g`.
-    pub fn project_origin<G: ?Sized>(
+    pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
         m: &Isometry<Real>,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>>
-    where
-        G: SupportMap,
-    {
+    ) -> Option<Point<Real>> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -158,7 +152,7 @@ impl EPA {
     ///
     /// The origin is assumed to be located inside of the shape.
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
-    pub fn closest_points<G1: ?Sized, G2: ?Sized>(
+    pub fn closest_points<G1, G2>(
         &mut self,
         pos12: &Isometry<Real>,
         g1: &G1,
@@ -166,8 +160,8 @@ impl EPA {
         simplex: &VoronoiSimplex,
     ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
     where
-        G1: SupportMap,
-        G2: SupportMap,
+        G1: ?Sized + SupportMap,
+        G2: ?Sized + SupportMap,
     {
         let _eps: Real = crate::math::DEFAULT_EPSILON;
         let _eps_tol = _eps * 100.0;
@@ -281,6 +275,7 @@ impl EPA {
         let mut niter = 0;
         let mut max_dist = Real::max_value();
         let mut best_face_id = *self.heap.peek().unwrap();
+        let mut old_dist = 0.0;
 
         /*
          * Run the expansion.
@@ -306,11 +301,17 @@ impl EPA {
 
             let curr_dist = -face_id.neg_dist;
 
-            if max_dist - curr_dist < _eps_tol {
+            if max_dist - curr_dist < _eps_tol ||
+                // Accept the intersection as the algorithm is stuck and no new points will be found
+                // This happens because of numerical stability issue
+                ((curr_dist - old_dist).abs() < _eps && candidate_max_dist < max_dist)
+            {
                 let best_face = &self.faces[best_face_id.id];
                 let cpts = best_face.closest_points(&self.vertices);
                 return Some((cpts.0, cpts.1, best_face.normal));
             }
+
+            old_dist = curr_dist;
 
             let pts1 = [face.pts[0], support_point_id];
             let pts2 = [support_point_id, face.pts[1]];
@@ -324,7 +325,7 @@ impl EPA {
                 if f.1 {
                     let dist = f.0.normal.dot(&f.0.proj.coords);
                     if dist < curr_dist {
-                        // FIXME: if we reach this point, there were issues due to
+                        // TODO: if we reach this point, there were issues due to
                         // numerical errors.
                         let cpts = f.0.closest_points(&self.vertices);
                         return Some((cpts.0, cpts.1, f.0.normal));
@@ -339,8 +340,10 @@ impl EPA {
             }
 
             niter += 1;
-            if niter > 10000 {
-                return None;
+            if niter > 100 {
+                // if we reached this point, our algorithm didn't converge to what precision we wanted.
+                // still return an intersection point, as it's probably close enough.
+                break;
             }
         }
 

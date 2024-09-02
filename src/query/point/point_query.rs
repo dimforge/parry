@@ -33,6 +33,11 @@ impl PointProjection {
             point: pos * self.point,
         }
     }
+
+    /// Returns `true` if `Self::is_inside` is `true` or if the distance between the projected point and `point` is smaller than `min_dist`.
+    pub fn is_inside_eps(&self, original_point: &Point<Real>, min_dist: Real) -> bool {
+        self.is_inside || na::distance_squared(original_point, &self.point) < min_dist * min_dist
+    }
 }
 
 /// Trait of objects that can be tested for point inclusion and projection.

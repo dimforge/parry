@@ -1,12 +1,13 @@
+#![allow(clippy::needless_range_loop)] // This tends to make the traversal code much more verbose that necessary.
+
 use crate::bounding_volume::{Aabb, SimdAabb};
 use crate::math::Real;
-use crate::partitioning::visitor::SimdSimultaneousVisitStatus;
+use crate::partitioning::visitor::{SimdSimultaneousVisitStatus, SimdVisitorWithContext};
 use crate::partitioning::{
-    GenericQbvh, QbvhStorage, SimdBestFirstVisitStatus, SimdBestFirstVisitor,
-    SimdSimultaneousVisitor, SimdVisitStatus, SimdVisitor,
+    Qbvh, SimdBestFirstVisitStatus, SimdBestFirstVisitor, SimdSimultaneousVisitor, SimdVisitStatus,
+    SimdVisitor,
 };
 use crate::simd::SIMD_WIDTH;
-use crate::utils::Array1;
 use crate::utils::WeightedValue;
 use num::Bounded;
 use simba::simd::SimdBool;
@@ -19,14 +20,14 @@ use {
     std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
 };
 
-use super::{IndexedData, NodeIndex, Qbvh};
+use super::{IndexedData, NodeIndex};
 
-impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData, Storage> {
+impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Performs a depth-first traversal on the BVH.
     ///
     /// # Return
     ///
-    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first(&self, visitor: &mut impl SimdVisitor<LeafData, SimdAabb>) -> bool {
         self.traverse_depth_first_node(visitor, 0)
     }
@@ -35,7 +36,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
     ///
     /// # Return
     ///
-    /// Returns `false` if the traversal exitted early, and `true` otherwise.
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
     pub fn traverse_depth_first_node(
         &self,
         visitor: &mut impl SimdVisitor<LeafData, SimdAabb>,
@@ -77,7 +78,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
             let node = &self.nodes[entry as usize];
             let leaf_data = if node.is_leaf() {
                 Some(
-                    array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -91,14 +92,80 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                     let bitmask = mask.bitmask();
 
                     for ii in 0..SIMD_WIDTH {
-                        if (bitmask & (1 << ii)) != 0 {
-                            if !node.is_leaf() {
-                                // Internal node, visit the child.
-                                // Un fortunately, we have this check because invalid Aabbs
-                                // return a hit as well.
-                                if node.children[ii] as usize <= self.nodes.len() {
-                                    stack.push(node.children[ii]);
-                                }
+                        if (bitmask & (1 << ii)) != 0 && !node.is_leaf() {
+                            // Internal node, visit the child.
+                            // Un fortunately, we have this check because invalid Aabbs
+                            // return a hit as well.
+                            if node.children[ii] as usize <= self.nodes.len() {
+                                stack.push(node.children[ii]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Performs a depth-first traversal on the BVH. Passes a context from the
+    /// parent to the children.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
+    pub fn traverse_depth_first_with_context<Context: Clone>(
+        &self,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
+        context: Context,
+    ) -> bool {
+        self.traverse_depth_first_node_with_stack_and_context(visitor, &mut Vec::new(), 0, context)
+    }
+
+    /// Performs a depth-first traversal on the BVH and propagates a context down,
+    /// from the root to each of its descendants. The context can be modified
+    /// during the query.
+    ///
+    /// # Return
+    ///
+    /// Returns `false` if the traversal exited early, and `true` otherwise.
+    pub fn traverse_depth_first_node_with_stack_and_context<Context: Clone>(
+        &self,
+        visitor: &mut impl SimdVisitorWithContext<LeafData, SimdAabb, Context>,
+        stack: &mut Vec<(u32, Context)>,
+        start_node: u32,
+        context: Context,
+    ) -> bool {
+        stack.clear();
+
+        if !self.nodes.is_empty() {
+            stack.push((start_node, context));
+        }
+        while let Some((entry, context)) = stack.pop() {
+            let node = &self.nodes[entry as usize];
+            let leaf_data = if node.is_leaf() {
+                Some(
+                    array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                )
+            } else {
+                None
+            };
+
+            let (visit_result, contexts) = visitor.visit(&node.simd_aabb, leaf_data, context);
+            match visit_result {
+                SimdVisitStatus::ExitEarly => {
+                    return false;
+                }
+                SimdVisitStatus::MaybeContinue(mask) => {
+                    let bitmask = mask.bitmask();
+
+                    for ii in 0..SIMD_WIDTH {
+                        if (bitmask & (1 << ii)) != 0 && !node.is_leaf() {
+                            // Internal node, visit the child.
+                            // Un fortunately, we have this check because invalid Aabbs
+                            // return a hit as well.
+                            if node.children[ii] as usize <= self.nodes.len() {
+                                stack.push((node.children[ii], contexts[ii].clone()));
                             }
                         }
                     }
@@ -154,7 +221,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
             let node = &self.nodes[entry.value as usize];
             let leaf_data = if node.is_leaf() {
                 Some(
-                    array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -178,7 +245,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                                 if weights[ii] < best_cost && results[ii].is_some() {
                                     // We found a leaf!
                                     if let Some(proxy) =
-                                        self.proxies.get_at(node.children[ii] as usize)
+                                        self.proxies.get(node.children[ii] as usize)
                                     {
                                         best_cost = weights[ii];
                                         best_result =
@@ -204,7 +271,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
     /// Retrieve all the data of the nodes with Aabbs intersecting
     /// the given Aabb:
-    // FIXME: implement a visitor pattern to merge intersect_aabb
+    // TODO: implement a visitor pattern to merge intersect_aabb
     // and intersect_ray into a single method.
     pub fn intersect_aabb(&self, aabb: &Aabb, out: &mut Vec<LeafData>) {
         if self.nodes.is_empty() {
@@ -224,7 +291,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                     if node.is_leaf() {
                         // We found a leaf!
                         // Unfortunately, invalid Aabbs return a intersection as well.
-                        if let Some(proxy) = self.proxies.get_at(node.children[ii] as usize) {
+                        if let Some(proxy) = self.proxies.get(node.children[ii] as usize) {
                             out.push(proxy.data);
                         }
                     } else {
@@ -269,7 +336,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
             let leaf_data1 = if node1.is_leaf() {
                 Some(
-                    array![|ii| Some(&qbvh1.proxies.get_at(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -277,7 +344,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
             let leaf_data2 = if node2.is_leaf() {
                 Some(
-                    array![|ii| Some(&qbvh2.proxies.get_at(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -297,10 +364,10 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             }
 
                             for jj in 0..SIMD_WIDTH {
-                                if (bitmask & (1 << jj)) != 0 {
-                                    if node2.children[jj] as usize <= qbvh2.nodes.len() {
-                                        stack.push((entry.0, node2.children[jj]));
-                                    }
+                                if (bitmask & (1 << jj)) != 0
+                                    && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                {
+                                    stack.push((entry.0, node2.children[jj]));
                                 }
                             }
                         }
@@ -308,10 +375,9 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             for ii in 0..SIMD_WIDTH {
                                 let bitmask = mask[ii].bitmask();
 
-                                if bitmask != 0 {
-                                    if node1.children[ii] as usize <= qbvh1.nodes.len() {
-                                        stack.push((node1.children[ii], entry.1));
-                                    }
+                                if bitmask != 0 && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                {
+                                    stack.push((node1.children[ii], entry.1));
                                 }
                             }
                         }
@@ -320,12 +386,11 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                                 let bitmask = mask[ii].bitmask();
 
                                 for jj in 0..SIMD_WIDTH {
-                                    if (bitmask & (1 << jj)) != 0 {
-                                        if node1.children[ii] as usize <= qbvh1.nodes.len()
-                                            && node2.children[jj] as usize <= qbvh2.nodes.len()
-                                        {
-                                            stack.push((node1.children[ii], node2.children[jj]));
-                                        }
+                                    if (bitmask & (1 << jj)) != 0
+                                        && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                        && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                    {
+                                        stack.push((node1.children[ii], node2.children[jj]));
                                     }
                                 }
                             }
@@ -369,7 +434,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
             let leaf_data1 = if node1.is_leaf() {
                 Some(
-                    array![|ii| Some(&qbvh1.proxies.get_at(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -377,7 +442,7 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
 
             let leaf_data2 = if node2.is_leaf() {
                 Some(
-                    array![|ii| Some(&qbvh2.proxies.get_at(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                    array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
                 )
             } else {
                 None
@@ -397,10 +462,10 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             }
 
                             for jj in 0..SIMD_WIDTH {
-                                if (bitmask & (1 << jj)) != 0 {
-                                    if node2.children[jj] as usize <= qbvh2.nodes.len() {
-                                        stack.push((entry.0, node2.children[jj]));
-                                    }
+                                if (bitmask & (1 << jj)) != 0
+                                    && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                {
+                                    stack.push((entry.0, node2.children[jj]));
                                 }
                             }
                         }
@@ -408,10 +473,9 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                             for ii in 0..SIMD_WIDTH {
                                 let bitmask = mask[ii].bitmask();
 
-                                if bitmask != 0 {
-                                    if node1.children[ii] as usize <= qbvh1.nodes.len() {
-                                        stack.push((node1.children[ii], entry.1));
-                                    }
+                                if bitmask != 0 && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                {
+                                    stack.push((node1.children[ii], entry.1));
                                 }
                             }
                         }
@@ -420,12 +484,11 @@ impl<LeafData: IndexedData, Storage: QbvhStorage<LeafData>> GenericQbvh<LeafData
                                 let bitmask = mask[ii].bitmask();
 
                                 for jj in 0..SIMD_WIDTH {
-                                    if (bitmask & (1 << jj)) != 0 {
-                                        if node1.children[ii] as usize <= qbvh1.nodes.len()
-                                            && node2.children[jj] as usize <= qbvh2.nodes.len()
-                                        {
-                                            stack.push((node1.children[ii], node2.children[jj]));
-                                        }
+                                    if (bitmask & (1 << jj)) != 0
+                                        && node1.children[ii] as usize <= qbvh1.nodes.len()
+                                        && node2.children[jj] as usize <= qbvh2.nodes.len()
+                                    {
+                                        stack.push((node1.children[ii], node2.children[jj]));
                                     }
                                 }
                             }
@@ -462,9 +525,7 @@ impl<LeafData: IndexedData + Sync> Qbvh<LeafData> {
         let mut stack: ArrayVec<u32, SIMD_WIDTH> = ArrayVec::new();
         let node = &self.nodes[entry as usize];
         let leaf_data = if node.is_leaf() {
-            Some(
-                array![|ii| Some(&self.proxies.get_at(node.children[ii] as usize)?.data); SIMD_WIDTH],
-            )
+            Some(array![|ii| Some(&self.proxies.get(node.children[ii] as usize)?.data); SIMD_WIDTH])
         } else {
             None
         };
@@ -546,7 +607,7 @@ impl<LeafData: IndexedData + Sync> Qbvh<LeafData> {
 
         let leaf_data1 = if node1.is_leaf() {
             Some(
-                array![|ii| Some(&qbvh1.proxies.get_at(node1.children[ii] as usize)?.data); SIMD_WIDTH],
+                array![|ii| Some(&qbvh1.proxies.get(node1.children[ii] as usize)?.data); SIMD_WIDTH],
             )
         } else {
             None
@@ -554,7 +615,7 @@ impl<LeafData: IndexedData + Sync> Qbvh<LeafData> {
 
         let leaf_data2 = if node2.is_leaf() {
             Some(
-                array![|ii| Some(&qbvh2.proxies.get_at(node2.children[ii] as usize)?.data); SIMD_WIDTH],
+                array![|ii| Some(&qbvh2.proxies.get(node2.children[ii] as usize)?.data); SIMD_WIDTH],
             )
         } else {
             None

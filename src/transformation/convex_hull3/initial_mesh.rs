@@ -46,7 +46,7 @@ pub fn try_get_initial_mesh(
 
     #[cfg(not(feature = "improved_fixed_point_support"))]
     {
-        let cov_mat = crate::utils::cov(normalized_points);
+        let cov_mat = utils::cov(normalized_points);
         let eig = cov_mat.symmetric_eigen();
         eigvec = eig.eigenvectors;
         eigval = eig.eigenvalues;
@@ -86,13 +86,13 @@ pub fn try_get_initial_mesh(
             break;
         }
 
-        dimension = dimension + 1;
+        dimension += 1;
     }
 
     match dimension {
         0 => {
             // The hull is a point.
-            let (vtx, idx) = build_degenerate_mesh_point(original_points[0].clone());
+            let (vtx, idx) = build_degenerate_mesh_point(original_points[0]);
             Ok(InitialMesh::ResultMesh(vtx, idx))
         }
         1 => {
@@ -120,10 +120,7 @@ pub fn try_get_initial_mesh(
 
             // Finalize the result, triangulating the polyline.
             let npoints = idx.len();
-            let coords = idx
-                .into_iter()
-                .map(|i| original_points[i].clone())
-                .collect();
+            let coords = idx.into_iter().map(|i| original_points[i]).collect();
             let mut triangles = Vec::with_capacity(npoints + npoints - 4);
 
             for id in 1u32..npoints as u32 - 1 {
@@ -143,7 +140,7 @@ pub fn try_get_initial_mesh(
         3 => {
             // The hull is a polyhedron.
             // Find a initial triangle lying on the principal halfspace…
-            let center = crate::utils::center(normalized_points);
+            let center = utils::center(normalized_points);
 
             for point in normalized_points.iter_mut() {
                 *point = Point3::from((*point - center) / eigval.amax());
@@ -155,7 +152,7 @@ pub fn try_get_initial_mesh(
                 .ok_or(ConvexHullError::MissingSupportPoint)?;
 
             let mut max_area = 0.0;
-            let mut p3 = usize::max_value();
+            let mut p3 = usize::MAX;
 
             for (i, point) in normalized_points.iter().enumerate() {
                 let area =
@@ -167,7 +164,7 @@ pub fn try_get_initial_mesh(
                 }
             }
 
-            if p3 == usize::max_value() {
+            if p3 == usize::MAX {
                 Err(ConvexHullError::InternalError("no triangle found."))
             } else {
                 // Build two facets with opposite normals
@@ -181,8 +178,7 @@ pub fn try_get_initial_mesh(
                 let mut facets = vec![f1, f2];
 
                 // … and attribute visible points to each one of them.
-                // FIXME: refactor this with the two others.
-                let mut ignored = 0usize;
+                // TODO: refactor this with the two others.
                 for point in 0..normalized_points.len() {
                     if normalized_points[point] == normalized_points[p1]
                         || normalized_points[point] == normalized_points[p2]
@@ -191,7 +187,7 @@ pub fn try_get_initial_mesh(
                         continue;
                     }
 
-                    let mut furthest = usize::max_value();
+                    let mut furthest = usize::MAX;
                     let mut furthest_dist = 0.0;
 
                     for (i, curr_facet) in facets.iter().enumerate() {
@@ -205,11 +201,10 @@ pub fn try_get_initial_mesh(
                         }
                     }
 
-                    if furthest != usize::max_value() {
+                    if furthest != usize::MAX {
                         facets[furthest].add_visible_point(point, normalized_points);
                     } else {
                         undecidable.push(point);
-                        ignored = ignored + 1;
                     }
 
                     // If none of the facet can be seen from the point, it is naturally deleted.
