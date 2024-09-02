@@ -1003,11 +1003,10 @@ impl Shape for TriMesh {
     }
 
     fn feature_normal_at_point(
-            &self,
-            feature: FeatureId,
-            point: &Point<Real>,
-        ) -> Option<Unit<Vector<Real>>>
-    {
+        &self,
+        feature: FeatureId,
+        point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
         self.feature_normal_at_point(feature, point)
     }
 
