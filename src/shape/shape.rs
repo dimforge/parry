@@ -1130,12 +1130,21 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
+    /// Gets the normal of the triangle represented by `feature`.
     fn feature_normal_at_point(
         &self,
-        feature: FeatureId,
-        point: &Point<Real>,
+        _feature: FeatureId,
+        _point: &Point<Real>,
     ) -> Option<Unit<Vector<Real>>> {
-        self.feature_normal_at_point(feature, point)
+        #[cfg(feature = "dim2")]
+        return None;
+        #[cfg(feature = "dim3")]
+        match _feature {
+            FeatureId::Face(i) => self
+                .triangle(i % self.num_triangles() as u32)
+                .feature_normal(FeatureId::Face(0)),
+            _ => None,
+        }
     }
 
     #[cfg(feature = "std")]
