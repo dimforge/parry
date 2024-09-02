@@ -2,9 +2,7 @@ use crate::common::{generate, generate_trimesh_around_origin, unref};
 use na::Isometry3;
 use parry3d::bounding_volume::BoundingVolume;
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
-use parry3d::shape::{
-    Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, TriMesh, Triangle,
-};
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, TriMesh, Triangle};
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
 use test::Bencher;
@@ -132,6 +130,7 @@ bench_method!(
     m: Isometry3<f32>
 );
 
+/*
 bench_method!(
     bench_convex_aabb,
     aabb: Aabb,
@@ -143,7 +142,7 @@ bench_method!(
     bounding_sphere: BoundingSphere,
     c: ConvexHull,
     m: Isometry3<f32>
-);
+);*/
 
 bench_method_gen!(
     bench_mesh_aabb,

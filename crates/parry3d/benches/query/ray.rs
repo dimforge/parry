@@ -2,9 +2,7 @@ use crate::common::{generate, generate_trimesh_around_origin, unref};
 use na::Isometry3;
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::query::{Ray, RayCast};
-use parry3d::shape::{
-    Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, TriMesh, Triangle,
-};
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, TriMesh, Triangle};
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
 use test::Bencher;
@@ -85,8 +83,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_ball_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_ball_with_normal,
+    cast_ray_and_get_normal,
     b: Ball,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -95,8 +93,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_cuboid_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_cuboid_with_normal,
+    cast_ray_and_get_normal,
     c: Cuboid,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -105,8 +103,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_capsule_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_capsule_with_normal,
+    cast_ray_and_get_normal,
     c: Capsule,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -115,8 +113,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_cone_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_cone_with_normal,
+    cast_ray_and_get_normal,
     c: Cone,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -125,8 +123,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_cylinder_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_cylinder_with_normal,
+    cast_ray_and_get_normal,
     c: Cylinder,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -135,8 +133,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_segment_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_segment_with_normal,
+    cast_ray_and_get_normal,
     c: Segment,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -145,8 +143,8 @@ bench_method!(
 );
 
 bench_method!(
-    bench_ray_against_triangle_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_triangle_with_normal,
+    cast_ray_and_get_normal,
     c: Triangle,
     pos: Isometry3<f32>,
     ray: Ray,
@@ -154,19 +152,21 @@ bench_method!(
     solid: bool
 );
 
+/*
 bench_method!(
-    bench_ray_against_convex_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_convex_with_normal,
+    cast_ray_and_get_normal,
     c: ConvexHull,
     pos: Isometry3<f32>,
     ray: Ray,
     max_time_of_impact: f32,
     solid: bool
 );
+*/
 
 bench_method_gen!(
-    bench_ray_against_trimesh_with_normal_uv,
-    cast_ray_and_get_normal_and_uv,
+    bench_ray_against_trimesh_with_normal,
+    cast_ray_and_get_normal,
     m: TriMesh = generate_trimesh_around_origin,
     pos: Isometry3<f32> = generate,
     ray: Ray = generate,

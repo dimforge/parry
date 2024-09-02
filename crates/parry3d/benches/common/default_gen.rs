@@ -1,13 +1,15 @@
 use na::{
-    self, Isometry2, Isometry3, Matrix2, Matrix3, Matrix4, Point2, Point3, Point4, RealField,
-    Vector2, Vector3, Vector4,
+    self, Isometry2, Isometry3, Matrix2, Matrix3, Matrix4, Point2, Point3, Point4, Vector2,
+    Vector3, Vector4,
 };
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::math::{Point, Real, Vector};
 use parry3d::query::Ray;
-use parry3d::shape::{Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, Triangle};
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
+
+use crate::ConvexHull;
 
 pub trait DefaultGen {
     fn generate<R: Rng>(rng: &mut R) -> Self;
@@ -76,7 +78,11 @@ where
     Standard: Distribution<Real>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Capsule {
-        Capsule::new(rng.gen::<Real>().abs(), rng.gen::<Real>().abs())
+        Capsule::new(
+            rng.gen::<Point<Real>>(),
+            rng.gen::<Point<Real>>(),
+            rng.gen::<Real>().abs(),
+        )
     }
 }
 
