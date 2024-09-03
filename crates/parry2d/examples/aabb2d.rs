@@ -2,17 +2,11 @@ mod common_macroquad;
 
 extern crate nalgebra as na;
 
-use common_macroquad::{
-    draw_point, draw_polygon, draw_polyline, lissajous_2d, lissajous_2d_with_params, mquad_from_na,
-    na_from_mquad,
-};
+use common_macroquad::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use na::{iter, Isometry2};
-use nalgebra::Point2;
+use na::Isometry2;
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
 use parry2d::shape::Ball;
-use parry2d::transformation;
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 const RENDER_SCALE: f32 = 30.0;
 
@@ -21,8 +15,7 @@ async fn main() {
     let render_pos = Vec2::new(300.0, 300.0);
 
     loop {
-        let elapsed_time = get_time() as f32;
-        let elapsed_time_slow = elapsed_time * 0.2;
+        let elapsed_time = get_time() as f32 * 0.7;
         clear_background(BLACK);
 
         /*
@@ -31,7 +24,7 @@ async fn main() {
         let ball1 = Ball::new(0.5);
         let ball2 = Ball::new(1.0);
 
-        let ball1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 3f32;
+        let ball1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
         let ball2_pos = Isometry2::identity();
 
         /*
@@ -44,9 +37,9 @@ async fn main() {
         let bounding_aabb = aabb_ball1.merged(&aabb_ball2);
 
         // Enlarge the ball2 aabb.
-        let loose_aabb_ball2 = aabb_ball2.loosened(1.0);
+        let loose_aabb_ball2 = aabb_ball2.loosened(2f32);
 
-        // Intersection and inclusion tests.
+        // Intersection test
         let color = if aabb_ball1.intersects(&aabb_ball2) {
             RED
         } else {
@@ -57,19 +50,15 @@ async fn main() {
         assert!(bounding_aabb.contains(&aabb_ball2));
         assert!(loose_aabb_ball2.contains(&aabb_ball2));
 
-        let ball1_translation =
-            Vec2::new(ball1_pos.coords.x, ball1_pos.coords.y) * RENDER_SCALE + render_pos;
+        let ball1_translation = mquad_from_na(ball1_pos.coords.into()) * RENDER_SCALE + render_pos;
         draw_circle(
             ball1_translation.x,
             ball1_translation.y,
             ball1.radius * RENDER_SCALE,
             color,
         );
-        let ball2_translation = Vec2::new(
-            ball2_pos.translation.vector.x,
-            ball2_pos.translation.vector.y,
-        ) * RENDER_SCALE
-            + render_pos;
+        let ball2_translation =
+            mquad_from_na(ball2_pos.translation.vector.into()) * RENDER_SCALE + render_pos;
         draw_circle(
             ball2_translation.x,
             ball2_translation.y,
@@ -79,8 +68,15 @@ async fn main() {
 
         draw_aabb(aabb_ball1, render_pos, color);
         draw_aabb(aabb_ball2, render_pos, color);
-        draw_aabb(bounding_aabb, render_pos, BLUE);
-        draw_aabb(loose_aabb_ball2, render_pos, YELLOW);
+        draw_aabb(bounding_aabb, render_pos, YELLOW);
+
+        // Inclusion test
+        let color_included: Color = if loose_aabb_ball2.contains(&aabb_ball1) {
+            BLUE
+        } else {
+            MAGENTA
+        };
+        draw_aabb(loose_aabb_ball2, render_pos, color_included);
         next_frame().await
     }
 }
@@ -88,7 +84,6 @@ async fn main() {
 fn draw_aabb(aabb: Aabb, offset: Vec2, color: Color) {
     let mins = mquad_from_na(aabb.mins) * RENDER_SCALE + offset;
     let maxs = mquad_from_na(aabb.maxs) * RENDER_SCALE + offset;
-    let size = maxs - mins;
 
     let line = vec![
         Vec2::new(mins.x, mins.y),
