@@ -12,7 +12,7 @@ use parry3d::math::Real;
 
 fn main() {
     println!(
-        "This module contains helper fubnctions to use macroquad,
+        "This module contains helper functions to use macroquad,
     isolated from the rest of the examples for the sake of simplicity."
     );
 }

@@ -1,19 +1,11 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+mod common_macroquad;
 
+use common_macroquad::{draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use nalgebra::{Point2, Point3, UnitComplex, Vector2};
-use parry2d::math::{Isometry, Real, Translation};
+use nalgebra::{Point3, UnitComplex, Vector2};
+use parry2d::math::{Isometry, Translation};
 use parry2d::query::PointQuery;
 use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
-
-fn lissajous_2d(t: f32) -> Vec2 {
-    // Some hardcoded parameters to have a pleasing lissajous trajectory.
-    let (a, b, delta_x, delta_y) = (3.0, 2.0, FRAC_PI_2, FRAC_PI_4);
-
-    let x = (a * t + delta_x).sin();
-    let y = (b * t + delta_y).sin();
-    Vec2::new(x, y) * 0.75f32
-}
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
@@ -93,30 +85,5 @@ async fn main() {
         draw_trimesh2(&trimesh, offset);
 
         next_frame().await
-    }
-}
-
-fn mquad_from_na(a: Point2<Real>) -> Vec2 {
-    Vec2::new(a.x, a.y)
-}
-
-fn na_from_mquad(a: Vec2) -> Point2<Real> {
-    Point2::new(a.x, a.y)
-}
-
-fn draw_line_2d(a: Vec2, b: Vec2, color: Color) {
-    draw_line(a.x, a.y, b.x, b.y, 2f32, color);
-}
-
-fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
-    let vertices = trimesh.vertices();
-    for v in trimesh.indices() {
-        let v0 = mquad_from_na(vertices[v[0] as usize]) + offset;
-        let v1 = mquad_from_na(vertices[v[1] as usize]) + offset;
-        let v2 = mquad_from_na(vertices[v[2] as usize]) + offset;
-
-        draw_line(v0.x, v0.y, v1.x, v1.y, 2f32, WHITE);
-        draw_line(v0.x, v0.y, v2.x, v2.y, 2f32, WHITE);
-        draw_line(v2.x, v2.y, v1.x, v1.y, 2f32, WHITE);
     }
 }
