@@ -1,8 +1,7 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
-use macroquad::models::Vertex;
 use macroquad::prelude::*;
-use nalgebra::{Point2, Point3, UnitComplex, UnitQuaternion, Vector2};
+use nalgebra::{Point2, Point3, UnitComplex, Vector2};
 use parry2d::math::{Isometry, Real, Translation};
 use parry2d::query::PointQuery;
 use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
@@ -15,9 +14,6 @@ fn lissajous_2d(t: f32) -> Vec2 {
     let y = (b * t + delta_y).sin();
     Vec2::new(x, y) * 0.75f32
 }
-
-const VIRTUAL_WIDTH: f32 = 1280.0;
-const VIRTUAL_HEIGHT: f32 = 720.0;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
@@ -51,8 +47,6 @@ async fn main() {
             &na_from_mquad(point_to_project),
             true,
         );
-
-        let slow_elapsed_time = slow_elapsed_time * 0.7;
 
         /*
          *

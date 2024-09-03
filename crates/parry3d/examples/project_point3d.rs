@@ -1,4 +1,3 @@
-use macroquad::models::Vertex;
 use macroquad::prelude::*;
 use nalgebra::Vector3;
 use parry3d::math::Isometry;
