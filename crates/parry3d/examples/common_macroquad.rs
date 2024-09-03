@@ -27,8 +27,18 @@ pub fn na_from_mquad(a: Vec3) -> Point3<Real> {
 
 pub fn lissajous_3d(t: f32) -> Vec3 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
-    let (a, b, c, delta_x, delta_y, delta_z) = (3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6);
+    lissajous_3d_with_params(t, 3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6)
+}
 
+pub fn lissajous_3d_with_params(
+    t: f32,
+    a: f32,
+    b: f32,
+    c: f32,
+    delta_x: f32,
+    delta_y: f32,
+    delta_z: f32,
+) -> Vec3 {
     let x = (a * t + delta_x).sin();
     let y = (b * t + delta_y).sin();
     let z = (c * t + delta_z).sin();
