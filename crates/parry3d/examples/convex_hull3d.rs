@@ -9,8 +9,6 @@ use macroquad::prelude::*;
 use nalgebra::Point3;
 use parry3d::transformation;
 
-const RENDER_SCALE: f32 = 30.0;
-
 #[macroquad::main("parry2d::utils::point_in_poly2d")]
 async fn main() {
     let count = 9;
