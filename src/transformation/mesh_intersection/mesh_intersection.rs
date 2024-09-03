@@ -228,7 +228,7 @@ pub fn intersect_meshes_with_tolerances(
         mesh2,
         mesh1,
         &constraints2,
-        &Isometry::identity(),
+        &pos1,
         flip2,
         flip1,
         &meta_data,
