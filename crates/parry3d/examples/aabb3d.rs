@@ -7,13 +7,9 @@ use macroquad::prelude::*;
 use na::Isometry3;
 use parry3d::bounding_volume::{Aabb, BoundingVolume};
 use parry3d::shape::Ball;
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
-
-const RENDER_SCALE: f32 = 30.0;
 
 #[macroquad::main("parry2d::utils::point_in_poly2d")]
 async fn main() {
-    let render_pos = Vec2::new(300.0, 300.0);
     let camera_pos = Vec3::new(8f32, 8f32, 12f32);
 
     loop {
