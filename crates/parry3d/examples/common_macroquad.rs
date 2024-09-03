@@ -1,7 +1,8 @@
+#[allow(unused, dead_code)]
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
 use macroquad::{
-    color::{Color, DARKGRAY, WHITE},
+    color::{Color, WHITE},
     math::{Vec2, Vec3, Vec4},
     models::{draw_line_3d, Mesh},
     ui::Vertex,
@@ -99,7 +100,7 @@ pub fn mquad_compute_normals_and_bake_light(
         let normal = (v0.position - v2.position)
             .cross(v1.position - v2.position)
             .normalize();
-        let brightness_mod = 0.2 + (0.8 / 2.) * (normal.dot(light_pos) + 1.);
+        let brightness_mod = 0.4 + (0.6 / 2.) * (normal.dot(light_pos) + 1.);
 
         for &i in indices.iter() {
             let mut color = points[i as usize].color;
