@@ -2,7 +2,7 @@ mod common_macroquad;
 
 extern crate nalgebra as na;
 
-use common_macroquad::{draw_polyline, lissajous_3d, mquad_from_na, na_from_mquad};
+use common_macroquad::{lissajous_3d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
 use na::Isometry3;
 use parry3d::bounding_volume::{Aabb, BoundingVolume};
@@ -75,59 +75,10 @@ async fn main() {
 }
 
 fn draw_aabb(aabb: Aabb, color: Color) {
-    let mins = mquad_from_na(aabb.mins);
-    let maxs = mquad_from_na(aabb.maxs);
-
-    let lines = vec![
-        (
-            Vec3::new(mins.x, mins.y, mins.z), // A -> B
-            Vec3::new(maxs.x, mins.y, mins.z),
-        ),
-        (
-            Vec3::new(maxs.x, mins.y, mins.z), // B -> F
-            Vec3::new(maxs.x, mins.y, maxs.z),
-        ),
-        (
-            Vec3::new(maxs.x, mins.y, maxs.z), // F -> E
-            Vec3::new(mins.x, mins.y, maxs.z),
-        ),
-        (
-            Vec3::new(mins.x, mins.y, maxs.z), // E -> A
-            Vec3::new(mins.x, mins.y, mins.z),
-        ),
-        (
-            Vec3::new(mins.x, mins.y, mins.z), // A -> D
-            Vec3::new(mins.x, maxs.y, mins.z),
-        ),
-        (
-            Vec3::new(mins.x, maxs.y, mins.z), // D -> H
-            Vec3::new(mins.x, maxs.y, maxs.z),
-        ),
-        (
-            Vec3::new(mins.x, maxs.y, maxs.z), // H -> E
-            Vec3::new(mins.x, mins.y, maxs.z),
-        ),
-        (
-            Vec3::new(mins.x, maxs.y, maxs.z), // H -> G
-            Vec3::new(maxs.x, maxs.y, maxs.z),
-        ),
-        (
-            Vec3::new(maxs.x, maxs.y, maxs.z), // G -> F
-            Vec3::new(maxs.x, mins.y, maxs.z),
-        ),
-        (
-            Vec3::new(maxs.x, maxs.y, maxs.z), // G -> C
-            Vec3::new(maxs.x, maxs.y, mins.z),
-        ),
-        (
-            Vec3::new(maxs.x, maxs.y, mins.z), // C -> B
-            Vec3::new(maxs.x, mins.y, mins.z),
-        ),
-        (
-            Vec3::new(mins.x, maxs.y, mins.z), // D -> C
-            Vec3::new(maxs.x, maxs.y, mins.z),
-        ),
-    ];
-
-    draw_polyline(lines, color);
+    let size = aabb.maxs - aabb.mins;
+    draw_cube_wires(
+        mquad_from_na(aabb.maxs - size / 2f32),
+        mquad_from_na(size.into()),
+        color,
+    );
 }
