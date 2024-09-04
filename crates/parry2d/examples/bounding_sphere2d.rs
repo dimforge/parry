@@ -48,8 +48,15 @@ async fn main() {
             GREEN
         };
 
-        //assert!(bounding_bounding_sphere.contains(&bounding_sphere_cube1));
-        //assert!(bounding_bounding_sphere.contains(&bounding_sphere_cube2));
+        // Due to float imprecisions, it's dangerous to assume that both shapes will be
+        // contained in the merged.
+        // You can leverage `BoundingVolume::loosened` with an epsilon for expected results.
+        //
+        // These might fail:
+        // assert!(bounding_bounding_sphere.contains(&bounding_sphere_cube1));
+        // assert!(bounding_bounding_sphere.contains(&bounding_sphere_cube2));
+
+        assert!(loose_bounding_sphere_cube2.contains(&bounding_sphere_cube1));
         assert!(loose_bounding_sphere_cube2.contains(&bounding_sphere_cube2));
 
         let cube1_translation =
