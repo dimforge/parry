@@ -14,7 +14,7 @@ fn main() {
     let indices = vec![[0u32, 1, 2], [0, 2, 3], [0, 3, 1]];
 
     // Build the mesh.
-    let mesh = TriMesh::new(points, indices);
+    let mesh = TriMesh::new(points, indices).unwrap();
 
     assert!(mesh.vertices().len() == 4);
 }

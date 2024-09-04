@@ -17,6 +17,8 @@ use std::fmt;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use super::TriMeshBuilderError;
+
 /// The shape of a collider.
 #[derive(Clone)]
 pub struct SharedShape(pub Arc<dyn Shape>);
@@ -194,8 +196,11 @@ impl SharedShape {
     }
 
     /// Initializes a triangle mesh shape defined by its vertex and index buffers.
-    pub fn trimesh(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
-        SharedShape(Arc::new(TriMesh::new(vertices, indices)))
+    pub fn trimesh(
+        vertices: Vec<Point<Real>>,
+        indices: Vec<[u32; 3]>,
+    ) -> Result<Self, TriMeshBuilderError> {
+        Ok(SharedShape(Arc::new(TriMesh::new(vertices, indices)?)))
     }
 
     /// Initializes a triangle mesh shape defined by its vertex and index buffers and
@@ -205,7 +210,9 @@ impl SharedShape {
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Self {
-        SharedShape(Arc::new(TriMesh::with_flags(vertices, indices, flags)))
+        SharedShape(Arc::new(
+            TriMesh::with_flags(vertices, indices, flags).unwrap(),
+        ))
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or

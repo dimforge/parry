@@ -1,5 +1,7 @@
 use core::fmt;
 
+use crate::shape::TriMeshBuilderError;
+
 /// Error indicating that a query is not supported between certain shapes
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MeshIntersectionError {
@@ -8,6 +10,7 @@ pub enum MeshIntersectionError {
     TriTriError,
     DuplicateVertices,
     TriangulationError,
+    TriMeshBuilderError(TriMeshBuilderError),
 }
 
 impl fmt::Display for MeshIntersectionError {
@@ -22,9 +25,16 @@ impl fmt::Display for MeshIntersectionError {
             Self::TriTriError => f.pad("internal failure while intersecting two triangles"),
             Self::DuplicateVertices => f.pad("internal failure while merging faces resulting from intersections"),
             Self::TriangulationError => f.pad("internal failure while triangulating an intersection face"),
+            Self::TriMeshBuilderError(error) => error.fmt(f),
         }
     }
 }
 
 #[cfg(feature = "std")]
 impl std::error::Error for MeshIntersectionError {}
+
+impl From<TriMeshBuilderError> for MeshIntersectionError {
+    fn from(value: TriMeshBuilderError) -> Self {
+        MeshIntersectionError::TriMeshBuilderError(value)
+    }
+}
