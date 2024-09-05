@@ -51,5 +51,6 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         None,
     );
 
-    assert!(!matches!(gjk_result, query::gjk::GJKResult::NoIntersection(_)), "PARTIAL SUCCESS: contact_support_map_support_map_with_params did not crash but did not produce the desired result");
+    assert!(!matches!(gjk_result, query::gjk::GJKResult::NoIntersection(_)),
+        "PARTIAL SUCCESS: contact_support_map_support_map_with_params did not crash but did not produce the desired result");
 }
