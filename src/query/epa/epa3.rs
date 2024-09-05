@@ -289,7 +289,7 @@ impl EPA {
                 // Related issues:
                 // https://github.com/dimforge/parry/issues/253
                 // https://github.com/dimforge/parry/issues/246
-                log::debug!("Hit unexpected state in EPA: proj_is_inside1, proj_is_inside2, proj_is_inside3 and proj_inside4 are all false. At least one of them should be true.");
+                log::debug!("Hit unexpected state in EPA: proj_inside1, proj_inside2, proj_inside3 and proj_inside4 are all false. At least one of them should be true.");
                 return None;
             }
         } else {
