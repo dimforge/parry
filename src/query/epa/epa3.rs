@@ -284,6 +284,11 @@ impl EPA {
                 let dist4 = self.faces[3].normal.dot(&self.vertices[3].point.coords);
                 self.heap.push(FaceId::new(3, -dist4)?);
             }
+
+            if !(proj_inside1 || proj_inside2 || proj_inside3 || proj_inside4) {
+                log::debug!("Hit unexpected state in EPA: proj_is_inside1, proj_is_inside2, proj_is_inside3 and proj_inside4 are all false. At least one of them should be true.");
+                return None;
+            }
         } else {
             if simplex.dimension() == 1 {
                 let dpt = self.vertices[1] - self.vertices[0];
