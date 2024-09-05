@@ -1139,12 +1139,7 @@ impl Shape for TriMesh {
         #[cfg(feature = "dim2")]
         return None;
         #[cfg(feature = "dim3")]
-        match _feature {
-            FeatureId::Face(i) => self
-                .triangle(i % self.num_triangles() as u32)
-                .feature_normal(FeatureId::Face(0)),
-            _ => None,
-        }
+        return self.feature_normal(_feature);
     }
 
     #[cfg(feature = "std")]
