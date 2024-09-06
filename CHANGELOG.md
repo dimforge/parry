@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+## v0.17.1
+
 ### Modified
 
 - Improve convergence of epa algorithm in degenerate configurations.
+- Fix bug in the esh/mesh intersection algorithm that didn’t properly take mesh transforms into account.
 
 ## v0.17.0
 
