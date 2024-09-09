@@ -9,8 +9,6 @@ use parry3d::shape::{Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Se
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
-use crate::ConvexHull;
-
 pub trait DefaultGen {
     fn generate<R: Rng>(rng: &mut R) -> Self;
 }
@@ -119,20 +117,6 @@ where
 {
     fn generate<R: Rng>(rng: &mut R) -> Triangle {
         Triangle::new(rng.gen(), rng.gen(), rng.gen())
-    }
-}
-
-impl DefaultGen for ConvexHull
-where
-    Standard: Distribution<Point<Real>>,
-{
-    fn generate<R: Rng>(rng: &mut R) -> ConvexHull {
-        // It is recommended to have at most 100 points.
-        // Otherwise, a smarter structure like the DK hierarchy would be needed.
-        let pts: Vec<_> = (0..100).map(|_| rng.gen()).collect();
-        ConvexPolyhedron::from_convex_hull(&pts)
-            .unwrap()
-            .to_trimesh()
     }
 }
 
