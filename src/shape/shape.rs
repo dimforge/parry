@@ -1130,6 +1130,18 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
+    /// Gets the normal of the triangle represented by `feature`.
+    fn feature_normal_at_point(
+        &self,
+        _feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        #[cfg(feature = "dim2")]
+        return None;
+        #[cfg(feature = "dim3")]
+        return self.feature_normal(_feature);
+    }
+
     #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
