@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+
 ### Modified
 
 - Improve convergence of epa algorithm in degenerate configurations.
