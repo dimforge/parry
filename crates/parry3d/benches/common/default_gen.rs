@@ -5,7 +5,7 @@ use na::{
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::math::{Point, Real, Vector};
 use parry3d::query::Ray;
-use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
+use parry3d::shape::{Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, Triangle};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -129,9 +129,22 @@ where
     fn generate<R: Rng>(rng: &mut R) -> ConvexHull {
         // It is recommended to have at most 100 points.
         // Otherwise, a smarter structure like the DK hierarchy would be needed.
-        // let pts: Vec<_> = (0..100).map(|_| rng.gen()).collect();
-        // ConvexHull::try_from_points(&pts).unwrap()
-        unimplemented!()
+        let pts: Vec<_> = (0..100).map(|_| rng.gen()).collect();
+        ConvexPolyhedron::from_convex_hull(&pts)
+            .unwrap()
+            .to_trimesh()
+    }
+}
+
+impl DefaultGen for ConvexPolyhedron
+where
+    Standard: Distribution<Real>,
+{
+    fn generate<R: Rng>(rng: &mut R) -> ConvexPolyhedron {
+        // It is recommended to have at most 100 points.
+        // Otherwise, a smarter structure like the DK hierarchy would be needed.
+        let pts: Vec<_> = (0..100).map(|_| rng.gen()).collect();
+        ConvexPolyhedron::from_convex_hull(&pts).unwrap()
     }
 }
 
