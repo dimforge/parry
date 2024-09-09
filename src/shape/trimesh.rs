@@ -22,11 +22,13 @@ use crate::query::details::NormalConstraints;
 use rkyv::{bytecheck, CheckBytes};
 
 /// Indicated an inconsistency in the topology of a triangle mesh.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
     /// Found a triangle with two or three identical vertices.
+    #[error("the triangle {0} has at least two identical vertices.")]
     BadTriangle(u32),
     /// At least two adjacent triangles have opposite orientations.
+    #[error("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations.", edge)]
     BadAdjacentTrianglesOrientation {
         /// The first triangle, with an orientation opposite to the second triangle.
         triangle1: u32,
@@ -37,44 +39,16 @@ pub enum TopologyError {
     },
 }
 
-impl fmt::Display for TopologyError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::BadTriangle(fid) => {
-                f.pad(&format!("the triangle {fid} has at least two identical vertices."))
-            }
-            Self::BadAdjacentTrianglesOrientation {
-                triangle1,
-                triangle2,
-                edge,
-            } => f.pad(&format!("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations.", edge)),
-        }
-    }
-}
-
-impl std::error::Error for TopologyError {}
-
 /// Indicated an inconsistency while building a triangle mesh.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TriMeshBuilderError {
     /// A triangle mesh must contain at least one triangle.
+    #[error("A triangle mesh must contain at least one triangle.")]
     EmptyIndices,
     /// Indicated an inconsistency in the topology of a triangle mesh.
+    #[error("Topology Error: {0}")]
     TopologyError(TopologyError),
 }
-
-impl fmt::Display for TriMeshBuilderError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::EmptyIndices => f.pad(&format!(
-                "A triangle mesh must contain at least one triangle."
-            )),
-            Self::TopologyError(topology_error) => topology_error.fmt(f),
-        }
-    }
-}
-
-impl std::error::Error for TriMeshBuilderError {}
 
 /// The set of pseudo-normals of a triangle mesh.
 ///

@@ -2,11 +2,8 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{IntersectResult, PointQuery, SplitResult};
-use crate::shape::{
-    Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshBuilderError, TriMeshFlags,
-    Triangle,
-};
-use crate::transformation::{self, intersect_meshes, MeshIntersectionError};
+use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
+use crate::transformation::{intersect_meshes, MeshIntersectionError};
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::cmp::Ordering;

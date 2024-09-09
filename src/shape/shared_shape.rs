@@ -209,10 +209,10 @@ impl SharedShape {
         vertices: Vec<Point<Real>>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
-    ) -> Self {
-        SharedShape(Arc::new(
-            TriMesh::with_flags(vertices, indices, flags).unwrap(),
-        ))
+    ) -> Result<Self, TriMeshBuilderError> {
+        Ok(SharedShape(Arc::new(TriMesh::with_flags(
+            vertices, indices, flags,
+        )?)))
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or

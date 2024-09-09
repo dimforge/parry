@@ -1,37 +1,27 @@
-use core::fmt;
-
 use crate::shape::TriMeshBuilderError;
 
 /// Error indicating that a query is not supported between certain shapes
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(thiserror::Error, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MeshIntersectionError {
+    /// At least one of the meshes is missing its topology information. Call `mesh.compute_topology` on the mesh
+    #[error("at least one of the meshes is missing its topology information. Call `mesh.compute_topology` on the mesh")]
     MissingTopology,
+    /// At least one of the meshes is missing its pseudo-normals. Call `mesh.compute_pseudo_normals` on the mesh
+    #[error("at least one of the meshes is missing its pseudo-normals. Call `mesh.compute_pseudo_normals` on the mesh")]
     MissingPseudoNormals,
+    /// Internal failure while intersecting two triangles
+    #[error("internal failure while intersecting two triangles")]
     TriTriError,
+    /// Internal failure while merging faces resulting from intersections
+    #[error("internal failure while merging faces resulting from intersections")]
     DuplicateVertices,
+    /// Internal failure while triangulating an intersection face
+    #[error("internal failure while triangulating an intersection face")]
     TriangulationError,
+    /// See [`TriMeshBuilderError`]
+    #[error("TriMeshBuilderError: {0}")]
     TriMeshBuilderError(TriMeshBuilderError),
 }
-
-impl fmt::Display for MeshIntersectionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::MissingTopology => {
-                f.pad("at least one of the meshes is missing its topology information. Call `mesh.compute_topology` on the mesh")
-            }
-            Self::MissingPseudoNormals => {
-                f.pad("at least one of the meshes is missing its pseudo-normals. Call `mesh.compute_pseudo_normals` on the mesh")
-            }
-            Self::TriTriError => f.pad("internal failure while intersecting two triangles"),
-            Self::DuplicateVertices => f.pad("internal failure while merging faces resulting from intersections"),
-            Self::TriangulationError => f.pad("internal failure while triangulating an intersection face"),
-            Self::TriMeshBuilderError(error) => error.fmt(f),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for MeshIntersectionError {}
 
 impl From<TriMeshBuilderError> for MeshIntersectionError {
     fn from(value: TriMeshBuilderError) -> Self {
