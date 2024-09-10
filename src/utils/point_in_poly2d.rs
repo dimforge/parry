@@ -48,14 +48,15 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
         let seg_dir = b - a;
         let dpt = pt - a;
         let perp = dpt.perp(&seg_dir);
+
         winding += match (dpt.y >= 0.0, b.y > pt.y) {
             (true, true) if perp < 0.0 => 1,
-            (false, false) if perp > 0.0 => -1,
+            (false, false) if perp > 0.0 => 1,
             _ => 0,
         };
     }
 
-    winding != 0
+    winding % 2 == 1
 }
 
 #[cfg(test)]

@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+### Fix
+
+- Fix `utils::point_in_poly2d` for self-intersecting polygons.
+
 ### Added
 
-- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a
+  `FeatureId::Face`.
 
 ## v0.17.1
 
@@ -283,7 +288,8 @@ This version was yanked. See the release notes for 0.13.3 instead.
   for most shapes.
 - Add the `parallel` feature that enables methods for the parallel traversal of Qbvh
   trees: `Qbvh::traverse_bvtt_parallel`,
-  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`, `Qbvh::traverse_depth_first_node_parallel`.
+  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`,
+  `Qbvh::traverse_depth_first_node_parallel`.
 
 ### Fixed
 
