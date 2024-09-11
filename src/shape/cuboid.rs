@@ -152,6 +152,7 @@ impl Cuboid {
         // to make this AoSoA friendly?
         let he = self.half_extents;
         let iamax = local_dir.iamax();
+        #[expect(clippy::unnecessary_cast)]
         let sign = (1.0 as Real).copysign(local_dir[iamax]);
 
         let vertices = match iamax {
