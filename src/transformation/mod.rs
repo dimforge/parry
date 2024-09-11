@@ -36,7 +36,6 @@ mod mesh_intersection;
 mod to_outline;
 #[cfg(feature = "dim2")]
 mod to_polyline;
-#[cfg(feature = "dim3")]
 mod to_trimesh;
 pub mod utils;
 

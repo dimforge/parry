@@ -1,3 +1,6 @@
+mod common_macroquad;
+
+use common_macroquad::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
 use parry2d::math::Isometry;
@@ -97,26 +100,6 @@ fn draw_polygon(
             color,
         );
     }
-}
-
-fn draw_point(point: Point2<f32>, scale: f32, shift: Point2<f32>, color: Color) {
-    let edge_len = 0.15;
-    draw_line(
-        (point.x - edge_len) * scale + shift.x,
-        point.y * scale + shift.y,
-        (point.x + edge_len) * scale + shift.x,
-        point.y * scale + shift.y,
-        2.0,
-        color,
-    );
-    draw_line(
-        point.x * scale + shift.x,
-        (point.y - edge_len) * scale + shift.y,
-        point.x * scale + shift.x,
-        (point.y + edge_len) * scale + shift.y,
-        2.0,
-        color,
-    );
 }
 
 fn drawline_from_to(
