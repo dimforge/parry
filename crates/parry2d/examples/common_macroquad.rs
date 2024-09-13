@@ -1,5 +1,4 @@
-#[allow(unused, dead_code)]
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use macroquad::prelude::*;
 use macroquad::{
@@ -11,6 +10,7 @@ use nalgebra::Point2;
 use parry2d::math::Real;
 use parry2d::shape::TriMesh;
 
+#[allow(dead_code)]
 fn main() {
     println!(
         "This module contains helper functions to use macroquad,
@@ -18,14 +18,17 @@ fn main() {
     );
 }
 
+#[allow(dead_code)]
 pub fn mquad_from_na(a: Point2<Real>) -> Vec2 {
     Vec2::new(a.x, a.y)
 }
 
+#[allow(dead_code)]
 pub fn na_from_mquad(a: Vec2) -> Point2<Real> {
     Point2::new(a.x, a.y)
 }
 
+#[allow(dead_code)]
 pub fn draw_polyline(polygon: Vec<(Vec2, Vec2)>, color: Color) {
     for i in 0..polygon.len() {
         let a = polygon[i].0;
@@ -34,10 +37,12 @@ pub fn draw_polyline(polygon: Vec<(Vec2, Vec2)>, color: Color) {
     }
 }
 
+#[allow(dead_code)]
 pub fn easy_draw_text(text: &str) {
     macroquad::text::draw_text(text, 10.0, 48.0 + 18.0, 30.0, WHITE);
 }
 
+#[allow(dead_code)]
 pub fn lissajous_2d(t: f32) -> Vec2 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
     let (a, b, delta_x, delta_y) = (3.0, 2.0, FRAC_PI_2, FRAC_PI_4);
@@ -47,10 +52,12 @@ pub fn lissajous_2d(t: f32) -> Vec2 {
     Vec2::new(x, y) * 0.75f32
 }
 
+#[allow(dead_code)]
 pub fn draw_line_2d(a: Vec2, b: Vec2, color: Color) {
     draw_line(a.x, a.y, b.x, b.y, 2f32, color);
 }
 
+#[allow(dead_code)]
 pub fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
     let vertices = trimesh.vertices();
     for v in trimesh.indices() {
@@ -64,6 +71,7 @@ pub fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
     }
 }
 
+#[allow(dead_code)]
 pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: Color) {
     for i in 0..polygon.len() {
         let a = polygon[i];
@@ -79,6 +87,7 @@ pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, col
     }
 }
 
+#[allow(dead_code)]
 pub fn draw_point(point: Point2<f32>, scale: f32, shift: Point2<f32>, color: Color) {
     let edge_len = 0.15;
     draw_line(
