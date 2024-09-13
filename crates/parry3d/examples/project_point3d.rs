@@ -16,7 +16,7 @@ async fn main() {
         Color::from_rgba(200, 200, 200, 150),
     );
     let (points, indices) = trimesh;
-    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
+    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
     for _i in 1.. {
         clear_background(BLACK);
 

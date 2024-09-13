@@ -14,7 +14,7 @@ async fn main() {
     let camera_pos = Vec3::new(-1.5f32, 2.5f32, -3f32);
 
     let mesh = mquad_mesh_from_points(&trimesh, light_pos, DARKGRAY);
-    let trimesh = TriMesh::new(trimesh.0, trimesh.1);
+    let trimesh = TriMesh::new(trimesh.0, trimesh.1).unwrap();
 
     for _ in 1.. {
         clear_background(BLACK);

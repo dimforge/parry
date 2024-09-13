@@ -3,7 +3,7 @@ use crate::math::{Isometry, Point, Real, UnitVector, Vector};
 use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
-use crate::transformation;
+use crate::transformation::{intersect_meshes, MeshIntersectionError};
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
 use std::cmp::Ordering;
@@ -339,8 +339,8 @@ impl TriMesh {
         } else if indices_lhs.is_empty() {
             SplitResult::Positive
         } else {
-            let mesh_lhs = TriMesh::new(vertices_lhs, indices_lhs);
-            let mesh_rhs = TriMesh::new(vertices_rhs, indices_rhs);
+            let mesh_lhs = TriMesh::new(vertices_lhs, indices_lhs).unwrap();
+            let mesh_rhs = TriMesh::new(vertices_rhs, indices_rhs).unwrap();
             SplitResult::Pair(mesh_lhs, mesh_rhs)
         }
     }
@@ -612,7 +612,7 @@ impl TriMesh {
         aabb: &Aabb,
         flip_cuboid: bool,
         epsilon: Real,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, MeshIntersectionError> {
         let cuboid = Cuboid::new(aabb.half_extents());
         let cuboid_pos = Isometry::from(aabb.center());
         self.intersection_with_cuboid(
@@ -634,7 +634,7 @@ impl TriMesh {
         cuboid_position: &Isometry<Real>,
         flip_cuboid: bool,
         epsilon: Real,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, MeshIntersectionError> {
         self.intersection_with_local_cuboid(
             flip_mesh,
             cuboid,
@@ -652,25 +652,26 @@ impl TriMesh {
         cuboid_position: &Isometry<Real>,
         flip_cuboid: bool,
         _epsilon: Real,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, MeshIntersectionError> {
         if self.topology().is_some() && self.pseudo_normals().is_some() {
             let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
             let cuboid_trimesh = TriMesh::with_flags(
                 cuboid_vtx,
                 cuboid_idx,
                 TriMeshFlags::HALF_EDGE_TOPOLOGY | TriMeshFlags::ORIENTED,
-            );
+            )
+            // `TriMesh::with_flags` can't fail for `cuboid.to_trimesh()`.
+            .unwrap();
 
-            return transformation::intersect_meshes(
+            let intersect_meshes = intersect_meshes(
                 &Isometry::identity(),
                 self,
                 flip_mesh,
                 cuboid_position,
                 &cuboid_trimesh,
                 flip_cuboid,
-            )
-            .ok()
-            .flatten();
+            );
+            return intersect_meshes;
         }
 
         let cuboid_aabb = cuboid.compute_aabb(cuboid_position);
@@ -682,7 +683,7 @@ impl TriMesh {
         let _ = self.qbvh().traverse_depth_first(&mut visitor);
 
         if intersecting_tris.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         // First, very naive version that outputs a triangle soup without
@@ -730,10 +731,10 @@ impl TriMesh {
             *pt = cuboid_position * *pt;
         }
 
-        if new_vertices.len() >= 3 {
-            Some(TriMesh::new(new_vertices, new_indices))
+        Ok(if new_vertices.len() >= 3 {
+            Some(TriMesh::new(new_vertices, new_indices).unwrap())
         } else {
             None
-        }
+        })
     }
 }

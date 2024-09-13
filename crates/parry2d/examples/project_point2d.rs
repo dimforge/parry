@@ -22,7 +22,7 @@ async fn main() {
     let scale = 200f32;
     let (points, indices) = Cuboid::new(Vector2::new(0.2 * scale, 0.5 * scale)).to_trimesh();
 
-    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
+    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
     for _i in 1.. {
         clear_background(BLACK);
 

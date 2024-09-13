@@ -15,7 +15,7 @@ fn mesh_connected_components_grouped_faces() {
         Point::new(15.82, 6.4, 0.0),
     ];
 
-    let mut roof = TriMesh::new(verts, vec![[0, 1, 2], [3, 4, 5]]);
+    let mut roof = TriMesh::new(verts, vec![[0, 1, 2], [3, 4, 5]]).unwrap();
 
     if let Err(e) =
         roof.set_flags(TriMeshFlags::MERGE_DUPLICATE_VERTICES | TriMeshFlags::CONNECTED_COMPONENTS)
