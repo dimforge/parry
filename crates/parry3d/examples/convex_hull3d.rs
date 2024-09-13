@@ -1,8 +1,8 @@
-mod common_macroquad;
+mod common_macroquad3d;
 
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
-use common_macroquad::{
+use common_macroquad3d::{
     lissajous_3d_with_params, mquad_from_na, mquad_mesh_from_points, na_from_mquad,
 };
 use macroquad::prelude::*;
