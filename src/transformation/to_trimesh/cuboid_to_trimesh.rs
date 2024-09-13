@@ -22,11 +22,9 @@ impl Cuboid {
     }
 }
 
-/**
- * Generates a cuboid shape with a split index buffer.
- *
- * The cuboid is centered at the origin, and has its half extents set to 0.5.
- */
+/// Generates a cuboid shape with a split index buffer.
+///
+/// The cuboid is centered at the origin, and has its half extents set to 0.5.
 fn unit_cuboid() -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
     #[cfg(feature = "dim3")]
     {

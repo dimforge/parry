@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
+
 ### Modified
 
 - Improve convergence of epa algorithm in degenerate configurations.
