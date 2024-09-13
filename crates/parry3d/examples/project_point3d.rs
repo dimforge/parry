@@ -3,8 +3,8 @@ use nalgebra::Vector3;
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
-mod common_macroquad;
-use common_macroquad::*;
+mod common_macroquad3d;
+use common_macroquad3d::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
