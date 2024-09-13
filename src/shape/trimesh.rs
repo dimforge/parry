@@ -846,6 +846,17 @@ impl TriMesh {
             )
         })
     }
+
+    #[cfg(feature = "dim3")]
+    /// Gets the normal of the triangle represented by `feature`.
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(i) => self
+                .triangle(i % self.num_triangles() as u32)
+                .feature_normal(FeatureId::Face(0)),
+            _ => None,
+        }
+    }
 }
 
 impl TriMesh {

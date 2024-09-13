@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.17.0"
+version = "0.17.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -171,6 +171,11 @@ doc-scrape-examples = true
 [[example]]
 name = "plane3d"
 path = "examples/plane3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane_intersection"
+path = "examples/plane_intersection.rs"
 doc-scrape-examples = true
 
 [[example]]

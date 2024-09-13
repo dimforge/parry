@@ -2,10 +2,21 @@
 
 ## Unreleased
 
+### Added
+
+- Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
+- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+
+### Modified
+
+- Propagate error information while creating a mesh and using functions making use of it. See `TriMeshBuilderError`.
+
+## v0.17.1
+
 ### Modified
 
 - Improve convergence of epa algorithm in degenerate configurations.
-- Propagate error information while creating a mesh and using functions making use of it. See `TriMeshBuilderError`.
+- Fix bug in the mesh/mesh intersection algorithm that didn’t properly take mesh transforms into account.
 
 ## v0.17.0
 

@@ -155,9 +155,9 @@ pub fn intersect_meshes_with_tolerances(
                 face.swap(0, 1);
             }
             topology_indices.push([
-                insert_point(mesh1.vertices()[face[0] as usize]),
-                insert_point(mesh1.vertices()[face[1] as usize]),
-                insert_point(mesh1.vertices()[face[2] as usize]),
+                insert_point(pos1 * mesh1.vertices()[face[0] as usize]),
+                insert_point(pos1 * mesh1.vertices()[face[1] as usize]),
+                insert_point(pos1 * mesh1.vertices()[face[2] as usize]),
             ]);
         }
 
@@ -167,9 +167,9 @@ pub fn intersect_meshes_with_tolerances(
                 face.swap(0, 1);
             }
             topology_indices.push([
-                insert_point(mesh2.vertices()[face[0] as usize]),
-                insert_point(mesh2.vertices()[face[1] as usize]),
-                insert_point(mesh2.vertices()[face[2] as usize]),
+                insert_point(pos2 * mesh2.vertices()[face[0] as usize]),
+                insert_point(pos2 * mesh2.vertices()[face[1] as usize]),
+                insert_point(pos2 * mesh2.vertices()[face[2] as usize]),
             ]);
         }
     }
@@ -179,8 +179,8 @@ pub fn intersect_meshes_with_tolerances(
     let mut constraints1 = BTreeMap::<_, Vec<_>>::new();
     let mut constraints2 = BTreeMap::<_, Vec<_>>::new();
     for (fid1, fid2) in &intersections {
-        let tri1 = mesh1.triangle(*fid1);
-        let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
+        let tri1 = mesh1.triangle(*fid1).transformed(&pos1);
+        let tri2 = mesh2.triangle(*fid2).transformed(&pos2);
 
         let list1 = constraints1.entry(fid1).or_default();
         let list2 = constraints2.entry(fid2).or_default();
@@ -216,7 +216,8 @@ pub fn intersect_meshes_with_tolerances(
         mesh1,
         mesh2,
         &constraints1,
-        &pos12,
+        &pos1,
+        &pos2,
         flip1,
         flip2,
         &meta_data,
@@ -228,7 +229,8 @@ pub fn intersect_meshes_with_tolerances(
         mesh2,
         mesh1,
         &constraints2,
-        &Isometry::identity(),
+        &pos2,
+        &pos1,
         flip2,
         flip1,
         &meta_data,
@@ -585,7 +587,8 @@ fn merge_triangle_sets(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     triangle_constraints: &BTreeMap<&u32, Vec<[Point3<Real>; 2]>>,
-    pos12: &Isometry<Real>,
+    pos1: &Isometry<Real>,
+    pos2: &Isometry<Real>,
     flip1: bool,
     flip2: bool,
     metadata: &MeshIntersectionTolerances,
@@ -598,7 +601,7 @@ fn merge_triangle_sets(
     // For each sub-triangle that is part of the intersection, add them to the
     // output mesh.
     for (triangle_id, constraints) in triangle_constraints.iter() {
-        let tri = mesh1.triangle(**triangle_id);
+        let tri = mesh1.triangle(**triangle_id).transformed(&pos1);
 
         let (delaunay, points) = triangulate_constraints_and_merge_duplicates(
             &tri,
@@ -632,7 +635,7 @@ fn merge_triangle_sets(
 
             let epsilon = metadata.global_insertion_epsilon;
             let projection = mesh2
-                .project_local_point_and_get_location(&pos12.inverse_transform_point(&center), true)
+                .project_local_point_and_get_location(&pos2.inverse_transform_point(&center), true)
                 .0;
 
             if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
