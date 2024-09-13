@@ -9,7 +9,11 @@
 
 ### Modified
 
-- Propagate error information while creating a mesh and using functions making use of it. See `TriMeshBuilderError`.
+- Propagate error information while creating a mesh and using functions making use of it (See #262):
+  - `TriMesh::new`
+  - `TriMesh::intersection_with_aabb`
+  - `SharedShape::trimesh`
+  - `SharedShape::trimesh_with_flags`
 
 ## v0.17.1
 
