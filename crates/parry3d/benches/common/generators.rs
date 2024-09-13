@@ -9,5 +9,5 @@ pub fn generate_trimesh_around_origin<R: Rng>(rng: &mut R) -> TriMesh {
         .map(|i| Point3::new(i * 3, i * 3 + 1, i * 3 + 2))
         .collect();
 
-    TriMesh::new(pts, indices, Some(uvs))
+    TriMesh::new(pts, indices, Some(uvs)).unwrap()
 }
