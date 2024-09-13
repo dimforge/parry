@@ -1,4 +1,5 @@
 mod common_macroquad2d;
+
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
