@@ -721,7 +721,7 @@ mod tests {
             &cuboid_mesh,
             false,
             &Isometry::translation(2.0, 0.0, 0.0),
-            &sphere_mesh, //.clone().scaled(&Vector3::new(1.001, 1.001, 1.001)),
+            &sphere_mesh,
             false,
         )
         .unwrap()
