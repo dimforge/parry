@@ -28,7 +28,7 @@ pub enum TopologyError {
     #[error("the triangle {0} has at least two identical vertices.")]
     BadTriangle(u32),
     /// At least two adjacent triangles have opposite orientations.
-    #[error("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations.", edge)]
+    #[error("the triangles {triangle1} and {triangle2} sharing the edge {edge:?} have opposite orientations.")]
     BadAdjacentTrianglesOrientation {
         /// The first triangle, with an orientation opposite to the second triangle.
         triangle1: u32,
