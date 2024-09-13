@@ -1,6 +1,5 @@
-mod common_macroquad;
-
-use common_macroquad::draw_point;
+mod common_macroquad2d;
+use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
 use parry2d::math::Isometry;

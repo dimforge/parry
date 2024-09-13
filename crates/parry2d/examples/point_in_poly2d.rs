@@ -1,6 +1,5 @@
-mod common_macroquad;
-
-use common_macroquad::{draw_point, draw_polygon};
+mod common_macroquad2d;
+use common_macroquad2d::{draw_point, draw_polygon};
 use macroquad::prelude::*;
 use nalgebra::{Point2, UnitComplex, Vector2};
 use parry2d::utils::point_in_poly2d;
