@@ -3,11 +3,6 @@ use crate::math::{Point, Real};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 
-#[cfg(feature = "dim2")]
-use na::Point2 as PointDim;
-#[cfg(feature = "dim2")]
-use na::{self, Point2};
-
 impl Aabb {
     /// Discretize the boundary of this Aabb as a triangle-mesh.
     pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
