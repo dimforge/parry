@@ -10,7 +10,7 @@ fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {
         Point2::new(1.0, 1.0),
     ];
 
-    let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]);
+    let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]).unwrap();
     let query_pt = Point2::new(0.6, 0.6); // Inside the top-right triangle (index 1)
 
     let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
@@ -34,7 +34,7 @@ fn project_local_point_and_get_feature_projects_correctly_from_outside() {
         Point2::new(1.0, 1.0),
     ];
 
-    let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]);
+    let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]).unwrap();
 
     {
         let query_pt = Point2::new(-1.0, 0.0); // Left from the bottom-left triangle (index 0)
