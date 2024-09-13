@@ -708,6 +708,51 @@ mod tests {
     }
 
     #[test]
+    fn test_same_mesh_same_position_far_from_origin() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../assets/tests/low_poly_bunny.obj").unwrap();
+
+        let mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let res = intersect_meshes(
+            &Isometry::translation(2.0, 0.0, 0.0),
+            &mesh,
+            false,
+            &Isometry::translation(2.0, 0.0, 0.0),
+            &mesh, // To Fix:
+                   // .clone().scaled(&Vector3::new(1.001, 1.001, 1.001))
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        let _ = res.to_obj_file(&PathBuf::from(
+            "test_same_mesh_same_position_far_from_origin.obj",
+        ));
+
+        // Not sure how to test, maybe amount of triangles ? verify the mesh is manifold?
+        assert!(
+            false,
+            "This test is failing, for now needs manual verification."
+        )
+    }
+
+    #[test]
     fn test_non_origin_pos1_pos2_intersection() {
         let ball = Ball::new(2f32 as Real).to_trimesh(10, 10);
         let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 1.0)).to_trimesh();
