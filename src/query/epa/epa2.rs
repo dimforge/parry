@@ -253,7 +253,7 @@ impl EPA {
                 // Related issues:
                 // https://github.com/dimforge/parry/issues/253
                 // https://github.com/dimforge/parry/issues/246
-                log::debug!("Hit unexpected state in EPA: proj_inside1, proj_inside2 and proj_inside3 are all false. At least one of them should be true.");
+                log::debug!("Hit unexpected state in EPA: failed to project the origin on the initial simplex.");
                 return None;
             }
         } else {
