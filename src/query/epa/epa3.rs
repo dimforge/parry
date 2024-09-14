@@ -95,9 +95,17 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (_, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
+        let (proj, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
         match loc {
+            TrianglePointLocation::OnVertex(_) | TrianglePointLocation::OnEdge(_, _) => {
+                let eps_tol = crate::math::DEFAULT_EPSILON * 100.0; // Same as in closest_points
+                (
+                    // barycentric_coordinates is guaranteed to work in OnVertex and OnEdge locations
+                    Self::new_with_proj(vertices, loc.barycentric_coordinates().unwrap(), pts, adj),
+                    proj.is_inside_eps(&Point::<Real>::origin(), eps_tol),
+                )
+            }
             TrianglePointLocation::OnFace(_, bcoords) => {
                 (Self::new_with_proj(vertices, bcoords, pts, adj), true)
             }
