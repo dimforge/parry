@@ -51,6 +51,12 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         None,
     );
 
-    assert!(!matches!(gjk_result, query::gjk::GJKResult::NoIntersection(_)),
-        "PARTIAL SUCCESS: contact_support_map_support_map_with_params did not crash but did not produce the desired result");
+    let query::gjk::GJKResult::ClosestPoints(a, _b, _normal) = &gjk_result else {
+        panic!("PARTIAL SUCCESS: contact_support_map_support_map_with_params did not crash but did not produce the desired result");
+    };
+
+    // The upper triangle (mesh1) lines on plane where y = 1
+    assert_abs_diff_eq!(a.y, 1.0, epsilon = 0.001);
+    // The bottom triangle touches the upper triangle in one point where x = -2.349647.
+    assert_abs_diff_eq!(a.x, -2.349647, epsilon = 0.001);
 }
