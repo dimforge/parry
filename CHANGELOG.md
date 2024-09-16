@@ -4,7 +4,16 @@
 
 ### Added
 
-- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+- Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
+- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+
+### Modified
+
+- Propagate error information while creating a mesh and using functions making use of it (See #262):
+  - `TriMesh::new`
+  - `TriMesh::intersection_with_aabb`
+  - `SharedShape::trimesh`
+  - `SharedShape::trimesh_with_flags`
 
 ## v0.17.1
 

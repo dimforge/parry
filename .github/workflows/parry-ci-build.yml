@@ -18,6 +18,8 @@ jobs:
         run: cargo fmt -- --check
   clippy:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v4
       - name: Clippy
@@ -77,3 +79,13 @@ jobs:
           toolchain: stable
       - name: cargo doc
         run: cargo doc --workspace --features bytemuck-serialize,serde-serialize,rkyv-serialize,parallel --no-deps --document-private-items
+  check-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - name: check benchmarks
+        run: cargo +nightly check --benches

@@ -33,6 +33,7 @@ pub struct MeshIntersectionTolerances {
 impl Default for MeshIntersectionTolerances {
     fn default() -> Self {
         Self {
+            #[expect(clippy::unnecessary_cast)]
             angle_epsilon: (0.005 as Real).to_radians(), // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_scale: 10.,
@@ -177,8 +178,8 @@ pub fn intersect_meshes_with_tolerances(
     let mut constraints1 = BTreeMap::<_, Vec<_>>::new();
     let mut constraints2 = BTreeMap::<_, Vec<_>>::new();
     for (fid1, fid2) in &intersections {
-        let tri1 = mesh1.triangle(*fid1).transformed(&pos1);
-        let tri2 = mesh2.triangle(*fid2).transformed(&pos2);
+        let tri1 = mesh1.triangle(*fid1).transformed(pos1);
+        let tri2 = mesh2.triangle(*fid2).transformed(pos2);
 
         let list1 = constraints1.entry(fid1).or_default();
         let list2 = constraints2.entry(fid2).or_default();
@@ -214,8 +215,8 @@ pub fn intersect_meshes_with_tolerances(
         mesh1,
         mesh2,
         &constraints1,
-        &pos1,
-        &pos2,
+        pos1,
+        pos2,
         flip1,
         flip2,
         &meta_data,
@@ -227,8 +228,8 @@ pub fn intersect_meshes_with_tolerances(
         mesh2,
         mesh1,
         &constraints2,
-        &pos2,
-        &pos1,
+        pos2,
+        pos1,
         flip2,
         flip1,
         &meta_data,
@@ -242,7 +243,7 @@ pub fn intersect_meshes_with_tolerances(
     let vertices: Vec<_> = vertices.iter().map(|p| Point3::from(p.point)).collect();
 
     if !topology_indices.is_empty() {
-        Ok(Some(TriMesh::new(vertices, topology_indices)))
+        Ok(Some(TriMesh::new(vertices, topology_indices)?))
     } else {
         Ok(None)
     }
@@ -599,7 +600,7 @@ fn merge_triangle_sets(
     // For each sub-triangle that is part of the intersection, add them to the
     // output mesh.
     for (triangle_id, constraints) in triangle_constraints.iter() {
-        let tri = mesh1.triangle(**triangle_id).transformed(&pos1);
+        let tri = mesh1.triangle(**triangle_id).transformed(pos1);
 
         let (delaunay, points) = triangulate_constraints_and_merge_duplicates(
             &tri,

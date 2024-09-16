@@ -3,7 +3,7 @@ use na::Isometry3;
 use parry3d::bounding_volume::BoundingVolume;
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::shape::{
-    Ball, Capsule, Cone, ConvexHull, Cuboid, Cylinder, Segment, TriMesh, Triangle,
+    Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, TriMesh, Triangle,
 };
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
@@ -135,13 +135,13 @@ bench_method!(
 bench_method!(
     bench_convex_aabb,
     aabb: Aabb,
-    c: ConvexHull,
+    c: ConvexPolyhedron,
     m: Isometry3<f32>
 );
 bench_method!(
     bench_convex_bounding_sphere,
     bounding_sphere: BoundingSphere,
-    c: ConvexHull,
+    c: ConvexPolyhedron,
     m: Isometry3<f32>
 );
 
