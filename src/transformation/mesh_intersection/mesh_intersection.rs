@@ -5,8 +5,6 @@ use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, Poi
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
 use na::{Point3, Vector3};
-#[cfg(feature = "wavefront")]
-use obj::{Group, IndexTuple, ObjData, Object, SimplePolygon};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
@@ -669,9 +667,10 @@ fn merge_triangle_sets(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::TriMeshFlags;
-    use crate::transformation::wavefront::*;
+    use crate::bounding_volume::{bounding_sphere, BoundingSphere};
+    use crate::shape::{Ball, Cuboid, TopoHalfEdge, TriMeshFlags, TriMeshTopology};
     use obj::Obj;
+    use obj::ObjData;
 
     #[test]
     fn test_same_mesh_intersection() {
@@ -685,7 +684,7 @@ mod tests {
         let mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -710,6 +709,99 @@ mod tests {
     }
 
     #[test]
+    fn test_same_mesh_same_position_far_from_origin() {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load("../../assets/tests/low_poly_bunny.obj").unwrap();
+
+        let mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        let mut res = intersect_meshes(
+            &Isometry::translation(2.0, 0.0, 0.0),
+            &mesh,
+            false,
+            &Isometry::translation(2.0, 0.0, 0.0),
+            &mesh, // To Fix:
+            // .clone().scaled(&Vector3::new(1.001, 1.001, 1.001))
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        let _ = res.to_obj_file(&PathBuf::from(
+            "test_same_mesh_same_position_far_from_origin.obj",
+        ));
+
+        assert!(
+            res.set_flags(TriMeshFlags::HALF_EDGE_TOPOLOGY).is_ok(),
+            "This intersection should be able to compute its half edges."
+        );
+        // Not sure how to test, maybe amount of triangles ? verify the mesh is manifold?
+        assert_eq!(
+            true,
+            is_manifold(&res),
+            "Intersection resulted in a non-manifold mesh."
+        )
+    }
+
+    /// Verifies that there are no holes in the given trimesh.
+    ///
+    /// Parameter `trimesh` must have its flags [`TriMeshFlags::HALF_EDGE_TOPOLOGY`] enabled.
+    fn is_manifold(trimesh: &TriMesh) -> bool {
+        let Some(topology) = trimesh.topology() else {
+            return false;
+        };
+        for half_edge in &topology.half_edges {
+            if half_edge.twin == u32::MAX {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    #[test]
+    fn test_non_origin_pos1_pos2_intersection() {
+        let ball = Ball::new(2f32 as Real).to_trimesh(10, 10);
+        let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 1.0)).to_trimesh();
+        let mut sphere_mesh = TriMesh::new(ball.0, ball.1);
+        sphere_mesh.set_flags(TriMeshFlags::all()).unwrap();
+        let mut cuboid_mesh = TriMesh::new(cuboid.0, cuboid.1);
+        cuboid_mesh.set_flags(TriMeshFlags::all()).unwrap();
+
+        let res = intersect_meshes(
+            &Isometry::translation(1.0, 0.0, 0.0),
+            &cuboid_mesh,
+            false,
+            &Isometry::translation(2.0, 0.0, 0.0),
+            &sphere_mesh,
+            false,
+        )
+        .unwrap()
+        .unwrap();
+
+        let _ = res.to_obj_file(&PathBuf::from("test_non_origin_pos1_pos2_intersection.obj"));
+
+        let bounding_sphere = res.local_bounding_sphere();
+        assert!(bounding_sphere.center == Point3::new(1.5, 0.0, 0.0));
+        assert_relative_eq!(2.0615528, bounding_sphere.radius, epsilon = 1.0e-5);
+    }
+
+    #[test]
     fn test_offset_cylinder_intersection() {
         let Obj {
             data: ObjData {
@@ -721,7 +813,7 @@ mod tests {
         let offset_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -741,7 +833,7 @@ mod tests {
         let center_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -777,7 +869,7 @@ mod tests {
         let stair_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -797,7 +889,7 @@ mod tests {
         let bar_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -833,7 +925,7 @@ mod tests {
         let bunny_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -853,7 +945,7 @@ mod tests {
         let cylinder_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as f64, v[1] as f64, v[2] as f64))
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
