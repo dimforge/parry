@@ -666,7 +666,6 @@ fn merge_triangle_sets(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bounding_volume::{bounding_sphere, BoundingSphere};
     use crate::shape::{Ball, Cuboid, TriMeshFlags};
     use obj::Obj;
     use obj::ObjData;
@@ -693,7 +692,7 @@ mod tests {
             TriMeshFlags::all(),
         );
 
-        let res = intersect_meshes(
+        let _ = intersect_meshes(
             &Isometry::identity(),
             &mesh,
             false,
@@ -704,7 +703,7 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        mesh.to_obj_file(&PathBuf::from("same_test.obj"));
+        let _ = mesh.to_obj_file(&PathBuf::from("same_test.obj"));
     }
 
     #[test]
@@ -787,7 +786,7 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        res.to_obj_file(&PathBuf::from("offset_test.obj"));
+        let _ = res.to_obj_file(&PathBuf::from("offset_test.obj"));
     }
 
     #[test]
@@ -843,7 +842,7 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        res.to_obj_file(&PathBuf::from("stair_test.obj"));
+        let _ = res.to_obj_file(&PathBuf::from("stair_test.obj"));
     }
 
     #[test]
@@ -899,6 +898,6 @@ mod tests {
         .unwrap()
         .unwrap();
 
-        res.to_obj_file(&PathBuf::from("complex_test.obj"));
+        let _ = res.to_obj_file(&PathBuf::from("complex_test.obj"));
     }
 }
