@@ -691,7 +691,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let _ = intersect_meshes(
             &Isometry::identity(),
@@ -711,9 +712,9 @@ mod tests {
     fn test_non_origin_pos1_pos2_intersection() {
         let ball = Ball::new(2f32 as Real).to_trimesh(10, 10);
         let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 1.0)).to_trimesh();
-        let mut sphere_mesh = TriMesh::new(ball.0, ball.1);
+        let mut sphere_mesh = TriMesh::new(ball.0, ball.1).unwrap();
         sphere_mesh.set_flags(TriMeshFlags::all()).unwrap();
-        let mut cuboid_mesh = TriMesh::new(cuboid.0, cuboid.1);
+        let mut cuboid_mesh = TriMesh::new(cuboid.0, cuboid.1).unwrap();
         cuboid_mesh.set_flags(TriMeshFlags::all()).unwrap();
 
         let res = intersect_meshes(
@@ -754,7 +755,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let Obj {
             data: ObjData {
@@ -774,7 +776,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let res = intersect_meshes(
             &Isometry::identity(),
@@ -810,7 +813,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let Obj {
             data: ObjData {
@@ -830,7 +834,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let res = intersect_meshes(
             &Isometry::identity(),
@@ -866,7 +871,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let Obj {
             data: ObjData {
@@ -886,7 +892,8 @@ mod tests {
                 .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
                 .collect::<Vec<_>>(),
             TriMeshFlags::all(),
-        );
+        )
+        .unwrap();
 
         let res = intersect_meshes(
             &Isometry::identity(),
