@@ -245,7 +245,7 @@ pub fn intersect_meshes_with_tolerances(
     let vertices: Vec<_> = vertices.iter().map(|p| Point3::from(p.point)).collect();
 
     if !topology_indices.is_empty() {
-        Ok(Some(TriMesh::new(vertices, topology_indices)))
+        Ok(Some(TriMesh::new(vertices, topology_indices)?))
     } else {
         Ok(None)
     }

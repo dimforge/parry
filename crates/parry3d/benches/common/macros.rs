@@ -72,7 +72,7 @@ macro_rules! bench_method_gen (
 
                 unsafe {
                     let val: $tres = test::black_box($arg.get_unchecked(i).$method($(unref($args.get_unchecked(i)),)*));
-                    drop(val);
+                    let _ = val;
                 }
             })
         }

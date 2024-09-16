@@ -89,6 +89,8 @@ oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
 macroquad = "0.4.12"
+nalgebra = { version = "0.33", default-features = false, features = ["rand"] }
+rand_isaac = "0.3"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
@@ -171,6 +173,11 @@ doc-scrape-examples = true
 [[example]]
 name = "plane3d"
 path = "examples/plane3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "plane_intersection"
+path = "examples/plane_intersection.rs"
 doc-scrape-examples = true
 
 [[example]]

@@ -1,3 +1,6 @@
+mod common_macroquad2d;
+
+use common_macroquad2d::{draw_point, draw_polygon};
 use macroquad::prelude::*;
 use nalgebra::{Point2, UnitComplex, Vector2};
 use parry2d::utils::point_in_poly2d;
@@ -15,14 +18,14 @@ async fn main() {
     loop {
         clear_background(BLACK);
 
-        /*
-         * Compute polygon intersections.
-         */
         spikes
             .iter_mut()
             .for_each(|pt| *pt = animation_rotation * *pt);
         draw_polygon(&spikes, RENDER_SCALE, spikes_render_pos, BLUE);
 
+        /*
+         * Compute polygon intersections.
+         */
         for point in &test_points {
             if point_in_poly2d(point, &spikes) {
                 draw_point(*point, RENDER_SCALE, spikes_render_pos, RED);
@@ -70,39 +73,4 @@ fn grid_points() -> Vec<Point2<f32>> {
         }
     }
     pts
-}
-
-fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: Color) {
-    for i in 0..polygon.len() {
-        let a = polygon[i];
-        let b = polygon[(i + 1) % polygon.len()];
-        draw_line(
-            a.x * scale + shift.x,
-            a.y * scale + shift.y,
-            b.x * scale + shift.x,
-            b.y * scale + shift.y,
-            2.0,
-            color,
-        );
-    }
-}
-
-fn draw_point(point: Point2<f32>, scale: f32, shift: Point2<f32>, color: Color) {
-    let edge_len = 0.15;
-    draw_line(
-        (point.x - edge_len) * scale + shift.x,
-        point.y * scale + shift.y,
-        (point.x + edge_len) * scale + shift.x,
-        point.y * scale + shift.y,
-        2.0,
-        color,
-    );
-    draw_line(
-        point.x * scale + shift.x,
-        (point.y - edge_len) * scale + shift.y,
-        point.x * scale + shift.x,
-        (point.y + edge_len) * scale + shift.y,
-        2.0,
-        color,
-    );
 }
