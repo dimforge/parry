@@ -511,7 +511,7 @@ fn insert_into_set(
 fn smallest_angle(points: &[Point3<Real>]) -> Real {
     let n = points.len();
 
-    let mut worst_cos = -2.0;
+    let mut worst_cos: Real = -2.0;
     for i in 0..points.len() {
         let d1 = (points[i] - points[(i + 1) % n]).normalize();
         let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
