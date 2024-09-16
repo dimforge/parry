@@ -1,11 +1,11 @@
-//! Mesh generation for `.obj` files.
-
 use crate::shape::TriMesh;
 use obj::{Group, IndexTuple, ObjData, ObjError, Object, SimplePolygon};
 use std::path::PathBuf;
 
 impl TriMesh {
-    /// Outputs an `.obj` file at the given path.
+    /// Outputs a Wavefront (`.obj`) file at the given path.
+    ///
+    /// This function is enabled by the `wavefront` feature flag.
     pub fn to_obj_file(&self, path: &PathBuf) -> Result<(), ObjError> {
         let mut file = std::fs::File::create(path).unwrap();
 
