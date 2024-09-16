@@ -1455,7 +1455,7 @@ impl Shape for HalfSpace {
 
     #[cfg(feature = "std")]
     fn scale_dyn(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
-        Some(Box::new(self.clone().scaled(scale)?))
+        Some(Box::new(self.scaled(scale)?))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1475,7 +1475,10 @@ impl Shape for HalfSpace {
     }
 
     fn ccd_thickness(&self) -> Real {
-        f32::MAX as Real
+        #[cfg_attr(feature = "f32", expect(clippy::unnecessary_cast))]
+        let result = f32::MAX as Real;
+        #[cfg_attr(feature = "f64", expect(clippy::let_and_return))]
+        result
     }
 
     fn ccd_angular_thickness(&self) -> Real {

@@ -18,6 +18,8 @@ jobs:
         run: cargo fmt -- --check
   clippy:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v4
       - name: Clippy
