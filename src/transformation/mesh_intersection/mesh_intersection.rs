@@ -667,7 +667,7 @@ fn merge_triangle_sets(
 mod tests {
     use super::*;
     use crate::bounding_volume::{bounding_sphere, BoundingSphere};
-    use crate::shape::{Ball, Cuboid, TriMeshFlags};
+    use crate::shape::{Ball, Cuboid, TopoHalfEdge, TriMeshFlags, TriMeshTopology};
     use obj::Obj;
     use obj::ObjData;
 
@@ -729,13 +729,13 @@ mod tests {
             TriMeshFlags::all(),
         );
 
-        let res = intersect_meshes(
+        let mut res = intersect_meshes(
             &Isometry::translation(2.0, 0.0, 0.0),
             &mesh,
             false,
             &Isometry::translation(2.0, 0.0, 0.0),
             &mesh, // To Fix:
-                   // .clone().scaled(&Vector3::new(1.001, 1.001, 1.001))
+            // .clone().scaled(&Vector3::new(1.001, 1.001, 1.001))
             false,
         )
         .unwrap()
@@ -745,11 +745,32 @@ mod tests {
             "test_same_mesh_same_position_far_from_origin.obj",
         ));
 
-        // Not sure how to test, maybe amount of triangles ? verify the mesh is manifold?
         assert!(
-            false,
-            "This test is failing, for now needs manual verification."
+            res.set_flags(TriMeshFlags::HALF_EDGE_TOPOLOGY).is_ok(),
+            "This intersection should be able to compute its half edges."
+        );
+        // Not sure how to test, maybe amount of triangles ? verify the mesh is manifold?
+        assert_eq!(
+            true,
+            is_manifold(&res),
+            "Intersection resulted in a non-manifold mesh."
         )
+    }
+
+    /// Verifies that there are no holes in the given trimesh.
+    ///
+    /// Parameter `trimesh` must have its flags [`TriMeshFlags::HALF_EDGE_TOPOLOGY`] enabled.
+    fn is_manifold(trimesh: &TriMesh) -> bool {
+        let Some(topology) = trimesh.topology() else {
+            return false;
+        };
+        for half_edge in &topology.half_edges {
+            if half_edge.twin == u32::MAX {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #[test]
