@@ -1,3 +1,6 @@
+mod common_macroquad2d;
+
+use common_macroquad2d::draw_polygon;
 use macroquad::prelude::*;
 use nalgebra::{Point2, UnitComplex, Vector2};
 use parry2d::shape::Ball;
@@ -110,19 +113,4 @@ fn spikes_polygon() -> Vec<Point2<f32>> {
     }
 
     polygon
-}
-
-fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: Color) {
-    for i in 0..polygon.len() {
-        let a = polygon[i];
-        let b = polygon[(i + 1) % polygon.len()];
-        draw_line(
-            a.x * scale + shift.x,
-            a.y * scale + shift.y,
-            b.x * scale + shift.x,
-            b.y * scale + shift.y,
-            2.0,
-            color,
-        );
-    }
 }
