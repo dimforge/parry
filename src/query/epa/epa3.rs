@@ -375,6 +375,8 @@ impl EPA {
                     let new_face_id = self.faces.len();
                     let new_face;
 
+                    // TODO: Thierry: We can probably remove that scope now, but I prefer to discuss it first.
+                    //                I assume NLL is for Non Lexical Lifetimes.
                     // TODO: NLL
                     {
                         let face_adj = &mut self.faces[edge.face_id];
