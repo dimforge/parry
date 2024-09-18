@@ -39,9 +39,6 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         Point3::new(-2.349647, 1.0, 11.037681),
     );
 
-    // TODO: Check the return-value of the function once
-    // it the function's correctness issue have been taken care of
-    // Right now we just want it not to crash
     let gjk_result = query::details::contact_support_map_support_map_with_params(
         &Isometry3::identity(),
         &mesh1,
