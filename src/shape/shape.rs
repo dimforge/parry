@@ -1130,6 +1130,18 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
+    /// Gets the normal of the triangle represented by `feature`.
+    fn feature_normal_at_point(
+        &self,
+        _feature: FeatureId,
+        _point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        #[cfg(feature = "dim2")]
+        return None;
+        #[cfg(feature = "dim3")]
+        return self.feature_normal(_feature);
+    }
+
     #[cfg(feature = "std")]
     fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
         Some(self as &dyn SimdCompositeShape)
@@ -1443,7 +1455,7 @@ impl Shape for HalfSpace {
 
     #[cfg(feature = "std")]
     fn scale_dyn(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
-        Some(Box::new(self.clone().scaled(scale)?))
+        Some(Box::new(self.scaled(scale)?))
     }
 
     fn compute_local_aabb(&self) -> Aabb {
@@ -1463,7 +1475,10 @@ impl Shape for HalfSpace {
     }
 
     fn ccd_thickness(&self) -> Real {
-        f32::MAX as Real
+        #[cfg_attr(feature = "f32", expect(clippy::unnecessary_cast))]
+        let result = f32::MAX as Real;
+        #[cfg_attr(feature = "f64", expect(clippy::let_and_return))]
+        result
     }
 
     fn ccd_angular_thickness(&self) -> Real {

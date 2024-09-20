@@ -15,7 +15,7 @@ fn build_pyramid() -> TriMesh {
 
     let indices = vec![[0u32, 1, 2], [0, 2, 3], [0, 3, 1]];
 
-    TriMesh::new(points, indices)
+    TriMesh::new(points, indices).unwrap()
 }
 
 fn do_toi_test() -> Option<Real> {

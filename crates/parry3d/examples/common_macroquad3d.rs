@@ -1,4 +1,3 @@
-#[allow(unused, dead_code)]
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
 use macroquad::{
@@ -10,6 +9,7 @@ use macroquad::{
 use nalgebra::Point3;
 use parry3d::math::Real;
 
+#[allow(dead_code)]
 fn main() {
     println!(
         "This module contains helper functions to use macroquad,
@@ -17,19 +17,23 @@ fn main() {
     );
 }
 
+#[allow(dead_code)]
 pub fn mquad_from_na(a: Point3<Real>) -> Vec3 {
     Vec3::new(a.x, a.y, a.z)
 }
 
+#[allow(dead_code)]
 pub fn na_from_mquad(a: Vec3) -> Point3<Real> {
     Point3::new(a.x, a.y, a.z)
 }
 
+#[allow(dead_code)]
 pub fn lissajous_3d(t: f32) -> Vec3 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
     lissajous_3d_with_params(t, 3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6)
 }
 
+#[allow(dead_code)]
 pub fn lissajous_3d_with_params(
     t: f32,
     a: f32,
@@ -45,6 +49,7 @@ pub fn lissajous_3d_with_params(
     Vec3::new(x, y, z) * 0.75f32
 }
 
+#[allow(dead_code)]
 pub fn draw_polyline(polygon: Vec<(Vec3, Vec3)>, color: Color) {
     for i in 0..polygon.len() {
         let a = polygon[i].0;
@@ -53,10 +58,12 @@ pub fn draw_polyline(polygon: Vec<(Vec3, Vec3)>, color: Color) {
     }
 }
 
+#[allow(dead_code)]
 pub fn easy_draw_text(text: &str) {
     macroquad::text::draw_text(text, 10.0, 48.0 + 18.0, 30.0, WHITE);
 }
 
+#[allow(dead_code)]
 pub fn mquad_mesh_from_points(
     trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>),
     light_pos: Vec3,
@@ -97,6 +104,7 @@ pub fn mquad_mesh_from_points(
     mesh
 }
 
+#[allow(dead_code)]
 pub fn mquad_compute_normals_and_bake_light(
     points: &Vec<Vertex>,
     indices: &Vec<u16>,

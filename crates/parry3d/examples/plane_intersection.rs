@@ -2,9 +2,8 @@ use macroquad::prelude::*;
 use nalgebra::{UnitVector3, Vector3};
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
-
-mod common_macroquad;
-use common_macroquad::*;
+mod common_macroquad3d;
+use common_macroquad3d::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
@@ -14,7 +13,7 @@ async fn main() {
     let camera_pos = Vec3::new(-1.5f32, 2.5f32, -3f32);
 
     let mesh = mquad_mesh_from_points(&trimesh, light_pos, DARKGRAY);
-    let trimesh = TriMesh::new(trimesh.0, trimesh.1);
+    let trimesh = TriMesh::new(trimesh.0, trimesh.1).unwrap();
 
     for _ in 1.. {
         clear_background(BLACK);

@@ -11,6 +11,7 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     pos12: &Isometry<Real>,
     axis1: &Vector<Real>,
 ) -> (Real, Vector<Real>) {
+    #[expect(clippy::unnecessary_cast)]
     let signum = (1.0 as Real).copysign(pos12.translation.vector.dot(axis1));
     let axis1 = axis1 * signum;
     let axis2 = pos12.inverse_transform_vector(&-axis1);
@@ -87,6 +88,7 @@ pub fn cuboid_cuboid_find_local_separating_normal_oneway(
     let mut best_dir = Vector::zeros();
 
     for i in 0..DIM {
+        #[expect(clippy::unnecessary_cast)]
         let sign = (1.0 as Real).copysign(pos12.translation.vector[i]);
         let axis1 = Vector::ith(i, sign);
         let axis2 = pos12.inverse_transform_vector(&-axis1);

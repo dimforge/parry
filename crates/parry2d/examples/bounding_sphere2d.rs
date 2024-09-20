@@ -1,12 +1,11 @@
-mod common_macroquad;
+mod common_macroquad2d;
 
 extern crate nalgebra as na;
 
-use common_macroquad::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
+use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
 use na::{Isometry2, Vector2};
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
-use parry2d::shape::Ball;
 use parry2d::shape::Cuboid;
 
 const RENDER_SCALE: f32 = 30.0;

@@ -22,7 +22,7 @@ fn build_diamond(position: &Isometry<Real>) -> TriMesh {
         [1, 4, 3],
     ];
 
-    TriMesh::new(points, indices)
+    TriMesh::new(points, indices).unwrap()
 }
 
 #[test]

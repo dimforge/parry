@@ -1,11 +1,10 @@
 use macroquad::prelude::*;
 use nalgebra::Vector3;
-use parry3d::math::Isometry;
+
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
-
-mod common_macroquad;
-use common_macroquad::*;
+mod common_macroquad3d;
+use common_macroquad3d::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
 async fn main() {
@@ -17,7 +16,7 @@ async fn main() {
         Color::from_rgba(200, 200, 200, 150),
     );
     let (points, indices) = trimesh;
-    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
+    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
     for _i in 1.. {
         clear_background(BLACK);
 
@@ -25,14 +24,10 @@ async fn main() {
         let slow_elapsed_time = elapsed_time / 3.0;
 
         let point_to_project = lissajous_3d(slow_elapsed_time);
-        let projected_point = trimesh.project_point(
-            &Isometry::identity(),
-            &na_from_mquad(point_to_project),
-            true,
-        );
+        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
 
         let slow_elapsed_time = slow_elapsed_time * 0.7;
-        // Going 3d!
+        // Setup 3D camera.
         set_camera(&Camera3D {
             position: Vec3::new(
                 slow_elapsed_time.sin() * 3.0,

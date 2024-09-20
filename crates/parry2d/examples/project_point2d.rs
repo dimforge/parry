@@ -1,6 +1,6 @@
-mod common_macroquad;
+mod common_macroquad2d;
 
-use common_macroquad::{draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad};
+use common_macroquad2d::{draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
 use nalgebra::{Point3, UnitComplex, Vector2};
 use parry2d::math::{Isometry, Translation};
@@ -22,7 +22,7 @@ async fn main() {
     let scale = 200f32;
     let (points, indices) = Cuboid::new(Vector2::new(0.2 * scale, 0.5 * scale)).to_trimesh();
 
-    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED);
+    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
     for _i in 1.. {
         clear_background(BLACK);
 
