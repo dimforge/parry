@@ -7,6 +7,10 @@
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
 - Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a `FeatureId::Face`.
 
+### Fix
+
+- Fix panic in `epa3::EPA::closest_points` and `epa2::EPA::closest_points`. Related issues: [#253](https://github.com/dimforge/parry/issues/253), [#246](https://github.com/dimforge/parry/issues/246)
+
 ### Modified
 
 - Propagate error information while creating a mesh and using functions making use of it (See #262):
