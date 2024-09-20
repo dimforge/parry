@@ -32,7 +32,7 @@ async fn main() {
         let cube2 = Cuboid::new(Vector3::new(0.5, 1.0, 0.5));
 
         let cube1_pos = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
-        let cube1_pos = Isometry3::translation(cube1_pos.x, cube1_pos.y, cube1_pos.z);
+        let cube1_pos = Isometry3::from(cube1_pos);
         let cube2_pos = Isometry3::identity(); // Identity matrix.
 
         /*

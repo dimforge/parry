@@ -25,7 +25,7 @@ async fn main() {
         let cube2 = Cuboid::new(Vector2::new(1., 0.5));
 
         let cube1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
-        let cube1_pos = Isometry2::translation(cube1_pos.x, cube1_pos.y);
+        let cube1_pos = Isometry2::from(cube1_pos);
         let cube2_pos = Isometry2::identity();
 
         /*
