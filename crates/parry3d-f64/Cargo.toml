@@ -44,6 +44,7 @@ simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
+# Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
 alloc = []
 improved_fixed_point_support = []
@@ -88,3 +89,7 @@ thiserror = { version = "1", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
+features = ["wavefront"]
