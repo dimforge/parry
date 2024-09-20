@@ -10,6 +10,10 @@ use nalgebra::Point2;
 use parry2d::math::Real;
 use parry2d::shape::TriMesh;
 
+/// As this file is used as a module from other examples,
+/// rustc warns about dead code:
+/// - `main()` is needed for this file to be included in examples
+/// - For other functions, they may be "dead code" for an example, but not for others.
 #[allow(dead_code)]
 fn main() {
     println!(

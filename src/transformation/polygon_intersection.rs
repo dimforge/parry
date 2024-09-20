@@ -45,11 +45,11 @@ impl PolylinePointLocation {
     }
 
     /// Computes the point corresponding to this location.
-    pub fn to_point(&self, pts: &[Point2<Real>]) -> Point2<Real> {
+    pub fn to_point(self, pts: &[Point2<Real>]) -> Point2<Real> {
         match self {
-            PolylinePointLocation::OnVertex(i) => pts[*i],
+            PolylinePointLocation::OnVertex(i) => pts[i],
             PolylinePointLocation::OnEdge(i1, i2, bcoords) => {
-                pts[*i1] * bcoords[0] + pts[*i2].coords * bcoords[1]
+                pts[i1] * bcoords[0] + pts[i2].coords * bcoords[1]
             }
         }
     }
