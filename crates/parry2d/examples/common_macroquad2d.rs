@@ -49,7 +49,12 @@ pub fn easy_draw_text(text: &str) {
 #[allow(dead_code)]
 pub fn lissajous_2d(t: f32) -> Vec2 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
-    let (a, b, delta_x, delta_y) = (3.0, 2.0, FRAC_PI_2, FRAC_PI_4);
+    lissajous_2d_with_params(t, 3.0, 2.0, FRAC_PI_2, FRAC_PI_4)
+}
+
+#[allow(dead_code)]
+pub fn lissajous_2d_with_params(t: f32, a: f32, b: f32, delta_x: f32, delta_y: f32) -> Vec2 {
+    // Some hardcoded parameters to have a pleasing lissajous trajectory.
 
     let x = (a * t + delta_x).sin();
     let y = (b * t + delta_y).sin();
