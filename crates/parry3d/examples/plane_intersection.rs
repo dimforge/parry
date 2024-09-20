@@ -2,6 +2,7 @@ use macroquad::prelude::*;
 use nalgebra::{UnitVector3, Vector3};
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
+
 mod common_macroquad3d;
 use common_macroquad3d::*;
 

@@ -1,8 +1,8 @@
 use macroquad::prelude::*;
 use nalgebra::Vector3;
-
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
+
 mod common_macroquad3d;
 use common_macroquad3d::*;
 
