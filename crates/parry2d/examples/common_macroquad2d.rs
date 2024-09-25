@@ -22,36 +22,46 @@ fn main() {
     );
 }
 
+/// Converts a [`nalgebra::Point2`] to a [`Vec2`], which is used by [`macroquad`]
 #[allow(dead_code)]
 pub fn mquad_from_na(a: Point2<Real>) -> Vec2 {
     Vec2::new(a.x, a.y)
 }
 
+/// Converts a [`Vec2`] to a [`nalgebra::Point2`], which is used by [`parry3d`]
 #[allow(dead_code)]
 pub fn na_from_mquad(a: Vec2) -> Point2<Real> {
     Point2::new(a.x, a.y)
 }
 
+/// Uses [`macroquad`] to display the line passed as parameter.
 #[allow(dead_code)]
-pub fn draw_polyline(polygon: Vec<(Vec2, Vec2)>, color: Color) {
-    for i in 0..polygon.len() {
-        let a = polygon[i].0;
-        let b = polygon[i].1;
+pub fn draw_polyline(polyline: Vec<(Vec2, Vec2)>, color: Color) {
+    for line in polyline {
+        let a = line.0;
+        let b = line.1;
         draw_line_2d(a, b, color);
     }
 }
 
+/// Draws a text in the top left corner of the screen.
+///
+/// This uses a hardcoded position, size, color.
 #[allow(dead_code)]
 pub fn easy_draw_text(text: &str) {
     macroquad::text::draw_text(text, 10.0, 48.0 + 18.0, 30.0, WHITE);
 }
 
+/// Returns [lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) coordinates for time `t`.
+///
+/// This uses hardcoded parameters to have an arbitrary pleasing trajectory.
 #[allow(dead_code)]
 pub fn lissajous_2d(t: f32) -> Vec2 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
     lissajous_2d_with_params(t, 3.0, 2.0, FRAC_PI_2, FRAC_PI_4)
 }
 
+/// Returns [lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) coordinates.
 #[allow(dead_code)]
 pub fn lissajous_2d_with_params(t: f32, a: f32, b: f32, delta_x: f32, delta_y: f32) -> Vec2 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
@@ -61,11 +71,13 @@ pub fn lissajous_2d_with_params(t: f32, a: f32, b: f32, delta_x: f32, delta_y: f
     Vec2::new(x, y) * 0.75f32
 }
 
+/// Uses [`macroquad`] to display the line passed as parameter.
 #[allow(dead_code)]
 pub fn draw_line_2d(a: Vec2, b: Vec2, color: Color) {
     draw_line(a.x, a.y, b.x, b.y, 2f32, color);
 }
 
+/// Uses [`macroquad`] to display the line passed as parameter.
 #[allow(dead_code)]
 pub fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
     let vertices = trimesh.vertices();
@@ -80,6 +92,7 @@ pub fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
     }
 }
 
+/// Uses [`macroquad`] to display a wireframe of the polygon.
 #[allow(dead_code)]
 pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: Color) {
     for i in 0..polygon.len() {
@@ -96,6 +109,7 @@ pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, col
     }
 }
 
+/// Uses [`macroquad`] to display the a cross, representing a point.
 #[allow(dead_code)]
 pub fn draw_point(point: Point2<f32>, scale: f32, shift: Point2<f32>, color: Color) {
     let edge_len = 0.15;
