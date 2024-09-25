@@ -17,22 +17,28 @@ fn main() {
     );
 }
 
+/// Converts a [`nalgebra::Point3`] to a [`Vec3`], which is used by [`macroquad`]
 #[allow(dead_code)]
 pub fn mquad_from_na(a: Point3<Real>) -> Vec3 {
     Vec3::new(a.x, a.y, a.z)
 }
 
+/// Converts a [`Vec3`] to a [`nalgebra::Point3`], which is used by [`parry3d`]
 #[allow(dead_code)]
 pub fn na_from_mquad(a: Vec3) -> Point3<Real> {
     Point3::new(a.x, a.y, a.z)
 }
 
+/// Returns [lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) coordinates for time `t`.
+///
+/// This uses hardcoded parameters to have an arbitrary pleasing trajectory.
 #[allow(dead_code)]
 pub fn lissajous_3d(t: f32) -> Vec3 {
     // Some hardcoded parameters to have a pleasing lissajous trajectory.
     lissajous_3d_with_params(t, 3.0, 2.0, 1.0, FRAC_PI_2, FRAC_PI_4, FRAC_PI_6)
 }
 
+/// Returns [lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) coordinates.
 #[allow(dead_code)]
 pub fn lissajous_3d_with_params(
     t: f32,
@@ -49,20 +55,28 @@ pub fn lissajous_3d_with_params(
     Vec3::new(x, y, z) * 0.75f32
 }
 
+/// Uses [`macroquad`] to display the line passed as parameter.
 #[allow(dead_code)]
-pub fn draw_polyline(polygon: Vec<(Vec3, Vec3)>, color: Color) {
-    for i in 0..polygon.len() {
-        let a = polygon[i].0;
-        let b = polygon[i].1;
+pub fn draw_polyline(polyline: Vec<(Vec3, Vec3)>, color: Color) {
+    for line in polyline {
+        let a = line.0;
+        let b = line.1;
         draw_line_3d(a, b, color);
     }
 }
 
+/// Draws a text in the top left corner of the screen.
+///
+/// This uses a hardcoded position, size, color.
 #[allow(dead_code)]
 pub fn easy_draw_text(text: &str) {
     macroquad::text::draw_text(text, 10.0, 48.0 + 18.0, 30.0, WHITE);
 }
 
+/// Create a usable mesh for [`macroquad`].
+///
+/// This duplicates the trimesh vertices, computes their normals,
+/// and bakes light into its vertices colors using [`mquad_compute_normals_and_bake_light`].
 #[allow(dead_code)]
 pub fn mquad_mesh_from_points(
     trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>),
@@ -104,6 +118,7 @@ pub fn mquad_mesh_from_points(
     mesh
 }
 
+/// Bakes light into vertices, using an hardcoded light strength.
 #[allow(dead_code)]
 pub fn mquad_compute_normals_and_bake_light(
     points: &Vec<Vertex>,
