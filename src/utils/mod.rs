@@ -48,6 +48,8 @@ mod hashable_partial_eq;
 #[cfg(feature = "std")]
 pub mod hashmap;
 #[cfg(feature = "std")]
+pub mod hashset;
+#[cfg(feature = "std")]
 mod interval;
 mod inv;
 mod isometry_ops;

@@ -2,15 +2,15 @@
 //! `enhanced-determinism` feature is enabled.
 
 #[cfg(all(feature = "enhanced-determinism", feature = "serde-serialize"))]
-use indexmap::IndexMap as StdHashMap;
+use indexmap::IndexSet as StdHashSet;
 #[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
-use std::collections::HashMap as StdHashMap;
+use std::collections::HashSet as StdHashSet;
 use std::mem::size_of;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
-pub fn serialize_hashmap_capacity<S: serde::Serializer, K, V, H: std::hash::BuildHasher>(
-    map: &StdHashMap<K, V, H>,
+pub fn serialize_hashmap_capacity<S: serde::Serializer, K, H: std::hash::BuildHasher>(
+    map: &StdHashSet<K, H>,
     s: S,
 ) -> Result<S::Ok, S::Error> {
     s.serialize_u64(map.capacity() as u64)
@@ -26,7 +26,7 @@ pub fn deserialize_hashmap_capacity<
     H: std::hash::BuildHasher + Default,
 >(
     d: D,
-) -> Result<StdHashMap<K, V, H>, D::Error> {
+) -> Result<StdHashSet<K, H>, D::Error> {
     struct CapacityVisitor;
     impl<'de> serde::de::Visitor<'de> for CapacityVisitor {
         type Value = u64;
@@ -41,7 +41,7 @@ pub fn deserialize_hashmap_capacity<
     }
 
     let capacity = d.deserialize_u64(CapacityVisitor)? as usize;
-    Ok(StdHashMap::with_capacity_and_hasher(
+    Ok(StdHashSet::with_capacity_and_hasher(
         capacity,
         Default::default(),
     ))
@@ -50,13 +50,13 @@ pub fn deserialize_hashmap_capacity<
 /*
  * FxHasher taken from rustc_hash, except that it does not depend on the pointer size.
  */
-/// Deterministic hashmap using [`indexmap::IndexMap`]
+/// Deterministic hashset using [`indexmap::IndexSet`]
 #[cfg(feature = "enhanced-determinism")]
-pub type FxHashMap32<K, V> = indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<FxHasher32>>;
+pub type FxHashSet32<K> = indexmap::IndexSet<K, std::hash::BuildHasherDefault<FxHasher32>>;
 #[cfg(feature = "enhanced-determinism")]
-pub use {self::FxHashMap32 as HashMap, indexmap::map::Entry};
+pub use self::FxHashSet32 as HashSet;
 #[cfg(not(feature = "enhanced-determinism"))]
-pub use {rustc_hash::FxHashMap as HashMap, std::collections::hash_map::Entry};
+pub use rustc_hash::FxHashSet as HashSet;
 
 const K: u32 = 0x9e3779b9;
 
