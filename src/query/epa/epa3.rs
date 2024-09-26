@@ -77,10 +77,6 @@ impl Face {
         ]) {
             normal = Ok(n);
         } else {
-            // This is a bit of a hack for degenerate faces.
-            // TODO: It will work OK with our current code, though
-            // we should do this in another way to avoid any risk
-            // of misusing the face normal in the future.
             normal = Err(Degenerate);
         }
 
