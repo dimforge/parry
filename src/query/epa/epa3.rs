@@ -375,20 +375,15 @@ impl EPA {
                     let new_face_id = self.faces.len();
                     let new_face;
 
-                    // TODO: Thierry: We can probably remove that scope now, but I prefer to discuss it first.
-                    //                I assume NLL is for Non Lexical Lifetimes.
-                    // TODO: NLL
-                    {
-                        let face_adj = &mut self.faces[edge.face_id];
-                        let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
-                        let pt_id2 = face_adj.pts[(edge.opp_pt_id + 1) % 3];
+                    let face_adj = &mut self.faces[edge.face_id];
+                    let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
+                    let pt_id2 = face_adj.pts[(edge.opp_pt_id + 1) % 3];
 
-                        let pts = [pt_id1, pt_id2, support_point_id];
-                        let adj = [edge.face_id, new_face_id + 1, new_face_id - 1];
-                        new_face = Face::new(&self.vertices, pts, adj);
+                    let pts = [pt_id1, pt_id2, support_point_id];
+                    let adj = [edge.face_id, new_face_id + 1, new_face_id - 1];
+                    new_face = Face::new(&self.vertices, pts, adj);
 
-                        face_adj.adj[(edge.opp_pt_id + 1) % 3] = new_face_id;
-                    }
+                    face_adj.adj[(edge.opp_pt_id + 1) % 3] = new_face_id;
 
                     self.faces.push(new_face.0);
 
