@@ -373,7 +373,6 @@ impl EPA {
             for edge in &self.silhouette {
                 if !self.faces[edge.face_id].deleted {
                     let new_face_id = self.faces.len();
-                    let new_face;
 
                     let face_adj = &mut self.faces[edge.face_id];
                     let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
@@ -381,7 +380,7 @@ impl EPA {
 
                     let pts = [pt_id1, pt_id2, support_point_id];
                     let adj = [edge.face_id, new_face_id + 1, new_face_id - 1];
-                    new_face = Face::new(&self.vertices, pts, adj);
+                    let new_face = Face::new(&self.vertices, pts, adj);
 
                     face_adj.adj[(edge.opp_pt_id + 1) % 3] = new_face_id;
 
