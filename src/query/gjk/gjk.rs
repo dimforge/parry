@@ -2,6 +2,7 @@
 
 use na::{self, ComplexField, Unit};
 
+use crate::query::epa::Degenerate;
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 // use query::Proximity;
@@ -19,7 +20,11 @@ pub enum GJKResult {
     ///
     /// Both points and vector are expressed in the local-space of the first geometry involved
     /// in the GJK execution.
-    ClosestPoints(Point<Real>, Point<Real>, Unit<Vector<Real>>),
+    ClosestPoints(
+        Point<Real>,
+        Point<Real>,
+        Result<Unit<Vector<Real>>, Degenerate>,
+    ),
     /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
     ///
     /// The returned vector is expressed in the local-space of the first geometry involved in the
@@ -125,7 +130,7 @@ where
         if max_bound >= old_max_bound {
             if exact_dist {
                 let (p1, p2) = result(simplex, true);
-                return GJKResult::ClosestPoints(p1, p2, old_dir); // upper bounds inconsistencies
+                return GJKResult::ClosestPoints(p1, p2, Ok(old_dir)); // upper bounds inconsistencies
             } else {
                 return GJKResult::Proximity(old_dir);
             }
@@ -143,7 +148,7 @@ where
         } else if max_bound - min_bound <= _eps_rel * max_bound {
             if exact_dist {
                 let (p1, p2) = result(simplex, false);
-                return GJKResult::ClosestPoints(p1, p2, dir); // the distance found has a good enough precision
+                return GJKResult::ClosestPoints(p1, p2, Ok(dir)); // the distance found has a good enough precision
             } else {
                 return GJKResult::Proximity(dir);
             }
@@ -152,7 +157,7 @@ where
         if !simplex.add_point(cso_point) {
             if exact_dist {
                 let (p1, p2) = result(simplex, false);
-                return GJKResult::ClosestPoints(p1, p2, dir);
+                return GJKResult::ClosestPoints(p1, p2, Ok(dir));
             } else {
                 return GJKResult::Proximity(dir);
             }
@@ -165,7 +170,7 @@ where
             if min_bound >= _eps_tol {
                 if exact_dist {
                     let (p1, p2) = result(simplex, true);
-                    return GJKResult::ClosestPoints(p1, p2, old_dir);
+                    return GJKResult::ClosestPoints(p1, p2, Ok(old_dir));
                 } else {
                     // NOTE: previous implementation used old_proj here.
                     return GJKResult::Proximity(old_dir);
