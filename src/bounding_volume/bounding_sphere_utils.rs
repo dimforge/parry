@@ -2,13 +2,14 @@ use crate::math::{Point, Real};
 use crate::utils;
 use na::{self, ComplexField};
 
+use super::BoundingSphere;
+
 /// Computes the bounding sphere of a set of point, given its center.
-// TODO: return a bounding sphere?
 #[inline]
 pub fn point_cloud_bounding_sphere_with_center(
     pts: &[Point<Real>],
     center: Point<Real>,
-) -> (Point<Real>, Real) {
+) -> BoundingSphere {
     let mut sqradius = 0.0;
 
     for pt in pts.iter() {
@@ -18,13 +19,11 @@ pub fn point_cloud_bounding_sphere_with_center(
             sqradius = distance_squared
         }
     }
-
-    (center, ComplexField::sqrt(sqradius))
+    BoundingSphere::new(center, ComplexField::sqrt(sqradius))
 }
 
 /// Computes a bounding sphere of the specified set of point.
-// TODO: return a bounding sphere?
 #[inline]
-pub fn point_cloud_bounding_sphere(pts: &[Point<Real>]) -> (Point<Real>, Real) {
+pub fn point_cloud_bounding_sphere(pts: &[Point<Real>]) -> BoundingSphere {
     point_cloud_bounding_sphere_with_center(pts, utils::center(pts))
 }

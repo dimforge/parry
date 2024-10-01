@@ -617,6 +617,31 @@ impl VoxelSet {
 
         cov_mat.symmetric_eigenvalues()
     }
+
+    pub(crate) fn compute_axes_aligned_clipping_planes(
+        &self,
+        downsampling: u32,
+        planes: &mut Vec<CutPlane>,
+    ) {
+        let min_v = self.min_bb_voxels();
+        let max_v = self.max_bb_voxels();
+
+        for dim in 0..DIM {
+            let i0 = min_v[dim];
+            let i1 = max_v[dim];
+
+            for i in (i0..=i1).step_by(downsampling as usize) {
+                let plane = CutPlane {
+                    abc: Vector::ith(dim, 1.0),
+                    axis: dim as u8,
+                    d: -(self.origin[dim] + (i as Real + 0.5) * self.scale),
+                    index: i,
+                };
+
+                planes.push(plane);
+            }
+        }
+    }
 }
 
 #[cfg(feature = "dim2")]

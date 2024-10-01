@@ -71,7 +71,7 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
     }
 }
 
-// TODO: can we re-used this for the segment/segment case?
+// TODO: can we re-use this for the segment/segment case?
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_line_line(

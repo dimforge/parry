@@ -164,32 +164,6 @@ impl VHACD {
         }
     }
 
-    // TODO: this should be a method of VoxelSet.
-    fn compute_axes_aligned_clipping_planes(
-        vset: &VoxelSet,
-        downsampling: u32,
-        planes: &mut Vec<CutPlane>,
-    ) {
-        let min_v = vset.min_bb_voxels();
-        let max_v = vset.max_bb_voxels();
-
-        for dim in 0..DIM {
-            let i0 = min_v[dim];
-            let i1 = max_v[dim];
-
-            for i in (i0..=i1).step_by(downsampling as usize) {
-                let plane = CutPlane {
-                    abc: Vector::ith(dim, 1.0),
-                    axis: dim as u8,
-                    d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
-                    index: i,
-                };
-
-                planes.push(plane);
-            }
-        }
-    }
-
     fn refine_axes_aligned_clipping_planes(
         vset: &VoxelSet,
         best_plane: &CutPlane,
@@ -328,11 +302,7 @@ impl VHACD {
                 Self::compute_preferred_cutting_direction(&eigenvalues);
 
             let mut planes = Vec::new();
-            Self::compute_axes_aligned_clipping_planes(
-                &voxels,
-                params.plane_downsampling,
-                &mut planes,
-            );
+            voxels.compute_axes_aligned_clipping_planes(params.plane_downsampling, &mut planes);
 
             let (mut best_plane, mut min_concavity) = self.compute_best_clipping_plane(
                 &voxels,

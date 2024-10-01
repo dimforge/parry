@@ -125,11 +125,8 @@ impl VoronoiSimplex {
             self.proj[0] = 1.0;
             self.vertices[0].point
         } else if self.dim == 1 {
-            // TODO: NLL
-            let (proj, location) = {
-                let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-                seg.project_local_point_and_get_location(&Point::<Real>::origin(), true)
-            };
+            let (proj, location) = Segment::new(self.vertices[0].point, self.vertices[1].point)
+                .project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
             match location {
                 SegmentPointLocation::OnVertex(0) => {
@@ -150,15 +147,12 @@ impl VoronoiSimplex {
 
             proj.point
         } else if self.dim == 2 {
-            // TODO: NLL
-            let (proj, location) = {
-                let tri = Triangle::new(
-                    self.vertices[0].point,
-                    self.vertices[1].point,
-                    self.vertices[2].point,
-                );
-                tri.project_local_point_and_get_location(&Point::<Real>::origin(), true)
-            };
+            let (proj, location) = Triangle::new(
+                self.vertices[0].point,
+                self.vertices[1].point,
+                self.vertices[2].point,
+            )
+            .project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
             match location {
                 TrianglePointLocation::OnVertex(i) => {
@@ -192,16 +186,13 @@ impl VoronoiSimplex {
             proj.point
         } else {
             assert!(self.dim == 3);
-            // TODO: NLL
-            let (proj, location) = {
-                let tetr = Tetrahedron::new(
-                    self.vertices[0].point,
-                    self.vertices[1].point,
-                    self.vertices[2].point,
-                    self.vertices[3].point,
-                );
-                tetr.project_local_point_and_get_location(&Point::<Real>::origin(), true)
-            };
+            let (proj, location) = Tetrahedron::new(
+                self.vertices[0].point,
+                self.vertices[1].point,
+                self.vertices[2].point,
+                self.vertices[3].point,
+            )
+            .project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
             match location {
                 TetrahedronPointLocation::OnVertex(i) => {
