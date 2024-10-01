@@ -20,7 +20,7 @@ the rust programming language.
 #![allow(clippy::type_complexity)] // Complains about closures that are fairly simple.
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![deny(unused_qualifications)] // TODO: deny that everytime
+#![deny(unused_qualifications)]
 
 #[cfg(all(
     feature = "simd-is-enabled",
