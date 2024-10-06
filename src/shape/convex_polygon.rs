@@ -164,6 +164,7 @@ impl ConvexPolygon {
     ///
     /// # Returns
     ///
+<<<<<<< HEAD
     /// - `Some(ConvexPolygon)` if successful
     /// - `None` if all points are nearly collinear (form an almost flat line) or there are fewer than 3 vertices after removing collinear points
     ///
@@ -209,6 +210,11 @@ impl ConvexPolygon {
     ///
     /// [`from_convex_hull`]: ConvexPolygon::from_convex_hull
     /// [`from_convex_polyline_unmodified`]: ConvexPolygon::from_convex_polyline_unmodified
+=======
+    /// Convexity of the input polyline is not checked.
+    /// Removes some points if they are collinear with the previous one.
+    /// Returns `None` if all points form an almost flat line.
+>>>>>>> 63e9242 (Create constructor for ConvexPolyline that does not remove any vertices)
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         if points.is_empty() {
             return None;
@@ -254,12 +260,19 @@ impl ConvexPolygon {
     /// Creates a new 2D convex polygon from a set of points assumed to
     /// describe a counter-clockwise convex polyline.
     ///
+<<<<<<< HEAD
     /// This is the same as [`ConvexPolygon::from_convex_polyline`] but without removing any point
     /// from the input even if some are coplanar.
     ///
     /// Returns `None` if `points` doesn’t contain at least three points.
     pub fn from_convex_polyline_unmodified(points: Vec<Point<Real>>) -> Option<Self> {
         if points.len() <= 2 {
+=======
+    /// Convexity of the input polyline is not checked.
+    /// Does not remove any points.
+    pub fn from_points(points: Vec<Point<Real>>) -> Option<Self> {
+        if points.is_empty() {
+>>>>>>> 63e9242 (Create constructor for ConvexPolyline that does not remove any vertices)
             return None;
         }
         let mut normals = Vec::with_capacity(points.len());
@@ -269,6 +282,7 @@ impl ConvexPolygon {
             normals.push(utils::ccw_face_normal([&points[i1], &points[i2]])?);
         }
 
+<<<<<<< HEAD
         Some(ConvexPolygon { points, normals })
     }
 
@@ -295,6 +309,16 @@ impl ConvexPolygon {
     /// assert_eq!(vertices[0], Point2::origin());
     /// # }
     /// ```
+=======
+        if points.len() > 2 {
+            Some(ConvexPolygon { points, normals })
+        } else {
+            None
+        }
+    }
+
+    /// The vertices of this convex polygon.
+>>>>>>> 63e9242 (Create constructor for ConvexPolyline that does not remove any vertices)
     #[inline]
     pub fn points(&self) -> &[Point<Real>] {
         &self.points

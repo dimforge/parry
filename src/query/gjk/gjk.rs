@@ -140,7 +140,7 @@ pub enum GJKResult {
 /// The absolute tolerance value (10 * DEFAULT_EPSILON)
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
-    _eps * 10.0
+    _eps * 100.0
 }
 
 /// Projects the origin onto the boundary of the given shape.
