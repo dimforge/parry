@@ -308,6 +308,15 @@ impl SharedShape {
         ConvexPolygon::from_convex_polyline(points).map(|ch| SharedShape(Arc::new(ch)))
     }
 
+    /// Creates a new shared shape that is a convex polygon formed by the
+    /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
+    /// computed and no points will be removed).
+    /// Does not remove any points.
+    #[cfg(feature = "dim2")]
+    pub fn convex_polyline_from_points_raw(points: Vec<Point<Real>>) -> Option<Self> {
+        ConvexPolygon::from_points(points).map(|ch| SharedShape(Arc::new(ch)))
+    }
+
     /// Creates a new shared shape that is a convex polyhedron formed by the
     /// given set of points assumed to form a convex mesh (no convex-hull will be automatically
     /// computed).
