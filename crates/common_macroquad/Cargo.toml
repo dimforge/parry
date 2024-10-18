@@ -1,0 +1,17 @@
+[package]
+name = "common_macroquad"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+"dim2" = ["dep:parry2d"]
+"dim3" = ["dep:parry3d"]
+
+[dependencies]
+macroquad = "0.4.12"
+nalgebra = "*"
+parry3d = { optional = true, version = "*", path = "../parry3d"}
+parry2d = { optional = true, version = "*", path = "../parry2d"}
+
+[lints]
+workspace = true

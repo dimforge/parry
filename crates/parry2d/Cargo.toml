@@ -91,6 +91,9 @@ oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
 macroquad = "0.4.12"
+common_macroquad = { version = "0.1", path = "../common_macroquad", features = [
+    "dim2",
+] }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

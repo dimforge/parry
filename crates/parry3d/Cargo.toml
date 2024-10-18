@@ -92,6 +92,10 @@ rand = { version = "0.8" }
 macroquad = "0.4.12"
 nalgebra = { version = "0.33", default-features = false, features = ["rand"] }
 rand_isaac = "0.3"
+common_macroquad = { version = "0.1", path = "../common_macroquad", features = [
+    "dim3",
+] }
+fork = "*"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

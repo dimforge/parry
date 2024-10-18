@@ -1,8 +1,6 @@
-mod common_macroquad2d;
-
 extern crate nalgebra as na;
 
-use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
+use common_macroquad::dim2::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
 use na::Isometry2;
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
