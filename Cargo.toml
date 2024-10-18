@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/parry2d", "crates/parry3d", "crates/parry2d-f64", "crates/parry3d-f64"]
+members = ["crates/parry2d", "crates/parry3d", "crates/parry2d-f64", "crates/parry3d-f64", "crates/common_macroquad"]
 resolver = "2"
 
 [workspace.lints]

@@ -3,11 +3,10 @@ use nalgebra::{UnitVector3, Vector3};
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
 
-mod common_macroquad3d;
-use common_macroquad3d::*;
+use common_macroquad::dim3::*;
 
 #[macroquad::main("parry3d::query::PlaneIntersection")]
-async fn main() {
+pub async fn main() {
     let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
 
     let light_pos = Vec3::new(-1f32, 3.5f32, -3f32);

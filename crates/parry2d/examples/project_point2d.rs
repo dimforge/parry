@@ -1,6 +1,6 @@
-mod common_macroquad2d;
-
-use common_macroquad2d::{draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad};
+use common_macroquad::dim2::{
+    draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad,
+};
 use macroquad::prelude::*;
 use nalgebra::{Point3, UnitComplex, Vector2};
 use parry2d::math::{Isometry, Translation};
