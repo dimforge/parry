@@ -44,6 +44,8 @@ mod consts;
 mod cov;
 #[cfg(feature = "std")]
 mod deterministic_state;
+#[cfg(feature = "enhanced-determinism")]
+mod fx_hasher;
 mod hashable_partial_eq;
 #[cfg(feature = "std")]
 pub mod hashmap;
