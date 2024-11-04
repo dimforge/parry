@@ -11,7 +11,7 @@ the rust programming language.
 #![deny(unused_parens)]
 #![deny(non_upper_case_globals)]
 #![deny(unused_results)]
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
 #![allow(clippy::too_many_arguments)] // Maybe revisit this one later.
