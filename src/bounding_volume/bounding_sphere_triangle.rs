@@ -15,8 +15,6 @@ impl Triangle {
     #[inline]
     pub fn local_bounding_sphere(&self) -> BoundingSphere {
         let pts = [self.a, self.b, self.c];
-        let (center, radius) = bounding_volume::details::point_cloud_bounding_sphere(&pts[..]);
-
-        BoundingSphere::new(center, radius)
+        bounding_volume::details::point_cloud_bounding_sphere(&pts[..])
     }
 }

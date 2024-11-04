@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: remove this
-
 use crate::mass_properties::MassProperties;
 use crate::math::{Point, Real};
 use crate::shape::Triangle;
