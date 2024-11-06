@@ -2,8 +2,8 @@
 
 use na::{self, ComplexField, Unit};
 
-use crate::query::epa::Degenerate;
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::FaceDegenerate;
 use crate::shape::SupportMap;
 // use query::Proximity;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
@@ -23,7 +23,7 @@ pub enum GJKResult {
     ClosestPoints(
         Point<Real>,
         Point<Real>,
-        Result<Unit<Vector<Real>>, Degenerate>,
+        Result<Unit<Vector<Real>>, FaceDegenerate>,
     ),
     /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
     ///
