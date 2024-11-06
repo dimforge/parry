@@ -14,6 +14,7 @@
   - `TriMesh::intersection_with_aabb`
   - `SharedShape::trimesh`
   - `SharedShape::trimesh_with_flags`
+- `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
 
 ## v0.17.1
 

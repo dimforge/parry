@@ -40,4 +40,4 @@ mod to_trimesh;
 pub mod utils;
 
 #[cfg(feature = "wavefront")]
-pub mod wavefront;
+mod wavefront;

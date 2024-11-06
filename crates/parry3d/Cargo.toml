@@ -45,6 +45,7 @@ simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
+# Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
 alloc = []
 improved_fixed_point_support = []
@@ -95,6 +96,7 @@ rand_isaac = "0.3"
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+features = ["wavefront"]
 
 # The following listing is to allow for examples to be scraped,
 # see https://doc.rust-lang.org/rustdoc/scraped-examples.html#scraped-examples for details.
