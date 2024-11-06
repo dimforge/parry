@@ -79,7 +79,7 @@ pub struct RayIntersection {
     /// Otherwise, the normal points outward.
     ///
     /// If the `time_of_impact` is exactly zero, the normal might not be reliable.
-    // TODO: use a Unit<Vector> instead. // TODO: Thierry: should we use Unit for [`Ray::dir`] too ?
+    // TODO: use a Unit<Vector> instead.
     pub normal: Vector<Real>,
 
     /// Feature at the intersection point.
