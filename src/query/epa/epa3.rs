@@ -340,14 +340,12 @@ impl EPA {
         while let Some(face_id) = self.heap.pop() {
             // Create new faces.
             let face = self.faces[face_id.id].clone();
-
             if face.deleted {
                 continue;
             }
-            let face_normal = &face
-                .normal
-                .clone()
-                .unwrap_or(Unit::new_unchecked(Vector::zeros()));
+            let Ok(face_normal) = &face.normal else {
+                continue;
+            };
             let cso_point = CSOPoint::from_shapes(pos12, g1, g2, face_normal);
             let candidate_max_dist = cso_point.point.coords.dot(face_normal);
             let support_point_id = self.vertices.len();

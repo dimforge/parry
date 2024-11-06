@@ -282,13 +282,14 @@ impl EPA {
             let dist1 = self.faces[0]
                 .normal
                 .as_ref()
-                .unwrap_or(&Unit::new_unchecked(Vector::zeros()))
-                .dot(&self.vertices[0].point.coords);
+                .map(|normal| normal.dot(&self.vertices[0].point.coords))
+                .unwrap_or(0.0);
+
             let dist2 = self.faces[1]
                 .normal
                 .as_ref()
-                .unwrap_or(&Unit::new_unchecked(Vector::zeros()))
-                .dot(&self.vertices[1].point.coords);
+                .map(|normal| normal.dot(&self.vertices[1].point.coords))
+                .unwrap_or(0.0);
 
             self.heap.push(FaceId::new(0, dist1)?);
             self.heap.push(FaceId::new(1, dist2)?);
