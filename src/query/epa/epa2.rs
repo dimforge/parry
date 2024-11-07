@@ -8,6 +8,7 @@ use num::Bounded;
 
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::FaceDegenerate;
 use crate::shape::SupportMap;
 use crate::utils;
 
@@ -49,14 +50,10 @@ impl Ord for FaceId {
     }
 }
 
-/// Represents a degenerate [`Face`] normal.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Degenerate;
-
 #[derive(Clone, Debug)]
 struct Face {
     pts: [usize; 2],
-    normal: Result<Unit<Vector<Real>>, Degenerate>,
+    normal: Result<Unit<Vector<Real>>, FaceDegenerate>,
     proj: Point<Real>,
     bcoords: [Real; 2],
     deleted: bool,
@@ -90,7 +87,7 @@ impl Face {
             normal = Ok(n);
             deleted = false;
         } else {
-            normal = Err(Degenerate);
+            normal = Err(FaceDegenerate);
             deleted = true;
         }
 
@@ -165,7 +162,7 @@ impl EPA {
     ) -> Option<(
         Point<Real>,
         Point<Real>,
-        Result<Unit<Vector<Real>>, Degenerate>,
+        Result<Unit<Vector<Real>>, FaceDegenerate>,
     )>
     where
         G1: ?Sized + SupportMap,
