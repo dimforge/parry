@@ -81,6 +81,6 @@ pub mod details {
     pub use super::shape_cast::*;
 }
 
-/// Represents a degenerate [`Face`] normal.
+/// Represents a degenerate Face normal.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FaceDegenerate;
