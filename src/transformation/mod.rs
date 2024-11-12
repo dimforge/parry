@@ -12,7 +12,9 @@ pub use self::mesh_intersection::{
     MeshIntersectionTolerances,
 };
 pub use self::polygon_intersection::{
-    convex_polygons_intersection, convex_polygons_intersection_points, polygons_intersection,
+    convex_polygons_intersection, convex_polygons_intersection_points,
+    convex_polygons_intersection_points_with_tolerances,
+    convex_polygons_intersection_with_tolerances, polygons_intersection,
     polygons_intersection_points,
 };
 

@@ -21,13 +21,14 @@ struct HashableTriangleIndices([u32; 3]);
 
 impl From<[u32; 3]> for HashableTriangleIndices {
     fn from([a, b, c]: [u32; 3]) -> Self {
-        let (sa, sb, sc) = crate::utils::sort3(&a, &b, &c);
+        let (sa, sb, sc) = utils::sort3(&a, &b, &c);
         HashableTriangleIndices([*sa, *sb, *sc])
     }
 }
 
 /// Metadata that specifies thresholds to use when making construction choices
 /// in mesh intersections.
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct MeshIntersectionTolerances {
     /// The smallest angle (in radians) that will be tolerated. A triangle with
     /// a smaller angle is considered degenerate and will be deleted.
@@ -39,9 +40,11 @@ pub struct MeshIntersectionTolerances {
     /// A multiplier coefficient to scale [`Self::global_insertion_epsilon`] when checking for
     /// point duplication within a single triangle.
     ///
-    /// Inside of an individual triangle the distance at which two points are considered
+    /// Inside an individual triangle the distance at which two points are considered
     /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
     pub local_insertion_epsilon_scale: Real,
+    /// Three points forming a triangle with an area smaller than this epsilon are considered collinear.
+    pub collinearity_epsilon: Real,
 }
 
 impl Default for MeshIntersectionTolerances {
@@ -51,6 +54,7 @@ impl Default for MeshIntersectionTolerances {
             angle_epsilon: (0.005 as Real).to_radians(), // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_scale: 10.,
+            collinearity_epsilon: Real::EPSILON * 100.0,
         }
     }
 }
@@ -89,7 +93,7 @@ pub fn intersect_meshes_with_tolerances(
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
     flip2: bool,
-    meta_data: MeshIntersectionTolerances,
+    tolerances: MeshIntersectionTolerances,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
     if cfg!(debug_assertions) {
         mesh1.assert_half_edge_topology_is_valid();
@@ -129,7 +133,9 @@ pub fn intersect_meshes_with_tolerances(
         let tri1 = mesh1.triangle(*fid1);
         let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
 
-        if super::triangle_triangle_intersection(&tri1, &tri2).is_some() {
+        if super::triangle_triangle_intersection(&tri1, &tri2, tolerances.collinearity_epsilon)
+            .is_some()
+        {
             intersections.push((*fid1, *fid2));
             let _ = deleted_faces1.insert(*fid1);
             let _ = deleted_faces2.insert(*fid2);
@@ -160,7 +166,11 @@ pub fn intersect_meshes_with_tolerances(
     let mut topology_indices = HashMap::new();
     {
         let mut insert_point = |position: Point3<Real>| {
-            insert_into_set(position, &mut point_set, meta_data.global_insertion_epsilon) as u32
+            insert_into_set(
+                position,
+                &mut point_set,
+                tolerances.global_insertion_epsilon,
+            ) as u32
         };
         // Add the inside vertices and triangles from mesh1
         for mut face in new_indices1 {
@@ -201,7 +211,8 @@ pub fn intersect_meshes_with_tolerances(
         let list1 = constraints1.entry(fid1).or_default();
         let list2 = constraints2.entry(fid2).or_default();
 
-        let intersection = super::triangle_triangle_intersection(&tri1, &tri2);
+        let intersection =
+            super::triangle_triangle_intersection(&tri1, &tri2, tolerances.collinearity_epsilon);
         if let Some(intersection) = intersection {
             match intersection {
                 TriangleTriangleIntersection::Segment { a, b } => {
@@ -236,7 +247,7 @@ pub fn intersect_meshes_with_tolerances(
         pos2,
         flip1,
         flip2,
-        &meta_data,
+        &tolerances,
         &mut point_set,
         &mut topology_indices,
     )?;
@@ -249,7 +260,7 @@ pub fn intersect_meshes_with_tolerances(
         pos1,
         flip2,
         flip1,
-        &meta_data,
+        &tolerances,
         &mut point_set,
         &mut topology_indices,
     )?;
