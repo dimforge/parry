@@ -1,13 +1,16 @@
 use crate::shape::TriMeshBuilderError;
 
+#[cfg(doc)]
+use crate::shape::{TriMesh, TriMeshFlags};
+
 /// Error indicating that a query is not supported between certain shapes
 #[derive(thiserror::Error, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MeshIntersectionError {
-    /// At least one of the meshes is missing its topology information. Call `mesh.compute_topology` on the mesh
-    #[error("at least one of the meshes is missing its topology information. Call `mesh.compute_topology` on the mesh")]
+    /// At least one of the meshes is missing its topology information. Ensure that the [`TriMeshFlags::ORIENTED`] flag is enabled on both meshes.
+    #[error("at least one of the meshes is missing its topology information. Ensure that the `TriMeshFlags::ORIENTED` flag is enabled on both meshes.")]
     MissingTopology,
-    /// At least one of the meshes is missing its pseudo-normals. Call `mesh.compute_pseudo_normals` on the mesh
-    #[error("at least one of the meshes is missing its pseudo-normals. Call `mesh.compute_pseudo_normals` on the mesh")]
+    /// At least one of the meshes is missing its pseudo-normals. Ensure that the [`TriMeshFlags::ORIENTED`] flag is enabled on both meshes.
+    #[error("at least one of the meshes is missing its pseudo-normals. Ensure that the `TriMeshFlags::ORIENTED` flag is enabled on both meshes.")]
     MissingPseudoNormals,
     /// Internal failure while intersecting two triangles
     #[error("internal failure while intersecting two triangles")]
