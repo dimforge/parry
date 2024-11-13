@@ -1,5 +1,8 @@
 use core::fmt;
 
+#[cfg(doc)]
+use crate::shape::{TriMesh, TriMeshFlags};
+
 /// Error indicating that a query is not supported between certain shapes
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum MeshIntersectionError {
