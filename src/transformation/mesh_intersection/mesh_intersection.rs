@@ -8,7 +8,8 @@ use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
-use std::collections::{hash_map::Entry, HashMap, HashSet};
+use crate::utils::hashmap::HashMap;
+use std::collections::{hash_map::Entry, HashSet};
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
@@ -163,7 +164,7 @@ pub fn intersect_meshes_with_tolerances(
     // 4: Initialize a new mesh by inserting points into a set. Duplicate points should
     // hash to the same index.
     let mut point_set = RTree::<TreePoint, _>::new();
-    let mut topology_indices = HashMap::new();
+    let mut topology_indices = HashMap::default();
     {
         let mut insert_point = |position: Point3<Real>| {
             insert_into_set(
