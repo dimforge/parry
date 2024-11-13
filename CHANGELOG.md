@@ -4,12 +4,9 @@
 
 ### Added
 
-- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a `FeatureId::Face`.
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
 - Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a
   `FeatureId::Face`.
-- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
-  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
 
 ### Modified
 
@@ -19,6 +16,14 @@
     - `SharedShape::trimesh`
     - `SharedShape::trimesh_with_flags`
 - `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
+
+## v0.17.2
+
+### Added
+
+- `TriMesh` now implements `Shape::feature_normal_at_point` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
+  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
 
 ### Fixed
 
