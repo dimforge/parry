@@ -4,11 +4,11 @@ use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
+use crate::utils::hashmap::HashMap;
 use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
-use crate::utils::hashmap::HashMap;
 use std::collections::{hash_map::Entry, HashSet};
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
