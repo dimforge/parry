@@ -13,11 +13,13 @@
 ### Modified
 
 - Propagate error information while creating a mesh and using functions making use of it (See #262):
-    - `TriMesh::new`
-    - `TriMesh::intersection_with_aabb`
-    - `SharedShape::trimesh`
-    - `SharedShape::trimesh_with_flags`
-- `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
+  - `TriMesh::new`
+  - `TriMesh::intersection_with_aabb`
+  - `SharedShape::trimesh`
+  - `SharedShape::trimesh_with_flags`
+- `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
+- Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
+  use `IntersectionCompositeShapeShapeVisitor` instead.
 
 ### Fixed
 
