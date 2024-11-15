@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fix
+
+- Fix compiling with `enhanced-determinism` feature enabled.
+  - This is now checked on CI.
+
+## v0.17.2
+
 ### Added
 
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
@@ -25,9 +32,9 @@
 - Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
   `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
 
-### Fixed
+### Fix
 
-- Fixed some robustness issues in mesh/mesh intersection when parts of both meshes overlap perfectly.
+- Fix some robustness issues in mesh/mesh intersection when parts of both meshes overlap perfectly.
 - Improve robustness of convex polygons intersections when all the vertices of one polygon are located in either the
   edges or vertices of the other polygon.
 - Fix incorrect orientation sometimes given to the polygon output by the convex polygon intersections when one of the
