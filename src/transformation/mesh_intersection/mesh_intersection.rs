@@ -4,12 +4,13 @@ use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
+use crate::utils::hashmap::Entry;
 use crate::utils::hashmap::HashMap;
 use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
-use std::collections::{hash_map::Entry, HashSet};
+use std::collections::HashSet;
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
@@ -705,6 +706,9 @@ fn merge_triangle_sets(
                             // If we are inserting two identical triangles but with mismatching
                             // orientations, we can just ignore both because they cover a degenerate
                             // 2D plane.
+                            #[cfg(feature = "enhanced-determinism")]
+                            let _ = e.swap_remove();
+                            #[cfg(not(feature = "enhanced-determinism"))]
                             let _ = e.remove();
                         }
                     }
