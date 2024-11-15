@@ -4,6 +4,7 @@ use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::query::Contact;
 use crate::shape::SupportMap;
 
+use log::warn;
 use na::Unit;
 
 /// Contact between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
@@ -25,7 +26,10 @@ where
             let normal2 = pos12.inverse_transform_unit_vector(&-normal1);
             Some(Contact::new(point1, point2, normal1, normal2, dist))
         }
-        GJKResult::ClosestPoints(_, _, Err(_)) => None,
+        GJKResult::ClosestPoints(_, _, Err(_)) => {
+            warn!("`contact_support_map_support_map` found the closest points on a degenerate face: verify your shapes' correctness.");
+            None
+        }
         GJKResult::NoIntersection(_) => None,
         GJKResult::Intersection => unreachable!(),
         GJKResult::Proximity(_) => unreachable!(),
