@@ -206,3 +206,8 @@ doc-scrape-examples = true
 name = "time_of_impact_query3d"
 path = "examples/time_of_impact_query3d.rs"
 doc-scrape-examples = true
+
+[[example]]
+name = "convex_decomposition"
+path = "examples/convex_decomposition.rs"
+doc-scrape-examples = true
