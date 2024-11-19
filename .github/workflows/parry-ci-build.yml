@@ -2,9 +2,9 @@ name: parry CI build
 
 on:
   push:
-    branches: [ master ]
+    branches: [master, v0.*]
   pull_request:
-    branches: [ master ]
+    branches: [master, v0.*]
 
 env:
   CARGO_TERM_COLOR: always
@@ -74,6 +74,6 @@ jobs:
       - name: install stable Rust
         uses: dtolnay/rust-toolchain@master
         with:
-            toolchain: stable
+          toolchain: stable
       - name: cargo doc
         run: cargo doc --workspace --features bytemuck-serialize,serde-serialize,rkyv-serialize,parallel --no-deps --document-private-items
