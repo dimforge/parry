@@ -2,20 +2,9 @@
 
 ## Unreleased
 
-### Fix
-
-- Fix compiling with `enhanced-determinism` feature enabled.
-  - This is now checked on CI.
-
-## v0.17.2
-
 ### Added
 
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
-- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a
-  `FeatureId::Face`.
-- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
-  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
 
 ### Modified
 
@@ -27,6 +16,22 @@
 - `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
 - Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
   use `IntersectionCompositeShapeShapeVisitor` instead.
+
+## v0.17.3
+
+### Fix
+
+- Fix compiling with `enhanced-determinism` feature enabled.
+  - This is now checked on CI.
+
+## v0.17.2
+
+### Added
+
+- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a
+  `FeatureId::Face`.
+- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
+  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
 
 ### Fix
 
