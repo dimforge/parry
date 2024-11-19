@@ -2,9 +2,9 @@ name: parry CI build
 
 on:
   push:
-    branches: [master]
+    branches: [master, v0.*]
   pull_request:
-    branches: [master]
+    branches: [master, v0.*]
 
 env:
   CARGO_TERM_COLOR: always
