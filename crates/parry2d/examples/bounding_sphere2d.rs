@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-mod common_macroquad;
-
-extern crate nalgebra as na;
-
-use common_macroquad::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
-use macroquad::prelude::*;
-use na::{Isometry2, Vector2};
-use parry2d::bounding_volume::{Aabb, BoundingVolume};
-use parry2d::shape::Ball;
-=======
 mod common_macroquad2d;
 
 extern crate nalgebra as na;
@@ -17,7 +6,6 @@ use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mqu
 use macroquad::prelude::*;
 use na::{Isometry2, Vector2};
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
->>>>>>> @{-1}
 use parry2d::shape::Cuboid;
 
 const RENDER_SCALE: f32 = 30.0;
@@ -37,11 +25,7 @@ async fn main() {
         let cube2 = Cuboid::new(Vector2::new(1., 0.5));
 
         let cube1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
-<<<<<<< HEAD
-        let cube1_pos = Isometry2::translation(cube1_pos.x, cube1_pos.y);
-=======
         let cube1_pos = Isometry2::from(cube1_pos);
->>>>>>> @{-1}
         let cube2_pos = Isometry2::identity();
 
         /*

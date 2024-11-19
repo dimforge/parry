@@ -1,8 +1,8 @@
-mod common_macroquad;
+mod common_macroquad3d;
 
 extern crate nalgebra as na;
 
-use common_macroquad::mquad_mesh_from_points;
+use common_macroquad3d::mquad_mesh_from_points;
 use macroquad::prelude::*;
 use parry3d::{math::Point, shape::SharedShape};
 
