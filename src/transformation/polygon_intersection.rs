@@ -7,12 +7,28 @@ use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::hashmap::HashMap;
 use crate::utils::{self, SegmentsIntersection};
 
-const EPS: Real = Real::EPSILON * 100.0;
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct PolygonIntersectionTolerances {
+    /// The epsilon given to [`Triangle::orientation2d`] for detecting if three points are collinear.
+    ///
+    /// Three points forming a triangle with an area smaller than this value are considered collinear.
+    pub collinearity_epsilon: Real,
+}
+
+impl Default for PolygonIntersectionTolerances {
+    fn default() -> Self {
+        Self {
+            collinearity_epsilon: Real::EPSILON * 100.0,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum InFlag {
-    PIn,
-    QIn,
+    // The current neighborhood of the traversed point on poly1 is inside poly2.
+    Poly1IsInside,
+    // The current neighborhood of the traversed point on poly2 is inside poly1.
+    Poly2IsInside,
     Unknown,
 }
 
@@ -66,13 +82,27 @@ impl PolylinePointLocation {
 
 /// Computes the intersection points of two convex polygons.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` closure.
+/// The resulting polygon is output vertex-by-vertex to the `out` vector.
+/// This is the same as [`convex_polygons_intersection_points_with_tolerances`] with the tolerances
+/// set to their default values.
 pub fn convex_polygons_intersection_points(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
     out: &mut Vec<Point2<Real>>,
 ) {
-    convex_polygons_intersection(poly1, poly2, |loc1, loc2| {
+    convex_polygons_intersection_points_with_tolerances(poly1, poly2, Default::default(), out);
+}
+
+/// Computes the intersection points of two convex polygons.
+///
+/// The resulting polygon is output vertex-by-vertex to the `out` vector.
+pub fn convex_polygons_intersection_points_with_tolerances(
+    poly1: &[Point2<Real>],
+    poly2: &[Point2<Real>],
+    tolerances: PolygonIntersectionTolerances,
+    out: &mut Vec<Point2<Real>>,
+) {
+    convex_polygons_intersection_with_tolerances(poly1, poly2, tolerances, |loc1, loc2| {
         if let Some(loc1) = loc1 {
             out.push(loc1.to_point(poly1))
         } else if let Some(loc2) = loc2 {
@@ -84,78 +114,127 @@ pub fn convex_polygons_intersection_points(
 /// Computes the intersection of two convex polygons.
 ///
 /// The resulting polygon is output vertex-by-vertex to the `out` closure.
+/// This is the same as [`convex_polygons_intersection_with_tolerances`] with the tolerances
+/// set to their default values.
 pub fn convex_polygons_intersection(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
+    out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
+) {
+    convex_polygons_intersection_with_tolerances(poly1, poly2, Default::default(), out)
+}
+
+/// Computes the intersection of two convex polygons.
+///
+/// The resulting polygon is output vertex-by-vertex to the `out` closure.
+pub fn convex_polygons_intersection_with_tolerances(
+    poly1: &[Point2<Real>],
+    poly2: &[Point2<Real>],
+    tolerances: PolygonIntersectionTolerances,
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
     // TODO: this does not handle correctly the case where the
     // first triangle of the polygon is degenerate.
     let rev1 = poly1.len() > 2
-        && Triangle::orientation2d(&poly1[0], &poly1[1], &poly1[2], EPS)
-            == TriangleOrientation::Clockwise;
+        && Triangle::orientation2d(
+            &poly1[0],
+            &poly1[1],
+            &poly1[2],
+            tolerances.collinearity_epsilon,
+        ) == TriangleOrientation::Clockwise;
     let rev2 = poly2.len() > 2
-        && Triangle::orientation2d(&poly2[0], &poly2[1], &poly2[2], EPS)
-            == TriangleOrientation::Clockwise;
+        && Triangle::orientation2d(
+            &poly2[0],
+            &poly2[1],
+            &poly2[2],
+            tolerances.collinearity_epsilon,
+        ) == TriangleOrientation::Clockwise;
 
-    let n = poly1.len();
-    let m = poly2.len();
+    let len1 = poly1.len();
+    let len2 = poly2.len();
 
-    let mut a = 0;
-    let mut b = 0;
-    let mut aa = 0;
-    let mut ba = 0;
+    let mut i1 = 0; // Current index on the first polyline.
+    let mut i2 = 0; // Current index on the second polyline.
+    let mut nsteps1 = 0; // Number of times we advanced on the first polyline.
+    let mut nsteps2 = 0; // Number of times we advanced on the second polyline.
     let mut inflag = InFlag::Unknown;
     let mut first_point_found = false;
 
     // Quit when both adv. indices have cycled, or one has cycled twice.
-    while (aa < n || ba < m) && aa < 2 * n && ba < 2 * m {
-        let (a1, a2) = if rev1 {
-            ((n - a) % n, n - a - 1)
+    while (nsteps1 < len1 || nsteps2 < len2) && nsteps1 < 2 * len1 && nsteps2 < 2 * len2 {
+        let (a1, b1) = if rev1 {
+            ((len1 - i1) % len1, len1 - i1 - 1)
         } else {
-            ((a + n - 1) % n, a)
+            // Point before `i1`, and point at `i1`.
+            ((i1 + len1 - 1) % len1, i1)
         };
 
-        let (b1, b2) = if rev2 {
-            ((m - b) % m, m - b - 1)
+        let (a2, b2) = if rev2 {
+            ((len2 - i2) % len2, len2 - i2 - 1)
         } else {
-            ((b + m - 1) % m, b)
+            // Point before `i2`, and point at `i2`.
+            ((i2 + len2 - 1) % len2, i2)
         };
 
-        let dir_edge1 = poly1[a2] - poly1[a1];
-        let dir_edge2 = poly2[b2] - poly2[b1];
+        let dir_edge1 = poly1[b1] - poly1[a1];
+        let dir_edge2 = poly2[b2] - poly2[a2];
 
+        // If there is an intersection, this will determine if the edge from poly2 is transitioning
+        // Left -> Right (CounterClockwise) or Right -> Left (Clockwise) relative to the edge from
+        // poly1.
         let cross = Triangle::orientation2d(
             &Point2::origin(),
             &Point2::from(dir_edge1),
             &Point2::from(dir_edge2),
-            EPS,
+            tolerances.collinearity_epsilon,
         );
-        let a_hb = Triangle::orientation2d(&poly2[b1], &poly2[b2], &poly1[a2], EPS);
-        let b_ha = Triangle::orientation2d(&poly1[a1], &poly1[a2], &poly2[b2], EPS);
+        // Determines if b1 is left (CounterClockwise) or right (Clockwise) of [a2, b2].
+        let a2_b2_b1 = Triangle::orientation2d(
+            &poly2[a2],
+            &poly2[b2],
+            &poly1[b1],
+            tolerances.collinearity_epsilon,
+        );
+        // Determines if b2 is left (CounterClockwise) or right (Clockwise) of [a1, b1].
+        let a1_b1_b2 = Triangle::orientation2d(
+            &poly1[a1],
+            &poly1[b1],
+            &poly2[b2],
+            tolerances.collinearity_epsilon,
+        );
 
         // If edge1 & edge2 intersect, update inflag.
-        if let Some(inter) =
-            utils::segments_intersection2d(&poly1[a1], &poly1[a2], &poly2[b1], &poly2[b2], EPS)
-        {
+        if let Some(inter) = utils::segments_intersection2d(
+            &poly1[a1],
+            &poly1[b1],
+            &poly2[a2],
+            &poly2[b2],
+            tolerances.collinearity_epsilon,
+        ) {
             match inter {
                 SegmentsIntersection::Point { loc1, loc2 } => {
-                    let loc1 = PolylinePointLocation::from_segment_point_location(a1, a2, loc1);
-                    let loc2 = PolylinePointLocation::from_segment_point_location(b1, b2, loc2);
-                    out(Some(loc1), Some(loc2));
+                    if a2_b2_b1 != TriangleOrientation::Degenerate
+                        && a1_b1_b2 != TriangleOrientation::Degenerate
+                    {
+                        let loc1 = PolylinePointLocation::from_segment_point_location(a1, b1, loc1);
+                        let loc2 = PolylinePointLocation::from_segment_point_location(a2, b2, loc2);
+                        out(Some(loc1), Some(loc2));
 
-                    if inflag == InFlag::Unknown && !first_point_found {
-                        // This is the first point.
-                        aa = 0;
-                        ba = 0;
-                        first_point_found = true;
-                    }
+                        if inflag == InFlag::Unknown && !first_point_found {
+                            // This is the first point, reset the number of steps since we are
+                            // effectively starting the actual traversal now.
+                            nsteps1 = 0;
+                            nsteps2 = 0;
+                            first_point_found = true;
+                        }
 
-                    // Update inflag.
-                    if a_hb == TriangleOrientation::CounterClockwise {
-                        inflag = InFlag::PIn;
-                    } else if b_ha == TriangleOrientation::CounterClockwise {
-                        inflag = InFlag::QIn;
+                        if a2_b2_b1 == TriangleOrientation::CounterClockwise {
+                            // The point b1 is left of [a2, b2] so it is inside poly2 ???
+                            inflag = InFlag::Poly1IsInside;
+                        } else if a1_b1_b2 == TriangleOrientation::CounterClockwise {
+                            // The point b2 is left of [a1, b1] so it is inside poly1 ???
+                            inflag = InFlag::Poly2IsInside;
+                        }
                     }
                 }
                 SegmentsIntersection::Segment {
@@ -164,20 +243,21 @@ pub fn convex_polygons_intersection(
                     second_loc1,
                     second_loc2,
                 } => {
-                    // Special case: edge1 & edge2 overlap and oppositely oriented.
                     if dir_edge1.dot(&dir_edge2) < 0.0 {
+                        // Special case: edge1 & edge2 overlap and oppositely oriented. The
+                        //               intersection is degenerate (equals to a segment). Output
+                        //               the segment and exit.
                         let loc1 =
-                            PolylinePointLocation::from_segment_point_location(a1, a2, first_loc1);
+                            PolylinePointLocation::from_segment_point_location(a1, b1, first_loc1);
                         let loc2 =
-                            PolylinePointLocation::from_segment_point_location(b1, b2, first_loc2);
+                            PolylinePointLocation::from_segment_point_location(a2, b2, first_loc2);
                         out(Some(loc1), Some(loc2));
 
                         let loc1 =
-                            PolylinePointLocation::from_segment_point_location(a1, a2, second_loc1);
+                            PolylinePointLocation::from_segment_point_location(a1, b1, second_loc1);
                         let loc2 =
-                            PolylinePointLocation::from_segment_point_location(b1, b2, second_loc2);
+                            PolylinePointLocation::from_segment_point_location(a2, b2, second_loc2);
                         out(Some(loc1), Some(loc2));
-
                         return;
                     }
                 }
@@ -186,48 +266,49 @@ pub fn convex_polygons_intersection(
 
         // Special case: edge1 & edge2 parallel and separated.
         if cross == TriangleOrientation::Degenerate
-            && a_hb == TriangleOrientation::Clockwise
-            && b_ha == TriangleOrientation::Clockwise
+            && a2_b2_b1 == TriangleOrientation::Clockwise
+            && a1_b1_b2 == TriangleOrientation::Clockwise
+        // TODO: should this also include any case where a2_b2_b1 and a1_b1_b2 are both different from Degenerate?
         {
             return;
         }
         // Special case: edge1 & edge2 collinear.
         else if cross == TriangleOrientation::Degenerate
-            && a_hb == TriangleOrientation::Degenerate
-            && b_ha == TriangleOrientation::Degenerate
+            && a2_b2_b1 == TriangleOrientation::Degenerate
+            && a1_b1_b2 == TriangleOrientation::Degenerate
         {
             // Advance but do not output point.
-            if inflag == InFlag::PIn {
-                b = advance(b, &mut ba, m);
+            if inflag == InFlag::Poly1IsInside {
+                i2 = advance(i2, &mut nsteps2, len2);
             } else {
-                a = advance(a, &mut aa, n);
+                i1 = advance(i1, &mut nsteps1, len1);
             }
         }
         // Generic cases.
         else if cross == TriangleOrientation::CounterClockwise {
-            if b_ha == TriangleOrientation::CounterClockwise {
-                if inflag == InFlag::PIn {
-                    out(Some(PolylinePointLocation::OnVertex(a2)), None)
+            if a1_b1_b2 == TriangleOrientation::CounterClockwise {
+                if inflag == InFlag::Poly1IsInside {
+                    out(Some(PolylinePointLocation::OnVertex(b1)), None)
                 }
-                a = advance(a, &mut aa, n);
+                i1 = advance(i1, &mut nsteps1, len1);
             } else {
-                if inflag == InFlag::QIn {
+                if inflag == InFlag::Poly2IsInside {
                     out(None, Some(PolylinePointLocation::OnVertex(b2)))
                 }
-                b = advance(b, &mut ba, m);
+                i2 = advance(i2, &mut nsteps2, len2);
             }
         } else {
             // We have cross == TriangleOrientation::Clockwise.
-            if a_hb == TriangleOrientation::CounterClockwise {
-                if inflag == InFlag::QIn {
+            if a2_b2_b1 == TriangleOrientation::CounterClockwise {
+                if inflag == InFlag::Poly2IsInside {
                     out(None, Some(PolylinePointLocation::OnVertex(b2)))
                 }
-                b = advance(b, &mut ba, m);
+                i2 = advance(i2, &mut nsteps2, len2);
             } else {
-                if inflag == InFlag::PIn {
-                    out(Some(PolylinePointLocation::OnVertex(a2)), None)
+                if inflag == InFlag::Poly1IsInside {
+                    out(Some(PolylinePointLocation::OnVertex(b1)), None)
                 }
-                a = advance(a, &mut aa, n);
+                i1 = advance(i1, &mut nsteps1, len1);
             }
         }
     }
@@ -237,20 +318,31 @@ pub fn convex_polygons_intersection(
         let mut orient = TriangleOrientation::Degenerate;
         let mut ok = true;
 
-        for a in 0..n {
-            let a1 = (a + n - 1) % n; // a - 1
-            let new_orient = Triangle::orientation2d(&poly1[a1], &poly1[a], &poly2[0], EPS);
+        // TODO: avoid the O(n²) complexity.
+        for a in 0..len1 {
+            for p2 in poly2 {
+                let a_minus_1 = (a + len1 - 1) % len1; // a - 1
+                let new_orient = Triangle::orientation2d(
+                    &poly1[a_minus_1],
+                    &poly1[a],
+                    p2,
+                    tolerances.collinearity_epsilon,
+                );
 
-            if orient == TriangleOrientation::Degenerate {
-                orient = new_orient
-            } else if new_orient != orient && new_orient != TriangleOrientation::Degenerate {
-                ok = false;
-                break;
+                if orient == TriangleOrientation::Degenerate {
+                    orient = new_orient
+                } else if new_orient != orient && new_orient != TriangleOrientation::Degenerate {
+                    ok = false;
+                    break;
+                }
             }
         }
 
         if ok {
-            for b in 0..m {
+            for mut b in 0..len2 {
+                if rev2 {
+                    b = len2 - b - 1;
+                }
                 out(None, Some(PolylinePointLocation::OnVertex(b)))
             }
         }
@@ -258,20 +350,31 @@ pub fn convex_polygons_intersection(
         let mut orient = TriangleOrientation::Degenerate;
         let mut ok = true;
 
-        for b in 0..m {
-            let b1 = (b + m - 1) % m; // b - 1
-            let new_orient = Triangle::orientation2d(&poly2[b1], &poly2[b], &poly1[0], EPS);
+        // TODO: avoid the O(n²) complexity.
+        for b in 0..len2 {
+            for p1 in poly1 {
+                let b_minus_1 = (b + len2 - 1) % len2; // = b - 1
+                let new_orient = Triangle::orientation2d(
+                    &poly2[b_minus_1],
+                    &poly2[b],
+                    p1,
+                    tolerances.collinearity_epsilon,
+                );
 
-            if orient == TriangleOrientation::Degenerate {
-                orient = new_orient
-            } else if new_orient != orient && new_orient != TriangleOrientation::Degenerate {
-                ok = false;
-                break;
+                if orient == TriangleOrientation::Degenerate {
+                    orient = new_orient
+                } else if new_orient != orient && new_orient != TriangleOrientation::Degenerate {
+                    ok = false;
+                    break;
+                }
             }
         }
 
         if ok {
-            for a in 0..n {
+            for mut a in 0..len1 {
+                if rev1 {
+                    a = len1 - a - 1;
+                }
                 out(Some(PolylinePointLocation::OnVertex(a)), None)
             }
         }
@@ -334,13 +437,16 @@ pub fn polygons_intersection(
     poly2: &[Point2<Real>],
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) -> Result<(), PolygonsIntersectionError> {
+    let tolerances = PolygonIntersectionTolerances::default();
+
     #[derive(Debug)]
     struct ToTraverse {
         poly: usize,
         edge: EdgeId,
     }
 
-    let (intersections, num_intersections) = compute_sorted_edge_intersections(poly1, poly2);
+    let (intersections, num_intersections) =
+        compute_sorted_edge_intersections(poly1, poly2, tolerances.collinearity_epsilon);
     let mut visited = vec![false; num_intersections];
     let segment = |eid: EdgeId, poly: &[Point2<Real>]| [poly[eid], poly[(eid + 1) % poly.len()]];
 
@@ -355,20 +461,26 @@ pub fn polygons_intersection(
             // between poly1 and poly2 when reaching an intersection.
             let [a1, b1] = segment(inter.edges[0], poly1);
             let [a2, b2] = segment(inter.edges[1], poly2);
-            let poly_to_traverse = match Triangle::orientation2d(&a1, &b1, &a2, EPS) {
-                TriangleOrientation::Clockwise => 1,
-                TriangleOrientation::CounterClockwise => 0,
-                TriangleOrientation::Degenerate => {
-                    match Triangle::orientation2d(&a1, &b1, &b2, EPS) {
-                        TriangleOrientation::Clockwise => 0,
-                        TriangleOrientation::CounterClockwise => 1,
-                        TriangleOrientation::Degenerate => {
-                            log::debug!("Unhandled edge-edge overlap case.");
-                            0
+            let poly_to_traverse =
+                match Triangle::orientation2d(&a1, &b1, &a2, tolerances.collinearity_epsilon) {
+                    TriangleOrientation::Clockwise => 1,
+                    TriangleOrientation::CounterClockwise => 0,
+                    TriangleOrientation::Degenerate => {
+                        match Triangle::orientation2d(
+                            &a1,
+                            &b1,
+                            &b2,
+                            tolerances.collinearity_epsilon,
+                        ) {
+                            TriangleOrientation::Clockwise => 0,
+                            TriangleOrientation::CounterClockwise => 1,
+                            TriangleOrientation::Degenerate => {
+                                log::debug!("Unhandled edge-edge overlap case.");
+                                0
+                            }
                         }
                     }
-                }
-            };
+                };
 
             #[derive(Debug)]
             enum TraversalStatus {
@@ -484,6 +596,7 @@ struct IntersectionPoint {
 fn compute_sorted_edge_intersections(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
+    eps: Real,
 ) -> ([HashMap<EdgeId, Vec<IntersectionPoint>>; 2], usize) {
     let mut inter1: HashMap<EdgeId, Vec<IntersectionPoint>> = HashMap::default();
     let mut inter2: HashMap<EdgeId, Vec<IntersectionPoint>> = HashMap::default();
@@ -498,7 +611,7 @@ fn compute_sorted_edge_intersections(
             let j2 = (i2 + 1) % poly2.len();
 
             let Some(inter) =
-                utils::segments_intersection2d(&poly1[i1], &poly1[j1], &poly2[i2], &poly2[j2], EPS)
+                utils::segments_intersection2d(&poly1[i1], &poly1[j1], &poly2[i2], &poly2[j2], eps)
             else {
                 continue;
             };
@@ -542,4 +655,101 @@ fn compute_sorted_edge_intersections(
     }
 
     ([inter1, inter2], id)
+}
+
+#[cfg(all(test, feature = "dim2"))]
+mod test {
+    use crate::query::PointQuery;
+    use crate::shape::Triangle;
+    use crate::transformation::convex_polygons_intersection_points_with_tolerances;
+    use crate::transformation::polygon_intersection::PolygonIntersectionTolerances;
+    use na::Point2;
+
+    #[test]
+    fn intersect_triangle_common_vertex() {
+        let tris = [
+            (
+                Triangle::new(
+                    Point2::new(-0.0008759537858568062, -2.0103871966663305),
+                    Point2::new(0.3903908709629763, -1.3421764825890266),
+                    Point2::new(1.3380817875388151, -2.0098007857739013),
+                ),
+                Triangle::new(
+                    Point2::new(0.0, -0.0),
+                    Point2::new(-0.0008759537858568062, -2.0103871966663305),
+                    Point2::new(1.9991979155226394, -2.009511242880474),
+                ),
+            ),
+            (
+                Triangle::new(
+                    Point2::new(0.7319315811016305, -0.00004046981523721891),
+                    Point2::new(2.0004914907008944, -0.00011061077714557787),
+                    Point2::new(1.1848406021956144, -0.8155712451545468),
+                ),
+                Triangle::new(
+                    Point2::new(0.0, 0.0),
+                    Point2::new(0.00011061077714557787, -2.000024893134292),
+                    Point2::new(2.0004914907008944, -0.00011061077714557787),
+                ),
+            ),
+            (
+                Triangle::new(
+                    Point2::new(-0.000049995168258705205, -0.9898801451981707),
+                    Point2::new(0.0, -0.0),
+                    Point2::new(0.583013294019752, -1.4170136900568633),
+                ),
+                Triangle::new(
+                    Point2::new(0.0, -0.0),
+                    Point2::new(-0.00010101395240669591, -2.000027389553894),
+                    Point2::new(2.000372544168497, 0.00010101395240669591),
+                ),
+            ),
+            (
+                Triangle::new(
+                    Point2::new(-0.940565646581769, -0.939804943675256),
+                    Point2::new(0.0, -0.0),
+                    Point2::new(-0.001533592366792066, -0.9283586484736431),
+                ),
+                Triangle::new(
+                    Point2::new(0.0, -0.0),
+                    Point2::new(-2.00752629829582, -2.0059026672784825),
+                    Point2::new(-0.0033081650580626698, -2.0025945022204197),
+                ),
+            ),
+        ];
+
+        for (tri1, tri2) in tris {
+            let mut inter = Vec::new();
+            let tolerances = PolygonIntersectionTolerances {
+                collinearity_epsilon: 1.0e-5,
+            };
+            convex_polygons_intersection_points_with_tolerances(
+                tri1.vertices(),
+                tri2.vertices(),
+                tolerances,
+                &mut inter,
+            );
+
+            println!("----------");
+            println!("inter: {:?}", inter);
+            println!(
+                "tri1 is in tri2: {}",
+                tri1.vertices().iter().all(|pt| tri2
+                    .project_local_point(pt, false)
+                    .is_inside_eps(pt, 1.0e-5))
+            );
+            println!(
+                "tri2 is in tri1: {}",
+                tri2.vertices().iter().all(|pt| tri1
+                    .project_local_point(pt, false)
+                    .is_inside_eps(pt, 1.0e-5))
+            );
+            for pt in &inter {
+                let proj1 = tri1.project_local_point(&pt, false);
+                let proj2 = tri2.project_local_point(&pt, false);
+                assert!(proj1.is_inside_eps(&pt, 1.0e-5));
+                assert!(proj2.is_inside_eps(&pt, 1.0e-5));
+            }
+        }
+    }
 }

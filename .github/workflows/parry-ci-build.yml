@@ -41,6 +41,8 @@ jobs:
         run: cd crates/parry3d; cargo build --verbose --features simd-stable;
       - name: Check serialization
         run: cargo check --features bytemuck-serialize,serde-serialize,rkyv-serialize;
+      - name: Check enhanced-determinism
+        run: cargo check --features enhanced-determinism
       - name: Run tests
         run: cargo test --features wavefront
   build-wasm:

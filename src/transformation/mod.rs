@@ -7,9 +7,14 @@ pub use self::convex_hull2::{convex_hull2 as convex_hull, convex_hull2_idx as co
 #[cfg(feature = "dim3")]
 pub use self::convex_hull3::{check_convex_hull, convex_hull, try_convex_hull, ConvexHullError};
 #[cfg(feature = "dim3")]
-pub use self::mesh_intersection::{intersect_meshes, MeshIntersectionError};
+pub use self::mesh_intersection::{
+    intersect_meshes, intersect_meshes_with_tolerances, MeshIntersectionError,
+    MeshIntersectionTolerances,
+};
 pub use self::polygon_intersection::{
-    convex_polygons_intersection, convex_polygons_intersection_points, polygons_intersection,
+    convex_polygons_intersection, convex_polygons_intersection_points,
+    convex_polygons_intersection_points_with_tolerances,
+    convex_polygons_intersection_with_tolerances, polygons_intersection,
     polygons_intersection_points,
 };
 
