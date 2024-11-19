@@ -9,6 +9,7 @@ use {na::Matrix3, std::ops::MulAssign};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
+#[cfg_attr(feature = "f32", expect(clippy::unnecessary_cast))]
 const EPSILON: Real = f32::EPSILON as Real;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]

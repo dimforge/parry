@@ -1,4 +1,6 @@
-pub use self::mesh_intersection::intersect_meshes;
+pub use self::mesh_intersection::{
+    intersect_meshes, intersect_meshes_with_tolerances, MeshIntersectionTolerances,
+};
 pub use self::mesh_intersection_error::MeshIntersectionError;
 use triangle_triangle_intersection::*;
 

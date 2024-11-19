@@ -22,11 +22,13 @@ use crate::query::details::NormalConstraints;
 use rkyv::{bytecheck, CheckBytes};
 
 /// Indicated an inconsistency in the topology of a triangle mesh.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
     /// Found a triangle with two or three identical vertices.
+    #[error("the triangle {0} has at least two identical vertices.")]
     BadTriangle(u32),
     /// At least two adjacent triangles have opposite orientations.
+    #[error("the triangles {triangle1} and {triangle2} sharing the edge {edge:?} have opposite orientations.")]
     BadAdjacentTrianglesOrientation {
         /// The first triangle, with an orientation opposite to the second triangle.
         triangle1: u32,
@@ -37,22 +39,16 @@ pub enum TopologyError {
     },
 }
 
-impl fmt::Display for TopologyError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::BadTriangle(fid) => {
-                f.pad(&format!("the triangle {fid} has at least two identical vertices."))
-            }
-            Self::BadAdjacentTrianglesOrientation {
-                triangle1,
-                triangle2,
-                edge,
-            } => f.pad(&format!("the triangles {triangle1} and {triangle2} sharing the edge {:?} have opposite orientations.", edge)),
-        }
-    }
+/// Indicated an inconsistency while building a triangle mesh.
+#[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TriMeshBuilderError {
+    /// A triangle mesh must contain at least one triangle.
+    #[error("A triangle mesh must contain at least one triangle.")]
+    EmptyIndices,
+    /// Indicated an inconsistency in the topology of a triangle mesh.
+    #[error("Topology Error: {0}")]
+    TopologyError(TopologyError),
 }
-
-impl std::error::Error for TopologyError {}
 
 /// The set of pseudo-normals of a triangle mesh.
 ///
@@ -255,7 +251,10 @@ impl fmt::Debug for TriMesh {
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Vec<[u32; 3]>) -> Self {
+    pub fn new(
+        vertices: Vec<Point<Real>>,
+        indices: Vec<[u32; 3]>,
+    ) -> Result<Self, TriMeshBuilderError> {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
     }
 
@@ -264,11 +263,10 @@ impl TriMesh {
         vertices: Vec<Point<Real>>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
-    ) -> Self {
-        assert!(
-            !indices.is_empty(),
-            "A triangle mesh must contain at least one triangle."
-        );
+    ) -> Result<Self, TriMeshBuilderError> {
+        if indices.is_empty() {
+            return Err(TriMeshBuilderError::EmptyIndices);
+        }
 
         let mut result = Self {
             qbvh: Qbvh::new(),
@@ -288,7 +286,7 @@ impl TriMesh {
             result.rebuild_qbvh();
         }
 
-        result
+        Ok(result)
     }
 
     /// Sets the flags of this triangle mesh, controlling its optional associated data.
@@ -415,7 +413,7 @@ impl TriMesh {
 
         let vertices = std::mem::take(&mut self.vertices);
         let indices = std::mem::take(&mut self.indices);
-        *self = TriMesh::with_flags(vertices, indices, self.flags);
+        *self = TriMesh::with_flags(vertices, indices, self.flags).unwrap();
     }
 
     /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
@@ -423,7 +421,7 @@ impl TriMesh {
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
     pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
-        triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices))
+        triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices).unwrap())
     }
 
     /// A flat view of the index buffer of this mesh.
@@ -848,6 +846,17 @@ impl TriMesh {
             )
         })
     }
+
+    #[cfg(feature = "dim3")]
+    /// Gets the normal of the triangle represented by `feature`.
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature {
+            FeatureId::Face(i) => self
+                .triangle(i % self.num_triangles() as u32)
+                .feature_normal(FeatureId::Face(0)),
+            _ => None,
+        }
+    }
 }
 
 impl TriMesh {
@@ -959,7 +968,7 @@ impl TriMesh {
 impl From<crate::shape::HeightField> for TriMesh {
     fn from(heightfield: crate::shape::HeightField) -> Self {
         let (vtx, idx) = heightfield.to_trimesh();
-        TriMesh::new(vtx, idx)
+        TriMesh::new(vtx, idx).unwrap()
     }
 }
 
@@ -967,7 +976,7 @@ impl From<crate::shape::HeightField> for TriMesh {
 impl From<Cuboid> for TriMesh {
     fn from(cuboid: Cuboid) -> Self {
         let (vtx, idx) = cuboid.to_trimesh();
-        TriMesh::new(vtx, idx)
+        TriMesh::new(vtx, idx).unwrap()
     }
 }
 
@@ -1028,5 +1037,18 @@ impl TypedSimdCompositeShape for TriMesh {
 
     fn typed_qbvh(&self) -> &Qbvh<u32> {
         &self.qbvh
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::shape::{TriMesh, TriMeshFlags};
+
+    #[test]
+    fn trimesh_error_empty_indices() {
+        assert!(
+            TriMesh::with_flags(vec![], vec![], TriMeshFlags::empty()).is_err(),
+            "A triangle mesh with no triangles is invalid."
+        );
     }
 }

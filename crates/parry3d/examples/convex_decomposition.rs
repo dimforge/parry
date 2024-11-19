@@ -8,7 +8,7 @@ use parry3d::{math::Point, shape::SharedShape};
 
 #[macroquad::main("parry2d::utils::point_in_poly2d")]
 async fn main() {
-    let camera_pos = Vec3::new(8f32, 8f32, 12f32);
+    let camera_pos = Vec3::new(72f32, 72f32, 18f32);
 
     loop {
         clear_background(BLACK);
@@ -26,7 +26,7 @@ async fn main() {
 
         //// This cube1 ends up in infinite loop if attempting to call `convex_decomposition` on it
         //
-        // let cube1 = Cuboid::new(Vector3::repeat(0.5)).to_trimesh();
+        // let cube1 = parry3d::shape::Cuboid::new(na::Vector3::repeat(0.5)).to_trimesh();
         // dbg!("before convex");
         // let convex_mesh = SharedShape::convex_decomposition(&cube1.0, &cube1.1);
         // dbg!("after convex, not reached");

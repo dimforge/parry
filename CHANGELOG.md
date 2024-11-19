@@ -2,9 +2,46 @@
 
 ## Unreleased
 
+### Fix
+
+- Fix compiling with `enhanced-determinism` feature enabled.
+  - This is now checked on CI.
+
+## v0.17.2
+
+### Added
+
+- Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
+- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a
+  `FeatureId::Face`.
+- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
+  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
+
+### Modified
+
+- Propagate error information while creating a mesh and using functions making use of it (See #262):
+  - `TriMesh::new`
+  - `TriMesh::intersection_with_aabb`
+  - `SharedShape::trimesh`
+  - `SharedShape::trimesh_with_flags`
+- `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
+- Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
+  use `IntersectionCompositeShapeShapeVisitor` instead.
+
+### Fix
+
+- Fix some robustness issues in mesh/mesh intersection when parts of both meshes overlap perfectly.
+- Improve robustness of convex polygons intersections when all the vertices of one polygon are located in either the
+  edges or vertices of the other polygon.
+- Fix incorrect orientation sometimes given to the polygon output by the convex polygon intersections when one of the
+  polygon is completely inside the other.
+
+## v0.17.1
+
 ### Modified
 
 - Improve convergence of epa algorithm in degenerate configurations.
+- Fix bug in the mesh/mesh intersection algorithm that didn’t properly take mesh transforms into account.
 
 ## v0.17.0
 
@@ -276,7 +313,8 @@ This version was yanked. See the release notes for 0.13.3 instead.
   for most shapes.
 - Add the `parallel` feature that enables methods for the parallel traversal of Qbvh
   trees: `Qbvh::traverse_bvtt_parallel`,
-  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`, `Qbvh::traverse_depth_first_node_parallel`.
+  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`,
+  `Qbvh::traverse_depth_first_node_parallel`.
 
 ### Fixed
 

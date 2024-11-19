@@ -1,21 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::Real;
+use crate::math::{Point, Real};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 
-#[cfg(feature = "dim3")]
-use na::Point3 as PointDim;
-#[cfg(feature = "dim3")]
-use na::{self, Point3};
-
-#[cfg(feature = "dim2")]
-use na::Point2 as PointDim;
-#[cfg(feature = "dim2")]
-use na::{self, Point2};
-
 impl Aabb {
     /// Discretize the boundary of this Aabb as a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<PointDim<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
         let center = self.center();
         let half_extents = self.half_extents();
         let mut cube_mesh = Cuboid::new(half_extents).to_trimesh();
@@ -26,31 +16,29 @@ impl Aabb {
 
 impl Cuboid {
     /// Discretize the boundary of this cuboid as a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<PointDim<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
         let (vtx, idx) = unit_cuboid();
         (utils::scaled(vtx, self.half_extents * 2.0), idx)
     }
 }
 
-/**
- * Generates a cuboid shape with a split index buffer.
- *
- * The cuboid is centered at the origin, and has its half extents set to 0.5.
- */
-fn unit_cuboid() -> (Vec<PointDim<Real>>, Vec<[u32; 3]>) {
+/// Generates a cuboid shape with a split index buffer.
+///
+/// The cuboid is centered at the origin, and has its half extents set to 0.5.
+fn unit_cuboid() -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
     #[cfg(feature = "dim3")]
-    return {
+    {
         let mut coords = Vec::with_capacity(8);
         let mut faces = Vec::with_capacity(12);
 
-        coords.push(Point3::new(-0.5, -0.5, 0.5));
-        coords.push(Point3::new(-0.5, -0.5, -0.5));
-        coords.push(Point3::new(0.5, -0.5, -0.5));
-        coords.push(Point3::new(0.5, -0.5, 0.5));
-        coords.push(Point3::new(-0.5, 0.5, 0.5));
-        coords.push(Point3::new(-0.5, 0.5, -0.5));
-        coords.push(Point3::new(0.5, 0.5, -0.5));
-        coords.push(Point3::new(0.5, 0.5, 0.5));
+        coords.push(Point::new(-0.5, -0.5, 0.5));
+        coords.push(Point::new(-0.5, -0.5, -0.5));
+        coords.push(Point::new(0.5, -0.5, -0.5));
+        coords.push(Point::new(0.5, -0.5, 0.5));
+        coords.push(Point::new(-0.5, 0.5, 0.5));
+        coords.push(Point::new(-0.5, 0.5, -0.5));
+        coords.push(Point::new(0.5, 0.5, -0.5));
+        coords.push(Point::new(0.5, 0.5, 0.5));
 
         faces.push([4, 5, 0]);
         faces.push([5, 1, 0]);
@@ -71,20 +59,20 @@ fn unit_cuboid() -> (Vec<PointDim<Real>>, Vec<[u32; 3]>) {
         faces.push([4, 7, 5]);
 
         (coords, faces)
-    };
+    }
     #[cfg(feature = "dim2")]
-    return {
+    {
         let mut coords = Vec::with_capacity(8);
         let mut faces = Vec::with_capacity(12);
 
-        coords.push(Point2::new(-0.5, -0.5));
-        coords.push(Point2::new(0.5, -0.5));
-        coords.push(Point2::new(-0.5, 0.5));
-        coords.push(Point2::new(0.5, 0.5));
+        coords.push(Point::new(-0.5, -0.5));
+        coords.push(Point::new(0.5, -0.5));
+        coords.push(Point::new(-0.5, 0.5));
+        coords.push(Point::new(0.5, 0.5));
 
         faces.push([0, 1, 2]);
         faces.push([2, 1, 3]);
 
         (coords, faces)
-    };
+    }
 }
