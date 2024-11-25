@@ -211,3 +211,4 @@ doc-scrape-examples = true
 name = "convex_decomposition"
 path = "examples/convex_decomposition.rs"
 doc-scrape-examples = true
+required-features = ["wavefront"]

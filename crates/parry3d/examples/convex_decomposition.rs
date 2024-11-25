@@ -2,79 +2,83 @@ mod common_macroquad3d;
 
 extern crate nalgebra as na;
 
-use common_macroquad3d::mquad_mesh_from_points;
+use common_macroquad3d::{easy_draw_text, hue_to_rgb, mquad_mesh_from_points};
 use macroquad::prelude::*;
-use parry3d::{math::Point, shape::SharedShape};
+use na::{Point3, Vector3};
+use obj::{Obj, ObjData};
+use parry3d::{
+    math::Real,
+    shape::{SharedShape, TriMesh, TriMeshFlags},
+};
 
 #[macroquad::main("parry2d::utils::point_in_poly2d")]
 async fn main() {
-    let camera_pos = Vec3::new(72f32, 72f32, 18f32);
+    /*
+     * Initialize the shapes.
+     */
+    let Obj {
+        data: ObjData {
+            position, objects, ..
+        },
+        ..
+    } = Obj::load("assets/tests/stairs.obj").unwrap();
+
+    let mut bunny_mesh = TriMesh::with_flags(
+        position
+            .iter()
+            .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+            .collect::<Vec<_>>(),
+        objects[0].groups[0]
+            .polys
+            .iter()
+            .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+            .collect::<Vec<_>>(),
+        TriMeshFlags::all(),
+    )
+    .unwrap();
+    clear_background(BLACK);
+
+    easy_draw_text("Please wait while convex decomposition is being computed...");
+    next_frame().await;
+    let mesh_vertices = bunny_mesh.vertices();
+    let mesh_indices = bunny_mesh.indices();
+    let convex_mesh = SharedShape::convex_decomposition(&mesh_vertices, &mesh_indices);
+    let trimesh_convex_compound = convex_mesh.as_compound().unwrap();
 
     loop {
         clear_background(BLACK);
+        let elapsed_time = get_time() as f32;
+        let camera_pos = Vec3::new(
+            19f32 * elapsed_time.sin(),
+            12f32,
+            19f32 * elapsed_time.cos(),
+        );
         // Initialize 3D camera.
         set_camera(&Camera3D {
             position: camera_pos,
             up: Vec3::new(0f32, 1f32, 0f32),
-            target: Vec3::new(0.5f32, 0f32, 0.5f32),
+            target: Vec3::new(0f32, 4.5f32, 0f32),
             ..Default::default()
         });
 
-        /*
-         * Initialize the shapes.
-         */
-
-        //// This cube1 ends up in infinite loop if attempting to call `convex_decomposition` on it
-        //
-        // let cube1 = parry3d::shape::Cuboid::new(na::Vector3::repeat(0.5)).to_trimesh();
-        // dbg!("before convex");
-        // let convex_mesh = SharedShape::convex_decomposition(&cube1.0, &cube1.1);
-        // dbg!("after convex, not reached");
-        // let trimesh_convex = convex_mesh.0.as_trimesh().unwrap();
-        //
-        ////
-
-        //
-        // Those values are from https://github.com/dimforge/rapier/issues/223#issuecomment-927816118
-
-        let points = [
-            Point::new(-0.74, -1.74, 52.3025),
-            Point::new(-0.74, -1.74, -52.3025),
-            Point::new(0.74, -1.74, -52.3025),
-            Point::new(0.74, -1.74, 52.3025),
-            Point::new(-0.74, 1.74, 52.3025),
-            Point::new(-0.74, 1.74, -52.3025),
-            Point::new(0.74, 1.74, -52.3025),
-            Point::new(0.74, 1.74, 52.3025),
-        ];
-        let indices = [
-            [4, 5, 0],
-            [5, 1, 0],
-            [5, 6, 1],
-            [6, 2, 1],
-            [6, 7, 3],
-            [2, 6, 3],
-            [7, 4, 0],
-            [3, 7, 0],
-            [0, 1, 2],
-            [3, 0, 2],
-            [7, 6, 5],
-            [4, 7, 5],
-        ];
-
-        let convex_mesh = SharedShape::convex_decomposition(&points, &indices);
-        let trimesh_convex_compound = convex_mesh.as_compound().unwrap();
-
-        for s in trimesh_convex_compound.shapes() {
+        let shapes_count = trimesh_convex_compound.shapes().len() as u32;
+        dbg!(shapes_count);
+        for (i, s) in trimesh_convex_compound.shapes().iter().enumerate() {
             let trimesh_convex = s.1.as_convex_polyhedron().unwrap().to_trimesh();
 
             /*
              * Display the shapes.
              */
+            let (r, g, b) = hue_to_rgb(i as f32 / shapes_count as f32);
             let mesh = mquad_mesh_from_points(
                 &trimesh_convex,
                 Vec3::new(1f32, 3f32, 3f32),
-                Color::from_rgba(200, 200, 200, 150),
+                Color::from_rgba(
+                    (r as f32 * 255.0) as u8,
+                    (g as f32 * 255.0) as u8,
+                    (b as f32 * 255.0) as u8,
+                    255,
+                ),
             );
             draw_mesh(&mesh);
         }
