@@ -30,6 +30,7 @@ std = [
     "arrayvec/std",
     "spade",
     "thiserror",
+    "ena"
 ]
 dim2 = []
 f32 = []
@@ -84,6 +85,7 @@ bytemuck = { version = "1", features = ["derive"], optional = true }
 ordered-float = { version = "4", default-features = false }
 log = "0.4"
 thiserror = { version = "1", optional = true }
+ena = { version = "0.14.3", optional = true }
 
 [dev-dependencies]
 simba = { version = "0.9", default-features = false }

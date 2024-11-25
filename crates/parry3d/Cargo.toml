@@ -30,6 +30,7 @@ std = [
     "arrayvec/std",
     "spade",
     "thiserror",
+    "ena"
 ]
 dim3 = []
 f32 = []
@@ -84,6 +85,7 @@ ordered-float = { version = "4", default-features = false }
 thiserror = { version = "1", optional = true }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
+ena = { version = "0.14.3", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
