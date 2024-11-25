@@ -96,6 +96,61 @@ impl TriMeshConnectedComponents {
     pub fn num_connected_components(&self) -> usize {
         self.ranges.len() - 1
     }
+
+    /// Convert the connected-component description into actual meshes (returned as raw index and
+    /// vertex buffers).
+    ///
+    /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
+    /// unexpected result.
+    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point<Real>>, Vec<[u32; 3]>)> {
+        let mut result = vec![];
+        let mut new_vtx_index: Vec<_> = vec![u32::MAX; mesh.vertices.len()];
+
+        for ranges in self.ranges.windows(2) {
+            let num_faces = ranges[1] - ranges[0];
+
+            if num_faces == 0 {
+                continue;
+            }
+
+            let mut vertices = Vec::with_capacity(num_faces);
+            let mut indices = Vec::with_capacity(num_faces);
+
+            for fid in ranges[0]..ranges[1] {
+                let vids = mesh.indices[self.grouped_faces[fid] as usize];
+                let new_vids = vids.map(|id| {
+                    if new_vtx_index[id as usize] == u32::MAX {
+                        vertices.push(mesh.vertices[id as usize]);
+                        new_vtx_index[id as usize] = vertices.len() as u32 - 1;
+                    }
+
+                    new_vtx_index[id as usize]
+                });
+                indices.push(new_vids);
+            }
+
+            result.push((vertices, indices));
+        }
+
+        result
+    }
+
+    /// Convert the connected-component description into actual meshes.
+    ///
+    /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
+    /// unexpected result.
+    ///
+    /// All the meshes are constructed with the given `flags`.
+    pub fn to_meshes(
+        &self,
+        mesh: &TriMesh,
+        flags: TriMeshFlags,
+    ) -> Vec<Result<TriMesh, TriMeshBuilderError>> {
+        self.to_mesh_buffers(mesh)
+            .into_iter()
+            .map(|(vtx, idx)| TriMesh::with_flags(vtx, idx, flags))
+            .collect()
+    }
 }
 
 /// A vertex of a triangle-mesh’s half-edge topology.
@@ -1040,6 +1095,17 @@ impl TriMesh {
         self.connected_components.as_ref()
     }
 
+    /// Returns the connected-component of this mesh.
+    ///
+    /// The connected-components are returned as a set of `TriMesh` build with the given `flags`.
+    pub fn connected_component_meshes(
+        &self,
+        flags: TriMeshFlags,
+    ) -> Option<Vec<Result<TriMesh, TriMeshBuilderError>>> {
+        self.connected_components()
+            .map(|cc| cc.to_meshes(self, flags))
+    }
+
     /// The pseudo-normals of this triangle mesh, if they have been computed.
     #[cfg(feature = "dim3")]
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
@@ -1156,5 +1222,13 @@ mod test {
         mesh.set_flags(TriMeshFlags::CONNECTED_COMPONENTS).unwrap();
         let connected_components = mesh.connected_components().unwrap();
         assert_eq!(connected_components.num_connected_components(), 10);
+
+        let cc_meshes = connected_components.to_meshes(&mesh, TriMeshFlags::empty());
+
+        for cc in cc_meshes {
+            let cc = cc.unwrap();
+            assert_eq!(cc.vertices.len(), vtx.len());
+            assert_eq!(cc.indices.len(), idx.len());
+        }
     }
 }
