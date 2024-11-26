@@ -17,6 +17,19 @@
 - Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
   use `IntersectionCompositeShapeShapeVisitor` instead.
 
+## v0.17.4
+
+### Added
+
+- Add `TriMeshConnectedComponents::to_meshes` and `::to_mesh_buffers` to easily extract individual meshes from the set
+  of connected components.
+- Add `TriMesh::connected_component_meshes` to get the connected components as meshes directly.
+
+### Modified
+
+- Connected-components extraction will never fail now, and no longer require the successful calculation of the mesh’s
+  half-edge topology.
+
 ## v0.17.3
 
 ### Fix
