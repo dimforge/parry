@@ -149,7 +149,7 @@ impl TriMeshConnectedComponents {
         &self,
         mesh: &TriMesh,
         flags: TriMeshFlags,
-    ) -> Vec<Result<TriMesh, TriMeshBuilderError>> {
+    ) -> Vec<TriMesh> {
         self.to_mesh_buffers(mesh)
             .into_iter()
             .map(|(vtx, idx)| TriMesh::with_flags(vtx, idx, flags))
@@ -1103,7 +1103,7 @@ impl TriMesh {
     pub fn connected_component_meshes(
         &self,
         flags: TriMeshFlags,
-    ) -> Option<Vec<Result<TriMesh, TriMeshBuilderError>>> {
+    ) -> Option<Vec<TriMesh>> {
         self.connected_components()
             .map(|cc| cc.to_meshes(self, flags))
     }
