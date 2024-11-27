@@ -4,14 +4,14 @@ extern crate nalgebra as na;
 
 use common_macroquad3d::{easy_draw_text, hue_to_rgb, mquad_mesh_from_points};
 use macroquad::prelude::*;
-use na::{Point3, Vector3};
+use na::Point3;
 use obj::{Obj, ObjData};
 use parry3d::{
     math::Real,
     shape::{SharedShape, TriMesh, TriMeshFlags},
 };
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("convex_decomposition")]
 async fn main() {
     /*
      * Initialize the shapes.
@@ -23,7 +23,7 @@ async fn main() {
         ..
     } = Obj::load("assets/tests/stairs.obj").unwrap();
 
-    let mut bunny_mesh = TriMesh::with_flags(
+    let bunny_mesh = TriMesh::with_flags(
         position
             .iter()
             .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
@@ -62,7 +62,6 @@ async fn main() {
         });
 
         let shapes_count = trimesh_convex_compound.shapes().len() as u32;
-        dbg!(shapes_count);
         for (i, s) in trimesh_convex_compound.shapes().iter().enumerate() {
             let trimesh_convex = s.1.as_convex_polyhedron().unwrap().to_trimesh();
 
