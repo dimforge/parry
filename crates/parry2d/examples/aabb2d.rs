@@ -10,7 +10,7 @@ use parry2d::shape::Ball;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("aabb2d")]
 async fn main() {
     let render_pos = Vec2::new(300.0, 300.0);
 

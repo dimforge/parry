@@ -7,7 +7,7 @@ use parry2d::utils::point_in_poly2d;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("points_in_poly2d")]
 async fn main() {
     let mut spikes = spikes_polygon();
     let test_points = grid_points();

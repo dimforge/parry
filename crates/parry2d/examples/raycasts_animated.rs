@@ -9,7 +9,7 @@ use parry2d::shape::Cuboid;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::query::RayCast")]
+#[macroquad::main("raycasts_animated")]
 async fn main() {
     let animation_scale = 1.4;
     let animation_rotation = 0.04;

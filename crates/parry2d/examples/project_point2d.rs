@@ -7,7 +7,7 @@ use parry2d::math::{Isometry, Translation};
 use parry2d::query::PointQuery;
 use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
-#[macroquad::main("parry3d::query::PlaneIntersection")]
+#[macroquad::main("project_point2d")]
 async fn main() {
     //
     // This is useful to test for https://github.com/dimforge/parry/pull/248

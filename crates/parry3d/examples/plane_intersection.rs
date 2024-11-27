@@ -6,7 +6,7 @@ use parry3d::shape::{Cuboid, TriMesh};
 mod common_macroquad3d;
 use common_macroquad3d::*;
 
-#[macroquad::main("parry3d::query::PlaneIntersection")]
+#[macroquad::main("plane_intersection")]
 async fn main() {
     let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
 

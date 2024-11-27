@@ -9,7 +9,7 @@ use macroquad::prelude::*;
 use nalgebra::Point3;
 use parry3d::transformation;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("convex_hull3d")]
 async fn main() {
     let count = 9;
     let mut pts = vec![Point3::default(); count];
