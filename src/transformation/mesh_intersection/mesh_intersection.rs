@@ -10,7 +10,7 @@ use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 use std::collections::BTreeMap;
-use std::collections::HashSet;
+use crate::utils::hashset::HashSet;
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
