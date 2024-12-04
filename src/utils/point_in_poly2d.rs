@@ -50,17 +50,34 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
         let perp = dpt.perp(&seg_dir);
         winding += match (dpt.y >= 0.0, b.y > pt.y) {
             (true, true) if perp < 0.0 => 1,
-            (false, false) if perp > 0.0 => -1,
+            (false, false) if perp > 0.0 => 1,
             _ => 0,
         };
     }
 
-    winding != 0
+    winding % 2 == 1
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn point_in_poly2d_self_intersecting() {
+        let poly = [
+            [-1.0, -1.0],
+            [0.0, -1.0],
+            [0.0, 1.0],
+            [-2.0, 1.0],
+            [-2.0, -2.0],
+            [1.0, -2.0],
+            [1.0, 2.0],
+            [-1.0, 2.0],
+        ]
+        .map(Point2::from);
+        assert!(!point_in_poly2d(&[-0.5, -0.5].into(), &poly));
+        assert!(point_in_poly2d(&[0.5, -0.5].into(), &poly));
+    }
 
     #[test]
     fn point_in_poly2d_concave() {

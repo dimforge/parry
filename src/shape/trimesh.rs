@@ -10,7 +10,7 @@ use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 use {
     crate::shape::composite_shape::SimdCompositeShape,
     crate::utils::hashmap::{Entry, HashMap},
-    std::collections::HashSet,
+    crate::utils::hashset::HashSet,
 };
 
 #[cfg(feature = "dim2")]
@@ -542,7 +542,7 @@ impl TriMesh {
         let mut vtx_to_id = HashMap::default();
         let mut new_vertices = Vec::with_capacity(self.vertices.len());
         let mut new_indices = Vec::with_capacity(self.indices.len());
-        let mut triangle_set = HashSet::new();
+        let mut triangle_set = HashSet::default();
 
         fn resolve_coord_id(
             coord: &Point<Real>,
@@ -693,7 +693,7 @@ impl TriMesh {
     }
 
     fn delete_bad_topology_triangles(&mut self) {
-        let mut half_edge_set = HashSet::new();
+        let mut half_edge_set = HashSet::default();
         let mut deleted_any = false;
 
         // First, create three half-edges for each face.
