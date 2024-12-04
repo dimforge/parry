@@ -5,6 +5,8 @@
 ### Added
 
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
+- Fix some edge-cases in `point_in_poly2d` for self-intersecting polygons.
+- Fix some edge-cases in mesh/mesh intersection that could result in degenerate triangles being generated.
 
 ### Modified
 
