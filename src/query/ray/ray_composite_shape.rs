@@ -132,8 +132,7 @@ impl<'a, S> RayCompositeShapeToiBestFirstVisitor<'a, S> {
     }
 }
 
-impl<S> SimdBestFirstVisitor<S::PartId, SimdAabb>
-    for RayCompositeShapeToiBestFirstVisitor<'_, S>
+impl<S> SimdBestFirstVisitor<S::PartId, SimdAabb> for RayCompositeShapeToiBestFirstVisitor<'_, S>
 where
     S: TypedSimdCompositeShape,
 {
