@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<'a, T, F> SimdVisitor<T, SimdAabb> for PointIntersectionsVisitor<'a, T, F>
+impl<T, F> SimdVisitor<T, SimdAabb> for PointIntersectionsVisitor<'_, T, F>
 where
     F: FnMut(&T) -> bool,
 {

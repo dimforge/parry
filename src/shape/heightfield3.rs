@@ -782,7 +782,7 @@ struct HeightFieldTriangles<'a> {
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a> Iterator for HeightFieldTriangles<'a> {
+impl Iterator for HeightFieldTriangles<'_> {
     type Item = Triangle;
 
     fn next(&mut self) -> Option<Triangle> {
@@ -819,7 +819,7 @@ pub struct HeightFieldRadialTriangles<'a> {
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a> HeightFieldRadialTriangles<'a> {
+impl HeightFieldRadialTriangles<'_> {
     /// Returns the next triangle in this iterator.
     ///
     /// Returns `None` no triangle closest than `max_dist` remain

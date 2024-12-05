@@ -26,8 +26,8 @@ impl<'a, S> CompositeClosestPointVisitor<'a, S> {
     }
 }
 
-impl<'a, S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAabb>
-    for CompositeClosestPointVisitor<'a, S>
+impl<S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAabb>
+    for CompositeClosestPointVisitor<'_, S>
 {
     type Result = PointProjection;
 

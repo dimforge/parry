@@ -83,8 +83,8 @@ where
     }
 }
 
-impl<'a, D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
-    for CompositeShapeAgainstShapeClosestPointsVisitor<'a, D, G1>
+impl<D, G1> SimdBestFirstVisitor<G1::PartId, SimdAabb>
+    for CompositeShapeAgainstShapeClosestPointsVisitor<'_, D, G1>
 where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedSimdCompositeShape,

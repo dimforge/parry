@@ -28,8 +28,8 @@ impl<'a, S> CompositePointContainmentTest<'a, S> {
     }
 }
 
-impl<'a, S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
-    for CompositePointContainmentTest<'a, S>
+impl<S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
+    for CompositePointContainmentTest<'_, S>
 {
     #[inline]
     fn visit(

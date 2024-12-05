@@ -51,7 +51,7 @@ pub trait IsometryOpt {
     fn inverse_transform_unit_vector(self, v: &Unit<Vector<Real>>) -> Unit<Vector<Real>>;
 }
 
-impl<'a> IsometryOpt for Option<&'a Isometry<Real>> {
+impl IsometryOpt for Option<&Isometry<Real>> {
     #[inline]
     fn inv_mul(self, rhs: &Isometry<Real>) -> Isometry<Real> {
         if let Some(iso) = self {

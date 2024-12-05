@@ -13,7 +13,7 @@ pub struct BuilderProxies<'a, LeafData> {
     aabbs: &'a mut Vec<Aabb>,
 }
 
-impl<'a, LeafData> BuilderProxies<'a, LeafData> {
+impl<LeafData> BuilderProxies<'_, LeafData> {
     fn insert(&mut self, data: LeafData, aabb: Aabb)
     where
         LeafData: IndexedData,
