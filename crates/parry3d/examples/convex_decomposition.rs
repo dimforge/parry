@@ -42,10 +42,10 @@ async fn main() {
     #[cfg(debug_assertions)]
     {
         macroquad::text::draw_text(
-            "Running in debug mode is way slower than with `--release`.",
+            "Running in debug mode is significantly slower than with `--release`.",
             10.0,
             48.0 + 48.0,
-            30.0,
+            26.0,
             RED,
         );
     }
@@ -54,6 +54,28 @@ async fn main() {
     let mesh_indices = bunny_mesh.indices();
     let convex_mesh = SharedShape::convex_decomposition(&mesh_vertices, &mesh_indices);
     let trimesh_convex_compound = convex_mesh.as_compound().unwrap();
+
+    let shapes_count = trimesh_convex_compound.shapes().len() as u32;
+    let mut meshes = Vec::new();
+    for (i, s) in trimesh_convex_compound.shapes().iter().enumerate() {
+        let trimesh_convex = s.1.as_convex_polyhedron().unwrap().to_trimesh();
+
+        /*
+         * Make render meshes out of the shapes.
+         */
+        let (r, g, b) = hue_to_rgb(i as f32 / 6 as f32);
+        let mesh = mquad_mesh_from_points(
+            &trimesh_convex,
+            Vec3::new(1f32, 3f32, 3f32),
+            Color::from_rgba(
+                (r as f32 * 255.0) as u8,
+                (g as f32 * 255.0) as u8,
+                (b as f32 * 255.0) as u8,
+                255,
+            ),
+        );
+        meshes.push(mesh);
+    }
 
     loop {
         clear_background(BLACK);
@@ -70,26 +92,8 @@ async fn main() {
             target: Vec3::new(0f32, 1f32, 0f32),
             ..Default::default()
         });
-
-        let shapes_count = trimesh_convex_compound.shapes().len() as u32;
-        for (i, s) in trimesh_convex_compound.shapes().iter().enumerate() {
-            let trimesh_convex = s.1.as_convex_polyhedron().unwrap().to_trimesh();
-
-            /*
-             * Display the shapes.
-             */
-            let (r, g, b) = hue_to_rgb(i as f32 / 6 as f32);
-            let mesh = mquad_mesh_from_points(
-                &trimesh_convex,
-                Vec3::new(1f32, 3f32, 3f32),
-                Color::from_rgba(
-                    (r as f32 * 255.0) as u8,
-                    (g as f32 * 255.0) as u8,
-                    (b as f32 * 255.0) as u8,
-                    255,
-                ),
-            );
-            draw_mesh(&mesh);
+        for mesh in &meshes {
+            draw_mesh(mesh);
         }
         set_default_camera();
         easy_draw_text(&format!("Number of shapes: {}", shapes_count));
