@@ -9,7 +9,7 @@ use parry2d::transformation;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("convex_hull2d")]
 async fn main() {
     let count = 9;
     let mut pts = vec![Point2::default(); count];

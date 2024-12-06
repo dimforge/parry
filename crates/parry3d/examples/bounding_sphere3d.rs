@@ -10,7 +10,7 @@ use na::{Isometry3, Vector3};
 use parry3d::bounding_volume::BoundingVolume;
 use parry3d::shape::Cuboid;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("bounding_sphere3d")]
 async fn main() {
     let camera_pos = Vec3::new(8f32, 8f32, 12f32);
 

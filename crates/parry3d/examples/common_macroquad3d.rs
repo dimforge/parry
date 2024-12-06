@@ -29,6 +29,20 @@ pub fn na_from_mquad(a: Vec3) -> Point3<Real> {
     Point3::new(a.x, a.y, a.z)
 }
 
+/// Converts a hue (from 0..=1) to rgb
+#[allow(dead_code)]
+pub fn hue_to_rgb(h: f32) -> (f32, f32, f32) {
+    let kr = (5.0 + h * 6.0).rem_euclid(6.0);
+    let kg = (3.0 + h * 6.0).rem_euclid(6.0);
+    let kb = (1.0 + h * 6.0).rem_euclid(6.0);
+
+    let r = 1.0 - kr.min(4.0 - kr).min(1.0).max(0.0);
+    let g = 1.0 - kg.min(4.0 - kg).min(1.0).max(0.0);
+    let b = 1.0 - kb.min(4.0 - kb).min(1.0).max(0.0);
+
+    (r, g, b)
+}
+
 /// Returns [lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) coordinates for time `t`.
 ///
 /// This uses hardcoded parameters to have an arbitrary pleasing trajectory.
