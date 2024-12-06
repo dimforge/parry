@@ -74,8 +74,7 @@ where
     }
 }
 
-impl<'a, D, G1> SimdVisitor<G1::PartId, SimdAabb>
-    for IntersectionCompositeShapeShapeVisitor<'a, D, G1>
+impl<D, G1> SimdVisitor<G1::PartId, SimdAabb> for IntersectionCompositeShapeShapeVisitor<'_, D, G1>
 where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedSimdCompositeShape,

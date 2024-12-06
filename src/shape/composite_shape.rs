@@ -45,7 +45,7 @@ pub trait TypedSimdCompositeShape {
 }
 
 #[cfg(feature = "std")]
-impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
+impl TypedSimdCompositeShape for dyn SimdCompositeShape + '_ {
     type PartShape = dyn Shape;
     type PartNormalConstraints = dyn NormalConstraints;
     type PartId = u32;
