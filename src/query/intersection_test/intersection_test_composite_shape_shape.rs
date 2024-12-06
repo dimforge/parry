@@ -20,7 +20,7 @@ where
     let mut visitor = IntersectionCompositeShapeShapeVisitor::new(dispatcher, pos12, g1, g2);
 
     let _ = g1.typed_qbvh().traverse_depth_first(&mut visitor);
-    visitor.found_intersection
+    visitor.found_intersection.is_some()
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
@@ -38,7 +38,10 @@ where
 }
 
 /// A visitor for checking if a composite-shape and a shape intersect.
-pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
+pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: 'a>
+where
+    G1: ?Sized + TypedSimdCompositeShape,
+{
     ls_aabb2: SimdAabb,
 
     dispatcher: &'a D,
@@ -46,7 +49,10 @@ pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: ?Sized + 'a
     g1: &'a G1,
     g2: &'a dyn Shape,
 
-    found_intersection: bool,
+    /// Populated after the traversal.
+    ///
+    /// Is [`None`] if no intersection was found.
+    pub found_intersection: Option<G1::PartId>,
 }
 
 impl<'a, D, G1> IntersectionCompositeShapeShapeVisitor<'a, D, G1>
@@ -69,7 +75,7 @@ where
             pos12,
             g1,
             g2,
-            found_intersection: false,
+            found_intersection: None,
         }
     }
 }
@@ -103,7 +109,7 @@ where
                     });
 
                     if found_intersection {
-                        self.found_intersection = true;
+                        self.found_intersection = Some(part_id);
                         return SimdVisitStatus::ExitEarly;
                     }
                 }
