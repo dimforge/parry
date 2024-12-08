@@ -8,6 +8,10 @@
 - Fix some edge-cases in `point_in_poly2d` for self-intersecting polygons.
 - Fix some edge-cases in mesh/mesh intersection that could result in degenerate triangles being generated.
 
+### Fix
+
+- Fix panic in `epa3::EPA::closest_points` and `epa2::EPA::closest_points`. Related issues: [#253](https://github.com/dimforge/parry/issues/253), [#246](https://github.com/dimforge/parry/issues/246)
+
 ### Modified
 
 - Propagate error information while creating a mesh and using functions making use of it (See #262):
