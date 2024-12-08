@@ -30,6 +30,7 @@ impl ConvexPolygon {
     /// describe a counter-clockwise convex polyline.
     ///
     /// Convexity of the input polyline is not checked.
+    /// Removes some points if they are collinear with the previous one.
     /// Returns `None` if all points form an almost flat line.
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         if points.is_empty() {
@@ -65,6 +66,29 @@ impl ConvexPolygon {
         let new_length = points.len() - nremoved;
         points.truncate(new_length);
         normals.truncate(new_length);
+
+        if points.len() > 2 {
+            Some(ConvexPolygon { points, normals })
+        } else {
+            None
+        }
+    }
+
+    /// Creates a new 2D convex polygon from a set of points assumed to
+    /// describe a counter-clockwise convex polyline.
+    ///
+    /// Convexity of the input polyline is not checked.
+    /// Does not remove any points.
+    pub fn from_points(points: Vec<Point<Real>>) -> Option<Self> {
+        if points.is_empty() {
+            return None;
+        }
+        let mut normals = Vec::with_capacity(points.len());
+        // First, compute all normals.
+        for i1 in 0..points.len() {
+            let i2 = (i1 + 1) % points.len();
+            normals.push(utils::ccw_face_normal([&points[i1], &points[i2]])?);
+        }
 
         if points.len() > 2 {
             Some(ConvexPolygon { points, normals })
