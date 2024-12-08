@@ -117,7 +117,7 @@ impl ConvexPolyhedron {
     /// This explicitly computes the convex hull of the given set of points. Use
     /// Returns `None` if the convex hull computation failed.
     pub fn from_convex_hull(points: &[Point<Real>]) -> Option<ConvexPolyhedron> {
-        let (vertices, indices) = crate::transformation::convex_hull(points);
+        let (vertices, indices) = crate::transformation::try_convex_hull(points).ok()?;
         Self::from_convex_mesh(vertices, &indices)
     }
 

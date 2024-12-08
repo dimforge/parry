@@ -79,7 +79,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     manifold.clear();
 
     match contact {
-        GJKResult::ClosestPoints(p1, p2_1, dir) => {
+        GJKResult::ClosestPoints(p1, p2_1, Ok(dir)) => {
             let mut local_n1 = dir;
             let mut local_n2 = pos12.inverse_transform_unit_vector(&-dir);
             let dist = (p2_1 - p1).dot(&local_n1);

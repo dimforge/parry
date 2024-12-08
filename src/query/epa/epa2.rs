@@ -8,6 +8,7 @@ use num::Bounded;
 
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::FaceDegenerate;
 use crate::shape::SupportMap;
 use crate::utils;
 
@@ -52,7 +53,7 @@ impl Ord for FaceId {
 #[derive(Clone, Debug)]
 struct Face {
     pts: [usize; 2],
-    normal: Unit<Vector<Real>>,
+    normal: Result<Unit<Vector<Real>>, FaceDegenerate>,
     proj: Point<Real>,
     bcoords: [Real; 2],
     deleted: bool,
@@ -83,10 +84,10 @@ impl Face {
 
         if let Some(n) = utils::ccw_face_normal([&vertices[pts[0]].point, &vertices[pts[1]].point])
         {
-            normal = n;
+            normal = Ok(n);
             deleted = false;
         } else {
-            normal = Unit::new_unchecked(na::zero());
+            normal = Err(FaceDegenerate);
             deleted = true;
         }
 
@@ -158,7 +159,11 @@ impl EPA {
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
+    ) -> Option<(
+        Point<Real>,
+        Point<Real>,
+        Result<Unit<Vector<Real>>, FaceDegenerate>,
+    )>
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -213,7 +218,7 @@ impl EPA {
                 }
             }
 
-            return Some((Point::origin(), Point::origin(), n));
+            return Some((Point::origin(), Point::origin(), Ok(n)));
         } else if simplex.dimension() == 2 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
@@ -235,18 +240,24 @@ impl EPA {
             self.faces.push(face3);
 
             if proj_is_inside1 {
-                let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-                self.heap.push(FaceId::new(0, -dist1)?);
+                if let Ok(normal) = self.faces[0].normal {
+                    let dist1 = normal.dot(&self.vertices[0].point.coords);
+                    self.heap.push(FaceId::new(0, -dist1)?);
+                }
             }
 
             if proj_is_inside2 {
-                let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
-                self.heap.push(FaceId::new(1, -dist2)?);
+                if let Ok(normal) = self.faces[1].normal {
+                    let dist2 = normal.dot(&self.vertices[1].point.coords);
+                    self.heap.push(FaceId::new(1, -dist2)?);
+                }
             }
 
             if proj_is_inside3 {
-                let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
-                self.heap.push(FaceId::new(2, -dist3)?);
+                if let Ok(normal) = self.faces[2].normal {
+                    let dist3 = normal.dot(&self.vertices[2].point.coords);
+                    self.heap.push(FaceId::new(2, -dist3)?);
+                }
             }
         } else {
             let pts1 = [0, 1];
@@ -265,8 +276,17 @@ impl EPA {
                 pts2,
             ));
 
-            let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-            let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
+            let dist1 = self.faces[0]
+                .normal
+                .as_ref()
+                .map(|normal| normal.dot(&self.vertices[0].point.coords))
+                .unwrap_or(0.0);
+
+            let dist2 = self.faces[1]
+                .normal
+                .as_ref()
+                .map(|normal| normal.dot(&self.vertices[1].point.coords))
+                .unwrap_or(0.0);
 
             self.heap.push(FaceId::new(0, dist1)?);
             self.heap.push(FaceId::new(1, dist2)?);
@@ -287,12 +307,15 @@ impl EPA {
             if face.deleted {
                 continue;
             }
+            let Ok(face_normal) = face.normal else {
+                continue;
+            };
 
-            let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &face.normal);
+            let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &face_normal);
             let support_point_id = self.vertices.len();
             self.vertices.push(cso_point);
 
-            let candidate_max_dist = cso_point.point.coords.dot(&face.normal);
+            let candidate_max_dist = cso_point.point.coords.dot(&face_normal);
 
             if candidate_max_dist < max_dist {
                 best_face_id = face_id;
@@ -308,7 +331,7 @@ impl EPA {
             {
                 let best_face = &self.faces[best_face_id.id];
                 let cpts = best_face.closest_points(&self.vertices);
-                return Some((cpts.0, cpts.1, best_face.normal));
+                return Some((cpts.0, cpts.1, best_face.normal.clone()));
             }
 
             old_dist = curr_dist;
@@ -323,12 +346,17 @@ impl EPA {
 
             for f in new_faces.iter() {
                 if f.1 {
-                    let dist = f.0.normal.dot(&f.0.proj.coords);
+                    let new_face_normal =
+                        f.0.normal
+                            .clone()
+                            .unwrap_or(Unit::new_unchecked(Vector::zeros()));
+
+                    let dist = new_face_normal.dot(&f.0.proj.coords);
                     if dist < curr_dist {
                         // TODO: if we reach this point, there were issues due to
                         // numerical errors.
                         let cpts = f.0.closest_points(&self.vertices);
-                        return Some((cpts.0, cpts.1, f.0.normal));
+                        return Some((cpts.0, cpts.1, Ok(new_face_normal)));
                     }
 
                     if !f.0.deleted {
@@ -349,7 +377,7 @@ impl EPA {
 
         let best_face = &self.faces[best_face_id.id];
         let cpts = best_face.closest_points(&self.vertices);
-        Some((cpts.0, cpts.1, best_face.normal))
+        Some((cpts.0, cpts.1, best_face.normal.clone()))
     }
 }
 
