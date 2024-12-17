@@ -30,7 +30,7 @@ std = [
     "arrayvec/std",
     "spade",
     "thiserror",
-    "ena"
+    "ena",
 ]
 dim2 = []
 f32 = []
