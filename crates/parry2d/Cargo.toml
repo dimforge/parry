@@ -143,6 +143,11 @@ path = "examples/cuboid2d.rs"
 doc-scrape-examples = true
 
 [[example]]
+name = "debug_shape_cast2d"
+path = "examples/debug_shape_cast2d.rs"
+doc-scrape-examples = true
+
+[[example]]
 name = "distance_query2d"
 path = "examples/distance_query2d.rs"
 doc-scrape-examples = true
