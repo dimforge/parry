@@ -170,8 +170,7 @@ fn convexpoly_raycast_fuzz() {
         let ray_origin = Point2::new(3., 1. + (i as Real * 0.0001));
         let ray_look_at = Point2::new(0., 2.);
         let collision = test_raycast(ray_origin, ray_look_at);
-        let eps = 1.0e-5;
-
+        let eps = parry2d::query::gjk::eps_tol();
         match collision {
             Some(distance) if distance >= 1.0 - eps && distance < (2.0 as Real).sqrt() => (),
             Some(distance) if distance >= 2.0 => panic!(
