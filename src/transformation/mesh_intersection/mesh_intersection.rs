@@ -186,7 +186,10 @@ pub fn intersect_meshes_with_tolerances(
                 insert_point(pos1 * mesh1.vertices()[face[1] as usize]),
                 insert_point(pos1 * mesh1.vertices()[face[2] as usize]),
             ];
-            let _ = topology_indices.insert(idx.into(), idx);
+
+            if !is_topologically_degenerate(idx) {
+                insert_topology_indices(&mut topology_indices, idx);
+            }
         }
 
         // Add the inside vertices and triangles from mesh2
@@ -199,7 +202,10 @@ pub fn intersect_meshes_with_tolerances(
                 insert_point(pos2 * mesh2.vertices()[face[1] as usize]),
                 insert_point(pos2 * mesh2.vertices()[face[2] as usize]),
             ];
-            let _ = topology_indices.insert(idx.into(), idx);
+
+            if !is_topologically_degenerate(idx) {
+                insert_topology_indices(&mut topology_indices, idx);
+            }
         }
     }
 
@@ -677,48 +683,59 @@ fn merge_triangle_sets(
                 // This should *never* trigger. If it does
                 // it means the code has created a triangle with duplicate vertices,
                 // which means we encountered an unaccounted for edge case.
-                if new_tri_idx[0] == new_tri_idx[1]
-                    || new_tri_idx[0] == new_tri_idx[2]
-                    || new_tri_idx[1] == new_tri_idx[2]
+                if is_topologically_degenerate(new_tri_idx)
                 {
                     return Err(MeshIntersectionError::DuplicateVertices);
                 }
 
-                // Insert in the hashmap with sorted indices to avoid adding duplicates.
-                // We also check if we don’t keep pairs of triangles that have the same
-                // set of indices but opposite orientations.
-                match topology_indices.entry(new_tri_idx.into()) {
-                    Entry::Vacant(e) => {
-                        let _ = e.insert(new_tri_idx);
-                    }
-                    Entry::Occupied(e) => {
-                        fn same_orientation(a: &[u32; 3], b: &[u32; 3]) -> bool {
-                            let ib = if a[0] == b[0] {
-                                0
-                            } else if a[0] == b[1] {
-                                1
-                            } else {
-                                2
-                            };
-                            a[1] == b[(ib + 1) % 3]
-                        }
-
-                        if !same_orientation(e.get(), &new_tri_idx) {
-                            // If we are inserting two identical triangles but with mismatching
-                            // orientations, we can just ignore both because they cover a degenerate
-                            // 2D plane.
-                            #[cfg(feature = "enhanced-determinism")]
-                            let _ = e.swap_remove();
-                            #[cfg(not(feature = "enhanced-determinism"))]
-                            let _ = e.remove();
-                        }
-                    }
-                }
+                insert_topology_indices(topology_indices, new_tri_idx);
             }
         }
     }
 
     Ok(())
+}
+
+// Insert in the hashmap with sorted indices to avoid adding duplicates.
+//
+// We also check if we don’t keep pairs of triangles that have the same
+// set of indices but opposite orientations. If this happens, both the new triangle, and the one it
+// matched with are removed (because they describe a degenerate piece of volume).
+fn insert_topology_indices(topology_indices: &mut HashMap<HashableTriangleIndices, [u32; 3]>,
+    new_tri_idx: [u32; 3]) {
+    match topology_indices.entry(new_tri_idx.into()) {
+        Entry::Vacant(e) => {
+            let _ = e.insert(new_tri_idx);
+        }
+        Entry::Occupied(e) => {
+            fn same_orientation(a: &[u32; 3], b: &[u32; 3]) -> bool {
+                let ib = if a[0] == b[0] {
+                    0
+                } else if a[0] == b[1] {
+                    1
+                } else {
+                    2
+                };
+                a[1] == b[(ib + 1) % 3]
+            }
+
+            if !same_orientation(e.get(), &new_tri_idx) {
+                // If we are inserting two identical triangles but with mismatching
+                // orientations, we can just ignore both because they cover a degenerate
+                // 2D plane.
+                #[cfg(feature = "enhanced-determinism")]
+                let _ = e.swap_remove();
+                #[cfg(not(feature = "enhanced-determinism"))]
+                let _ = e.remove();
+            }
+        }
+    }
+}
+
+fn is_topologically_degenerate(tri_idx: [u32; 3]) -> bool {
+    tri_idx[0] == tri_idx[1]
+        || tri_idx[0] == tri_idx[2]
+        || tri_idx[1] == tri_idx[2]
 }
 
 #[cfg(feature = "wavefront")]
