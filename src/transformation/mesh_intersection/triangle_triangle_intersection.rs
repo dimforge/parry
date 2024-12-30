@@ -7,7 +7,7 @@ use crate::transformation::polygon_intersection::{
     PolygonIntersectionTolerances, PolylinePointLocation,
 };
 use crate::utils::WBasis;
-use na::Point2;
+use na::{Point2, Point3, Vector3};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct TriangleTriangleIntersectionPoint {
@@ -224,7 +224,7 @@ fn segment_plane_intersection(
 fn debug_check_intersections(
     tri1: &Triangle,
     tri2: &Triangle,
-    basis: &[na::Vector3<Real>; 2],
+    basis: &[Vector3<Real>; 2],
     poly1: &[Point2<Real>], // Projection of tri1 on the basis `basis1` with the origin at tri2.a.
     poly2: &[Point2<Real>], // Projection of tri2 on the basis `basis2` with the origin at tri2.a.
     intersections: &[TriangleTriangleIntersectionPoint],

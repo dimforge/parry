@@ -10,8 +10,8 @@ use crate::utils::hashset::HashSet;
 use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
-use std::collections::BTreeMap;
-#[cfg(feature = "wavefront")]
+use std::collections::{BTreeMap, BTreeSet};
+// #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
 /// A triangle with indices sorted in increasing order for deduplication in a hashmap.
@@ -84,6 +84,9 @@ pub fn intersect_meshes(
     )
 }
 
+use std::sync::atomic::AtomicU32;
+static INVOCATION_COUNT: AtomicU32 = AtomicU32::new(0);
+
 /// Similar to `intersect_meshes`.
 ///
 /// It allows to specify epsilons for how the algorithm will behave.
@@ -97,6 +100,8 @@ pub fn intersect_meshes_with_tolerances(
     flip2: bool,
     tolerances: MeshIntersectionTolerances,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
+    let _ = INVOCATION_COUNT.fetch_add(1, core::sync::atomic::Ordering::AcqRel);
+
     if cfg!(debug_assertions) {
         mesh1.assert_half_edge_topology_is_valid();
         mesh2.assert_half_edge_topology_is_valid();
@@ -135,6 +140,32 @@ pub fn intersect_meshes_with_tolerances(
         let tri1 = mesh1.triangle(*fid1);
         let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
 
+        // Experiemntal code
+        let mut tri1 = [tri1.a.coords, tri1.b.coords, tri1.c.coords];
+        let mut tri2 = [tri2.a.coords, tri2.b.coords, tri2.c.coords];
+        let c1 = (tri1[0] + tri1[1] + tri1[2]) / 3.;
+        let c2 = (tri2[0] + tri2[1] + tri2[2]) / 3.;
+
+        for i in 0..3 {
+            let intersection_colerance = 0.002;
+            let d = (tri1[i] - c1).normalize();
+            tri1[i] += intersection_colerance * d;
+
+            let d = (tri2[i] - c2).normalize();
+            tri2[i] += intersection_colerance * d;
+        }
+
+        let tri1 = Triangle {
+            a: Point3::from(tri1[0]),
+            b: Point3::from(tri1[1]),
+            c: Point3::from(tri1[2]),
+        };
+        let tri2 = Triangle {
+            a: Point3::from(tri2[0]),
+            b: Point3::from(tri2[1]),
+            c: Point3::from(tri2[2]),
+        };
+
         if super::triangle_triangle_intersection(&tri1, &tri2, tolerances.collinearity_epsilon)
             .is_some()
         {
@@ -143,6 +174,73 @@ pub fn intersect_meshes_with_tolerances(
             let _ = deleted_faces2.insert(*fid2);
         }
     }
+
+    // dbg
+    let count = INVOCATION_COUNT.load(core::sync::atomic::Ordering::Relaxed);
+    let mut dbg = Vec::new();
+    let mut dbg_ids = Vec::new();
+    let tris1: Vec<_> = mesh1.triangles().collect();
+    let tris2: Vec<_> = mesh2.triangles().collect();
+    for intersection in &intersections {
+        let t1 = tris1[intersection.0 as usize];
+        dbg_ids.push([dbg.len(), dbg.len() + 1, dbg.len() + 2]);
+        dbg.push(t1.a);
+        dbg.push(t1.b);
+        dbg.push(t1.c);
+
+        let t2 = tris2[intersection.1 as usize];
+        dbg_ids.push([dbg.len(), dbg.len() + 1, dbg.len() + 2]);
+        dbg.push(t2.a);
+        dbg.push(t2.b);
+        dbg.push(t2.c);
+    }
+
+    _triangles_to_obj(
+        &dbg,
+        &dbg_ids,
+        &PathBuf::from(format!("dbg/intersections_{:?}.obj", count)),
+    );
+    let vs = mesh1.vertices().to_vec();
+    let fs: Vec<_> = mesh1
+        .indices()
+        .to_vec()
+        .into_iter()
+        .map(|l| [l[0] as usize, l[1] as usize, l[2] as usize])
+        .collect();
+    _triangles_to_obj(
+        &vs,
+        &fs,
+        &PathBuf::from(format!("dbg/input1_{:?}.obj", count)),
+    );
+    let vs = mesh2.vertices().to_vec();
+    let fs: Vec<_> = mesh2
+        .indices()
+        .to_vec()
+        .into_iter()
+        .map(|l| [l[0] as usize, l[1] as usize, l[2] as usize])
+        .collect();
+    _triangles_to_obj(
+        &vs,
+        &fs,
+        &PathBuf::from(format!("dbg/input2_{:?}.obj", count)),
+    );
+    _triangles_to_obj(&dbg, &dbg_ids, &PathBuf::from("dbg/intersections.obj"));
+
+    let cc = extract_connected_components_exp(mesh1, &deleted_faces1);
+    for (i, c) in cc.iter().enumerate() {
+        let indices: Vec<_> = c
+            .iter()
+            .map(|fid| mesh1.indices()[*fid].map(|i| i as usize))
+            .collect();
+        let points = mesh1.vertices();
+
+        _triangles_to_obj(
+            &points,
+            &indices,
+            &PathBuf::from(format!("dbg/connected_component_{:?}.obj", i)),
+        );
+    }
+    // ===
 
     // 3: Grab all triangles that are inside the other mesh but do not intersect it.
     extract_connected_components(
@@ -286,6 +384,71 @@ pub fn intersect_meshes_with_tolerances(
     } else {
         Ok(None)
     }
+}
+
+fn extract_connected_components_exp(
+    mesh: &TriMesh,
+    deleted_faces: &HashSet<u32>,
+) -> Vec<Vec<usize>> {
+    // Map of all faces incident on an edge. Effectively, the edges of the dual mesh.
+    let mut edge_face_map = BTreeMap::new();
+    let face_edges = |face: &[u32; 3]| {
+        let vals = face.clone();
+        (0..3).map(move |i| {
+            let v1 = vals[i];
+            let v2 = vals[(i + 1) % 3];
+
+            let mut edge = [v1, v2];
+            edge.sort();
+
+            edge
+        })
+    };
+    for (fid, face) in mesh.indices().iter().enumerate() {
+        let mut dbg = 0;
+        for edge in face_edges(face) {
+            dbg += 1;
+            let faces = edge_face_map.entry(edge).or_insert(Vec::new());
+            faces.push(fid);
+        }
+
+        assert!(dbg == 3);
+    }
+
+    let mut fids: BTreeSet<_> = (0..mesh.indices().len()).collect();
+
+    let mut connected_components = Vec::new();
+    // Pop from the set of faces until no faces are left.
+    while let Some(fid) = fids.pop_first() {
+        let mut stack = vec![fid];
+        connected_components.push(vec![fid]);
+        // Depth first search over the dual mesh. Each time we add a face to the current connected component, we remove it
+        // from the set of faces.
+        while let Some(fid) = stack.pop() {
+            // Skip deleted faces, for obvious reasons.
+            if deleted_faces.contains(&(fid as u32)) {
+                continue;
+            }
+
+            let face = mesh.indices()[fid];
+            for edge in face_edges(&face) {
+                let other_faces = edge_face_map.get(&edge).unwrap();
+
+                // Check all faces connected to this face by an edge.
+                for f in other_faces {
+                    if fids.remove(f) && !deleted_faces.contains(&(*f as u32)) {
+                        stack.push(*f);
+                        println!("{}", stack.len());
+                        // Add the current face to the current connected component.
+                        connected_components.last_mut().unwrap().push(*f);
+                    }
+                }
+            }
+        }
+        // println!(" cc size {}", connected_components.last().unwrap().len());
+    }
+
+    connected_components
 }
 
 fn extract_connected_components(
@@ -467,7 +630,7 @@ fn triangulate_constraints_and_merge_duplicates(
 }
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
-#[cfg(feature = "wavefront")]
+// #[cfg(feature = "wavefront")]
 fn _points_to_obj(mesh: &[Point3<Real>], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
@@ -478,7 +641,7 @@ fn _points_to_obj(mesh: &[Point3<Real>], path: &PathBuf) {
 }
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
-#[cfg(feature = "wavefront")]
+// #[cfg(feature = "wavefront")]
 fn _points_and_edges_to_obj(mesh: &[Point3<Real>], edges: &[[usize; 2]], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
@@ -489,6 +652,21 @@ fn _points_and_edges_to_obj(mesh: &[Point3<Real>], edges: &[[usize; 2]], path: &
 
     for e in edges {
         writeln!(file, "l {} {}", e[0] + 1, e[1] + 1).unwrap();
+    }
+}
+
+// We heavily recommend that this is left here in case one needs to debug the above code.
+// #[cfg(feature = "wavefront")]
+fn _triangles_to_obj(mesh: &[Point3<Real>], triangles: &[[usize; 3]], path: &PathBuf) {
+    use std::io::Write;
+    let mut file = std::fs::File::create(path).unwrap();
+
+    for p in mesh {
+        writeln!(file, "v {} {} {}", p.x, p.y, p.z).unwrap();
+    }
+
+    for t in triangles {
+        writeln!(file, "f {} {} {}", t[0] + 1, t[1] + 1, t[2] + 1).unwrap();
     }
 }
 
@@ -645,6 +823,22 @@ fn merge_triangle_sets(
             let p1 = points[verts[0].index()];
             let p2 = points[verts[1].index()];
             let p3 = points[verts[2].index()];
+
+            let proj_1 = mesh2.project_local_point(&p1, false).point;
+            let proj_2 = mesh2.project_local_point(&p2, false).point;
+            let proj_3 = mesh2.project_local_point(&p3, false).point;
+            let projs = [proj_1, proj_2, proj_3];
+            let ogs = [p1, p2, p3];
+
+            // If all three faces of a post-intersection triangle are on the surface of the other mesh,
+            // then we have two overlapping surfaces. We should remove all such tiangles.
+            let mut close_count = 0;
+            for i in 0..3 {
+                close_count += ((projs[i] - ogs[i]).norm() < 0.00001) as usize;
+            }
+            if close_count == 3 {
+                continue;
+            }
 
             // Sometimes the triangulation is messed up due to numerical errors. If
             // a triangle does not survive this test it should be deleted.
