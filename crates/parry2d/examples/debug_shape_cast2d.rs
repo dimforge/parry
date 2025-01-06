@@ -2,7 +2,7 @@ mod common_macroquad2d;
 
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
-use nalgebra::{Isometry2, Point2, Vector2};
+use nalgebra::{Isometry2, Point2};
 use parry2d::math::Isometry;
 use parry2d::query::{self, Ray, ShapeCastOptions};
 use parry2d::shape::{Ball, ConvexPolygon, Shape};
@@ -15,15 +15,14 @@ async fn main() {
     for _i in 1.. {
         clear_background(BLACK);
 
-        let screen_shift =
-            Point2::new(screen_width() / 2.0, screen_height() / 2.0) + Vector2::new(-500.0, -200.0);
+        let screen_shift = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
 
         let to_cast_against = ConvexPolygon::from_convex_polyline(
             [
-                [600.0, 288.0].into(),
-                [576.0, 312.0].into(),
-                [552.0, 288.0].into(),
-                [576.0, 264.0].into(),
+                [-24.0, 0.0].into(),
+                [0.0, 24.0].into(),
+                [24.0, 0.0].into(),
+                [0.0, -24.0].into(),
             ]
             .into(),
         )
@@ -33,31 +32,35 @@ async fn main() {
         let mouse_pos = mouse_position();
         let mouse_position_world =
             (Point2::<f32>::new(mouse_pos.0, mouse_pos.1) - screen_shift.coords) / RENDER_SCALE;
-        let target_pos: Point2<f32> = [264.0, 440.0].into();
-        shape_cast_debug(
-            screen_shift,
-            target_pos,
-            mouse_position_world,
-            to_cast_against.clone(),
-        );
+        let target_pos: Point2<f32> = [-312.0, 152.0].into();
+
         // Those 2 fail with `min_bound >= _eps_tol`, fixed with a tolerance * 100
         shape_cast_debug(
             screen_shift,
-            [675.0, 255.0].into(),
+            [99.0, -33.0].into(),
             target_pos,
             to_cast_against.clone(),
         );
         shape_cast_debug(
             screen_shift,
-            [674.0, 257.0].into(),
+            [98.0, -31.0].into(),
             target_pos,
             to_cast_against.clone(),
         );
         // This fails with `niter == 100` (and `niter == 100_000`), fixed with a tolerance * 10_000
         shape_cast_debug(
             screen_shift,
-            [623.0, 256.0].into(),
+            [47.0, -32.0].into(),
             target_pos,
+            to_cast_against.clone(),
+        );
+
+        // For debug purposes, raycast to mouse position.
+        // Rendered last to be on top of the other raycasts
+        shape_cast_debug(
+            screen_shift,
+            target_pos,
+            mouse_position_world,
             to_cast_against.clone(),
         );
 
