@@ -808,14 +808,6 @@ impl TriMesh {
     // NOTE: this is private because that calculation is controlled by TriMeshFlags::CONNECTED_COMPONENTS
     // TODO: we should remove the CONNECTED_COMPONENTS flags and just have this be a free function.
     fn compute_connected_components(&mut self) {
-        if self.topology.is_some() {
-            self.compute_connected_components_from_topology()
-        } else {
-            self.compute_connected_components_union_find()
-        }
-    }
-
-    fn compute_connected_components_union_find(&mut self) {
         use ena::unify::{InPlaceUnificationTable, UnifyKey};
 
         #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
@@ -903,49 +895,6 @@ impl TriMesh {
             grouped_faces,
             ranges,
         })
-    }
-
-    fn compute_connected_components_from_topology(&mut self) {
-        let topo = self.topology.as_ref().unwrap();
-        let mut face_colors = vec![u32::MAX; topo.faces.len()];
-        let mut grouped_faces = Vec::new();
-        let mut ranges = vec![0];
-        let mut stack = vec![];
-
-        for i in 0..topo.faces.len() {
-            if face_colors[i] == u32::MAX {
-                let color = ranges.len() as u32 - 1;
-                face_colors[i] = color;
-                grouped_faces.push(i as u32);
-                stack.push(i as u32);
-
-                while let Some(tri_id) = stack.pop() {
-                    let eid = topo.faces[tri_id as usize].half_edge;
-                    let edge_a = &topo.half_edges[eid as usize];
-                    let edge_b = &topo.half_edges[edge_a.next as usize];
-                    let edge_c = &topo.half_edges[edge_b.next as usize];
-                    let edges = [edge_a, edge_b, edge_c];
-
-                    for edge in edges {
-                        if let Some(twin) = topo.half_edges.get(edge.twin as usize) {
-                            if face_colors[twin.face as usize] == u32::MAX {
-                                face_colors[twin.face as usize] = color;
-                                grouped_faces.push(twin.face);
-                                stack.push(twin.face);
-                            }
-                        }
-                    }
-                }
-
-                ranges.push(grouped_faces.len());
-            }
-        }
-
-        self.connected_components = Some(TriMeshConnectedComponents {
-            face_colors,
-            grouped_faces,
-            ranges,
-        });
     }
 
     #[allow(dead_code)] // Useful for testing.
