@@ -19,6 +19,13 @@
 - Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
   use `IntersectionCompositeShapeShapeVisitor` instead.
 
+## v0.17.5
+
+### Fix
+
+- Always compute connected-components from union-find instead of topology. It is faster and the function based on
+  topology could result in a crash for non-manifold meshes.
+
 ## v0.17.4
 
 ### Added
