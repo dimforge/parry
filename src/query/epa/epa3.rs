@@ -314,7 +314,7 @@ impl EPA {
 
         let mut niter = 0;
         let mut max_dist = Real::max_value();
-        let mut best_face_id = *self.heap.peek().unwrap();
+        let mut best_face_id = *self.heap.peek()?;
         let mut old_dist = 0.0;
 
         /*
