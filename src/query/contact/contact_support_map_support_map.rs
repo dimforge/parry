@@ -4,6 +4,7 @@ use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::query::Contact;
 use crate::shape::SupportMap;
 
+use log::warn;
 use na::Unit;
 
 /// Contact between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
@@ -19,11 +20,15 @@ where
 {
     let simplex = &mut VoronoiSimplex::new();
     match contact_support_map_support_map_with_params(pos12, g1, g2, prediction, simplex, None) {
-        GJKResult::ClosestPoints(point1, point2_1, normal1) => {
+        GJKResult::ClosestPoints(point1, point2_1, Ok(normal1)) => {
             let dist = (point2_1 - point1).dot(&normal1);
             let point2 = pos12.inverse_transform_point(&point2_1);
             let normal2 = pos12.inverse_transform_unit_vector(&-normal1);
             Some(Contact::new(point1, point2, normal1, normal2, dist))
+        }
+        GJKResult::ClosestPoints(_, _, Err(_)) => {
+            warn!("`contact_support_map_support_map` found the closest points on a degenerate face: verify your shapes' correctness.");
+            None
         }
         GJKResult::NoIntersection(_) => None,
         GJKResult::Intersection => unreachable!(),
@@ -68,6 +73,7 @@ where
 
     // The point is inside of the CSO: use the fallback algorithm
     let mut epa = EPA::new();
+
     if let Some((p1, p2, n)) = epa.closest_points(pos12, g1, g2, simplex) {
         return GJKResult::ClosestPoints(p1, p2, n);
     }
