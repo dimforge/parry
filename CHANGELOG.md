@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.18.0
 
 ### Added
 
