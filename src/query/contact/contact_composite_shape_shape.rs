@@ -26,7 +26,7 @@ where
             if let Ok(Some(mut c)) =
                 dispatcher.contact(&part_pos1.inv_mul(pos12), part1, g2, prediction)
             {
-                let replace = res.map_or(true, |cbest| c.dist < cbest.dist);
+                let replace = res.is_none_or(|cbest| c.dist < cbest.dist);
 
                 if replace {
                     if let Some(part_pos1) = part_pos1 {
