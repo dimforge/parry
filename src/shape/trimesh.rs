@@ -230,7 +230,7 @@ pub struct TriMeshTopology {
 )]
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-/// The status of the cell of an heightfield.
+/// Controls how a [`TriMesh`] should be loaded.
 pub struct TriMeshFlags(u16);
 
 bitflags::bitflags! {
