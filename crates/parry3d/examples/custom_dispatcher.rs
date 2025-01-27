@@ -12,21 +12,21 @@ use parry3d::{
     shape::{Ball, Cuboid, FeatureId, Shape, ShapeType, TypedShape},
 };
 
-pub struct CustomBall(pub Ball);
+pub struct CustomShape(pub Ball);
 
 fn main() {
     let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
-    let ball = CustomBall(Ball::new(1.0));
+    let custom_shape = CustomShape(Ball::new(1.0));
 
     let pos12 = Isometry::identity();
-    let dispatcher = CustomBallDispatcher;
+    let dispatcher = CustomShapeDispatcher;
 
-    let contact = dispatcher.contact(&pos12, &cube, &ball.0, 0.0);
+    let contact = dispatcher.contact(&pos12, &cube, &custom_shape.0, 0.0);
 
-    dbg!(contact);
+    _ = dbg!(contact);
 }
 
-impl PointQuery for CustomBall {
+impl PointQuery for CustomShape {
     fn project_local_point(&self, pt: &Point<f32>, solid: bool) -> PointProjection {
         self.0.project_local_point(pt, solid)
     }
@@ -36,7 +36,7 @@ impl PointQuery for CustomBall {
     }
 }
 
-impl RayCast for CustomBall {
+impl RayCast for CustomShape {
     fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
@@ -48,7 +48,7 @@ impl RayCast for CustomBall {
     }
 }
 
-impl Shape for CustomBall {
+impl Shape for CustomShape {
     fn compute_local_aabb(&self) -> Aabb {
         self.0.compute_local_aabb()
     }
@@ -86,35 +86,28 @@ impl Shape for CustomBall {
     }
 }
 
-pub struct CustomBallDispatcher;
+pub struct CustomShapeDispatcher;
 
-impl QueryDispatcher for CustomBallDispatcher {
+impl QueryDispatcher for CustomShapeDispatcher {
     fn intersection_test(
         &self,
         pos12: &Isometry<f32>,
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> Result<bool, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 let p12 = Point::from(pos12.translation.vector);
                 return Ok(parry3d::query::details::intersection_test_ball_ball(
-                    &p12, &ball1.0, &ball2.0,
+                    &p12, &custom1.0, &custom2.0,
                 ));
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.intersection_test(pos12, &ball1.0, g2)
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.intersection_test(pos12, g1, &ball2.0)
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.intersection_test(pos12, g1, g2)
@@ -128,26 +121,19 @@ impl QueryDispatcher for CustomBallDispatcher {
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> Result<f32, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 let p2 = Point::from(pos12.translation.vector);
                 return Ok(parry3d::query::details::distance_ball_ball(
-                    &ball1.0, &p2, &ball2.0,
+                    &custom1.0, &p2, &custom2.0,
                 ));
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.distance(pos12, &ball1.0, g2)
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.distance(pos12, g1, &ball2.0)
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.distance(pos12, g1, g2)
@@ -162,25 +148,18 @@ impl QueryDispatcher for CustomBallDispatcher {
         g2: &dyn Shape,
         prediction: f32,
     ) -> Result<Option<Contact>, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 return Ok(parry3d::query::details::contact_ball_ball(
-                    pos12, &ball1.0, &ball2.0, prediction,
+                    pos12, &custom1.0, &custom2.0, prediction,
                 ));
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.contact(pos12, &ball1.0, g2, prediction)
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.contact(pos12, g1, &ball2.0, prediction)
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.contact(pos12, g1, g2, prediction)
@@ -195,25 +174,18 @@ impl QueryDispatcher for CustomBallDispatcher {
         g2: &dyn Shape,
         max_dist: f32,
     ) -> Result<ClosestPoints, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 return Ok(parry3d::query::details::closest_points_ball_ball(
-                    pos12, &ball1.0, &ball2.0, max_dist,
+                    pos12, &custom1.0, &custom2.0, max_dist,
                 ));
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.closest_points(pos12, &ball1.0, g2, max_dist)
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.closest_points(pos12, g1, &ball2.0, max_dist)
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.closest_points(pos12, g1, g2, max_dist)
@@ -229,29 +201,22 @@ impl QueryDispatcher for CustomBallDispatcher {
         g2: &dyn Shape,
         options: ShapeCastOptions,
     ) -> Result<Option<ShapeCastHit>, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 return Ok(parry3d::query::details::cast_shapes_ball_ball(
                     pos12,
                     local_vel12,
-                    &ball1.0,
-                    &ball2.0,
+                    &custom1.0,
+                    &custom2.0,
                     options,
                 ));
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes(pos12, local_vel12, &ball1.0, g2, options)
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes(pos12, local_vel12, g1, &ball2.0, options)
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.cast_shapes(pos12, local_vel12, g1, g2, options)
@@ -269,47 +234,24 @@ impl QueryDispatcher for CustomBallDispatcher {
         end_time: f32,
         stop_at_penetration: bool,
     ) -> Result<Option<ShapeCastHit>, Unsupported> {
-        let (ball1, ball2) = (
-            g1.downcast_ref::<CustomBall>(),
-            g2.downcast_ref::<CustomBall>(),
+        let (maybe_custom1, maybe_custom2) = (
+            g1.downcast_ref::<CustomShape>(),
+            g2.downcast_ref::<CustomShape>(),
         );
 
-        match (ball1, ball2) {
-            (Some(ball1), Some(ball2)) => {
+        match (maybe_custom1, maybe_custom2) {
+            (Some(custom1), Some(custom2)) => {
                 return parry3d::query::details::cast_shapes_nonlinear(
                     motion1,
-                    &ball1.0,
+                    &custom1.0,
                     motion2,
-                    &ball2.0,
+                    &custom2.0,
                     start_time,
                     end_time,
                     stop_at_penetration,
                 );
             }
-            (Some(ball1), None) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes_nonlinear(
-                    motion1,
-                    &ball1.0,
-                    motion2,
-                    g2,
-                    start_time,
-                    end_time,
-                    stop_at_penetration,
-                )
-            }
-            (None, Some(ball2)) => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes_nonlinear(
-                    motion1,
-                    g1,
-                    motion2,
-                    &ball2.0,
-                    start_time,
-                    end_time,
-                    stop_at_penetration,
-                )
-            }
+            // TODO: implement the algorithm for each shape type combination you want to support.
             _ => {
                 let dispatcher = DefaultQueryDispatcher;
                 dispatcher.cast_shapes_nonlinear(
