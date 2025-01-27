@@ -87,10 +87,7 @@ pub(crate) fn triangulate_ear_clipping(vertices: &[Point<Real>]) -> Option<Vec<[
             });
 
         // If we found an ear, clip it. Else the algorithm failed.
-        let (ear_i, _) = match maybe_ear {
-            Some(ear) => ear,
-            None => return None,
-        };
+        let (ear_i, _) = maybe_ear?;
 
         // Deactivate the tip of the ear.
         vertex_info[ear_i].is_active = false;
