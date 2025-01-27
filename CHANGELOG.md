@@ -1,12 +1,16 @@
 # Change Log
 
-## Unreleased
+## v0.18.0
 
 ### Added
 
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
 - Fix some edge-cases in `point_in_poly2d` for self-intersecting polygons.
 - Fix some edge-cases in mesh/mesh intersection that could result in degenerate triangles being generated.
+
+### Fix
+
+- Fix panic in `epa3::EPA::closest_points` and `epa2::EPA::closest_points`. Related issues: [#253](https://github.com/dimforge/parry/issues/253), [#246](https://github.com/dimforge/parry/issues/246)
 
 ### Modified
 
@@ -18,6 +22,13 @@
 - `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
 - Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
   use `IntersectionCompositeShapeShapeVisitor` instead.
+
+## v0.17.5
+
+### Fix
+
+- Always compute connected-components from union-find instead of topology. It is faster and the function based on
+  topology could result in a crash for non-manifold meshes.
 
 ## v0.17.4
 
