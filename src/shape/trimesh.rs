@@ -269,7 +269,7 @@ bitflags::bitflags! {
         ///
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
-        const FIX_INTERNAL_EDGES = 1 << 7 | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
+        const FIX_INTERNAL_EDGES = (1 << 7) | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
