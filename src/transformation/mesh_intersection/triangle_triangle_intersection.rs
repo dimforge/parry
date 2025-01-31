@@ -214,10 +214,10 @@ fn segment_plane_intersection(
     }
 }
 
-/// Prints debug information if the calulated intersection of two triangles is detected to be
+/// Prints debug information if the calculated intersection of two triangles is detected to be
 /// invalid.
 ///
-/// If the intersection is valid, this prints nothing. If it isn’t valid, this will print a few
+/// If the intersection is valid, this prints nothing. If it isn't valid, this will print a few
 /// lines to copy/paste into the Desmos online graphing tool (for visual debugging), as well as
 /// some rust code to add to the `tris` array in the `intersect_triangle_common_vertex` test for
 /// regression checking.
@@ -273,7 +273,7 @@ fn debug_check_intersections(
         }
         println!(")");
 
-        println!("~~~~~~~ (copy/paste the folliwing input in the `intersect_triangle_common_vertex` test)");
+        println!("~~~~~~~ (copy/paste the following input in the `intersect_triangle_common_vertex` test)");
         println!("(Triangle::new(");
         for pt1 in poly1 {
             println!("    Point2::new({},{}),", pt1.x, pt1.y);
