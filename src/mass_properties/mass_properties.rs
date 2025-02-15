@@ -21,12 +21,6 @@ const EPSILON: Real = f32::EPSILON as Real;
 )]
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
-    /// The center of mass of a rigid-body expressed in its local-space.
-    pub local_com: Point<Real>,
-    /// The inverse of the mass of a rigid-body.
-    ///
-    /// If this is zero, the rigid-body is assumed to have infinite mass.
-    pub inv_mass: Real,
     /// The inverse of the principal angular inertia of the rigid-body.
     ///
     /// The angular inertia is calculated relative to [`Self::local_com`].
@@ -35,6 +29,12 @@ pub struct MassProperties {
     #[cfg(feature = "dim3")]
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
     pub principal_inertia_local_frame: Rotation<Real>,
+    /// The center of mass of a rigid-body expressed in its local-space.
+    pub local_com: Point<Real>,
+    /// The inverse of the mass of a rigid-body.
+    ///
+    /// If this is zero, the rigid-body is assumed to have infinite mass.
+    pub inv_mass: Real,
 }
 
 impl MassProperties {
