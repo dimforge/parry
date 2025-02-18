@@ -316,7 +316,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     shape2,
                     options,
                 );
-            } else if let Some(heightfield2) = shape1.as_heightfield() {
+            } else if let Some(heightfield2) = shape2.as_heightfield() {
                 return query::details::cast_shapes_shape_heightfield(
                     self,
                     pos12,
