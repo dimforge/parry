@@ -22,6 +22,8 @@
 - `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
 - Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
   use `IntersectionCompositeShapeShapeVisitor` instead.
+- Epsilon from `parry::query::gjk::eps_tol` is now `10e-2` (from `10e-5`).
+  - This fixes cases of incorrectly failing shapecasts.
 
 ## v0.17.5
 
