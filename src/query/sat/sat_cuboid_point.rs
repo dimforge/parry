@@ -8,10 +8,10 @@ use na::Unit;
 /// Computes the separation between a point and a cuboid, along the given direction `normal1`.
 pub fn point_cuboid_find_local_separating_normal_oneway(
     point1: Point<Real>,
-    normal1: Option<Unit<Vector<Real>>>,
+    normal1: Option<Unit<Vector>>,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::zeros();
 

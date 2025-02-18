@@ -5,7 +5,7 @@ use crate::shape::HeightField;
 impl HeightField {
     /// Computes the world-space [`Aabb`] of this heightfield, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.root_aabb().transform_by(pos)
     }
 

@@ -52,7 +52,7 @@ impl Ord for FaceId {
 struct Face {
     pts: [usize; 3],
     adj: [usize; 3],
-    normal: Unit<Vector<Real>>,
+    normal: Unit<Vector>,
     bcoords: [Real; 3],
     deleted: bool,
 }
@@ -205,7 +205,7 @@ impl EPA {
     /// Return the projected point in the local-space of `g`.
     pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         g: &G,
         simplex: &VoronoiSimplex,
     ) -> Option<Point<Real>> {
@@ -219,11 +219,11 @@ impl EPA {
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
     pub fn closest_points<G1, G2>(
         &mut self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
+    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector>)>
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -241,7 +241,7 @@ impl EPA {
         }
 
         if simplex.dimension() == 0 {
-            let mut n: Vector<Real> = na::zero();
+            let mut n: Vector = na::zero();
             n[1] = 1.0;
             return Some((Point::origin(), Point::origin(), Unit::new_unchecked(n)));
         } else if simplex.dimension() == 3 {

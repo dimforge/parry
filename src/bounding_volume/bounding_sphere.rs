@@ -43,7 +43,7 @@ impl BoundingSphere {
 
     /// Transforms this bounding sphere by `m`.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> BoundingSphere {
+    pub fn transform_by(&self, m: &Isometry) -> BoundingSphere {
         BoundingSphere::new(m * self.center, self.radius)
     }
 }

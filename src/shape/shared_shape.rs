@@ -60,7 +60,7 @@ impl SharedShape {
     }
 
     /// Initialize a compound shape defined by its subshapes.
-    pub fn compound(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Self {
+    pub fn compound(shapes: Vec<(Isometry, SharedShape)>) -> Self {
         let raw_shapes = shapes.into_iter().map(|s| (s.0, s.1)).collect();
         let compound = Compound::new(raw_shapes);
         SharedShape(Arc::new(compound))
@@ -72,7 +72,7 @@ impl SharedShape {
     }
 
     /// Initialize a plane shape defined by its outward normal.
-    pub fn halfspace(outward_normal: Unit<Vector<Real>>) -> Self {
+    pub fn halfspace(outward_normal: Unit<Vector>) -> Self {
         SharedShape(Arc::new(HalfSpace::new(outward_normal)))
     }
 
@@ -367,14 +367,14 @@ impl SharedShape {
     /// Initializes a heightfield shape defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim2")]
-    pub fn heightfield(heights: na::DVector<Real>, scale: Vector<Real>) -> Self {
+    pub fn heightfield(heights: na::DVector<Real>, scale: Vector) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
     }
 
     /// Initializes a heightfield shape on the x-z plane defined by its set of height and a scale
     /// factor along each coordinate axis.
     #[cfg(feature = "dim3")]
-    pub fn heightfield(heights: na::DMatrix<Real>, scale: Vector<Real>) -> Self {
+    pub fn heightfield(heights: na::DMatrix<Real>, scale: Vector) -> Self {
         SharedShape(Arc::new(HeightField::new(heights, scale)))
     }
 
@@ -383,7 +383,7 @@ impl SharedShape {
     #[cfg(feature = "dim3")]
     pub fn heightfield_with_flags(
         heights: na::DMatrix<Real>,
-        scale: Vector<Real>,
+        scale: Vector,
         flags: HeightFieldFlags,
     ) -> Self {
         SharedShape(Arc::new(HeightField::with_flags(heights, scale, flags)))

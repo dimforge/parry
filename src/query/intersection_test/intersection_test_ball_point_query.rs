@@ -4,7 +4,7 @@ use crate::shape::Ball;
 
 /// Intersection test between a ball and a shape implementing the `PointQuery` trait.
 pub fn intersection_test_ball_point_query<P: ?Sized + PointQuery>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     ball1: &Ball,
     point_query2: &P,
 ) -> bool {
@@ -13,7 +13,7 @@ pub fn intersection_test_ball_point_query<P: ?Sized + PointQuery>(
 
 /// Intersection test between a shape implementing the `PointQuery` trait and a ball.
 pub fn intersection_test_point_query_ball<P: ?Sized + PointQuery>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     point_query1: &P,
     ball2: &Ball,
 ) -> bool {

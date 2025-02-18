@@ -50,10 +50,10 @@ impl CSOPoint {
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the unit direction `dir`.
     pub fn from_shapes_toward<G1, G2>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &G1,
         g2: &G2,
-        dir: &Unit<Vector<Real>>,
+        dir: &Unit<Vector>,
     ) -> Self
     where
         G1: ?Sized + SupportMap,
@@ -66,7 +66,7 @@ impl CSOPoint {
     }
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the direction `dir`.
-    pub fn from_shapes<G1, G2>(pos12: &Isometry<Real>, g1: &G1, g2: &G2, dir: &Vector<Real>) -> Self
+    pub fn from_shapes<G1, G2>(pos12: &Isometry, g1: &G1, g2: &G2, dir: &Vector) -> Self
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -78,21 +78,21 @@ impl CSOPoint {
     }
 
     /// Translate the CSO point.
-    pub fn translate(&self, dir: &Vector<Real>) -> Self {
+    pub fn translate(&self, dir: &Vector) -> Self {
         CSOPoint::new_with_point(self.point + dir, self.orig1, self.orig2)
     }
 
     /// Translate in-place the CSO point.
-    pub fn translate_mut(&mut self, dir: &Vector<Real>) {
+    pub fn translate_mut(&mut self, dir: &Vector) {
         self.point += dir;
     }
 }
 
 impl Sub<CSOPoint> for CSOPoint {
-    type Output = Vector<Real>;
+    type Output = Vector;
 
     #[inline]
-    fn sub(self, rhs: CSOPoint) -> Vector<Real> {
+    fn sub(self, rhs: CSOPoint) -> Vector {
         self.point - rhs.point
     }
 }

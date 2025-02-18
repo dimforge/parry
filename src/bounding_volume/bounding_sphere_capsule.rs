@@ -5,7 +5,7 @@ use crate::shape::Capsule;
 impl Capsule {
     /// Computes the world-space bounding sphere of this capsule, transformed by `pos`.
     #[inline]
-    pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {
+    pub fn bounding_sphere(&self, pos: &Isometry) -> BoundingSphere {
         self.local_bounding_sphere().transform_by(pos)
     }
 

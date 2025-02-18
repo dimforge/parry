@@ -3,7 +3,7 @@ use parry3d::math::{Isometry, Real};
 use parry3d::query::IntersectResult;
 use parry3d::shape::TriMesh;
 
-fn build_diamond(position: &Isometry<Real>) -> TriMesh {
+fn build_diamond(position: &Isometry) -> TriMesh {
     // Two tetrahedrons sharing a face
     let points = vec![
         position * Point3::new(0.0, 2.0, 0.0),

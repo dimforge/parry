@@ -10,14 +10,14 @@ use std::cmp::Ordering;
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    basis: [Vector<Real>; 2],
+    basis: [Vector; 2],
     basis_origin: Point<Real>,
     spade2index: HashMap<FixedVertexHandle, u32>,
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
 impl Triangulation {
-    fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
+    fn new(axis: UnitVector, basis_origin: Point<Real>) -> Self {
         Triangulation {
             delaunay: ConstrainedDelaunayTriangulation::new(),
             basis: axis.orthonormal_basis(),
@@ -75,8 +75,8 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn split(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Isometry,
+        axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
@@ -89,7 +89,7 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn local_split(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
@@ -367,8 +367,8 @@ impl TriMesh {
     /// (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_plane(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Isometry,
+        axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
@@ -382,7 +382,7 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_local_plane(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
@@ -607,7 +607,7 @@ impl TriMesh {
     /// Computes the intersection mesh between an Aabb and this mesh.
     pub fn intersection_with_aabb(
         &self,
-        position: &Isometry<Real>,
+        position: &Isometry,
         flip_mesh: bool,
         aabb: &Aabb,
         flip_cuboid: bool,
@@ -628,10 +628,10 @@ impl TriMesh {
     /// Computes the intersection mesh between a cuboid and this mesh transformed by `position`.
     pub fn intersection_with_cuboid(
         &self,
-        position: &Isometry<Real>,
+        position: &Isometry,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Isometry,
         flip_cuboid: bool,
         epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
@@ -649,7 +649,7 @@ impl TriMesh {
         &self,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Isometry,
         flip_cuboid: bool,
         _epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {

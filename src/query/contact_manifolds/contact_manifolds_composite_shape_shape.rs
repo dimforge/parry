@@ -55,7 +55,7 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 /// Computes the contact manifolds between a composite shape and an abstract shape.
 pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     composite1: &dyn SimdCompositeShape,
     shape2: &dyn Shape,
     prediction: Real,

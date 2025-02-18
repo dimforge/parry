@@ -21,12 +21,12 @@ pub struct Contact {
     pub point2: Point<Real>,
 
     /// Contact normal, pointing towards the exterior of the first shape.
-    pub normal1: Unit<Vector<Real>>,
+    pub normal1: Unit<Vector>,
 
     /// Contact normal, pointing towards the exterior of the second shape.
     ///
     /// If these contact data are expressed in world-space, this normal is equal to `-normal1`.
-    pub normal2: Unit<Vector<Real>>,
+    pub normal2: Unit<Vector>,
 
     /// Distance between the two contact points.
     ///
@@ -40,8 +40,8 @@ impl Contact {
     pub fn new(
         point1: Point<Real>,
         point2: Point<Real>,
-        normal1: Unit<Vector<Real>>,
-        normal2: Unit<Vector<Real>>,
+        normal1: Unit<Vector>,
+        normal2: Unit<Vector>,
         dist: Real,
     ) -> Self {
         Contact {
@@ -72,7 +72,7 @@ impl Contact {
     /// Transform the points and normals from this contact by
     /// the given transformations.
     #[inline]
-    pub fn transform_by_mut(&mut self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) {
+    pub fn transform_by_mut(&mut self, pos1: &Isometry, pos2: &Isometry) {
         self.point1 = pos1 * self.point1;
         self.point2 = pos2 * self.point2;
         self.normal1 = pos1 * self.normal1;
@@ -80,7 +80,7 @@ impl Contact {
     }
 
     /// Transform `self.point1` and `self.normal1` by the `pos`.
-    pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {
+    pub fn transform1_by_mut(&mut self, pos: &Isometry) {
         self.point1 = pos * self.point1;
         self.normal1 = pos * self.normal1;
     }

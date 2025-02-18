@@ -29,14 +29,14 @@ pub struct HeightField {
     heights: DVector<Real>,
     status: DVector<HeightFieldCellStatus>,
 
-    scale: Vector<Real>,
+    scale: Vector,
     aabb: Aabb,
 }
 
 #[cfg(feature = "std")]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
-    pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {
+    pub fn new(heights: DVector<Real>, scale: Vector) -> Self {
         assert!(
             heights.len() > 1,
             "A heightfield heights must have at least 2 elements."
@@ -72,12 +72,12 @@ impl HeightField {
     }
 
     /// The scale factor applied to this heightfield.
-    pub fn scale(&self) -> &Vector<Real> {
+    pub fn scale(&self) -> &Vector {
         &self.scale
     }
 
     /// Sets the scale factor applied to this heightfield.
-    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
+    pub fn set_scale(&mut self, new_scale: Vector) {
         let ratio = new_scale.component_div(&self.scale);
         self.aabb.mins.coords.component_mul_assign(&ratio);
         self.aabb.maxs.coords.component_mul_assign(&ratio);
@@ -85,7 +85,7 @@ impl HeightField {
     }
 
     /// Returns a scaled version of this heightfield.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.set_scale(self.scale.component_mul(scale));
         self
     }

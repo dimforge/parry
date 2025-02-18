@@ -18,7 +18,7 @@
 
 use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
-use crate::math::{Matrix, Point, Real, Vector, DIM};
+use crate::math::{Matrix, Point, Real, Vector, VectorD, DIM};
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
 
@@ -77,7 +77,7 @@ impl VoxelSet {
         Self {
             origin: Point::origin(),
             min_bb_voxels: Point::origin(),
-            max_bb_voxels: Vector::repeat(1).into(),
+            max_bb_voxels: VectorD::repeat(1).into(),
             scale: 1.0,
             voxels: Vec::new(),
             intersections: Arc::new(Vec::new()),
@@ -592,7 +592,7 @@ impl VoxelSet {
         (vertices, indices)
     }
 
-    pub(crate) fn compute_principal_axes(&self) -> Vector<Real> {
+    pub(crate) fn compute_principal_axes(&self) -> Vector {
         let num_voxels = self.voxels.len();
         if num_voxels == 0 {
             return Vector::zeros();

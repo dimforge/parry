@@ -13,7 +13,7 @@ pub trait SimdCompositeShape {
     fn map_part_at(
         &self,
         shape_id: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     );
 
     /// Gets the acceleration structure of the composite shape.
@@ -29,7 +29,7 @@ pub trait TypedSimdCompositeShape {
     fn map_typed_part_at(
         &self,
         shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
+        f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     );
 
     // TODO: we need this method because the compiler won't want
@@ -38,7 +38,7 @@ pub trait TypedSimdCompositeShape {
     fn map_untyped_part_at(
         &self,
         shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: impl FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     );
 
     fn typed_qbvh(&self) -> &Qbvh<Self::PartId>;
@@ -54,7 +54,7 @@ impl TypedSimdCompositeShape for dyn SimdCompositeShape + '_ {
         &self,
         shape_id: u32,
         mut f: impl FnMut(
-            Option<&Isometry<Real>>,
+            Option<&Isometry>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
         ),
@@ -65,7 +65,7 @@ impl TypedSimdCompositeShape for dyn SimdCompositeShape + '_ {
     fn map_untyped_part_at(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        mut f: impl FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         self.map_part_at(shape_id, &mut f)
     }

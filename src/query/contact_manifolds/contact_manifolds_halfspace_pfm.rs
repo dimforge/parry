@@ -4,7 +4,7 @@ use crate::shape::{HalfSpace, PackedFeatureId, PolygonalFeature, PolygonalFeatur
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -41,7 +41,7 @@ pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a convex shape and a ball.
 pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace1: &'a HalfSpace,
     pfm2: &'a S2,
     border_radius2: Real,

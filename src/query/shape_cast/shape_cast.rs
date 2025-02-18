@@ -49,13 +49,13 @@ pub struct ShapeCastHit {
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub normal1: Unit<Vector<Real>>,
+    pub normal1: Unit<Vector>,
     /// The local-space outward normal on the second shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub normal2: Unit<Vector<Real>>,
+    pub normal2: Unit<Vector>,
     /// The way the shape-casting algorithm terminated.
     pub status: ShapeCastStatus,
 }
@@ -77,7 +77,7 @@ impl ShapeCastHit {
     }
 
     /// Transform `self.witness1` and `self.normal1` by `pos`.
-    pub fn transform1_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform1_by(&self, pos: &Isometry) -> Self {
         Self {
             time_of_impact: self.time_of_impact,
             witness1: pos * self.witness1,
@@ -139,11 +139,11 @@ impl Default for ShapeCastOptions {
 /// Returns `0.0` if the objects are touching or closer than `options.target_distance`,
 /// or penetrating.
 pub fn cast_shapes(
-    pos1: &Isometry<Real>,
-    vel1: &Vector<Real>,
+    pos1: &Isometry,
+    vel1: &Vector,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
-    vel2: &Vector<Real>,
+    pos2: &Isometry,
+    vel2: &Vector,
     g2: &dyn Shape,
     options: ShapeCastOptions,
 ) -> Result<Option<ShapeCastHit>, Unsupported> {

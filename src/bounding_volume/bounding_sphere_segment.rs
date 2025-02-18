@@ -6,7 +6,7 @@ use crate::shape::Segment;
 impl Segment {
     /// Computes the world-space bounding sphere of this segment, transformed by `pos`.
     #[inline]
-    pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {
+    pub fn bounding_sphere(&self, pos: &Isometry) -> BoundingSphere {
         let bv: BoundingSphere = self.local_bounding_sphere();
         bv.transform_by(pos)
     }

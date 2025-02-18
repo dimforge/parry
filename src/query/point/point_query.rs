@@ -27,7 +27,7 @@ impl PointProjection {
     }
 
     /// Transforms `self.point` by `pos`.
-    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, pos: &Isometry) -> Self {
         PointProjection {
             is_inside: self.is_inside,
             point: pos * self.point,
@@ -62,7 +62,7 @@ pub trait PointQuery {
     /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
     fn project_point_with_max_dist(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,
@@ -99,14 +99,14 @@ pub trait PointQuery {
     }
 
     /// Projects a point on `self` transformed by `m`.
-    fn project_point(&self, m: &Isometry<Real>, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_point(&self, m: &Isometry, pt: &Point<Real>, solid: bool) -> PointProjection {
         self.project_local_point(&m.inverse_transform_point(pt), solid)
             .transform_by(m)
     }
 
     /// Computes the minimal distance between a point and `self` transformed by `m`.
     #[inline]
-    fn distance_to_point(&self, m: &Isometry<Real>, pt: &Point<Real>, solid: bool) -> Real {
+    fn distance_to_point(&self, m: &Isometry, pt: &Point<Real>, solid: bool) -> Real {
         self.distance_to_local_point(&m.inverse_transform_point(pt), solid)
     }
 
@@ -114,7 +114,7 @@ pub trait PointQuery {
     /// feature the point was projected on.
     fn project_point_and_get_feature(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
         let res = self.project_local_point_and_get_feature(&m.inverse_transform_point(pt));
@@ -123,7 +123,7 @@ pub trait PointQuery {
 
     /// Tests if the given point is inside of `self` transformed by `m`.
     #[inline]
-    fn contains_point(&self, m: &Isometry<Real>, pt: &Point<Real>) -> bool {
+    fn contains_point(&self, m: &Isometry, pt: &Point<Real>) -> bool {
         self.contains_local_point(&m.inverse_transform_point(pt))
     }
 }
@@ -161,7 +161,7 @@ pub trait PointQueryWithLocation {
     /// Projects a point on `self` transformed by `m`.
     fn project_point_and_get_location(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         pt: &Point<Real>,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
@@ -187,7 +187,7 @@ pub trait PointQueryWithLocation {
     /// Projects a point on `self` transformed by `m`, with a maximum projection distance.
     fn project_point_and_get_location_with_max_dist(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,

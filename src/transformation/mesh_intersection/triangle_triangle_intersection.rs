@@ -118,7 +118,7 @@ pub(crate) fn triangle_triangle_intersection(
         let unit_normal2 = normal2.normalize();
         if (tri1.a - tri2.a).dot(&unit_normal2) < EPS {
             let basis = unit_normal2.orthonormal_basis();
-            let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
+            let proj = |vect: Vector| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
 
             let mut intersections = vec![];
 
@@ -191,7 +191,7 @@ pub(crate) fn triangle_triangle_intersection(
 
 fn segment_plane_intersection(
     plane_center: &Point<Real>,
-    plane_normal: &Vector<Real>,
+    plane_normal: &Vector,
     segment: &Segment,
     eid: u32,
     vids: (u32, u32),
@@ -229,7 +229,7 @@ fn debug_check_intersections(
     poly2: &[Point2<Real>], // Projection of tri2 on the basis `basis2` with the origin at tri2.a.
     intersections: &[TriangleTriangleIntersectionPoint],
 ) {
-    let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
+    let proj = |vect: Vector| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
     let mut incorrect = false;
     for pt in intersections {
         if !tri1

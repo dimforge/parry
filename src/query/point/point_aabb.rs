@@ -6,11 +6,7 @@ use crate::shape::FeatureId;
 use na;
 
 impl Aabb {
-    fn do_project_local_point(
-        &self,
-        pt: &Point<Real>,
-        solid: bool,
-    ) -> (bool, Point<Real>, Vector<Real>) {
+    fn do_project_local_point(&self, pt: &Point<Real>, solid: bool) -> (bool, Point<Real>, Vector) {
         let mins_pt = self.mins - pt;
         let pt_maxs = pt - self.maxs;
         let shift = mins_pt.sup(&na::zero()) - pt_maxs.sup(&na::zero());
@@ -44,7 +40,7 @@ impl Aabb {
                 }
             }
 
-            let mut shift: Vector<Real> = na::zero();
+            let mut shift: Vector = na::zero();
 
             if is_mins {
                 shift[best_id] = best;

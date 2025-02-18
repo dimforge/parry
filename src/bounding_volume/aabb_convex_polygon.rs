@@ -5,7 +5,7 @@ use crate::shape::ConvexPolygon;
 impl ConvexPolygon {
     /// Computes the world-space [`Aabb`] of this convex polygon, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         super::details::point_cloud_aabb(pos, self.points())
     }
 

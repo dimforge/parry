@@ -19,24 +19,24 @@ pub struct Ray {
     /// Starting point of the ray.
     pub origin: Point<Real>,
     /// Direction of the ray.
-    pub dir: Vector<Real>,
+    pub dir: Vector,
 }
 
 impl Ray {
     /// Creates a new ray starting from `origin` and with the direction `dir`.
-    pub fn new(origin: Point<Real>, dir: Vector<Real>) -> Ray {
+    pub fn new(origin: Point<Real>, dir: Vector) -> Ray {
         Ray { origin, dir }
     }
 
     /// Transforms this ray by the given isometry.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Isometry) -> Self {
         Self::new(m * self.origin, m * self.dir)
     }
 
     /// Transforms this ray by the inverse of the given isometry.
     #[inline]
-    pub fn inverse_transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn inverse_transform_by(&self, m: &Isometry) -> Self {
         Self::new(
             m.inverse_transform_point(&self.origin),
             m.inverse_transform_vector(&self.dir),
@@ -45,7 +45,7 @@ impl Ray {
 
     /// Translates this ray by the given vector. Its direction is left unchanged.
     #[inline]
-    pub fn translate_by(&self, v: Vector<Real>) -> Self {
+    pub fn translate_by(&self, v: Vector) -> Self {
         Self::new(self.origin + v, self.dir)
     }
 
@@ -80,7 +80,7 @@ pub struct RayIntersection {
     ///
     /// If the `time_of_impact` is exactly zero, the normal might not be reliable.
     // TODO: use a Unit<Vector> instead.
-    pub normal: Vector<Real>,
+    pub normal: Vector,
 
     /// Feature at the intersection point.
     pub feature: FeatureId,
@@ -90,7 +90,7 @@ impl RayIntersection {
     #[inline]
     /// Creates a new `RayIntersection`.
     #[cfg(feature = "dim3")]
-    pub fn new(time_of_impact: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
+    pub fn new(time_of_impact: Real, normal: Vector, feature: FeatureId) -> RayIntersection {
         RayIntersection {
             time_of_impact,
             normal,
@@ -101,7 +101,7 @@ impl RayIntersection {
     #[inline]
     /// Creates a new `RayIntersection`.
     #[cfg(feature = "dim2")]
-    pub fn new(time_of_impact: Real, normal: Vector<Real>, feature: FeatureId) -> RayIntersection {
+    pub fn new(time_of_impact: Real, normal: Vector, feature: FeatureId) -> RayIntersection {
         RayIntersection {
             time_of_impact,
             normal,
@@ -110,7 +110,7 @@ impl RayIntersection {
     }
 
     #[inline]
-    pub fn transform_by(&self, transform: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, transform: &Isometry) -> Self {
         RayIntersection {
             time_of_impact: self.time_of_impact,
             normal: transform * self.normal,
@@ -144,7 +144,7 @@ pub trait RayCast {
     /// Computes the time of impact between this transform shape and a ray.
     fn cast_ray(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
@@ -156,7 +156,7 @@ pub trait RayCast {
     /// Computes the time of impact, and normal between this transformed shape and a ray.
     fn cast_ray_and_get_normal(
         &self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
@@ -168,7 +168,7 @@ pub trait RayCast {
 
     /// Tests whether a ray intersects this transformed shape.
     #[inline]
-    fn intersects_ray(&self, m: &Isometry<Real>, ray: &Ray, max_time_of_impact: Real) -> bool {
+    fn intersects_ray(&self, m: &Isometry, ray: &Ray, max_time_of_impact: Real) -> bool {
         let ls_ray = ray.inverse_transform_by(m);
         self.intersects_local_ray(&ls_ray, max_time_of_impact)
     }

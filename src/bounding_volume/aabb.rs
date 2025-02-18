@@ -109,7 +109,7 @@ impl Aabb {
 
     /// Creates a new `Aabb` from its center and its half-extents.
     #[inline]
-    pub fn from_half_extents(center: Point<Real>, half_extents: Vector<Real>) -> Self {
+    pub fn from_half_extents(center: Point<Real>, half_extents: Vector) -> Self {
         Self::new(center - half_extents, center + half_extents)
     }
 
@@ -129,7 +129,7 @@ impl Aabb {
 
     /// The half extents of this `Aabb`.
     #[inline]
-    pub fn half_extents(&self) -> Vector<Real> {
+    pub fn half_extents(&self) -> Vector {
         let half: Real = na::convert::<f64, Real>(0.5);
         (self.maxs - self.mins) * half
     }
@@ -146,7 +146,7 @@ impl Aabb {
 
     /// The extents of this `Aabb`.
     #[inline]
-    pub fn extents(&self) -> Vector<Real> {
+    pub fn extents(&self) -> Vector {
         self.maxs - self.mins
     }
 
@@ -158,7 +158,7 @@ impl Aabb {
 
     /// Computes the `Aabb` bounding `self` transformed by `m`.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Isometry) -> Self {
         let ls_center = self.center();
         let center = m * ls_center;
         let ws_half_extents = m.absolute_transform_vector(&self.half_extents());
@@ -167,7 +167,7 @@ impl Aabb {
     }
 
     #[inline]
-    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(self, scale: &Vector) -> Self {
         let a = self.mins.coords.component_mul(scale);
         let b = self.maxs.coords.component_mul(scale);
         Self {
@@ -184,7 +184,7 @@ impl Aabb {
     ///            by its absolute value.
     #[inline]
     #[must_use]
-    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
+    pub fn scaled_wrt_center(self, scale: &Vector) -> Self {
         let center = self.center();
         // Multiply the extents by the scale. Negative scaling might modify the half-extent
         // sign, so we take the absolute value. The AABB being symmetric that absolute value
@@ -215,7 +215,7 @@ impl Aabb {
 
     /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`?
     #[inline]
-    pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector<Real>) -> bool {
+    pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector) -> bool {
         // Minkowski sum.
         let msum = Aabb {
             mins: self.mins - aabb2.maxs.coords,
@@ -399,7 +399,7 @@ impl Aabb {
     }
 
     /// Projects every point of `Aabb` on an arbitrary axis.
-    pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
+    pub fn project_on_axis(&self, axis: &UnitVector) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());
         let shift = cuboid
             .local_support_point_toward(axis)
@@ -416,8 +416,8 @@ impl Aabb {
         &self,
         point: &Point<Real>,
         center: &Point<Real>,
-        axis: &UnitVector<Real>,
-        linvel: &Vector<Real>,
+        axis: &UnitVector,
+        linvel: &Vector,
         angvel: Real,
     ) -> bool {
         use crate::utils::WBasis;
@@ -425,11 +425,11 @@ impl Aabb {
 
         struct SpiralPlaneDistance {
             center: Point<Real>,
-            tangents: [Vector<Real>; 2],
-            linvel: Vector<Real>,
+            tangents: [Vector; 2],
+            linvel: Vector,
             angvel: Real,
             point: na::Vector2<Real>,
-            plane: Vector<Real>,
+            plane: Vector,
             bias: Real,
         }
 

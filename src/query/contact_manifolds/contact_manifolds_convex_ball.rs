@@ -6,7 +6,7 @@ use na::Unit;
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     normal_constraints1: Option<&dyn NormalConstraints>,
@@ -43,7 +43,7 @@ pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a convex shape and a ball.
 pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &'a S1,
     ball2: &'a Ball,
     normal_constraints1: Option<&dyn NormalConstraints>,

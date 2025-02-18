@@ -34,7 +34,7 @@ pub struct MassProperties {
     pub inv_principal_inertia_sqrt: AngVector<Real>,
     #[cfg(feature = "dim3")]
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
-    pub principal_inertia_local_frame: Rotation<Real>,
+    pub principal_inertia_local_frame: Rotation,
 }
 
 impl MassProperties {
@@ -72,7 +72,7 @@ impl MassProperties {
         local_com: Point<Real>,
         mass: Real,
         principal_inertia: AngVector<Real>,
-        principal_inertia_local_frame: Rotation<Real>,
+        principal_inertia_local_frame: Rotation,
     ) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt =
@@ -127,19 +127,19 @@ impl MassProperties {
     }
 
     /// The world-space center of mass of the rigid-body.
-    pub fn world_com(&self, pos: &Isometry<Real>) -> Point<Real> {
+    pub fn world_com(&self, pos: &Isometry) -> Point<Real> {
         pos * self.local_com
     }
 
     #[cfg(feature = "dim2")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation<Real>) -> AngularInertia<Real> {
+    pub fn world_inv_inertia_sqrt(&self, _rot: &Rotation) -> AngularInertia {
         self.inv_principal_inertia_sqrt
     }
 
     #[cfg(feature = "dim3")]
     /// The world-space inverse angular inertia tensor of the rigid-body.
-    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation<Real>) -> AngularInertia<Real> {
+    pub fn world_inv_inertia_sqrt(&self, rot: &Rotation) -> AngularInertia {
         if !self.inv_principal_inertia_sqrt.is_zero() {
             let mut lhs = (rot * self.principal_inertia_local_frame)
                 .to_rotation_matrix()
@@ -183,7 +183,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim2")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Real {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector) -> Real {
         let i = utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
 
         if self.inv_mass != 0.0 {
@@ -195,7 +195,7 @@ impl MassProperties {
     }
 
     #[cfg(feature = "dim3")]
-    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector<Real>) -> Matrix3<Real> {
+    pub(crate) fn construct_shifted_inertia_matrix(&self, shift: Vector) -> Matrix3<Real> {
         let matrix = self.reconstruct_inertia_matrix();
 
         if self.inv_mass != 0.0 {
@@ -209,7 +209,7 @@ impl MassProperties {
     }
 
     /// Transform each element of the mass properties.
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Isometry) -> Self {
         // NOTE: we don't apply the parallel axis theorem here
         // because the center of mass is also transformed.
         Self {

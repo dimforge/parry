@@ -114,8 +114,8 @@ where
 
     let mut result = ShapeCastHit {
         time_of_impact: start_time,
-        normal1: Vector::<Real>::x_axis(),
-        normal2: Vector::<Real>::x_axis(),
+        normal1: Vector::x_axis(),
+        normal2: Vector::x_axis(),
         witness1: Point::<Real>::origin(),
         witness2: Point::<Real>::origin(),
         status: ShapeCastStatus::PenetratingOrWithinTargetDist,
@@ -452,7 +452,7 @@ fn bisect<SM1, SM2>(
     sm1: &SM1,
     motion2: &NonlinearRigidMotion,
     sm2: &SM2,
-    normal1: &Unit<Vector<Real>>,
+    normal1: &Unit<Vector>,
     mut range: BisectionRange,
 ) -> (BisectionRange, usize)
 where

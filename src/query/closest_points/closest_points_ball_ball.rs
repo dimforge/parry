@@ -7,7 +7,7 @@ use crate::shape::Ball;
 /// Each returned point is expressed on the local-space of the corresponding shape.
 #[inline]
 pub fn closest_points_ball_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     b1: &Ball,
     b2: &Ball,
     margin: Real,

@@ -13,7 +13,7 @@ pub fn intersection_test_aabb_segment(aabb1: &Aabb, segment2: &Segment) -> bool 
 /// Test if a segment intersects a cuboid.
 #[inline]
 pub fn intersection_test_segment_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     segment1: &Segment,
     cuboid2: &Cuboid,
 ) -> bool {
@@ -23,7 +23,7 @@ pub fn intersection_test_segment_cuboid(
 /// Test if a segment intersects a cuboid.
 #[inline]
 pub fn intersection_test_cuboid_segment(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cube1: &Cuboid,
     segment2: &Segment,
 ) -> bool {

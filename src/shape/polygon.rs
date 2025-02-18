@@ -13,7 +13,7 @@ use parry::bounding_volume::Aabb;
 /// A convex planar polygon.
 pub struct Polygon {
     pub(crate) vertices: Vec<Point<Real>>,
-    pub(crate) normals: Vec<Vector<Real>>,
+    pub(crate) normals: Vec<Vector>,
 }
 
 impl Polygon {
@@ -27,12 +27,12 @@ impl Polygon {
     /// The vertices must form a convex polygon.
     ///
     /// One normal must be provided per edge and mut point towards the outside of the polygon.
-    pub fn new(vertices: Vec<Point<Real>>, normals: Vec<Vector<Real>>) -> Self {
+    pub fn new(vertices: Vec<Point<Real>>, normals: Vec<Vector>) -> Self {
         Self { vertices, normals }
     }
 
     /// Compute the axis-aligned bounding box of the polygon.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         let p0 = pos * self.vertices[0];
         let mut mins = p0;
         let mut maxs = p0;
@@ -51,7 +51,7 @@ impl Polygon {
         &self.vertices
     }
 
-    pub(crate) fn support_point(&self, dir: &Vector<Real>) -> usize {
+    pub(crate) fn support_point(&self, dir: &Vector) -> usize {
         let mut best_dot = -Real::MAX;
         let mut best_i = 0;
 
@@ -66,7 +66,7 @@ impl Polygon {
         best_i
     }
 
-    pub(crate) fn support_face(&self, dir: &Vector<Real>) -> usize {
+    pub(crate) fn support_face(&self, dir: &Vector) -> usize {
         let mut max_dot = -Real::MAX;
         let mut max_dot_i = 0;
 

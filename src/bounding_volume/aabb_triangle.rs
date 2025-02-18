@@ -7,7 +7,7 @@ use crate::{
 impl Triangle {
     /// Computes the world-space [`Aabb`] of this triangle, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.transformed(pos).local_aabb()
     }
 

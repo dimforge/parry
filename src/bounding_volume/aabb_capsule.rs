@@ -5,7 +5,7 @@ use crate::shape::Capsule;
 impl Capsule {
     /// The axis-aligned bounding box of this capsule.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.transform_by(pos).local_aabb()
     }
 

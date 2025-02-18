@@ -37,7 +37,7 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
@@ -64,7 +64,7 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
@@ -84,22 +84,22 @@ impl Ball {
 
 impl SupportMap for Ball {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
+    fn support_point(&self, m: &Isometry, dir: &Vector) -> Point<Real> {
         self.support_point_toward(m, &Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn support_point_toward(&self, m: &Isometry, dir: &Unit<Vector>) -> Point<Real> {
         Point::from(m.translation.vector) + **dir * self.radius
     }
 
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
         Point::from(**dir * self.radius)
     }
 }

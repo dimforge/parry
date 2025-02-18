@@ -34,7 +34,7 @@ pub struct Vertex {
 pub struct Edge {
     pub vertices: Point2<u32>,
     pub faces: Point2<u32>,
-    pub dir: Unit<Vector<Real>>,
+    pub dir: Unit<Vector>,
     deleted: bool,
 }
 
@@ -58,7 +58,7 @@ impl Edge {
 pub struct Face {
     pub first_vertex_or_edge: u32,
     pub num_vertices_or_edges: u32,
-    pub normal: Unit<Vector<Real>>,
+    pub normal: Unit<Vector>,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -71,7 +71,7 @@ pub struct Face {
 struct Triangle {
     vertices: [u32; 3],
     edges: [u32; 3],
-    normal: Vector<Real>,
+    normal: Vector,
     parent_face: Option<u32>,
     is_degenerate: bool,
 }
@@ -440,7 +440,7 @@ impl ConvexPolyhedron {
     ///
     /// Returns `None` if the result had degenerate normals (for example if
     /// the scaling factor along one axis is zero).
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+    pub fn scaled(mut self, scale: &Vector) -> Option<Self> {
         self.points
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
@@ -458,7 +458,7 @@ impl ConvexPolyhedron {
 
     fn support_feature_id_toward_eps(
         &self,
-        local_dir: &Unit<Vector<Real>>,
+        local_dir: &Unit<Vector>,
         eps: Real,
     ) -> FeatureId {
         let (seps, ceps) = ComplexField::sin_cos(eps);
@@ -490,13 +490,13 @@ impl ConvexPolyhedron {
     }
 
     /// Computes the ID of the features with a normal that maximize the dot-product with `local_dir`.
-    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector>) -> FeatureId {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
         self.support_feature_id_toward_eps(local_dir, eps)
     }
 
     /// The normal of the given feature.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector>> {
         match feature {
             FeatureId::Face(id) => Some(self.faces[id as usize].normal),
             FeatureId::Edge(id) => {
@@ -525,13 +525,13 @@ impl ConvexPolyhedron {
 
 impl SupportMap for ConvexPolyhedron {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
 
 impl PolygonalFeatureMap for ConvexPolyhedron {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_feature: &mut PolygonalFeature) {
         let mut best_fid = 0;
         let mut best_dot = self.faces[0].normal.dot(dir);
 
@@ -609,8 +609,8 @@ impl ConvexPolyhedron for ConvexPolyhedron {
 
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Isometry,
+        dir: &Unit<Vector>,
         out: &mut ConvexPolygonalFeature,
     ) {
         let ls_dir = m.inverse_transform_vector(dir);
@@ -633,8 +633,8 @@ impl ConvexPolyhedron for ConvexPolyhedron {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Isometry,
+        dir: &Unit<Vector>,
         angle: Real,
         out: &mut ConvexPolygonalFeature,
     ) {

@@ -5,7 +5,7 @@ use crate::shape::Cuboid;
 ///
 /// The returned OBB is not guaranteed to be the smallest enclosing OBB.
 /// Though it should be a pretty good on for most purposes.
-pub fn obb(pts: &[Point<Real>]) -> (Isometry<Real>, Cuboid) {
+pub fn obb(pts: &[Point<Real>]) -> (Isometry, Cuboid) {
     let cov = crate::utils::cov(pts);
     let mut eigv = cov.symmetric_eigen().eigenvectors;
 

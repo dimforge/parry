@@ -6,18 +6,18 @@ use crate::na::ComplexField;
 use {crate::math::DIM, num::Zero};
 
 /// Applies in-place a transformation to an array of points.
-pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
+pub fn transform(points: &mut [Point<Real>], m: Isometry) {
     points.iter_mut().for_each(|p| *p = m * *p);
 }
 
 /// Returns the transformed version of a vector of points.
-pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
+pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry) -> Vec<Point<Real>> {
     transform(&mut points, m);
     points
 }
 
 /// Returns the transformed version of a vector of points.
-pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Real>> {
+pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector) -> Vec<Point<Real>> {
     points
         .iter_mut()
         .for_each(|p| p.coords.component_mul_assign(&scale));

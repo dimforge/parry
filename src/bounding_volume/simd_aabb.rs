@@ -1,5 +1,7 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, DIM, SIMD_WIDTH};
+use crate::math::{
+    Isometry, IsometryD, Point, Real, SimdBool, SimdReal, Vector, VectorD, DIM, SIMD_WIDTH,
+};
 use crate::query::SimdRay;
 use crate::utils::{self, IsometryOps};
 use num::{One, Zero};
@@ -141,7 +143,7 @@ impl SimdAabb {
     }
 
     /// The half-extents of all the Aabbs represented by `self``.
-    pub fn half_extents(&self) -> Vector<SimdReal> {
+    pub fn half_extents(&self) -> VectorD<SimdReal> {
         (self.maxs - self.mins) * SimdReal::splat(0.5)
     }
 
@@ -151,7 +153,7 @@ impl SimdAabb {
     }
 
     /// Return the Aabb of the `self` transformed by the given isometry.
-    pub fn transform_by(&self, transform: &Isometry<SimdReal>) -> Self {
+    pub fn transform_by(&self, transform: &IsometryD<SimdReal>) -> Self {
         let ls_center = self.center();
         let center = transform * ls_center;
         let ws_half_extents = transform.absolute_transform_vector(&self.half_extents());
@@ -163,7 +165,7 @@ impl SimdAabb {
 
     /// Returns a scaled version of this Aabb.
     #[inline]
-    pub fn scaled(self, scale: &Vector<SimdReal>) -> Self {
+    pub fn scaled(self, scale: &VectorD<SimdReal>) -> Self {
         let a = self.mins.coords.component_mul(scale);
         let b = self.maxs.coords.component_mul(scale);
         Self {
@@ -174,8 +176,8 @@ impl SimdAabb {
 
     /// Enlarges this bounding volume by the given margin.
     pub fn loosen(&mut self, margin: SimdReal) {
-        self.mins -= Vector::repeat(margin);
-        self.maxs += Vector::repeat(margin);
+        self.mins -= VectorD::repeat(margin);
+        self.maxs += VectorD::repeat(margin);
     }
 
     /// Dilate all the Aabbs represented by `self`` by their extents multiplied
@@ -255,7 +257,7 @@ impl SimdAabb {
         self.mins
             .coords
             .sup(&-self.maxs.coords)
-            .sup(&Vector::zeros())
+            .sup(&VectorD::zeros())
             .norm()
     }
 

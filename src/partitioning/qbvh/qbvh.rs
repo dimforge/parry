@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::{Real, Vector};
+use crate::math::{Real, Vector, VectorD};
 
 use na::SimdValue;
 
@@ -305,10 +305,10 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     /// Computes a scaled version of this Qbvh.
     ///
     /// This will apply the scale to each Aabb on this BVH.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.root_aabb = self.root_aabb.scaled(scale);
         for node in &mut self.nodes {
-            node.simd_aabb = node.simd_aabb.scaled(&Vector::splat(*scale));
+            node.simd_aabb = node.simd_aabb.scaled(&VectorD::splat(*scale));
         }
         self
     }

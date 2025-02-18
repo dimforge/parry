@@ -86,9 +86,9 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     #[cfg(feature = "dim3")]
     pub points: Vec<TrackedContact<ContactData>>,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the first shape.
-    pub local_n1: Vector<Real>,
+    pub local_n1: Vector,
     /// The contact normal of all the contacts of this manifold, expressed in the local space of the second shape.
-    pub local_n2: Vector<Real>,
+    pub local_n2: Vector,
     /// The first subshape involved in this contact manifold.
     ///
     /// This is zero if the first shape is not a composite shape.
@@ -99,10 +99,10 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     pub subshape2: u32,
     /// If the first shape involved is a composite shape, this contains the position of its subshape
     /// involved in this contact.
-    pub subshape_pos1: Option<Isometry<Real>>,
+    pub subshape_pos1: Option<Isometry>,
     /// If the second shape involved is a composite shape, this contains the position of its subshape
     /// involved in this contact.
-    pub subshape_pos2: Option<Isometry<Real>>,
+    pub subshape_pos2: Option<Isometry>,
     /// Additional tracked data associated to this contact manifold.
     pub data: ManifoldData,
 }
@@ -178,7 +178,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
 
     /// Attempts to use spatial coherence to update contacts points.
     #[inline]
-    pub fn try_update_contacts(&mut self, pos12: &Isometry<Real>) -> bool {
+    pub fn try_update_contacts(&mut self, pos12: &Isometry) -> bool {
         // const DOT_THRESHOLD: Real = 0.crate::COS_10_DEGREES;
         // const DOT_THRESHOLD: Real = crate::utils::COS_5_DEGREES;
         const DOT_THRESHOLD: Real = crate::utils::COS_1_DEGREES;
@@ -190,7 +190,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     #[inline]
     pub fn try_update_contacts_eps(
         &mut self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         angle_dot_threshold: Real,
         dist_sq_threshold: Real,
     ) -> bool {

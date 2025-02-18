@@ -19,20 +19,20 @@ use crate::query::details::NormalConstraints;
 #[derive(Clone, Debug)]
 pub struct TrianglePseudoNormals {
     /// The triangle’s face normal.
-    pub face: UnitVector<Real>,
+    pub face: UnitVector,
     // TODO: if we switch this to providing pseudo-normals in a specific order
     //       (e.g. in the same order as the triangle’s edges), then we should
     //       think of fixing that order in the heightfield
     //       triangle_pseudo_normals code.
     /// The edges pseudo-normals, in no particular order.
-    pub edges: [UnitVector<Real>; 3],
+    pub edges: [UnitVector; 3],
 }
 
 #[cfg(feature = "std")]
 impl NormalConstraints for TrianglePseudoNormals {
     /// Projects the given direction to it is contained in the polygonal
     /// cone defined `self`.
-    fn project_local_normal_mut(&self, dir: &mut Vector<Real>) -> bool {
+    fn project_local_normal_mut(&self, dir: &mut Vector) -> bool {
         let dot_face = dir.dot(&self.face);
 
         // Find the closest pseudo-normal.
@@ -101,11 +101,11 @@ mod test {
 
     use super::NormalConstraints;
 
-    fn bisector(v1: Vector<Real>, v2: Vector<Real>) -> Vector<Real> {
+    fn bisector(v1: Vector, v2: Vector) -> Vector {
         (v1 + v2).normalize()
     }
 
-    fn bisector_y(v: Vector<Real>) -> Vector<Real> {
+    fn bisector_y(v: Vector) -> Vector {
         bisector(v, Vector::y())
     }
 
@@ -125,8 +125,8 @@ mod test {
 
     #[test]
     fn edge_pseudo_normals_projection_strictly_positive() {
-        let bisector = |v1: Vector<Real>, v2: Vector<Real>| (v1 + v2).normalize();
-        let bisector_y = |v: Vector<Real>| bisector(v, Vector::y());
+        let bisector = |v1: Vector, v2: Vector| (v1 + v2).normalize();
+        let bisector_y = |v: Vector| bisector(v, Vector::y());
 
         // The normal cones for this test will be fully contained in the +Y half-space.
         let cones_ref_dir = [

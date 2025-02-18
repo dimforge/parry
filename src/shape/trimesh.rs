@@ -66,9 +66,9 @@ pub enum TriMeshBuilderError {
 #[cfg(feature = "dim3")]
 pub struct TriMeshPseudoNormals {
     /// The pseudo-normals of the vertices.
-    pub vertices_pseudo_normal: Vec<Vector<Real>>,
+    pub vertices_pseudo_normal: Vec<Vector>,
     /// The pseudo-normals of the edges.
-    pub edges_pseudo_normal: Vec<[Vector<Real>; 3]>,
+    pub edges_pseudo_normal: Vec<[Vector; 3]>,
 }
 
 /// The connected-components of a triangle mesh.
@@ -395,7 +395,7 @@ impl TriMesh {
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
-    pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
+    pub fn transform_vertices(&mut self, transform: &Isometry) {
         self.vertices
             .iter_mut()
             .for_each(|pt| *pt = transform * *pt);
@@ -417,7 +417,7 @@ impl TriMesh {
     }
 
     /// Returns a scaled version of this triangle mesh.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.vertices
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
@@ -936,7 +936,7 @@ impl TriMesh {
 
     #[cfg(feature = "dim3")]
     /// Gets the normal of the triangle represented by `feature`.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector>> {
         match feature {
             FeatureId::Face(i) => self
                 .triangle(i % self.num_triangles() as u32)
@@ -953,7 +953,7 @@ impl TriMesh {
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
@@ -1082,7 +1082,7 @@ impl SimdCompositeShape for TriMesh {
     fn map_part_at(
         &self,
         i: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let normals = self.triangle_normal_constraints(i);
@@ -1108,7 +1108,7 @@ impl TypedSimdCompositeShape for TriMesh {
         &self,
         i: u32,
         mut f: impl FnMut(
-            Option<&Isometry<Real>>,
+            Option<&Isometry>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
         ),
@@ -1122,7 +1122,7 @@ impl TypedSimdCompositeShape for TriMesh {
     fn map_untyped_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        mut f: impl FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);

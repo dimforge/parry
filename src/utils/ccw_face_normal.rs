@@ -6,7 +6,7 @@ use na::Unit;
 /// Returns `None` if the segment is degenerate.
 #[inline]
 #[cfg(feature = "dim2")]
-pub fn ccw_face_normal(pts: [&Point<Real>; 2]) -> Option<Unit<Vector<Real>>> {
+pub fn ccw_face_normal(pts: [&Point<Real>; 2]) -> Option<Unit<Vector>> {
     let ab = pts[1] - pts[0];
     let res = Vector::new(ab[1], -ab[0]);
 
@@ -18,7 +18,7 @@ pub fn ccw_face_normal(pts: [&Point<Real>; 2]) -> Option<Unit<Vector<Real>>> {
 /// Returns `None` if the triangle is degenerate.
 #[inline]
 #[cfg(feature = "dim3")]
-pub fn ccw_face_normal(pts: [&Point<Real>; 3]) -> Option<Unit<Vector<Real>>> {
+pub fn ccw_face_normal(pts: [&Point<Real>; 3]) -> Option<Unit<Vector>> {
     let ab = pts[1] - pts[0];
     let ac = pts[2] - pts[0];
     let res = ab.cross(&ac);

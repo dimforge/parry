@@ -41,7 +41,7 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
     p2: &Point<Real>,
     p3: &Point<Real>,
     p4: &Point<Real>,
-) -> Matrix<Real> {
+) -> Matrix {
     let p1 = p1 - point;
     let p2 = p2 - point;
     let p3 = p3 - point;

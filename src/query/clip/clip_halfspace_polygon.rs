@@ -9,7 +9,7 @@ use crate::query::{self, Ray};
 /// the half-space if `normal.dot(&(pt - center)) <= 0.0`.
 pub fn clip_halfspace_polygon(
     center: &Point<Real>,
-    normal: &Vector<Real>,
+    normal: &Vector,
     polygon: &[Point<Real>],
     result: &mut Vec<Point<Real>>,
 ) {

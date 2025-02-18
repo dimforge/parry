@@ -7,13 +7,13 @@ use na;
 
 /// Computes the [`Aabb`] of an [support mapped shape](SupportMap).
 #[cfg(feature = "dim3")]
-pub fn support_map_aabb<G>(m: &Isometry<Real>, i: &G) -> Aabb
+pub fn support_map_aabb<G>(m: &Isometry, i: &G) -> Aabb
 where
     G: SupportMap,
 {
-    let mut min = na::zero::<Vector<Real>>();
-    let mut max = na::zero::<Vector<Real>>();
-    let mut basis = na::zero::<Vector<Real>>();
+    let mut min = na::zero::<Vector>();
+    let mut max = na::zero::<Vector>();
+    let mut basis = na::zero::<Vector>();
 
     for d in 0..DIM {
         // TODO: this could be further improved iterating on `m`'s columns, and passing
@@ -35,9 +35,9 @@ pub fn local_support_map_aabb<G>(i: &G) -> Aabb
 where
     G: SupportMap,
 {
-    let mut min = na::zero::<Vector<Real>>();
-    let mut max = na::zero::<Vector<Real>>();
-    let mut basis = na::zero::<Vector<Real>>();
+    let mut min = na::zero::<Vector>();
+    let mut max = na::zero::<Vector>();
+    let mut basis = na::zero::<Vector>();
 
     for d in 0..DIM {
         // TODO: this could be further improved iterating on `m`'s columns, and passing
@@ -55,7 +55,7 @@ where
 }
 
 /// Computes the [`Aabb`] of a set of points transformed by `m`.
-pub fn point_cloud_aabb<'a, I>(m: &Isometry<Real>, pts: I) -> Aabb
+pub fn point_cloud_aabb<'a, I>(m: &Isometry, pts: I) -> Aabb
 where
     I: IntoIterator<Item = &'a Point<Real>>,
 {

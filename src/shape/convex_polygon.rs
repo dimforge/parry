@@ -13,7 +13,7 @@ use na::{self, ComplexField, RealField, Unit};
 #[derive(Clone, Debug)]
 pub struct ConvexPolygon {
     points: Vec<Point<Real>>,
-    normals: Vec<Unit<Vector<Real>>>,
+    normals: Vec<Unit<Vector>>,
 }
 
 impl ConvexPolygon {
@@ -81,7 +81,7 @@ impl ConvexPolygon {
 
     /// The normals of the edges of this convex polygon.
     #[inline]
-    pub fn normals(&self) -> &[Unit<Vector<Real>>] {
+    pub fn normals(&self) -> &[Unit<Vector>] {
         &self.normals
     }
 
@@ -89,7 +89,7 @@ impl ConvexPolygon {
     ///
     /// Returns `None` if the result had degenerate normals (for example if
     /// the scaling factor along one axis is zero).
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+    pub fn scaled(mut self, scale: &Vector) -> Option<Self> {
         self.points
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
@@ -137,7 +137,7 @@ impl ConvexPolygon {
     }
 
     /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
-    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector>) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
         let ceps = ComplexField::cos(eps);
 
@@ -157,7 +157,7 @@ impl ConvexPolygon {
     }
 
     /// The normal of the given feature.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector>> {
         match feature {
             FeatureId::Face(id) => Some(self.normals[id as usize]),
             FeatureId::Vertex(id2) => {
@@ -177,13 +177,13 @@ impl ConvexPolygon {
 
 impl SupportMap for ConvexPolygon {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
 
 impl PolygonalFeatureMap for ConvexPolygon {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_feature: &mut PolygonalFeature) {
         let cuboid = crate::shape::Cuboid::new(self.points[2].coords);
         cuboid.local_support_feature(dir, out_feature);
         let mut best_face = 0;
@@ -231,8 +231,8 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Isometry,
+        dir: &Unit<Vector>,
         out: &mut ConvexPolygonalFeature,
     ) {
         let ls_dir = m.inverse_transform_vector(dir);
@@ -254,8 +254,8 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Isometry,
+        dir: &Unit<Vector>,
         _angle: Real,
         out: &mut ConvexPolygonalFeature,
     ) {
@@ -264,7 +264,7 @@ impl ConvexPolyhedron for ConvexPolygon {
         self.support_face_toward(transform, dir, out)
     }
 
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    fn support_feature_id_toward(&self, local_dir: &Unit<Vector>) -> FeatureId {
         let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
         let ceps = ComplexField::cos(eps);
 

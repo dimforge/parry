@@ -28,7 +28,7 @@ type ConvexHull = (Vec<Point<Real>>, Vec<[u32; 3]>);
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct CutPlane {
-    pub abc: Vector<Real>,
+    pub abc: Vector,
     pub d: Real,
     pub axis: u8,
     pub index: u32,
@@ -103,7 +103,7 @@ impl VHACD {
     }
 
     #[cfg(feature = "dim2")]
-    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
+    fn compute_preferred_cutting_direction(eigenvalues: &Vector) -> (Vector, Real) {
         let vx = eigenvalues.y * eigenvalues.y;
         let vy = eigenvalues.x * eigenvalues.x;
 
@@ -129,7 +129,7 @@ impl VHACD {
     }
 
     #[cfg(feature = "dim3")]
-    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
+    fn compute_preferred_cutting_direction(eigenvalues: &Vector) -> (Vector, Real) {
         let vx = (eigenvalues.y - eigenvalues.z) * (eigenvalues.y - eigenvalues.z);
         let vy = (eigenvalues.x - eigenvalues.z) * (eigenvalues.x - eigenvalues.z);
         let vz = (eigenvalues.x - eigenvalues.y) * (eigenvalues.x - eigenvalues.y);
@@ -194,7 +194,7 @@ impl VHACD {
         input_voxels: &VoxelSet,
         input_voxels_ch: &ConvexHull,
         planes: &[CutPlane],
-        preferred_cutting_direction: &Vector<Real>,
+        preferred_cutting_direction: &Vector,
         w: Real,
         alpha: Real,
         beta: Real,

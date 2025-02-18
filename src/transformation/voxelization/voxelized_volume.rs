@@ -17,7 +17,7 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, Real, Vector, VectorD, DIM};
 use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
 use std::sync::Arc;
@@ -190,8 +190,8 @@ impl VoxelizedVolume {
 
         let mut tri_pts = [Point::origin(); DIM];
         let box_half_size = Vector::repeat(0.5);
-        let mut ijk0 = Vector::repeat(0u32);
-        let mut ijk1 = Vector::repeat(0u32);
+        let mut ijk0 = VectorD::repeat(0u32);
+        let mut ijk1 = VectorD::repeat(0u32);
 
         let detect_self_intersections = fill_mode.detect_self_intersections();
         #[cfg(feature = "dim2")]
@@ -214,9 +214,9 @@ impl VoxelizedVolume {
                 assert!(k < result.resolution[2]);
 
                 #[cfg(feature = "dim2")]
-                let ijk = Vector::new(i, j);
+                let ijk = VectorD::new(i, j);
                 #[cfg(feature = "dim3")]
-                let ijk = Vector::new(i, j, k);
+                let ijk = VectorD::new(i, j, k);
 
                 if c == 0 {
                     ijk0 = ijk;
@@ -863,7 +863,7 @@ impl From<VoxelizedVolume> for VoxelSet {
 fn traceRay(
     mesh: &RaycastMesh,
     start: Real,
-    dir: &Vector<Real>,
+    dir: &Vector,
     inside_count: &mut u32,
     outside_count: &mut u32,
 ) {

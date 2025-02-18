@@ -6,7 +6,7 @@ use crate::utils::IsometryOps;
 impl Cuboid {
     /// Computes the world-space [`Aabb`] of this cuboid, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         let center = Point::from(pos.translation.vector);
         let ws_half_extents = pos.absolute_transform_vector(&self.half_extents);
 

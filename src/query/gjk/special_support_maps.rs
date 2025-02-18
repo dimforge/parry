@@ -8,22 +8,22 @@ pub struct ConstantPoint(pub Point<Real>);
 
 impl SupportMap for ConstantPoint {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, _: &Vector<Real>) -> Point<Real> {
+    fn support_point(&self, m: &Isometry, _: &Vector) -> Point<Real> {
         m * self.0
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, _: &Unit<Vector<Real>>) -> Point<Real> {
+    fn support_point_toward(&self, m: &Isometry, _: &Unit<Vector>) -> Point<Real> {
         m * self.0
     }
 
     #[inline]
-    fn local_support_point(&self, _: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, _: &Vector) -> Point<Real> {
         self.0
     }
 
     #[inline]
-    fn local_support_point_toward(&self, _: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, _: &Unit<Vector>) -> Point<Real> {
         self.0
     }
 }
@@ -33,22 +33,22 @@ pub struct ConstantOrigin;
 
 impl SupportMap for ConstantOrigin {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, _: &Vector<Real>) -> Point<Real> {
+    fn support_point(&self, m: &Isometry, _: &Vector) -> Point<Real> {
         m.translation.vector.into()
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, _: &Unit<Vector<Real>>) -> Point<Real> {
+    fn support_point_toward(&self, m: &Isometry, _: &Unit<Vector>) -> Point<Real> {
         m.translation.vector.into()
     }
 
     #[inline]
-    fn local_support_point(&self, _: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, _: &Vector) -> Point<Real> {
         Point::origin()
     }
 
     #[inline]
-    fn local_support_point_toward(&self, _: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, _: &Unit<Vector>) -> Point<Real> {
         Point::origin()
     }
 }
@@ -63,22 +63,22 @@ pub struct DilatedShape<'a, S: ?Sized + SupportMap> {
 
 impl<S: ?Sized + SupportMap> SupportMap for DilatedShape<'_, S> {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
+    fn support_point(&self, m: &Isometry, dir: &Vector) -> Point<Real> {
         self.support_point_toward(m, &Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn support_point_toward(&self, m: &Isometry, dir: &Unit<Vector>) -> Point<Real> {
         self.shape.support_point_toward(m, dir) + **dir * self.radius
     }
 
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
         self.shape.local_support_point_toward(dir) + **dir * self.radius
     }
 }

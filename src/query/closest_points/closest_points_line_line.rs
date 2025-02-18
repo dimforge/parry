@@ -8,9 +8,9 @@ use crate::na::{Point as SPoint, SVector};
 #[inline]
 pub fn closest_points_line_line_parameters(
     orig1: &Point<Real>,
-    dir1: &Vector<Real>,
+    dir1: &Vector,
     orig2: &Point<Real>,
-    dir2: &Vector<Real>,
+    dir2: &Vector,
 ) -> (Real, Real) {
     let res = closest_points_line_line_parameters_eps(
         orig1,
@@ -76,9 +76,9 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
 #[inline]
 pub fn closest_points_line_line(
     orig1: &Point<Real>,
-    dir1: &Vector<Real>,
+    dir1: &Vector,
     orig2: &Point<Real>,
-    dir2: &Vector<Real>,
+    dir2: &Vector,
 ) -> (Point<Real>, Point<Real>) {
     let (s, t) = closest_points_line_line_parameters(orig1, dir1, orig2, dir2);
     (*orig1 + *dir1 * s, *orig2 + *dir2 * t)

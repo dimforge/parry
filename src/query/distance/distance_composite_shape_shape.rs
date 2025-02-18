@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorD, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -9,7 +9,7 @@ use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 /// Smallest distance between a composite shape and any other shape.
 pub fn distance_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &dyn Shape,
 ) -> Real
@@ -28,7 +28,7 @@ where
 /// Smallest distance between a shape and a composite shape.
 pub fn distance_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &G2,
 ) -> Real
@@ -41,29 +41,24 @@ where
 
 /// A visitor for computing the distance between a composite shape and a shape.
 pub struct CompositeShapeAgainstAnyDistanceVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: Vector<SimdReal>,
-    msum_margin: Vector<SimdReal>,
+    msum_shift: VectorD<SimdReal>,
+    msum_margin: VectorD<SimdReal>,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
+    pos12: &'a Isometry,
     g1: &'a G1,
     g2: &'a dyn Shape,
 }
 
 impl<'a, D: ?Sized, G1: ?Sized + 'a> CompositeShapeAgainstAnyDistanceVisitor<'a, D, G1> {
     /// Initialize a visitor for computing the distance between a composite shape and a shape.
-    pub fn new(
-        dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
-        g1: &'a G1,
-        g2: &'a dyn Shape,
-    ) -> Self {
+    pub fn new(dispatcher: &'a D, pos12: &'a Isometry, g1: &'a G1, g2: &'a dyn Shape) -> Self {
         let ls_aabb2 = g2.compute_aabb(pos12);
 
         Self {
             dispatcher,
-            msum_shift: Vector::splat(-ls_aabb2.center().coords),
-            msum_margin: Vector::splat(ls_aabb2.half_extents()),
+            msum_shift: VectorD::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorD::splat(ls_aabb2.half_extents()),
             pos12,
             g1,
             g2,

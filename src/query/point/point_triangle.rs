@@ -109,12 +109,12 @@ impl PointQueryWithLocation for Triangle {
         // For 2D and 3D, it uses explicit cross/perp products that are
         // more numerically stable.
         fn stable_check_edges_voronoi(
-            ab: &Vector<Real>,
-            ac: &Vector<Real>,
-            bc: &Vector<Real>,
-            ap: &Vector<Real>,
-            bp: &Vector<Real>,
-            cp: &Vector<Real>,
+            ab: &Vector,
+            ac: &Vector,
+            bc: &Vector,
+            ap: &Vector,
+            bp: &Vector,
+            cp: &Vector,
             ab_ap: Real,
             ab_bp: Real,
             ac_ap: Real,

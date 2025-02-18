@@ -41,7 +41,7 @@ impl From<Segment> for PolygonalFeature {
 
 impl PolygonalFeature {
     /// Transforms the vertices of `self` by the given position `pos`.
-    pub fn transform_by(&mut self, pos: &Isometry<Real>) {
+    pub fn transform_by(&mut self, pos: &Isometry) {
         self.vertices[0] = pos * self.vertices[0];
         self.vertices[1] = pos * self.vertices[1];
     }
@@ -49,10 +49,10 @@ impl PolygonalFeature {
     /// Computes the contacts between two polygonal features.
     #[cfg(feature = "std")]
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
-        pos21: &Isometry<Real>,
-        sep_axis1: &Vector<Real>,
-        sep_axis2: &Vector<Real>,
+        pos12: &Isometry,
+        pos21: &Isometry,
+        sep_axis1: &Vector,
+        sep_axis2: &Vector,
         feature1: &Self,
         feature2: &Self,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
@@ -77,9 +77,9 @@ impl PolygonalFeature {
     /// This method assume we already know that at least one contact exists.
     #[cfg(feature = "std")]
     pub fn face_vertex_contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &Self,
-        sep_axis1: &Vector<Real>,
+        sep_axis1: &Vector,
         vertex2: &Self,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
@@ -107,9 +107,9 @@ impl PolygonalFeature {
     /// Computes the contacts between two polygonal faces.
     #[cfg(feature = "std")]
     pub fn face_face_contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &Self,
-        normal1: &Vector<Real>,
+        normal1: &Vector,
         face2: &Self,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,

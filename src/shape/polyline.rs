@@ -47,7 +47,7 @@ impl Polyline {
     }
 
     /// Compute the axis-aligned bounding box of this polyline.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
@@ -117,7 +117,7 @@ impl Polyline {
     }
 
     /// Computes a scaled version of this polyline.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.vertices
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
@@ -283,7 +283,7 @@ impl SimdCompositeShape for Polyline {
     fn map_part_at(
         &self,
         i: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.segment(i);
         f(None, &tri, None)
@@ -304,7 +304,7 @@ impl TypedSimdCompositeShape for Polyline {
         &self,
         i: u32,
         mut f: impl FnMut(
-            Option<&Isometry<Real>>,
+            Option<&Isometry>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
         ),
@@ -317,7 +317,7 @@ impl TypedSimdCompositeShape for Polyline {
     fn map_untyped_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        mut f: impl FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let seg = self.segment(i);
         f(None, &seg, None)

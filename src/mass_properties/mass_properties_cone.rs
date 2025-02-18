@@ -6,7 +6,7 @@ impl MassProperties {
     pub(crate) fn cone_y_volume_unit_inertia(
         half_height: Real,
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         let volume = radius * radius * Real::pi() * half_height * 2.0 / 3.0;
         let sq_radius = radius * radius;
         let sq_height = half_height * half_height * 4.0;

@@ -14,7 +14,7 @@ pub type ClippingPoints = (Point<Real>, Point<Real>, usize, usize);
 pub fn clip_segment_segment_with_normal(
     mut seg1: (Point<Real>, Point<Real>),
     mut seg2: (Point<Real>, Point<Real>),
-    normal: Vector<Real>,
+    normal: Vector,
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     use crate::utils::WBasis;
     let tangent = normal.orthonormal_basis()[0];
