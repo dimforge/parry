@@ -3,7 +3,7 @@ use crate::shape::Ball;
 
 /// Intersection test between balls.
 #[inline]
-pub fn intersection_test_ball_ball(center12: &Point<Real>, b1: &Ball, b2: &Ball) -> bool {
+pub fn intersection_test_ball_ball(center12: &Point, b1: &Ball, b2: &Ball) -> bool {
     let r1 = b1.radius;
     let r2 = b2.radius;
     let distance_squared = center12.coords.norm_squared();

@@ -102,7 +102,7 @@ impl TriMeshConnectedComponents {
     ///
     /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
     /// unexpected result.
-    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point<Real>>, Vec<[u32; 3]>)> {
+    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point>, Vec<[u32; 3]>)> {
         let mut result = vec![];
         let mut new_vtx_index: Vec<_> = vec![u32::MAX; mesh.vertices.len()];
 
@@ -284,7 +284,7 @@ bitflags::bitflags! {
 /// A triangle mesh.
 pub struct TriMesh {
     qbvh: Qbvh<u32>,
-    vertices: Vec<Point<Real>>,
+    vertices: Vec<Point>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
     pub(crate) pseudo_normals: Option<TriMeshPseudoNormals>,
@@ -302,7 +302,7 @@ impl fmt::Debug for TriMesh {
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
     pub fn new(
-        vertices: Vec<Point<Real>>,
+        vertices: Vec<Point>,
         indices: Vec<[u32; 3]>,
     ) -> Result<Self, TriMeshBuilderError> {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
@@ -310,7 +310,7 @@ impl TriMesh {
 
     /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
     pub fn with_flags(
-        vertices: Vec<Point<Real>>,
+        vertices: Vec<Point>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Result<Self, TriMeshBuilderError> {
@@ -470,7 +470,7 @@ impl TriMesh {
     ///
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
-    pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_polygon(vertices: Vec<Point>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices).unwrap())
     }
 
@@ -545,9 +545,9 @@ impl TriMesh {
         let mut triangle_set = HashSet::default();
 
         fn resolve_coord_id(
-            coord: &Point<Real>,
-            vtx_to_id: &mut HashMap<HashablePartialEq<Point<Real>>, u32>,
-            new_vertices: &mut Vec<Point<Real>>,
+            coord: &Point,
+            vtx_to_id: &mut HashMap<HashablePartialEq<Point>, u32>,
+            new_vertices: &mut Vec<Point>,
         ) -> u32 {
             let key = HashablePartialEq::new(*coord);
             let id = match vtx_to_id.entry(key) {
@@ -1025,7 +1025,7 @@ impl TriMesh {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Point] {
         &self.vertices
     }
 

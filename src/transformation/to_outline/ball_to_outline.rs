@@ -45,7 +45,7 @@ fn unit_sphere_outline(nsubdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
 /// Creates an hemisphere with a radius of 0.5.
 pub(crate) fn push_unit_hemisphere_outline(
     nsubdiv: u32,
-    pts: &mut Vec<Point<Real>>,
+    pts: &mut Vec<Point>,
     idx: &mut Vec<[u32; 2]>,
 ) {
     let base_idx = pts.len() as u32;

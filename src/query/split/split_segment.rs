@@ -41,7 +41,7 @@ impl Segment {
         local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
-    ) -> (SplitResult<Self>, Option<(Point<Real>, Real)>) {
+    ) -> (SplitResult<Self>, Option<(Point, Real)>) {
         let dir = self.b - self.a;
         let a = bias - local_axis.dot(&self.a.coords);
         let b = local_axis.dot(&dir);

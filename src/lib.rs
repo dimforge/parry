@@ -112,17 +112,20 @@ pub mod math {
     /// The dimension of the rotations.
     pub type AngDim = U3;
 
+    /// The point type, parameterized over its scalar type.
+    pub type PointT<N> = Point3<N>;
+
     /// The point type.
-    pub type Point<N> = Point3<N>;
+    pub type Point = Point3<Real>;
 
     /// The angular vector type.
-    pub type AngVector<N> = Vector3<N>;
+    pub type AngVector = Vector3<Real>;
 
     /// The vector type, parameterized over its scalar type.
-    pub type VectorD<N> = Vector3<N>;
+    pub type VectorT<N> = Vector3<N>;
 
     /// The vector type.
-    pub type Vector = VectorD<Real>;
+    pub type Vector = Vector3<Real>;
 
     /// The unit vector type.
     pub type UnitVector = UnitVector3<Real>;
@@ -137,10 +140,10 @@ pub mod math {
     pub type Orientation<N> = Vector3<N>;
 
     /// The transformation matrix type, parameterized over its scalar type.
-    pub type IsometryD<N> = Isometry3<N>;
+    pub type IsometryT<N> = Isometry3<N>;
 
     /// The transformation matrix type.
-    pub type Isometry = IsometryD<Real>;
+    pub type Isometry = Isometry3<Real>;
 
     /// The rotation matrix type.
     pub type Rotation = UnitQuaternion<Real>;
@@ -189,17 +192,20 @@ pub mod math {
     /// The dimension of the rotations.
     pub type AngDim = U1;
 
+    /// The point type, parameterized over its scalar type.
+    pub type PointT<N> = Point2<N>;
+
     /// The point type.
-    pub type Point<N> = Point2<N>;
+    pub type Point = Point2<Real>;
 
     /// The angular vector type.
-    pub type AngVector<N> = N;
+    pub type AngVector = Real;
 
     /// The vector type, parameterized over its scalar type.
-    pub type VectorD<N> = Vector2<N>;
+    pub type VectorT<N> = Vector2<N>;
 
     /// The vector type.
-    pub type Vector = VectorD<Real>;
+    pub type Vector = Vector2<Real>;
 
     /// The unit vector type.
     pub type UnitVector = UnitVector2<Real>;
@@ -211,10 +217,10 @@ pub mod math {
     pub type Orientation<N> = Vector1<N>;
 
     /// The transformation matrix type, parameterized over its scalar type.
-    pub type IsometryD<N> = Isometry2<N>;
+    pub type IsometryT<N> = Isometry2<N>;
 
     /// The transformation matrix type.
-    pub type Isometry = IsometryD<Real>;
+    pub type Isometry = Isometry2<Real>;
 
     /// The rotation matrix type.
     pub type Rotation = UnitComplex<Real>;

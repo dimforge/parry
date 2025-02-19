@@ -19,7 +19,7 @@ pub enum GJKResult {
     ///
     /// Both points and vector are expressed in the local-space of the first geometry involved
     /// in the GJK execution.
-    ClosestPoints(Point<Real>, Point<Real>, Unit<Vector>),
+    ClosestPoints(Point, Point, Unit<Vector>),
     /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
     ///
     /// The returned vector is expressed in the local-space of the first geometry involved in the
@@ -50,7 +50,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry,
     g: &G,
     simplex: &mut VoronoiSimplex,
-) -> Option<Point<Real>> {
+) -> Option<Point> {
     match closest_points(
         &m.inverse(),
         g,
@@ -210,7 +210,7 @@ pub fn directional_distance<G1, G2>(
     g2: &G2,
     dir: &Vector,
     simplex: &mut VoronoiSimplex,
-) -> Option<(Real, Vector, Point<Real>, Point<Real>)>
+) -> Option<(Real, Vector, Point, Point)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
@@ -369,7 +369,7 @@ where
     }
 }
 
-fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
+fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point, Point) {
     let mut res = (Point::origin(), Point::origin());
     if prev {
         for i in 0..simplex.prev_dimension() + 1 {

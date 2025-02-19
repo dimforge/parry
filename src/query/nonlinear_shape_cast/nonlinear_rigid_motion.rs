@@ -6,7 +6,7 @@ pub struct NonlinearRigidMotion {
     /// The starting isometry at `t = 0`.
     pub start: Isometry,
     /// The local-space point at which the rotational part of this motion is applied.
-    pub local_center: Point<Real>,
+    pub local_center: Point,
     /// The translational velocity of this motion.
     pub linvel: Vector,
     /// The angular velocity of this motion.
@@ -20,7 +20,7 @@ pub struct NonlinearRigidMotion {
 impl NonlinearRigidMotion {
     /// Initialize a motion from a starting isometry and linear and angular velocities.
     #[cfg(feature = "dim2")]
-    pub fn new(start: Isometry, local_center: Point<Real>, linvel: Vector, angvel: Real) -> Self {
+    pub fn new(start: Isometry, local_center: Point, linvel: Vector, angvel: Real) -> Self {
         NonlinearRigidMotion {
             start,
             local_center,
@@ -31,7 +31,7 @@ impl NonlinearRigidMotion {
 
     /// Initialize a motion from a starting isometry and linear and angular velocities.
     #[cfg(feature = "dim3")]
-    pub fn new(start: Isometry, local_center: Point<Real>, linvel: Vector, angvel: Vector) -> Self {
+    pub fn new(start: Isometry, local_center: Point, linvel: Vector, angvel: Vector) -> Self {
         NonlinearRigidMotion {
             start,
             local_center,

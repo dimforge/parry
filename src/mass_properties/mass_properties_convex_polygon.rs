@@ -4,7 +4,7 @@ use crate::shape::Triangle;
 
 impl MassProperties {
     /// Computes the mass properties of a convex polygon.
-    pub fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
+    pub fn from_convex_polygon(density: Real, vertices: &[Point]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
         if area == 0.0 {
@@ -28,8 +28,8 @@ impl MassProperties {
 
 /// Computes the area and center-of-mass of a convex polygon.
 pub fn convex_polygon_area_and_center_of_mass(
-    convex_polygon: &[Point<Real>],
-) -> (Real, Point<Real>) {
+    convex_polygon: &[Point],
+) -> (Real, Point) {
     let geometric_center = convex_polygon
         .iter()
         .fold(Point::origin(), |e1, e2| e1 + e2.coords)

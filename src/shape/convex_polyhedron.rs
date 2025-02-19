@@ -97,7 +97,7 @@ impl Triangle {
 #[derive(PartialEq, Debug, Clone)]
 /// A convex polyhedron without degenerate faces.
 pub struct ConvexPolyhedron {
-    points: Vec<Point<Real>>,
+    points: Vec<Point>,
     vertices: Vec<Vertex>,
     faces: Vec<Face>,
     edges: Vec<Edge>,
@@ -116,7 +116,7 @@ impl ConvexPolyhedron {
     ///
     /// This explicitly computes the convex hull of the given set of points. Use
     /// Returns `None` if the convex hull computation failed.
-    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<ConvexPolyhedron> {
+    pub fn from_convex_hull(points: &[Point]) -> Option<ConvexPolyhedron> {
         crate::transformation::try_convex_hull(points)
             .ok()
             .and_then(|(vertices, indices)| Self::from_convex_mesh(vertices, &indices))
@@ -131,7 +131,7 @@ impl ConvexPolyhedron {
     ///
     /// Returns `None` if the given solid is not manifold (contains t-junctions, not closed, etc.)
     pub fn from_convex_mesh(
-        points: Vec<Point<Real>>,
+        points: Vec<Point>,
         indices: &[[u32; DIM]],
     ) -> Option<ConvexPolyhedron> {
         let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
@@ -396,7 +396,7 @@ impl ConvexPolyhedron {
 
     /// The set of vertices of this convex polyhedron.
     #[inline]
-    pub fn points(&self) -> &[Point<Real>] {
+    pub fn points(&self) -> &[Point] {
         &self.points[..]
     }
 
@@ -525,7 +525,7 @@ impl ConvexPolyhedron {
 
 impl SupportMap for ConvexPolyhedron {
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
@@ -571,11 +571,11 @@ impl PolygonalFeatureMap for ConvexPolyhedron {
 
 /*
 impl ConvexPolyhedron for ConvexPolyhedron {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         self.points[id.unwrap_vertex() as usize]
     }
 
-    fn edge(&self, id: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, id: FeatureId) -> (Point, Point, FeatureId, FeatureId) {
         let edge = &self.edges[id.unwrap_edge() as usize];
         let v1 = edge.vertices[0];
         let v2 = edge.vertices[1];

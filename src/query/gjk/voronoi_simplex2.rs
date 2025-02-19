@@ -93,13 +93,13 @@ impl VoronoiSimplex {
     /// Returns the result of the projection or Point::origin() if the origin lies inside of the simplex.
     /// The state of the simplex before projection is saved, and can be retrieved using the methods prefixed
     /// by `prev_`.
-    pub fn project_origin_and_reduce(&mut self) -> Point<Real> {
+    pub fn project_origin_and_reduce(&mut self) -> Point {
         if self.dim == 0 {
             self.proj[0] = 1.0;
             self.vertices[0].point
         } else if self.dim == 1 {
             let (proj, location) = Segment::new(self.vertices[0].point, self.vertices[1].point)
-                .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+                .project_local_point_and_get_location(&Point::origin(), true);
 
             match location {
                 SegmentPointLocation::OnVertex(0) => {
@@ -125,7 +125,7 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             )
-            .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+            .project_local_point_and_get_location(&Point::origin(), true);
 
             match location {
                 TrianglePointLocation::OnVertex(i) => {
@@ -156,13 +156,12 @@ impl VoronoiSimplex {
     }
 
     /// Compute the projection of the origin on the boundary of this simplex.
-    pub fn project_origin(&mut self) -> Point<Real> {
+    pub fn project_origin(&mut self) -> Point {
         if self.dim == 0 {
             self.vertices[0].point
         } else if self.dim == 1 {
             let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-            seg.project_local_point(&Point::<Real>::origin(), true)
-                .point
+            seg.project_local_point(&Point::origin(), true).point
         } else {
             assert!(self.dim == 2);
             let tri = Triangle::new(
@@ -170,13 +169,12 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             );
-            tri.project_local_point(&Point::<Real>::origin(), true)
-                .point
+            tri.project_local_point(&Point::origin(), true).point
         }
     }
 
     /// Tests if the given point is already a vertex of this simplex.
-    pub fn contains_point(&self, pt: &Point<Real>) -> bool {
+    pub fn contains_point(&self, pt: &Point) -> bool {
         for i in 0..self.dim + 1 {
             if self.vertices[i].point == *pt {
                 return true;

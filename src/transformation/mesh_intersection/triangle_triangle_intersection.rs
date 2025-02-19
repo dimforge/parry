@@ -11,7 +11,7 @@ use na::Point2;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct TriangleTriangleIntersectionPoint {
-    pub p1: Point<Real>,
+    pub p1: Point,
 }
 
 #[derive(Clone, Debug)]
@@ -135,7 +135,7 @@ pub(crate) fn triangle_triangle_intersection(
                 proj(tri2.c - tri2.a),
             ];
 
-            let convert_loc = |loc, pts: &[Point<Real>; 3]| match loc {
+            let convert_loc = |loc, pts: &[Point; 3]| match loc {
                 PolylinePointLocation::OnVertex(vid) => (FeatureId::Vertex(vid as u32), pts[vid]),
                 PolylinePointLocation::OnEdge(vid1, vid2, bcoords) => (
                     match (vid1, vid2) {
@@ -190,12 +190,12 @@ pub(crate) fn triangle_triangle_intersection(
 }
 
 fn segment_plane_intersection(
-    plane_center: &Point<Real>,
+    plane_center: &Point,
     plane_normal: &Vector,
     segment: &Segment,
     eid: u32,
     vids: (u32, u32),
-) -> Option<(Point<Real>, FeatureId)> {
+) -> Option<(Point, FeatureId)> {
     let dir = segment.b - segment.a;
     let dir_norm = dir.norm();
 

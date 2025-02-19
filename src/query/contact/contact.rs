@@ -15,10 +15,10 @@ use rkyv::{bytecheck, CheckBytes};
 )]
 pub struct Contact {
     /// Position of the contact on the first object.
-    pub point1: Point<Real>,
+    pub point1: Point,
 
     /// Position of the contact on the second object.
-    pub point2: Point<Real>,
+    pub point2: Point,
 
     /// Contact normal, pointing towards the exterior of the first shape.
     pub normal1: Unit<Vector>,
@@ -38,8 +38,8 @@ impl Contact {
     /// Creates a new contact.
     #[inline]
     pub fn new(
-        point1: Point<Real>,
-        point2: Point<Real>,
+        point1: Point,
+        point2: Point,
         normal1: Unit<Vector>,
         normal2: Unit<Vector>,
         dist: Real,

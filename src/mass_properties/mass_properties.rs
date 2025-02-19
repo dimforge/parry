@@ -22,7 +22,7 @@ const EPSILON: Real = f32::EPSILON as Real;
 /// The local mass properties of a rigid-body.
 pub struct MassProperties {
     /// The center of mass of a rigid-body expressed in its local-space.
-    pub local_com: Point<Real>,
+    pub local_com: Point,
     /// The inverse of the mass of a rigid-body.
     ///
     /// If this is zero, the rigid-body is assumed to have infinite mass.
@@ -31,7 +31,7 @@ pub struct MassProperties {
     ///
     /// The angular inertia is calculated relative to [`Self::local_com`].
     /// Components set to zero are assumed to be infinite along the corresponding principal axis.
-    pub inv_principal_inertia_sqrt: AngVector<Real>,
+    pub inv_principal_inertia_sqrt: AngVector,
     #[cfg(feature = "dim3")]
     /// The principal vectors of the local angular inertia tensor of the rigid-body.
     pub principal_inertia_local_frame: Rotation,
@@ -42,7 +42,7 @@ impl MassProperties {
     ///
     /// The center-of-mass is specified in the local-space of the rigid-body.
     #[cfg(feature = "dim2")]
-    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: Real) -> Self {
+    pub fn new(local_com: Point, mass: Real, principal_inertia: Real) -> Self {
         let inv_mass = utils::inv(mass);
         let inv_principal_inertia_sqrt = utils::inv(ComplexField::sqrt(principal_inertia));
         Self {
@@ -58,7 +58,7 @@ impl MassProperties {
     /// The principal angular inertia are the angular inertia along the coordinate axes in the local-space
     /// of the rigid-body.
     #[cfg(feature = "dim3")]
-    pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: AngVector<Real>) -> Self {
+    pub fn new(local_com: Point, mass: Real, principal_inertia: AngVector) -> Self {
         Self::with_principal_inertia_frame(local_com, mass, principal_inertia, Rotation::identity())
     }
 
@@ -69,9 +69,9 @@ impl MassProperties {
     /// the `principal_inertia_local_frame` expressed in the local-space of the rigid-body.
     #[cfg(feature = "dim3")]
     pub fn with_principal_inertia_frame(
-        local_com: Point<Real>,
+        local_com: Point,
         mass: Real,
-        principal_inertia: AngVector<Real>,
+        principal_inertia: AngVector,
         principal_inertia_local_frame: Rotation,
     ) -> Self {
         let inv_mass = utils::inv(mass);
@@ -90,7 +90,7 @@ impl MassProperties {
     /// The angular inertia matrix will be diagonalized in order to extract the principal inertia
     /// values and principal inertia frame.
     #[cfg(feature = "dim3")]
-    pub fn with_inertia_matrix(local_com: Point<Real>, mass: Real, inertia: Matrix3<Real>) -> Self {
+    pub fn with_inertia_matrix(local_com: Point, mass: Real, inertia: Matrix3<Real>) -> Self {
         let mut eigen = inertia.symmetric_eigen();
 
         if eigen.eigenvectors.determinant() < 0.0 {
@@ -119,7 +119,7 @@ impl MassProperties {
     }
 
     /// The angular inertia along the principal inertia axes and center of mass of the rigid-body.
-    pub fn principal_inertia(&self) -> AngVector<Real> {
+    pub fn principal_inertia(&self) -> AngVector {
         #[cfg(feature = "dim2")]
         return utils::inv(self.inv_principal_inertia_sqrt * self.inv_principal_inertia_sqrt);
         #[cfg(feature = "dim3")]
@@ -127,7 +127,7 @@ impl MassProperties {
     }
 
     /// The world-space center of mass of the rigid-body.
-    pub fn world_com(&self, pos: &Isometry) -> Point<Real> {
+    pub fn world_com(&self, pos: &Isometry) -> Point {
         pos * self.local_com
     }
 

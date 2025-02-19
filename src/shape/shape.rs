@@ -411,7 +411,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn feature_normal_at_point(
         &self,
         _feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         None
     }
@@ -705,7 +705,7 @@ impl Shape for Ball {
     fn feature_normal_at_point(
         &self,
         _: FeatureId,
-        point: &Point<Real>,
+        point: &Point,
     ) -> Option<Unit<Vector>> {
         Unit::try_new(point.coords, crate::math::DEFAULT_EPSILON)
     }
@@ -769,7 +769,7 @@ impl Shape for Cuboid {
     fn feature_normal_at_point(
         &self,
         feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
@@ -894,7 +894,7 @@ impl Shape for Triangle {
     fn feature_normal_at_point(
         &self,
         _feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         #[cfg(feature = "dim2")]
         return None;
@@ -961,7 +961,7 @@ impl Shape for Segment {
     fn feature_normal_at_point(
         &self,
         feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
@@ -1134,7 +1134,7 @@ impl Shape for TriMesh {
     fn feature_normal_at_point(
         &self,
         _feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         #[cfg(feature = "dim2")]
         return None;
@@ -1254,7 +1254,7 @@ impl Shape for ConvexPolygon {
     fn feature_normal_at_point(
         &self,
         feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
@@ -1322,7 +1322,7 @@ impl Shape for ConvexPolyhedron {
     fn feature_normal_at_point(
         &self,
         feature: FeatureId,
-        _point: &Point<Real>,
+        _point: &Point,
     ) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }

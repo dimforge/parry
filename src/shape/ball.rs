@@ -84,22 +84,22 @@ impl Ball {
 
 impl SupportMap for Ball {
     #[inline]
-    fn support_point(&self, m: &Isometry, dir: &Vector) -> Point<Real> {
+    fn support_point(&self, m: &Isometry, dir: &Vector) -> Point {
         self.support_point_toward(m, &Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry, dir: &Unit<Vector>) -> Point<Real> {
+    fn support_point_toward(&self, m: &Isometry, dir: &Unit<Vector>) -> Point {
         Point::from(m.translation.vector) + **dir * self.radius
     }
 
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }
 
     #[inline]
-    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         Point::from(**dir * self.radius)
     }
 }

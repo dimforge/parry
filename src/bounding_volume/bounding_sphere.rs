@@ -19,19 +19,19 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct BoundingSphere {
-    pub center: Point<Real>,
+    pub center: Point,
     pub radius: Real,
 }
 
 impl BoundingSphere {
     /// Creates a new bounding sphere.
-    pub fn new(center: Point<Real>, radius: Real) -> BoundingSphere {
+    pub fn new(center: Point, radius: Real) -> BoundingSphere {
         BoundingSphere { center, radius }
     }
 
     /// The bounding sphere center.
     #[inline]
-    pub fn center(&self) -> &Point<Real> {
+    pub fn center(&self) -> &Point {
         &self.center
     }
 
@@ -50,7 +50,7 @@ impl BoundingSphere {
 
 impl BoundingVolume for BoundingSphere {
     #[inline]
-    fn center(&self) -> Point<Real> {
+    fn center(&self) -> Point {
         *self.center()
     }
 

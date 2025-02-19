@@ -6,7 +6,7 @@ use crate::shape::FeatureId;
 use na;
 
 impl Aabb {
-    fn do_project_local_point(&self, pt: &Point<Real>, solid: bool) -> (bool, Point<Real>, Vector) {
+    fn do_project_local_point(&self, pt: &Point, solid: bool) -> (bool, Point, Vector) {
         let mins_pt = self.mins - pt;
         let pt_maxs = pt - self.maxs;
         let shift = mins_pt.sup(&na::zero()) - pt_maxs.sup(&na::zero());
@@ -55,7 +55,7 @@ impl Aabb {
 
 impl PointQuery for Aabb {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         let (inside, ls_pt, _) = self.do_project_local_point(pt, solid);
         PointProjection::new(inside, ls_pt)
     }
@@ -65,7 +65,7 @@ impl PointQuery for Aabb {
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
     ) -> (PointProjection, FeatureId) {
         let (inside, ls_pt, shift) = self.do_project_local_point(pt, false);
         let proj = PointProjection::new(inside, ls_pt);
@@ -128,7 +128,7 @@ impl PointQuery for Aabb {
     }
 
     #[inline]
-    fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
+    fn distance_to_local_point(&self, pt: &Point, solid: bool) -> Real {
         let mins_pt = self.mins - pt;
         let pt_maxs = pt - self.maxs;
         let shift = mins_pt.sup(&pt_maxs).sup(&na::zero());

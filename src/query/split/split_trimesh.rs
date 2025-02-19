@@ -11,13 +11,13 @@ use std::cmp::Ordering;
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
     basis: [Vector; 2],
-    basis_origin: Point<Real>,
+    basis_origin: Point,
     spade2index: HashMap<FixedVertexHandle, u32>,
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
 impl Triangulation {
-    fn new(axis: UnitVector, basis_origin: Point<Real>) -> Self {
+    fn new(axis: UnitVector, basis_origin: Point) -> Self {
         Triangulation {
             delaunay: ConstrainedDelaunayTriangulation::new(),
             basis: axis.orthonormal_basis(),
@@ -27,12 +27,12 @@ impl Triangulation {
         }
     }
 
-    fn project(&self, pt: Point<Real>) -> spade::Point2<Real> {
+    fn project(&self, pt: Point) -> spade::Point2<Real> {
         let dpt = pt - self.basis_origin;
         spade::Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]))
     }
 
-    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point<Real>]) {
+    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point]) {
         let proj1 = self.project(points[id1 as usize]);
         let proj2 = self.project(points[id2 as usize]);
 

@@ -12,7 +12,7 @@ use na::{self, ComplexField, RealField, Unit};
 )]
 #[derive(Clone, Debug)]
 pub struct ConvexPolygon {
-    points: Vec<Point<Real>>,
+    points: Vec<Point>,
     normals: Vec<Unit<Vector>>,
 }
 
@@ -21,7 +21,7 @@ impl ConvexPolygon {
     ///
     /// This explicitly computes the convex hull of the given set of points.
     /// Returns `None` if the convex hull computation failed.
-    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
+    pub fn from_convex_hull(points: &[Point]) -> Option<Self> {
         let vertices = crate::transformation::convex_hull(points);
         Self::from_convex_polyline(vertices)
     }
@@ -31,7 +31,7 @@ impl ConvexPolygon {
     ///
     /// Convexity of the input polyline is not checked.
     /// Returns `None` if all points form an almost flat line.
-    pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_convex_polyline(mut points: Vec<Point>) -> Option<Self> {
         if points.is_empty() {
             return None;
         }
@@ -75,7 +75,7 @@ impl ConvexPolygon {
 
     /// The vertices of this convex polygon.
     #[inline]
-    pub fn points(&self) -> &[Point<Real>] {
+    pub fn points(&self) -> &[Point] {
         &self.points
     }
 
@@ -177,7 +177,7 @@ impl ConvexPolygon {
 
 impl SupportMap for ConvexPolygon {
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
@@ -211,7 +211,7 @@ impl PolygonalFeatureMap for ConvexPolygon {
 
 /*
 impl ConvexPolyhedron for ConvexPolygon {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         self.points[id.unwrap_vertex() as usize]
     }
 

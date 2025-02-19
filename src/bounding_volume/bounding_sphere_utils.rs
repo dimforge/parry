@@ -7,8 +7,8 @@ use super::BoundingSphere;
 /// Computes the bounding sphere of a set of point, given its center.
 #[inline]
 pub fn point_cloud_bounding_sphere_with_center(
-    pts: &[Point<Real>],
-    center: Point<Real>,
+    pts: &[Point],
+    center: Point,
 ) -> BoundingSphere {
     let mut sqradius = 0.0;
 
@@ -24,6 +24,6 @@ pub fn point_cloud_bounding_sphere_with_center(
 
 /// Computes a bounding sphere of the specified set of point.
 #[inline]
-pub fn point_cloud_bounding_sphere(pts: &[Point<Real>]) -> BoundingSphere {
+pub fn point_cloud_bounding_sphere(pts: &[Point]) -> BoundingSphere {
     point_cloud_bounding_sphere_with_center(pts, utils::center(pts))
 }

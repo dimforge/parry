@@ -6,7 +6,7 @@ use na::{self, Unit};
 
 impl PointQuery for Capsule {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         let seg = Segment::new(self.segment.a, self.segment.b);
         let proj = seg.project_local_point(pt, solid);
         let dproj = *pt - proj.point;
@@ -44,7 +44,7 @@ impl PointQuery for Capsule {
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
     ) -> (PointProjection, FeatureId) {
         (self.project_local_point(pt, false), FeatureId::Face(0))
     }

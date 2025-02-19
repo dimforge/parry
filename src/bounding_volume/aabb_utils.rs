@@ -57,7 +57,7 @@ where
 /// Computes the [`Aabb`] of a set of points transformed by `m`.
 pub fn point_cloud_aabb<'a, I>(m: &Isometry, pts: I) -> Aabb
 where
-    I: IntoIterator<Item = &'a Point<Real>>,
+    I: IntoIterator<Item = &'a Point>,
 {
     let mut it = pts.into_iter();
 
@@ -65,8 +65,8 @@ where
         "Point cloud Aabb construction: the input iterator should yield at least one point.",
     );
     let wp0 = m.transform_point(p0);
-    let mut min: Point<Real> = wp0;
-    let mut max: Point<Real> = wp0;
+    let mut min: Point = wp0;
+    let mut max: Point = wp0;
 
     for pt in it {
         let wpt = m * pt;
@@ -80,15 +80,15 @@ where
 /// Computes the [`Aabb`] of a set of points.
 pub fn local_point_cloud_aabb<'a, I>(pts: I) -> Aabb
 where
-    I: IntoIterator<Item = &'a Point<Real>>,
+    I: IntoIterator<Item = &'a Point>,
 {
     let mut it = pts.into_iter();
 
     let p0 = it.next().expect(
         "Point cloud Aabb construction: the input iterator should yield at least one point.",
     );
-    let mut min: Point<Real> = *p0;
-    let mut max: Point<Real> = *p0;
+    let mut min: Point = *p0;
+    let mut max: Point = *p0;
 
     for pt in it {
         min = min.inf(pt);

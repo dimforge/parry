@@ -143,7 +143,7 @@ impl SharedShape {
     }
 
     /// Initialize a capsule shape from its endpoints and radius.
-    pub fn capsule(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
+    pub fn capsule(a: Point, b: Point, radius: Real) -> Self {
         SharedShape(Arc::new(Capsule::new(a, b, radius)))
     }
 
@@ -167,19 +167,19 @@ impl SharedShape {
     }
 
     /// Initialize a segment shape from its endpoints.
-    pub fn segment(a: Point<Real>, b: Point<Real>) -> Self {
+    pub fn segment(a: Point, b: Point) -> Self {
         SharedShape(Arc::new(Segment::new(a, b)))
     }
 
     /// Initializes a triangle shape.
-    pub fn triangle(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Self {
+    pub fn triangle(a: Point, b: Point, c: Point) -> Self {
         SharedShape(Arc::new(Triangle::new(a, b, c)))
     }
     /// Initializes a triangle shape with round corners.
     pub fn round_triangle(
-        a: Point<Real>,
-        b: Point<Real>,
-        c: Point<Real>,
+        a: Point,
+        b: Point,
+        c: Point,
         border_radius: Real,
     ) -> Self {
         SharedShape(Arc::new(RoundShape {
@@ -191,13 +191,13 @@ impl SharedShape {
     /// Initializes a polyline shape defined by its vertex and index buffers.
     ///
     /// If no index buffer is provided, the polyline is assumed to describe a line strip.
-    pub fn polyline(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+    pub fn polyline(vertices: Vec<Point>, indices: Option<Vec<[u32; 2]>>) -> Self {
         SharedShape(Arc::new(Polyline::new(vertices, indices)))
     }
 
     /// Initializes a triangle mesh shape defined by its vertex and index buffers.
     pub fn trimesh(
-        vertices: Vec<Point<Real>>,
+        vertices: Vec<Point>,
         indices: Vec<[u32; 3]>,
     ) -> Result<Self, TriMeshBuilderError> {
         Ok(SharedShape(Arc::new(TriMesh::new(vertices, indices)?)))
@@ -206,7 +206,7 @@ impl SharedShape {
     /// Initializes a triangle mesh shape defined by its vertex and index buffers and
     /// pre-processing flags.
     pub fn trimesh_with_flags(
-        vertices: Vec<Point<Real>>,
+        vertices: Vec<Point>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Result<Self, TriMeshBuilderError> {
@@ -217,14 +217,14 @@ impl SharedShape {
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts.
-    pub fn convex_decomposition(vertices: &[Point<Real>], indices: &[[u32; DIM]]) -> Self {
+    pub fn convex_decomposition(vertices: &[Point], indices: &[[u32; DIM]]) -> Self {
         Self::convex_decomposition_with_params(vertices, indices, &VHACDParameters::default())
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts dilated with round corners.
     pub fn round_convex_decomposition(
-        vertices: &[Point<Real>],
+        vertices: &[Point],
         indices: &[[u32; DIM]],
         border_radius: Real,
     ) -> Self {
@@ -239,7 +239,7 @@ impl SharedShape {
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts.
     pub fn convex_decomposition_with_params(
-        vertices: &[Point<Real>],
+        vertices: &[Point],
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
     ) -> Self {
@@ -266,7 +266,7 @@ impl SharedShape {
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts dilated with round corners.
     pub fn round_convex_decomposition_with_params(
-        vertices: &[Point<Real>],
+        vertices: &[Point],
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
         border_radius: Real,
@@ -292,7 +292,7 @@ impl SharedShape {
     }
 
     /// Creates a new shared shape that is the convex-hull of the given points.
-    pub fn convex_hull(points: &[Point<Real>]) -> Option<Self> {
+    pub fn convex_hull(points: &[Point]) -> Option<Self> {
         #[cfg(feature = "dim2")]
         return ConvexPolygon::from_convex_hull(points).map(|ch| SharedShape(Arc::new(ch)));
         #[cfg(feature = "dim3")]
@@ -303,7 +303,7 @@ impl SharedShape {
     /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim2")]
-    pub fn convex_polyline(points: Vec<Point<Real>>) -> Option<Self> {
+    pub fn convex_polyline(points: Vec<Point>) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| SharedShape(Arc::new(ch)))
     }
 
@@ -311,13 +311,13 @@ impl SharedShape {
     /// given set of points assumed to form a convex mesh (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim3")]
-    pub fn convex_mesh(points: Vec<Point<Real>>, indices: &[[u32; 3]]) -> Option<Self> {
+    pub fn convex_mesh(points: Vec<Point>, indices: &[[u32; 3]]) -> Option<Self> {
         ConvexPolyhedron::from_convex_mesh(points, indices).map(|ch| SharedShape(Arc::new(ch)))
     }
 
     /// Creates a new shared shape with rounded corners that is the
     /// convex-hull of the given points, dilated by `border_radius`.
-    pub fn round_convex_hull(points: &[Point<Real>], border_radius: Real) -> Option<Self> {
+    pub fn round_convex_hull(points: &[Point], border_radius: Real) -> Option<Self> {
         #[cfg(feature = "dim2")]
         return ConvexPolygon::from_convex_hull(points).map(|ch| {
             SharedShape(Arc::new(RoundShape {
@@ -338,7 +338,7 @@ impl SharedShape {
     /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
     /// computed).
     #[cfg(feature = "dim2")]
-    pub fn round_convex_polyline(points: Vec<Point<Real>>, border_radius: Real) -> Option<Self> {
+    pub fn round_convex_polyline(points: Vec<Point>, border_radius: Real) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| {
             SharedShape(Arc::new(RoundShape {
                 inner_shape: ch,
@@ -352,7 +352,7 @@ impl SharedShape {
     /// computed).
     #[cfg(feature = "dim3")]
     pub fn round_convex_mesh(
-        points: Vec<Point<Real>>,
+        points: Vec<Point>,
         indices: &[[u32; 3]],
         border_radius: Real,
     ) -> Option<Self> {

@@ -11,7 +11,7 @@ use na::Point2;
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
     /// Up to four vertices forming this polygonal feature.
-    pub vertices: [Point<Real>; 4],
+    pub vertices: [Point; 4],
     /// The feature IDs of this polygon's vertices.
     pub vids: [PackedFeatureId; 4],
     /// The feature IDs of this polygon's edges.

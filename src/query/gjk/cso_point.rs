@@ -13,16 +13,16 @@ use std::ops::Sub;
 pub struct CSOPoint {
     /// The point on the CSO. This is equal to `self.orig1 - self.orig2`, unless this CSOPoint
     /// has been translated with self.translate.
-    pub point: Point<Real>,
+    pub point: Point,
     /// The original point on the first shape used to compute `self.point`.
-    pub orig1: Point<Real>,
+    pub orig1: Point,
     /// The original point on the second shape used to compute `self.point`.
-    pub orig2: Point<Real>,
+    pub orig2: Point,
 }
 
 impl CSOPoint {
     /// Initializes a CSO point with `orig1 - orig2`.
-    pub fn new(orig1: Point<Real>, orig2: Point<Real>) -> Self {
+    pub fn new(orig1: Point, orig2: Point) -> Self {
         let point = Point::from(orig1 - orig2);
         Self::new_with_point(point, orig1, orig2)
     }
@@ -30,7 +30,7 @@ impl CSOPoint {
     /// Initializes a CSO point with all information provided.
     ///
     /// It is assumed, but not checked, that `point == orig1 - orig2`.
-    pub fn new_with_point(point: Point<Real>, orig1: Point<Real>, orig2: Point<Real>) -> Self {
+    pub fn new_with_point(point: Point, orig1: Point, orig2: Point) -> Self {
         CSOPoint {
             point,
             orig1,
@@ -39,7 +39,7 @@ impl CSOPoint {
     }
 
     /// Initializes a CSO point where both original points are equal.
-    pub fn single_point(point: Point<Real>) -> Self {
+    pub fn single_point(point: Point) -> Self {
         Self::new_with_point(point, point, Point::origin())
     }
 

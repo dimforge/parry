@@ -116,8 +116,8 @@ where
         time_of_impact: start_time,
         normal1: Vector::x_axis(),
         normal2: Vector::x_axis(),
-        witness1: Point::<Real>::origin(),
-        witness2: Point::<Real>::origin(),
+        witness1: Point::origin(),
+        witness2: Point::origin(),
         status: ShapeCastStatus::PenetratingOrWithinTargetDist,
     };
 

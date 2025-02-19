@@ -46,7 +46,7 @@ impl Capsule {
     }
 
     /// Creates a new capsule defined as the segment between `a` and `b` and with the given `radius`.
-    pub fn new(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
+    pub fn new(a: Point, b: Point, radius: Real) -> Self {
         let segment = Segment::new(a, b);
         Self { segment, radius }
     }
@@ -62,7 +62,7 @@ impl Capsule {
     }
 
     /// The center of this capsule.
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point {
         na::center(&self.segment.a, &self.segment.b)
     }
 
@@ -165,12 +165,12 @@ impl Capsule {
 }
 
 impl SupportMap for Capsule {
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let dir = Unit::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
         self.local_support_point_toward(&dir)
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         if dir.dot(&self.segment.a.coords) > dir.dot(&self.segment.b.coords) {
             self.segment.a + **dir * self.radius
         } else {

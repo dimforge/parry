@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, VectorD, SIMD_WIDTH};
+use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, ShapeCastHit, SimdRay};
@@ -52,8 +52,8 @@ where
 
 /// A visitor used to find the time-of-impact between a composite shape and a shape.
 pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: VectorD<SimdReal>,
-    msum_margin: VectorD<SimdReal>,
+    msum_shift: VectorT<SimdReal>,
+    msum_margin: VectorT<SimdReal>,
     ray: SimdRay,
 
     dispatcher: &'a D,
@@ -83,8 +83,8 @@ where
 
         TOICompositeShapeShapeBestFirstVisitor {
             dispatcher,
-            msum_shift: VectorD::splat(-ls_aabb2.center().coords),
-            msum_margin: VectorD::splat(
+            msum_shift: VectorT::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorT::splat(
                 ls_aabb2.half_extents() + Vector::repeat(options.target_distance),
             ),
             ray: SimdRay::splat(ray),

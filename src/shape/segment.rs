@@ -21,9 +21,9 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Segment {
     /// The segment first point.
-    pub a: Point<Real>,
+    pub a: Point,
     /// The segment second point.
-    pub b: Point<Real>,
+    pub b: Point,
 }
 
 /// Logical description of the location of a point on a triangle.
@@ -55,12 +55,12 @@ impl SegmentPointLocation {
 impl Segment {
     /// Creates a new segment from two points.
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>) -> Segment {
+    pub fn new(a: Point, b: Point) -> Segment {
         Segment { a, b }
     }
 
     /// Creates the reference to a segment from the reference to an array of two points.
-    pub fn from_array(arr: &[Point<Real>; 2]) -> &Segment {
+    pub fn from_array(arr: &[Point; 2]) -> &Segment {
         unsafe { mem::transmute(arr) }
     }
 
@@ -145,7 +145,7 @@ impl Segment {
     }
 
     /// Computes the point at the given location.
-    pub fn point_at(&self, location: &SegmentPointLocation) -> Point<Real> {
+    pub fn point_at(&self, location: &SegmentPointLocation) -> Point {
         match *location {
             SegmentPointLocation::OnVertex(0) => self.a,
             SegmentPointLocation::OnVertex(1) => self.b,
@@ -196,7 +196,7 @@ impl Segment {
 
 impl SupportMap for Segment {
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         if self.a.coords.dot(dir) > self.b.coords.dot(dir) {
             self.a
         } else {
@@ -205,15 +205,15 @@ impl SupportMap for Segment {
     }
 }
 
-impl From<[Point<Real>; 2]> for Segment {
-    fn from(arr: [Point<Real>; 2]) -> Self {
+impl From<[Point; 2]> for Segment {
+    fn from(arr: [Point; 2]) -> Self {
         *Self::from_array(&arr)
     }
 }
 
 /*
 impl ConvexPolyhedron for Segment {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         if id.unwrap_vertex() == 0 {
             self.a
         } else {
@@ -222,7 +222,7 @@ impl ConvexPolyhedron for Segment {
     }
 
     #[cfg(feature = "dim3")]
-    fn edge(&self, _: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, _: FeatureId) -> (Point, Point, FeatureId, FeatureId) {
         (self.a, self.b, FeatureId::Vertex(0), FeatureId::Vertex(1))
     }
 

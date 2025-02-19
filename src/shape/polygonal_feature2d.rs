@@ -8,7 +8,7 @@ use crate::shape::{PackedFeatureId, Segment};
 #[derive(Debug)]
 pub struct PolygonalFeature {
     /// Up to two vertices forming this polygonal feature.
-    pub vertices: [Point<Real>; 2],
+    pub vertices: [Point; 2],
     /// The feature IDs of this polygon's vertices.
     pub vids: [PackedFeatureId; 2],
     /// The feature ID of this polygonal feature.

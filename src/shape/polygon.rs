@@ -12,7 +12,7 @@ use parry::bounding_volume::Aabb;
 )]
 /// A convex planar polygon.
 pub struct Polygon {
-    pub(crate) vertices: Vec<Point<Real>>,
+    pub(crate) vertices: Vec<Point>,
     pub(crate) normals: Vec<Vector>,
 }
 
@@ -27,7 +27,7 @@ impl Polygon {
     /// The vertices must form a convex polygon.
     ///
     /// One normal must be provided per edge and mut point towards the outside of the polygon.
-    pub fn new(vertices: Vec<Point<Real>>, normals: Vec<Vector>) -> Self {
+    pub fn new(vertices: Vec<Point>, normals: Vec<Vector>) -> Self {
         Self { vertices, normals }
     }
 
@@ -47,7 +47,7 @@ impl Polygon {
     }
 
     /// The vertices of this polygon.
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Point] {
         &self.vertices
     }
 

@@ -7,9 +7,9 @@ use crate::shape::{FeatureId, HalfSpace};
 /// Computes the time_of_impact of an unbounded line with a halfspace described by its center and normal.
 #[inline]
 pub fn line_toi_with_halfspace(
-    halfspace_center: &Point<Real>,
+    halfspace_center: &Point,
     halfspace_normal: &Vector,
-    line_origin: &Point<Real>,
+    line_origin: &Point,
     line_dir: &Vector,
 ) -> Option<Real> {
     let dpos = *halfspace_center - *line_origin;
@@ -24,7 +24,7 @@ pub fn line_toi_with_halfspace(
 
 /// Computes the time_of_impact of a ray with a halfspace described by its center and normal.
 #[inline]
-pub fn ray_toi_with_halfspace(center: &Point<Real>, normal: &Vector, ray: &Ray) -> Option<Real> {
+pub fn ray_toi_with_halfspace(center: &Point, normal: &Vector, ray: &Ray) -> Option<Real> {
     if let Some(t) = line_toi_with_halfspace(center, normal, &ray.origin, &ray.dir) {
         if t >= 0.0 {
             return Some(t);

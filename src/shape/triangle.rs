@@ -30,11 +30,11 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Triangle {
     /// The triangle first point.
-    pub a: Point<Real>,
+    pub a: Point,
     /// The triangle second point.
-    pub b: Point<Real>,
+    pub b: Point,
     /// The triangle third point.
-    pub c: Point<Real>,
+    pub c: Point,
 }
 
 /// Description of the location of a point on a triangle.
@@ -110,8 +110,8 @@ pub enum TriangleOrientation {
     Degenerate,
 }
 
-impl From<[Point<Real>; 3]> for Triangle {
-    fn from(arr: [Point<Real>; 3]) -> Self {
+impl From<[Point; 3]> for Triangle {
+    fn from(arr: [Point; 3]) -> Self {
         *Self::from_array(&arr)
     }
 }
@@ -119,18 +119,18 @@ impl From<[Point<Real>; 3]> for Triangle {
 impl Triangle {
     /// Creates a triangle from three points.
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Triangle {
+    pub fn new(a: Point, b: Point, c: Point) -> Triangle {
         Triangle { a, b, c }
     }
 
     /// Creates the reference to a triangle from the reference to an array of three points.
-    pub fn from_array(arr: &[Point<Real>; 3]) -> &Triangle {
+    pub fn from_array(arr: &[Point; 3]) -> &Triangle {
         unsafe { mem::transmute(arr) }
     }
 
     /// Reference to an array containing the three vertices of this triangle.
     #[inline]
-    pub fn vertices(&self) -> &[Point<Real>; 3] {
+    pub fn vertices(&self) -> &[Point; 3] {
         unsafe { mem::transmute(self) }
     }
 
@@ -387,7 +387,7 @@ impl Triangle {
 
     /// The geometric center of this triangle.
     #[inline]
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point {
         utils::center(&[self.a, self.b, self.c])
     }
 
@@ -400,7 +400,7 @@ impl Triangle {
     }
 
     /// The circumcircle of this triangle.
-    pub fn circumcircle(&self) -> (Point<Real>, Real) {
+    pub fn circumcircle(&self) -> (Point, Real) {
         let a = self.a - self.c;
         let b = self.b - self.c;
 
@@ -482,7 +482,7 @@ impl Triangle {
 
     /// Tests if a point is inside of this triangle.
     #[cfg(feature = "dim2")]
-    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+    pub fn contains_point(&self, p: &Point) -> bool {
         let ab = self.b - self.a;
         let bc = self.c - self.b;
         let ca = self.a - self.c;
@@ -496,7 +496,7 @@ impl Triangle {
 
     /// Tests if a point is inside of this triangle.
     #[cfg(feature = "dim3")]
-    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+    pub fn contains_point(&self, p: &Point) -> bool {
         const EPS: Real = crate::math::DEFAULT_EPSILON;
 
         let vb = self.b - self.a;
@@ -613,7 +613,7 @@ impl Triangle {
 
 impl SupportMap for Triangle {
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let d1 = self.a.coords.dot(dir);
         let d2 = self.b.coords.dot(dir);
         let d3 = self.c.coords.dot(dir);
@@ -635,7 +635,7 @@ impl SupportMap for Triangle {
 /*
 #[cfg(feature = "dim3")]
 impl ConvexPolyhedron for Triangle {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         match id.unwrap_vertex() {
             0 => self.a,
             1 => self.b,
@@ -643,7 +643,7 @@ impl ConvexPolyhedron for Triangle {
             _ => panic!("Triangle vertex index out of bounds."),
         }
     }
-    fn edge(&self, id: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, id: FeatureId) -> (Point, Point, FeatureId, FeatureId) {
         match id.unwrap_edge() {
             0 => (self.a, self.b, FeatureId::Vertex(0), FeatureId::Vertex(1)),
             1 => (self.b, self.c, FeatureId::Vertex(1), FeatureId::Vertex(2)),

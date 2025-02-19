@@ -19,13 +19,13 @@ use na::ComplexField; // for .abs()
 /// A polyline.
 pub struct Polyline {
     qbvh: Qbvh<u32>,
-    vertices: Vec<Point<Real>>,
+    vertices: Vec<Point>,
     indices: Vec<[u32; 2]>,
 }
 
 impl Polyline {
     /// Creates a new polyline from a vertex buffer and an index buffer.
-    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+    pub fn new(vertices: Vec<Point>, indices: Option<Vec<[u32; 2]>>) -> Self {
         let indices =
             indices.unwrap_or_else(|| (0..vertices.len() as u32 - 1).map(|i| [i, i + 1]).collect());
         let data = indices.iter().enumerate().map(|(i, idx)| {
@@ -98,7 +98,7 @@ impl Polyline {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Point] {
         &self.vertices[..]
     }
 
@@ -223,7 +223,7 @@ impl Polyline {
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,
-        point: Point<Real>,
+        point: Point,
         #[cfg(feature = "dim3")] axis: u8,
     ) -> (PointProjection, (u32, SegmentPointLocation)) {
         let mut proj = self.project_local_point_and_get_location(&point, false);

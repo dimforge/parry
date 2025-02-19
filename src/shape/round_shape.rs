@@ -19,11 +19,11 @@ pub struct RoundShape<S> {
 }
 
 impl<S: SupportMap> SupportMap for RoundShape<S> {
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         self.inner_shape.local_support_point_toward(dir) + **dir * self.border_radius
     }
 }
@@ -37,11 +37,11 @@ pub(crate) struct RoundShapeRef<'a, S: ?Sized> {
 }
 
 impl<S: ?Sized + SupportMap> SupportMap for RoundShapeRef<'_, S> {
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         self.inner_shape.local_support_point_toward(dir) + **dir * self.border_radius
     }
 }

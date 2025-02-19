@@ -17,14 +17,14 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Ray {
     /// Starting point of the ray.
-    pub origin: Point<Real>,
+    pub origin: Point,
     /// Direction of the ray.
     pub dir: Vector,
 }
 
 impl Ray {
     /// Creates a new ray starting from `origin` and with the direction `dir`.
-    pub fn new(origin: Point<Real>, dir: Vector) -> Ray {
+    pub fn new(origin: Point, dir: Vector) -> Ray {
         Ray { origin, dir }
     }
 
@@ -53,7 +53,7 @@ impl Ray {
     ///
     /// This computes `self.origin + self.dir * t`.
     #[inline]
-    pub fn point_at(&self, t: Real) -> Point<Real> {
+    pub fn point_at(&self, t: Real) -> Point {
         self.origin + self.dir * t
     }
 }

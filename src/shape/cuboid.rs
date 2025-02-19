@@ -47,7 +47,7 @@ impl Cuboid {
     /// Return the id of the vertex of this cuboid with a normal that maximizes
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
-    pub fn vertex_feature_id(vertex: Point<Real>) -> u32 {
+    pub fn vertex_feature_id(vertex: Point) -> u32 {
         // TODO: is this still correct with the f64 version?
         #[allow(clippy::unnecessary_cast)] // Unnecessary for f32 but necessary for f64.
         {
@@ -334,14 +334,14 @@ impl Cuboid {
 
 impl SupportMap for Cuboid {
     #[inline]
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         dir.copy_sign_to(self.half_extents).into()
     }
 }
 
 /*
 impl ConvexPolyhedron for Cuboid {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         let vid = id.unwrap_vertex();
         let mut res = self.half_extents;
 
@@ -355,7 +355,7 @@ impl ConvexPolyhedron for Cuboid {
     }
 
     #[cfg(feature = "dim3")]
-    fn edge(&self, id: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, id: FeatureId) -> (Point, Point, FeatureId, FeatureId) {
         let eid = id.unwrap_edge();
         let mut res = self.half_extents;
 

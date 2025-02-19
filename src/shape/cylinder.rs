@@ -77,7 +77,7 @@ impl Cylinder {
 }
 
 impl SupportMap for Cylinder {
-    fn local_support_point(&self, dir: &Vector) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let mut vres = *dir;
 
         vres[1] = 0.0;

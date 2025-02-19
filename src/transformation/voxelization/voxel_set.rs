@@ -18,20 +18,20 @@
 
 use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
-use crate::math::{Matrix, Point, Real, Vector, VectorD, DIM};
+use crate::math::{Matrix, Point, PointT, Real, Vector, VectorT, DIM};
 use crate::transformation::vhacd::CutPlane;
 use std::sync::Arc;
 
 #[cfg(feature = "dim2")]
-type ConvexHull = Vec<Point<Real>>;
+type ConvexHull = Vec<Point>;
 #[cfg(feature = "dim3")]
-type ConvexHull = (Vec<Point<Real>>, Vec<[u32; DIM]>);
+type ConvexHull = (Vec<Point>, Vec<[u32; DIM]>);
 
 /// A voxel.
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
     /// The integer coordinates of the voxel as part of the voxel grid.
-    pub coords: Point<u32>,
+    pub coords: PointT<u32>,
     /// Is this voxel on the surface of the volume (i.e. not inside of it)?
     pub is_on_surface: bool,
     /// Range of indices (to be looked up into the `VoxelSet` primitive map)
@@ -42,7 +42,7 @@ pub struct Voxel {
 impl Default for Voxel {
     fn default() -> Self {
         Self {
-            coords: Point::origin(),
+            coords: PointT::origin(),
             is_on_surface: false,
             intersections_range: (0, 0),
         }
@@ -54,12 +54,12 @@ impl Default for Voxel {
 /// It only contains voxels that are considered as "full" after a voxelization.
 pub struct VoxelSet {
     /// The 3D origin of this voxel-set.
-    pub origin: Point<Real>,
+    pub origin: Point,
     /// The scale factor between the voxel integer coordinates and their
     /// actual float world-space coordinates.
     pub scale: Real,
-    pub(crate) min_bb_voxels: Point<u32>,
-    pub(crate) max_bb_voxels: Point<u32>,
+    pub(crate) min_bb_voxels: PointT<u32>,
+    pub(crate) max_bb_voxels: PointT<u32>,
     pub(crate) voxels: Vec<Voxel>,
     pub(crate) intersections: Arc<Vec<u32>>,
     pub(crate) primitive_classes: Arc<Vec<u32>>,
@@ -76,8 +76,8 @@ impl VoxelSet {
     pub fn new() -> Self {
         Self {
             origin: Point::origin(),
-            min_bb_voxels: Point::origin(),
-            max_bb_voxels: VectorD::repeat(1).into(),
+            min_bb_voxels: PointT::origin(),
+            max_bb_voxels: VectorT::repeat(1).into(),
             scale: 1.0,
             voxels: Vec::new(),
             intersections: Arc::new(Vec::new()),
@@ -111,7 +111,7 @@ impl VoxelSet {
     /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
     ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
     pub fn voxelize(
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
         resolution: u32,
         fill_mode: FillMode,
@@ -128,12 +128,12 @@ impl VoxelSet {
     }
 
     /// The minimal coordinates of the integer bounding-box of the voxels in this set.
-    pub fn min_bb_voxels(&self) -> Point<u32> {
+    pub fn min_bb_voxels(&self) -> PointT<u32> {
         self.min_bb_voxels
     }
 
     /// The maximal coordinates of the integer bounding-box of the voxels in this set.
-    pub fn max_bb_voxels(&self) -> Point<u32> {
+    pub fn max_bb_voxels(&self) -> PointT<u32> {
         self.max_bb_voxels
     }
 
@@ -142,11 +142,11 @@ impl VoxelSet {
         self.voxel_volume() * self.voxels.len() as Real
     }
 
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
+    fn get_voxel_point(&self, voxel: &Voxel) -> Point {
         self.get_point(na::convert(voxel.coords))
     }
 
-    pub(crate) fn get_point(&self, voxel: Point<Real>) -> Point<Real> {
+    pub(crate) fn get_point(&self, voxel: Point) -> Point {
         self.origin + voxel.coords * self.scale
     }
 
@@ -194,9 +194,9 @@ impl VoxelSet {
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hull(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> Vec<Point<Real>> {
+    ) -> Vec<Point> {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
@@ -207,17 +207,13 @@ impl VoxelSet {
     #[cfg(feature = "dim3")]
     pub fn compute_exact_convex_hull(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    ) -> (Vec<Point>, Vec<[u32; DIM]>) {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
-    fn do_compute_exact_convex_hull(
-        &self,
-        points: &[Point<Real>],
-        indices: &[[u32; DIM]],
-    ) -> ConvexHull {
+    fn do_compute_exact_convex_hull(&self, points: &[Point], indices: &[[u32; DIM]]) -> ConvexHull {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
@@ -305,9 +301,9 @@ impl VoxelSet {
     /// `voxel_to_primitives_map = true`.
     pub fn compute_primitive_intersections(
         &self,
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
-    ) -> Vec<Point<Real>> {
+    ) -> Vec<Point> {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute primitive intersections voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
@@ -361,7 +357,7 @@ impl VoxelSet {
     ///   regular intervals. Useful to save some computation times if an exact result isn't need.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim2")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point<Real>> {
+    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point> {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -385,7 +381,7 @@ impl VoxelSet {
     ///   regular intervals. Useful to save some computation times if an exact result isn't need.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point>, Vec<[u32; DIM]>) {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -403,7 +399,7 @@ impl VoxelSet {
     }
 
     /// Gets the vertices of the given voxel.
-    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point<Real>)) {
+    fn map_voxel_points(&self, voxel: &Voxel, mut f: impl FnMut(Point)) {
         let ijk = voxel.coords.coords.map(|e| e as Real);
 
         #[cfg(feature = "dim2")]
@@ -434,8 +430,8 @@ impl VoxelSet {
     pub(crate) fn intersect(
         &self,
         plane: &CutPlane,
-        positive_pts: &mut Vec<Point<Real>>,
-        negative_pts: &mut Vec<Point<Real>>,
+        positive_pts: &mut Vec<Point>,
+        negative_pts: &mut Vec<Point>,
         sampling: u32,
     ) {
         let num_voxels = self.voxels.len();
@@ -566,7 +562,7 @@ impl VoxelSet {
         &self,
         base_index: u32,
         is_on_surface: bool,
-    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    ) -> (Vec<Point>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -645,7 +641,7 @@ impl VoxelSet {
 }
 
 #[cfg(feature = "dim2")]
-fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
+fn convex_hull(vertices: &[Point]) -> Vec<Point> {
     if vertices.len() > 1 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -654,7 +650,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+fn convex_hull(vertices: &[Point]) -> (Vec<Point>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {

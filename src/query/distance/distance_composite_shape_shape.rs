@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorD, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -41,8 +41,8 @@ where
 
 /// A visitor for computing the distance between a composite shape and a shape.
 pub struct CompositeShapeAgainstAnyDistanceVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: VectorD<SimdReal>,
-    msum_margin: VectorD<SimdReal>,
+    msum_shift: VectorT<SimdReal>,
+    msum_margin: VectorT<SimdReal>,
 
     dispatcher: &'a D,
     pos12: &'a Isometry,
@@ -57,8 +57,8 @@ impl<'a, D: ?Sized, G1: ?Sized + 'a> CompositeShapeAgainstAnyDistanceVisitor<'a,
 
         Self {
             dispatcher,
-            msum_shift: VectorD::splat(-ls_aabb2.center().coords),
-            msum_margin: VectorD::splat(ls_aabb2.half_extents()),
+            msum_shift: VectorT::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorT::splat(ls_aabb2.half_extents()),
             pos12,
             g1,
             g2,

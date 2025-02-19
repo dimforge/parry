@@ -12,10 +12,10 @@ pub trait SupportMap {
     //
     // A support function is a function associating a vector to the shape point which maximizes
     // their dot product.
-    fn local_support_point(&self, dir: &Vector) -> Point<Real>;
+    fn local_support_point(&self, dir: &Vector) -> Point;
 
     /// Same as `self.local_support_point` except that `dir` is normalized.
-    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         self.local_support_point(dir.as_ref())
     }
 
@@ -23,17 +23,13 @@ pub trait SupportMap {
     //
     // A support function is a function associating a vector to the shape point which maximizes
     // their dot product.
-    fn support_point(&self, transform: &Isometry, dir: &Vector) -> Point<Real> {
+    fn support_point(&self, transform: &Isometry, dir: &Vector) -> Point {
         let local_dir = transform.inverse_transform_vector(dir);
         transform * self.local_support_point(&local_dir)
     }
 
     /// Same as `self.support_point` except that `dir` is normalized.
-    fn support_point_toward(
-        &self,
-        transform: &Isometry,
-        dir: &Unit<Vector>,
-    ) -> Point<Real> {
+    fn support_point_toward(&self, transform: &Isometry, dir: &Unit<Vector>) -> Point {
         let local_dir = Unit::new_unchecked(transform.inverse_transform_vector(dir));
         transform * self.local_support_point_toward(&local_dir)
     }

@@ -77,8 +77,8 @@ where
 {
     fn generate<R: Rng>(rng: &mut R) -> Capsule {
         Capsule::new(
-            rng.gen::<Point<Real>>(),
-            rng.gen::<Point<Real>>(),
+            rng.gen::<Point>(),
+            rng.gen::<Point>(),
             rng.gen::<Real>().abs(),
         )
     }
@@ -104,7 +104,7 @@ where
 
 impl DefaultGen for Segment
 where
-    Standard: Distribution<Point<Real>>,
+    Standard: Distribution<Point>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Segment {
         Segment::new(rng.gen(), rng.gen())
@@ -113,7 +113,7 @@ where
 
 impl DefaultGen for Triangle
 where
-    Standard: Distribution<Point<Real>>,
+    Standard: Distribution<Point>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Triangle {
         Triangle::new(rng.gen(), rng.gen(), rng.gen())

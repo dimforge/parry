@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorD, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -46,8 +46,8 @@ where
 
 /// A visitor for computing the closest points between a composite-shape and a shape.
 pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: VectorD<SimdReal>,
-    msum_margin: VectorD<SimdReal>,
+    msum_shift: VectorT<SimdReal>,
+    msum_margin: VectorT<SimdReal>,
     margin: Real,
 
     dispatcher: &'a D,
@@ -72,8 +72,8 @@ where
         let ls_aabb2 = g2.compute_aabb(pos12);
 
         CompositeShapeAgainstShapeClosestPointsVisitor {
-            msum_shift: VectorD::splat(-ls_aabb2.center().coords),
-            msum_margin: VectorD::splat(ls_aabb2.half_extents()),
+            msum_shift: VectorT::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorT::splat(ls_aabb2.half_extents()),
             margin,
             dispatcher,
             pos12,

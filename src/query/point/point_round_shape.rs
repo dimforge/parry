@@ -7,7 +7,7 @@ use crate::shape::{FeatureId, RoundShape, SupportMap};
 // call this and adjust the projected point accordingly.
 impl<S: SupportMap> PointQuery for RoundShape<S> {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, solid: bool) -> PointProjection {
         #[cfg(not(feature = "std"))] // TODO: can’t be used without std because of EPA
         return unimplemented!(
             "The projection of points on a round shapes isn’t supported on no-std platforms yet."
@@ -25,7 +25,7 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
-        point: &Point<Real>,
+        point: &Point,
     ) -> (PointProjection, FeatureId) {
         (self.project_local_point(point, false), FeatureId::Unknown)
     }

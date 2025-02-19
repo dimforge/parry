@@ -6,14 +6,14 @@ use crate::{math::Vector, utils};
 // 0 = First vertex.
 // 1 = On the face.
 // 2 = Second vertex.
-pub type ClippingPoints = (Point<Real>, Point<Real>, usize, usize);
+pub type ClippingPoints = (Point, Point, usize, usize);
 
 /// Projects two segments on one another towards the direction `normal`,
 /// and compute their intersection.
 #[cfg(feature = "dim2")]
 pub fn clip_segment_segment_with_normal(
-    mut seg1: (Point<Real>, Point<Real>),
-    mut seg2: (Point<Real>, Point<Real>),
+    mut seg1: (Point, Point),
+    mut seg2: (Point, Point),
     normal: Vector,
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     use crate::utils::WBasis;
@@ -74,8 +74,8 @@ pub fn clip_segment_segment_with_normal(
 
 /// Projects two segments on one another and compute their intersection.
 pub fn clip_segment_segment(
-    mut seg1: (Point<Real>, Point<Real>),
-    mut seg2: (Point<Real>, Point<Real>),
+    mut seg1: (Point, Point),
+    mut seg2: (Point, Point),
 ) -> Option<(ClippingPoints, ClippingPoints)> {
     // NOTE: no need to normalize the tangent.
     let tangent1 = seg1.1 - seg1.0;

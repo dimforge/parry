@@ -6,7 +6,7 @@ impl MassProperties {
     /// Computes the mass properties of a triangle-mesh.
     pub fn from_trimesh(
         density: Real,
-        vertices: &[Point<Real>],
+        vertices: &[Point],
         indices: &[[u32; 3]],
     ) -> MassProperties {
         let (area, com) = trimesh_area_and_center_of_mass(vertices, indices);
@@ -36,9 +36,9 @@ impl MassProperties {
 
 /// Computes the area and center-of-mass of a triangle-mesh.
 pub fn trimesh_area_and_center_of_mass(
-    vertices: &[Point<Real>],
+    vertices: &[Point],
     indices: &[[u32; 3]],
-) -> (Real, Point<Real>) {
+) -> (Real, Point) {
     let mut res = Point::origin();
     let mut areasum = 0.0;
 

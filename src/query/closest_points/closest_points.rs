@@ -14,7 +14,7 @@ pub enum ClosestPoints {
     /// The two objects are intersecting.
     Intersecting,
     /// The two objects are non-intersecting but closer than a given user-defined distance.
-    WithinMargin(Point<Real>, Point<Real>),
+    WithinMargin(Point, Point),
     /// The two objects are non-intersecting and further than a given user-defined distance.
     Disjoint,
 }

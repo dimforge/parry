@@ -95,7 +95,7 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (proj, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
+        let (proj, loc) = tri.project_local_point_and_get_location(&Point::origin(), true);
 
         match loc {
             TrianglePointLocation::OnVertex(_) | TrianglePointLocation::OnEdge(_, _) => {
@@ -103,7 +103,7 @@ impl Face {
                 (
                     // barycentric_coordinates is guaranteed to work in OnVertex and OnEdge locations
                     Self::new_with_proj(vertices, loc.barycentric_coordinates().unwrap(), pts, adj),
-                    proj.is_inside_eps(&Point::<Real>::origin(), eps_tol),
+                    proj.is_inside_eps(&Point::origin(), eps_tol),
                 )
             }
             TrianglePointLocation::OnFace(_, bcoords) => {
@@ -113,7 +113,7 @@ impl Face {
         }
     }
 
-    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point<Real>, Point<Real>) {
+    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point, Point) {
         (
             vertices[self.pts[0]].orig1 * self.bcoords[0]
                 + vertices[self.pts[1]].orig1.coords * self.bcoords[1]
@@ -208,7 +208,7 @@ impl EPA {
         m: &Isometry,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>> {
+    ) -> Option<Point> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -223,7 +223,7 @@ impl EPA {
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector>)>
+    ) -> Option<(Point, Point, Unit<Vector>)>
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,

@@ -6,9 +6,9 @@ impl MassProperties {
     /// Computes the mass properties of a triangle.
     pub fn from_triangle(
         density: Real,
-        a: &Point<Real>,
-        b: &Point<Real>,
-        c: &Point<Real>,
+        a: &Point,
+        b: &Point,
+        c: &Point,
     ) -> MassProperties {
         let triangle = Triangle::new(*a, *b, *c);
         let area = triangle.area();

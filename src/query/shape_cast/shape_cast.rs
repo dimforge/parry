@@ -37,13 +37,13 @@ pub struct ShapeCastHit {
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`.
-    pub witness1: Point<Real>,
+    pub witness1: Point,
     /// The local-space closest point on the second shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub witness2: Point<Real>,
+    pub witness2: Point,
     /// The local-space outward normal on the first shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
