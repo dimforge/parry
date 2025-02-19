@@ -9,10 +9,7 @@ impl PointQuery for Segment {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let (proj, loc) = self.project_local_point_and_get_location(pt, false);
         let feature = match loc {
             SegmentPointLocation::OnVertex(i) => FeatureId::Vertex(i),

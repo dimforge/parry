@@ -526,10 +526,7 @@ impl VHACD {
     /// Use `compute_exact_convex_hulls` instead if the original polyline/trimesh geometry
     /// needs to be taken into account.
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hulls(
-        &self,
-        downsampling: u32,
-    ) -> Vec<(Vec<Point>, Vec<[u32; DIM]>)> {
+    pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<(Vec<Point>, Vec<[u32; DIM]>)> {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()

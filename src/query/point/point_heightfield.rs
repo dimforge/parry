@@ -55,10 +55,7 @@ impl PointQuery for HeightField {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         // TODO: compute the feature properly.
         (self.project_local_point(point, false), FeatureId::Unknown)
     }

@@ -148,11 +148,7 @@ impl TypedSimdCompositeShape for Compound {
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     ) {
         if let Some((part_pos, part)) = self.shapes.get(i as usize) {
             f(Some(part_pos), &**part, None)

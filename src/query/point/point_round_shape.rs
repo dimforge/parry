@@ -23,10 +23,7 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         (self.project_local_point(point, false), FeatureId::Unknown)
     }
 }

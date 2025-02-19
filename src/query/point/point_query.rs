@@ -78,8 +78,7 @@ pub trait PointQuery {
 
     /// Projects a point on the boundary of `self` and returns the id of the
     /// feature the point was projected on.
-    fn project_local_point_and_get_feature(&self, pt: &Point)
-        -> (PointProjection, FeatureId);
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId);
 
     /// Computes the minimal distance between a point and `self`.
     fn distance_to_local_point(&self, pt: &Point, solid: bool) -> Real {

@@ -4,12 +4,7 @@ use crate::shape::Triangle;
 
 impl MassProperties {
     /// Computes the mass properties of a triangle.
-    pub fn from_triangle(
-        density: Real,
-        a: &Point,
-        b: &Point,
-        c: &Point,
-    ) -> MassProperties {
+    pub fn from_triangle(density: Real, a: &Point, b: &Point, c: &Point) -> MassProperties {
         let triangle = Triangle::new(*a, *b, *c);
         let area = triangle.area();
         let com = triangle.center();

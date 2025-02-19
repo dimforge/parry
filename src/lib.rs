@@ -246,7 +246,7 @@ pub mod math {
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
-    
+
     use simba::simd::AutoBoolx4;
 
     /// The number of lanes of a SIMD number.

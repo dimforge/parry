@@ -408,11 +408,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     // }
 
     /// The shape's normal at the given point located on a specific feature.
-    fn feature_normal_at_point(
-        &self,
-        _feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, _feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         None
     }
 
@@ -702,11 +698,7 @@ impl Shape for Ball {
 
     /// The shape's normal at the given point located on a specific feature.
     #[inline]
-    fn feature_normal_at_point(
-        &self,
-        _: FeatureId,
-        point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, _: FeatureId, point: &Point) -> Option<Unit<Vector>> {
         Unit::try_new(point.coords, crate::math::DEFAULT_EPSILON)
     }
 }
@@ -766,11 +758,7 @@ impl Shape for Cuboid {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
 }
@@ -891,11 +879,7 @@ impl Shape for Triangle {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        _feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, _feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         #[cfg(feature = "dim2")]
         return None;
         #[cfg(feature = "dim3")]
@@ -958,11 +942,7 @@ impl Shape for Segment {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
 }
@@ -1131,11 +1111,7 @@ impl Shape for TriMesh {
     }
 
     /// Gets the normal of the triangle represented by `feature`.
-    fn feature_normal_at_point(
-        &self,
-        _feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, _feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         #[cfg(feature = "dim2")]
         return None;
         #[cfg(feature = "dim3")]
@@ -1251,11 +1227,7 @@ impl Shape for ConvexPolygon {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
 }
@@ -1319,11 +1291,7 @@ impl Shape for ConvexPolyhedron {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(
-        &self,
-        feature: FeatureId,
-        _point: &Point,
-    ) -> Option<Unit<Vector>> {
+    fn feature_normal_at_point(&self, feature: FeatureId, _point: &Point) -> Option<Unit<Vector>> {
         self.feature_normal(feature)
     }
 }

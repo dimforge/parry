@@ -120,10 +120,8 @@ pub fn mquad_mesh_from_points(
     let vertices: Vec<Vertex> =
         mquad_compute_normals_and_bake_light(&mquad_points, &mquad_indices, light_pos);
     // Regenerate the index for each vertex.
-    let indices: Vec<u16> = (0..vertices.len() * 3)
-        .map(|i| i as u16)
-        .collect();
-    
+    let indices: Vec<u16> = (0..vertices.len() * 3).map(|i| i as u16).collect();
+
     Mesh {
         vertices,
         indices,

@@ -12,10 +12,7 @@ impl PointQuery for Cuboid {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let dl = Point::from(-self.half_extents);
         let ur = Point::from(self.half_extents);
         Aabb::new(dl, ur).project_local_point_and_get_feature(pt)

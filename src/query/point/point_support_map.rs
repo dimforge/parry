@@ -59,10 +59,7 @@ impl PointQuery for ConvexPolyhedron {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
@@ -84,10 +81,7 @@ impl PointQuery for ConvexPolygon {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };

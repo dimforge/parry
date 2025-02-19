@@ -4,11 +4,7 @@ use crate::shape::Triangle;
 
 impl MassProperties {
     /// Computes the mass properties of a triangle-mesh.
-    pub fn from_trimesh(
-        density: Real,
-        vertices: &[Point],
-        indices: &[[u32; 3]],
-    ) -> MassProperties {
+    pub fn from_trimesh(density: Real, vertices: &[Point], indices: &[[u32; 3]]) -> MassProperties {
         let (area, com) = trimesh_area_and_center_of_mass(vertices, indices);
 
         if area == 0.0 {
@@ -35,10 +31,7 @@ impl MassProperties {
 }
 
 /// Computes the area and center-of-mass of a triangle-mesh.
-pub fn trimesh_area_and_center_of_mass(
-    vertices: &[Point],
-    indices: &[[u32; 3]],
-) -> (Real, Point) {
+pub fn trimesh_area_and_center_of_mass(vertices: &[Point], indices: &[[u32; 3]]) -> (Real, Point) {
     let mut res = Point::origin();
     let mut areasum = 0.0;
 

@@ -63,10 +63,7 @@ impl PointQuery for Aabb {
     #[allow(unused_assignments)] // For last_zero_shift which is used only in 3D.
     #[allow(unused_variables)] // For last_zero_shift which is used only in 3D.
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let (inside, ls_pt, shift) = self.do_project_local_point(pt, false);
         let proj = PointProjection::new(inside, ls_pt);
         let mut nzero_shifts = 0;

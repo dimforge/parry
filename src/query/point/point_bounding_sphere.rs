@@ -14,10 +14,7 @@ impl PointQuery for BoundingSphere {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         (self.project_local_point(pt, false), FeatureId::Face(0))
     }
 

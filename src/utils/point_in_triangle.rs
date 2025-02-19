@@ -45,12 +45,7 @@ pub fn corner_direction(p1: &Point, p2: &Point, p3: &Point) -> Orientation {
 
 /// Returns `true` if point `p` is in triangle with corners `v1`, `v2` and `v3`.
 /// Returns `None` if the triangle is invalid i.e. all points are the same or on a straight line.
-pub fn is_point_in_triangle(
-    p: &Point,
-    v1: &Point,
-    v2: &Point,
-    v3: &Point,
-) -> Option<bool> {
+pub fn is_point_in_triangle(p: &Point, v1: &Point, v2: &Point, v3: &Point) -> Option<bool> {
     let d1 = corner_direction(p, v1, v2);
     let d2 = corner_direction(p, v2, v3);
     let d3 = corner_direction(p, v3, v1);

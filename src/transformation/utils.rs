@@ -204,13 +204,7 @@ pub fn push_arc_and_idx(
 /// Pushes to `out` a set of points forming an arc starting at `start`, ending at `end` with
 /// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
 /// The `start` and `end` point are not pushed to `out`.
-pub fn push_arc(
-    center: Point,
-    start: Point,
-    end: Point,
-    nsubdivs: u32,
-    out: &mut Vec<Point>,
-) {
+pub fn push_arc(center: Point, start: Point, end: Point, nsubdivs: u32, out: &mut Vec<Point>) {
     assert!(nsubdivs > 0);
     if let (Some((start_dir, start_len)), Some((end_dir, end_len))) = (
         na::Unit::try_new_and_get(start - center, 0.0),

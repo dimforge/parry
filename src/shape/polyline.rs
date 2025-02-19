@@ -303,11 +303,7 @@ impl TypedSimdCompositeShape for Polyline {
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     ) {
         let seg = self.segment(i);
         f(None, &seg, None)

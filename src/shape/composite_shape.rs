@@ -53,11 +53,7 @@ impl TypedSimdCompositeShape for dyn SimdCompositeShape + '_ {
     fn map_typed_part_at(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(
-            Option<&Isometry>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     ) {
         self.map_part_at(shape_id, &mut f)
     }

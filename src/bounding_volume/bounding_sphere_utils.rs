@@ -6,10 +6,7 @@ use super::BoundingSphere;
 
 /// Computes the bounding sphere of a set of point, given its center.
 #[inline]
-pub fn point_cloud_bounding_sphere_with_center(
-    pts: &[Point],
-    center: Point,
-) -> BoundingSphere {
+pub fn point_cloud_bounding_sphere_with_center(pts: &[Point], center: Point) -> BoundingSphere {
     let mut sqradius = 0.0;
 
     for pt in pts.iter() {

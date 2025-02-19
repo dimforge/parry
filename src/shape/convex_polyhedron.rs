@@ -456,11 +456,7 @@ impl ConvexPolyhedron {
         Some(self)
     }
 
-    fn support_feature_id_toward_eps(
-        &self,
-        local_dir: &Unit<Vector>,
-        eps: Real,
-    ) -> FeatureId {
+    fn support_feature_id_toward_eps(&self, local_dir: &Unit<Vector>, eps: Real) -> FeatureId {
         let (seps, ceps) = ComplexField::sin_cos(eps);
         let support_pt_id = utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points);
         let vertex = &self.vertices[support_pt_id];

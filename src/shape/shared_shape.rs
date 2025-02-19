@@ -176,12 +176,7 @@ impl SharedShape {
         SharedShape(Arc::new(Triangle::new(a, b, c)))
     }
     /// Initializes a triangle shape with round corners.
-    pub fn round_triangle(
-        a: Point,
-        b: Point,
-        c: Point,
-        border_radius: Real,
-    ) -> Self {
+    pub fn round_triangle(a: Point, b: Point, c: Point, border_radius: Real) -> Self {
         SharedShape(Arc::new(RoundShape {
             inner_shape: Triangle::new(a, b, c),
             border_radius,

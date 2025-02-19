@@ -19,11 +19,7 @@ impl Aabb {
     /// The results is written into `points` directly. The input points are
     /// assumed to form a convex polygon where all points lie on the same plane.
     #[inline]
-    pub fn clip_polygon_with_workspace(
-        &self,
-        points: &mut Vec<Point>,
-        workspace: &mut Vec<Point>,
-    ) {
+    pub fn clip_polygon_with_workspace(&self, points: &mut Vec<Point>, workspace: &mut Vec<Point>) {
         super::clip_halfspace_polygon(&self.mins, &-Vector::x(), points, workspace);
         super::clip_halfspace_polygon(&self.maxs, &Vector::x(), workspace, points);
 

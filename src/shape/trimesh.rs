@@ -301,10 +301,7 @@ impl fmt::Debug for TriMesh {
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(
-        vertices: Vec<Point>,
-        indices: Vec<[u32; 3]>,
-    ) -> Result<Self, TriMeshBuilderError> {
+    pub fn new(vertices: Vec<Point>, indices: Vec<[u32; 3]>) -> Result<Self, TriMeshBuilderError> {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
     }
 
@@ -1107,11 +1104,7 @@ impl TypedSimdCompositeShape for TriMesh {
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
