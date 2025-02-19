@@ -1,6 +1,6 @@
 use na::Unit;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 #[cfg(feature = "std")]
 use crate::query::epa::EPA;
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
@@ -17,7 +17,7 @@ use crate::shape::{FeatureId, SupportMap};
 pub fn local_point_projection_on_support_map<G>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
-    point: &Point<Real>,
+    point: &Point,
     solid: bool,
 ) -> PointProjection
 where
@@ -54,15 +54,12 @@ where
 #[cfg(feature = "dim3")]
 impl PointQuery for ConvexPolyhedron {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, solid: bool) -> PointProjection {
         local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
@@ -79,15 +76,12 @@ impl PointQuery for ConvexPolyhedron {
 #[cfg(feature = "dim2")]
 impl PointQuery for ConvexPolygon {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, solid: bool) -> PointProjection {
         local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         let proj = self.project_local_point(point, false);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };

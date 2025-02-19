@@ -66,7 +66,7 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
 pub(crate) fn unit_hemisphere(
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
-) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+) -> (Vec<Point>, Vec<[u32; DIM]>) {
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();
     let dtheta = two_pi / (ntheta_subdiv as Real);

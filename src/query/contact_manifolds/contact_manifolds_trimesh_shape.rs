@@ -41,7 +41,7 @@ impl TriMeshShapeContactManifoldsWorkspace {
 /// Computes the contact manifold between a triangle-mesh an a shape, both represented as `Shape` trait-objects.
 pub fn contact_manifolds_trimesh_shape_shapes<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -86,7 +86,7 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 /// Computes the contact manifold between a triangle-mesh and a shape.
 pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     trimesh1: &TriMesh,
     shape2: &dyn Shape,
     prediction: Real,

@@ -71,9 +71,9 @@ impl RayCast for Triangle {
 /// the intersection point are returned.
 #[cfg(feature = "dim3")]
 pub fn local_ray_intersection_with_triangle(
-    a: &Point<Real>,
-    b: &Point<Real>,
-    c: &Point<Real>,
+    a: &Point,
+    b: &Point,
+    c: &Point,
     ray: &Ray,
 ) -> Option<(RayIntersection, Vector3<Real>)> {
     let ab = *b - *a;

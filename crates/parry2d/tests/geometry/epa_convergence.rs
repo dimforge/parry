@@ -9,10 +9,10 @@ use parry2d::{
 #[test]
 fn capsule_convergence() {
     let shape1 = Capsule::new_y(5.0, 10.0);
-    let mut vec = Vec::<Point<Real>>::with_capacity(3);
-    vec.push(Point::<Real>::new(64.0, 507.0));
-    vec.push(Point::<Real>::new(440.0, 326.0));
-    vec.push(Point::<Real>::new(1072.0, 507.0));
+    let mut vec = Vec::<Point>::with_capacity(3);
+    vec.push(Point::new(64.0, 507.0));
+    vec.push(Point::new(440.0, 326.0));
+    vec.push(Point::new(1072.0, 507.0));
     let shape2 = ConvexPolygon::from_convex_polyline(vec);
     let shape2 = shape2.unwrap();
     let transform1 = Isometry::new(Vector2::new(381.592, 348.491), 0.0);

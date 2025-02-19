@@ -1,6 +1,6 @@
 use crate::bounding_volume;
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::Segment;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder};
@@ -9,7 +9,7 @@ use crate::shape::{Cone, Cylinder};
 impl Cone {
     /// Computes the world-space [`Aabb`] of this cone, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         bounding_volume::details::support_map_aabb(pos, self)
     }
 
@@ -24,7 +24,7 @@ impl Cone {
 impl Cylinder {
     /// Computes the world-space [`Aabb`] of this cylinder, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         bounding_volume::details::support_map_aabb(pos, self)
     }
 
@@ -38,7 +38,7 @@ impl Cylinder {
 impl Segment {
     /// Computes the world-space [`Aabb`] of this segment, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.transformed(pos).local_aabb()
     }
 

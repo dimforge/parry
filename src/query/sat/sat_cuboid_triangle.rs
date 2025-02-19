@@ -16,8 +16,8 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     triangle2: &Triangle,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     // NOTE: everything in this method will be expressed
     // in the local-space of the first triangle. So we
     // don't bother adding 2_1 suffixes (e.g. `a2_1`) to everything in
@@ -99,8 +99,8 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 pub fn triangle_support_map_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let mut best_sep = -Real::MAX;
     let mut best_normal = Vector::zeros();
 
@@ -125,8 +125,8 @@ pub fn triangle_support_map_find_local_separating_normal_oneway(
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     triangle_support_map_find_local_separating_normal_oneway(triangle1, shape2, pos12)
 }
 
@@ -138,8 +138,8 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     sat::point_cuboid_find_local_separating_normal_oneway(
         triangle1.a,
         triangle1.normal(),

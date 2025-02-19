@@ -5,7 +5,7 @@ use na;
 
 /// Distance between a halfspace and a support-mapped shape.
 pub fn distance_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
 ) -> Real {
@@ -15,7 +15,7 @@ pub fn distance_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Distance between a support-mapped shape and a halfspace.
 pub fn distance_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
 ) -> Real {

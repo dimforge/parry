@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::partitioning::Qbvh;
 use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
 use crate::utils::HashablePartialEq;
@@ -66,9 +66,9 @@ pub enum TriMeshBuilderError {
 #[cfg(feature = "dim3")]
 pub struct TriMeshPseudoNormals {
     /// The pseudo-normals of the vertices.
-    pub vertices_pseudo_normal: Vec<Vector<Real>>,
+    pub vertices_pseudo_normal: Vec<Vector>,
     /// The pseudo-normals of the edges.
-    pub edges_pseudo_normal: Vec<[Vector<Real>; 3]>,
+    pub edges_pseudo_normal: Vec<[Vector; 3]>,
 }
 
 /// The connected-components of a triangle mesh.
@@ -102,7 +102,7 @@ impl TriMeshConnectedComponents {
     ///
     /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
     /// unexpected result.
-    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point<Real>>, Vec<[u32; 3]>)> {
+    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point>, Vec<[u32; 3]>)> {
         let mut result = vec![];
         let mut new_vtx_index: Vec<_> = vec![u32::MAX; mesh.vertices.len()];
 
@@ -284,7 +284,7 @@ bitflags::bitflags! {
 /// A triangle mesh.
 pub struct TriMesh {
     qbvh: Qbvh<u32>,
-    vertices: Vec<Point<Real>>,
+    vertices: Vec<Point>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
     pub(crate) pseudo_normals: Option<TriMeshPseudoNormals>,
@@ -301,16 +301,13 @@ impl fmt::Debug for TriMesh {
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
-    pub fn new(
-        vertices: Vec<Point<Real>>,
-        indices: Vec<[u32; 3]>,
-    ) -> Result<Self, TriMeshBuilderError> {
+    pub fn new(vertices: Vec<Point>, indices: Vec<[u32; 3]>) -> Result<Self, TriMeshBuilderError> {
         Self::with_flags(vertices, indices, TriMeshFlags::empty())
     }
 
     /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
     pub fn with_flags(
-        vertices: Vec<Point<Real>>,
+        vertices: Vec<Point>,
         indices: Vec<[u32; 3]>,
         flags: TriMeshFlags,
     ) -> Result<Self, TriMeshBuilderError> {
@@ -395,7 +392,7 @@ impl TriMesh {
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
-    pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
+    pub fn transform_vertices(&mut self, transform: &Isometry) {
         self.vertices
             .iter_mut()
             .for_each(|pt| *pt = transform * *pt);
@@ -417,7 +414,7 @@ impl TriMesh {
     }
 
     /// Returns a scaled version of this triangle mesh.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.vertices
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
@@ -470,7 +467,7 @@ impl TriMesh {
     ///
     /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
     #[cfg(feature = "dim2")]
-    pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_polygon(vertices: Vec<Point>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices).unwrap())
     }
 
@@ -545,9 +542,9 @@ impl TriMesh {
         let mut triangle_set = HashSet::default();
 
         fn resolve_coord_id(
-            coord: &Point<Real>,
-            vtx_to_id: &mut HashMap<HashablePartialEq<Point<Real>>, u32>,
-            new_vertices: &mut Vec<Point<Real>>,
+            coord: &Point,
+            vtx_to_id: &mut HashMap<HashablePartialEq<Point>, u32>,
+            new_vertices: &mut Vec<Point>,
         ) -> u32 {
             let key = HashablePartialEq::new(*coord);
             let id = match vtx_to_id.entry(key) {
@@ -936,7 +933,7 @@ impl TriMesh {
 
     #[cfg(feature = "dim3")]
     /// Gets the normal of the triangle represented by `feature`.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector>> {
         match feature {
             FeatureId::Face(i) => self
                 .triangle(i % self.num_triangles() as u32)
@@ -953,7 +950,7 @@ impl TriMesh {
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Isometry) -> Aabb {
         self.qbvh.root_aabb().transform_by(pos)
     }
 
@@ -1025,7 +1022,7 @@ impl TriMesh {
     }
 
     /// The vertex buffer of this mesh.
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Point] {
         &self.vertices
     }
 
@@ -1082,7 +1079,7 @@ impl SimdCompositeShape for TriMesh {
     fn map_part_at(
         &self,
         i: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let normals = self.triangle_normal_constraints(i);
@@ -1107,11 +1104,7 @@ impl TypedSimdCompositeShape for TriMesh {
     fn map_typed_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ),
+        mut f: impl FnMut(Option<&Isometry>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
@@ -1122,7 +1115,7 @@ impl TypedSimdCompositeShape for TriMesh {
     fn map_untyped_part_at(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        mut f: impl FnMut(Option<&Isometry>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);

@@ -11,7 +11,7 @@ use na::Point2;
 #[derive(Debug, Clone)]
 pub struct PolygonalFeature {
     /// Up to four vertices forming this polygonal feature.
-    pub vertices: [Point<Real>; 4],
+    pub vertices: [Point; 4],
     /// The feature IDs of this polygon's vertices.
     pub vids: [PackedFeatureId; 4],
     /// The feature IDs of this polygon's edges.
@@ -65,7 +65,7 @@ impl PolygonalFeature {
     }
 
     /// Transform each vertex of this polygonal feature by the given position `pos`.
-    pub fn transform_by(&mut self, pos: &Isometry<Real>) {
+    pub fn transform_by(&mut self, pos: &Isometry) {
         for p in &mut self.vertices[0..self.num_vertices] {
             *p = pos * *p;
         }
@@ -74,10 +74,10 @@ impl PolygonalFeature {
     /// Computes all the contacts between two polygonal features.
     #[cfg(feature = "std")]
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
-        _pos21: &Isometry<Real>,
-        sep_axis1: &Vector<Real>,
-        _sep_axis2: &Vector<Real>,
+        pos12: &Isometry,
+        _pos21: &Isometry,
+        sep_axis1: &Vector,
+        _sep_axis2: &Vector,
         feature1: &Self,
         feature2: &Self,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
@@ -93,9 +93,9 @@ impl PolygonalFeature {
 
     #[cfg(feature = "std")]
     fn contacts_edge_edge<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<Real>,
+        sep_axis1: &Vector,
         face2: &PolygonalFeature,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,
@@ -206,9 +206,9 @@ impl PolygonalFeature {
 
     #[cfg(feature = "std")]
     fn contacts_face_face<ManifoldData, ContactData: Default + Copy>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         face1: &PolygonalFeature,
-        sep_axis1: &Vector<Real>,
+        sep_axis1: &Vector,
         face2: &PolygonalFeature,
         manifold: &mut ContactManifold<ManifoldData, ContactData>,
         flipped: bool,

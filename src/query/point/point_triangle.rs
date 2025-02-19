@@ -3,7 +3,7 @@ use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
 
 #[inline]
-fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
+fn compute_result(pt: &Point, proj: Point) -> PointProjection {
     #[cfg(feature = "dim2")]
     {
         PointProjection::new(*pt == proj, proj)
@@ -19,15 +19,12 @@ fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
 
 impl PointQuery for Triangle {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let (proj, loc) = if DIM == 2 {
             self.project_local_point_and_get_location(pt, false)
         } else {
@@ -57,7 +54,7 @@ impl PointQueryWithLocation for Triangle {
     #[inline]
     fn project_local_point_and_get_location(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         // To understand the ideas, consider reading the slides below
@@ -109,12 +106,12 @@ impl PointQueryWithLocation for Triangle {
         // For 2D and 3D, it uses explicit cross/perp products that are
         // more numerically stable.
         fn stable_check_edges_voronoi(
-            ab: &Vector<Real>,
-            ac: &Vector<Real>,
-            bc: &Vector<Real>,
-            ap: &Vector<Real>,
-            bp: &Vector<Real>,
-            cp: &Vector<Real>,
+            ab: &Vector,
+            ac: &Vector,
+            bc: &Vector,
+            ap: &Vector,
+            bp: &Vector,
+            cp: &Vector,
             ab_ap: Real,
             ab_bp: Real,
             ac_ap: Real,

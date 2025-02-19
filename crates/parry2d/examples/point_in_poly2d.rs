@@ -29,13 +29,13 @@ async fn main() {
             .iter_mut()
             .for_each(|pt| *pt = animation_rotation * *pt);
 
-        draw_polygon(&polygon, RENDER_SCALE, polygon_render_pos, BLUE);
+        draw_polygon(polygon, RENDER_SCALE, polygon_render_pos, BLUE);
 
         /*
          * Compute polygon intersections.
          */
         for point in &test_points {
-            if point_in_poly2d(point, &polygon) {
+            if point_in_poly2d(point, polygon) {
                 draw_point(*point, RENDER_SCALE, polygon_render_pos, RED);
             } else {
                 draw_point(*point, RENDER_SCALE, polygon_render_pos, GREEN);

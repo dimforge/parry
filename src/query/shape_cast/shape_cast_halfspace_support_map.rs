@@ -1,12 +1,12 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{Ray, RayCast, ShapeCastHit, ShapeCastStatus};
 use crate::shape::{HalfSpace, RoundShapeRef, SupportMap};
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
 pub fn cast_shapes_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     halfspace: &HalfSpace,
     other: &G,
     options: ShapeCastOptions,
@@ -61,8 +61,8 @@ pub fn cast_shapes_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
 pub fn cast_shapes_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     other: &G,
     halfspace: &HalfSpace,
     options: ShapeCastOptions,

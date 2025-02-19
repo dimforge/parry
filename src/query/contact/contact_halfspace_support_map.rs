@@ -4,7 +4,7 @@ use crate::shape::{HalfSpace, SupportMap};
 
 /// Contact between a halfspace and a support-mapped shape (Cuboid, ConvexHull, etc.)
 pub fn contact_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
     prediction: Real,
@@ -31,7 +31,7 @@ pub fn contact_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Contact between a support-mapped shape (Cuboid, ConvexHull, etc.) and a halfspace.
 pub fn contact_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
     prediction: Real,

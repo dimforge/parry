@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Point, Real, SimdBool, SimdReal, Vector, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, ShapeCastHit, SimdRay};
@@ -9,8 +9,8 @@ use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 /// Time Of Impact of a composite shape with any other shape, under translational movement.
 pub fn cast_shapes_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     g1: &G1,
     g2: &dyn Shape,
     options: ShapeCastOptions,
@@ -29,8 +29,8 @@ where
 /// Time Of Impact of any shape with a composite shape, under translational movement.
 pub fn cast_shapes_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     g1: &dyn Shape,
     g2: &G2,
     options: ShapeCastOptions,
@@ -52,13 +52,13 @@ where
 
 /// A visitor used to find the time-of-impact between a composite shape and a shape.
 pub struct TOICompositeShapeShapeBestFirstVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: Vector<SimdReal>,
-    msum_margin: Vector<SimdReal>,
+    msum_shift: VectorT<SimdReal>,
+    msum_margin: VectorT<SimdReal>,
     ray: SimdRay,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
-    vel12: &'a Vector<Real>,
+    pos12: &'a Isometry,
+    vel12: &'a Vector,
     g1: &'a G1,
     g2: &'a dyn Shape,
     options: ShapeCastOptions,
@@ -72,8 +72,8 @@ where
     /// Creates a new visitor used to find the time-of-impact between a composite shape and a shape.
     pub fn new(
         dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
-        vel12: &'a Vector<Real>,
+        pos12: &'a Isometry,
+        vel12: &'a Vector,
         g1: &'a G1,
         g2: &'a dyn Shape,
         options: ShapeCastOptions,
@@ -83,8 +83,8 @@ where
 
         TOICompositeShapeShapeBestFirstVisitor {
             dispatcher,
-            msum_shift: Vector::splat(-ls_aabb2.center().coords),
-            msum_margin: Vector::splat(
+            msum_shift: VectorT::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorT::splat(
                 ls_aabb2.half_extents() + Vector::repeat(options.target_distance),
             ),
             ray: SimdRay::splat(ray),

@@ -10,8 +10,8 @@ use crate::{bounding_volume::Aabb, query::RayCast};
 #[cfg(feature = "dim2")]
 pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     heightfield1: &HeightField,
     g2: &dyn Shape,
     options: ShapeCastOptions,
@@ -99,8 +99,8 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
 #[cfg(feature = "dim3")]
 pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     heightfield1: &HeightField,
     g2: &dyn Shape,
     options: ShapeCastOptions,
@@ -263,8 +263,8 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
 /// Time Of Impact between a moving shape and a heightfield.
 pub fn cast_shapes_shape_heightfield<D: ?Sized + QueryDispatcher>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     g1: &dyn Shape,
     heightfield2: &HeightField,
     options: ShapeCastOptions,

@@ -9,8 +9,8 @@ use na::Unit;
 pub fn triangle_segment_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     segment2: &Segment,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     if let Some(dir) = triangle1.normal() {
         let p2a = segment2.support_point_toward(pos12, &-dir);
         let p2b = segment2.support_point_toward(pos12, &dir);
@@ -34,8 +34,8 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 pub fn segment_triangle_find_local_separating_edge_twoway(
     segment1: &Segment,
     triangle2: &Triangle,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let x2 = pos12 * (triangle2.b - triangle2.a);
     let y2 = pos12 * (triangle2.c - triangle2.b);
     let z2 = pos12 * (triangle2.a - triangle2.c);

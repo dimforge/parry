@@ -10,9 +10,9 @@ use na::Unit;
 pub fn cuboid_support_map_compute_separation_wrt_local_line(
     cube1: &Cuboid,
     shape2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-    axis1: &Unit<Vector<Real>>,
-) -> (Real, Unit<Vector<Real>>) {
+    pos12: &Isometry,
+    axis1: &Unit<Vector>,
+) -> (Real, Unit<Vector>) {
     let axis1_2 = pos12.inverse_transform_unit_vector(axis1);
     let separation1 = {
         let axis2 = -axis1_2;
@@ -44,9 +44,9 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 pub fn cuboid_support_map_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     shape2: &impl SupportMap,
-    axes: &[Vector<Real>],
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    axes: &[Vector],
+    pos12: &Isometry,
+) -> (Real, Vector) {
     use approx::AbsDiffEq;
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::zeros();
@@ -72,8 +72,8 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
     cube1: &Cuboid,
     shape2: &S,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::zeros();
 

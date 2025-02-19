@@ -8,7 +8,7 @@ use na::ComplexField; // For sqrt.
 impl PointQuery for HeightField {
     fn project_local_point_with_max_dist(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
@@ -33,7 +33,7 @@ impl PointQuery for HeightField {
     }
 
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, _: bool) -> PointProjection {
+    fn project_local_point(&self, point: &Point, _: bool) -> PointProjection {
         let mut smallest_dist = Real::MAX;
         let mut best_proj = PointProjection::new(false, *point);
 
@@ -55,10 +55,7 @@ impl PointQuery for HeightField {
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: &Point) -> (PointProjection, FeatureId) {
         // TODO: compute the feature properly.
         (self.project_local_point(point, false), FeatureId::Unknown)
     }
@@ -66,7 +63,7 @@ impl PointQuery for HeightField {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, _point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, _point: &Point) -> bool {
         false
     }
 }
@@ -77,7 +74,7 @@ impl PointQueryWithLocation for HeightField {
     #[inline]
     fn project_local_point_and_get_location(
         &self,
-        _point: &Point<Real>,
+        _point: &Point,
         _: bool,
     ) -> (PointProjection, Self::Location) {
         unimplemented!()

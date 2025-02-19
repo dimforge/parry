@@ -22,7 +22,7 @@ impl Segment {
     /// the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn local_split(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
@@ -38,10 +38,10 @@ impl Segment {
     /// parallel or near-parallel to the segment.
     pub fn local_split_and_get_intersection(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: &UnitVector,
         bias: Real,
         epsilon: Real,
-    ) -> (SplitResult<Self>, Option<(Point<Real>, Real)>) {
+    ) -> (SplitResult<Self>, Option<(Point, Real)>) {
         let dir = self.b - self.a;
         let a = bias - local_axis.dot(&self.a.coords);
         let b = local_axis.dot(&dir);

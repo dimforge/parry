@@ -31,7 +31,7 @@ impl RayCast for Ball {
 /// The first result element is `true` if the ray started inside of the ball.
 #[inline]
 pub fn ray_toi_with_ball(
-    center: &Point<Real>,
+    center: &Point,
     radius: Real,
     ray: &Ray,
     solid: bool,
@@ -79,7 +79,7 @@ pub fn ray_toi_with_ball(
 /// Computes the time of impact and contact normal of a ray on a ball.
 #[inline]
 pub fn ray_toi_and_normal_with_ball(
-    center: &Point<Real>,
+    center: &Point,
     radius: Real,
     ray: &Ray,
     solid: bool,

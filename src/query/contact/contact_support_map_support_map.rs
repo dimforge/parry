@@ -8,7 +8,7 @@ use na::Unit;
 
 /// Contact between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
 pub fn contact_support_map_support_map<G1, G2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     prediction: Real,
@@ -38,12 +38,12 @@ where
 /// subsequent executions of the algorithm. It is also the contact
 /// normal (that points toward the outside of the first solid).
 pub fn contact_support_map_support_map_with_params<G1, G2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     prediction: Real,
     simplex: &mut VoronoiSimplex,
-    init_dir: Option<Unit<Vector<Real>>>,
+    init_dir: Option<Unit<Vector>>,
 ) -> GJKResult
 where
     G1: ?Sized + SupportMap,

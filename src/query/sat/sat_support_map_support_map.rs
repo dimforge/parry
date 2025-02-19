@@ -8,8 +8,8 @@ use na::Unit;
 pub fn support_map_support_map_compute_separation(
     sm1: &impl SupportMap,
     sm2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-    dir1: &Unit<Vector<Real>>,
+    pos12: &Isometry,
+    dir1: &Unit<Vector>,
 ) -> Real {
     let p1 = sm1.local_support_point_toward(dir1);
     let p2 = sm2.support_point_toward(pos12, &-*dir1);

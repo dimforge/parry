@@ -26,9 +26,9 @@ pub fn generate_contacts_polygon_polygon(_ctxt: &mut PrimitiveContactGenerationC
 
 fn generate_contacts<'a>(
     mut p1: &'a Polygon,
-    mut m1: &'a Isometry<Real>,
+    mut m1: &'a Isometry,
     mut p2: &'a Polygon,
-    mut m2: &'a Isometry<Real>,
+    mut m2: &'a Isometry,
     manifold: &'a mut ContactManifold,
 ) {
     let mut m12 = m1.inv_mul(&m2);

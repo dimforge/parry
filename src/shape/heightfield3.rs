@@ -70,7 +70,7 @@ pub struct HeightField {
     heights: DMatrix<Real>,
     status: DMatrix<HeightFieldCellStatus>,
 
-    scale: Vector<Real>,
+    scale: Vector,
     aabb: Aabb,
     num_triangles: usize,
     flags: HeightFieldFlags,
@@ -79,16 +79,12 @@ pub struct HeightField {
 #[cfg(feature = "std")]
 impl HeightField {
     /// Initializes a new heightfield with the given heights, scaling factor, and flags.
-    pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {
+    pub fn new(heights: DMatrix<Real>, scale: Vector) -> Self {
         Self::with_flags(heights, scale, HeightFieldFlags::empty())
     }
 
     /// Initializes a new heightfield with the given heights and a scaling factor.
-    pub fn with_flags(
-        heights: DMatrix<Real>,
-        scale: Vector<Real>,
-        flags: HeightFieldFlags,
-    ) -> Self {
+    pub fn with_flags(heights: DMatrix<Real>, scale: Vector, flags: HeightFieldFlags) -> Self {
         assert!(
             heights.nrows() > 1 && heights.ncols() > 1,
             "A heightfield heights must have at least 2 rows and columns."
@@ -429,7 +425,7 @@ impl HeightField {
             //       (+/-X, +/-Z, or a combination of both). So this bivector
             //       calculation could be simplified/optimized quite a bit.
             // Computes the pseudo-normal of an edge where the adjacent triangle is missing.
-            let bivector = |v: Vector<Real>| tri_normal.cross(&v).cross(&tri_normal).normalize();
+            let bivector = |v: Vector| tri_normal.cross(&v).cross(&tri_normal).normalize();
             // Pseudo-normal computed from an adjacent triangle’s normal and the current triangle’s normal.
             let adj_pseudo_normal = |adj: Option<Triangle>| {
                 adj.map(|adj| adj.normal().map(|n| *n).unwrap_or(tri_normal))
@@ -547,12 +543,12 @@ impl HeightField {
     }
 
     /// The scale factor applied to this heightfield.
-    pub fn scale(&self) -> &Vector<Real> {
+    pub fn scale(&self) -> &Vector {
         &self.scale
     }
 
     /// Sets the scale factor applied to this heightfield.
-    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
+    pub fn set_scale(&mut self, new_scale: Vector) {
         let ratio = new_scale.component_div(&self.scale);
         self.aabb.mins.coords.component_mul_assign(&ratio);
         self.aabb.maxs.coords.component_mul_assign(&ratio);
@@ -560,7 +556,7 @@ impl HeightField {
     }
 
     /// Returns a scaled version of this heightfield.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(mut self, scale: &Vector) -> Self {
         self.set_scale(self.scale.component_mul(scale));
         self
     }

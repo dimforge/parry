@@ -8,9 +8,9 @@ use na::RealField; // For .copysign()
 pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
-    pos12: &Isometry<Real>,
-    axis1: &Vector<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+    axis1: &Vector,
+) -> (Real, Vector) {
     #[expect(clippy::unnecessary_cast)]
     let signum = (1.0 as Real).copysign(pos12.translation.vector.dot(axis1));
     let axis1 = axis1 * signum;
@@ -30,8 +30,8 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
 pub fn cuboid_cuboid_find_local_separating_edge_twoway(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     use approx::AbsDiffEq;
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::zeros();
@@ -82,8 +82,8 @@ pub fn cuboid_cuboid_find_local_separating_edge_twoway(
 pub fn cuboid_cuboid_find_local_separating_normal_oneway(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::zeros();
 

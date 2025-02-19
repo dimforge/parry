@@ -34,7 +34,7 @@ pub trait QbvhDataSplitter<LeafData> {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
         proxies: BuilderProxies<LeafData>,
@@ -62,7 +62,7 @@ impl<LeafData> QbvhDataSplitter<LeafData> for CenterDataSplitter {
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         _: &'idx mut Vec<usize>,
         proxies: BuilderProxies<LeafData>,
@@ -75,7 +75,7 @@ impl CenterDataSplitter {
     pub(crate) fn split_dataset_wo_workspace<'idx>(
         &self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         aabbs: &[Aabb],
     ) -> [&'idx mut [usize]; 4] {
@@ -130,7 +130,7 @@ where
     fn split_dataset<'idx>(
         &mut self,
         subdiv_dims: [usize; 2],
-        center: Point<Real>,
+        center: Point,
         indices: &'idx mut [usize],
         indices_workspace: &'idx mut Vec<usize>,
         mut proxies: BuilderProxies<LeafData>,

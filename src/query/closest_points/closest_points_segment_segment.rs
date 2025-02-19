@@ -7,7 +7,7 @@ use na::{self, Point};
 /// Closest points between segments.
 #[inline]
 pub fn closest_points_segment_segment(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     seg1: &Segment,
     seg2: &Segment,
     margin: Real,
@@ -27,7 +27,7 @@ pub fn closest_points_segment_segment(
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_segment_segment_with_locations(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     seg1: &Segment,
     seg2: &Segment,
 ) -> (SegmentPointLocation, SegmentPointLocation) {

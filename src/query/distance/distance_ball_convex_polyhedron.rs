@@ -7,7 +7,7 @@ use crate::shape::{Ball, Shape};
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn distance_ball_convex_polyhedron(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     ball1: &Ball,
     shape2: &(impl Shape + ?Sized),
 ) -> Real {
@@ -20,7 +20,7 @@ pub fn distance_ball_convex_polyhedron(
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn distance_convex_polyhedron_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &(impl Shape + ?Sized),
     ball2: &Ball,
 ) -> Real {

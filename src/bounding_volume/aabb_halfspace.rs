@@ -7,7 +7,7 @@ use na;
 impl HalfSpace {
     /// Computes the world-space [`Aabb`] of this half-space.
     #[inline]
-    pub fn aabb(&self, _pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, _pos: &Isometry) -> Aabb {
         self.local_aabb()
     }
 

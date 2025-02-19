@@ -4,15 +4,12 @@ use crate::shape::{FeatureId, Tetrahedron, TetrahedronPointLocation};
 
 impl PointQuery for Tetrahedron {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, pt: &Point, solid: bool) -> PointProjection {
         self.project_local_point_and_get_location(pt, solid).0
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        pt: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, pt: &Point) -> (PointProjection, FeatureId) {
         let (proj, loc) = self.project_local_point_and_get_location(pt, false);
         let feature = match loc {
             TetrahedronPointLocation::OnVertex(i) => FeatureId::Vertex(i),
@@ -31,7 +28,7 @@ impl PointQueryWithLocation for Tetrahedron {
     #[inline]
     fn project_local_point_and_get_location(
         &self,
-        pt: &Point<Real>,
+        pt: &Point,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         let ab = self.b - self.a;
@@ -97,12 +94,12 @@ impl PointQueryWithLocation for Tetrahedron {
         #[inline(always)]
         fn check_edge(
             i: usize,
-            a: &Point<Real>,
-            _: &Point<Real>,
-            nabc: &Vector<Real>,
-            nabd: &Vector<Real>,
-            ap: &Vector<Real>,
-            ab: &Vector<Real>,
+            a: &Point,
+            _: &Point,
+            nabc: &Vector,
+            nabd: &Vector,
+            ap: &Vector,
+            ab: &Vector,
             ap_ab: Real, /*ap_ac: Real, ap_ad: Real,*/
             bp_ab: Real, /*bp_ac: Real, bp_ad: Real*/
         ) -> (
@@ -238,15 +235,15 @@ impl PointQueryWithLocation for Tetrahedron {
         #[inline(always)]
         fn check_face(
             i: usize,
-            a: &Point<Real>,
-            b: &Point<Real>,
-            c: &Point<Real>,
-            ap: &Vector<Real>,
-            bp: &Vector<Real>,
-            cp: &Vector<Real>,
-            ab: &Vector<Real>,
-            ac: &Vector<Real>,
-            ad: &Vector<Real>,
+            a: &Point,
+            b: &Point,
+            c: &Point,
+            ap: &Vector,
+            bp: &Vector,
+            cp: &Vector,
+            ab: &Vector,
+            ac: &Vector,
+            ad: &Vector,
             dabc: Real,
             dbca: Real,
             dacb: Real,
