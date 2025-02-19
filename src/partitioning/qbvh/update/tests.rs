@@ -213,7 +213,7 @@ impl QbvhTester {
         let mut qbvh = Qbvh::new();
         let workspace = QbvhUpdateWorkspace::default();
         let aabbs = self.aabbs.clone();
-        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, aabb.clone())), 0.0);
+        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, *aabb)), 0.0);
         QbvhTester {
             qbvh,
             workspace,
@@ -245,7 +245,7 @@ impl QbvhTester {
             *self
                 .aabbs
                 .get(*index)
-                .expect(&format!("invalid index {}", index))
+                .unwrap_or_else(|| panic!("invalid index {}", index))
         });
     }
 
@@ -281,7 +281,7 @@ fn generate_random_aabb(rng: &mut StdRng) -> Aabb {
     }
 }
 
-impl<'q> ptree::TreeItem for QbvhTreeIterator<'q> {
+impl ptree::TreeItem for QbvhTreeIterator<'_> {
     type Child = Self;
 
     fn write_self<W: std::io::Write>(

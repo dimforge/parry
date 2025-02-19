@@ -1,6 +1,6 @@
 use crate::bounding_volume;
 use crate::bounding_volume::BoundingSphere;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::ConvexPolygon;
 
 impl ConvexPolygon {

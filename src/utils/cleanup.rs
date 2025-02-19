@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::Point;
 use std::iter;
 
 /// Given an index buffer, remove from `points` every point that is not indexed.

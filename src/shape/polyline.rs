@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::partitioning::Qbvh;
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;

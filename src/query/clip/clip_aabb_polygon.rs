@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 
 impl Aabb {
     /// Computes the intersections between this Aabb and the given polygon.

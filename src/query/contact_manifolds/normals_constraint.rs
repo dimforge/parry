@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Vector};
 
 // NOTE: the 'static requirement is only needed for the following impl to work:
 //       impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape

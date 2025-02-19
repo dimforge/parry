@@ -1,5 +1,5 @@
 use crate::bounding_volume::BoundingSphere;
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point};
 use crate::shape::Cylinder;
 use na::ComplexField;
 

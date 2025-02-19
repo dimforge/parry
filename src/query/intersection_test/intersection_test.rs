@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 

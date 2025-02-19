@@ -1,4 +1,4 @@
-use crate::math::{Real, UnitVector, Vector};
+use crate::math::{UnitVector, Vector};
 use na::Vector3;
 
 #[cfg(feature = "std")]

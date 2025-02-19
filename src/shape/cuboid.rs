@@ -1,6 +1,6 @@
 //! Support mapping based Cuboid shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 #[cfg(feature = "dim3")]
 use crate::shape::Segment;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
@@ -153,7 +153,7 @@ impl Cuboid {
         let he = self.half_extents;
         let iamax = local_dir.iamax();
         #[expect(clippy::unnecessary_cast)]
-        let sign = (1.0 as Real).copysign(local_dir[iamax]);
+        let sign = (1.0 as crate::math::Real).copysign(local_dir[iamax]);
 
         let vertices = match iamax {
             0 => [

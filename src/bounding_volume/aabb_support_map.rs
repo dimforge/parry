@@ -1,6 +1,6 @@
 use crate::bounding_volume;
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::Segment;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder};

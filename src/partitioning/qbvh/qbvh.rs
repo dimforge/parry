@@ -1,5 +1,5 @@
 use crate::bounding_volume::{Aabb, SimdAabb};
-use crate::math::{Real, Vector, VectorT};
+use crate::math::{Vector, VectorT};
 
 use na::SimdValue;
 

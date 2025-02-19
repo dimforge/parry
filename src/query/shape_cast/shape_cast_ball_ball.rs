@@ -1,6 +1,6 @@
 use na::Unit;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{self, Ray, ShapeCastHit, ShapeCastStatus};
 use crate::shape::Ball;

@@ -1,6 +1,6 @@
 use na::{self, Unit};
 
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Vector};
 use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
 use crate::shape::SupportMap;
 

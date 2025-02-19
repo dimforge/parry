@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, VectorT, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};

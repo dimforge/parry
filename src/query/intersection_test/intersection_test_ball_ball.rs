@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::Point;
 use crate::shape::Ball;
 
 /// Intersection test between balls.

@@ -1,5 +1,5 @@
 //! Support mapping based HalfSpace shape.
-use crate::math::{Real, Vector};
+use crate::math::Vector;
 use na::Unit;
 
 #[cfg(feature = "rkyv")]

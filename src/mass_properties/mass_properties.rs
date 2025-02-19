@@ -588,7 +588,7 @@ mod test {
 
     #[test]
     fn mass_properties_sum_no_nan() {
-        let mp: MassProperties = [MassProperties::zero()].iter().map(|v| *v).sum();
+        let mp: MassProperties = [MassProperties::zero()].iter().copied().sum();
         assert!(!mp.local_com.x.is_nan() && !mp.local_com.y.is_nan());
         #[cfg(feature = "dim3")]
         assert!(!mp.local_com.z.is_nan());

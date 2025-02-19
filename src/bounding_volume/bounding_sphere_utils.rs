@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::Point;
 use crate::utils;
 use na::{self, ComplexField};
 

@@ -1,7 +1,7 @@
 use std::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::math::{Isometry, Point, Vector, DIM};
 use crate::shape::SupportMap;
 use na;
 

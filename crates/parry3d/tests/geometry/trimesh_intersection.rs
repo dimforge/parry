@@ -1,5 +1,5 @@
 use na::{Point3, Vector3};
-use parry3d::math::{Isometry, Real};
+use parry3d::math::Isometry;
 use parry3d::query::IntersectResult;
 use parry3d::shape::TriMesh;
 

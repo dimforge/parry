@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::ConvexPolygon;
 
 impl ConvexPolygon {

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{Ray, RayCast, ShapeCastHit, ShapeCastStatus};
 use crate::shape::{HalfSpace, RoundShapeRef, SupportMap};

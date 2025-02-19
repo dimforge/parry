@@ -3,7 +3,7 @@
 //!
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::partitioning::Qbvh;
 use crate::query::details::NormalConstraints;
 #[cfg(feature = "dim2")]

@@ -1,6 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{
-    Isometry, IsometryT, Point, PointT, Real, SimdBool, SimdReal, Vector, VectorT, DIM, SIMD_WIDTH,
+    IsometryT, PointT, Real, SimdBool, SimdReal, VectorT, DIM, SIMD_WIDTH,
 };
 use crate::query::SimdRay;
 use crate::utils::{self, IsometryOps};

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point};
 use crate::query::PointQuery;
 use crate::shape::Ball;
 

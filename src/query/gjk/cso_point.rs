@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::shape::SupportMap;
 use na::Unit;
 use std::ops::Sub;

@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real};
+use crate::math::Point;
 
 pub fn split_indices_wrt_dim<'a>(
     indices: &'a mut [usize],

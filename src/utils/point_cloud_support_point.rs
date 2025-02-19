@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 
 /// Computes the index of the support point of a cloud of points.
 #[inline]

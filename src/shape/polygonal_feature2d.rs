@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 #[cfg(feature = "std")]
 use crate::query::{self, ContactManifold, TrackedContact};
 use crate::shape::{PackedFeatureId, Segment};

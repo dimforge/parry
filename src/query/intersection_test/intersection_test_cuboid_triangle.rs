@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::query::sat;
 use crate::shape::{Cuboid, Triangle};
 

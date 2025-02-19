@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::Point;
 use crate::query::gjk::VoronoiSimplex;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{FeatureId, RoundShape, SupportMap};

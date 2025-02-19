@@ -1,6 +1,6 @@
 use crate::{
     bounding_volume::Aabb,
-    math::{Isometry, Point, Real, DIM},
+    math::{Isometry, Point, DIM},
     shape::Triangle,
 };
 

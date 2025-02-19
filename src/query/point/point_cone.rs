@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cone, FeatureId, Segment};
 use na;

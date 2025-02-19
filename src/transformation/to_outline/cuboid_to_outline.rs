@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 

@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::partitioning::{IndexedData, Qbvh};
 use crate::query::details::NormalConstraints;
 use crate::shape::Shape;

@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::Point;
 #[cfg(feature = "dim2")]
 use crate::{math::Vector, utils};
 

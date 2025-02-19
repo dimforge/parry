@@ -1,6 +1,6 @@
 use na::Unit;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 #[cfg(feature = "std")]
 use crate::query::epa::EPA;
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
