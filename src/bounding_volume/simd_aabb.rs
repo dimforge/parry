@@ -1,7 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{
-    IsometryT, PointT, Real, SimdBool, SimdReal, VectorT, DIM, SIMD_WIDTH,
-};
+use crate::math::{IsometryT, PointT, Real, SimdBool, SimdReal, VectorT, DIM, SIMD_WIDTH};
 use crate::query::SimdRay;
 use crate::utils::{self, IsometryOps};
 use num::{One, Zero};
@@ -29,12 +27,12 @@ impl serde::Serialize for SimdAabb {
     {
         use serde::ser::SerializeStruct;
 
-        let mins: Point<[Real; SIMD_WIDTH]> = Point::from(
+        let mins: PointT<[Real; SIMD_WIDTH]> = PointT::from(
             self.mins
                 .coords
                 .map(|e| array![|ii| e.extract(ii); SIMD_WIDTH]),
         );
-        let maxs: Point<[Real; SIMD_WIDTH]> = Point::from(
+        let maxs: PointT<[Real; SIMD_WIDTH]> = PointT::from(
             self.maxs
                 .coords
                 .map(|e| array![|ii| e.extract(ii); SIMD_WIDTH]),
@@ -76,8 +74,8 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
             where
                 A: serde::de::MapAccess<'de>,
             {
-                let mut mins: Option<Point<[Real; SIMD_WIDTH]>> = None;
-                let mut maxs: Option<Point<[Real; SIMD_WIDTH]>> = None;
+                let mut mins: Option<PointT<[Real; SIMD_WIDTH]>> = None;
+                let mut maxs: Option<PointT<[Real; SIMD_WIDTH]>> = None;
 
                 while let Some(key) = map.next_key()? {
                     match key {
@@ -107,10 +105,10 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
             where
                 A: serde::de::SeqAccess<'de>,
             {
-                let mins: Point<[Real; SIMD_WIDTH]> = seq
+                let mins: PointT<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-                let maxs: Point<[Real; SIMD_WIDTH]> = seq
+                let maxs: PointT<[Real; SIMD_WIDTH]> = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
                 let mins = mins.map(SimdReal::from);
