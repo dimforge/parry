@@ -35,7 +35,7 @@ pub enum GJKResult {
 /// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
-    _eps * 10.0
+    _eps * 10_000.0
 }
 
 /// Projects the origin on the boundary of the given shape.
@@ -389,5 +389,63 @@ fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
         }
 
         res
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "dim2")]
+mod test {
+    use na::Point2;
+
+    use crate::{
+        math::Real,
+        query::{self, ShapeCastOptions},
+        shape::{Ball, ConvexPolygon, Shape},
+    };
+
+    #[test]
+    fn gjk_issue_180() {
+        let to_cast_against = ConvexPolygon::from_convex_polyline(
+            [
+                [-24.0, 0.0].into(),
+                [0.0, 24.0].into(),
+                [24.0, 0.0].into(),
+                [0.0, -24.0].into(),
+            ]
+            .into(),
+        )
+        .unwrap();
+        let target_pos: Point2<Real> = [-312.0, 152.0].into();
+
+        check_converge(&to_cast_against, [47.0, -32.0].into(), target_pos);
+        check_converge(&to_cast_against, [99.0, -33.0].into(), target_pos);
+        check_converge(&to_cast_against, [98.0, -31.0].into(), target_pos);
+    }
+
+    fn check_converge(
+        to_cast_against: &ConvexPolygon,
+        source_pos: Point2<Real>,
+        target_pos: Point2<Real>,
+    ) {
+        let vel1 = target_pos - source_pos;
+        let g1 = Ball::new(16.0);
+        let pos2 = [0.0, 0.0];
+        let vel2 = [0.0, 0.0];
+        let g2 = to_cast_against.clone_dyn();
+
+        let toi = query::cast_shapes(
+            &source_pos.into(),
+            &vel1,
+            &g1,
+            &pos2.into(),
+            &vel2.into(),
+            &*g2,
+            ShapeCastOptions::with_max_time_of_impact(1.0),
+        )
+        .unwrap();
+        assert!(
+            toi.is_some(),
+            "casting against the convex polygon should converge."
+        );
     }
 }
