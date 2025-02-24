@@ -1,5 +1,4 @@
 use na::{self, Isometry3, Vector3};
-use parry3d::math::Real;
 use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::{Ball, Cuboid};
 

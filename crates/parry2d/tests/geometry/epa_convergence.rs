@@ -1,6 +1,6 @@
 use na::Vector2;
 use parry2d::{
-    math::{Isometry, Point, Real},
+    math::{Isometry, Point},
     query,
     shape::{Capsule, ConvexPolygon, SharedShape},
 };
