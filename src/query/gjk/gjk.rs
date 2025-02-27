@@ -19,17 +19,17 @@ pub enum GJKResult {
     ///
     /// Both points and vector are expressed in the local-space of the first geometry involved
     /// in the GJK execution.
-    ClosestPoints(Point<Real>, Point<Real>, Unit<Vector<Real>>),
+    ClosestPoints(Point, Point, Unit<Vector>),
     /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
     ///
     /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
-    Proximity(Unit<Vector<Real>>),
+    Proximity(Unit<Vector>),
     /// Result of the GJK algorithm when the origin is too far away from the polytope.
     ///
     /// The returned vector is expressed in the local-space of the first geometry involved in the
     /// GJK execution.
-    NoIntersection(Unit<Vector<Real>>),
+    NoIntersection(Unit<Vector>),
 }
 
 /// The absolute tolerance used by the GJK algorithm.
@@ -47,10 +47,10 @@ pub fn eps_tol() -> Real {
 ///
 /// Return the projected point in the local-space of `g`.
 pub fn project_origin<G: ?Sized + SupportMap>(
-    m: &Isometry<Real>,
+    m: &Isometry,
     g: &G,
     simplex: &mut VoronoiSimplex,
-) -> Option<Point<Real>> {
+) -> Option<Point> {
     match closest_points(
         &m.inverse(),
         g,
@@ -81,7 +81,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
 ///   compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
 ///   than `max_dist` but not inside `shape`.
 pub fn closest_points<G1, G2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     max_dist: Real,
@@ -188,7 +188,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_time_of_impact: Real,
-) -> Option<(Real, Vector<Real>)> {
+) -> Option<(Real, Vector)> {
     let g2 = ConstantOrigin;
     minkowski_ray_cast(
         &Isometry::identity(),
@@ -205,12 +205,12 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
 ///
 /// The `dir` vector must be expressed in the local-space of the first shape.
 pub fn directional_distance<G1, G2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
-    dir: &Vector<Real>,
+    dir: &Vector,
     simplex: &mut VoronoiSimplex,
-) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
+) -> Option<(Real, Vector, Point, Point)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
@@ -233,13 +233,13 @@ where
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
 fn minkowski_ray_cast<G1, G2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &G2,
     ray: &Ray,
     max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
-) -> Option<(Real, Vector<Real>)>
+) -> Option<(Real, Vector)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
@@ -369,7 +369,7 @@ where
     }
 }
 
-fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
+fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point, Point) {
     let mut res = (Point::origin(), Point::origin());
     if prev {
         for i in 0..simplex.prev_dimension() + 1 {

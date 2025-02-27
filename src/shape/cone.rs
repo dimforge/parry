@@ -54,7 +54,7 @@ impl Cone {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         // NOTE: if the y scale is negative, the result cone points downwards,
@@ -78,7 +78,7 @@ impl Cone {
 
 impl SupportMap for Cone {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let mut vres = *dir;
 
         vres[1] = 0.0;

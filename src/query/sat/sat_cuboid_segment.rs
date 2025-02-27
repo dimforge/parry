@@ -10,8 +10,8 @@ use crate::shape::{Cuboid, Segment};
 pub fn cuboid_segment_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     segment2: &Segment,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     let x2 = pos12 * (segment2.b - segment2.a);
 
     let axes = [
@@ -31,8 +31,8 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 pub fn segment_cuboid_find_local_separating_normal_oneway(
     segment1: &Segment,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Isometry,
+) -> (Real, Vector) {
     sat::point_cuboid_find_local_separating_normal_oneway(
         segment1.a,
         segment1.normal(),

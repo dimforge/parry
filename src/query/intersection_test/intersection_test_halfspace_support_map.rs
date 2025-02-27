@@ -1,10 +1,10 @@
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::HalfSpace;
 use crate::shape::SupportMap;
 
 /// Intersection test between a halfspace and a support-mapped shape (Cuboid, ConvexHull, etc.)
 pub fn intersection_test_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
 ) -> bool {
@@ -14,7 +14,7 @@ pub fn intersection_test_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Intersection test between a support-mapped shape (Cuboid, ConvexHull, etc.) and a halfspace.
 pub fn intersection_test_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
 ) -> bool {

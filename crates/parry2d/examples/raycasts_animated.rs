@@ -83,7 +83,7 @@ async fn main() {
 
 fn draw_polygon(
     polygon: &[Point2<f32>],
-    pose: &Isometry<f32>,
+    pose: &Isometry,
     scale: f32,
     shift: Point2<f32>,
     color: Color,

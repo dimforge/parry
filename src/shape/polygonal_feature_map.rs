@@ -1,10 +1,11 @@
-use crate::math::{Real, Vector};
+use crate::math::Vector;
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
 use na::Unit;
 #[cfg(feature = "dim3")]
 use {
     crate::{
         math::Point,
+        math::Real,
         shape::{Cone, Cylinder, PackedFeatureId},
     },
     approx::AbsDiffEq,
@@ -16,7 +17,7 @@ use na::{ComplexField, RealField}; // for .abs() and .copysign()
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
     /// Compute the support polygonal face of `self` towards the `dir`.
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature);
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_feature: &mut PolygonalFeature);
 
     // TODO: this is currently just a workaround for https://github.com/dimforge/rapier/issues/417
     //       until we get a better way to deal with the issue without breaking internal edges
@@ -28,26 +29,26 @@ pub trait PolygonalFeatureMap: SupportMap {
 }
 
 impl PolygonalFeatureMap for Segment {
-    fn local_support_feature(&self, _: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, _: &Unit<Vector>, out_feature: &mut PolygonalFeature) {
         *out_feature = PolygonalFeature::from(*self);
     }
 }
 
 impl PolygonalFeatureMap for Triangle {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_feature: &mut PolygonalFeature) {
         *out_feature = self.support_face(**dir);
     }
 }
 
 impl PolygonalFeatureMap for Cuboid {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_feature: &mut PolygonalFeature) {
         *out_feature = self.support_face(**dir);
     }
 }
 
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cylinder {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_features: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_features: &mut PolygonalFeature) {
         use na::Vector2;
 
         // About feature ids.
@@ -106,7 +107,7 @@ impl PolygonalFeatureMap for Cylinder {
 
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cone {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_features: &mut PolygonalFeature) {
+    fn local_support_feature(&self, dir: &Unit<Vector>, out_features: &mut PolygonalFeature) {
         use na::Vector2;
 
         // About feature ids. It is very similar to the feature ids of cylinders.

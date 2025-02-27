@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SIMD_WIDTH};
+use crate::math::{Isometry, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::QueryDispatcher;
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -9,7 +9,7 @@ use simba::simd::SimdBool as _;
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &dyn Shape,
 ) -> bool
@@ -26,7 +26,7 @@ where
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
 pub fn intersection_test_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &G2,
 ) -> bool
@@ -45,7 +45,7 @@ where
     ls_aabb2: SimdAabb,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
+    pos12: &'a Isometry,
     g1: &'a G1,
     g2: &'a dyn Shape,
 
@@ -63,7 +63,7 @@ where
     /// Initialize a visitor for checking if a composite-shape and a shape intersect.
     pub fn new(
         dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
+        pos12: &'a Isometry,
         g1: &'a G1,
         g2: &'a dyn Shape,
     ) -> IntersectionCompositeShapeShapeVisitor<'a, D, G1> {

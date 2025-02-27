@@ -8,7 +8,7 @@ use crate::shape::{Ball, Shape};
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn closest_points_ball_convex_polyhedron(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     ball1: &Ball,
     shape2: &(impl Shape + ?Sized),
     prediction: Real,
@@ -31,7 +31,7 @@ pub fn closest_points_ball_convex_polyhedron(
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn closest_points_convex_polyhedron_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &(impl Shape + ?Sized),
     ball2: &Ball,
     prediction: Real,

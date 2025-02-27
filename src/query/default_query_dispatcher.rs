@@ -19,7 +19,7 @@ pub struct DefaultQueryDispatcher;
 impl QueryDispatcher for DefaultQueryDispatcher {
     fn intersection_test(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<bool, Unsupported> {
@@ -83,7 +83,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<Real, Unsupported> {
@@ -139,7 +139,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn contact(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -195,7 +195,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn closest_points(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         max_dist: Real,
@@ -271,8 +271,8 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn cast_shapes(
         &self,
-        pos12: &Isometry<Real>,
-        local_vel12: &Vector<Real>,
+        pos12: &Isometry,
+        local_vel12: &Vector,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         options: ShapeCastOptions,
@@ -426,7 +426,7 @@ where
 {
     fn contact_manifolds(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -529,7 +529,7 @@ where
 
     fn contact_manifold_convex_convex(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         normal_constraints1: Option<&dyn NormalConstraints>,

@@ -3,11 +3,11 @@ use crate::math::{Isometry, Matrix, Real};
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct AabbSetsInterferencesCollector<'a, T: 'a> {
     /// The transform from the local-space of the second bounding volumes to the local space of the first.
-    pub ls_m2: &'a Isometry<Real>,
+    pub ls_m2: &'a Isometry,
     /// The absolute value of the rotation matrix representing `ls_m2.rotation`.
     ///
     /// Equals to `ls_m2.rotation.to_rotation.matrix().matrix().abs()`.
-    pub ls_m2_abs_rot: &'a Matrix<Real>,
+    pub ls_m2_abs_rot: &'a Matrix,
     /// A tolerance applied to the interference tests.
     ///
     /// Aabb pairs closer than `tolerance` will be reported as intersecting.
@@ -21,8 +21,8 @@ impl<'a, T> AabbSetsInterferencesCollector<'a, T> {
     #[inline]
     pub fn new(
         tolerance: Real,
-        ls_m2: &'a Isometry<Real>,
-        ls_m2_abs_rot: &'a Matrix<Real>,
+        ls_m2: &'a Isometry,
+        ls_m2_abs_rot: &'a Matrix,
         collector: &'a mut Vec<(T, T)>,
     ) -> AabbSetsInterferencesCollector<'a, T> {
         AabbSetsInterferencesCollector {

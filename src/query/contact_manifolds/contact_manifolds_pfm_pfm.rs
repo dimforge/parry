@@ -11,7 +11,7 @@ use na::Unit;
 /// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap`
 /// trait, both represented as `Shape` trait-objects.
 pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     normal_constraints1: Option<&dyn NormalConstraints>,
@@ -42,7 +42,7 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between two convex shapes implementing the `PolygonalSupportMap` trait.
 pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     pfm1: &'a S1,
     border_radius1: Real,
     normal_constraints1: Option<&dyn NormalConstraints>,

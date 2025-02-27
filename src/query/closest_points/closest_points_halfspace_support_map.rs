@@ -5,7 +5,7 @@ use crate::shape::SupportMap;
 
 /// Closest points between a halfspace and a support-mapped shape (Cuboid, ConvexHull, etc.)
 pub fn closest_points_halfspace_support_map<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     halfspace: &HalfSpace,
     other: &G,
     margin: Real,
@@ -33,7 +33,7 @@ pub fn closest_points_halfspace_support_map<G: ?Sized + SupportMap>(
 
 /// Closest points between a support-mapped shape (Cuboid, ConvexHull, etc.) and a halfspace.
 pub fn closest_points_support_map_halfspace<G: ?Sized + SupportMap>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     other: &G,
     halfspace: &HalfSpace,
     margin: Real,

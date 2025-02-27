@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::shape::SupportMap;
 use na::Unit;
 use std::ops::Sub;
@@ -13,16 +13,16 @@ use std::ops::Sub;
 pub struct CSOPoint {
     /// The point on the CSO. This is equal to `self.orig1 - self.orig2`, unless this CSOPoint
     /// has been translated with self.translate.
-    pub point: Point<Real>,
+    pub point: Point,
     /// The original point on the first shape used to compute `self.point`.
-    pub orig1: Point<Real>,
+    pub orig1: Point,
     /// The original point on the second shape used to compute `self.point`.
-    pub orig2: Point<Real>,
+    pub orig2: Point,
 }
 
 impl CSOPoint {
     /// Initializes a CSO point with `orig1 - orig2`.
-    pub fn new(orig1: Point<Real>, orig2: Point<Real>) -> Self {
+    pub fn new(orig1: Point, orig2: Point) -> Self {
         let point = Point::from(orig1 - orig2);
         Self::new_with_point(point, orig1, orig2)
     }
@@ -30,7 +30,7 @@ impl CSOPoint {
     /// Initializes a CSO point with all information provided.
     ///
     /// It is assumed, but not checked, that `point == orig1 - orig2`.
-    pub fn new_with_point(point: Point<Real>, orig1: Point<Real>, orig2: Point<Real>) -> Self {
+    pub fn new_with_point(point: Point, orig1: Point, orig2: Point) -> Self {
         CSOPoint {
             point,
             orig1,
@@ -39,7 +39,7 @@ impl CSOPoint {
     }
 
     /// Initializes a CSO point where both original points are equal.
-    pub fn single_point(point: Point<Real>) -> Self {
+    pub fn single_point(point: Point) -> Self {
         Self::new_with_point(point, point, Point::origin())
     }
 
@@ -50,10 +50,10 @@ impl CSOPoint {
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the unit direction `dir`.
     pub fn from_shapes_toward<G1, G2>(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &G1,
         g2: &G2,
-        dir: &Unit<Vector<Real>>,
+        dir: &Unit<Vector>,
     ) -> Self
     where
         G1: ?Sized + SupportMap,
@@ -66,7 +66,7 @@ impl CSOPoint {
     }
 
     /// Computes the support point of the CSO of `g1` and `g2` toward the direction `dir`.
-    pub fn from_shapes<G1, G2>(pos12: &Isometry<Real>, g1: &G1, g2: &G2, dir: &Vector<Real>) -> Self
+    pub fn from_shapes<G1, G2>(pos12: &Isometry, g1: &G1, g2: &G2, dir: &Vector) -> Self
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -78,21 +78,21 @@ impl CSOPoint {
     }
 
     /// Translate the CSO point.
-    pub fn translate(&self, dir: &Vector<Real>) -> Self {
+    pub fn translate(&self, dir: &Vector) -> Self {
         CSOPoint::new_with_point(self.point + dir, self.orig1, self.orig2)
     }
 
     /// Translate in-place the CSO point.
-    pub fn translate_mut(&mut self, dir: &Vector<Real>) {
+    pub fn translate_mut(&mut self, dir: &Vector) {
         self.point += dir;
     }
 }
 
 impl Sub<CSOPoint> for CSOPoint {
-    type Output = Vector<Real>;
+    type Output = Vector;
 
     #[inline]
-    fn sub(self, rhs: CSOPoint) -> Vector<Real> {
+    fn sub(self, rhs: CSOPoint) -> Vector {
         self.point - rhs.point
     }
 }

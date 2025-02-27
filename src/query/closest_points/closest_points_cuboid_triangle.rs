@@ -5,7 +5,7 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 /// Closest points between a cuboid and a triangle.
 #[inline]
 pub fn closest_points_cuboid_triangle(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cuboid1: &Cuboid,
     triangle2: &Triangle,
     margin: Real,
@@ -24,7 +24,7 @@ pub fn closest_points_cuboid_triangle(
     }
 
     #[cfg(feature = "dim2")]
-    let sep3 = (-Real::MAX, crate::math::Vector::<Real>::y()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, crate::math::Vector::y()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_triangle_find_local_separating_edge_twoway(cuboid1, triangle2, pos12);
     if sep3.0 > margin {
@@ -80,7 +80,7 @@ pub fn closest_points_cuboid_triangle(
 /// Closest points between a triangle and a cuboid.
 #[inline]
 pub fn closest_points_triangle_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     triangle1: &Triangle,
     cuboid2: &Cuboid,
     margin: Real,

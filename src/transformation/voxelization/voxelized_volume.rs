@@ -17,7 +17,7 @@
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Point, PointT, Real, Vector, VectorT, DIM};
 use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
 use std::sync::Arc;
@@ -107,7 +107,7 @@ struct VoxelData {
 
 /// A cubic volume filled with voxels.
 pub struct VoxelizedVolume {
-    origin: Point<Real>,
+    origin: Point,
     scale: Real,
     resolution: [u32; DIM],
     values: Vec<VoxelValue>,
@@ -130,7 +130,7 @@ impl VoxelizedVolume {
     /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
     ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
     pub fn voxelize(
-        points: &[Point<Real>],
+        points: &[Point],
         indices: &[[u32; DIM]],
         resolution: u32,
         fill_mode: FillMode,
@@ -190,8 +190,8 @@ impl VoxelizedVolume {
 
         let mut tri_pts = [Point::origin(); DIM];
         let box_half_size = Vector::repeat(0.5);
-        let mut ijk0 = Vector::repeat(0u32);
-        let mut ijk1 = Vector::repeat(0u32);
+        let mut ijk0 = VectorT::repeat(0u32);
+        let mut ijk1 = VectorT::repeat(0u32);
 
         let detect_self_intersections = fill_mode.detect_self_intersections();
         #[cfg(feature = "dim2")]
@@ -214,9 +214,9 @@ impl VoxelizedVolume {
                 assert!(k < result.resolution[2]);
 
                 #[cfg(feature = "dim2")]
-                let ijk = Vector::new(i, j);
+                let ijk = VectorT::new(i, j);
                 #[cfg(feature = "dim3")]
-                let ijk = Vector::new(i, j, k);
+                let ijk = VectorT::new(i, j, k);
 
                 if c == 0 {
                     ijk0 = ijk;
@@ -230,7 +230,7 @@ impl VoxelizedVolume {
             ijk0.apply(|e| *e = e.saturating_sub(1));
             ijk1 = ijk1
                 .map(|e| e + 1)
-                .inf(&Point::from(result.resolution).coords);
+                .inf(&PointT::from(result.resolution).coords);
 
             #[cfg(feature = "dim2")]
             let range_k = 0..1;
@@ -739,7 +739,7 @@ impl VoxelizedVolume {
     /// This conversion is extremely naive: it will simply collect all the 12 triangles forming
     /// the faces of each voxel. No actual boundary extraction is done.
     #[cfg(feature = "dim3")]
-    pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub fn to_trimesh(&self, value: VoxelValue) -> (Vec<Point>, Vec<[u32; DIM]>) {
         let mut vertices = Vec::new();
         let mut indices = Vec::new();
 
@@ -807,9 +807,9 @@ impl From<VoxelizedVolume> for VoxelSet {
                     let id = shape.voxel_index(i, j, k) as usize;
                     let value = shape.values[id];
                     #[cfg(feature = "dim2")]
-                    let coords = Point::new(i, j);
+                    let coords = PointT::new(i, j);
                     #[cfg(feature = "dim3")]
-                    let coords = Point::new(i, j, k);
+                    let coords = PointT::new(i, j, k);
 
                     if value == VoxelValue::PrimitiveInsideSurface {
                         let voxel = Voxel {
@@ -863,7 +863,7 @@ impl From<VoxelizedVolume> for VoxelSet {
 fn traceRay(
     mesh: &RaycastMesh,
     start: Real,
-    dir: &Vector<Real>,
+    dir: &Vector,
     inside_count: &mut u32,
     outside_count: &mut u32,
 ) {

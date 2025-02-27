@@ -7,9 +7,9 @@ use crate::shape::Shape;
 /// Returns `None` if the objects are separated by a distance greater than `prediction`.
 /// The result is given in world-space.
 pub fn contact(
-    pos1: &Isometry<Real>,
+    pos1: &Isometry,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Isometry,
     g2: &dyn Shape,
     prediction: Real,
 ) -> Result<Option<Contact>, Unsupported> {

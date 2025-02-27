@@ -7,9 +7,9 @@ use crate::shape::Shape;
 /// Returns `ClosestPoints::Disjoint` if the objects are separated by a distance greater than `max_dist`.
 /// The result points in `ClosestPoints::WithinMargin` are expressed in world-space.
 pub fn closest_points(
-    pos1: &Isometry<Real>,
+    pos1: &Isometry,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Isometry,
     g2: &dyn Shape,
     max_dist: Real,
 ) -> Result<ClosestPoints, Unsupported> {

@@ -1,11 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real};
+use crate::math::Point;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 
 impl Aabb {
     /// Discretize the boundary of this Aabb as a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self) -> (Vec<Point>, Vec<[u32; 3]>) {
         let center = self.center();
         let half_extents = self.half_extents();
         let mut cube_mesh = Cuboid::new(half_extents).to_trimesh();
@@ -16,7 +16,7 @@ impl Aabb {
 
 impl Cuboid {
     /// Discretize the boundary of this cuboid as a triangle-mesh.
-    pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
+    pub fn to_trimesh(&self) -> (Vec<Point>, Vec<[u32; 3]>) {
         let (vtx, idx) = unit_cuboid();
         (utils::scaled(vtx, self.half_extents * 2.0), idx)
     }
@@ -25,7 +25,7 @@ impl Cuboid {
 /// Generates a cuboid shape with a split index buffer.
 ///
 /// The cuboid is centered at the origin, and has its half extents set to 0.5.
-fn unit_cuboid() -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
+fn unit_cuboid() -> (Vec<Point>, Vec<[u32; 3]>) {
     #[cfg(feature = "dim3")]
     {
         let mut coords = Vec::with_capacity(8);

@@ -72,7 +72,7 @@ fn ray_aabb(
     ray: &Ray,
     max_time_of_impact: Real,
     solid: bool,
-) -> Option<(Real, Vector<Real>, isize)> {
+) -> Option<(Real, Vector, isize)> {
     use crate::query::clip;
     clip::clip_aabb_line(aabb, &ray.origin, &ray.dir).and_then(|(near, far)| {
         if near.0 < 0.0 {

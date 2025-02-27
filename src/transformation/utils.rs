@@ -6,18 +6,18 @@ use crate::na::ComplexField;
 use {crate::math::DIM, num::Zero};
 
 /// Applies in-place a transformation to an array of points.
-pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
+pub fn transform(points: &mut [Point], m: Isometry) {
     points.iter_mut().for_each(|p| *p = m * *p);
 }
 
 /// Returns the transformed version of a vector of points.
-pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
+pub fn transformed(mut points: Vec<Point>, m: Isometry) -> Vec<Point> {
     transform(&mut points, m);
     points
 }
 
 /// Returns the transformed version of a vector of points.
-pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Real>> {
+pub fn scaled(mut points: Vec<Point>, scale: Vector) -> Vec<Point> {
     points
         .iter_mut()
         .for_each(|p| p.coords.component_mul_assign(&scale));
@@ -28,7 +28,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
 /// Pushes a discretized counterclockwise circle to a buffer.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut Vec<Point<Real>>) {
+pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut Vec<Point>) {
     let mut curr_theta = Real::zero();
 
     for _ in 0..nsubdiv {
@@ -45,7 +45,7 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 /// The circle is contained on the plane spanned by the `x` and `y` axis.
 #[inline]
 #[cfg(feature = "dim2")]
-pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point<Real>>) {
+pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point>) {
     let mut curr_theta: Real = 0.0;
 
     for _ in 0..nsubdiv {
@@ -183,11 +183,11 @@ pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std:
 /// the `start` and `end` points).
 #[cfg(feature = "dim3")]
 pub fn push_arc_and_idx(
-    center: Point<Real>,
+    center: Point,
     start: u32,
     end: u32,
     nsubdivs: u32,
-    out_vtx: &mut Vec<Point<Real>>,
+    out_vtx: &mut Vec<Point>,
     out_idx: &mut Vec<[u32; 2]>,
 ) {
     let base = out_vtx.len() as u32;
@@ -204,13 +204,7 @@ pub fn push_arc_and_idx(
 /// Pushes to `out` a set of points forming an arc starting at `start`, ending at `end` with
 /// revolution center at `center`. The curve is approximated by pushing `nsubdivs` points.
 /// The `start` and `end` point are not pushed to `out`.
-pub fn push_arc(
-    center: Point<Real>,
-    start: Point<Real>,
-    end: Point<Real>,
-    nsubdivs: u32,
-    out: &mut Vec<Point<Real>>,
-) {
+pub fn push_arc(center: Point, start: Point, end: Point, nsubdivs: u32, out: &mut Vec<Point>) {
     assert!(nsubdivs > 0);
     if let (Some((start_dir, start_len)), Some((end_dir, end_len))) = (
         na::Unit::try_new_and_get(start - center, 0.0),
@@ -268,7 +262,7 @@ pub fn apply_revolution(
     collapse_top: bool,
     circle_ranges: &[std::ops::Range<u32>],
     nsubdivs: u32,
-    out_vtx: &mut Vec<Point<Real>>, // Must be set to the half-profile.
+    out_vtx: &mut Vec<Point>, // Must be set to the half-profile.
     out_idx: &mut Vec<[u32; 2]>,
 ) {
     use na::RealField;

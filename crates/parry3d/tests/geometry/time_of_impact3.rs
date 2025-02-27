@@ -1,5 +1,4 @@
 use na::{self, Isometry3, Vector3};
-use parry3d::math::Real;
 use parry3d::query::{self, ShapeCastOptions};
 use parry3d::shape::{Ball, Cuboid};
 
@@ -56,7 +55,7 @@ fn ball_cuboid_toi() {
     assert_eq!(toi_intersecting, Some(0.0));
     assert!(relative_eq!(
         toi_will_touch.unwrap(),
-        ((3.0 as Real).sqrt() - 1.0) / (ball_vel2 - cuboid_vel2).norm()
+        (3.0_f32.sqrt() - 1.0) / (ball_vel2 - cuboid_vel2).norm()
     ));
     assert_eq!(toi_wont_touch, None);
 }
