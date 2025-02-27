@@ -29,7 +29,7 @@ std = [
     "simba/std",
     "arrayvec/std",
     "spade",
-    "thiserror",
+    "thiserror/std",
     "ena"
 ]
 dim2 = []
@@ -84,7 +84,7 @@ rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 ordered-float = { version = "4", default-features = false }
 log = "0.4"
-thiserror = { version = "1", optional = true }
+thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true }
 
 [dev-dependencies]
