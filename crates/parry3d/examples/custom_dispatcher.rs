@@ -19,7 +19,8 @@ fn main() {
     let custom_shape = CustomShape(Ball::new(1.0));
 
     let pos12 = Isometry::identity();
-    let dispatcher = CustomShapeDispatcher;
+    // You can chain your custom dispatcher with the default one.
+    let dispatcher = CustomShapeDispatcher.chain(DefaultQueryDispatcher);
 
     let contact = dispatcher.contact(&pos12, &cube, &custom_shape.0, 0.0);
 
@@ -108,10 +109,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 ));
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.intersection_test(pos12, g1, g2)
-            }
+            _ => Err(Unsupported),
         }
     }
 
@@ -134,10 +132,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 ));
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.distance(pos12, g1, g2)
-            }
+            _ => Err(Unsupported),
         }
     }
 
@@ -160,10 +155,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 ));
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.contact(pos12, g1, g2, prediction)
-            }
+            _ => Err(Unsupported),
         }
     }
 
@@ -186,10 +178,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 ));
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.closest_points(pos12, g1, g2, max_dist)
-            }
+            _ => Err(Unsupported),
         }
     }
 
@@ -217,10 +206,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 ));
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes(pos12, local_vel12, g1, g2, options)
-            }
+            _ => Err(Unsupported),
         }
     }
 
@@ -252,18 +238,7 @@ impl QueryDispatcher for CustomShapeDispatcher {
                 );
             }
             // TODO: implement the algorithm for each shape type combination you want to support.
-            _ => {
-                let dispatcher = DefaultQueryDispatcher;
-                dispatcher.cast_shapes_nonlinear(
-                    motion1,
-                    g1,
-                    motion2,
-                    g2,
-                    start_time,
-                    end_time,
-                    stop_at_penetration,
-                )
-            }
+            _ => Err(Unsupported),
         }
     }
 }
