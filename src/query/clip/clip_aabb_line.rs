@@ -137,8 +137,10 @@ pub fn clip_aabb_line(
 
         if near_side < 0 {
             normal[(-near_side - 1) as usize] = 1.0;
-        } else {
+        } else if near_side > 0 {
             normal[(near_side - 1) as usize] = -1.0;
+        } else {
+            return None;
         }
 
         (tmin, normal, near_side)
@@ -151,8 +153,10 @@ pub fn clip_aabb_line(
 
         if far_side < 0 {
             normal[(-far_side - 1) as usize] = -1.0;
-        } else {
+        } else if far_side > 0 {
             normal[(far_side - 1) as usize] = 1.0;
+        } else {
+            return None;
         }
 
         (tmax, normal, far_side)
