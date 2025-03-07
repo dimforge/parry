@@ -83,7 +83,7 @@ spade = { version = "2", optional = true } # Make this optional?
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
-ordered-float = { version = "4", default-features = false }
+ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true }
 
