@@ -412,7 +412,7 @@ impl Triangle {
         let denom = 2.0 * (na * nb - dab * dab);
 
         if denom.is_zero() {
-            // The triangle is degenerate (the three points are colinear).
+            // The triangle is degenerate (the three points are collinear).
             // So we find the longest segment and take its center.
             let c = self.a - self.b;
             let nc = c.norm_squared();
