@@ -65,7 +65,6 @@ either = { version = "1", default-features = false }
 bitflags = "2.3"
 downcast-rs = { version = "2", default-features = false, features = ["sync"] }
 num-traits = { version = "0.2", default-features = false }
-smallvec = "1"
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
