@@ -38,8 +38,8 @@ pub use self::intersection_test::intersection_test;
 pub use self::nonlinear_shape_cast::{cast_shapes_nonlinear, NonlinearRigidMotion};
 pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
 #[cfg(feature = "std")]
-pub use self::query_dispatcher::PersistentQueryDispatcher;
-pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
+pub use self::query_dispatcher::{PersistentQueryDispatcher, PersistentQueryDispatcherComposite};
+pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain, QueryDispatcherComposite};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
 pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
 pub use self::split::{IntersectResult, SplitResult};

@@ -1,24 +1,25 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{
-    self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
-    QueryDispatcher, ShapeCastHit, Unsupported,
+    self, details::NonlinearShapeCastMode, query_dispatcher::QueryDispatcherComposite,
+    ClosestPoints, Contact, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit, Unsupported,
 };
 #[cfg(feature = "std")]
 use crate::query::{
     contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
-    query_dispatcher::PersistentQueryDispatcher,
+    query_dispatcher::{PersistentQueryDispatcher, PersistentQueryDispatcherComposite},
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
 /// A dispatcher that exposes built-in queries
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DefaultQueryDispatcher;
 
-impl QueryDispatcher for DefaultQueryDispatcher {
+impl QueryDispatcherComposite for DefaultQueryDispatcher {
     fn intersection_test(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
@@ -66,11 +67,17 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::intersection_test_composite_shape_shape(
-                    self, pos12, c1, shape2,
+                    root_dispatcher,
+                    pos12,
+                    c1,
+                    shape2,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::intersection_test_shape_composite_shape(
-                    self, pos12, shape1, c2,
+                    root_dispatcher,
+                    pos12,
+                    shape1,
+                    c2,
                 ));
             }
 
@@ -83,6 +90,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
@@ -125,11 +133,17 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::distance_composite_shape_shape(
-                    self, pos12, c1, shape2,
+                    root_dispatcher,
+                    pos12,
+                    c1,
+                    shape2,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::distance_shape_composite_shape(
-                    self, pos12, shape1, c2,
+                    root_dispatcher,
+                    pos12,
+                    shape1,
+                    c2,
                 ));
             }
 
@@ -139,6 +153,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn contact(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
@@ -181,11 +196,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::contact_composite_shape_shape(
-                    self, pos12, c1, shape2, prediction,
+                    root_dispatcher,
+                    pos12,
+                    c1,
+                    shape2,
+                    prediction,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::contact_shape_composite_shape(
-                    self, pos12, shape1, c2, prediction,
+                    root_dispatcher,
+                    pos12,
+                    shape1,
+                    c2,
+                    prediction,
                 ));
             }
 
@@ -195,6 +218,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn closest_points(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
@@ -257,11 +281,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::closest_points_composite_shape_shape(
-                    self, pos12, c1, shape2, max_dist,
+                    root_dispatcher,
+                    pos12,
+                    c1,
+                    shape2,
+                    max_dist,
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::closest_points_shape_composite_shape(
-                    self, pos12, shape1, c2, max_dist,
+                    root_dispatcher,
+                    pos12,
+                    shape1,
+                    c2,
+                    max_dist,
                 ));
             }
 
@@ -271,6 +303,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn cast_shapes(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         pos12: &Isometry<Real>,
         local_vel12: &Vector<Real>,
         shape1: &dyn Shape,
@@ -309,7 +342,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             #[cfg(feature = "std")]
             if let Some(heightfield1) = shape1.as_heightfield() {
                 return query::details::cast_shapes_heightfield_shape(
-                    self,
+                    root_dispatcher,
                     pos12,
                     local_vel12,
                     heightfield1,
@@ -318,7 +351,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 );
             } else if let Some(heightfield2) = shape2.as_heightfield() {
                 return query::details::cast_shapes_shape_heightfield(
-                    self,
+                    root_dispatcher,
                     pos12,
                     local_vel12,
                     shape1,
@@ -336,7 +369,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_composite_shape_shape(
-                    self,
+                    root_dispatcher,
                     pos12,
                     local_vel12,
                     c1,
@@ -345,7 +378,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::cast_shapes_shape_composite_shape(
-                    self,
+                    root_dispatcher,
                     pos12,
                     local_vel12,
                     shape1,
@@ -360,6 +393,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn cast_shapes_nonlinear(
         &self,
+        root_dispatcher: &dyn QueryDispatcher,
         motion1: &NonlinearRigidMotion,
         shape1: &dyn Shape,
         motion2: &NonlinearRigidMotion,
@@ -377,14 +411,23 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
             Ok(
                 query::details::cast_shapes_nonlinear_support_map_support_map(
-                    self, motion1, sm1, shape1, motion2, sm2, shape2, start_time, end_time, mode,
+                    root_dispatcher,
+                    motion1,
+                    sm1,
+                    shape1,
+                    motion2,
+                    sm2,
+                    shape2,
+                    start_time,
+                    end_time,
+                    mode,
                 ),
             )
         } else {
             #[cfg(feature = "std")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_nonlinear_composite_shape_shape(
-                    self,
+                    root_dispatcher,
                     motion1,
                     c1,
                     motion2,
@@ -395,7 +438,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 ));
             } else if let Some(c2) = shape2.as_composite_shape() {
                 return Ok(query::details::cast_shapes_nonlinear_shape_composite_shape(
-                    self,
+                    root_dispatcher,
                     motion1,
                     shape1,
                     motion2,
@@ -418,7 +461,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 }
 
 #[cfg(feature = "std")]
-impl<ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData>
+impl<ManifoldData, ContactData> PersistentQueryDispatcherComposite<ManifoldData, ContactData>
     for DefaultQueryDispatcher
 where
     ManifoldData: Default + Clone,
@@ -426,6 +469,7 @@ where
 {
     fn contact_manifolds(
         &self,
+        root_dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
         pos12: &Isometry<Real>,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
@@ -440,7 +484,13 @@ where
 
         if let (Some(composite1), Some(composite2)) = (composite1, composite2) {
             contact_manifolds_composite_shape_composite_shape(
-                self, pos12, composite1, composite2, prediction, manifolds, workspace,
+                root_dispatcher,
+                pos12,
+                composite1,
+                composite2,
+                prediction,
+                manifolds,
+                workspace,
             );
 
             return Ok(());
@@ -449,13 +499,19 @@ where
         match (shape1.shape_type(), shape2.shape_type()) {
             (ShapeType::TriMesh, _) | (_, ShapeType::TriMesh) => {
                 contact_manifolds_trimesh_shape_shapes(
-                    self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                    root_dispatcher,
+                    pos12,
+                    shape1,
+                    shape2,
+                    prediction,
+                    manifolds,
+                    workspace,
                 );
             }
             (ShapeType::HeightField, _) => {
                 if let Some(composite2) = composite2 {
                     contact_manifolds_heightfield_composite_shape(
-                        self,
+                        root_dispatcher,
                         pos12,
                         &pos12.inverse(),
                         shape1.as_heightfield().unwrap(),
@@ -467,14 +523,20 @@ where
                     )
                 } else {
                     contact_manifolds_heightfield_shape_shapes(
-                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                        root_dispatcher,
+                        pos12,
+                        shape1,
+                        shape2,
+                        prediction,
+                        manifolds,
+                        workspace,
                     );
                 }
             }
             (_, ShapeType::HeightField) => {
                 if let Some(composite1) = composite1 {
                     contact_manifolds_heightfield_composite_shape(
-                        self,
+                        root_dispatcher,
                         &pos12.inverse(),
                         pos12,
                         shape2.as_heightfield().unwrap(),
@@ -486,18 +548,31 @@ where
                     )
                 } else {
                     contact_manifolds_heightfield_shape_shapes(
-                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                        root_dispatcher,
+                        pos12,
+                        shape1,
+                        shape2,
+                        prediction,
+                        manifolds,
+                        workspace,
                     );
                 }
             }
             _ => {
                 if let Some(composite1) = composite1 {
                     contact_manifolds_composite_shape_shape(
-                        self, pos12, composite1, shape2, prediction, manifolds, workspace, false,
+                        root_dispatcher,
+                        pos12,
+                        composite1,
+                        shape2,
+                        prediction,
+                        manifolds,
+                        workspace,
+                        false,
                     );
                 } else if let Some(composite2) = composite2 {
                     contact_manifolds_composite_shape_shape(
-                        self,
+                        root_dispatcher,
                         &pos12.inverse(),
                         composite2,
                         shape1,
@@ -511,7 +586,7 @@ where
                         manifolds.push(ContactManifold::new());
                     }
 
-                    return self.contact_manifold_convex_convex(
+                    return root_dispatcher.contact_manifold_convex_convex(
                         pos12,
                         shape1,
                         shape2,
