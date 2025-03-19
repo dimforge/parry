@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+- derive `Copy` for `VHACDParameters`.
+
 ## v0.18.0
 
 ### Added
