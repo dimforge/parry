@@ -501,7 +501,7 @@ impl VoxelizedVolume {
 
     /// The value of the given voxel.
     ///
-    /// In 2D`, the `k` argument is ignored.
+    /// In 2D, the `k` argument is ignored.
     pub fn voxel(&self, i: u32, j: u32, k: u32) -> VoxelValue {
         let idx = self.voxel_index(i, j, k);
         self.values[idx as usize]

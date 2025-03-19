@@ -135,17 +135,17 @@ impl SimdAabb {
         }
     }
 
-    /// The center of all the Aabbs represented by `self``.
+    /// The center of all the Aabbs represented by `self`.
     pub fn center(&self) -> Point<SimdReal> {
         na::center(&self.mins, &self.maxs)
     }
 
-    /// The half-extents of all the Aabbs represented by `self``.
+    /// The half-extents of all the Aabbs represented by `self`.
     pub fn half_extents(&self) -> Vector<SimdReal> {
         (self.maxs - self.mins) * SimdReal::splat(0.5)
     }
 
-    /// The radius of all the Aabbs represented by `self``.
+    /// The radius of all the Aabbs represented by `self`.
     pub fn radius(&self) -> SimdReal {
         (self.maxs - self.mins).norm()
     }
@@ -178,7 +178,7 @@ impl SimdAabb {
         self.maxs += Vector::repeat(margin);
     }
 
-    /// Dilate all the Aabbs represented by `self`` by their extents multiplied
+    /// Dilate all the Aabbs represented by `self` by their extents multiplied
     /// by the given scale `factor`.
     pub fn dilate_by_factor(&mut self, factor: SimdReal) {
         // If some of the Aabbs on this SimdAabb are invalid,
