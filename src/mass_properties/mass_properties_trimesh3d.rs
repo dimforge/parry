@@ -148,7 +148,7 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
         + x4 * y4 * 2.0)
         * 0.05;
 
-    Matrix::new(a0, -b1, -c1, -b1, b0, -a1, -c1, -a1, c0)
+    Matrix::new(a0, -c1, -b1, -c1, b0, -a1, -b1, -a1, c0)
 }
 
 /// Computes the volume and center-of-mass of a mesh.
