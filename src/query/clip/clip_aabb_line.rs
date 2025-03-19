@@ -133,14 +133,17 @@ pub fn clip_aabb_line(
     let near = if near_diag {
         (tmin, -dir.normalize(), near_side)
     } else {
+        // If near_side is 0, the index calculation would be invalid (-1).
+        if near_side == 0 {
+            return None;
+        }
+
         let mut normal = Vector::zeros();
 
         if near_side < 0 {
             normal[(-near_side - 1) as usize] = 1.0;
-        } else if near_side > 0 {
-            normal[(near_side - 1) as usize] = -1.0;
         } else {
-            return None;
+            normal[(near_side - 1) as usize] = -1.0;
         }
 
         (tmin, normal, near_side)
@@ -149,14 +152,17 @@ pub fn clip_aabb_line(
     let far = if far_diag {
         (tmax, -dir.normalize(), far_side)
     } else {
+        // If far_side is 0, the index calculation would be invalid (-1).
+        if far_side == 0 {
+            return None;
+        }
+
         let mut normal = Vector::zeros();
 
         if far_side < 0 {
             normal[(-far_side - 1) as usize] = -1.0;
-        } else if far_side > 0 {
-            normal[(far_side - 1) as usize] = 1.0;
         } else {
-            return None;
+            normal[(far_side - 1) as usize] = 1.0;
         }
 
         (tmax, normal, far_side)
