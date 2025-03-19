@@ -130,7 +130,7 @@ where
         let mut mask = [false; SIMD_WIDTH];
         let mut results = [None; SIMD_WIDTH];
 
-        // let centers1: [Point<Real>; SIMD_WIDTH] = bv.center().into();
+        // let centers1: [Point; SIMD_WIDTH] = bv.center().into();
         let centers1 = bv.center();
         let radius1: [Real; SIMD_WIDTH] = bv.radius().into();
 

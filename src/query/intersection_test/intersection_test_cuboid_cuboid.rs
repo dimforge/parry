@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::query::sat;
 use crate::shape::Cuboid;
 
 /// Intersection test between cuboids.
 #[inline]
 pub fn intersection_test_cuboid_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
 ) -> bool {

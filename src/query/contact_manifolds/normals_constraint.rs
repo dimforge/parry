@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Isometry, Vector};
 
 // NOTE: the 'static requirement is only needed for the following impl to work:
 //       impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape
@@ -19,13 +19,13 @@ pub trait NormalConstraints: 'static {
     ///
     /// If this method returns `false` then the contacts associated to that normal should be
     /// considered invalid and be ignored by the collision-detection pipeline.
-    fn project_local_normal_mut(&self, normal: &mut Vector<Real>) -> bool;
+    fn project_local_normal_mut(&self, normal: &mut Vector) -> bool;
     /// Corrects or discards the specified normal (assumed to be unit-sized) based on the constraints
     /// encoded by `Self`.
     ///
     /// If this method returns `None` then the contacts associated to that normal should be
     /// considered invalid and be ignored by the collision-detection pipeline.
-    fn project_local_normal(&self, mut normal: Vector<Real>) -> Option<Vector<Real>> {
+    fn project_local_normal(&self, mut normal: Vector) -> Option<Vector> {
         self.project_local_normal_mut(&mut normal).then_some(normal)
     }
 
@@ -41,9 +41,9 @@ pub trait NormalConstraints: 'static {
     /// considered invalid and be ignored by the collision-detection pipeline.
     fn project_local_normal1(
         &self,
-        pos12: &Isometry<Real>,
-        normal1: &mut Vector<Real>,
-        normal2: &mut Vector<Real>,
+        pos12: &Isometry,
+        normal1: &mut Vector,
+        normal2: &mut Vector,
     ) -> bool {
         if !self.project_local_normal_mut(normal1) {
             return false;
@@ -64,9 +64,9 @@ pub trait NormalConstraints: 'static {
     /// considered invalid and be ignored by the collision-detection pipeline.
     fn project_local_normal2(
         &self,
-        pos12: &Isometry<Real>,
-        normal1: &mut Vector<Real>,
-        normal2: &mut Vector<Real>,
+        pos12: &Isometry,
+        normal1: &mut Vector,
+        normal2: &mut Vector,
     ) -> bool {
         if !self.project_local_normal_mut(normal2) {
             return false;
@@ -79,7 +79,7 @@ pub trait NormalConstraints: 'static {
 }
 
 impl NormalConstraints for () {
-    fn project_local_normal_mut(&self, _: &mut Vector<Real>) -> bool {
+    fn project_local_normal_mut(&self, _: &mut Vector) -> bool {
         true
     }
 }
@@ -91,9 +91,9 @@ pub trait NormalConstraintsPair {
     /// This trait is mostly used internally to combine two [`NormalConstraints`] conveniently.
     fn project_local_normals(
         &self,
-        pos12: &Isometry<Real>,
-        normal1: &mut Vector<Real>,
-        normal2: &mut Vector<Real>,
+        pos12: &Isometry,
+        normal1: &mut Vector,
+        normal2: &mut Vector,
     ) -> bool;
 }
 
@@ -107,9 +107,9 @@ impl NormalConstraintsPair
 {
     fn project_local_normals(
         &self,
-        pos12: &Isometry<Real>,
-        normal1: &mut Vector<Real>,
-        normal2: &mut Vector<Real>,
+        pos12: &Isometry,
+        normal1: &mut Vector,
+        normal2: &mut Vector,
     ) -> bool {
         if let Some(proj) = self.0 {
             if !proj.project_local_normal1(pos12, normal1, normal2) {

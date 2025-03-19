@@ -52,8 +52,8 @@ impl Ord for FaceId {
 #[derive(Clone, Debug)]
 struct Face {
     pts: [usize; 2],
-    normal: Unit<Vector<Real>>,
-    proj: Point<Real>,
+    normal: Unit<Vector>,
+    proj: Point,
     bcoords: [Real; 2],
     deleted: bool,
 }
@@ -74,7 +74,7 @@ impl Face {
 
     pub fn new_with_proj(
         vertices: &[CSOPoint],
-        proj: Point<Real>,
+        proj: Point,
         bcoords: [Real; 2],
         pts: [usize; 2],
     ) -> Self {
@@ -99,7 +99,7 @@ impl Face {
         }
     }
 
-    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point<Real>, Point<Real>) {
+    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point, Point) {
         (
             vertices[self.pts[0]].orig1 * self.bcoords[0]
                 + vertices[self.pts[1]].orig1.coords * self.bcoords[1],
@@ -140,10 +140,10 @@ impl EPA {
     /// Return the projected point in the local-space of `g`.
     pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
-        m: &Isometry<Real>,
+        m: &Isometry,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>> {
+    ) -> Option<Point> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -154,11 +154,11 @@ impl EPA {
     /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
     pub fn closest_points<G1, G2>(
         &mut self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
+    ) -> Option<(Point, Point, Unit<Vector>)>
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -361,7 +361,7 @@ impl EPA {
     }
 }
 
-fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Real; 2])> {
+fn project_origin(a: &Point, b: &Point) -> Option<(Point, [Real; 2])> {
     let ab = *b - *a;
     let ap = -a.coords;
     let ab_ap = ab.dot(&ap);

@@ -1,5 +1,5 @@
 use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SimdBool, SimdReal, Vector, SIMD_WIDTH};
+use crate::math::{Isometry, Real, SimdBool, SimdReal, VectorT, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{Shape, TypedSimdCompositeShape};
@@ -10,7 +10,7 @@ use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 /// Closest points between a composite shape and any other shape.
 pub fn closest_points_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &G1,
     g2: &dyn Shape,
     margin: Real,
@@ -32,7 +32,7 @@ where
 /// Closest points between a shape and a composite shape.
 pub fn closest_points_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     g1: &dyn Shape,
     g2: &G2,
     margin: Real,
@@ -46,12 +46,12 @@ where
 
 /// A visitor for computing the closest points between a composite-shape and a shape.
 pub struct CompositeShapeAgainstShapeClosestPointsVisitor<'a, D: ?Sized, G1: ?Sized + 'a> {
-    msum_shift: Vector<SimdReal>,
-    msum_margin: Vector<SimdReal>,
+    msum_shift: VectorT<SimdReal>,
+    msum_margin: VectorT<SimdReal>,
     margin: Real,
 
     dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
+    pos12: &'a Isometry,
     g1: &'a G1,
     g2: &'a dyn Shape,
 }
@@ -64,7 +64,7 @@ where
     /// Initializes a visitor for computing the closest points between a composite-shape and a shape.
     pub fn new(
         dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
+        pos12: &'a Isometry,
         g1: &'a G1,
         g2: &'a dyn Shape,
         margin: Real,
@@ -72,8 +72,8 @@ where
         let ls_aabb2 = g2.compute_aabb(pos12);
 
         CompositeShapeAgainstShapeClosestPointsVisitor {
-            msum_shift: Vector::splat(-ls_aabb2.center().coords),
-            msum_margin: Vector::splat(ls_aabb2.half_extents()),
+            msum_shift: VectorT::splat(-ls_aabb2.center().coords),
+            msum_margin: VectorT::splat(ls_aabb2.half_extents()),
             margin,
             dispatcher,
             pos12,

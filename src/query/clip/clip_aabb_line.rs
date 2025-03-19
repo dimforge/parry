@@ -9,7 +9,7 @@ impl Aabb {
     ///
     /// Returns `None` if there is no intersection.
     #[inline]
-    pub fn clip_segment(&self, pa: &Point<Real>, pb: &Point<Real>) -> Option<Segment> {
+    pub fn clip_segment(&self, pa: &Point, pb: &Point) -> Option<Segment> {
         let ab = pb - pa;
         clip_aabb_line(self, pa, &ab)
             .map(|clip| Segment::new(pa + ab * (clip.0).0.max(0.0), pa + ab * (clip.1).0.min(1.0)))
@@ -20,11 +20,7 @@ impl Aabb {
     /// The parameters are such that the point are given by `orig + dir * parameter`.
     /// Returns `None` if there is no intersection.
     #[inline]
-    pub fn clip_line_parameters(
-        &self,
-        orig: &Point<Real>,
-        dir: &Vector<Real>,
-    ) -> Option<(Real, Real)> {
+    pub fn clip_line_parameters(&self, orig: &Point, dir: &Vector) -> Option<(Real, Real)> {
         clip_aabb_line(self, orig, dir).map(|clip| ((clip.0).0, (clip.1).0))
     }
 
@@ -32,7 +28,7 @@ impl Aabb {
     ///
     /// Returns `None` if there is no intersection.
     #[inline]
-    pub fn clip_line(&self, orig: &Point<Real>, dir: &Vector<Real>) -> Option<Segment> {
+    pub fn clip_line(&self, orig: &Point, dir: &Vector) -> Option<Segment> {
         clip_aabb_line(self, orig, dir)
             .map(|clip| Segment::new(orig + dir * (clip.0).0, orig + dir * (clip.1).0))
     }
@@ -69,9 +65,9 @@ impl Aabb {
 /// Computes the segment given by the intersection of a line and an Aabb.
 pub fn clip_aabb_line(
     aabb: &Aabb,
-    origin: &Point<Real>,
-    dir: &Vector<Real>,
-) -> Option<((Real, Vector<Real>, isize), (Real, Vector<Real>, isize))> {
+    origin: &Point,
+    dir: &Vector,
+) -> Option<((Real, Vector, isize), (Real, Vector, isize))> {
     let mut tmax: Real = Bounded::max_value();
     let mut tmin: Real = -tmax;
     let mut near_side = 0;

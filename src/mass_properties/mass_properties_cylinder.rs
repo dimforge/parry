@@ -10,7 +10,7 @@ impl MassProperties {
     pub(crate) fn cylinder_y_volume_unit_inertia(
         half_height: Real,
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         #[cfg(feature = "dim2")]
         {
             Self::cuboid_volume_unit_inertia(Vector::new(radius, half_height))

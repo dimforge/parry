@@ -1,6 +1,6 @@
 use na::Unit;
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{self, Ray, ShapeCastHit, ShapeCastStatus};
 use crate::shape::Ball;
@@ -9,8 +9,8 @@ use num::Zero;
 /// Time Of Impact of two balls under translational movement.
 #[inline]
 pub fn cast_shapes_ball_ball(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     b1: &Ball,
     b2: &Ball,
     options: ShapeCastOptions,

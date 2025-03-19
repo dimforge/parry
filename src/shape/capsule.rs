@@ -46,7 +46,7 @@ impl Capsule {
     }
 
     /// Creates a new capsule defined as the segment between `a` and `b` and with the given `radius`.
-    pub fn new(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
+    pub fn new(a: Point, b: Point, radius: Real) -> Self {
         let segment = Segment::new(a, b);
         Self { segment, radius }
     }
@@ -62,25 +62,25 @@ impl Capsule {
     }
 
     /// The center of this capsule.
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point {
         na::center(&self.segment.a, &self.segment.b)
     }
 
     /// Creates a new capsule equal to `self` with all its endpoints transformed by `pos`.
-    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, pos: &Isometry) -> Self {
         Self::new(pos * self.segment.a, pos * self.segment.b, self.radius)
     }
 
     /// The transformation such that `t * Y` is collinear with `b - a` and `t * origin` equals
     /// the capsule's center.
-    pub fn canonical_transform(&self) -> Isometry<Real> {
+    pub fn canonical_transform(&self) -> Isometry {
         let tra = self.center().coords;
         let rot = self.rotation_wrt_y();
         Isometry::from_parts(tra.into(), rot)
     }
 
     /// The rotation `r` such that `r * Y` is collinear with `b - a`.
-    pub fn rotation_wrt_y(&self) -> Rotation<Real> {
+    pub fn rotation_wrt_y(&self) -> Rotation {
         let mut dir = self.segment.b - self.segment.a;
         if dir.y < 0.0 {
             dir = -dir;
@@ -98,7 +98,7 @@ impl Capsule {
     }
 
     /// The transform `t` such that `t * Y` is collinear with `b - a` and such that `t * origin = (b + a) / 2.0`.
-    pub fn transform_wrt_y(&self) -> Isometry<Real> {
+    pub fn transform_wrt_y(&self) -> Isometry {
         let rot = self.rotation_wrt_y();
         Isometry::from_parts(self.center().coords.into(), rot)
     }
@@ -112,7 +112,7 @@ impl Capsule {
     #[cfg(all(feature = "dim2", feature = "std"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
@@ -142,7 +142,7 @@ impl Capsule {
     #[cfg(all(feature = "dim3", feature = "std"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
@@ -165,12 +165,12 @@ impl Capsule {
 }
 
 impl SupportMap for Capsule {
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let dir = Unit::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
         self.local_support_point_toward(&dir)
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         if dir.dot(&self.segment.a.coords) > dir.dot(&self.segment.b.coords) {
             self.segment.a + **dir * self.radius
         } else {

@@ -11,7 +11,7 @@ use na::ComplexField; // for .abs()
 
 /// Computes the contact manifold between two capsules given as `Shape` trait-objects.
 pub fn contact_manifold_capsule_capsule_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -27,7 +27,7 @@ pub fn contact_manifold_capsule_capsule_shapes<ManifoldData, ContactData>(
 /// Computes the contact manifold between two capsules.
 #[cfg(feature = "dim2")]
 pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     capsule1: &'a Capsule,
     capsule2: &'a Capsule,
     prediction: Real,
@@ -135,7 +135,7 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
 /// Computes the contact manifold between two capsules.
 #[cfg(feature = "dim3")]
 pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     capsule1: &'a Capsule,
     capsule2: &'a Capsule,
     prediction: Real,

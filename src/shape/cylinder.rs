@@ -56,7 +56,7 @@ impl Cylinder {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: &Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.z {
@@ -77,7 +77,7 @@ impl Cylinder {
 }
 
 impl SupportMap for Cylinder {
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let mut vres = *dir;
 
         vres[1] = 0.0;

@@ -112,20 +112,26 @@ pub mod math {
     /// The dimension of the rotations.
     pub type AngDim = U3;
 
+    /// The point type, parameterized over its scalar type.
+    pub type PointT<N> = Point3<N>;
+
     /// The point type.
-    pub type Point<N> = Point3<N>;
+    pub type Point = Point3<Real>;
 
     /// The angular vector type.
-    pub type AngVector<N> = Vector3<N>;
+    pub type AngVector = Vector3<Real>;
+
+    /// The vector type, parameterized over its scalar type.
+    pub type VectorT<N> = Vector3<N>;
 
     /// The vector type.
-    pub type Vector<N> = Vector3<N>;
+    pub type Vector = Vector3<Real>;
 
     /// The unit vector type.
-    pub type UnitVector<N> = UnitVector3<N>;
+    pub type UnitVector = UnitVector3<Real>;
 
     /// The matrix type.
-    pub type Matrix<N> = Matrix3<N>;
+    pub type Matrix = Matrix3<Real>;
 
     /// The vector type with dimension `SpatialDim × 1`.
     pub type SpatialVector<N> = Vector6<N>;
@@ -133,20 +139,23 @@ pub mod math {
     /// The orientation type.
     pub type Orientation<N> = Vector3<N>;
 
+    /// The transformation matrix type, parameterized over its scalar type.
+    pub type IsometryT<N> = Isometry3<N>;
+
     /// The transformation matrix type.
-    pub type Isometry<N> = Isometry3<N>;
+    pub type Isometry = Isometry3<Real>;
 
     /// The rotation matrix type.
-    pub type Rotation<N> = UnitQuaternion<N>;
+    pub type Rotation = UnitQuaternion<Real>;
 
     /// The translation type.
     pub type Translation<N> = Translation3<N>;
 
     /// The angular inertia of a rigid body.
-    pub type AngularInertia<N> = crate::utils::SdpMatrix3<N>;
+    pub type AngularInertia = crate::utils::SdpMatrix3<Real>;
 
     /// The principal angular inertia of a rigid body.
-    pub type PrincipalAngularInertia<N> = Vector3<N>;
+    pub type PrincipalAngularInertia = Vector3<Real>;
 
     /// A matrix that represent the cross product with a given vector.
     pub type CrossMatrix<N> = Matrix3<N>;
@@ -183,38 +192,47 @@ pub mod math {
     /// The dimension of the rotations.
     pub type AngDim = U1;
 
+    /// The point type, parameterized over its scalar type.
+    pub type PointT<N> = Point2<N>;
+
     /// The point type.
-    pub type Point<N> = Point2<N>;
+    pub type Point = Point2<Real>;
 
     /// The angular vector type.
-    pub type AngVector<N> = N;
+    pub type AngVector = Real;
+
+    /// The vector type, parameterized over its scalar type.
+    pub type VectorT<N> = Vector2<N>;
 
     /// The vector type.
-    pub type Vector<N> = Vector2<N>;
+    pub type Vector = Vector2<Real>;
 
     /// The unit vector type.
-    pub type UnitVector<N> = UnitVector2<N>;
+    pub type UnitVector = UnitVector2<Real>;
 
     /// The matrix type.
-    pub type Matrix<N> = Matrix2<N>;
+    pub type Matrix = Matrix2<Real>;
 
     /// The orientation type.
     pub type Orientation<N> = Vector1<N>;
 
+    /// The transformation matrix type, parameterized over its scalar type.
+    pub type IsometryT<N> = Isometry2<N>;
+
     /// The transformation matrix type.
-    pub type Isometry<N> = Isometry2<N>;
+    pub type Isometry = Isometry2<Real>;
 
     /// The rotation matrix type.
-    pub type Rotation<N> = UnitComplex<N>;
+    pub type Rotation = UnitComplex<Real>;
 
     /// The translation type.
     pub type Translation<N> = Translation2<N>;
 
     /// The angular inertia of a rigid body.
-    pub type AngularInertia<N> = N;
+    pub type AngularInertia = Real;
 
     /// The principal angular inertia of a rigid body.
-    pub type PrincipalAngularInertia<N> = N;
+    pub type PrincipalAngularInertia = Real;
 
     /// A matrix that represent the cross product with a given vector.
     pub type CrossMatrix<N> = Vector2<N>;
@@ -228,7 +246,9 @@ pub mod math {
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
+
     use simba::simd::AutoBoolx4;
+
     /// The number of lanes of a SIMD number.
     pub const SIMD_WIDTH: usize = 4;
     /// SIMD_WIDTH - 1

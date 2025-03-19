@@ -22,7 +22,7 @@ struct VertexInfo {
 }
 
 /// Updates the fields `pointiness` and `is_ear` for a given vertex index.
-fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>]) -> bool {
+fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point]) -> bool {
     // Get the point and its neighbors.
     let p = points[idx];
     let p1 = points[vertex_info.p_prev];
@@ -54,7 +54,7 @@ fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>
 }
 
 /// Ear clipping triangulation algorithm.
-pub(crate) fn triangulate_ear_clipping(vertices: &[Point<Real>]) -> Option<Vec<[u32; 3]>> {
+pub(crate) fn triangulate_ear_clipping(vertices: &[Point]) -> Option<Vec<[u32; 3]>> {
     let n_vertices = vertices.len();
 
     // Create a new vector to hold the information about vertices.

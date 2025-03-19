@@ -1,12 +1,12 @@
 use crate::bounding_volume;
 use crate::bounding_volume::BoundingSphere;
-use crate::math::{Isometry, Real};
+use crate::math::Isometry;
 use crate::shape::ConvexPolyhedron;
 
 impl ConvexPolyhedron {
     /// Computes the world-space bounding sphere of this convex polyhedron, transformed by `pos`.
     #[inline]
-    pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {
+    pub fn bounding_sphere(&self, pos: &Isometry) -> BoundingSphere {
         let bv: BoundingSphere = self.local_bounding_sphere();
         bv.transform_by(pos)
     }

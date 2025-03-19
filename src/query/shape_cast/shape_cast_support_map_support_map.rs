@@ -10,8 +10,8 @@ use num::Zero;
 
 /// Time of impacts between two support-mapped shapes under translational movement.
 pub fn cast_shapes_support_map_support_map<G1, G2>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Isometry,
+    vel12: &Vector,
     g1: &G1,
     g2: &G2,
     options: ShapeCastOptions,

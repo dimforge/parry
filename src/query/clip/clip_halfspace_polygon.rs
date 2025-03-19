@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Vector};
 use crate::query::{self, Ray};
 
 /// Cuts a polygon with the given half-space.
@@ -8,10 +8,10 @@ use crate::query::{self, Ray};
 /// the polygon. (Note that a point `pt` is considered as inside of
 /// the half-space if `normal.dot(&(pt - center)) <= 0.0`.
 pub fn clip_halfspace_polygon(
-    center: &Point<Real>,
-    normal: &Vector<Real>,
-    polygon: &[Point<Real>],
-    result: &mut Vec<Point<Real>>,
+    center: &Point,
+    normal: &Vector,
+    polygon: &[Point],
+    result: &mut Vec<Point>,
 ) {
     result.clear();
 
@@ -19,7 +19,7 @@ pub fn clip_halfspace_polygon(
         return;
     }
 
-    let keep_point = |pt: &Point<Real>| (pt - center).dot(normal) <= 0.0;
+    let keep_point = |pt: &Point| (pt - center).dot(normal) <= 0.0;
     let last_pt = polygon.last().unwrap();
     let mut last_keep = keep_point(last_pt);
 

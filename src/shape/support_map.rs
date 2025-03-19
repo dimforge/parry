@@ -1,6 +1,6 @@
 //! Traits for support mapping based shapes.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Isometry, Point, Vector};
 use na::Unit;
 
 /// Traits of convex shapes representable by a support mapping function.
@@ -12,10 +12,10 @@ pub trait SupportMap {
     //
     // A support function is a function associating a vector to the shape point which maximizes
     // their dot product.
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real>;
+    fn local_support_point(&self, dir: &Vector) -> Point;
 
     /// Same as `self.local_support_point` except that `dir` is normalized.
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
+    fn local_support_point_toward(&self, dir: &Unit<Vector>) -> Point {
         self.local_support_point(dir.as_ref())
     }
 
@@ -23,17 +23,13 @@ pub trait SupportMap {
     //
     // A support function is a function associating a vector to the shape point which maximizes
     // their dot product.
-    fn support_point(&self, transform: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
+    fn support_point(&self, transform: &Isometry, dir: &Vector) -> Point {
         let local_dir = transform.inverse_transform_vector(dir);
         transform * self.local_support_point(&local_dir)
     }
 
     /// Same as `self.support_point` except that `dir` is normalized.
-    fn support_point_toward(
-        &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
-    ) -> Point<Real> {
+    fn support_point_toward(&self, transform: &Isometry, dir: &Unit<Vector>) -> Point {
         let local_dir = Unit::new_unchecked(transform.inverse_transform_vector(dir));
         transform * self.local_support_point_toward(&local_dir)
     }

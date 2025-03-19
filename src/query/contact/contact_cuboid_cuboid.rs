@@ -7,7 +7,7 @@ use na::Unit;
 /// Contact between two cuboids.
 #[inline]
 pub fn contact_cuboid_cuboid(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
     prediction: Real,
@@ -25,7 +25,7 @@ pub fn contact_cuboid_cuboid(
     }
 
     #[cfg(feature = "dim2")]
-    let sep3 = (-Real::MAX, crate::math::Vector::<Real>::y()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, crate::math::Vector::y()); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_cuboid_find_local_separating_edge_twoway(cuboid1, cuboid2, pos12);
     if sep3.0 > prediction {

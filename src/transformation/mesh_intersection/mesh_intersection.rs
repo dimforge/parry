@@ -66,10 +66,10 @@ impl Default for MeshIntersectionTolerances {
 /// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
 /// The result mesh vertex coordinates are given in the local-space of `mesh1`.
 pub fn intersect_meshes(
-    pos1: &Isometry<Real>,
+    pos1: &Isometry,
     mesh1: &TriMesh,
     flip1: bool,
-    pos2: &Isometry<Real>,
+    pos2: &Isometry,
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
@@ -89,10 +89,10 @@ pub fn intersect_meshes(
 /// It allows to specify epsilons for how the algorithm will behave.
 /// See `MeshIntersectionTolerances` for details.
 pub fn intersect_meshes_with_tolerances(
-    pos1: &Isometry<Real>,
+    pos1: &Isometry,
     mesh1: &TriMesh,
     flip1: bool,
-    pos2: &Isometry<Real>,
+    pos2: &Isometry,
     mesh2: &TriMesh,
     flip2: bool,
     tolerances: MeshIntersectionTolerances,
@@ -289,7 +289,7 @@ pub fn intersect_meshes_with_tolerances(
 }
 
 fn extract_connected_components(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     flip2: bool,
@@ -617,8 +617,8 @@ fn merge_triangle_sets(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     triangle_constraints: &BTreeMap<&u32, Vec<[Point3<Real>; 2]>>,
-    pos1: &Isometry<Real>,
-    pos2: &Isometry<Real>,
+    pos1: &Isometry,
+    pos2: &Isometry,
     flip1: bool,
     flip2: bool,
     metadata: &MeshIntersectionTolerances,

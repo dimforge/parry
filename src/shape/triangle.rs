@@ -30,11 +30,11 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Triangle {
     /// The triangle first point.
-    pub a: Point<Real>,
+    pub a: Point,
     /// The triangle second point.
-    pub b: Point<Real>,
+    pub b: Point,
     /// The triangle third point.
-    pub c: Point<Real>,
+    pub c: Point,
 }
 
 /// Description of the location of a point on a triangle.
@@ -110,8 +110,8 @@ pub enum TriangleOrientation {
     Degenerate,
 }
 
-impl From<[Point<Real>; 3]> for Triangle {
-    fn from(arr: [Point<Real>; 3]) -> Self {
+impl From<[Point; 3]> for Triangle {
+    fn from(arr: [Point; 3]) -> Self {
         *Self::from_array(&arr)
     }
 }
@@ -119,18 +119,18 @@ impl From<[Point<Real>; 3]> for Triangle {
 impl Triangle {
     /// Creates a triangle from three points.
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Triangle {
+    pub fn new(a: Point, b: Point, c: Point) -> Triangle {
         Triangle { a, b, c }
     }
 
     /// Creates the reference to a triangle from the reference to an array of three points.
-    pub fn from_array(arr: &[Point<Real>; 3]) -> &Triangle {
+    pub fn from_array(arr: &[Point; 3]) -> &Triangle {
         unsafe { mem::transmute(arr) }
     }
 
     /// Reference to an array containing the three vertices of this triangle.
     #[inline]
-    pub fn vertices(&self) -> &[Point<Real>; 3] {
+    pub fn vertices(&self) -> &[Point; 3] {
         unsafe { mem::transmute(self) }
     }
 
@@ -140,7 +140,7 @@ impl Triangle {
     /// product).
     #[inline]
     #[cfg(feature = "dim3")]
-    pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
+    pub fn normal(&self) -> Option<Unit<Vector>> {
         Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
     }
 
@@ -155,7 +155,7 @@ impl Triangle {
     }
 
     /// Computes a scaled version of this triangle.
-    pub fn scaled(self, scale: &Vector<Real>) -> Self {
+    pub fn scaled(self, scale: &Vector) -> Self {
         Self::new(
             na::Scale::from(*scale) * self.a,
             na::Scale::from(*scale) * self.b,
@@ -165,19 +165,19 @@ impl Triangle {
 
     /// Returns a new triangle with vertices transformed by `m`.
     #[inline]
-    pub fn transformed(&self, m: &Isometry<Real>) -> Self {
+    pub fn transformed(&self, m: &Isometry) -> Self {
         Triangle::new(m * self.a, m * self.b, m * self.c)
     }
 
     /// The three edges scaled directions of this triangle: [B - A, C - B, A - C].
     #[inline]
-    pub fn edges_scaled_directions(&self) -> [Vector<Real>; 3] {
+    pub fn edges_scaled_directions(&self) -> [Vector; 3] {
         [self.b - self.a, self.c - self.b, self.a - self.c]
     }
 
     /// Return the edge segment of this cuboid with a normal cone containing
     /// a direction that that maximizes the dot product with `local_dir`.
-    pub fn local_support_edge_segment(&self, dir: Vector<Real>) -> Segment {
+    pub fn local_support_edge_segment(&self, dir: Vector) -> Segment {
         let dots = na::Vector3::new(
             dir.dot(&self.a.coords),
             dir.dot(&self.b.coords),
@@ -194,14 +194,14 @@ impl Triangle {
     /// Return the face of this triangle with a normal that maximizes
     /// the dot product with `dir`.
     #[cfg(feature = "dim3")]
-    pub fn support_face(&self, _dir: Vector<Real>) -> PolygonalFeature {
+    pub fn support_face(&self, _dir: Vector) -> PolygonalFeature {
         PolygonalFeature::from(*self)
     }
 
     /// Return the face of this triangle with a normal that maximizes
     /// the dot product with `dir`.
     #[cfg(feature = "dim2")]
-    pub fn support_face(&self, dir: Vector<Real>) -> PolygonalFeature {
+    pub fn support_face(&self, dir: Vector) -> PolygonalFeature {
         let mut best = 0;
         let mut best_dot = -Real::MAX;
 
@@ -238,7 +238,7 @@ impl Triangle {
     /// [`Triangle::robust_scaled_normal`].
     #[inline]
     #[cfg(feature = "dim3")]
-    pub fn scaled_normal(&self) -> Vector<Real> {
+    pub fn scaled_normal(&self) -> Vector {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         ab.cross(&ac)
@@ -272,7 +272,7 @@ impl Triangle {
     /// This computes the min and max values of the dot products between each
     /// vertex of this triangle and `dir`.
     #[inline]
-    pub fn extents_on_dir(&self, dir: &Unit<Vector<Real>>) -> (Real, Real) {
+    pub fn extents_on_dir(&self, dir: &Unit<Vector>) -> (Real, Real) {
         let a = self.a.coords.dot(dir);
         let b = self.b.coords.dot(dir);
         let c = self.c.coords.dot(dir);
@@ -298,7 +298,7 @@ impl Triangle {
     }
     //
     // #[cfg(feature = "dim3")]
-    // fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>, eps: Real) -> FeatureId {
+    // fn support_feature_id_toward(&self, local_dir: &Unit<Vector>, eps: Real) -> FeatureId {
     //     if let Some(normal) = self.normal() {
     //         let (seps, ceps) = ComplexField::sin_cos(eps);
     //
@@ -387,7 +387,7 @@ impl Triangle {
 
     /// The geometric center of this triangle.
     #[inline]
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Point {
         utils::center(&[self.a, self.b, self.c])
     }
 
@@ -400,7 +400,7 @@ impl Triangle {
     }
 
     /// The circumcircle of this triangle.
-    pub fn circumcircle(&self) -> (Point<Real>, Real) {
+    pub fn circumcircle(&self) -> (Point, Real) {
         let a = self.a - self.c;
         let b = self.b - self.c;
 
@@ -482,7 +482,7 @@ impl Triangle {
 
     /// Tests if a point is inside of this triangle.
     #[cfg(feature = "dim2")]
-    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+    pub fn contains_point(&self, p: &Point) -> bool {
         let ab = self.b - self.a;
         let bc = self.c - self.b;
         let ca = self.a - self.c;
@@ -496,7 +496,7 @@ impl Triangle {
 
     /// Tests if a point is inside of this triangle.
     #[cfg(feature = "dim3")]
-    pub fn contains_point(&self, p: &Point<Real>) -> bool {
+    pub fn contains_point(&self, p: &Point) -> bool {
         const EPS: Real = crate::math::DEFAULT_EPSILON;
 
         let vb = self.b - self.a;
@@ -540,7 +540,7 @@ impl Triangle {
 
     /// The normal of the given feature of this shape.
     #[cfg(feature = "dim3")]
-    pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector>> {
         self.normal()
     }
 
@@ -613,7 +613,7 @@ impl Triangle {
 
 impl SupportMap for Triangle {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: &Vector) -> Point {
         let d1 = self.a.coords.dot(dir);
         let d2 = self.b.coords.dot(dir);
         let d3 = self.c.coords.dot(dir);
@@ -635,7 +635,7 @@ impl SupportMap for Triangle {
 /*
 #[cfg(feature = "dim3")]
 impl ConvexPolyhedron for Triangle {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Point {
         match id.unwrap_vertex() {
             0 => self.a,
             1 => self.b,
@@ -643,7 +643,7 @@ impl ConvexPolyhedron for Triangle {
             _ => panic!("Triangle vertex index out of bounds."),
         }
     }
-    fn edge(&self, id: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, id: FeatureId) -> (Point, Point, FeatureId, FeatureId) {
         match id.unwrap_edge() {
             0 => (self.a, self.b, FeatureId::Vertex(0), FeatureId::Vertex(1)),
             1 => (self.b, self.c, FeatureId::Vertex(1), FeatureId::Vertex(2)),
@@ -689,8 +689,8 @@ impl ConvexPolyhedron for Triangle {
 
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Isometry,
+        dir: &Unit<Vector>,
         face: &mut ConvexPolygonalFeature,
     ) {
         let normal = self.scaled_normal();
@@ -705,8 +705,8 @@ impl ConvexPolyhedron for Triangle {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Isometry,
+        dir: &Unit<Vector>,
         eps: Real,
         out: &mut ConvexPolygonalFeature,
     ) {
@@ -732,7 +732,7 @@ impl ConvexPolyhedron for Triangle {
         }
     }
 
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    fn support_feature_id_toward(&self, local_dir: &Unit<Vector>) -> FeatureId {
         self.support_feature_id_toward(local_dir, na::convert::<f64, Real>(f64::consts::PI / 180.0))
     }
 }

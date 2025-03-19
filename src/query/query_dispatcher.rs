@@ -20,7 +20,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
     /// spatial and temporal coherence.
     fn contact_manifolds(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         prediction: Real,
@@ -31,7 +31,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
     /// Computes the contact-manifold between two convex shapes.
     fn contact_manifold_convex_convex(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         normal_constraints1: Option<&dyn NormalConstraints>,
@@ -52,7 +52,7 @@ pub trait QueryDispatcher: Send + Sync {
     /// Tests whether two shapes are intersecting.
     fn intersection_test(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> Result<bool, Unsupported>;
@@ -62,7 +62,7 @@ pub trait QueryDispatcher: Send + Sync {
     /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> Result<Real, Unsupported>;
@@ -72,7 +72,7 @@ pub trait QueryDispatcher: Send + Sync {
     /// Returns `None` if the objects are separated by a distance greater than `prediction`.
     fn contact(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         prediction: Real,
@@ -83,7 +83,7 @@ pub trait QueryDispatcher: Send + Sync {
     /// Returns `ClosestPoints::Disjoint` if the objects are separated by a distance greater than `max_dist`.
     fn closest_points(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_dist: Real,
@@ -105,8 +105,8 @@ pub trait QueryDispatcher: Send + Sync {
     ///              detected is theater than this value.
     fn cast_shapes(
         &self,
-        pos12: &Isometry<Real>,
-        local_vel12: &Vector<Real>,
+        pos12: &Isometry,
+        local_vel12: &Vector,
         g1: &dyn Shape,
         g2: &dyn Shape,
         options: ShapeCastOptions,
@@ -167,30 +167,30 @@ where
     U: QueryDispatcher,
 {
     chain_method!(intersection_test(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
     ) -> bool);
 
-    chain_method!(distance(pos12: &Isometry<Real>, g1: &dyn Shape, g2: &dyn Shape,) -> Real);
+    chain_method!(distance(pos12: &Isometry, g1: &dyn Shape, g2: &dyn Shape,) -> Real);
 
     chain_method!(contact(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         prediction: Real,
     ) -> Option<Contact>);
 
     chain_method!(closest_points(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         max_dist: Real,
     ) -> ClosestPoints);
 
     chain_method!(cast_shapes(
-        pos12: &Isometry<Real>,
-        vel12: &Vector<Real>,
+        pos12: &Isometry,
+        vel12: &Vector,
         g1: &dyn Shape,
         g2: &dyn Shape,
         options: ShapeCastOptions,
@@ -215,7 +215,7 @@ where
     U: PersistentQueryDispatcher<ManifoldData, ContactData>,
 {
     chain_method!(contact_manifolds(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         prediction: Real,
@@ -224,7 +224,7 @@ where
     ) -> ());
 
     chain_method!(contact_manifold_convex_convex(
-        pos12: &Isometry<Real>,
+        pos12: &Isometry,
         g1: &dyn Shape,
         g2: &dyn Shape,
         normal_constraints1: Option<&dyn NormalConstraints>,

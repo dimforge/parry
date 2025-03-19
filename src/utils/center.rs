@@ -3,7 +3,7 @@ use na;
 
 /// Computes the center of a set of point.
 #[inline]
-pub fn center(pts: &[Point<Real>]) -> Point<Real> {
+pub fn center(pts: &[Point]) -> Point {
     assert!(
         !pts.is_empty(),
         "Cannot compute the center of less than 1 point."

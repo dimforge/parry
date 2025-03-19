@@ -7,7 +7,7 @@ use num::Zero;
 /// Contact between balls.
 #[inline]
 pub fn contact_ball_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     b1: &Ball,
     b2: &Ball,
     prediction: Real,

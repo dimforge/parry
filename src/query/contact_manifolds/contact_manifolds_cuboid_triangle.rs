@@ -8,7 +8,7 @@ use crate::shape::{Cuboid, Shape, Triangle};
 
 /// Computes the contact manifold between a cuboid and a triangle represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Isometry,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     normal_constraints1: Option<&dyn NormalConstraints>,
@@ -47,8 +47,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a cuboid and a triangle.
 pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Isometry,
+    pos21: &Isometry,
     cuboid1: &'a Cuboid,
     triangle2: &'a Triangle,
     normal_constraints1: Option<&dyn NormalConstraints>,
