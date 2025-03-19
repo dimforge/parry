@@ -363,7 +363,7 @@ impl VHACD {
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();
-        input_parts.push(std::mem::replace(&mut voxels, VoxelSet::new()));
+        input_parts.push(std::mem::take(&mut voxels));
 
         let mut first_iteration = true;
         self.volume_ch0 = 1.0;
