@@ -20,7 +20,7 @@ maintenance = { status = "actively-developed" }
 workspace = true
 
 [features]
-default = ["required-features", "alloc"]
+default = ["required-features", "std"]
 required-features = ["dim3", "f64"]
 std = [
     "nalgebra/std",
