@@ -39,6 +39,7 @@ serde-serialize = [
     "nalgebra/serde-serialize",
     "arrayvec/serde",
     "bitflags/serde",
+    "hashbrown?/serde",
     "spade?/serde",
 ]
 rkyv-serialize = [
