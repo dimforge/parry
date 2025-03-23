@@ -1,4 +1,5 @@
 use crate::shape::TriMesh;
+use alloc::{string::ToString, vec};
 use obj::{Group, IndexTuple, ObjData, ObjError, Object, SimplePolygon};
 use std::path::PathBuf;
 
