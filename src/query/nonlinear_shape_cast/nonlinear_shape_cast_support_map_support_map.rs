@@ -1,5 +1,3 @@
-#[cfg(not(feature = "alloc"))]
-use na::ComplexField; // for .abs()
 use na::{RealField, Unit};
 
 use crate::math::{Point, Real, Vector};

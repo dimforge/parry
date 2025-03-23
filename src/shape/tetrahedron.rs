@@ -6,7 +6,7 @@ use crate::utils;
 use core::mem;
 use na::Matrix3;
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(all(feature = "dim2", not(feature = "std")))]
 use na::ComplexField; // for .abs()
 
 #[cfg(feature = "rkyv")]

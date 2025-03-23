@@ -1,6 +1,4 @@
 use na;
-#[cfg(not(feature = "alloc"))]
-use na::ComplexField; // for .abs()
 
 use crate::math::Real;
 #[cfg(feature = "dim2")]

@@ -8,9 +8,6 @@ use num::Zero;
 #[cfg(feature = "alloc")]
 use either::Either;
 
-#[cfg(not(feature = "alloc"))]
-use na::RealField; // for .copysign()
-
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 

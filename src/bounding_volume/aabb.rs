@@ -8,8 +8,8 @@ use arrayvec::ArrayVec;
 use na;
 use num::Bounded;
 
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
+#[cfg(all(feature = "dim3", not(feature = "std")))]
+use na::ComplexField; // for .sin_cos()
 
 use crate::query::{Ray, RayCast};
 #[cfg(feature = "rkyv")]

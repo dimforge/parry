@@ -1,5 +1,7 @@
 use super::TriangleFacet;
+#[cfg(feature = "std")]
 use crate::math::Real;
+#[cfg(feature = "std")]
 use na::Point3;
 
 pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {

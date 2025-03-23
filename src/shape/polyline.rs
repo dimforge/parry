@@ -8,8 +8,6 @@ use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCom
 use alloc::vec::Vec;
 
 use crate::query::details::NormalConstraints;
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
