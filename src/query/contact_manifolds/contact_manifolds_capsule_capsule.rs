@@ -6,7 +6,7 @@ use crate::shape::{Capsule, PackedFeatureId, Shape};
 use approx::AbsDiffEq;
 use na::Unit;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "alloc"))]
 use na::ComplexField; // for .abs()
 
 /// Computes the contact manifold between two capsules given as `Shape` trait-objects.

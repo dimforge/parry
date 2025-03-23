@@ -1,6 +1,6 @@
 mod common_macroquad2d;
 
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use core::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use common_macroquad2d::{draw_point, draw_polygon, lissajous_2d_with_params, na_from_mquad};
 use macroquad::prelude::*;

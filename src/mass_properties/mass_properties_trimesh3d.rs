@@ -182,6 +182,8 @@ pub fn trimesh_signed_volume_and_center_of_mass(
 
 #[cfg(test)]
 mod test {
+    use std::dbg;
+
     use crate::math::Vector;
     use crate::{
         mass_properties::MassProperties,

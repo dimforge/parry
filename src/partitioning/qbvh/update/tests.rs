@@ -1,5 +1,6 @@
+use alloc::{borrow::Cow, string::String};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::borrow::Cow;
+use std::println;
 
 use crate::{
     bounding_volume::Aabb,
@@ -213,7 +214,7 @@ impl QbvhTester {
         let mut qbvh = Qbvh::new();
         let workspace = QbvhUpdateWorkspace::default();
         let aabbs = self.aabbs.clone();
-        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, aabb.clone())), 0.0);
+        qbvh.clear_and_rebuild(aabbs.iter().map(|(index, aabb)| (index, *aabb)), 0.0);
         QbvhTester {
             qbvh,
             workspace,

@@ -4,8 +4,10 @@
 pub(crate) use self::convex_hull2::convex_hull2_idx;
 #[cfg(feature = "dim2")]
 pub use self::convex_hull2::{convex_hull2 as convex_hull, convex_hull2_idx as convex_hull_idx};
+#[cfg(all(feature = "dim3", feature = "std"))]
+pub use self::convex_hull3::check_convex_hull;
 #[cfg(feature = "dim3")]
-pub use self::convex_hull3::{check_convex_hull, convex_hull, try_convex_hull, ConvexHullError};
+pub use self::convex_hull3::{convex_hull, try_convex_hull, ConvexHullError};
 #[cfg(feature = "dim3")]
 pub use self::mesh_intersection::{
     intersect_meshes, intersect_meshes_with_tolerances, MeshIntersectionError,

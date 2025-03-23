@@ -1,4 +1,4 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use core::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use macroquad::prelude::*;
 use macroquad::{

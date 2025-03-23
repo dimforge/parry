@@ -1,3 +1,6 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
@@ -87,15 +90,15 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
     let flipped = ls_aabb1.half_extents().norm_squared() < ls_aabb2.half_extents().norm_squared();
 
     if flipped {
-        std::mem::swap(&mut composite1, &mut composite2);
-        std::mem::swap(&mut qbvh1, &mut qbvh2);
-        std::mem::swap(&mut pos12, &mut pos21);
-        std::mem::swap(&mut ls_aabb1, &mut ls_aabb2);
+        core::mem::swap(&mut composite1, &mut composite2);
+        core::mem::swap(&mut qbvh1, &mut qbvh2);
+        core::mem::swap(&mut pos12, &mut pos21);
+        core::mem::swap(&mut ls_aabb1, &mut ls_aabb2);
     }
 
     // Traverse qbvh1 first.
     let ls_aabb2_1 = ls_aabb2.transform_by(&pos12).loosened(prediction);
-    let mut old_manifolds = std::mem::take(manifolds);
+    let mut old_manifolds = core::mem::take(manifolds);
 
     let mut leaf_fn1 = |leaf1: &u32| {
         composite1.map_part_at(

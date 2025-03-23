@@ -26,7 +26,10 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
 }
 
 /// Checks if a convex-hull is properly formed.
+#[cfg(feature = "std")]
 pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
+    use std::println;
+
     use crate::utils::hashmap::{Entry, HashMap};
     use crate::utils::SortedPair;
     let mut edges = HashMap::default();
@@ -93,7 +96,7 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
     assert_eq!(points.len() + triangles.len() - edges.len(), 2);
 }
 
-// fn print_buildable_vec<T: std::fmt::Display + na::Scalar>(desc: &str, elts: &[Point3<T>]) {
+// fn print_buildable_vec<T: core::fmt::Display + na::Scalar>(desc: &str, elts: &[Point3<T>]) {
 //     print!("let {} = vec![", desc);
 //     for elt in elts {
 //         print!("Point3::new({},{},{}),", elt.x, elt.y, elt.z);

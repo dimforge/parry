@@ -6,7 +6,7 @@ use crate::shape::{FeatureId, Triangle};
 #[cfg(feature = "dim3")]
 use {crate::math::Point, na::Vector3};
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "alloc"))]
 use na::ComplexField; // for .abs()
 
 impl RayCast for Triangle {

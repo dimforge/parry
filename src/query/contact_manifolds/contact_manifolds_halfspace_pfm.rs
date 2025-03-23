@@ -58,7 +58,7 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
 
     // We do this clone to perform contact tracking and transfer impulses.
     // TODO: find a more efficient way of doing this.
-    let old_manifold_points = std::mem::take(&mut manifold.points);
+    let old_manifold_points = core::mem::take(&mut manifold.points);
 
     for i in 0..feature2.num_vertices {
         let vtx2 = feature2.vertices[i];

@@ -12,10 +12,11 @@ use crate::shape::{
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
+use alloc::sync::Arc;
+use alloc::{vec, vec::Vec};
+use core::fmt;
+use core::ops::Deref;
 use na::Unit;
-use std::fmt;
-use std::ops::Deref;
-use std::sync::Arc;
 
 use super::TriMeshBuilderError;
 

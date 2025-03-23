@@ -5,10 +5,10 @@ use crate::shape::SupportMap;
 use na;
 use num::Zero;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use either::Either;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "alloc"))]
 use na::RealField; // for .copysign()
 
 #[cfg(feature = "rkyv")]
@@ -50,7 +50,7 @@ impl Cone {
     /// cone. Instead, a convex polyhedral approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn scaled(
         self,

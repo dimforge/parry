@@ -1,6 +1,7 @@
 use crate::math::Real;
 use crate::shape::RoundConvexPolyhedron;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 use na::Point3;
 
 impl RoundConvexPolyhedron {

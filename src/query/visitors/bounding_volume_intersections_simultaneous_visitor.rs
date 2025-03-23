@@ -1,9 +1,9 @@
 use crate::bounding_volume::SimdAabb;
 use crate::math::{Isometry, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdSimultaneousVisitStatus, SimdSimultaneousVisitor};
+use core::marker::PhantomData;
 use na::SimdValue;
 use simba::simd::SimdBool as _;
-use std::marker::PhantomData;
 
 #[cfg(feature = "parallel")]
 use crate::partitioning::{QbvhNode, SimdNodeIndex};

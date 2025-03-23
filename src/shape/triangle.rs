@@ -5,12 +5,12 @@ use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
+use core::mem;
 use na::{self, ComplexField, Unit};
 use num::Zero;
-use std::mem;
 
 #[cfg(feature = "dim3")]
-use {crate::shape::FeatureId, std::f64};
+use {crate::shape::FeatureId, core::f64};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;

@@ -4,6 +4,8 @@ use crate::partitioning::Qbvh;
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::SimdCompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 use crate::query::details::NormalConstraints;
 #[cfg(not(feature = "std"))]
@@ -112,7 +114,7 @@ impl Polyline {
         unsafe {
             let len = self.indices.len() * 2;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
@@ -192,8 +194,8 @@ impl Polyline {
                     // Start node reached: build polyline and start next component
                     component_indices.push([(i - start_i) as u32, 0]);
                     components.push(Polyline::new(
-                        std::mem::take(&mut component_vertices),
-                        Some(std::mem::take(&mut component_indices)),
+                        core::mem::take(&mut component_vertices),
+                        Some(core::mem::take(&mut component_indices)),
                     ));
 
                     if i + 1 < indices.len() {

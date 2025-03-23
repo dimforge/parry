@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "dim2")]
+    #[cfg(all(feature = "dim2", feature = "alloc"))]
     fn point_in_poly2d_concave_exact_vertex_bug() {
         let poly = crate::shape::Ball::new(1.0).to_polyline(10);
         assert!(point_in_poly2d(&Point2::origin(), &poly));

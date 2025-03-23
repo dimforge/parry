@@ -2,8 +2,8 @@ use crate::bounding_volume::SimdAabb;
 use crate::math::{Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
 use crate::query::{Ray, SimdRay};
+use core::marker::PhantomData;
 use simba::simd::{SimdBool as _, SimdValue};
-use std::marker::PhantomData;
 
 /// Bounding Volume Tree visitor collecting intersections with a given ray.
 pub struct RayIntersectionsVisitor<'a, T, F> {

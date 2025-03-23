@@ -20,17 +20,17 @@ maintenance = { status = "actively-developed" }
 workspace = true
 
 [features]
-default = ["required-features", "std"]
+default = ["required-features", "alloc"]
 required-features = ["dim2", "f64"]
 std = [
     "nalgebra/std",
     "slab",
-    "rustc-hash",
     "simba/std",
     "arrayvec/std",
     "spade",
     "thiserror/std",
-    "ena"
+    "ena",
+    "spade/std",
 ]
 dim2 = []
 f64 = []
@@ -39,6 +39,7 @@ serde-serialize = [
     "nalgebra/serde-serialize",
     "arrayvec/serde",
     "bitflags/serde",
+    "spade/serde",
 ]
 rkyv-serialize = [
     "rkyv/validation",
@@ -50,7 +51,7 @@ simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
-alloc = []
+alloc = ["nalgebra/alloc", "hashbrown"]
 improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
@@ -76,17 +77,24 @@ serde = { version = "1.0", optional = true, features = ["derive"] }
 rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
-rustc-hash = { version = "2", optional = true }
+hashbrown = { version = "0.15", optional = true, default-features = false, features = [
+    "default-hasher",
+] }
 cust_core = { version = "0.1", optional = true }
-spade = { version = "2", optional = true } # Make this optional?
+spade = { version = "2", optional = true, default-features = false } # Make this optional?
+robust = { version = "1.1", optional = true, default-features = false, features = [
+    # Force `no_std` for `robust`, which is used by `spade`.
+    "no_std",
+] }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
 ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
-ena = { version = "0.14.3", optional = true }
+ena = { version = "0.14.3", optional = true, default-features = false }
 
 [dev-dependencies]
+parry2d-f64 = { path = ".", features = ["std"] }
 simba = { version = "0.9", default-features = false }
 oorandom = "11"
 ptree = "0.4.0"

@@ -1,6 +1,7 @@
 use crate::math::{Point, Real, Vector};
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
+use alloc::vec::Vec;
 use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.

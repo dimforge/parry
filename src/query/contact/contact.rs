@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use na::{self, Unit};
-use std::mem;
+use core::mem;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};

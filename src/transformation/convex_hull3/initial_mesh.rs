@@ -4,8 +4,9 @@ use crate::shape::Triangle;
 use crate::transformation;
 use crate::transformation::convex_hull_utils::support_point_id;
 use crate::utils;
+use alloc::{vec, vec::Vec};
+use core::cmp::Ordering;
 use na::{Point2, Point3, Vector3};
-use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub enum InitialMesh {

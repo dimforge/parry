@@ -3,10 +3,10 @@
 use crate::math::{Matrix, Point, Real};
 use crate::shape::{Segment, Triangle};
 use crate::utils;
+use core::mem;
 use na::Matrix3;
-use std::mem;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "alloc"))]
 use na::ComplexField; // for .abs()
 
 #[cfg(feature = "rkyv")]

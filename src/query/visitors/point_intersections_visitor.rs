@@ -1,8 +1,8 @@
 use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdVisitStatus, SimdVisitor};
+use core::marker::PhantomData;
 use simba::simd::{SimdBool as _, SimdValue};
-use std::marker::PhantomData;
 
 // TODO: add a point cost fn.
 

@@ -7,6 +7,7 @@ use crate::transformation::polygon_intersection::{
     PolygonIntersectionTolerances, PolylinePointLocation,
 };
 use crate::utils::WBasis;
+use alloc::{vec, vec::Vec};
 use na::Point2;
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -221,6 +222,7 @@ fn segment_plane_intersection(
 /// lines to copy/paste into the Desmos online graphing tool (for visual debugging), as well as
 /// some rust code to add to the `tris` array in the `intersect_triangle_common_vertex` test for
 /// regression checking.
+#[cfg(feature = "std")]
 fn debug_check_intersections(
     tri1: &Triangle,
     tri2: &Triangle,
@@ -229,6 +231,8 @@ fn debug_check_intersections(
     poly2: &[Point2<Real>], // Projection of tri2 on the basis `basis2` with the origin at tri2.a.
     intersections: &[TriangleTriangleIntersectionPoint],
 ) {
+    use std::{print, println};
+
     let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
     let mut incorrect = false;
     for pt in intersections {

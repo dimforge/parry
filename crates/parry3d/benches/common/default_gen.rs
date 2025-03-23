@@ -5,7 +5,9 @@ use na::{
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::math::{Point, Real, Vector};
 use parry3d::query::Ray;
-use parry3d::shape::{Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, Triangle};
+#[cfg(feature = "alloc")]
+use parry3d::shape::ConvexPolyhedron;
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -120,6 +122,7 @@ where
     }
 }
 
+#[cfg(feature = "alloc")]
 impl DefaultGen for ConvexPolyhedron
 where
     Standard: Distribution<Real>,

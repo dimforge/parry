@@ -2,7 +2,7 @@ use crate::math::{Isometry, Point, Real, SimdReal, Vector};
 use na::SimdComplexField;
 use na::Unit; // for .abs()
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "alloc"))]
 use na::ComplexField;
 
 /// Extra operations with isometries.

@@ -1,6 +1,6 @@
 //! Spatial partitioning tools.
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::qbvh::{
     CenterDataSplitter, IndexedData, NodeIndex, Qbvh, QbvhDataGenerator, QbvhNode,
     QbvhNonOverlappingDataSplitter, QbvhProxy, QbvhUpdateWorkspace, SimdNodeIndex,
@@ -14,9 +14,9 @@ pub use self::visitor::{
 
 /// A quaternary bounding-volume-hierarchy.
 #[deprecated(note = "Renamed to Qbvh")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub type SimdQbvh<T> = Qbvh<T>;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod qbvh;
 mod visitor;

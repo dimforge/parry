@@ -1,10 +1,12 @@
-use crate::common::{generate, generate_trimesh_around_origin, unref};
+#[cfg(feature = "alloc")]
+use crate::common::generate_trimesh_around_origin;
+use crate::common::{generate, unref};
 use na::Isometry3;
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
 use parry3d::query::{Ray, RayCast};
-use parry3d::shape::{
-    Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, TriMesh, Triangle,
-};
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
+#[cfg(feature = "alloc")]
+use parry3d::shape::{ConvexPolyhedron, TriMesh};
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
 use test::Bencher;
@@ -154,6 +156,7 @@ bench_method!(
     solid: bool
 );
 
+#[cfg(feature = "alloc")]
 bench_method!(
     bench_ray_against_convex_with_normal,
     cast_ray_and_get_normal,
@@ -164,6 +167,7 @@ bench_method!(
     solid: bool
 );
 
+#[cfg(feature = "alloc")]
 bench_method_gen!(
     bench_ray_against_trimesh_with_normal,
     cast_ray_and_get_normal,

@@ -92,7 +92,7 @@ pub fn clip_aabb_line(
 
             if inter_with_near_halfspace > inter_with_far_halfspace {
                 flip_sides = true;
-                std::mem::swap(
+                core::mem::swap(
                     &mut inter_with_near_halfspace,
                     &mut inter_with_far_halfspace,
                 )
