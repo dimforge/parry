@@ -7,6 +7,7 @@ use crate::query::{
 };
 use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, ShapeCastHit, Unsupported};
 use crate::shape::Shape;
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 #[cfg(feature = "alloc")]

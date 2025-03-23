@@ -11,6 +11,7 @@ use crate::query::{
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 /// A dispatcher that exposes built-in queries

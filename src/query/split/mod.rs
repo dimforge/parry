@@ -4,5 +4,5 @@ mod split;
 mod split_aabb;
 mod split_segment;
 
-#[cfg(all(feature = "alloc", feature = "dim3"))]
+#[cfg(all(feature = "dim3", feature = "spade"))]
 mod split_trimesh;

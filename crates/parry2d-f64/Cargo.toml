@@ -20,7 +20,7 @@ maintenance = { status = "actively-developed" }
 workspace = true
 
 [features]
-default = ["required-features", "std"]
+default = ["required-features", "std", "spade"]
 required-features = ["dim2", "f64"]
 std = [
     "nalgebra/std",
@@ -30,7 +30,7 @@ std = [
     "spade",
     "thiserror/std",
     "ena",
-    "spade/std",
+    "spade?/std",
 ]
 dim2 = []
 f64 = []
@@ -39,7 +39,7 @@ serde-serialize = [
     "nalgebra/serde-serialize",
     "arrayvec/serde",
     "bitflags/serde",
-    "spade/serde",
+    "spade?/serde",
 ]
 rkyv-serialize = [
     "rkyv/validation",
@@ -52,6 +52,7 @@ simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
 alloc = ["nalgebra/alloc", "hashbrown"]
+spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically

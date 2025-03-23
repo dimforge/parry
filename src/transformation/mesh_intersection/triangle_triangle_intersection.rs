@@ -176,11 +176,14 @@ pub(crate) fn triangle_triangle_intersection(
                 },
             );
 
-            // NOTE: set this to `true` to automatically check if the computed intersection is
-            //       valid, and print debug infos if it is not.
-            const DEBUG_INTERSECTIONS: bool = false;
-            if DEBUG_INTERSECTIONS {
-                debug_check_intersections(tri1, tri2, &basis, &poly1, &poly2, &intersections);
+            #[cfg(feature = "std")]
+            {
+                // NOTE: set this to `true` to automatically check if the computed intersection is
+                //       valid, and print debug infos if it is not.
+                const DEBUG_INTERSECTIONS: bool = false;
+                if DEBUG_INTERSECTIONS {
+                    debug_check_intersections(tri1, tri2, &basis, &poly1, &poly2, &intersections);
+                }
             }
 
             Some(TriangleTriangleIntersection::Polygon(intersections))
