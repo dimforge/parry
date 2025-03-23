@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::SupportMap;
-use na::Unit;
 use core::ops::Sub;
+use na::Unit;
 
 /// A point of a Configuration-Space Obstacle.
 ///

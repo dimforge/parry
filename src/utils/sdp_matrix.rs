@@ -1,6 +1,6 @@
 use crate::math::Real;
-use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
 use core::ops::{Add, Mul};
+use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
 
 #[cfg(feature = "rkyv")]
 #[cfg(feature = "rkyv")]
