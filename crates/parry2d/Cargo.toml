@@ -83,10 +83,6 @@ hashbrown = { version = "0.15", optional = true, default-features = false, featu
 ] }
 cust_core = { version = "0.1", optional = true }
 spade = { version = "2", optional = true, default-features = false }
-robust = { version = "1.1", optional = true, default-features = false, features = [
-    # Force `no_std` for `robust`, which is used by `spade`.
-    "no_std",
-] }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 ordered-float = { version = "5", default-features = false }

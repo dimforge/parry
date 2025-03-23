@@ -83,11 +83,7 @@ hashbrown = { version = "0.15", optional = true, default-features = false, featu
 ] }
 foldhash = { version = "0.1", optional = true, default-features = false }
 cust_core = { version = "0.1", optional = true }
-spade = { version = "2.9", optional = true, default-features = false } # Make this optional?
-robust = { version = "1.1", optional = true, default-features = false, features = [
-    # Force `no_std` for `robust`, which is used by `spade`.
-    "no_std",
-] }
+spade = { version = "2.9", optional = true, default-features = false }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 rstar = "0.12.0"
