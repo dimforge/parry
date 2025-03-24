@@ -92,7 +92,6 @@ thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true, default-features = false }
 
 [dev-dependencies]
-parry2d-f64 = { path = ".", features = ["std"] }
 simba = { version = "0.9", default-features = false }
 oorandom = "11"
 ptree = "0.4.0"

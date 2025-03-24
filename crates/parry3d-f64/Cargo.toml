@@ -96,7 +96,6 @@ ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
 
 [dev-dependencies]
-parry3d-f64 = { path = ".", features = ["std"] }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
