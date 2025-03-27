@@ -17,6 +17,10 @@
   - Use `hashbrown` instead of `rustc-hash` when `enhanced-determinism` is not enabled.
   - Make `spade` optional.
 
+### Fix
+
+- Fix trimesh inertia tensor computation [#331](https://github.com/dimforge/parry/pull/331).
+
 ## v0.18.0
 
 ### Added
