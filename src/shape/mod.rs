@@ -15,6 +15,7 @@ pub use self::shape::{Shape, ShapeType, TypedShape};
 #[doc(inline)]
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
+pub use self::voxels::{OctantPattern, VoxelData, VoxelPrimitiveGeometry, VoxelType, Voxels};
 
 #[cfg(feature = "alloc")]
 pub use self::{
@@ -122,3 +123,4 @@ mod polygonal_feature2d;
 #[cfg(feature = "alloc")]
 mod shared_shape;
 mod triangle_pseudo_normals;
+mod voxels;
