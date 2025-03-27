@@ -30,6 +30,7 @@ mod aabb_triangle;
 mod aabb_utils;
 
 mod aabb_capsule;
+mod aabb_voxels;
 #[doc(hidden)]
 pub mod bounding_sphere;
 mod bounding_sphere_ball;
@@ -55,6 +56,7 @@ mod bounding_sphere_triangle;
 #[cfg(feature = "alloc")]
 mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
+mod bounding_sphere_voxels;
 mod simd_aabb;
 
 /// Free functions for some special cases of bounding-volume computation.
