@@ -77,12 +77,42 @@ impl Aabb {
     /// ```
     #[cfg(feature = "dim3")]
     pub const FACES_VERTEX_IDS: [(usize, usize, usize, usize); 6] = [
+        // Face with normal +X
         (1, 2, 6, 5),
+        // Face with normal -X
         (0, 3, 7, 4),
+        // Face with normal +Y
         (2, 3, 7, 6),
+        // Face with normal -Y
         (1, 0, 4, 5),
+        // Face with normal +Z
         (4, 5, 6, 7),
+        // Face with normal -Z
         (0, 1, 2, 3),
+    ];
+
+    /// The vertex indices of each face of this `Aabb`.
+    ///
+    /// This gives, for each face of this `Aabb`, the indices of its
+    /// vertices when taken from the `self.vertices()` array.
+    /// Here is how the faces are numbered, assuming
+    /// a right-handed coordinate system:
+    ///
+    /// ```text
+    ///    y             3 - 2
+    ///    |             |   |
+    ///    ___ x         0 - 1
+    /// ```
+    #[cfg(feature = "dim2")]
+    pub const FACES_VERTEX_IDS: [(usize, usize); 4] = [
+        // Face with normal +X
+        (1, 2),
+        // Face with normal -X
+        (3, 0),
+        // Face with normal +Y
+        (2, 3),
+        // Face with normal -Y
+        (0, 1),
     ];
 
     /// Creates a new Aabb.
@@ -166,6 +196,14 @@ impl Aabb {
         Aabb::new(center + (-ws_half_extents), center + ws_half_extents)
     }
 
+    /// Computes the Aabb bounding `self` translated by `translation`.
+    #[inline]
+    pub fn translated(mut self, translation: &Vector<Real>) -> Self {
+        self.mins += translation;
+        self.maxs += translation;
+        self
+    }
+
     #[inline]
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         let a = self.mins.coords.component_mul(scale);
@@ -242,6 +280,31 @@ impl Aabb {
         Some(result)
     }
 
+    /// Computes two AABBs for the intersection between two translated and rotated AABBs.
+    ///
+    /// This method returns two AABBs: the first is expressed in the local-space of `self`,
+    /// and the second is expressed in the local-space of `aabb2`.
+    pub fn aligned_intersections(
+        &self,
+        pos12: &Isometry<Real>,
+        aabb2: &Self,
+    ) -> Option<(Aabb, Aabb)> {
+        let pos21 = pos12.inverse();
+
+        let aabb2_1 = aabb2.transform_by(pos12);
+        let inter1_1 = self.intersection(&aabb2_1)?;
+        let inter1_2 = inter1_1.transform_by(&pos21);
+
+        let aabb1_2 = self.transform_by(&pos21);
+        let inter2_2 = aabb2.intersection(&aabb1_2)?;
+        let inter2_1 = inter2_2.transform_by(pos12);
+
+        Some((
+            inter1_1.intersection(&inter2_1)?,
+            inter1_2.intersection(&inter2_2)?,
+        ))
+    }
+
     /// Returns the difference between this `Aabb` and `rhs`.
     ///
     /// Removing another `Aabb` from `self` will result in zero, one, or up to 4 (in 2D) or 8 (in 3D)
@@ -309,18 +372,34 @@ impl Aabb {
     }
 
     /// Computes the vertices of this `Aabb`.
+    ///
+    /// The vertices are given in the following order in a right-handed coordinate system:
+    /// ```text
+    ///    y             3 - 2
+    ///    |             |   |
+    ///    ___ x         0 - 1
+    /// ```
     #[inline]
     #[cfg(feature = "dim2")]
     pub fn vertices(&self) -> [Point<Real>; 4] {
         [
             Point::new(self.mins.x, self.mins.y),
-            Point::new(self.mins.x, self.maxs.y),
             Point::new(self.maxs.x, self.mins.y),
             Point::new(self.maxs.x, self.maxs.y),
+            Point::new(self.mins.x, self.maxs.y),
         ]
     }
 
     /// Computes the vertices of this `Aabb`.
+    ///
+    /// The vertices are given in the following order, in a right-handed coordinate system:
+    /// ```text
+    ///    y             3 - 2
+    ///    |           7 − 6 |
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
+    ///  z
+    /// ```
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn vertices(&self) -> [Point<Real>; 8] {

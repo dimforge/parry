@@ -1,7 +1,7 @@
 //! Bounding sphere.
 
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Isometry, Point, Real, Vector};
 use na;
 use num::Zero;
 
@@ -45,6 +45,12 @@ impl BoundingSphere {
     #[inline]
     pub fn transform_by(&self, m: &Isometry<Real>) -> BoundingSphere {
         BoundingSphere::new(m * self.center, self.radius)
+    }
+
+    /// Translates this bounding sphere by the given translation.
+    #[inline]
+    pub fn translated(&self, translation: &Vector<Real>) -> BoundingSphere {
+        BoundingSphere::new(self.center + translation, self.radius)
     }
 }
 
