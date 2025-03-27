@@ -123,7 +123,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 
         std::mem::swap(manifolds, &mut old_manifolds);
 
-        // This assertion may fire due to the invalid triangle_ids that the
+        // NOTE: This assertion may fire due to the invalid triangle_ids that the
         // near-phase may return (due to SIMD sentinels).
         //
         // assert_eq!(
