@@ -492,6 +492,9 @@ where
                     );
                 }
             }
+            (ShapeType::Voxels, ShapeType::Ball) | (ShapeType::Ball, ShapeType::Voxels) => {
+                contact_manifolds_voxels_ball_shapes(pos12, shape1, shape2, prediction, manifolds)
+            }
             _ => {
                 if let Some(composite1) = composite1 {
                     contact_manifolds_composite_shape_shape(
