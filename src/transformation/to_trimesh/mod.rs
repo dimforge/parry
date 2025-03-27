@@ -11,3 +11,5 @@ mod cuboid_to_trimesh;
 mod cylinder_to_trimesh;
 #[cfg(feature = "dim3")]
 mod heightfield_to_trimesh;
+#[cfg(feature = "dim3")]
+mod voxels_to_trimesh;
