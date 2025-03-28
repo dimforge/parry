@@ -1,4 +1,5 @@
-use std::marker::PhantomData;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 use crate::math::Real;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, support_point_id};

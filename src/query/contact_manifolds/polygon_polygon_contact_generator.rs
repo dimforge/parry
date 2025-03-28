@@ -52,10 +52,10 @@ fn generate_contacts<'a>(
 
     let mut swapped = false;
     if sep2.0 > sep1.0 {
-        std::mem::swap(&mut sep1, &mut sep2);
-        std::mem::swap(&mut m1, &mut m2);
-        std::mem::swap(&mut p1, &mut p2);
-        std::mem::swap(&mut m12, &mut m21);
+        core::mem::swap(&mut sep1, &mut sep2);
+        core::mem::swap(&mut m1, &mut m2);
+        core::mem::swap(&mut p1, &mut p2);
+        core::mem::swap(&mut m12, &mut m21);
         manifold.swap_identifiers();
         swapped = true;
     }

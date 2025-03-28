@@ -16,14 +16,14 @@ pub mod bounding_volume;
 pub mod aabb;
 mod aabb_ball;
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod aabb_convex_polygon;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod aabb_convex_polyhedron;
 mod aabb_cuboid;
 mod aabb_halfspace;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod aabb_heightfield;
 mod aabb_support_map;
 mod aabb_triangle;
@@ -37,22 +37,22 @@ mod bounding_sphere_capsule;
 #[cfg(feature = "dim3")]
 mod bounding_sphere_cone;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod bounding_sphere_convex;
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod bounding_sphere_convex_polygon;
 mod bounding_sphere_cuboid;
 #[cfg(feature = "dim3")]
 mod bounding_sphere_cylinder;
 mod bounding_sphere_halfspace;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod bounding_sphere_heightfield;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod bounding_sphere_polyline;
 mod bounding_sphere_segment;
 mod bounding_sphere_triangle;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
 mod simd_aabb;

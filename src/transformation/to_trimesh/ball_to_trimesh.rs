@@ -1,6 +1,7 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::Ball;
 use crate::transformation::utils;
+use alloc::vec::Vec;
 use na::{self, ComplexField, Point3, RealField};
 
 impl Ball {

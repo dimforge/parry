@@ -4,7 +4,18 @@
 
 ### Added
 
-- derive `Copy` for `VHACDParameters`.
+- Derive `Copy` for `VHACDParameters`.
+- Add `spade` default feature for algorithms using Delaunay triangulation from `spade`.
+
+### Modified
+
+- Improve `no_std` compatibility.
+  - Everything is now compatible, except `mesh_intersections`, `split_trimesh`,
+    convex hull validation, and computation of connected components for `TriMesh`.
+  - Add the `alloc_instead_of_core`, `std_instead_of_alloc`, and `std_instead_of_core` Clippy lints to the workspace.
+  - Use `core` and `alloc` directly rather than using an `std` alias.
+  - Use `hashbrown` instead of `rustc-hash` when `enhanced-determinism` is not enabled.
+  - Make `spade` optional.
 
 ## v0.18.0
 
@@ -158,7 +169,7 @@ This version modifies many names related to shape-casting:
   now prefixed with `cast_shapes_` (e.g. `cast_shapes_ball_ball`).
 - Rename `QueryDispatcher::time_of_impact` to `QueryDispatcher::cast_shapes`.
 - The (linear) shape-casting functions like `query::cast_shapes` (previously named
-  `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
+  `query::time_of_impact`) now take a `ShapeCastOptions` instead of the `max_toi` and
   `stop_at_penetration` arguments.
 - Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
 - Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_shapes_nonlinear`.

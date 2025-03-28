@@ -62,7 +62,7 @@ impl<'de> serde::Deserialize<'de> for SimdAabb {
 
         impl<'de> serde::de::Visitor<'de> for Visitor {
             type Value = SimdAabb;
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
                 write!(
                     formatter,
                     "two arrays containing at least {} floats",

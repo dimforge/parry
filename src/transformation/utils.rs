@@ -2,6 +2,7 @@
 
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::na::ComplexField;
+use alloc::vec::Vec;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
 
@@ -163,7 +164,7 @@ pub fn reverse_clockwising(indices: &mut [[u32; DIM]]) {
 /// Pushes the index buffer of a closed loop.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
+pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: core::ops::Range<u32>) {
     indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
     indices.push([range.end - 1, range.start]);
 }
@@ -171,7 +172,7 @@ pub fn push_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops:
 /// Pushes the index buffer of an open chain.
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: std::ops::Range<u32>) {
+pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: core::ops::Range<u32>) {
     indices.extend((range.start..range.end - 1).map(|i| [i, i + 1]));
 }
 
@@ -249,7 +250,7 @@ pub fn push_arc(
 /// Pushes the index buffer for an arc between `start` and `end` and intermediate points in the
 /// range `arc`.
 #[cfg(feature = "dim3")]
-pub fn push_arc_idx(start: u32, arc: std::ops::Range<u32>, end: u32, out: &mut Vec<[u32; 2]>) {
+pub fn push_arc_idx(start: u32, arc: core::ops::Range<u32>, end: u32, out: &mut Vec<[u32; 2]>) {
     if arc.is_empty() {
         out.push([start, end]);
     } else {
@@ -266,7 +267,7 @@ pub fn push_arc_idx(start: u32, arc: std::ops::Range<u32>, end: u32, out: &mut V
 pub fn apply_revolution(
     collapse_bottom: bool,
     collapse_top: bool,
-    circle_ranges: &[std::ops::Range<u32>],
+    circle_ranges: &[core::ops::Range<u32>],
     nsubdivs: u32,
     out_vtx: &mut Vec<Point<Real>>, // Must be set to the half-profile.
     out_idx: &mut Vec<[u32; 2]>,

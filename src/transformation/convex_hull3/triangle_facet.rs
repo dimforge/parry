@@ -1,5 +1,6 @@
 use crate::math::Real;
 use crate::shape::Triangle;
+use alloc::vec::Vec;
 use na::{Point3, Vector3};
 use num::Bounded;
 

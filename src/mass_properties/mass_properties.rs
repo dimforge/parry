@@ -1,10 +1,10 @@
 use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
 use crate::utils;
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 use na::ComplexField;
 use num::Zero;
-use std::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "dim3")]
-use {na::Matrix3, std::ops::MulAssign};
+use {core::ops::MulAssign, na::Matrix3};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -380,13 +380,15 @@ impl AddAssign<MassProperties> for MassProperties {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::iter::Sum<MassProperties> for MassProperties {
+#[cfg(feature = "alloc")]
+impl core::iter::Sum<MassProperties> for MassProperties {
     #[cfg(feature = "dim2")]
     fn sum<I>(iter: I) -> Self
     where
         I: Iterator<Item = Self>,
     {
+        use alloc::vec::Vec;
+
         let mut total_mass = 0.0;
         let mut total_com = Point::origin();
         let mut total_inertia = 0.0;
@@ -421,6 +423,8 @@ impl std::iter::Sum<MassProperties> for MassProperties {
     where
         I: Iterator<Item = Self>,
     {
+        use alloc::vec::Vec;
+
         let mut total_mass = 0.0;
         let mut total_com = Point::origin();
         let mut total_inertia = Matrix3::zeros();
@@ -587,6 +591,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn mass_properties_sum_no_nan() {
         let mp: MassProperties = [MassProperties::zero()].iter().map(|v| *v).sum();
         assert!(!mp.local_com.x.is_nan() && !mp.local_com.y.is_nan());

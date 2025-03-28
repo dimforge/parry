@@ -3,7 +3,7 @@
 #[doc(inline)]
 pub use self::ray::{Ray, RayCast, RayIntersection};
 pub use self::ray_ball::ray_toi_with_ball;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::ray_composite_shape::{
     RayCompositeShapeToiAndNormalBestFirstVisitor, RayCompositeShapeToiBestFirstVisitor,
 };
@@ -18,11 +18,11 @@ pub mod ray;
 mod ray_aabb;
 mod ray_ball;
 mod ray_bounding_sphere;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod ray_composite_shape;
 mod ray_cuboid;
 mod ray_halfspace;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod ray_heightfield;
 mod ray_round_shape;
 mod ray_support_map;

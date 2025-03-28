@@ -1,6 +1,6 @@
-#[cfg(feature = "std")]
+use core::ops::Range;
+#[cfg(feature = "alloc")]
 use na::DMatrix;
-use std::ops::Range;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
@@ -76,7 +76,7 @@ pub struct HeightField {
     flags: HeightFieldFlags,
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl HeightField {
     /// Initializes a new heightfield with the given heights, scaling factor, and flags.
     pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {

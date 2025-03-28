@@ -9,9 +9,9 @@ use crate::partitioning::{
 };
 use crate::simd::SIMD_WIDTH;
 use crate::utils::WeightedValue;
+use alloc::{collections::BinaryHeap, vec, vec::Vec};
 use num::Bounded;
 use simba::simd::SimdBool;
-use std::collections::BinaryHeap;
 #[cfg(feature = "parallel")]
 use {
     crate::partitioning::{ParallelSimdSimultaneousVisitor, ParallelSimdVisitor},

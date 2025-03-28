@@ -19,7 +19,8 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
-use std::sync::Arc;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
@@ -363,7 +364,7 @@ impl VHACD {
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();
-        input_parts.push(std::mem::take(&mut voxels));
+        input_parts.push(core::mem::take(&mut voxels));
 
         let mut first_iteration = true;
         self.volume_ch0 = 1.0;
@@ -406,7 +407,7 @@ impl VHACD {
                 first_iteration = false;
             }
 
-            std::mem::swap(&mut input_parts, &mut temp);
+            core::mem::swap(&mut input_parts, &mut temp);
             // Note that temp is already clear because our previous for
             // loop used `drain`. However we call `clear` here explicitly
             // to make sure it still works if we remove the `drain` in the

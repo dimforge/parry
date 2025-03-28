@@ -20,7 +20,8 @@ use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
 use crate::math::{Matrix, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::CutPlane;
-use std::sync::Arc;
+use alloc::sync::Arc;
+use alloc::{vec, vec::Vec};
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
