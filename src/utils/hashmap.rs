@@ -4,7 +4,7 @@
 #[cfg(all(feature = "enhanced-determinism", feature = "serde-serialize"))]
 use indexmap::IndexMap as StdHashMap;
 #[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
-use std::collections::HashMap as StdHashMap;
+use hashbrown::hash_map::HashMap as StdHashMap;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
