@@ -182,13 +182,13 @@ pub fn trimesh_signed_volume_and_center_of_mass(
 
 #[cfg(test)]
 mod test {
-    use std::dbg;
-    use na::UnitQuaternion;
     use crate::math::{Isometry, Vector};
     use crate::{
         mass_properties::MassProperties,
         shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Shape},
     };
+    use na::UnitQuaternion;
+    use std::dbg;
 
     fn assert_same_principal_inertias(mprops1: &MassProperties, mprops2: &MassProperties) {
         for k in 0..3 {
