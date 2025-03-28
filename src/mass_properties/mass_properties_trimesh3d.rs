@@ -148,7 +148,7 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
         + x4 * y4 * 2.0)
         * 0.05;
 
-    Matrix::new(a0, -b1, -c1, -b1, b0, -a1, -c1, -a1, c0)
+    Matrix::new(a0, -c1, -b1, -c1, b0, -a1, -b1, -a1, c0)
 }
 
 /// Computes the volume and center-of-mass of a mesh.
@@ -182,13 +182,13 @@ pub fn trimesh_signed_volume_and_center_of_mass(
 
 #[cfg(test)]
 mod test {
-    use std::dbg;
-
-    use crate::math::Vector;
+    use crate::math::{Isometry, Vector};
     use crate::{
         mass_properties::MassProperties,
         shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Shape},
     };
+    use na::UnitQuaternion;
+    use std::dbg;
 
     fn assert_same_principal_inertias(mprops1: &MassProperties, mprops2: &MassProperties) {
         for k in 0..3 {
@@ -284,5 +284,64 @@ mod test {
                 epsilon = 1.0e-3
             );
         }
+    }
+
+    // Regression test for https://github.com/dimforge/parry/pull/331
+    //
+    // We compare the angular inertia tensor of a rotated & translated Cuboid, with the
+    // inertia tensor of the same cuboid represented as a `TriMesh` with rotated & translated
+    // vertices.
+    #[test]
+    fn rotated_inertia_tensor() {
+        let cuboid = Cuboid::new(Vector::new(1.0, 2.0, 3.0));
+        let density = 1.0;
+
+        // Compute mass properties with a translated and rotated cuboid.
+        let pose = Isometry::new(Vector::new(5.0, 2.0, 3.0), Vector::new(0.6, 0.7, 0.8));
+        let mprops = cuboid.mass_properties(density);
+
+        // Compute mass properties with a manually transformed cuboid.
+        let mut vertices = cuboid.to_trimesh().0;
+        let trimesh_origin_mprops =
+            MassProperties::from_trimesh(density, &vertices, &cuboid.to_trimesh().1);
+        vertices.iter_mut().for_each(|v| *v = pose * *v);
+        let trimesh_transformed_mprops =
+            MassProperties::from_trimesh(density, &vertices, &cuboid.to_trimesh().1);
+
+        // Compare the mass properties.
+        assert_relative_eq!(
+            mprops.mass(),
+            trimesh_origin_mprops.mass(),
+            epsilon = 1.0e-4
+        );
+        assert_relative_eq!(
+            mprops.mass(),
+            trimesh_transformed_mprops.mass(),
+            epsilon = 1.0e-4
+        );
+        // compare local_com
+        assert_relative_eq!(
+            pose * mprops.local_com,
+            trimesh_transformed_mprops.local_com,
+            epsilon = 1.0e-4
+        );
+        assert_relative_eq!(
+            pose * trimesh_origin_mprops.local_com,
+            trimesh_transformed_mprops.local_com,
+            epsilon = 1.0e-4
+        );
+        assert_relative_eq!(
+            trimesh_origin_mprops.principal_inertia(),
+            mprops.principal_inertia(),
+            epsilon = 1.0e-4
+        );
+        let w1 = trimesh_origin_mprops.world_inv_inertia_sqrt(&pose.rotation);
+        let w2 = trimesh_transformed_mprops.world_inv_inertia_sqrt(&UnitQuaternion::identity());
+        assert_relative_eq!(w1.m11, w2.m11, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m12, w2.m12, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m13, w2.m13, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m22, w2.m22, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m23, w2.m23, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m33, w2.m33, epsilon = 1.0e-7);
     }
 }
