@@ -6,6 +6,9 @@
 
 - Derive `Copy` for `VHACDParameters`.
 - Add `spade` default feature for algorithms using Delaunay triangulation from `spade`.
+- Add `SharedShape::from_convex_polyline_unmodified` and `ConvexPolygon::from_convex_polyline_unmodified`
+  to initialize a polyline from a set of points assumed to be convex, and without modifying this set even
+  if some points are collinear.
 
 ### Modified
 
