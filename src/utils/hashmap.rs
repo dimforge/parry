@@ -1,10 +1,10 @@
 //! A hash-map that behaves deterministically when the
 //! `enhanced-determinism` feature is enabled.
 
+#[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
+use hashbrown::hash_map::HashMap as StdHashMap;
 #[cfg(all(feature = "enhanced-determinism", feature = "serde-serialize"))]
 use indexmap::IndexMap as StdHashMap;
-#[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
-use std::collections::HashMap as StdHashMap;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
