@@ -286,20 +286,25 @@ mod test {
         }
     }
 
+    // Regression test for https://github.com/dimforge/parry/pull/331
+    //
+    // We compare the angular inertia tensor of a rotated & translated Cuboid, with the
+    // inertia tensor of the same cuboid represented as a `TriMesh` with rotated & translated
+    // vertices.
     #[test]
-    fn inertia_tensor() {
+    fn rotated_inertia_tensor() {
         let cuboid = Cuboid::new(Vector::new(1.0, 2.0, 3.0));
         let density = 1.0;
 
         // Compute mass properties with a translated and rotated cuboid.
-        let isometry = Isometry::new(Vector::new(5.0, 2.0, 3.0), Vector::new(0.6, 0.7, 0.8));
+        let pose = Isometry::new(Vector::new(5.0, 2.0, 3.0), Vector::new(0.6, 0.7, 0.8));
         let mprops = cuboid.mass_properties(density);
 
         // Compute mass properties with a manually transformed cuboid.
         let mut vertices = cuboid.to_trimesh().0;
         let trimesh_origin_mprops =
             MassProperties::from_trimesh(density, &vertices, &cuboid.to_trimesh().1);
-        vertices.iter_mut().for_each(|v| *v = isometry * *v);
+        vertices.iter_mut().for_each(|v| *v = pose * *v);
         let trimesh_transformed_mprops =
             MassProperties::from_trimesh(density, &vertices, &cuboid.to_trimesh().1);
 
@@ -316,12 +321,12 @@ mod test {
         );
         // compare local_com
         assert_relative_eq!(
-            isometry * mprops.local_com,
+            pose * mprops.local_com,
             trimesh_transformed_mprops.local_com,
             epsilon = 1.0e-4
         );
         assert_relative_eq!(
-            isometry * trimesh_origin_mprops.local_com,
+            pose * trimesh_origin_mprops.local_com,
             trimesh_transformed_mprops.local_com,
             epsilon = 1.0e-4
         );
@@ -330,13 +335,13 @@ mod test {
             mprops.principal_inertia(),
             epsilon = 1.0e-4
         );
-        let w1 = trimesh_origin_mprops.world_inv_inertia_sqrt(&isometry.rotation);
+        let w1 = trimesh_origin_mprops.world_inv_inertia_sqrt(&pose.rotation);
         let w2 = trimesh_transformed_mprops.world_inv_inertia_sqrt(&UnitQuaternion::identity());
-        assert_relative_eq!(w1.m11, w2.m11, epsilon = 1.0e-7,);
-        assert_relative_eq!(w1.m12, w2.m12, epsilon = 1.0e-7,);
-        assert_relative_eq!(w1.m13, w2.m13, epsilon = 1.0e-7,);
-        assert_relative_eq!(w1.m22, w2.m22, epsilon = 1.0e-7,);
-        assert_relative_eq!(w1.m23, w2.m23, epsilon = 1.0e-7,);
-        assert_relative_eq!(w1.m33, w2.m33, epsilon = 1.0e-7,);
+        assert_relative_eq!(w1.m11, w2.m11, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m12, w2.m12, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m13, w2.m13, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m22, w2.m22, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m23, w2.m23, epsilon = 1.0e-7);
+        assert_relative_eq!(w1.m33, w2.m33, epsilon = 1.0e-7);
     }
 }
