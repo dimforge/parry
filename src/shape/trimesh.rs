@@ -1065,7 +1065,6 @@ impl TriMesh {
         self.pseudo_normals.as_ref()
     }
 
-
     /// The pseudo-normals of this triangle mesh, if they have been computed **and** this mesh was
     /// marked as [`TriMeshFlags::ORIENTED`].
     #[cfg(feature = "dim3")]
