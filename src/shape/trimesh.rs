@@ -270,7 +270,7 @@ bitflags::bitflags! {
         ///
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
-        const FIX_INTERNAL_EDGES = (1 << 7) | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
+        const FIX_INTERNAL_EDGES = (1 << 7) | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
@@ -350,7 +350,7 @@ impl TriMesh {
         }
 
         #[cfg(feature = "dim3")]
-        if !flags.contains(TriMeshFlags::ORIENTED) {
+        if !flags.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.pseudo_normals = None;
         }
 
@@ -384,7 +384,7 @@ impl TriMesh {
         }
 
         #[cfg(feature = "dim3")]
-        if difference.contains(TriMeshFlags::ORIENTED) {
+        if difference.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.compute_pseudo_normals();
         }
 
@@ -1063,6 +1063,17 @@ impl TriMesh {
     #[cfg(feature = "dim3")]
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
         self.pseudo_normals.as_ref()
+    }
+
+    /// The pseudo-normals of this triangle mesh, if they have been computed **and** this mesh was
+    /// marked as [`TriMeshFlags::ORIENTED`].
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals_if_oriented(&self) -> Option<&TriMeshPseudoNormals> {
+        if self.flags.intersects(TriMeshFlags::ORIENTED) {
+            self.pseudo_normals.as_ref()
+        } else {
+            None
+        }
     }
 }
 

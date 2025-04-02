@@ -168,7 +168,7 @@ impl PointQueryWithLocation for TriMesh {
                 .traverse_best_first_node(&mut visitor, 0, max_dist)
         {
             #[cfg(feature = "dim3")]
-            if let Some(pseudo_normals) = self.pseudo_normals() {
+            if let Some(pseudo_normals) = self.pseudo_normals_if_oriented() {
                 let pseudo_normal = match location {
                     TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
                         Some(self.triangle(part_id).scaled_normal())
