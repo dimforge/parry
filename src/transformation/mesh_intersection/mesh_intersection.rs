@@ -109,7 +109,7 @@ pub fn intersect_meshes_with_tolerances(
         return Err(MeshIntersectionError::MissingTopology);
     }
 
-    if mesh1.pseudo_normals().is_none() || mesh2.pseudo_normals().is_none() {
+    if mesh1.pseudo_normals_if_oriented().is_none() || mesh2.pseudo_normals_if_oriented().is_none() {
         return Err(MeshIntersectionError::MissingPseudoNormals);
     }
 
