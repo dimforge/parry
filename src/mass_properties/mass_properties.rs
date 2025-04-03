@@ -202,7 +202,7 @@ impl MassProperties {
             let mass = 1.0 / self.inv_mass;
             let diag = shift.norm_squared();
             let diagm = Matrix3::from_diagonal_element(diag);
-            matrix + (diagm + shift * shift.transpose()) * mass
+            matrix + (diagm - shift * shift.transpose()) * mass
         } else {
             matrix
         }
