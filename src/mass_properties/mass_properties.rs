@@ -614,7 +614,7 @@ mod test {
         .sum::<MassProperties>();
 
         // Check that the mass properties of the compound shape match the mass properties
-        // of a single cuboid 1x3x1
+        // of a single 1x3x1 cuboid.
         #[cfg(feature = "dim2")]
         let expected = Cuboid::new(Vector::new(0.5, 1.5)).mass_properties(1.0);
         #[cfg(feature = "dim3")]
