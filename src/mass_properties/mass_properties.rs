@@ -592,8 +592,47 @@ mod test {
 
     #[test]
     #[cfg(feature = "alloc")]
+    fn mass_properties_sum_shifted() {
+        use na::Isometry;
+
+        use crate::{math::Vector, shape::Cuboid};
+
+        // Compute the mass properties of a compound shape made of three 1x1x1 cuboids.
+        let m = Cuboid::new(Vector::repeat(0.5)).mass_properties(1.0);
+        let sum = [
+            m,
+            m.transform_by(&Isometry::from_parts(
+                Vector::y().into(),
+                Default::default(),
+            )),
+            m.transform_by(&Isometry::from_parts(
+                (-Vector::y()).into(),
+                Default::default(),
+            )),
+        ]
+        .into_iter()
+        .sum::<MassProperties>();
+
+        // Check that the mass properties of the compound shape match the mass properties
+        // of a single cuboid 1x3x1
+        #[cfg(feature = "dim2")]
+        let expected = Cuboid::new(Vector::new(0.5, 1.5)).mass_properties(1.0);
+        #[cfg(feature = "dim3")]
+        let expected = Cuboid::new(Vector::new(0.5, 1.5, 0.5)).mass_properties(1.0);
+
+        assert_relative_eq!(sum.local_com, expected.local_com, epsilon = 1.0e-6);
+        assert_relative_eq!(sum.inv_mass, expected.inv_mass, epsilon = 1.0e-6);
+        assert_relative_eq!(
+            sum.inv_principal_inertia_sqrt,
+            expected.inv_principal_inertia_sqrt,
+            epsilon = 1.0e-6
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
     fn mass_properties_sum_no_nan() {
-        let mp: MassProperties = [MassProperties::zero()].iter().map(|v| *v).sum();
+        let mp: MassProperties = [MassProperties::zero()].iter().copied().sum();
         assert!(!mp.local_com.x.is_nan() && !mp.local_com.y.is_nan());
         #[cfg(feature = "dim3")]
         assert!(!mp.local_com.z.is_nan());
