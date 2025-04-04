@@ -1,5 +1,5 @@
-use std::mem;
-use std::slice;
+use core::mem;
+use core::slice;
 
 use na::{Point2, Point3, Vector2, Vector3};
 use simba::scalar::RealField;

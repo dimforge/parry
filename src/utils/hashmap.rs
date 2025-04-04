@@ -1,14 +1,14 @@
 //! A hash-map that behaves deterministically when the
 //! `enhanced-determinism` feature is enabled.
 
+#[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
+use hashbrown::hash_map::HashMap as StdHashMap;
 #[cfg(all(feature = "enhanced-determinism", feature = "serde-serialize"))]
 use indexmap::IndexMap as StdHashMap;
-#[cfg(all(not(feature = "enhanced-determinism"), feature = "serde-serialize"))]
-use std::collections::HashMap as StdHashMap;
 
 /// Serializes only the capacity of a hash-map instead of its actual content.
 #[cfg(feature = "serde-serialize")]
-pub fn serialize_hashmap_capacity<S: serde::Serializer, K, V, H: std::hash::BuildHasher>(
+pub fn serialize_hashmap_capacity<S: serde::Serializer, K, V, H: core::hash::BuildHasher>(
     map: &StdHashMap<K, V, H>,
     s: S,
 ) -> Result<S::Ok, S::Error> {
@@ -22,7 +22,7 @@ pub fn deserialize_hashmap_capacity<
     D: serde::Deserializer<'de>,
     K,
     V,
-    H: std::hash::BuildHasher + Default,
+    H: core::hash::BuildHasher + Default,
 >(
     d: D,
 ) -> Result<StdHashMap<K, V, H>, D::Error> {
@@ -52,8 +52,12 @@ pub fn deserialize_hashmap_capacity<
 /// Deterministic hashmap using [`indexmap::IndexMap`]
 #[cfg(feature = "enhanced-determinism")]
 pub type FxHashMap32<K, V> =
-    indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<super::fx_hasher::FxHasher32>>;
+    indexmap::IndexMap<K, V, core::hash::BuildHasherDefault<super::fx_hasher::FxHasher32>>;
 #[cfg(feature = "enhanced-determinism")]
 pub use {self::FxHashMap32 as HashMap, indexmap::map::Entry};
+
 #[cfg(not(feature = "enhanced-determinism"))]
-pub use {rustc_hash::FxHashMap as HashMap, std::collections::hash_map::Entry};
+pub use hashbrown::hash_map::Entry;
+/// Hashmap using [`hashbrown::HashMap`]
+#[cfg(not(feature = "enhanced-determinism"))]
+pub type HashMap<K, V> = hashbrown::hash_map::HashMap<K, V, hashbrown::DefaultHashBuilder>;

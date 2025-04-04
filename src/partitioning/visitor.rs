@@ -1,6 +1,6 @@
 use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
 
-#[cfg(all(feature = "std", feature = "parallel"))]
+#[cfg(all(feature = "alloc", feature = "parallel"))]
 use crate::partitioning::{qbvh::QbvhNode, SimdNodeIndex};
 
 /// The next action to be taken by a BVH traversal algorithm after having visited a node with some data.
@@ -117,7 +117,7 @@ pub trait SimdSimultaneousVisitor<T1, T2, SimdBV> {
  */
 
 /// Trait implemented by visitor called during the parallel traversal of a spatial partitioning data structure.
-#[cfg(all(feature = "std", feature = "parallel"))]
+#[cfg(all(feature = "alloc", feature = "parallel"))]
 pub trait ParallelSimdVisitor<LeafData>: Sync {
     /// Execute an operation on the content of a node of the spatial partitioning structure.
     ///
@@ -131,7 +131,7 @@ pub trait ParallelSimdVisitor<LeafData>: Sync {
     ) -> SimdVisitStatus;
 }
 
-#[cfg(all(feature = "std", feature = "parallel"))]
+#[cfg(all(feature = "alloc", feature = "parallel"))]
 impl<F, LeafData> ParallelSimdVisitor<LeafData> for F
 where
     F: Sync + Fn(&QbvhNode, Option<[Option<&LeafData>; SIMD_WIDTH]>) -> SimdVisitStatus,
@@ -148,7 +148,7 @@ where
 
 /// Trait implemented by visitor called during a parallel simultaneous spatial partitioning
 /// data structure traversal.
-#[cfg(all(feature = "std", feature = "parallel"))]
+#[cfg(all(feature = "alloc", feature = "parallel"))]
 pub trait ParallelSimdSimultaneousVisitor<LeafData1, LeafData2>: Sync {
     /// Visitor state data that will be passed down the recursion.
     type Data: Copy + Sync + Default;

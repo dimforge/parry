@@ -37,9 +37,9 @@ pub fn corner_direction(p1: &Point<Real>, p2: &Point<Real>, p3: &Point<Real>) ->
         .partial_cmp(&0.0)
         .expect("Found NaN while computing corner direction.")
     {
-        std::cmp::Ordering::Less => Orientation::Ccw,
-        std::cmp::Ordering::Equal => Orientation::None,
-        std::cmp::Ordering::Greater => Orientation::Cw,
+        core::cmp::Ordering::Less => Orientation::Ccw,
+        core::cmp::Ordering::Equal => Orientation::None,
+        core::cmp::Ordering::Greater => Orientation::Cw,
     }
 }
 

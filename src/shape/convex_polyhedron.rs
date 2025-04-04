@@ -3,11 +3,12 @@ use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatur
 // use crate::transformation;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{self, SortedPair};
-use na::{self, ComplexField, Point2, Unit};
-use std::f64;
-
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+use core::f64;
 #[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
+use na::ComplexField; // for .abs(), .sqrt(), and .sin_cos()
+use na::{self, Point2, Unit};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -134,7 +135,7 @@ impl ConvexPolyhedron {
         points: Vec<Point<Real>>,
         indices: &[[u32; DIM]],
     ) -> Option<ConvexPolyhedron> {
-        let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
+        let eps = crate::math::DEFAULT_EPSILON.sqrt();
 
         let mut vertices = Vec::new();
         let mut edges = Vec::<Edge>::new();
@@ -461,7 +462,7 @@ impl ConvexPolyhedron {
         local_dir: &Unit<Vector<Real>>,
         eps: Real,
     ) -> FeatureId {
-        let (seps, ceps) = ComplexField::sin_cos(eps);
+        let (seps, ceps) = eps.sin_cos();
         let support_pt_id = utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points);
         let vertex = &self.vertices[support_pt_id];
 

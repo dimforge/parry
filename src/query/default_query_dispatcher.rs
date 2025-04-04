@@ -4,13 +4,15 @@ use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
     QueryDispatcher, ShapeCastHit, Unsupported,
 };
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::query::{
     contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
     query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 /// A dispatcher that exposes built-in queries
 #[derive(Debug, Clone)]
@@ -63,7 +65,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12, s1, s2,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::intersection_test_composite_shape_shape(
                     self, pos12, c1, shape2,
@@ -122,7 +124,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12, s1, s2,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::distance_composite_shape_shape(
                     self, pos12, c1, shape2,
@@ -174,7 +176,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12, shape1, b2, prediction,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
                 return Ok(query::details::contact_support_map_support_map(
                     pos12, s1, s2, prediction,
@@ -254,7 +256,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12, s1, s2, max_dist,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::closest_points_composite_shape_shape(
                     self, pos12, c1, shape2, max_dist,
@@ -306,7 +308,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 options,
             ))
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let Some(heightfield1) = shape1.as_heightfield() {
                 return query::details::cast_shapes_heightfield_shape(
                     self,
@@ -381,7 +383,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 ),
             )
         } else {
-            #[cfg(feature = "std")]
+            #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_nonlinear_composite_shape_shape(
                     self,
@@ -417,7 +419,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData>
     for DefaultQueryDispatcher
 where

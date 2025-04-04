@@ -1,6 +1,7 @@
 use crate::math::Real;
 use crate::shape::Capsule;
 use crate::transformation::utils;
+use alloc::vec::Vec;
 use na::{self, Point2, RealField, Vector2};
 
 impl Capsule {

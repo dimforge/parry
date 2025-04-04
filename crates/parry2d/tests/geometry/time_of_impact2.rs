@@ -152,7 +152,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
     let ball_isometry = Isometry2::identity();
     let ball_velocity = Vector2::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let polyline_isometry = Isometry2::rotation(-std::f32::consts::FRAC_PI_2);
+    let polyline_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
     let polyline_velocity = Vector2::zeros();
     let polyline = Polyline::new(vec![Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0)], None);
 
@@ -184,7 +184,7 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
     let ball_isometry = Isometry2::identity();
     let ball_velocity = Vector2::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let segment_isometry = Isometry2::rotation(-std::f32::consts::FRAC_PI_2);
+    let segment_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
     let segment_velocity = Vector2::zeros();
     let segment = Segment::new(Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0));
 
@@ -216,7 +216,7 @@ fn cast_shapes_should_return_toi_for_rotated_segment_and_ball() {
     let ball_isometry = Isometry2::identity();
     let ball_velocity = Vector2::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let segment_isometry = Isometry2::rotation(-std::f32::consts::FRAC_PI_2);
+    let segment_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
     let segment_velocity = Vector2::zeros();
     let segment = Segment::new(Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0));
 

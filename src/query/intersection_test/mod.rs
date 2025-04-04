@@ -5,7 +5,7 @@ pub use self::intersection_test_ball_ball::intersection_test_ball_ball;
 pub use self::intersection_test_ball_point_query::{
     intersection_test_ball_point_query, intersection_test_point_query_ball,
 };
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::intersection_test_composite_shape_shape::{
     intersection_test_composite_shape_shape, intersection_test_shape_composite_shape,
     IntersectionCompositeShapeShapeVisitor,
@@ -28,7 +28,7 @@ pub use self::intersection_test_support_map_support_map::intersection_test_suppo
 mod intersection_test;
 mod intersection_test_ball_ball;
 mod intersection_test_ball_point_query;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod intersection_test_composite_shape_shape;
 mod intersection_test_cuboid_cuboid;
 mod intersection_test_cuboid_segment;

@@ -1,3 +1,5 @@
+use alloc::{boxed::Box, vec::Vec};
+
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
@@ -81,7 +83,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
 
     // Traverse qbvh1 first.
     let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
-    let mut old_manifolds = std::mem::take(manifolds);
+    let mut old_manifolds = core::mem::take(manifolds);
 
     let mut leaf1_fn = |leaf1: &u32| {
         composite1.map_part_at(

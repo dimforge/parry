@@ -1,3 +1,5 @@
+use alloc::{boxed::Box, vec::Vec};
+
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
@@ -116,12 +118,12 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
         new_local_aabb2.maxs += extra_margin;
 
         let local_aabb2 = new_local_aabb2; // .loosened(prediction * 2.0); // TODO: what would be the best value?
-        std::mem::swap(
+        core::mem::swap(
             &mut workspace.old_interferences,
             &mut workspace.interferences,
         );
 
-        std::mem::swap(manifolds, &mut old_manifolds);
+        core::mem::swap(manifolds, &mut old_manifolds);
 
         // This assertion may fire due to the invalid triangle_ids that the
         // near-phase may return (due to SIMD sentinels).

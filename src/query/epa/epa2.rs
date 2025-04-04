@@ -1,7 +1,7 @@
 //! Two-dimensional penetration depth queries using the Expanding Polytope Algorithm.
 
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use alloc::{collections::BinaryHeap, vec::Vec};
+use core::cmp::Ordering;
 
 use na::{self, Unit};
 use num::Bounded;

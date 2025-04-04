@@ -2,6 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::RoundCuboid;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 
 impl RoundCuboid {
     /// Outlines this round cuboid’s surface with polylines.

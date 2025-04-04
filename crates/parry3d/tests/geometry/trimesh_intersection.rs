@@ -29,7 +29,7 @@ fn build_diamond(position: &Isometry<Real>) -> TriMesh {
 fn trimesh_plane_edge_intersection() {
     let mesh = build_diamond(&Isometry::identity());
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, std::f32::EPSILON);
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
@@ -47,7 +47,7 @@ fn trimesh_plane_edge_intersection() {
 fn trimesh_plane_vertex_intersection() {
     let mesh = build_diamond(&Isometry::identity());
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.0, std::f32::EPSILON);
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.0, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
@@ -65,7 +65,7 @@ fn trimesh_plane_vertex_intersection() {
 fn trimesh_plane_mixed_intersection() {
     let mesh = build_diamond(&Isometry::identity());
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(0), 0.0, std::f32::EPSILON);
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(0), 0.0, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
@@ -85,7 +85,7 @@ fn trimesh_plane_multi_intersection() {
     let mut mesh = build_diamond(&Isometry::identity());
     mesh.append(&build_diamond(&Isometry::translation(-5.0, 0.0, 0.0)));
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, std::f32::EPSILON);
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 0.5, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Intersect(_)));
 
@@ -108,7 +108,8 @@ fn trimesh_plane_multi_intersection() {
 fn trimesh_plane_above() {
     let mesh = build_diamond(&Isometry::identity());
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), -5.0, std::f32::EPSILON);
+    let result =
+        mesh.intersection_with_local_plane(&Vector3::ith_axis(2), -5.0, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Positive));
 }
@@ -117,7 +118,7 @@ fn trimesh_plane_above() {
 fn trimesh_plane_below() {
     let mesh = build_diamond(&Isometry::identity());
 
-    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 5.0, std::f32::EPSILON);
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), 5.0, core::f32::EPSILON);
 
     assert!(matches!(result, IntersectResult::Negative));
 }

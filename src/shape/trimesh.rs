@@ -3,7 +3,8 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::Qbvh;
 use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
 use crate::utils::HashablePartialEq;
-use std::fmt;
+use alloc::{vec, vec::Vec};
+use core::fmt;
 #[cfg(feature = "dim3")]
 use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 
@@ -377,6 +378,7 @@ impl TriMesh {
                 self.compute_topology(flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES));
         }
 
+        #[cfg(feature = "std")]
         if difference.intersects(TriMeshFlags::CONNECTED_COMPONENTS) {
             self.compute_connected_components();
         }
@@ -461,8 +463,8 @@ impl TriMesh {
                 .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
         );
 
-        let vertices = std::mem::take(&mut self.vertices);
-        let indices = std::mem::take(&mut self.indices);
+        let vertices = core::mem::take(&mut self.vertices);
+        let indices = core::mem::take(&mut self.indices);
         *self = TriMesh::with_flags(vertices, indices, self.flags).unwrap();
     }
 
@@ -479,7 +481,7 @@ impl TriMesh {
         unsafe {
             let len = self.indices.len() * 3;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
@@ -805,6 +807,8 @@ impl TriMesh {
 
     // NOTE: this is private because that calculation is controlled by TriMeshFlags::CONNECTED_COMPONENTS
     // TODO: we should remove the CONNECTED_COMPONENTS flags and just have this be a free function.
+    // TODO: this should be no_std compatible once ena is or once we have an alternative for it.
+    #[cfg(feature = "std")]
     fn compute_connected_components(&mut self) {
         use ena::unify::{InPlaceUnificationTable, UnifyKey};
 

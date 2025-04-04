@@ -12,7 +12,7 @@ fn main() {
     // Solid cast.
     assert_eq!(
         cuboid
-            .cast_ray(&Isometry2::identity(), &ray_inside, std::f32::MAX, true)
+            .cast_ray(&Isometry2::identity(), &ray_inside, f32::MAX, true)
             .unwrap(),
         0.0
     );
@@ -20,16 +20,16 @@ fn main() {
     // Non-solid cast.
     assert_eq!(
         cuboid
-            .cast_ray(&Isometry2::identity(), &ray_inside, std::f32::MAX, false)
+            .cast_ray(&Isometry2::identity(), &ray_inside, f32::MAX, false)
             .unwrap(),
         2.0
     );
 
     // The other ray does not intersect this shape.
     assert!(cuboid
-        .cast_ray(&Isometry2::identity(), &ray_miss, std::f32::MAX, false)
+        .cast_ray(&Isometry2::identity(), &ray_miss, f32::MAX, false)
         .is_none());
     assert!(cuboid
-        .cast_ray(&Isometry2::identity(), &ray_miss, std::f32::MAX, true)
+        .cast_ray(&Isometry2::identity(), &ray_miss, f32::MAX, true)
         .is_none());
 }

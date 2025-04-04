@@ -4,6 +4,7 @@ use crate::math::Vector;
 use crate::math::{Point, Real};
 use crate::partitioning::{CenterDataSplitter, QbvhProxy};
 use crate::simd::{SimdReal, SIMD_WIDTH};
+use alloc::{vec, vec::Vec};
 use simba::simd::{SimdBool, SimdValue};
 
 use super::{IndexedData, NodeIndex, Qbvh, QbvhNode, QbvhNodeFlags};
@@ -320,7 +321,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             }
 
             first_iter = false;
-            std::mem::swap(&mut self.dirty_nodes, &mut workspace.dirty_parent_nodes);
+            core::mem::swap(&mut self.dirty_nodes, &mut workspace.dirty_parent_nodes);
         }
 
         num_changed
@@ -403,7 +404,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
         workspace.to_sort.extend(0..workspace.orig_ids.len());
         let root_id = NodeIndex::new(0, 0);
 
-        let mut indices = std::mem::take(&mut workspace.to_sort);
+        let mut indices = core::mem::take(&mut workspace.to_sort);
         let (id, aabb) = self.do_recurse_rebalance(&mut indices, workspace, root_id, margin);
         workspace.to_sort = indices;
 

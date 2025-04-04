@@ -1,4 +1,4 @@
-use std::iter::IntoIterator;
+use core::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
