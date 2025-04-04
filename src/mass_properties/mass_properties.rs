@@ -598,14 +598,14 @@ mod test {
         use crate::{math::Vector, shape::Cuboid};
 
         // Compute the mass properties of a compound shape made of three 1x1x1 cuboids.
-        let m = Cuboid::new(Vector::repeat(0.5)).mass_properties(1.0);
+        let mp = Cuboid::new(Vector::repeat(0.5)).mass_properties(1.0);
         let sum = [
-            m,
-            m.transform_by(&Isometry::from_parts(
+            mp,
+            mp.transform_by(&Isometry::from_parts(
                 Vector::y().into(),
                 Default::default(),
             )),
-            m.transform_by(&Isometry::from_parts(
+            mp.transform_by(&Isometry::from_parts(
                 (-Vector::y()).into(),
                 Default::default(),
             )),
