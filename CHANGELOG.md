@@ -23,6 +23,7 @@
 ### Fix
 
 - Fix trimesh inertia tensor computation [#331](https://github.com/dimforge/parry/pull/331).
+- Fix shifted inertia tensor computation [#334](https://github.com/dimforge/parry/pull/334).
 
 ## v0.18.0
 
