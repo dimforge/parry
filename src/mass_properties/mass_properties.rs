@@ -592,26 +592,35 @@ mod test {
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn mass_properties_sum_shifted() {
+    fn mass_properties_compound() {
         use na::Isometry;
 
-        use crate::{math::Vector, shape::Cuboid};
+        use crate::{
+            math::Vector,
+            shape::{Compound, Cuboid, SharedShape},
+        };
 
         // Compute the mass properties of a compound shape made of three 1x1x1 cuboids.
-        let mp = Cuboid::new(Vector::repeat(0.5)).mass_properties(1.0);
-        let sum = [
-            mp,
-            mp.transform_by(&Isometry::from_parts(
-                Vector::y().into(),
-                Default::default(),
-            )),
-            mp.transform_by(&Isometry::from_parts(
-                (-Vector::y()).into(),
-                Default::default(),
-            )),
-        ]
-        .into_iter()
-        .sum::<MassProperties>();
+        let shape = Cuboid::new(Vector::repeat(0.5));
+        let mp = shape.mass_properties(1.0);
+        let iso2 = Isometry::from_parts(Vector::y().into(), Default::default());
+        let iso3 = Isometry::from_parts((-Vector::y()).into(), Default::default());
+
+        // Test sum shifted result through `MassProperties::add`
+        let sum = [mp, mp.transform_by(&iso2), mp.transform_by(&iso3)]
+            .into_iter()
+            .sum::<MassProperties>();
+
+        // Test compound through `MassProperties::from_compound`
+        let compound_shape = Compound::new(vec![
+            (
+                Isometry::from_parts(Vector::default().into(), Default::default()),
+                SharedShape::new(shape),
+            ),
+            (iso2, SharedShape::new(shape)),
+            (iso3, SharedShape::new(shape)),
+        ]);
+        let mp_compound = compound_shape.mass_properties(1.0);
 
         // Check that the mass properties of the compound shape match the mass properties
         // of a single 1x3x1 cuboid.
@@ -620,10 +629,20 @@ mod test {
         #[cfg(feature = "dim3")]
         let expected = Cuboid::new(Vector::new(0.5, 1.5, 0.5)).mass_properties(1.0);
 
+        // Sum shifted
         assert_relative_eq!(sum.local_com, expected.local_com, epsilon = 1.0e-6);
         assert_relative_eq!(sum.inv_mass, expected.inv_mass, epsilon = 1.0e-6);
         assert_relative_eq!(
             sum.inv_principal_inertia_sqrt,
+            expected.inv_principal_inertia_sqrt,
+            epsilon = 1.0e-6
+        );
+
+        // Compound
+        assert_relative_eq!(mp_compound.local_com, expected.local_com, epsilon = 1.0e-6);
+        assert_relative_eq!(mp_compound.inv_mass, expected.inv_mass, epsilon = 1.0e-6);
+        assert_relative_eq!(
+            mp_compound.inv_principal_inertia_sqrt,
             expected.inv_principal_inertia_sqrt,
             epsilon = 1.0e-6
         );
