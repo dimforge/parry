@@ -180,8 +180,8 @@ impl Aabb {
     ///
     /// # Parameters
     /// - `scale`: the scaling factor. It can be non-uniform and/or negative. The AABB being
-    ///            symmetric wrt. its center, a negative scale value has the same effect as scaling
-    ///            by its absolute value.
+    ///   symmetric wrt. its center, a negative scale value has the same effect as scaling
+    ///   by its absolute value.
     #[inline]
     #[must_use]
     pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {

@@ -99,12 +99,12 @@ pub trait QueryDispatcher: Send + Sync {
     /// # Parameters
     /// - `pos12`: the position of the second shape relative to the first shape.
     /// - `local_vel12`: the relative velocity between the two shapes, expressed in the local-space
-    ///                  of the first shape. In other world: `pos1.inverse() * (vel2 - vel1)`.
+    ///   of the first shape. In other world: `pos1.inverse() * (vel2 - vel1)`.
     /// - `g1`: the first shape involved in the shape-cast.
     /// - `g2`: the second shape involved in the shape-cast.
     /// - `target_dist`: a hit will be returned as soon as the two shapes get closer than `target_dist`.
     /// - `max_time_of_impact`: the maximum allowed travel time. This method returns `None` if the time-of-impact
-    ///              detected is theater than this value.
+    ///   detected is theater than this value.
     fn cast_shapes(
         &self,
         pos12: &Isometry<Real>,
