@@ -162,6 +162,7 @@ impl VoxelData {
             AxisMask::from_bits_truncate((!self.0) & INTERIOR_FACE_MASK)
         }
     }
+
     pub const fn voxel_type(self) -> VoxelType {
         FACES_TO_VOXEL_TYPES[self.0 as usize]
     }
@@ -229,6 +230,10 @@ impl Voxels {
         Vector::from(self.dimensions).cast::<Real>() * self.scale
     }
 
+    pub fn dimensions(&self) -> [u32; DIM] {
+        self.dimensions
+    }
+
     /// The size of each voxel part this [`Voxels`] shape.
     pub fn voxel_size(&self) -> Real {
         self.scale
@@ -268,7 +273,7 @@ impl Voxels {
     pub fn voxels_intersecting_local_aabb(
         &self,
         aabb: &Aabb,
-    ) -> impl Iterator<Item = (Point<Real>, VoxelData)> + '_ {
+    ) -> impl Iterator<Item = (u32, Point<Real>, VoxelData)> + '_ {
         let dims = Vector::from(self.dimensions);
         let mins = ((aabb.mins - self.origin) / self.scale)
             .map(|x| x.floor().max(0.0) as u32)
@@ -284,7 +289,7 @@ impl Voxels {
     ///
     /// The voxel data associated to each center is provided to determine what kind of voxel
     /// it is (and, in particular, if it is empty or full).
-    pub fn centers(&self) -> impl Iterator<Item = (Point<Real>, VoxelData)> + '_ {
+    pub fn centers(&self) -> impl Iterator<Item = (u32, Point<Real>, VoxelData)> + '_ {
         self.centers_range([0; DIM], self.dimensions)
     }
 
@@ -296,7 +301,7 @@ impl Voxels {
         // TODO: optimize this?
         let mut in_box = vec![];
         let mut rest = vec![];
-        for (center, voxel) in self.centers() {
+        for (_, center, voxel) in self.centers() {
             if !voxel.is_empty() {
                 if aabb.contains_local_point(&center) {
                     in_box.push(center);
@@ -334,13 +339,13 @@ impl Voxels {
         &self,
         mins: [u32; DIM],
         maxs: [u32; DIM],
-    ) -> impl Iterator<Item = (Point<Real>, VoxelData)> + '_ {
+    ) -> impl Iterator<Item = (u32, Point<Real>, VoxelData)> + '_ {
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).map(move |iy| {
                 let vid = self.linear_index([ix, iy]);
                 let center =
                     self.origin + Vector::new(ix as Real + 0.5, iy as Real + 0.5) * self.scale;
-                (center, self.data[vid as usize])
+                (vid, center, self.data[vid as usize])
             })
         })
     }
@@ -350,7 +355,7 @@ impl Voxels {
         &self,
         mins: [u32; DIM],
         maxs: [u32; DIM],
-    ) -> impl Iterator<Item = (Point<Real>, VoxelData)> + '_ {
+    ) -> impl Iterator<Item = (u32, Point<Real>, VoxelData)> + '_ {
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).flat_map(move |iy| {
                 (mins[2]..maxs[2]).map(move |iz| {
@@ -358,38 +363,42 @@ impl Voxels {
                     let center = self.origin
                         + Vector::new(ix as Real + 0.5, iy as Real + 0.5, iz as Real + 0.5)
                             * self.scale;
-                    (center, self.data[vid as usize])
+                    (vid, center, self.data[vid as usize])
                 })
             })
         })
     }
 
     #[cfg(feature = "dim2")]
-    fn linear_index(&self, voxel_id: [u32; DIM]) -> u32 {
+    pub fn linear_index(&self, voxel_id: [u32; DIM]) -> u32 {
         voxel_id[0] + voxel_id[1] * self.dimensions[0]
     }
 
     #[cfg(feature = "dim3")]
-    fn linear_index(&self, voxel_id: [u32; DIM]) -> u32 {
+    pub fn linear_index(&self, voxel_id: [u32; DIM]) -> u32 {
         voxel_id[0]
             + voxel_id[1] * self.dimensions[0]
             + voxel_id[2] * self.dimensions[0] * self.dimensions[1]
     }
 
     #[cfg(feature = "dim2")]
-    fn to_key(&self, linear_index: u32) -> [u32; DIM] {
+    pub fn to_key(&self, linear_index: u32) -> [u32; DIM] {
         let y = linear_index / self.dimensions[0];
         let x = linear_index % self.dimensions[0];
         [x, y]
     }
 
     #[cfg(feature = "dim3")]
-    fn to_key(&self, linear_index: u32) -> [u32; DIM] {
+    pub fn to_key(&self, linear_index: u32) -> [u32; DIM] {
         let d0d1 = self.dimensions[0] * self.dimensions[1];
         let z = linear_index / d0d1;
         let y = (linear_index - z * d0d1) / self.dimensions[0];
         let x = linear_index % self.dimensions[0];
         [x, y, z]
+    }
+
+    pub fn key_center(&self, key: [u32; DIM]) -> Point<Real> {
+        self.origin + (Vector::from(key).cast::<Real>() + Vector::repeat(0.5)) * self.scale
     }
 
     fn compute_voxel_data(&self, key: [u32; DIM]) -> VoxelData {
