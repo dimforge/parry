@@ -55,7 +55,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
     let aabb2 = ball2.aabb(pos12).loosened(prediction / 2.0);
     let geometry1 = voxels1.primitive_geometry();
     if let Some(aabb_intersection) = aabb1.intersection(&aabb2) {
-        for (center1, data1) in voxels1.voxels_intersecting_local_aabb(&aabb_intersection) {
+        for (_, center1, data1) in voxels1.voxels_intersecting_local_aabb(&aabb_intersection) {
             let voxel1 = data1.voxel_type();
             match voxel1 {
                 #[cfg(feature = "dim2")]

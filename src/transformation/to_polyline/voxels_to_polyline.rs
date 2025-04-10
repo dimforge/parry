@@ -24,7 +24,7 @@ impl Voxels {
         let aabb = Aabb::from_half_extents(Point::origin(), Vector::repeat(radius));
         let vtx = aabb.vertices();
 
-        for (center, vox_data) in self.centers() {
+        for (_, center, vox_data) in self.centers() {
             match vox_data.voxel_type() {
                 VoxelType::Vertex => {
                     let mask = vox_data.feature_mask();

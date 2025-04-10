@@ -60,7 +60,7 @@ impl Voxels {
         }
         */
 
-        for (center, vox_data) in self.centers() {
+        for (_, center, vox_data) in self.centers() {
             match vox_data.voxel_type() {
                 VoxelType::Vertex => {
                     let mask = vox_data.feature_mask();

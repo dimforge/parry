@@ -12,7 +12,7 @@ impl Voxels {
 
         let mut vtx = vec![];
         let mut idx = vec![];
-        for (center, data) in self.centers() {
+        for (_, center, data) in self.centers() {
             let mask = data.free_faces();
             for i in 0..6 {
                 if mask.bits() & (1 << i) != 0 {
