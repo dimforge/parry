@@ -9,9 +9,13 @@
 - Add `SharedShape::from_convex_polyline_unmodified` and `ConvexPolygon::from_convex_polyline_unmodified`
   to initialize a polyline from a set of points assumed to be convex, and without modifying this set even
   if some points are collinear.
+- Add `TriMesh::pseudo_normals_if_oriented` that returns `Some` only if the mesh has the `TriMeshFlags::ORIENTED`
+  flag enabled.
 
 ### Modified
 
+- The `TriMeshFlags::FIX_INTERNAL_EDGES` flag no longer automatically enable the `TriMeshFlags::ORIENTED`
+  flag (but the mesh pseudo-normals will still be computed).
 - Improve `no_std` compatibility.
   - Everything is now compatible, except `mesh_intersections`, `split_trimesh`,
     convex hull validation, and computation of connected components for `TriMesh`.

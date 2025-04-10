@@ -94,7 +94,7 @@ impl TriMesh {
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
-        let mut triangulation = if self.pseudo_normals().is_some() {
+        let mut triangulation = if self.pseudo_normals_if_oriented().is_some() {
             Some(Triangulation::new(*local_axis, self.vertices()[0]))
         } else {
             None
@@ -654,7 +654,7 @@ impl TriMesh {
         flip_cuboid: bool,
         _epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
-        if self.topology().is_some() && self.pseudo_normals().is_some() {
+        if self.topology().is_some() && self.pseudo_normals_if_oriented().is_some() {
             let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
             let cuboid_trimesh = TriMesh::with_flags(
                 cuboid_vtx,
