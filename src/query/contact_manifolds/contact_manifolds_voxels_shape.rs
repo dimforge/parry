@@ -4,7 +4,9 @@ use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::shape::{AxisMask, Cuboid, Shape, SupportMap, VoxelType, Voxels};
+use crate::shape::{
+    AxisMask, Cuboid, RoundShape, Shape, SupportMap, VoxelPrimitiveGeometry, VoxelType, Voxels,
+};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
@@ -23,6 +25,7 @@ struct SubDetector {
 
 // NOTE: this is using a similar kind of cache as compound shape and height-field.
 //       It is different from the trimesh cash though. Which one is better?
+/// A workspace for collision-detection against voxels shape.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Default)]
 pub struct VoxelsShapeContactManifoldsWorkspace {
@@ -31,6 +34,7 @@ pub struct VoxelsShapeContactManifoldsWorkspace {
 }
 
 impl VoxelsShapeContactManifoldsWorkspace {
+    /// A new empty workspace for collision-detection against voxels shape.
     pub fn new() -> Self {
         Self::default()
     }
@@ -75,7 +79,7 @@ pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
 {
     if let Some(voxels1) = shape1.as_voxels() {
         contact_manifolds_voxels_shape(
-            dispatcher, &pos12, voxels1, shape2, prediction, manifolds, workspace, false,
+            dispatcher, pos12, voxels1, shape2, prediction, manifolds, workspace, false,
         );
     } else if let Some(voxels2) = shape2.as_voxels() {
         contact_manifolds_voxels_shape(
@@ -92,10 +96,10 @@ pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
 }
 
 /// Computes the contact manifold between a convex shape and a ball.
-pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
+pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
-    voxels1: &'a Voxels,
+    voxels1: &Voxels,
     shape2: &dyn Shape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
@@ -117,10 +121,8 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
 
     let radius1 = voxels1.scale / 2.0;
 
-    let aabb2 = shape2.compute_local_aabb().loosened(prediction);
     let aabb1 = voxels1.local_aabb();
-
-    let aabb2_1 = shape2.compute_aabb(&pos12);
+    let aabb2_1 = shape2.compute_aabb(pos12);
     let domain2_1 = aabb2_1.loosened(10.0 * radius1);
 
     if let Some(intersection_aabb1) = aabb1.intersection(&aabb2_1) {
@@ -132,13 +134,13 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
                 continue;
             }
 
-            let key_voxel = voxels1.to_key(vid);
+            let key_voxel = voxels1.voxel_key_at(vid);
             let mut key_low = Vector::from(key_voxel);
             let mut key_high = Vector::from(key_low);
             let maxes = voxels1.dimensions().map(|e| e - 1);
             let mask1 = data1.free_faces();
 
-            let mut adjust_canon = |axis: AxisMask, i: usize, key: &mut Vector<u32>, val: u32| {
+            let adjust_canon = |axis: AxisMask, i: usize, key: &mut Vector<u32>, val: u32| {
                 if !mask1.contains(axis) {
                     key[i] = val;
                 }
@@ -205,8 +207,8 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
             let manifold = &mut manifolds[sub_detector.manifold_id];
 
             if !manifold_updated {
-                let mut canonical_mins1 = voxels1.key_center(key_low.into());
-                let mut canonical_maxs1 = voxels1.key_center(key_high.into());
+                let mut canonical_mins1 = voxels1.voxel_center(key_low.into());
+                let mut canonical_maxs1 = voxels1.voxel_center(key_high.into());
 
                 for k in 0..DIM {
                     if key_low[k] != key_voxel[k] {
@@ -221,7 +223,17 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
                 let canonical_half_extents1 =
                     (canonical_maxs1 - canonical_mins1) / 2.0 + Vector::repeat(radius1);
                 let canonical_center1 = na::center(&canonical_mins1, &canonical_maxs1);
-                let canonical_shape1 = Cuboid::new(canonical_half_extents1);
+
+                let canonical_pseudo_cube1 = Cuboid::new(canonical_half_extents1);
+                let canonical_pseudo_ball1 = RoundShape {
+                    inner_shape: Cuboid::new(canonical_half_extents1 - Vector::repeat(radius1)),
+                    border_radius: radius1,
+                };
+
+                let canonical_shape1 = match voxels1.primitive_geometry() {
+                    VoxelPrimitiveGeometry::PseudoBall => &canonical_pseudo_ball1 as &dyn Shape,
+                    VoxelPrimitiveGeometry::PseudoCube => &canonical_pseudo_cube1 as &dyn Shape,
+                };
 
                 let canonical_pos12 = Translation::from(-canonical_center1) * pos12;
 
@@ -262,7 +274,7 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12.inverse(),
                         shape2,
-                        &canonical_shape1,
+                        canonical_shape1,
                         None,
                         None,
                         prediction,
@@ -272,7 +284,7 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
                     manifold.subshape_pos1 = Some(Isometry::from(canonical_center1));
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12,
-                        &canonical_shape1,
+                        canonical_shape1,
                         shape2,
                         None,
                         None,
@@ -302,7 +314,7 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
                     let sm2 = shape2
                         .as_support_map()
                         .expect("Unsupported collision pair.");
-                    let sp2 = sm2.support_point(&pos12, &penetration_dir1);
+                    let sp2 = sm2.support_point(pos12, &penetration_dir1);
                     let test_dist = (sp2 - sp1).dot(&-penetration_dir1);
                     let keep = test_dist < pt.dist;
 
@@ -325,7 +337,7 @@ pub fn contact_manifolds_voxels_shape<'a, ManifoldData, ContactData>(
     }
 
     // Remove contacts marked as ignored.
-    for (_, sub_detector) in &workspace.sub_detectors {
+    for sub_detector in workspace.sub_detectors.values() {
         if sub_detector.timestamp == new_timestamp {
             let manifold = &mut manifolds[sub_detector.manifold_id];
             let mut k = 0;
