@@ -16,7 +16,7 @@ pub use self::shape::{Shape, ShapeType, TypedShape};
 pub use self::support_map::SupportMap;
 pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 pub use self::voxels::{
-    AxisMask, OctantPattern, VoxelData, VoxelPrimitiveGeometry, VoxelType, Voxels,
+    AxisMask, OctantPattern, VoxelPrimitiveGeometry, VoxelState, VoxelType, Voxels,
 };
 
 #[cfg(feature = "alloc")]

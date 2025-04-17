@@ -1535,8 +1535,8 @@ impl Shape for Voxels {
         todo!()
     }
 
-    fn mass_properties(&self, density: Real) -> MassProperties {
-        MassProperties::from_voxels(density, self)
+    fn mass_properties(&self, _density: Real) -> MassProperties {
+        MassProperties::default()
     }
 
     fn shape_type(&self) -> ShapeType {

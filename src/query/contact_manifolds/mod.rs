@@ -37,9 +37,6 @@ pub use self::contact_manifolds_voxels_shape::{
     contact_manifolds_voxels_shape, contact_manifolds_voxels_shape_shapes,
     VoxelsShapeContactManifoldsWorkspace,
 };
-pub use self::contact_manifolds_voxels_voxels::{
-    contact_manifolds_voxels_voxels, contact_manifolds_voxels_voxels_shapes,
-};
 pub use self::contact_manifolds_workspace::{
     ContactManifoldsWorkspace, TypedWorkspaceData, WorkspaceData,
 };
@@ -51,7 +48,6 @@ use {
     self::contact_manifolds_heightfield_composite_shape::HeightFieldCompositeShapeContactManifoldsWorkspace,
     self::contact_manifolds_heightfield_shape::HeightFieldShapeContactManifoldsWorkspace,
     self::contact_manifolds_trimesh_shape::TriMeshShapeContactManifoldsWorkspace,
-    self::contact_manifolds_voxels_ball::detect_hit_voxel_ball,
 };
 
 mod contact_manifold;
@@ -70,6 +66,5 @@ mod contact_manifolds_pfm_pfm;
 mod contact_manifolds_trimesh_shape;
 mod contact_manifolds_voxels_ball;
 mod contact_manifolds_voxels_shape;
-mod contact_manifolds_voxels_voxels;
 mod contact_manifolds_workspace;
 mod normals_constraint;

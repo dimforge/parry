@@ -217,6 +217,10 @@ impl SharedShape {
         )?)))
     }
 
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and centers given by `centers`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     pub fn voxels(
         primitive_geometry: VoxelPrimitiveGeometry,
         centers: &[Point<Real>],
@@ -241,7 +245,6 @@ impl SharedShape {
     }
 
     fn from_voxel_set(primitive_geometry: VoxelPrimitiveGeometry, vox_set: &VoxelSet) -> Self {
-        let dims = (vox_set.max_bb_voxels() - vox_set.min_bb_voxels()) + Vector::repeat(1);
         let centers: Vec<_> = vox_set
             .voxels()
             .iter()
@@ -275,7 +278,7 @@ impl SharedShape {
         params: &VHACDParameters,
     ) -> Vec<Self> {
         let mut parts = vec![];
-        let decomp = VHACD::decompose(params, &vertices, &indices, true);
+        let decomp = VHACD::decompose(params, vertices, indices, true);
 
         for vox_set in decomp.voxel_parts() {
             parts.push(Self::from_voxel_set(primitive_geometry, vox_set));

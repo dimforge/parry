@@ -1,10 +1,11 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::{VoxelType, Voxels};
-use crate::transformation::utils;
-use na::{self, Point3, Vector3};
 
 impl Voxels {
+    /// Outlines this voxels shape as a set of polylines.
+    ///
+    /// The outline is such that only convex edges are output in the polyline.
     pub fn to_outline(&self) -> (Vec<Point<Real>>, Vec<[u32; 2]>) {
         let mut points = vec![];
         self.iter_outline(|a, b| {
@@ -17,7 +18,9 @@ impl Voxels {
         (points, indices)
     }
 
-    /// Outlines this voxels shape using polylines.
+    /// Outlines this voxels shape using segments.
+    ///
+    /// The outline is such that only convex edges are output in the polyline.
     pub fn iter_outline(&self, mut f: impl FnMut(Point<Real>, Point<Real>)) {
         // TODO: move this as a new method: Voxels::to_outline?
         let radius = self.voxel_size() / 2.0;

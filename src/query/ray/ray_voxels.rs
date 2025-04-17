@@ -90,11 +90,11 @@ impl RayCast for Voxels {
                     break;
                 }
             } else if voxel_key[imin] > 0 {
-                    voxel_key[imin] -= 1;
-                } else {
-                    // Leaving the shape’s bounds.
-                    break;
-                }
+                voxel_key[imin] -= 1;
+            } else {
+                // Leaving the shape’s bounds.
+                break;
+            }
         }
 
         None

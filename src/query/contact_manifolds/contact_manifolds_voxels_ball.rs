@@ -2,7 +2,7 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{ContactManifold, PointQuery, TrackedContact};
 use crate::shape::{
-    Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelData, VoxelPrimitiveGeometry,
+    Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelPrimitiveGeometry, VoxelState,
     VoxelType, Voxels,
 };
 
@@ -77,7 +77,7 @@ pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
     pos12: Isometry<Real>,
     center1: Point<Real>,
     radius1: Real,
-    data1: VoxelData,
+    data1: VoxelState,
     geometry1: VoxelPrimitiveGeometry,
     center2: Point<Real>,
     radius2: Real,
@@ -147,9 +147,9 @@ pub fn project_point_on_pseudo_ball(
     // NOTE: in 2D the array is [0, 1, 3, 2] which matches the one in 3D.
     const AABB_OCTANT_KEYS: [u32; 8] = [0, 1, 3, 2, 4, 5, 7, 6];
     #[cfg(feature = "dim2")]
-    let octant_key = (((dpos.x >= 0.0) as usize) << 0) | (((dpos.y >= 0.0) as usize) << 1);
+    let octant_key = (dpos.x >= 0.0) as usize | (((dpos.y >= 0.0) as usize) << 1);
     #[cfg(feature = "dim3")]
-    let octant_key = (((dpos.x >= 0.0) as usize) << 0)
+    let octant_key = (dpos.x >= 0.0) as usize
         | (((dpos.y >= 0.0) as usize) << 1)
         | (((dpos.z >= 0.0) as usize) << 2);
     let aabb_octant_key = AABB_OCTANT_KEYS[octant_key];
@@ -231,9 +231,9 @@ pub fn project_point_on_pseudo_cube(
     // NOTE: in 2D the array is [0, 1, 3, 2] which matches the one in 3D.
     const AABB_OCTANT_KEYS: [u32; 8] = [0, 1, 3, 2, 4, 5, 7, 6];
     #[cfg(feature = "dim2")]
-    let octant_key = (((dpos.x >= 0.0) as usize) << 0) | (((dpos.y >= 0.0) as usize) << 1);
+    let octant_key = ((dpos.x >= 0.0) as usize) | (((dpos.y >= 0.0) as usize) << 1);
     #[cfg(feature = "dim3")]
-    let octant_key = (((dpos.x >= 0.0) as usize) << 0)
+    let octant_key = ((dpos.x >= 0.0) as usize)
         | (((dpos.y >= 0.0) as usize) << 1)
         | (((dpos.z >= 0.0) as usize) << 2);
     let aabb_octant_key = AABB_OCTANT_KEYS[octant_key];

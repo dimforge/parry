@@ -331,7 +331,11 @@ impl Voxels {
 
         let id = self.linear_index(key);
         let prev = self.data[id as usize];
-        let new = if is_filled { VoxelState::INTERIOR } else { VoxelState::EMPTY };
+        let new = if is_filled {
+            VoxelState::INTERIOR
+        } else {
+            VoxelState::EMPTY
+        };
 
         if prev.is_empty() ^ new.is_empty() {
             self.data[id as usize] = new;
@@ -356,13 +360,13 @@ impl Voxels {
             // Add 10% extra padding.
             let extra = self.dimensions.map(|k| k * 10 / 100);
             let neg_padding = ii.map(|k| key[k].min(0).unsigned_abs() + extra[k]);
-            let pos_padding = ii.map(|k|
+            let pos_padding = ii.map(|k| {
                 if key[k] >= self.dimensions[k] as i32 {
                     (key[k] - self.dimensions[k] as i32 + 1 + extra[k] as i32) as u32
                 } else {
                     0
                 }
-            );
+            });
             self.pad_model(neg_padding, pos_padding);
 
             // Shift the key based on the new origin.
@@ -408,23 +412,27 @@ impl Voxels {
             new_self.data[new_i as usize] = self.data[i];
         }
 
-
         *self = new_self;
     }
 
     /// Checks if the given key is within [`Self::dimensions`].
     #[cfg(feature = "dim2")]
     pub fn is_signed_key_in_bounds(&self, key: [i32; DIM]) -> bool {
-        key[0] >= 0 && key[0] < self.dimensions[0] as i32 &&
-            key[1] >= 0 && key[1] < self.dimensions[1] as i32
+        key[0] >= 0
+            && key[0] < self.dimensions[0] as i32
+            && key[1] >= 0
+            && key[1] < self.dimensions[1] as i32
     }
 
     /// Checks if the given key is within [`Self::dimensions`].
     #[cfg(feature = "dim3")]
     pub fn is_signed_key_in_bounds(&self, key: [i32; DIM]) -> bool {
-        key[0] >= 0 && key[0] < self.dimensions[0] as i32 &&
-            key[1] >= 0 && key[1] < self.dimensions[1] as i32 &&
-            key[2] >= 0 && key[2] < self.dimensions[2] as i32
+        key[0] >= 0
+            && key[0] < self.dimensions[0] as i32
+            && key[1] >= 0
+            && key[1] < self.dimensions[1] as i32
+            && key[2] >= 0
+            && key[2] < self.dimensions[2] as i32
     }
 
     fn update_voxel_and_neighbors_state(&mut self, key: [u32; DIM]) {
@@ -493,8 +501,11 @@ impl Voxels {
 
     fn key_at_point(&self, pt: Point<Real>) -> Option<[u32; DIM]> {
         let quant = self.signed_key_at_point(pt);
-        if quant[0] < 0 || quant[1] < 0 ||
-            quant[0] >= self.dimensions[0] as i32 || quant[1] >= self.dimensions[1] as i32 {
+        if quant[0] < 0
+            || quant[1] < 0
+            || quant[0] >= self.dimensions[0] as i32
+            || quant[1] >= self.dimensions[1] as i32
+        {
             return None;
         }
 
