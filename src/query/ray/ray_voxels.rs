@@ -1,0 +1,102 @@
+use crate::math::{Real, Vector};
+use crate::query::{Ray, RayCast, RayIntersection};
+use crate::shape::{FeatureId, Voxels};
+
+impl RayCast for Voxels {
+    #[inline]
+    fn cast_local_ray_and_get_normal(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+    ) -> Option<RayIntersection> {
+        use num_traits::Bounded;
+
+        let aabb = self.local_aabb();
+        let dims = self.dimensions();
+        let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
+
+        #[cfg(feature = "dim2")]
+        let ii = [0, 1];
+        #[cfg(feature = "dim3")]
+        let ii = [0, 1, 2];
+
+        if min_t > max_time_of_impact {
+            return None;
+        }
+
+        max_t = max_t.min(max_time_of_impact);
+        let clip_ray_a = ray.point_at(min_t);
+        let voxel_key_signed = self.signed_key_at_point(clip_ray_a);
+        let mut voxel_key = ii.map(|i| voxel_key_signed[i].clamp(0, dims[i] as i32 - 1) as u32);
+
+        loop {
+            let voxel = self.voxel_data_at_key(voxel_key);
+            let aabb = self.voxel_aabb_at_key(voxel_key);
+
+            if !voxel.is_empty() {
+                // We hit a voxel!
+                // TODO: if `solid` is false, and we started hitting from the first iteration,
+                //       then we should continue the ray propagation until we reach empty space again.
+                let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid);
+
+                if let Some(mut hit) = hit {
+                    // TODO: have the feature id be based on the voxel type?
+                    hit.feature = FeatureId::Face(self.linear_index(voxel_key));
+                    return Some(hit);
+                }
+            }
+
+            /*
+             * Find the next voxel to cast the ray on.
+             */
+            let toi = ii.map(|i| {
+                if ray.dir[i] > 0.0 {
+                    let t = (aabb.maxs[i] - ray.origin[i]) / ray.dir[i];
+                    if t < 0.0 {
+                        (Real::max_value(), true)
+                    } else {
+                        (t, true)
+                    }
+                } else if ray.dir[i] < 0.0 {
+                    let t = (aabb.mins[i] - ray.origin[i]) / ray.dir[i];
+                    if t < 0.0 {
+                        (Real::max_value(), false)
+                    } else {
+                        (t, false)
+                    }
+                } else {
+                    (Real::max_value(), false)
+                }
+            });
+
+            #[cfg(feature = "dim2")]
+            if toi[0].0 > max_t && toi[1].0 > max_t {
+                break;
+            }
+
+            #[cfg(feature = "dim3")]
+            if toi[0].0 > max_t && toi[1].0 > max_t && toi[2].0 > max_t {
+                break;
+            }
+
+            let imin = Vector::from(toi.map(|t| t.0)).imin();
+
+            if toi[imin].1 {
+                if voxel_key[imin] < dims[imin] - 1 {
+                    voxel_key[imin] += 1;
+                } else {
+                    // Leaving the shape’s bounds.
+                    break;
+                }
+            } else if voxel_key[imin] > 0 {
+                    voxel_key[imin] -= 1;
+                } else {
+                    // Leaving the shape’s bounds.
+                    break;
+                }
+        }
+
+        None
+    }
+}
