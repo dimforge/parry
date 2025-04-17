@@ -230,7 +230,7 @@ impl SharedShape {
         SharedShape::new(shape)
     }
 
-    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_mesh(
         primitive_geometry: VoxelPrimitiveGeometry,
