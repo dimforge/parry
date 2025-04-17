@@ -1,6 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::{VoxelType, Voxels};
+use alloc::{vec, vec::Vec};
 use na::{self, Point2};
 
 impl Voxels {

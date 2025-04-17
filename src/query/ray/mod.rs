@@ -27,5 +27,6 @@ mod ray_heightfield;
 mod ray_round_shape;
 mod ray_support_map;
 mod ray_triangle;
+#[cfg(feature = "alloc")]
 mod ray_voxels;
 mod simd_ray;

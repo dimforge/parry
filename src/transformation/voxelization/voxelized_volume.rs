@@ -166,8 +166,6 @@ impl VoxelizedVolume {
             .map(|x| (x.ceil() as u32).max(2) + 1)
             .into();
 
-        dbg!(result.resolution);
-
         result.do_voxelize(points, indices, fill_mode, keep_voxel_to_primitives_map);
         result
     }

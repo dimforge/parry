@@ -1,6 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::{VoxelType, Voxels};
+use alloc::{vec, vec::Vec};
 
 impl Voxels {
     /// Outlines this voxels shape as a set of polylines.

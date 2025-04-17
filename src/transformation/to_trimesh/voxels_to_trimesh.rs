@@ -1,6 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::Voxels;
+use alloc::{vec, vec::Vec};
 
 impl Voxels {
     /// Computes an unoptimized mesh representation of this shape.

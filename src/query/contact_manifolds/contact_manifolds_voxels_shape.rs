@@ -9,6 +9,7 @@ use crate::shape::{
 };
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
+use alloc::{boxed::Box, vec::Vec};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -115,7 +116,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     let new_timestamp = !workspace.timestamp;
 
     // TODO: avoid reallocating the new `manifolds` vec at each step.
-    let mut old_manifolds = std::mem::take(manifolds);
+    let mut old_manifolds = core::mem::take(manifolds);
 
     workspace.timestamp = new_timestamp;
 

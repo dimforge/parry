@@ -30,6 +30,7 @@ mod aabb_triangle;
 mod aabb_utils;
 
 mod aabb_capsule;
+#[cfg(feature = "alloc")]
 mod aabb_voxels;
 #[doc(hidden)]
 pub mod bounding_sphere;
@@ -56,6 +57,7 @@ mod bounding_sphere_triangle;
 #[cfg(feature = "alloc")]
 mod bounding_sphere_trimesh;
 mod bounding_sphere_utils;
+#[cfg(feature = "alloc")]
 mod bounding_sphere_voxels;
 mod simd_aabb;
 

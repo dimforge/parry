@@ -14,18 +14,18 @@ use crate::shape::SharedShape;
 use crate::shape::{composite_shape::SimdCompositeShape, Compound, HeightField, Polyline, TriMesh};
 use crate::shape::{
     Ball, Capsule, Cuboid, FeatureId, HalfSpace, PolygonalFeatureMap, RoundCuboid, RoundShape,
-    RoundTriangle, Segment, SupportMap, Triangle, Voxels,
+    RoundTriangle, Segment, SupportMap, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
 
 #[cfg(feature = "dim3")]
 #[cfg(feature = "alloc")]
-use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron};
+use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron, Voxels};
 
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]
-use crate::shape::{ConvexPolygon, RoundConvexPolygon};
+use crate::shape::{ConvexPolygon, RoundConvexPolygon, Voxels};
 use downcast_rs::{impl_downcast, DowncastSync};
 use na::{RealField, Unit};
 use num::Zero;
@@ -107,6 +107,7 @@ pub enum TypedShape<'a> {
     Segment(&'a Segment),
     /// A triangle shape.
     Triangle(&'a Triangle),
+    #[cfg(feature = "alloc")]
     /// A shape defined as a voxel grid.
     Voxels(&'a Voxels),
     /// A triangle mesh shape.
@@ -170,6 +171,7 @@ impl Debug for TypedShape<'_> {
             Self::Capsule(arg0) => f.debug_tuple("Capsule").field(arg0).finish(),
             Self::Segment(arg0) => f.debug_tuple("Segment").field(arg0).finish(),
             Self::Triangle(arg0) => f.debug_tuple("Triangle").field(arg0).finish(),
+            #[cfg(feature = "alloc")]
             Self::Voxels(arg0) => f.debug_tuple("Voxels").field(arg0).finish(),
             #[cfg(feature = "alloc")]
             Self::TriMesh(arg0) => f.debug_tuple("TriMesh").field(arg0).finish(),
@@ -227,6 +229,7 @@ pub(crate) enum DeserializableTypedShape {
     /// A triangle shape.
     Triangle(Triangle),
     /// A shape defined as a voxel grid.
+    #[cfg(feature = "alloc")]
     Voxels(Voxels),
     /// A triangle mesh shape.
     #[cfg(feature = "alloc")]
@@ -294,6 +297,7 @@ impl DeserializableTypedShape {
             DeserializableTypedShape::Capsule(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Segment(s) => Some(SharedShape::new(s)),
             DeserializableTypedShape::Triangle(s) => Some(SharedShape::new(s)),
+            #[cfg(feature = "alloc")]
             DeserializableTypedShape::Voxels(s) => Some(SharedShape::new(s)),
             #[cfg(feature = "alloc")]
             DeserializableTypedShape::TriMesh(s) => Some(SharedShape::new(s)),
@@ -502,10 +506,12 @@ impl dyn Shape {
     }
 
     /// Converts this abstract shape to voxels, if it is one.
+    #[cfg(feature = "alloc")]
     pub fn as_voxels(&self) -> Option<&Voxels> {
         self.downcast_ref()
     }
     /// Converts this abstract shape to mutable voxels, if it is one.
+    #[cfg(feature = "alloc")]
     pub fn as_voxels_mut(&mut self) -> Option<&mut Voxels> {
         self.downcast_mut()
     }
@@ -1517,7 +1523,7 @@ impl Shape for HalfSpace {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl Shape for Voxels {
     fn compute_local_aabb(&self) -> Aabb {
         self.local_aabb()

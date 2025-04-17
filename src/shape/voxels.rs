@@ -1,5 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
+use alloc::{vec, vec::Vec};
 
 /// The primitive shape all voxels from a [`Voxels`] is given.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -686,6 +687,7 @@ impl Voxels {
 // FACES_TO_VOXEL_TYPES, FACES_TO_FEATURE_MASKS, FACES_TO_OCTANT_MASKS.
 #[allow(dead_code)]
 #[cfg(feature = "dim2")]
+#[cfg(test)]
 fn gen_const_tables() {
     // The `j-th` bit of `faces_adj_to_vtx[i]` is set to 1, if the j-th face of the AABB (based on
     // the face order depicted in `AABB::FACES_VERTEX_IDS`) is adjacent to the `i` vertex of the AABB
@@ -813,6 +815,7 @@ fn gen_const_tables() {
 // FACES_TO_VOXEL_TYPES, FACES_TO_FEATURE_MASKS, FACES_TO_OCTANT_MASKS.
 #[allow(dead_code)]
 #[cfg(feature = "dim3")]
+#[cfg(test)]
 fn gen_const_tables() {
     // The `j-th` bit of `faces_adj_to_vtx[i]` is set to 1, if the j-th face of the AABB (based on
     // the face order depicted in `AABB::FACES_VERTEX_IDS`) is adjacent to the `i` vertex of the AABB

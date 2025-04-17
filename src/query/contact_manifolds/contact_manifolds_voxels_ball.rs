@@ -5,6 +5,7 @@ use crate::shape::{
     Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelPrimitiveGeometry, VoxelState,
     VoxelType, Voxels,
 };
+use alloc::vec::Vec;
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifolds_voxels_ball_shapes<ManifoldData, ContactData>(
