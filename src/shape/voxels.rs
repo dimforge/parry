@@ -183,7 +183,7 @@ impl VoxelState {
     }
 }
 
-/// A shape made of axis-ligned, uniformly sized, cubes (aka. voxels).
+/// A shape made of axis-aligned, uniformly sized, cubes (aka. voxels).
 ///
 /// This shape is specialized to handle voxel worlds and voxelized obojects efficiently why ensuring
 /// that collision-detection isn’t affected by the so-called "internal edges problem" that can create
@@ -195,16 +195,58 @@ impl VoxelState {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Voxels {
-    pub(crate) dimensions: [u32; DIM],
-    pub(crate) data: Vec<VoxelState>, // TODO: use a Vob?
+    pub(crate) domain_mins: Point<i32>,
+    pub(crate) domain_maxs: Point<i32>,
+    pub(crate) data: Vec<VoxelState>, // Somehow switch to a sparse representation?
     primitive_geometry: VoxelPrimitiveGeometry,
     /// The size of each voxel along all dimensions.
     pub voxel_size: Vector<Real>,
-    /// The point relative to which all voxel positions are computed.
-    pub origin: Point<Real>,
 }
 
 impl Voxels {
+    /// Initializes a voxel shapes from the voxels grid coordinates.
+    ///
+    /// Each voxel will have its bottom-left-back corner located at
+    /// `voxel * voxel_size`; and its center at `(voxel + 0.5) * voxel_size`.
+    pub fn new(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vector<Real>,
+        voxels: &[Point<i32>],
+    ) -> Self {
+        // Ensure pseudo-balls always use uniform voxel sizes.
+        let voxel_size = match primitive_geometry {
+            VoxelPrimitiveGeometry::PseudoBall => Vector::repeat(voxel_size.x),
+            VoxelPrimitiveGeometry::PseudoCube => voxel_size,
+        };
+
+        let mut domain_mins = voxels[0];
+        let mut domain_maxs = voxels[0];
+
+        for vox in voxels {
+            domain_mins = domain_mins.inf(vox);
+            domain_maxs = domain_maxs.sup(vox);
+        }
+
+        domain_maxs += Vector::repeat(1);
+        let dimensions = domain_maxs - domain_mins;
+        let voxels_count = dimensions.product();
+        let mut result = Self {
+            domain_mins,
+            domain_maxs,
+            data: vec![VoxelState::EMPTY; voxels_count as usize],
+            primitive_geometry,
+            voxel_size,
+        };
+
+        for vox in voxels {
+            let index = result.linear_index(*vox);
+            result.data[index as usize] = VoxelState::INTERIOR;
+        }
+
+        result.recompute_voxels_data();
+        result
+    }
+
     /// Computes a voxels shape from the set of `points`.
     ///
     /// The points are mapped to a regular grid centered at the provided point with smallest
@@ -218,33 +260,20 @@ impl Voxels {
         // Ensure pseudo-balls always use uniform voxel sizes.
         let voxel_size = match primitive_geometry {
             VoxelPrimitiveGeometry::PseudoBall => Vector::repeat(voxel_size.x),
-            VoxelPrimitiveGeometry::PseudoCube => voxel_size
+            VoxelPrimitiveGeometry::PseudoCube => voxel_size,
         };
 
-        let mut aabb = Aabb::from_points(points);
-        aabb.mins -= voxel_size / 2.0;
-        aabb.maxs += voxel_size / 2.0; // NOTE: is this + necessary?
-
-        // Discretize the points on the grid.
-        let dimensions = (aabb.maxs - aabb.mins).component_div(&voxel_size).map(|x| x.ceil() as u32);
-        let len = dimensions.product();
-        let mut result = Self {
-            dimensions: dimensions.into(),
-            data: vec![VoxelState::EMPTY; len as usize],
-            primitive_geometry,
-            voxel_size,
-            origin: aabb.mins,
-        };
-
-        for pt in points {
-            let coords = (pt - aabb.mins).component_div(&voxel_size).map(|x| x.floor() as u32);
-            let index = result.linear_index(coords.into());
-            // The precise voxel data will be computed in `recompute_voxels_data` below.
-            result.data[index as usize] = VoxelState::INTERIOR;
-        }
-
-        result.recompute_voxels_data();
-        result
+        let voxels: Vec<_> = points
+            .iter()
+            .map(|pt| {
+                Point::from(
+                    pt.coords
+                        .component_div(&voxel_size)
+                        .map(|x| x.floor() as i32),
+                )
+            })
+            .collect();
+        Self::new(primitive_geometry, voxel_size, &voxels)
     }
 
     // TODO: support a crate like get_size2 (will require support on nalgebra too)?
@@ -258,11 +287,11 @@ impl Voxels {
     pub fn get_heap_size(&self) -> usize {
         // NOTE: if a new field is added to `Self`, adjust this function result.
         let Self {
-            dimensions: _,
+            domain_mins: _,
+            domain_maxs: _,
             data,
             primitive_geometry: _,
             voxel_size: _,
-            origin: _,
         } = self;
         data.capacity() * size_of::<VoxelState>()
     }
@@ -271,12 +300,25 @@ impl Voxels {
     ///
     /// This accounts for all the voxels in `self`, including empty ones.
     pub fn extents(&self) -> Vector<Real> {
-        Vector::from(self.dimensions).cast::<Real>().component_mul(&self.voxel_size)
+        self.dimensions()
+            .cast::<Real>()
+            .component_mul(&self.voxel_size)
+    }
+
+    /// The center of this shape’s domain.
+    pub fn center(&self) -> Point<Real> {
+        (self
+            .domain_mins
+            .coords
+            .cast::<Real>()
+            .component_mul(&self.voxel_size)
+            + self.extents() / 2.0)
+            .into()
     }
 
     /// The domain covered by this voxels shape.
-    pub fn dimensions(&self) -> [u32; DIM] {
-        self.dimensions
+    pub fn dimensions(&self) -> Vector<u32> {
+        (self.domain_maxs - self.domain_mins).map(|e| e as u32)
     }
 
     /// The size of each voxel part this [`Voxels`] shape.
@@ -299,7 +341,6 @@ impl Voxels {
     /// Scale this shape. Returns `None` if the scale is non-uniform (not supported yet).
     pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
         self.voxel_size.component_mul_assign(scale);
-        self.origin.coords.component_mul_assign(scale);
         Some(self)
     }
 
@@ -317,13 +358,17 @@ impl Voxels {
     ///
     /// See [`Self::insert_voxel_at_key`] for a method that automatically resizes the internal
     /// storage of `self` if the key is out of the valid bounds.
-    pub fn set_voxel_at_key(&mut self, key: [u32; DIM], is_filled: bool) -> Option<VoxelState> {
-        if key[0] >= self.dimensions[0] || key[1] >= self.dimensions[1] {
+    pub fn set_voxel_at_key(&mut self, key: Point<i32>, is_filled: bool) -> Option<VoxelState> {
+        if key[0] < self.domain_mins[0]
+            || key[0] >= self.domain_maxs[0]
+            || key[1] < self.domain_mins[1]
+            || key[1] >= self.domain_maxs[1]
+        {
             return None;
         }
 
         #[cfg(feature = "dim3")]
-        if key[2] >= self.dimensions[2] {
+        if key[2] < self.domain_mins[2] || key[2] >= self.domain_maxs[2] {
             return None;
         }
 
@@ -349,97 +394,117 @@ impl Voxels {
     /// voxels storage will be resized automatically. If a resize happens, the cost of the insertion
     /// is `O(n)` where `n` is the capacity of `self`. If no resize happens, then the cost of
     /// insertion is `O(1)`.
-    pub fn insert_voxel_at_key(&mut self, key: [i32; DIM], is_filled: bool) -> Option<VoxelState> {
+    pub fn insert_voxel_at_key(&mut self, key: Point<i32>, is_filled: bool) -> Option<VoxelState> {
         if !self.is_signed_key_in_bounds(key) && is_filled {
-            #[cfg(feature = "dim2")]
-            let ii = [0, 1];
-            #[cfg(feature = "dim3")]
-            let ii = [0, 1, 2];
-            // Add 10% extra padding.
-            let extra = self.dimensions.map(|k| k * 10 / 100);
-            let neg_padding = ii.map(|k| key[k].min(0).unsigned_abs() + extra[k]);
-            let pos_padding = ii.map(|k| {
-                if key[k] >= self.dimensions[k] as i32 {
-                    (key[k] - self.dimensions[k] as i32 + 1 + extra[k] as i32) as u32
-                } else {
-                    0
-                }
-            });
-            self.pad_model(neg_padding, pos_padding);
+            let dims = self.dimensions();
 
-            // Shift the key based on the new origin.
-            let new_key = ii.map(|k| (key[k] + neg_padding[k] as i32) as u32);
-            self.set_voxel_at_key(new_key, is_filled)
+            // Add 10% extra padding.
+            let extra = dims.map(|k| k * 10 / 100);
+            let mut new_domain_mins = self.domain_mins;
+            let mut new_domain_maxs = self.domain_maxs;
+
+            for k in 0..DIM {
+                if key[k] < self.domain_mins[k] {
+                    new_domain_mins[k] = key[k] - extra[k] as i32;
+                }
+
+                if key[k] >= self.domain_maxs[k] {
+                    new_domain_maxs[k] = key[k] + extra[k] as i32 + 1;
+                }
+            }
+
+            self.resize(new_domain_mins, new_domain_maxs);
+
+            self.set_voxel_at_key(key, is_filled)
         } else {
-            self.set_voxel_at_key(key.map(|x| x as u32), is_filled)
+            self.set_voxel_at_key(key, is_filled)
         }
     }
 
-    /// Grows the domain of `self` by allocating space for additional voxels.
+    /// Set the model domain.
     ///
-    /// The `neg_padding` (resp. `pos_padding`) indicates how [`Self::dimensions`] grows toward the
-    /// negative (resp. positive) coordinate axes.
-    pub fn pad_model(&mut self, neg_padding: [u32; DIM], pos_padding: [u32; DIM]) {
-        let mut new_dim = self.dimensions;
-        for k in 0..DIM {
-            new_dim[k] += neg_padding[k] + pos_padding[k];
+    /// The domain can be smaller or larger than the current one. Voxels in any overlap between
+    /// the current and new domain will be preserved.
+    ///
+    /// If for any index `i`, `domain_maxs[i] <= domain_mins[i]`, then the new domain is invalid
+    /// and this operation will result in a no-op.
+    pub fn resize(&mut self, domain_mins: Point<i32>, domain_maxs: Point<i32>) {
+        if self.domain_mins == domain_mins && self.domain_maxs == domain_maxs {
+            // Nothing to change.
+            return;
         }
 
-        if new_dim == self.dimensions {
-            // No dimension change.
-            return;
+        if let Some(new_shape) = self.resized(domain_mins, domain_maxs) {
+            *self = new_shape;
+        }
+    }
+
+    /// Clone this voxels shape with a new size.
+    ///
+    /// The domain can be smaller or larger than the current one. Voxels in any overlap between
+    /// the current and new domain will be preserved.
+    ///
+    /// If for any index `i`, `domain_maxs[i] <= domain_mins[i]`, then the new domain is invalid
+    /// and this operation returns `None`.
+    #[must_use]
+    pub fn resized(&self, domain_mins: Point<i32>, domain_maxs: Point<i32>) -> Option<Self> {
+        if self.domain_mins == domain_mins && self.domain_maxs == domain_maxs {
+            // Nothing to change, just clone as-is.
+            return Some(self.clone());
+        }
+
+        let new_dim = domain_maxs - domain_mins;
+        if new_dim.iter().any(|d| *d <= 0) {
+            log::error!("Invalid domain provided for resizing a voxels shape. New domain: {:?} - {:?}; new domain size: {:?}", domain_mins, domain_maxs, new_dim);
+            return None;
         }
 
         let new_len = new_dim.iter().map(|x| *x as usize).product();
 
-        let mut new_self = Self {
-            dimensions: new_dim,
+        let mut new_shape = Self {
+            domain_mins,
+            domain_maxs,
             data: vec![VoxelState::EMPTY; new_len],
             primitive_geometry: self.primitive_geometry,
             voxel_size: self.voxel_size,
-            origin: self.origin - Vector::from(neg_padding).cast::<Real>().component_mul(&self.voxel_size),
         };
 
         for i in 0..self.data.len() {
             let key = self.voxel_key_at(i as u32);
-            let mut new_key = key;
-            for k in 0..DIM {
-                new_key[k] += neg_padding[k];
-            }
-            let new_i = new_self.linear_index(new_key);
-            new_self.data[new_i as usize] = self.data[i];
+            let new_i = new_shape.linear_index(key);
+            new_shape.data[new_i as usize] = self.data[i];
         }
 
-        *self = new_self;
+        Some(new_shape)
     }
 
     /// Checks if the given key is within [`Self::dimensions`].
     #[cfg(feature = "dim2")]
-    pub fn is_signed_key_in_bounds(&self, key: [i32; DIM]) -> bool {
-        key[0] >= 0
-            && key[0] < self.dimensions[0] as i32
-            && key[1] >= 0
-            && key[1] < self.dimensions[1] as i32
+    pub fn is_signed_key_in_bounds(&self, key: Point<i32>) -> bool {
+        key[0] >= self.domain_mins[1]
+            && key[0] < self.domain_maxs[0]
+            && key[1] >= self.domain_mins[1]
+            && key[1] < self.domain_maxs[1]
     }
 
     /// Checks if the given key is within [`Self::dimensions`].
     #[cfg(feature = "dim3")]
-    pub fn is_signed_key_in_bounds(&self, key: [i32; DIM]) -> bool {
-        key[0] >= 0
-            && key[0] < self.dimensions[0] as i32
-            && key[1] >= 0
-            && key[1] < self.dimensions[1] as i32
-            && key[2] >= 0
-            && key[2] < self.dimensions[2] as i32
+    pub fn is_signed_key_in_bounds(&self, key: Point<i32>) -> bool {
+        key[0] >= self.domain_mins[0]
+            && key[0] < self.domain_maxs[0]
+            && key[1] >= self.domain_mins[1]
+            && key[1] < self.domain_maxs[1]
+            && key[2] >= self.domain_mins[2]
+            && key[2] < self.domain_maxs[2]
     }
 
-    fn update_voxel_and_neighbors_state(&mut self, key: [u32; DIM]) {
+    fn update_voxel_and_neighbors_state(&mut self, key: Point<i32>) {
         let key_id = self.linear_index(key) as usize;
         let mut key_data = 0;
         let center_is_empty = self.data[key_id].is_empty();
 
         for k in 0..DIM {
-            if key[k] > 0 {
+            if key[k] > self.domain_mins[k] {
                 let mut left = key;
                 left[k] -= 1;
                 let left_id = self.linear_index(left) as usize;
@@ -454,7 +519,7 @@ impl Voxels {
                 }
             }
 
-            if key[k] + 1 < self.dimensions[k] {
+            if key[k] + 1 < self.domain_maxs[k] {
                 let mut right = key;
                 right[k] += 1;
                 let right_id = self.linear_index(right) as usize;
@@ -476,7 +541,7 @@ impl Voxels {
     }
 
     /// The AABB of the voxel with the given quantized `key`.
-    pub fn voxel_aabb_at_key(&self, key: [u32; DIM]) -> Aabb {
+    pub fn voxel_aabb_at_key(&self, key: Point<i32>) -> Aabb {
         let center = self.voxel_center(key);
         let hext = self.voxel_size / 2.0;
         Aabb::from_half_extents(center, hext)
@@ -485,34 +550,51 @@ impl Voxels {
     /// Returns the state of a given voxel.
     ///
     /// Panics if the key is out of the bounds defined by [`Self::dimensions`].
-    pub fn voxel_data_at_key(&self, key: [u32; DIM]) -> VoxelState {
+    pub fn voxel_data_at_key(&self, key: Point<i32>) -> VoxelState {
         self.data[self.linear_index(key) as usize]
     }
 
     /// Calculates the signed key of the voxel containing the given `point`, regardless
     /// of [`Self::dimensions`].
-    pub fn signed_key_at_point(&self, point: Point<Real>) -> [i32; DIM] {
-        (point - self.origin).component_div(&self.voxel_size)
+    pub fn key_at_point_unchecked(&self, point: Point<Real>) -> Point<i32> {
+        point
+            .coords
+            .component_div(&self.voxel_size)
             .map(|x| x.floor() as i32)
             .into()
     }
 
-    fn key_at_point(&self, pt: Point<Real>) -> Option<[u32; DIM]> {
-        let quant = self.signed_key_at_point(pt);
-        if quant[0] < 0
-            || quant[1] < 0
-            || quant[0] >= self.dimensions[0] as i32
-            || quant[1] >= self.dimensions[1] as i32
+    /// Gets the key of the voxel containing the given `pt`.
+    ///
+    /// Note that the returned key might address a voxel that is empty.
+    /// `None` is returned if the point is out of the domain of `self`.
+    pub fn key_at_point(&self, pt: Point<Real>) -> Option<Point<i32>> {
+        let quant = self.key_at_point_unchecked(pt);
+        if quant[0] < self.domain_mins[0]
+            || quant[1] < self.domain_mins[1]
+            || quant[0] >= self.domain_maxs[0]
+            || quant[1] >= self.domain_maxs[1]
         {
             return None;
         }
 
         #[cfg(feature = "dim3")]
-        if quant[2] < 0 || quant[2] >= self.dimensions[2] as i32 {
+        if quant[2] < self.domain_mins[2] || quant[2] >= self.domain_maxs[2] {
             return None;
         }
 
-        Some(quant.map(|e| e as u32))
+        Some(quant)
+    }
+
+    /// Clamps an arbitrary voxel key into the valid domain of `self`.
+    pub fn clamp_key(&self, key: Point<i32>) -> Point<i32> {
+        key.coords
+            .zip_zip_map(
+                &self.domain_mins.coords,
+                &self.domain_maxs.coords,
+                |k, min, max| k.clamp(min, max - 1),
+            )
+            .into()
     }
 
     /// Iterates through every voxel intersecting the given aabb.
@@ -522,13 +604,18 @@ impl Voxels {
         &self,
         aabb: &Aabb,
     ) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
-        let dims = Vector::from(self.dimensions);
-        let mins = (aabb.mins - self.origin).component_div(&self.voxel_size)
-            .map(|x| x.floor().max(0.0) as u32)
-            .inf(&dims);
-        let maxs = (aabb.maxs - self.origin).component_div(&self.voxel_size)
-            .map(|x| x.ceil().max(0.0) as u32)
-            .inf(&dims);
+        let mins = aabb
+            .mins
+            .coords
+            .component_div(&self.voxel_size)
+            .map(|x| x.floor() as i32)
+            .sup(&self.domain_mins.coords);
+        let maxs = aabb
+            .maxs
+            .coords
+            .component_div(&self.voxel_size)
+            .map(|x| x.ceil() as i32)
+            .inf(&self.domain_maxs.coords);
 
         self.centers_range(mins.into(), maxs.into())
     }
@@ -538,7 +625,7 @@ impl Voxels {
     /// The voxel data associated to each center is provided to determine what kind of voxel
     /// it is (and, in particular, if it is empty or full).
     pub fn centers(&self) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
-        self.centers_range([0; DIM], self.dimensions)
+        self.centers_range(self.domain_mins, self.domain_maxs)
     }
 
     /// Splits this voxels shape into two subshapes.
@@ -585,15 +672,15 @@ impl Voxels {
     #[cfg(feature = "dim2")]
     fn centers_range(
         &self,
-        mins: [u32; DIM],
-        maxs: [u32; DIM],
+        mins: Point<i32>,
+        maxs: Point<i32>,
     ) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).map(move |iy| {
-                let vid = self.linear_index([ix, iy]);
+                let vid = self.linear_index(Point::new(ix, iy));
                 let center =
-                    self.origin + Vector::new(ix as Real + 0.5, iy as Real + 0.5).component_mul(&self.voxel_size);
-                (vid, center, self.data[vid as usize])
+                    Vector::new(ix as Real + 0.5, iy as Real + 0.5).component_mul(&self.voxel_size);
+                (vid, Point::from(center), self.data[vid as usize])
             })
         })
     }
@@ -601,18 +688,18 @@ impl Voxels {
     #[cfg(feature = "dim3")]
     fn centers_range(
         &self,
-        mins: [u32; DIM],
-        maxs: [u32; DIM],
+        mins: Point<i32>,
+        maxs: Point<i32>,
     ) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
         let voxel_size = self.voxel_size();
 
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).flat_map(move |iy| {
                 (mins[2]..maxs[2]).map(move |iz| {
-                    let vid = self.linear_index([ix, iy, iz]);
-                    let center = self.origin
-                        + Vector::new(ix as Real + 0.5, iy as Real + 0.5, iz as Real + 0.5)
-                        .component_mul(&voxel_size);
+                    let vid = self.linear_index(Point::new(ix, iy, iz));
+                    let center = Vector::new(ix as Real + 0.5, iy as Real + 0.5, iz as Real + 0.5)
+                        .component_mul(&voxel_size)
+                        .into();
                     (vid, center, self.data[vid as usize])
                 })
             })
@@ -621,42 +708,50 @@ impl Voxels {
 
     /// The linearized index associated to the given voxel key.
     #[cfg(feature = "dim2")]
-    pub fn linear_index(&self, voxel_key: [u32; DIM]) -> u32 {
-        voxel_key[0] + voxel_key[1] * self.dimensions[0]
+    pub fn linear_index(&self, voxel_key: Point<i32>) -> u32 {
+        let dims = self.dimensions();
+        let rel_key = voxel_key - self.domain_mins;
+        (rel_key.x + rel_key.y * dims[0] as i32) as u32
     }
 
     /// The linearized index associated to the given voxel key.
     #[cfg(feature = "dim3")]
-    pub fn linear_index(&self, voxel_key: [u32; DIM]) -> u32 {
-        voxel_key[0]
-            + voxel_key[1] * self.dimensions[0]
-            + voxel_key[2] * self.dimensions[0] * self.dimensions[1]
+    pub fn linear_index(&self, voxel_key: Point<i32>) -> u32 {
+        let dims = self.dimensions();
+        let rel_key = voxel_key - self.domain_mins;
+        rel_key.x as u32 + rel_key.y as u32 * dims[0] + rel_key.z as u32 * dims[0] * dims[1]
     }
 
     /// The key of the voxel at the given linearized index.
     #[cfg(feature = "dim2")]
-    pub fn voxel_key_at(&self, linear_index: u32) -> [u32; DIM] {
-        let y = linear_index / self.dimensions[0];
-        let x = linear_index % self.dimensions[0];
-        [x, y]
+    pub fn voxel_key_at(&self, linear_index: u32) -> Point<i32> {
+        let dim0 = self.domain_maxs[0] - self.domain_mins[0];
+        let y = linear_index as i32 / dim0;
+        let x = linear_index as i32 % dim0;
+        self.domain_mins + Vector::new(x, y)
     }
 
     /// The key of the voxel at the given linearized index.
     #[cfg(feature = "dim3")]
-    pub fn voxel_key_at(&self, linear_index: u32) -> [u32; DIM] {
-        let d0d1 = self.dimensions[0] * self.dimensions[1];
+    pub fn voxel_key_at(&self, linear_index: u32) -> Point<i32> {
+        let dims = self.dimensions();
+
+        let d0d1 = dims[0] * dims[1];
         let z = linear_index / d0d1;
-        let y = (linear_index - z * d0d1) / self.dimensions[0];
-        let x = linear_index % self.dimensions[0];
-        [x, y, z]
+        let y = (linear_index - z * d0d1) / dims[0];
+        let x = linear_index % dims[0];
+        self.domain_mins + Vector::new(x as i32, y as i32, z as i32)
     }
 
     /// The center of the voxel with the given key.
-    pub fn voxel_center(&self, key: [u32; DIM]) -> Point<Real> {
-        self.origin + (Vector::from(key).cast::<Real>() + Vector::repeat(0.5)).component_mul(&self.voxel_size)
+    pub fn voxel_center(&self, key: Point<i32>) -> Point<Real> {
+        (key.cast::<Real>() + Vector::repeat(0.5))
+            .coords
+            .component_mul(&self.voxel_size)
+            .into()
     }
 
-    fn compute_voxel_data(&self, key: [u32; DIM]) -> VoxelState {
+    fn compute_voxel_data(&self, key: Point<i32>) -> VoxelState {
         if self.data[self.linear_index(key) as usize].is_empty() {
             return VoxelState::EMPTY;
         }
@@ -665,15 +760,17 @@ impl Voxels {
 
         for k in 0..DIM {
             let (mut prev, mut next) = (key, key);
-            prev[k] = prev[k].saturating_sub(1);
+            prev[k] -= 1;
             next[k] += 1;
 
-            if key[k] < self.dimensions[k] - 1
+            if key[k] + 1 < self.domain_maxs[k]
                 && !self.data[self.linear_index(next) as usize].is_empty()
             {
                 occupied_faces |= 1 << (k * 2);
             }
-            if key[k] > 0 && !self.data[self.linear_index(prev) as usize].is_empty() {
+            if key[k] > self.domain_mins[k]
+                && !self.data[self.linear_index(prev) as usize].is_empty()
+            {
                 occupied_faces |= 1 << (k * 2 + 1);
             }
         }

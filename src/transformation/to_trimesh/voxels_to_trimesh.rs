@@ -9,8 +9,7 @@ impl Voxels {
     /// Each free face of each voxel will result in two triangles. No effort is made to merge
     /// adjacent triangles on large flat areas.
     pub fn to_trimesh(&self) -> (Vec<Point<Real>>, Vec<[u32; 3]>) {
-        let aabb =
-            Aabb::from_half_extents(Point::origin(), self.voxel_size() / 2.0);
+        let aabb = Aabb::from_half_extents(Point::origin(), self.voxel_size() / 2.0);
         let aabb_vtx = aabb.vertices();
 
         let mut vtx = vec![];

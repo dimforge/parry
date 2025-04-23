@@ -1,5 +1,5 @@
-use crate::bounding_volume::{Aabb};
-use crate::math::{Isometry, Real, Translation, Vector, DIM};
+use crate::bounding_volume::Aabb;
+use crate::math::{Isometry, Point, Real, Translation, Vector, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
@@ -139,31 +139,32 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             }
 
             let key_voxel = voxels1.voxel_key_at(vid);
-            let mut key_low = Vector::from(key_voxel);
-            let mut key_high = Vector::from(key_low);
-            let maxes = voxels1.dimensions().map(|e| e - 1);
+            let mut key_low = key_voxel;
+            let mut key_high = key_low;
+            let mins = voxels1.domain_mins;
+            let maxs = voxels1.domain_maxs - Vector::repeat(1);
             let mask1 = data1.free_faces();
 
-            let adjust_canon = |axis: AxisMask, i: usize, key: &mut Vector<u32>, val: u32| {
+            let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {
                 if !mask1.contains(axis) {
                     key[i] = val;
                 }
             };
 
-            adjust_canon(AxisMask::X_POS, 0, &mut key_high, maxes[0]);
-            adjust_canon(AxisMask::X_NEG, 0, &mut key_low, 0);
-            adjust_canon(AxisMask::Y_POS, 1, &mut key_high, maxes[1]);
-            adjust_canon(AxisMask::Y_NEG, 1, &mut key_low, 0);
+            adjust_canon(AxisMask::X_POS, 0, &mut key_high, maxs[0]);
+            adjust_canon(AxisMask::X_NEG, 0, &mut key_low, mins[0]);
+            adjust_canon(AxisMask::Y_POS, 1, &mut key_high, maxs[1]);
+            adjust_canon(AxisMask::Y_NEG, 1, &mut key_low, mins[1]);
 
             #[cfg(feature = "dim3")]
             {
-                adjust_canon(AxisMask::Z_POS, 2, &mut key_high, maxes[2]);
-                adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, 0);
+                adjust_canon(AxisMask::Z_POS, 2, &mut key_high, maxs[2]);
+                adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, mins[2]);
             }
 
             let workspace_key = [
-                voxels1.linear_index(key_low.into()),
-                voxels1.linear_index(key_high.into()),
+                voxels1.linear_index(key_low),
+                voxels1.linear_index(key_high),
             ];
 
             // TODO: could we refactor the workspace system between Voxels, HeightField, and CompoundShape?
@@ -211,8 +212,8 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             let manifold = &mut manifolds[sub_detector.manifold_id];
 
             if !manifold_updated {
-                let mut canonical_mins1 = voxels1.voxel_center(key_low.into());
-                let mut canonical_maxs1 = voxels1.voxel_center(key_high.into());
+                let mut canonical_mins1 = voxels1.voxel_center(key_low);
+                let mut canonical_maxs1 = voxels1.voxel_center(key_high);
 
                 for k in 0..DIM {
                     if key_low[k] != key_voxel[k] {
@@ -224,8 +225,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     }
                 }
 
-                let canonical_half_extents1 =
-                    (canonical_maxs1 - canonical_mins1) / 2.0 + radius1;
+                let canonical_half_extents1 = (canonical_maxs1 - canonical_mins1) / 2.0 + radius1;
                 let canonical_center1 = na::center(&canonical_mins1, &canonical_maxs1);
 
                 let canonical_pseudo_cube1 = Cuboid::new(canonical_half_extents1);
@@ -235,8 +235,12 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 };
 
                 let canonical_shape1 = match voxels1.primitive_geometry() {
-                    VoxelPrimitiveGeometry::PseudoBall { .. } => &canonical_pseudo_ball1 as &dyn Shape,
-                    VoxelPrimitiveGeometry::PseudoCube { .. } => &canonical_pseudo_cube1 as &dyn Shape,
+                    VoxelPrimitiveGeometry::PseudoBall { .. } => {
+                        &canonical_pseudo_ball1 as &dyn Shape
+                    }
+                    VoxelPrimitiveGeometry::PseudoCube { .. } => {
+                        &canonical_pseudo_cube1 as &dyn Shape
+                    }
                 };
 
                 let canonical_pos12 = Translation::from(-canonical_center1) * pos12;

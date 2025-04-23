@@ -13,7 +13,6 @@ impl RayCast for Voxels {
         use num_traits::Bounded;
 
         let aabb = self.local_aabb();
-        let dims = self.dimensions();
         let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
 
         #[cfg(feature = "dim2")]
@@ -27,8 +26,8 @@ impl RayCast for Voxels {
 
         max_t = max_t.min(max_time_of_impact);
         let clip_ray_a = ray.point_at(min_t);
-        let voxel_key_signed = self.signed_key_at_point(clip_ray_a);
-        let mut voxel_key = ii.map(|i| voxel_key_signed[i].clamp(0, dims[i] as i32 - 1) as u32);
+        let voxel_key_signed = self.key_at_point_unchecked(clip_ray_a);
+        let mut voxel_key = self.clamp_key(voxel_key_signed);
 
         loop {
             let voxel = self.voxel_data_at_key(voxel_key);
@@ -83,13 +82,13 @@ impl RayCast for Voxels {
             let imin = Vector::from(toi.map(|t| t.0)).imin();
 
             if toi[imin].1 {
-                if voxel_key[imin] < dims[imin] - 1 {
+                if voxel_key[imin] < self.domain_maxs[imin] - 1 {
                     voxel_key[imin] += 1;
                 } else {
                     // Leaving the shape’s bounds.
                     break;
                 }
-            } else if voxel_key[imin] > 0 {
+            } else if voxel_key[imin] > self.domain_mins[imin] {
                 voxel_key[imin] -= 1;
             } else {
                 // Leaving the shape’s bounds.
