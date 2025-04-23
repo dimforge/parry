@@ -801,13 +801,13 @@ fn gen_const_tables() {
     /*
      * FACES_TO_VOXEL_TYPES
      */
-    println!("const FACES_TO_VOXEL_TYPES: [VoxelType; 17] = [");
+    std::println!("const FACES_TO_VOXEL_TYPES: [VoxelType; 17] = [");
     'outer: for i in 0usize..16 {
         // If any vertex of the voxel has three faces with no adjacent voxels,
         // then the voxel type is Vertex.
         for adjs in faces_adj_to_vtx.iter() {
             if (*adjs & i) == 0 {
-                println!("VoxelType::Vertex,");
+                std::println!("VoxelType::Vertex,");
                 continue 'outer;
             }
         }
@@ -816,21 +816,21 @@ fn gen_const_tables() {
         // then the voxel type is Face.
         for fid in 0..4 {
             if ((1 << fid) & i) == 0 {
-                println!("VoxelType::Face,");
+                std::println!("VoxelType::Face,");
                 continue 'outer;
             }
         }
     }
 
     // Add final entries for special values.
-    println!("VoxelType::Interior,");
-    println!("VoxelType::Empty,");
-    println!("];");
+    std::println!("VoxelType::Interior,");
+    std::println!("VoxelType::Empty,");
+    std::println!("];");
 
     /*
      * FACES_TO_FEATURE_MASKS
      */
-    println!("const FACES_TO_FEATURE_MASKS: [u16; 17] = [");
+    std::println!("const FACES_TO_FEATURE_MASKS: [u16; 17] = [");
     for i in 0usize..16 {
         // Each bit set indicates a convex vertex that can lead to collisions.
         // The result will be nonzero only for `VoxelType::Vertex` voxels.
@@ -842,7 +842,7 @@ fn gen_const_tables() {
         }
 
         if vtx_key != 0 {
-            println!("0b{:b},", vtx_key as u16);
+            std::println!("0b{:b},", vtx_key as u16);
             continue;
         }
 
@@ -856,19 +856,19 @@ fn gen_const_tables() {
         }
 
         if face_key != 0 {
-            println!("0b{:b},", face_key as u16);
+            std::println!("0b{:b},", face_key as u16);
             continue;
         }
     }
 
-    println!("0b{:b},", u16::MAX);
-    println!("0,");
-    println!("];");
+    std::println!("0b{:b},", u16::MAX);
+    std::println!("0,");
+    std::println!("];");
 
     /*
      * Faces to octant masks.
      */
-    println!("const FACES_TO_OCTANT_MASKS: [u32; 17] = [");
+    std::println!("const FACES_TO_OCTANT_MASKS: [u32; 17] = [");
     for i in 0usize..16 {
         // First test if we have vertices.
         let mut octant_mask = 0;
@@ -901,10 +901,10 @@ fn gen_const_tables() {
                 set_mask(mask, vid.1);
             }
         }
-        println!("0b{:b},", octant_mask);
+        std::println!("0b{:b},", octant_mask);
     }
-    println!("0,");
-    println!("];");
+    std::println!("0,");
+    std::println!("];");
 }
 
 // NOTE: this code is used to generate the constant tables
@@ -957,13 +957,13 @@ fn gen_const_tables() {
     /*
      * FACES_TO_VOXEL_TYPES
      */
-    println!("const FACES_TO_VOXEL_TYPES: [VoxelType; 65] = [");
+    std::println!("const FACES_TO_VOXEL_TYPES: [VoxelType; 65] = [");
     'outer: for i in 0usize..64 {
         // If any vertex of the voxel has three faces with no adjacent voxels,
         // then the voxel type is Vertex.
         for adjs in faces_adj_to_vtx.iter() {
             if (*adjs & i) == 0 {
-                println!("VoxelType::Vertex,");
+                std::println!("VoxelType::Vertex,");
                 continue 'outer;
             }
         }
@@ -972,7 +972,7 @@ fn gen_const_tables() {
         // then the voxel type is Edge.
         for adjs in faces_adj_to_edge.iter() {
             if (*adjs & i) == 0 {
-                println!("VoxelType::Edge,");
+                std::println!("VoxelType::Edge,");
                 continue 'outer;
             }
         }
@@ -981,21 +981,21 @@ fn gen_const_tables() {
         // then the voxel type is Face.
         for fid in 0..6 {
             if ((1 << fid) & i) == 0 {
-                println!("VoxelType::Face,");
+                std::println!("VoxelType::Face,");
                 continue 'outer;
             }
         }
     }
 
     // Add final entries for special values.
-    println!("VoxelType::Interior,");
-    println!("VoxelType::Empty,");
-    println!("];");
+    std::println!("VoxelType::Interior,");
+    std::println!("VoxelType::Empty,");
+    std::println!("];");
 
     /*
      * FACES_TO_FEATURE_MASKS
      */
-    println!("const FACES_TO_FEATURE_MASKS: [u16; 65] = [");
+    std::println!("const FACES_TO_FEATURE_MASKS: [u16; 65] = [");
     for i in 0usize..64 {
         // Each bit set indicates a convex vertex that can lead to collisions.
         // The result will be nonzero only for `VoxelType::Vertex` voxels.
@@ -1007,7 +1007,7 @@ fn gen_const_tables() {
         }
 
         if vtx_key != 0 {
-            println!("0b{:b},", vtx_key as u16);
+            std::println!("0b{:b},", vtx_key as u16);
             continue;
         }
 
@@ -1021,7 +1021,7 @@ fn gen_const_tables() {
         }
 
         if edge_key != 0 {
-            println!("0b{:b},", edge_key as u16);
+            std::println!("0b{:b},", edge_key as u16);
             continue;
         }
 
@@ -1035,19 +1035,19 @@ fn gen_const_tables() {
         }
 
         if face_key != 0 {
-            println!("0b{:b},", face_key as u16);
+            std::println!("0b{:b},", face_key as u16);
             continue;
         }
     }
 
-    println!("0b{:b},", u16::MAX);
-    println!("0,");
-    println!("];");
+    std::println!("0b{:b},", u16::MAX);
+    std::println!("0,");
+    std::println!("];");
 
     /*
      * Faces to octant masks.
      */
-    println!("const FACES_TO_OCTANT_MASKS: [u32; 65] = [");
+    std::println!("const FACES_TO_OCTANT_MASKS: [u32; 65] = [");
     for i in 0usize..64 {
         // First test if we have vertices.
         let mut octant_mask = 0;
@@ -1099,10 +1099,10 @@ fn gen_const_tables() {
                 set_mask(mask, vid.3);
             }
         }
-        println!("0b{:b},", octant_mask);
+        std::println!("0b{:b},", octant_mask);
     }
-    println!("0,");
-    println!("];");
+    std::println!("0,");
+    std::println!("];");
 }
 
 // Index to the item of FACES_TO_VOXEL_TYPES which identifies interior voxels.
@@ -1197,11 +1197,11 @@ const FACES_TO_VOXEL_TYPES: [VoxelType; 65] = [
 /// The interpretation of each bit differs depending on the corresponding voxel type in
 /// `FACES_TO_VOXEL_TYPES`:
 /// - For `VoxelType::Vertex`: the i-th bit set to `1` indicates that the i-th AABB vertex is convex
-///                            and might lead to collisions.
+///   and might lead to collisions.
 /// - For `VoxelType::Edge`: the i-th bit set to `1` indicates that the i-th edge from `Aabb::EDGES_VERTEX_IDS`
-///                          is convex and might lead to collisions.
+///   is convex and might lead to collisions.
 /// - For `VoxelType::Face`: the i-th bit set to `1` indicates that the i-th face from `Aabb::FACES_VERTEX_IDS`
-///                          is exposed and might lead to collisions.
+///   is exposed and might lead to collisions.
 #[cfg(feature = "dim3")]
 const FACES_TO_FEATURE_MASKS: [u16; 65] = [
     0b11111111,

@@ -235,12 +235,8 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 };
 
                 let canonical_shape1 = match voxels1.primitive_geometry() {
-                    VoxelPrimitiveGeometry::PseudoBall { .. } => {
-                        &canonical_pseudo_ball1 as &dyn Shape
-                    }
-                    VoxelPrimitiveGeometry::PseudoCube { .. } => {
-                        &canonical_pseudo_cube1 as &dyn Shape
-                    }
+                    VoxelPrimitiveGeometry::PseudoBall => &canonical_pseudo_ball1 as &dyn Shape,
+                    VoxelPrimitiveGeometry::PseudoCube => &canonical_pseudo_cube1 as &dyn Shape,
                 };
 
                 let canonical_pos12 = Translation::from(-canonical_center1) * pos12;

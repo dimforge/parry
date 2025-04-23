@@ -177,9 +177,9 @@ impl VoxelizedVolume {
     /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
     /// * `indices` - The index buffer of the boundary of the shape to voxelize.
     /// * `resolution` - Controls the number of subdivision done along each axis. This number
-    ///    is the number of subdivisions along the axis where the input shape has the largest extent.
-    ///    The other dimensions will have a different automatically-determined resolution (in order to
-    ///    keep the voxels cubic).
+    ///   is the number of subdivisions along the axis where the input shape has the largest extent.
+    ///   The other dimensions will have a different automatically-determined resolution (in order to
+    ///   keep the voxels cubic).
     /// * `fill_mode` - Controls what is being voxelized.
     /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
     ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
