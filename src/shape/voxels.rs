@@ -3,7 +3,7 @@ use crate::math::{Point, Real, Vector, DIM};
 use alloc::{vec, vec::Vec};
 
 /// The primitive shape all voxels from a [`Voxels`] is given.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub enum VoxelPrimitiveGeometry {
     /// Each voxel is modeled as a pseudo-ball, i.e., in flat areas it will act like a planar
@@ -199,8 +199,8 @@ pub struct Voxels {
     pub(crate) data: Vec<VoxelState>, // TODO: use a Vob?
     primitive_geometry: VoxelPrimitiveGeometry,
     /// The size of each voxel along all dimensions.
-    pub scale: Real,
-    /// The point relative too which all voxel positions are computed.
+    pub voxel_size: Vector<Real>,
+    /// The point relative to which all voxel positions are computed.
     pub origin: Point<Real>,
 }
 
@@ -212,26 +212,32 @@ impl Voxels {
     /// fall into the same grid cell.
     pub fn from_points(
         primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vector<Real>,
         points: &[Point<Real>],
-        scale: Real,
     ) -> Self {
+        // Ensure pseudo-balls always use uniform voxel sizes.
+        let voxel_size = match primitive_geometry {
+            VoxelPrimitiveGeometry::PseudoBall => Vector::repeat(voxel_size.x),
+            VoxelPrimitiveGeometry::PseudoCube => voxel_size
+        };
+
         let mut aabb = Aabb::from_points(points);
-        aabb.mins -= Vector::repeat(scale / 2.0);
-        aabb.maxs += Vector::repeat(scale / 2.0); // NOTE: is this + necessary?
+        aabb.mins -= voxel_size / 2.0;
+        aabb.maxs += voxel_size / 2.0; // NOTE: is this + necessary?
 
         // Discretize the points on the grid.
-        let dimensions = ((aabb.maxs - aabb.mins) / scale).map(|x| x.ceil() as u32);
+        let dimensions = (aabb.maxs - aabb.mins).component_div(&voxel_size).map(|x| x.ceil() as u32);
         let len = dimensions.product();
         let mut result = Self {
             dimensions: dimensions.into(),
             data: vec![VoxelState::EMPTY; len as usize],
             primitive_geometry,
-            scale,
+            voxel_size,
             origin: aabb.mins,
         };
 
         for pt in points {
-            let coords = (pt - aabb.mins).map(|x| (x / scale).floor() as u32);
+            let coords = (pt - aabb.mins).component_div(&voxel_size).map(|x| x.floor() as u32);
             let index = result.linear_index(coords.into());
             // The precise voxel data will be computed in `recompute_voxels_data` below.
             result.data[index as usize] = VoxelState::INTERIOR;
@@ -255,7 +261,7 @@ impl Voxels {
             dimensions: _,
             data,
             primitive_geometry: _,
-            scale: _,
+            voxel_size: _,
             origin: _,
         } = self;
         data.capacity() * size_of::<VoxelState>()
@@ -265,7 +271,7 @@ impl Voxels {
     ///
     /// This accounts for all the voxels in `self`, including empty ones.
     pub fn extents(&self) -> Vector<Real> {
-        Vector::from(self.dimensions).cast::<Real>() * self.scale
+        Vector::from(self.dimensions).cast::<Real>().component_mul(&self.voxel_size)
     }
 
     /// The domain covered by this voxels shape.
@@ -274,8 +280,8 @@ impl Voxels {
     }
 
     /// The size of each voxel part this [`Voxels`] shape.
-    pub fn voxel_size(&self) -> Real {
-        self.scale
+    pub fn voxel_size(&self) -> Vector<Real> {
+        self.voxel_size
     }
 
     /// The shape each voxel is assumed to have.
@@ -292,18 +298,9 @@ impl Voxels {
 
     /// Scale this shape. Returns `None` if the scale is non-uniform (not supported yet).
     pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
-        #[cfg(feature = "dim2")]
-        let scale_is_uniform = scale.x == scale.y;
-        #[cfg(feature = "dim3")]
-        let scale_is_uniform = scale.x == scale.y && scale.y == scale.z;
-        if !scale_is_uniform {
-            // TODO: what about non-uniform scale?
-            None
-        } else {
-            self.scale *= scale.x;
-            self.origin *= scale.x;
-            Some(self)
-        }
+        self.voxel_size.component_mul_assign(scale);
+        self.origin.coords.component_mul_assign(scale);
+        Some(self)
     }
 
     /// Adds a voxel at the point `pt` (in the voxels shape local space) if it lies within the
@@ -399,8 +396,8 @@ impl Voxels {
             dimensions: new_dim,
             data: vec![VoxelState::EMPTY; new_len],
             primitive_geometry: self.primitive_geometry,
-            scale: self.scale,
-            origin: self.origin - Vector::from(neg_padding).cast::<Real>() * self.scale,
+            voxel_size: self.voxel_size,
+            origin: self.origin - Vector::from(neg_padding).cast::<Real>().component_mul(&self.voxel_size),
         };
 
         for i in 0..self.data.len() {
@@ -481,7 +478,7 @@ impl Voxels {
     /// The AABB of the voxel with the given quantized `key`.
     pub fn voxel_aabb_at_key(&self, key: [u32; DIM]) -> Aabb {
         let center = self.voxel_center(key);
-        let hext = Vector::repeat(self.scale / 2.0);
+        let hext = self.voxel_size / 2.0;
         Aabb::from_half_extents(center, hext)
     }
 
@@ -495,7 +492,7 @@ impl Voxels {
     /// Calculates the signed key of the voxel containing the given `point`, regardless
     /// of [`Self::dimensions`].
     pub fn signed_key_at_point(&self, point: Point<Real>) -> [i32; DIM] {
-        ((point - self.origin) / self.scale)
+        (point - self.origin).component_div(&self.voxel_size)
             .map(|x| x.floor() as i32)
             .into()
     }
@@ -526,10 +523,10 @@ impl Voxels {
         aabb: &Aabb,
     ) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
         let dims = Vector::from(self.dimensions);
-        let mins = ((aabb.mins - self.origin) / self.scale)
+        let mins = (aabb.mins - self.origin).component_div(&self.voxel_size)
             .map(|x| x.floor().max(0.0) as u32)
             .inf(&dims);
-        let maxs = ((aabb.maxs - self.origin) / self.scale)
+        let maxs = (aabb.maxs - self.origin).component_div(&self.voxel_size)
             .map(|x| x.ceil().max(0.0) as u32)
             .inf(&dims);
 
@@ -565,8 +562,8 @@ impl Voxels {
         let in_box = if !in_box.is_empty() {
             Some(Voxels::from_points(
                 self.primitive_geometry,
+                self.voxel_size,
                 &in_box,
-                self.scale,
             ))
         } else {
             None
@@ -575,8 +572,8 @@ impl Voxels {
         let rest = if !rest.is_empty() {
             Some(Voxels::from_points(
                 self.primitive_geometry,
+                self.voxel_size,
                 &rest,
-                self.scale,
             ))
         } else {
             None
@@ -595,7 +592,7 @@ impl Voxels {
             (mins[1]..maxs[1]).map(move |iy| {
                 let vid = self.linear_index([ix, iy]);
                 let center =
-                    self.origin + Vector::new(ix as Real + 0.5, iy as Real + 0.5) * self.scale;
+                    self.origin + Vector::new(ix as Real + 0.5, iy as Real + 0.5).component_mul(&self.voxel_size);
                 (vid, center, self.data[vid as usize])
             })
         })
@@ -607,13 +604,15 @@ impl Voxels {
         mins: [u32; DIM],
         maxs: [u32; DIM],
     ) -> impl Iterator<Item = (u32, Point<Real>, VoxelState)> + '_ {
+        let voxel_size = self.voxel_size();
+
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).flat_map(move |iy| {
                 (mins[2]..maxs[2]).map(move |iz| {
                     let vid = self.linear_index([ix, iy, iz]);
                     let center = self.origin
                         + Vector::new(ix as Real + 0.5, iy as Real + 0.5, iz as Real + 0.5)
-                            * self.scale;
+                        .component_mul(&voxel_size);
                     (vid, center, self.data[vid as usize])
                 })
             })
@@ -654,7 +653,7 @@ impl Voxels {
 
     /// The center of the voxel with the given key.
     pub fn voxel_center(&self, key: [u32; DIM]) -> Point<Real> {
-        self.origin + (Vector::from(key).cast::<Real>() + Vector::repeat(0.5)) * self.scale
+        self.origin + (Vector::from(key).cast::<Real>() + Vector::repeat(0.5)).component_mul(&self.voxel_size)
     }
 
     fn compute_voxel_data(&self, key: [u32; DIM]) -> VoxelState {

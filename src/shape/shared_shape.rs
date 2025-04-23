@@ -223,10 +223,10 @@ impl SharedShape {
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     pub fn voxels(
         primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vector<Real>,
         centers: &[Point<Real>],
-        voxel_size: Real,
     ) -> Self {
-        let shape = Voxels::from_points(primitive_geometry, centers, voxel_size);
+        let shape = Voxels::from_points(primitive_geometry, voxel_size, centers);
         SharedShape::new(shape)
     }
 
@@ -250,7 +250,7 @@ impl SharedShape {
             .iter()
             .map(|v| vox_set.get_voxel_point(v))
             .collect();
-        let shape = Voxels::from_points(primitive_geometry, &centers, vox_set.scale);
+        let shape = Voxels::from_points(primitive_geometry, Vector::repeat(vox_set.scale), &centers);
         SharedShape::new(shape)
     }
 

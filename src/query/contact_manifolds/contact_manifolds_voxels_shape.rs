@@ -1,4 +1,4 @@
-use crate::bounding_volume::BoundingVolume;
+use crate::bounding_volume::{Aabb};
 use crate::math::{Isometry, Real, Translation, Vector, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
@@ -120,11 +120,14 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
 
     workspace.timestamp = new_timestamp;
 
-    let radius1 = voxels1.scale / 2.0;
+    let radius1 = voxels1.voxel_size() / 2.0;
 
     let aabb1 = voxels1.local_aabb();
     let aabb2_1 = shape2.compute_aabb(pos12);
-    let domain2_1 = aabb2_1.loosened(10.0 * radius1);
+    let domain2_1 = Aabb {
+        mins: aabb2_1.mins - radius1 * 10.0,
+        maxs: aabb2_1.maxs + radius1 * 10.0,
+    };
 
     if let Some(intersection_aabb1) = aabb1.intersection(&aabb2_1) {
         for (vid, center1, data1) in voxels1.voxels_intersecting_local_aabb(&intersection_aabb1) {
@@ -222,18 +225,18 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 }
 
                 let canonical_half_extents1 =
-                    (canonical_maxs1 - canonical_mins1) / 2.0 + Vector::repeat(radius1);
+                    (canonical_maxs1 - canonical_mins1) / 2.0 + radius1;
                 let canonical_center1 = na::center(&canonical_mins1, &canonical_maxs1);
 
                 let canonical_pseudo_cube1 = Cuboid::new(canonical_half_extents1);
                 let canonical_pseudo_ball1 = RoundShape {
-                    inner_shape: Cuboid::new(canonical_half_extents1 - Vector::repeat(radius1)),
-                    border_radius: radius1,
+                    inner_shape: Cuboid::new(canonical_half_extents1 - radius1),
+                    border_radius: radius1.x,
                 };
 
                 let canonical_shape1 = match voxels1.primitive_geometry() {
-                    VoxelPrimitiveGeometry::PseudoBall => &canonical_pseudo_ball1 as &dyn Shape,
-                    VoxelPrimitiveGeometry::PseudoCube => &canonical_pseudo_cube1 as &dyn Shape,
+                    VoxelPrimitiveGeometry::PseudoBall { .. } => &canonical_pseudo_ball1 as &dyn Shape,
+                    VoxelPrimitiveGeometry::PseudoCube { .. } => &canonical_pseudo_cube1 as &dyn Shape,
                 };
 
                 let canonical_pos12 = Translation::from(-canonical_center1) * pos12;
@@ -298,7 +301,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             /*
              * Filter-out points that don’t belong to this block.
              */
-            let test_voxel = Cuboid::new(Vector::repeat(radius1 + 1.0e-2));
+            let test_voxel = Cuboid::new(radius1 + Vector::repeat(1.0e-2));
             let penetration_dir1 = if flipped {
                 manifold.local_n2
             } else {
@@ -310,7 +313,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     // If this is a penetration, double-check that we are not hitting the
                     // interior of the infinitely expanded canonical shape by checking if
                     // the opposite normal would have led to a better vector.
-                    let cuboid1 = Cuboid::new(Vector::repeat(radius1));
+                    let cuboid1 = Cuboid::new(radius1);
                     let sp1 = cuboid1.local_support_point(&-penetration_dir1) + center1.coords;
                     let sm2 = shape2
                         .as_support_map()

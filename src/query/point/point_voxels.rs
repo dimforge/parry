@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cuboid, FeatureId, VoxelType, Voxels};
 
@@ -6,7 +6,7 @@ impl PointQuery for Voxels {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
         // TODO: optimize this very naive implementation.
-        let base_cuboid = Cuboid::new(Vector::repeat(self.voxel_size() / 2.0));
+        let base_cuboid = Cuboid::new(self.voxel_size() / 2.0);
         let mut smallest_dist = Real::MAX;
         let mut result = PointProjection::new(false, *pt);
 

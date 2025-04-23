@@ -47,9 +47,9 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
     // TODO: don’t generate one manifold per voxel.
     manifolds.clear();
 
-    let radius1 = voxels1.scale / 2.0;
     let radius2 = ball2.radius;
     let center2 = Point::origin(); // The ball’s center.
+    let radius1 = voxels1.voxel_size / 2.0;
 
     // FIXME: optimize this.
     let aabb1 = voxels1.local_aabb().loosened(prediction / 2.0);
@@ -77,7 +77,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
 pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
     pos12: Isometry<Real>,
     center1: Point<Real>,
-    radius1: Real,
+    radius1: Vector<Real>,
     data1: VoxelState,
     geometry1: VoxelPrimitiveGeometry,
     center2: Point<Real>,
@@ -93,7 +93,7 @@ pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
 
     let projection = match geometry1 {
         VoxelPrimitiveGeometry::PseudoBall => {
-            project_point_on_pseudo_ball(center1, radius1, data1.octant_mask(), center2_1)
+            project_point_on_pseudo_ball(center1, radius1.x, data1.octant_mask(), center2_1)
         }
         VoxelPrimitiveGeometry::PseudoCube => {
             project_point_on_pseudo_cube(center1, radius1, data1.octant_mask(), center2_1)
@@ -218,7 +218,7 @@ pub fn project_point_on_pseudo_ball(
 
 pub fn project_point_on_pseudo_cube(
     voxel_center: Point<Real>,
-    voxel_radius: Real,
+    voxel_radius: Vector<Real>,
     voxel_mask: u32,
     point: Point<Real>,
 ) -> Option<(Vector<Real>, Real)> {
@@ -239,8 +239,9 @@ pub fn project_point_on_pseudo_cube(
         | (((dpos.z >= 0.0) as usize) << 2);
     let aabb_octant_key = AABB_OCTANT_KEYS[octant_key];
     let dpos_signs = dpos.map(|x| x.signum());
-    let unit_dpos = dpos.abs() / voxel_radius; // Project the point in "local unit octant space".
-                                               // Extract the feature pattern specific to the selected octant.
+    let unit_dpos = dpos.abs().component_div(&voxel_radius); // Project the point in "local unit octant space".
+
+    // Extract the feature pattern specific to the selected octant.
     let pattern = (voxel_mask >> (aabb_octant_key * 3)) & 0b0111;
 
     let unit_result = match pattern {
@@ -297,5 +298,9 @@ pub fn project_point_on_pseudo_cube(
         _ => unreachable!(),
     };
 
-    unit_result.map(|(n, d)| (n.component_mul(&dpos_signs), d * voxel_radius))
+    unit_result.map(|(n, d)| {
+        let mut scaled_n = n.component_mul(&dpos_signs).component_mul(&voxel_radius);
+        let scaled_d = scaled_n.normalize_mut();
+        (scaled_n, d * scaled_d)
+    })
 }

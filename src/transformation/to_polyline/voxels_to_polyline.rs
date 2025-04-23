@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real};
 use crate::shape::{VoxelType, Voxels};
 use alloc::{vec, vec::Vec};
 use na::{self, Point2};
@@ -22,7 +22,7 @@ impl Voxels {
     pub fn iter_outline(&self, mut f: impl FnMut(Point<Real>, Point<Real>)) {
         // TODO: move this as a new method: Voxels::to_outline?
         let radius = self.voxel_size() / 2.0;
-        let aabb = Aabb::from_half_extents(Point::origin(), Vector::repeat(radius));
+        let aabb = Aabb::from_half_extents(Point::origin(), radius);
         let vtx = aabb.vertices();
 
         for (_, center, vox_data) in self.centers() {
