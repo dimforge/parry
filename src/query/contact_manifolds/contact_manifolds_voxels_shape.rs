@@ -141,8 +141,8 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             let key_voxel = voxels1.voxel_key_at(vid);
             let mut key_low = key_voxel;
             let mut key_high = key_low;
-            let mins = voxels1.domain_mins;
-            let maxs = voxels1.domain_maxs - Vector::repeat(1);
+            let mins = voxels1.domain()[0];
+            let maxs = voxels1.domain()[1] - Vector::repeat(1);
             let mask1 = data1.free_faces();
 
             let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {

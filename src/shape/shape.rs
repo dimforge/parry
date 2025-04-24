@@ -1554,7 +1554,7 @@ impl Shape for Voxels {
     }
 
     fn ccd_thickness(&self) -> Real {
-        self.voxel_size.min()
+        self.voxel_size().min()
     }
 
     fn ccd_angular_thickness(&self) -> Real {

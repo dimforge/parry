@@ -195,12 +195,11 @@ impl VoxelState {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Voxels {
-    pub(crate) domain_mins: Point<i32>,
-    pub(crate) domain_maxs: Point<i32>,
-    pub(crate) data: Vec<VoxelState>, // Somehow switch to a sparse representation?
+    domain_mins: Point<i32>,
+    domain_maxs: Point<i32>,
+    data: Vec<VoxelState>, // Somehow switch to a sparse representation?
     primitive_geometry: VoxelPrimitiveGeometry,
-    /// The size of each voxel along all dimensions.
-    pub voxel_size: Vector<Real>,
+    voxel_size: Vector<Real>,
 }
 
 impl Voxels {
@@ -314,6 +313,26 @@ impl Voxels {
             .component_mul(&self.voxel_size)
             + self.extents() / 2.0)
             .into()
+    }
+
+    /// Sets the size of each voxel along each local coordinate axis.
+    ///
+    /// If [`Self::primitive_geometry`] is [`VoxelPrimitiveGeometry::PseudoBall`], then all voxels
+    /// must be square, and only `size.x` is taken into account for setting the size.
+    pub fn set_voxel_size(&mut self, size: Vector<Real>) {
+        match self.primitive_geometry {
+            VoxelPrimitiveGeometry::PseudoBall => {
+                self.voxel_size = Vector::repeat(size.x);
+            }
+            VoxelPrimitiveGeometry::PseudoCube => {
+                self.voxel_size = size;
+            }
+        }
+    }
+
+    /// The valid range of voxel grid indices.
+    pub fn domain(&self) -> [&Point<i32>; 2] {
+        [&self.domain_mins, &self.domain_maxs]
     }
 
     /// The domain covered by this voxels shape.

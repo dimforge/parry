@@ -28,6 +28,7 @@ impl RayCast for Voxels {
         let clip_ray_a = ray.point_at(min_t);
         let voxel_key_signed = self.key_at_point_unchecked(clip_ray_a);
         let mut voxel_key = self.clamp_key(voxel_key_signed);
+        let [domain_mins, domain_maxs] = self.domain();
 
         loop {
             let voxel = self.voxel_data_at_key(voxel_key);
@@ -82,13 +83,13 @@ impl RayCast for Voxels {
             let imin = Vector::from(toi.map(|t| t.0)).imin();
 
             if toi[imin].1 {
-                if voxel_key[imin] < self.domain_maxs[imin] - 1 {
+                if voxel_key[imin] < domain_maxs[imin] - 1 {
                     voxel_key[imin] += 1;
                 } else {
                     // Leaving the shape’s bounds.
                     break;
                 }
-            } else if voxel_key[imin] > self.domain_mins[imin] {
+            } else if voxel_key[imin] > domain_mins[imin] {
                 voxel_key[imin] -= 1;
             } else {
                 // Leaving the shape’s bounds.
