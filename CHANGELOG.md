@@ -1,13 +1,13 @@
 # Change Log
 
-## Unreleased
+## v0.20.0
 
 ### Added
 
 - Added the `Voxels` type: a dedicated shape for voxel models. This is currently experimental because some features are
   still missing (in particular: shape-casting, mass properties, and collision-detection against non-convex shapes).
-- Added `SharedShape::voxels` and `::voxelized_mesh` for creating a voxels shape from centroids or automatic
-  voxelization of a triangle mesh.
+- Added `SharedShape::voxels`, `SharedShape::voxels_from_points`, and `::voxelized_mesh` for creating a voxels shape
+  from grid coordinates, points, or automatic voxelization of a triangle mesh.
 
 ## v0.19.0
 
