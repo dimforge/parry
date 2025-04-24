@@ -49,7 +49,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
 
     let radius2 = ball2.radius;
     let center2 = Point::origin(); // The ball’s center.
-    let radius1 = voxels1.voxel_size / 2.0;
+    let radius1 = voxels1.voxel_size() / 2.0;
 
     // FIXME: optimize this.
     let aabb1 = voxels1.local_aabb().loosened(prediction / 2.0);
