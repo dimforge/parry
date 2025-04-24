@@ -204,7 +204,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                 assert_eq!(parent.children[node.parent.lane as usize], id);
 
                 if check_aabbs {
-                    // Make sure the parent AABB contains its child AABB.
+                    // Make sure the parent Aabb contains its child Aabb.
                     assert!(
                         parent
                             .simd_aabb
@@ -229,7 +229,7 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
                         proxy_id_found[proxy_id as usize] = true;
 
                         if check_aabbs {
-                            // Proxy AABB is correct.
+                            // Proxy Aabb is correct.
                             let aabb = node.simd_aabb.extract(ii);
                             assert!(
                                 aabb.contains(&aabb_builder(&self.proxies[proxy_id as usize].data))

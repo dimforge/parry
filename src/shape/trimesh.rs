@@ -396,6 +396,64 @@ impl TriMesh {
         result
     }
 
+    // TODO: support a crate like get_size2 (will require support on nalgebra too)?
+    /// An approximation of the memory usage (in bytes) for this struct plus
+    /// the memory it allocates dynamically.
+    pub fn get_size(&self) -> usize {
+        size_of::<Self>() + self.get_heap_size()
+    }
+
+    /// An approximation of the memory dynamically-allocated by this struct.
+    pub fn get_heap_size(&self) -> usize {
+        // NOTE: if a new field is added to `Self`, adjust this function result.
+        let Self {
+            qbvh,
+            vertices,
+            indices,
+            topology,
+            connected_components,
+            flags: _,
+            #[cfg(feature = "dim3")]
+            pseudo_normals,
+        } = self;
+        let sz_qbvh = qbvh.get_heap_size();
+        let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
+        let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
+        #[cfg(feature = "dim3")]
+        let sz_pseudo_normals = pseudo_normals
+            .as_ref()
+            .map(|pn| {
+                pn.vertices_pseudo_normal.capacity() * size_of::<Vector<Real>>()
+                    + pn.edges_pseudo_normal.capacity() * size_of::<[Vector<Real>; 3]>()
+            })
+            .unwrap_or(0);
+        #[cfg(feature = "dim2")]
+        let sz_pseudo_normals = 0;
+        let sz_topology = topology
+            .as_ref()
+            .map(|t| {
+                t.vertices.capacity() * size_of::<TopoVertex>()
+                    + t.faces.capacity() * size_of::<TopoFace>()
+                    + t.half_edges.capacity() * size_of::<TopoHalfEdge>()
+            })
+            .unwrap_or(0);
+        let sz_connected_components = connected_components
+            .as_ref()
+            .map(|c| {
+                c.face_colors.capacity() * size_of::<u32>()
+                    + c.grouped_faces.capacity() * size_of::<f32>()
+                    + c.ranges.capacity() * size_of::<usize>()
+            })
+            .unwrap_or(0);
+
+        sz_qbvh
+            + sz_vertices
+            + sz_indices
+            + sz_pseudo_normals
+            + sz_topology
+            + sz_connected_components
+    }
+
     /// Transforms in-place the vertices of this triangle mesh.
     pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
         self.vertices

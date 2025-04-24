@@ -22,6 +22,7 @@ pub use self::{
     compound::Compound,
     polyline::Polyline,
     shared_shape::SharedShape,
+    voxels::{AxisMask, OctantPattern, VoxelPrimitiveGeometry, VoxelState, VoxelType, Voxels},
 };
 
 #[cfg(feature = "dim2")]
@@ -122,3 +123,5 @@ mod polygonal_feature2d;
 #[cfg(feature = "alloc")]
 mod shared_shape;
 mod triangle_pseudo_normals;
+#[cfg(feature = "alloc")]
+mod voxels;

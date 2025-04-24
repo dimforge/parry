@@ -131,25 +131,25 @@ impl QbvhNode {
     }
 
     #[inline]
-    /// Does the AABB of this node needs to be updated?
+    /// Does the Aabb of this node needs to be updated?
     pub fn is_dirty(&self) -> bool {
         self.flags.contains(QbvhNodeFlags::DIRTY)
     }
 
     #[inline]
-    /// Sets if the AABB of this node needs to be updated.
+    /// Sets if the Aabb of this node needs to be updated.
     pub fn set_dirty(&mut self, dirty: bool) {
         self.flags.set(QbvhNodeFlags::DIRTY, dirty);
     }
 
     #[inline]
-    /// Was the AABB of this node changed since the last rebalancing?
+    /// Was the Aabb of this node changed since the last rebalancing?
     pub fn is_changed(&self) -> bool {
         self.flags.contains(QbvhNodeFlags::CHANGED)
     }
 
     #[inline]
-    /// Sets if the AABB of this node changed since the last rebalancing.
+    /// Sets if the Aabb of this node changed since the last rebalancing.
     pub fn set_changed(&mut self, changed: bool) {
         self.flags.set(QbvhNodeFlags::CHANGED, changed);
     }
@@ -250,6 +250,31 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
             free_list: Vec::new(),
             proxies: Vec::new(),
         }
+    }
+
+    // TODO: support a crate like get_size2 (will require support on nalgebra too)?
+    /// An approximation of the memory usage (in bytes) for this struct plus
+    /// the memory it allocates dynamically.
+    pub fn get_size(&self) -> usize {
+        size_of::<Self>() + self.get_heap_size()
+    }
+
+    /// An approximation of the memory dynamically-allocated by this struct.
+    pub fn get_heap_size(&self) -> usize {
+        let Self {
+            root_aabb: _,
+            nodes,
+            dirty_nodes,
+            free_list,
+            proxies,
+        } = self;
+        let sz_root_aabb = 0;
+        let sz_nodes = nodes.capacity() * size_of::<u32>();
+        let sz_dirty_nodes = dirty_nodes.capacity() * size_of::<u32>();
+        let sz_free_list = free_list.capacity() * size_of::<u32>();
+        let sz_proxies = proxies.capacity() * size_of::<u32>();
+
+        sz_root_aabb + sz_nodes + sz_dirty_nodes + sz_free_list + sz_proxies
     }
 
     /// Iterates mutably through all the leaf data in this Qbvh.

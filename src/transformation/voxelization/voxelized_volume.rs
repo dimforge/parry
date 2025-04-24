@@ -43,6 +43,16 @@ pub enum FillMode {
     // RaycastFill
 }
 
+impl Default for FillMode {
+    fn default() -> Self {
+        Self::FloodFill {
+            detect_cavities: false,
+            #[cfg(feature = "dim2")]
+            detect_self_intersections: false,
+        }
+    }
+}
+
 impl FillMode {
     #[cfg(feature = "dim2")]
     pub(crate) fn detect_cavities(self) -> bool {
@@ -100,7 +110,7 @@ pub enum VoxelValue {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-struct VoxelData {
+struct VoxelState {
     #[cfg(feature = "dim2")]
     multiplicity: u32,
     num_primitive_intersections: u32,
@@ -112,11 +122,54 @@ pub struct VoxelizedVolume {
     scale: Real,
     resolution: [u32; DIM],
     values: Vec<VoxelValue>,
-    data: Vec<VoxelData>,
+    data: Vec<VoxelState>,
     primitive_intersections: Vec<(u32, u32)>,
 }
 
 impl VoxelizedVolume {
+    /// Voxelizes the given shape described by its boundary:
+    /// a triangle mesh (in 3D) or polyline (in 2D).
+    ///
+    /// # Parameters
+    /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
+    /// * `indices` - The index buffer of the boundary of the shape to voxelize.
+    /// * `resolution` - Controls the number of subdivision done along each axis. This number
+    ///   is the number of subdivisions along the axis where the input shape has the largest extent.
+    ///   The other dimensions will have a different automatically-determined resolution (in order to
+    ///   keep the voxels cubic).
+    /// * `fill_mode` - Controls what is being voxelized.
+    /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
+    ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
+    pub fn with_voxel_size(
+        points: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        voxel_size: Real,
+        fill_mode: FillMode,
+        keep_voxel_to_primitives_map: bool,
+    ) -> Self {
+        let mut result = VoxelizedVolume {
+            resolution: [0; DIM],
+            origin: Point::origin(),
+            scale: voxel_size,
+            values: Vec::new(),
+            data: Vec::new(),
+            primitive_intersections: Vec::new(),
+        };
+
+        if points.is_empty() {
+            return result;
+        }
+
+        let aabb = crate::bounding_volume::details::local_point_cloud_aabb(points);
+        result.origin = aabb.mins;
+        result.resolution = (aabb.extents() / voxel_size)
+            .map(|x| (x.ceil() as u32).max(2) + 1)
+            .into();
+
+        result.do_voxelize(points, indices, fill_mode, keep_voxel_to_primitives_map);
+        result
+    }
+
     /// Voxelizes the given shape described by its boundary:
     /// a triangle mesh (in 3D) or polyline (in 2D).
     ///
@@ -186,8 +239,19 @@ impl VoxelizedVolume {
         }
 
         result.scale = r / (resolution as Real - 1.0);
-        let inv_scale = (resolution as Real - 1.0) / r;
-        result.allocate();
+        result.do_voxelize(points, indices, fill_mode, keep_voxel_to_primitives_map);
+        result
+    }
+
+    fn do_voxelize(
+        &mut self,
+        points: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        fill_mode: FillMode,
+        keep_voxel_to_primitives_map: bool,
+    ) {
+        let inv_scale = 1.0 / self.scale;
+        self.allocate();
 
         let mut tri_pts = [Point::origin(); DIM];
         let box_half_size = Vector::repeat(0.5);
@@ -203,16 +267,16 @@ impl VoxelizedVolume {
             // Find the range of voxels potentially intersecting the triangle.
             for c in 0..DIM {
                 let pt = points[tri[c] as usize];
-                tri_pts[c] = (pt - result.origin.coords) * inv_scale;
+                tri_pts[c] = (pt - self.origin.coords) * inv_scale;
 
                 let i = (tri_pts[c].x + 0.5) as u32;
                 let j = (tri_pts[c].y + 0.5) as u32;
                 #[cfg(feature = "dim3")]
                 let k = (tri_pts[c].z + 0.5) as u32;
 
-                assert!(i < result.resolution[0] && j < result.resolution[1]);
+                assert!(i < self.resolution[0] && j < self.resolution[1]);
                 #[cfg(feature = "dim3")]
-                assert!(k < result.resolution[2]);
+                assert!(k < self.resolution[2]);
 
                 #[cfg(feature = "dim2")]
                 let ijk = Vector::new(i, j);
@@ -231,7 +295,7 @@ impl VoxelizedVolume {
             ijk0.apply(|e| *e = e.saturating_sub(1));
             ijk1 = ijk1
                 .map(|e| e + 1)
-                .inf(&Point::from(result.resolution).coords);
+                .inf(&Point::from(self.resolution).coords);
 
             #[cfg(feature = "dim2")]
             let range_k = 0..1;
@@ -247,9 +311,9 @@ impl VoxelizedVolume {
                         #[cfg(feature = "dim3")]
                         let pt = Point::new(i as Real, j as Real, k as Real);
 
-                        let id = result.voxel_index(i, j, k);
-                        let value = &mut result.values[id as usize];
-                        let data = &mut result.data[id as usize];
+                        let id = self.voxel_index(i, j, k);
+                        let value = &mut self.values[id as usize];
+                        let data = &mut self.data[id as usize];
 
                         if detect_self_intersections
                             || keep_voxel_to_primitives_map
@@ -266,7 +330,7 @@ impl VoxelizedVolume {
                                 if intersect {
                                     if keep_voxel_to_primitives_map {
                                         data.num_primitive_intersections += 1;
-                                        result.primitive_intersections.push((id, tri_id as u32));
+                                        self.primitive_intersections.push((id, tri_id as u32));
                                     }
 
                                     *value = VoxelValue::PrimitiveOnSurface;
@@ -281,18 +345,9 @@ impl VoxelizedVolume {
                                     continue;
                                 }
 
-                                data.multiplicity += ((params.0 >= -eps && params.0 <= eps)
-                                    || (params.0 >= 1.0 - eps && params.0 <= 1.0 + eps))
-                                    as u32;
-                                data.multiplicity += ((params.1 >= -eps && params.1 <= eps)
-                                    || (params.1 >= 1.0 - eps && params.1 <= 1.0 + eps))
-                                    as u32;
-                                data.multiplicity += (params.0 > eps) as u32 * 2;
-                                data.multiplicity += (params.1 < 1.0 - eps) as u32 * 2;
-
                                 if keep_voxel_to_primitives_map {
                                     data.num_primitive_intersections += 1;
-                                    result.primitive_intersections.push((id, tri_id as u32));
+                                    self.primitive_intersections.push((id, tri_id as u32));
                                 }
 
                                 if data.multiplicity > 4 && lock_high_multiplicities {
@@ -314,7 +369,7 @@ impl VoxelizedVolume {
 
                                     if keep_voxel_to_primitives_map {
                                         data.num_primitive_intersections += 1;
-                                        result.primitive_intersections.push((id, tri_id as u32));
+                                        self.primitive_intersections.push((id, tri_id as u32));
                                     }
                                 }
                             };
@@ -326,7 +381,7 @@ impl VoxelizedVolume {
 
         match fill_mode {
             FillMode::SurfaceOnly => {
-                for value in &mut result.values {
+                for value in &mut self.values {
                     if *value != VoxelValue::PrimitiveOnSurface {
                         *value = VoxelValue::PrimitiveOutsideSurface
                     }
@@ -337,76 +392,55 @@ impl VoxelizedVolume {
             } => {
                 #[cfg(feature = "dim2")]
                 {
-                    result.mark_outside_surface(0, 0, result.resolution[0], 1);
-                    result.mark_outside_surface(
+                    self.mark_outside_surface(0, 0, self.resolution[0], 1);
+                    self.mark_outside_surface(
                         0,
-                        result.resolution[1] - 1,
-                        result.resolution[0],
-                        result.resolution[1],
+                        self.resolution[1] - 1,
+                        self.resolution[0],
+                        self.resolution[1],
                     );
-                    result.mark_outside_surface(0, 0, 1, result.resolution[1]);
-                    result.mark_outside_surface(
-                        result.resolution[0] - 1,
+                    self.mark_outside_surface(0, 0, 1, self.resolution[1]);
+                    self.mark_outside_surface(
+                        self.resolution[0] - 1,
                         0,
-                        result.resolution[0],
-                        result.resolution[1],
+                        self.resolution[0],
+                        self.resolution[1],
                     );
                 }
 
                 #[cfg(feature = "dim3")]
                 {
-                    result.mark_outside_surface(
+                    self.mark_outside_surface(0, 0, 0, self.resolution[0], self.resolution[1], 1);
+                    self.mark_outside_surface(
                         0,
                         0,
-                        0,
-                        result.resolution[0],
-                        result.resolution[1],
-                        1,
+                        self.resolution[2] - 1,
+                        self.resolution[0],
+                        self.resolution[1],
+                        self.resolution[2],
                     );
-                    result.mark_outside_surface(
+                    self.mark_outside_surface(0, 0, 0, self.resolution[0], 1, self.resolution[2]);
+                    self.mark_outside_surface(
                         0,
+                        self.resolution[1] - 1,
                         0,
-                        result.resolution[2] - 1,
-                        result.resolution[0],
-                        result.resolution[1],
-                        result.resolution[2],
+                        self.resolution[0],
+                        self.resolution[1],
+                        self.resolution[2],
                     );
-                    result.mark_outside_surface(
+                    self.mark_outside_surface(0, 0, 0, 1, self.resolution[1], self.resolution[2]);
+                    self.mark_outside_surface(
+                        self.resolution[0] - 1,
                         0,
                         0,
-                        0,
-                        result.resolution[0],
-                        1,
-                        result.resolution[2],
-                    );
-                    result.mark_outside_surface(
-                        0,
-                        result.resolution[1] - 1,
-                        0,
-                        result.resolution[0],
-                        result.resolution[1],
-                        result.resolution[2],
-                    );
-                    result.mark_outside_surface(
-                        0,
-                        0,
-                        0,
-                        1,
-                        result.resolution[1],
-                        result.resolution[2],
-                    );
-                    result.mark_outside_surface(
-                        result.resolution[0] - 1,
-                        0,
-                        0,
-                        result.resolution[0],
-                        result.resolution[1],
-                        result.resolution[2],
+                        self.resolution[0],
+                        self.resolution[1],
+                        self.resolution[2],
                     );
                 }
 
                 if detect_cavities {
-                    let _ = result.propagate_values(
+                    let _ = self.propagate_values(
                         VoxelValue::PrimitiveOutsideSurfaceToWalk,
                         VoxelValue::PrimitiveOutsideSurface,
                         None,
@@ -414,7 +448,7 @@ impl VoxelizedVolume {
                     );
 
                     loop {
-                        if !result.propagate_values(
+                        if !self.propagate_values(
                             VoxelValue::PrimitiveInsideSurfaceToWalk,
                             VoxelValue::PrimitiveInsideSurface,
                             Some(VoxelValue::PrimitiveOnSurfaceToWalk1),
@@ -423,7 +457,7 @@ impl VoxelizedVolume {
                             break;
                         }
 
-                        if !result.propagate_values(
+                        if !self.propagate_values(
                             VoxelValue::PrimitiveOutsideSurfaceToWalk,
                             VoxelValue::PrimitiveOutsideSurface,
                             Some(VoxelValue::PrimitiveOnSurfaceToWalk2),
@@ -433,7 +467,7 @@ impl VoxelizedVolume {
                         }
                     }
 
-                    for voxel in &mut result.values {
+                    for voxel in &mut self.values {
                         if *voxel == VoxelValue::PrimitiveOnSurfaceToWalk1
                             || *voxel == VoxelValue::PrimitiveOnSurfaceToWalk2
                             || *voxel == VoxelValue::PrimitiveOnSurfaceNoWalk
@@ -442,22 +476,20 @@ impl VoxelizedVolume {
                         }
                     }
                 } else {
-                    let _ = result.propagate_values(
+                    let _ = self.propagate_values(
                         VoxelValue::PrimitiveOutsideSurfaceToWalk,
                         VoxelValue::PrimitiveOutsideSurface,
                         None,
                         VoxelValue::PrimitiveOnSurface,
                     );
 
-                    result.replace_value(
+                    self.replace_value(
                         VoxelValue::PrimitiveUndefined,
                         VoxelValue::PrimitiveInsideSurface,
                     );
                 }
             }
         }
-
-        result
     }
 
     /// The number of voxel subdivisions along each coordinate axis.
@@ -480,7 +512,7 @@ impl VoxelizedVolume {
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
         self.data.resize(
             len as usize,
-            VoxelData {
+            VoxelState {
                 #[cfg(feature = "dim2")]
                 multiplicity: 0,
                 num_primitive_intersections: 0,

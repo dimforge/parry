@@ -1,4 +1,6 @@
+use super::TriMeshBuilderError;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
+use crate::shape::voxels::VoxelPrimitiveGeometry;
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
@@ -7,18 +9,17 @@ use crate::shape::DeserializableTypedShape;
 use crate::shape::HeightFieldFlags;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, TriMeshFlags, Triangle, TypedShape,
+    TriMesh, TriMeshFlags, Triangle, TypedShape, Voxels,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
+use crate::transformation::voxelization::{FillMode, VoxelSet};
 use alloc::sync::Arc;
 use alloc::{vec, vec::Vec};
 use core::fmt;
 use core::ops::Deref;
 use na::Unit;
-
-use super::TriMeshBuilderError;
 
 /// The shape of a collider.
 #[derive(Clone)]
@@ -214,6 +215,95 @@ impl SharedShape {
         Ok(SharedShape(Arc::new(TriMesh::with_flags(
             vertices, indices, flags,
         )?)))
+    }
+
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and grid coordinate given by `centers`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    ///
+    /// For initializing a voxels shape from points in space, see [`Self::voxels_from_points`].
+    /// For initializing a voxels shape from a mesh to voxelize, see [`Self::voxelized_mesh`].
+    /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
+    /// [`Self::voxelized_convex_decomposition`].
+    pub fn voxels(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vector<Real>,
+        centers: &[Point<i32>],
+    ) -> Self {
+        let shape = Voxels::new(primitive_geometry, voxel_size, centers);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    pub fn voxels_from_points(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        voxel_size: Vector<Real>,
+        points: &[Point<Real>],
+    ) -> Self {
+        let shape = Voxels::from_points(primitive_geometry, voxel_size, points);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_mesh(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        voxel_size: Real,
+        fill_mode: FillMode,
+    ) -> Self {
+        let mut voxels = VoxelSet::with_voxel_size(vertices, indices, voxel_size, fill_mode, true);
+        voxels.compute_bb();
+        Self::from_voxel_set(primitive_geometry, &voxels)
+    }
+
+    fn from_voxel_set(primitive_geometry: VoxelPrimitiveGeometry, vox_set: &VoxelSet) -> Self {
+        let centers: Vec<_> = vox_set
+            .voxels()
+            .iter()
+            .map(|v| vox_set.get_voxel_point(v))
+            .collect();
+        let shape =
+            Voxels::from_points(primitive_geometry, Vector::repeat(vox_set.scale), &centers);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+    ) -> Vec<Self> {
+        Self::voxelized_convex_decomposition_with_params(
+            primitive_geometry,
+            vertices,
+            indices,
+            &VHACDParameters::default(),
+        )
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition_with_params(
+        primitive_geometry: VoxelPrimitiveGeometry,
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        params: &VHACDParameters,
+    ) -> Vec<Self> {
+        let mut parts = vec![];
+        let decomp = VHACD::decompose(params, vertices, indices, true);
+
+        for vox_set in decomp.voxel_parts() {
+            parts.push(Self::from_voxel_set(primitive_geometry, vox_set));
+        }
+
+        parts
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or

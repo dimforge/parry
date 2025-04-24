@@ -7,7 +7,7 @@ use crate::query::contact_manifolds::{
     CompositeShapeCompositeShapeContactManifoldsWorkspace,
     CompositeShapeShapeContactManifoldsWorkspace,
     HeightFieldCompositeShapeContactManifoldsWorkspace, HeightFieldShapeContactManifoldsWorkspace,
-    TriMeshShapeContactManifoldsWorkspace,
+    TriMeshShapeContactManifoldsWorkspace, VoxelsShapeContactManifoldsWorkspace,
 };
 
 #[derive(Copy, Clone)]
@@ -28,6 +28,8 @@ pub enum TypedWorkspaceData<'a> {
     ),
     /// A composite shape vs. shape workspace.
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
+    /// A voxels vs. shape workspace.
+    VoxelsShapeContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace),
     /// A custom workspace.
     Custom,
 }
