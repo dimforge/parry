@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.19.0"
+version = "0.20.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -83,7 +83,6 @@ indexmap = { version = "2", features = ["serde"], optional = true }
 hashbrown = { version = "0.15", optional = true, default-features = false, features = [
     "default-hasher",
 ] }
-cust_core = { version = "0.1", optional = true }
 spade = { version = "2.9", optional = true, default-features = false }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
