@@ -1,6 +1,8 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use alloc::{vec, vec::Vec};
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 
 /// The primitive shape all voxels from a [`Voxels`] is given.
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
