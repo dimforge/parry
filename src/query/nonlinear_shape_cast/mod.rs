@@ -7,7 +7,7 @@ pub use self::nonlinear_shape_cast_composite_shape_shape::{
 };
 #[cfg(feature = "alloc")]
 pub use self::nonlinear_shape_cast_voxels_shape::{
-    cast_shapes_nonlinear_voxels_shape, cast_shapes_nonlinear_shape_voxels
+    cast_shapes_nonlinear_shape_voxels, cast_shapes_nonlinear_voxels_shape,
 };
 //pub use self::nonlinear_shape_cast_halfspace_support_map::{cast_shapes_nonlinear_halfspace_support_map, cast_shapes_nonlinear_support_map_halfspace};
 pub use self::nonlinear_rigid_motion::NonlinearRigidMotion;

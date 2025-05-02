@@ -1,8 +1,6 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Point, Real, Vector};
-use crate::query::{
-    NonlinearRigidMotion, QueryDispatcher, ShapeCastHit,
-};
+use crate::query::{NonlinearRigidMotion, QueryDispatcher, ShapeCastHit};
 use crate::shape::{Cuboid, Shape, Voxels};
 
 /// Time Of Impact of a voxels shape with any other shape, under a rigid motion (translation + rotation).
@@ -32,7 +30,6 @@ where
     motion1.freeze(start_time);
     let pos1 = motion1.position_at_time(start_time);
 
-
     // Search for the smallest time of impact.
     //
     // 1. Check all the cells in the AABB at time `start_time`.
@@ -55,9 +52,9 @@ where
     let start_pos2_1 = pos1.inv_mul(&motion2.position_at_time(start_time));
     let mut end_pos2_1 = pos1.inv_mul(&motion2.position_at_time(end_time));
     end_pos2_1.translation = start_pos2_1.translation;
-    let start_aabb2_1 = g2.compute_aabb(&start_pos2_1)
+    let start_aabb2_1 = g2
+        .compute_aabb(&start_pos2_1)
         .merged(&g2.compute_aabb(&end_pos2_1));
-
 
     let mut check_voxels_in_range = |search_domain: [Point<i32>; 2]| {
         for vox in g1.voxels_in_range(search_domain[0], search_domain[1]) {
@@ -66,9 +63,19 @@ where
                 let center = g1.voxel_center(vox.grid_coords);
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
                 let vox_motion1 = motion1.prepend_translation(center.coords);
-                if let Some(new_hit) = dispatcher.cast_shapes_nonlinear(
-                    &vox_motion1, &cuboid, &motion2, g2, start_time, end_time, stop_at_penetration
-                ).ok().flatten() {
+                if let Some(new_hit) = dispatcher
+                    .cast_shapes_nonlinear(
+                        &vox_motion1,
+                        &cuboid,
+                        &motion2,
+                        g2,
+                        start_time,
+                        end_time,
+                        stop_at_penetration,
+                    )
+                    .ok()
+                    .flatten()
+                {
                     if new_hit.time_of_impact < smallest_t {
                         smallest_t = new_hit.time_of_impact;
                         hit = Some(new_hit);
@@ -134,10 +141,7 @@ where
                 let mut prev_row = search_domain[0];
                 prev_row[imin] = search_domain[1][imin] - 1;
 
-                let range_to_check = [
-                    prev_row,
-                    search_domain[1]
-                ];
+                let range_to_check = [prev_row, search_domain[1]];
                 check_voxels_in_range(range_to_check);
             } else if search_domain[0][imin] >= domain_maxs[imin] {
                 // Leaving the shape’s bounds.
@@ -152,10 +156,7 @@ where
                 let mut next_row = search_domain[1];
                 next_row[imin] = search_domain[0][imin] + 1;
 
-                let range_to_check = [
-                    search_domain[0],
-                    next_row,
-                ];
+                let range_to_check = [search_domain[0], next_row];
                 check_voxels_in_range(range_to_check);
             } else if search_domain[1][imin] <= domain_mins[imin] {
                 // Leaving the shape’s bounds.
@@ -191,5 +192,5 @@ where
         end_time,
         stop_at_penetration,
     )
-        .map(|hit| hit.swapped())
+    .map(|hit| hit.swapped())
 }

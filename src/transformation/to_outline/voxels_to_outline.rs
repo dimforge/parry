@@ -35,7 +35,10 @@ impl Voxels {
 
                     for edge in Aabb::EDGES_VERTEX_IDS {
                         if mask & (1 << edge.0) != 0 || mask & (1 << edge.1) != 0 {
-                            f(vox.center + vtx[edge.0].coords, vox.center + vtx[edge.1].coords);
+                            f(
+                                vox.center + vtx[edge.0].coords,
+                                vox.center + vtx[edge.1].coords,
+                            );
                         }
                     }
                 }
@@ -45,7 +48,10 @@ impl Voxels {
 
                     for (i, edge) in Aabb::EDGES_VERTEX_IDS.iter().enumerate() {
                         if mask & (1 << i) != 0 {
-                            f(vox.center + vtx[edge.0].coords, vox.center + vtx[edge.1].coords);
+                            f(
+                                vox.center + vtx[edge.0].coords,
+                                vox.center + vtx[edge.1].coords,
+                            );
                         }
                     }
                 }

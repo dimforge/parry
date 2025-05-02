@@ -479,7 +479,11 @@ impl Voxels {
     /// If for any index `i`, `domain_maxs[i] <= domain_mins[i]`, then the new domain is invalid
     /// and this operation returns `None`.
     #[must_use]
-    pub fn with_resized_domain(&self, domain_mins: Point<i32>, domain_maxs: Point<i32>) -> Option<Self> {
+    pub fn with_resized_domain(
+        &self,
+        domain_mins: Point<i32>,
+        domain_maxs: Point<i32>,
+    ) -> Option<Self> {
         if self.domain_mins == domain_mins && self.domain_maxs == domain_maxs {
             // Nothing to change, just clone as-is.
             return Some(self.clone());
@@ -655,8 +659,16 @@ impl Voxels {
     /// the voxels contained within are empty or not.
     pub fn voxel_range_aabb(&self, mins: Point<i32>, maxs: Point<i32>) -> Aabb {
         Aabb {
-            mins: mins.cast::<Real>().coords.component_mul(&self.voxel_size).into(),
-            maxs: maxs.cast::<Real>().coords.component_mul(&self.voxel_size).into(),
+            mins: mins
+                .cast::<Real>()
+                .coords
+                .component_mul(&self.voxel_size)
+                .into(),
+            maxs: maxs
+                .cast::<Real>()
+                .coords
+                .component_mul(&self.voxel_size)
+                .into(),
         }
     }
 
@@ -665,11 +677,17 @@ impl Voxels {
     /// The aligned is calculated such that the returned AABB has corners lying at the grid
     /// intersections (i.e. matches voxel corners) and fully contains the input `aabb`.
     pub fn align_aabb_to_grid(&self, aabb: &Aabb) -> Aabb {
-        let mins = aabb.mins.coords.zip_map(&self.voxel_size, |m, sz| (m / sz).floor() * m).into();
-        let maxs = aabb.maxs.coords.zip_map(&self.voxel_size, |m, sz| (m / sz).ceil() * m).into();
-        Aabb {
-            mins, maxs
-        }
+        let mins = aabb
+            .mins
+            .coords
+            .zip_map(&self.voxel_size, |m, sz| (m / sz).floor() * m)
+            .into();
+        let maxs = aabb
+            .maxs
+            .coords
+            .zip_map(&self.voxel_size, |m, sz| (m / sz).ceil() * m)
+            .into();
+        Aabb { mins, maxs }
     }
 
     /// Iterates through every voxel intersecting the given aabb.

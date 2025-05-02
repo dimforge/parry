@@ -12,7 +12,8 @@ impl PointQuery for Voxels {
 
         for vox in self.voxels() {
             if vox.state.voxel_type() != VoxelType::Empty {
-                let mut candidate = base_cuboid.project_local_point(&(pt - vox.center.coords), solid);
+                let mut candidate =
+                    base_cuboid.project_local_point(&(pt - vox.center.coords), solid);
                 candidate.point += vox.center.coords;
 
                 let candidate_dist = (candidate.point - pt).norm();
