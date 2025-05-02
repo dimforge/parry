@@ -14,16 +14,16 @@ impl Voxels {
 
         let mut vtx = vec![];
         let mut idx = vec![];
-        for (_, center, data) in self.centers() {
-            let mask = data.free_faces();
+        for vox in self.voxels() {
+            let mask = vox.state.free_faces();
             for i in 0..6 {
                 if mask.bits() & (1 << i) != 0 {
                     let fvid = Aabb::FACES_VERTEX_IDS[i];
                     let base_id = vtx.len() as u32;
-                    vtx.push(center + aabb_vtx[fvid.0].coords);
-                    vtx.push(center + aabb_vtx[fvid.1].coords);
-                    vtx.push(center + aabb_vtx[fvid.2].coords);
-                    vtx.push(center + aabb_vtx[fvid.3].coords);
+                    vtx.push(vox.center + aabb_vtx[fvid.0].coords);
+                    vtx.push(vox.center + aabb_vtx[fvid.1].coords);
+                    vtx.push(vox.center + aabb_vtx[fvid.2].coords);
+                    vtx.push(vox.center + aabb_vtx[fvid.3].coords);
 
                     if i % 2 == 0 {
                         idx.push([base_id, base_id + 1, base_id + 2]);

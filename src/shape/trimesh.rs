@@ -399,12 +399,12 @@ impl TriMesh {
     // TODO: support a crate like get_size2 (will require support on nalgebra too)?
     /// An approximation of the memory usage (in bytes) for this struct plus
     /// the memory it allocates dynamically.
-    pub fn get_size(&self) -> usize {
-        size_of::<Self>() + self.get_heap_size()
+    pub fn total_memory_size(&self) -> usize {
+        size_of::<Self>() + self.heap_memory_size()
     }
 
     /// An approximation of the memory dynamically-allocated by this struct.
-    pub fn get_heap_size(&self) -> usize {
+    pub fn heap_memory_size(&self) -> usize {
         // NOTE: if a new field is added to `Self`, adjust this function result.
         let Self {
             qbvh,
@@ -416,7 +416,7 @@ impl TriMesh {
             #[cfg(feature = "dim3")]
             pseudo_normals,
         } = self;
-        let sz_qbvh = qbvh.get_heap_size();
+        let sz_qbvh = qbvh.heap_memory_size();
         let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
         let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
         #[cfg(feature = "dim3")]

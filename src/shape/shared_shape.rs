@@ -219,7 +219,7 @@ impl SharedShape {
 
     /// Initializes a shape made of voxels.
     ///
-    /// Each voxel has the size `voxel_size` and grid coordinate given by `centers`.
+    /// Each voxel has the size `voxel_size` and grid coordinate given by `grid_coords`.
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     ///
     /// For initializing a voxels shape from points in space, see [`Self::voxels_from_points`].
@@ -229,9 +229,9 @@ impl SharedShape {
     pub fn voxels(
         primitive_geometry: VoxelPrimitiveGeometry,
         voxel_size: Vector<Real>,
-        centers: &[Point<i32>],
+        grid_coords: &[Point<i32>],
     ) -> Self {
-        let shape = Voxels::new(primitive_geometry, voxel_size, centers);
+        let shape = Voxels::new(primitive_geometry, voxel_size, grid_coords);
         SharedShape::new(shape)
     }
 

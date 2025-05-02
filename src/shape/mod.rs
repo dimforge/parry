@@ -22,7 +22,7 @@ pub use self::{
     compound::Compound,
     polyline::Polyline,
     shared_shape::SharedShape,
-    voxels::{AxisMask, OctantPattern, VoxelPrimitiveGeometry, VoxelState, VoxelType, Voxels},
+    voxels::{AxisMask, OctantPattern, VoxelPrimitiveGeometry, VoxelState, VoxelType, Voxels, VoxelData},
 };
 
 #[cfg(feature = "dim2")]
