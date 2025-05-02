@@ -354,6 +354,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     c2,
                     options,
                 ));
+            } else if let Some(v1) = shape1.as_voxels() {
+                return Ok(query::details::cast_shapes_voxels_shape(
+                    self, pos12, local_vel12, v1, shape2, options
+                ))
+            } else if let Some(v2) = shape2.as_voxels() {
+                return Ok(query::details::cast_shapes_shape_voxels(
+                    self,
+                    pos12,
+                    local_vel12,
+                    shape1,
+                    v2,
+                    options,
+                ));
             }
 
             Err(Unsupported)
@@ -406,6 +419,14 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     end_time,
                     stop_at_penetration,
                 ));
+            } else if let Some(c1) = shape1.as_voxels() {
+                return Ok(query::details::cast_shapes_nonlinear_voxels_shape(
+                    self, motion1, c1, motion2, shape2, start_time, end_time, stop_at_penetration
+                ))
+            } else if let Some(c2) = shape2.as_voxels() {
+                return Ok(query::details::cast_shapes_nonlinear_shape_voxels(
+                    self, motion1, shape1, motion2, c2, start_time, end_time, stop_at_penetration
+                ))
             }
             /* } else if let (Some(p1), Some(s2)) = (shape1.as_shape::<HalfSpace>(), shape2.as_support_map()) {
             //        query::details::cast_shapes_nonlinear_halfspace_support_map(m1, vel1, p1, m2, vel2, s2)
