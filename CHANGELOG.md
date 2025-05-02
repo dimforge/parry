@@ -1,6 +1,13 @@
 # Change Log
 
-## v0.20.0
+## v0.20.1
+
+### Added
+
+- Rework the `Voxels` shape API to use better method names.
+- Added implementations for linear and non-linear shape-casting involving `Voxels` shapes.
+
+## v0.20.0 (yanked)
 
 ### Added
 
