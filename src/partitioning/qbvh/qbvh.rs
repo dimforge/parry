@@ -255,12 +255,12 @@ impl<LeafData: IndexedData> Qbvh<LeafData> {
     // TODO: support a crate like get_size2 (will require support on nalgebra too)?
     /// An approximation of the memory usage (in bytes) for this struct plus
     /// the memory it allocates dynamically.
-    pub fn get_size(&self) -> usize {
-        size_of::<Self>() + self.get_heap_size()
+    pub fn total_memory_size(&self) -> usize {
+        size_of::<Self>() + self.heap_memory_size()
     }
 
     /// An approximation of the memory dynamically-allocated by this struct.
-    pub fn get_heap_size(&self) -> usize {
+    pub fn heap_memory_size(&self) -> usize {
         let Self {
             root_aabb: _,
             nodes,

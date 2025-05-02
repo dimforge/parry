@@ -130,20 +130,19 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     };
 
     if let Some(intersection_aabb1) = aabb1.intersection(&aabb2_1) {
-        for (vid, center1, data1) in voxels1.voxels_intersecting_local_aabb(&intersection_aabb1) {
-            let voxel1 = data1.voxel_type();
+        for vox1 in voxels1.voxels_intersecting_local_aabb(&intersection_aabb1) {
+            let vox_type1 = vox1.state.voxel_type();
 
             // TODO: would be nice to have a strategy to handle interior voxels for depenetration.
-            if voxel1 == VoxelType::Empty || voxel1 == VoxelType::Interior {
+            if vox_type1 == VoxelType::Empty || vox_type1 == VoxelType::Interior {
                 continue;
             }
 
-            let key_voxel = voxels1.voxel_key_at(vid);
-            let mut key_low = key_voxel;
+            let mut key_low = vox1.grid_coords;
             let mut key_high = key_low;
             let mins = voxels1.domain()[0];
             let maxs = voxels1.domain()[1] - Vector::repeat(1);
-            let mask1 = data1.free_faces();
+            let mask1 = vox1.state.free_faces();
 
             let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {
                 if !mask1.contains(axis) {
@@ -195,6 +194,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                             timestamp: new_timestamp,
                         };
 
+                        let vid = vox1.linear_id;
                         let (id1, id2) = if flipped { (0, vid) } else { (vid, 0) };
                         manifolds.push(ContactManifold::with_data(
                             id1,
@@ -216,11 +216,11 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 let mut canonical_maxs1 = voxels1.voxel_center(key_high);
 
                 for k in 0..DIM {
-                    if key_low[k] != key_voxel[k] {
+                    if key_low[k] != vox1.grid_coords[k] {
                         canonical_mins1[k] = canonical_mins1[k].max(domain2_1.mins[k]);
                     }
 
-                    if key_high[k] != key_voxel[k] {
+                    if key_high[k] != vox1.grid_coords[k] {
                         canonical_maxs1[k] = canonical_maxs1[k].min(domain2_1.maxs[k]);
                     }
                 }
@@ -314,7 +314,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     // interior of the infinitely expanded canonical shape by checking if
                     // the opposite normal would have led to a better vector.
                     let cuboid1 = Cuboid::new(radius1);
-                    let sp1 = cuboid1.local_support_point(&-penetration_dir1) + center1.coords;
+                    let sp1 = cuboid1.local_support_point(&-penetration_dir1) + vox1.center.coords;
                     let sm2 = shape2
                         .as_support_map()
                         .expect("Unsupported collision pair.");
@@ -330,9 +330,9 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 }
 
                 let pt_in_voxel_space = if flipped {
-                    manifold.subshape_pos2.transform_point(&pt.local_p2) - center1.coords
+                    manifold.subshape_pos2.transform_point(&pt.local_p2) - vox1.center.coords
                 } else {
-                    manifold.subshape_pos1.transform_point(&pt.local_p1) - center1.coords
+                    manifold.subshape_pos1.transform_point(&pt.local_p1) - vox1.center.coords
                 };
                 sub_detector.selected_contacts |=
                     (test_voxel.contains_local_point(&pt_in_voxel_space) as u32) << i;

@@ -10,10 +10,10 @@ impl PointQuery for Voxels {
         let mut smallest_dist = Real::MAX;
         let mut result = PointProjection::new(false, *pt);
 
-        for (_, center, data) in self.centers() {
-            if data.voxel_type() != VoxelType::Empty {
-                let mut candidate = base_cuboid.project_local_point(&(pt - center.coords), solid);
-                candidate.point += center.coords;
+        for vox in self.voxels() {
+            if vox.state.voxel_type() != VoxelType::Empty {
+                let mut candidate = base_cuboid.project_local_point(&(pt - vox.center.coords), solid);
+                candidate.point += vox.center.coords;
 
                 let candidate_dist = (candidate.point - pt).norm();
                 if candidate_dist < smallest_dist {

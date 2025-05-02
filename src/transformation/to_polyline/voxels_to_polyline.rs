@@ -25,24 +25,24 @@ impl Voxels {
         let aabb = Aabb::from_half_extents(Point::origin(), radius);
         let vtx = aabb.vertices();
 
-        for (_, center, vox_data) in self.centers() {
-            match vox_data.voxel_type() {
+        for vox in self.voxels() {
+            match vox.state.voxel_type() {
                 VoxelType::Vertex => {
-                    let mask = vox_data.feature_mask();
+                    let mask = vox.state.feature_mask();
 
                     for edge in Aabb::FACES_VERTEX_IDS {
                         if mask & (1 << edge.0) != 0 || mask & (1 << edge.1) != 0 {
-                            f(center + vtx[edge.0].coords, center + vtx[edge.1].coords);
+                            f(vox.center + vtx[edge.0].coords, vox.center + vtx[edge.1].coords);
                         }
                     }
                 }
                 VoxelType::Face => {
                     let vtx = aabb.vertices();
-                    let mask = vox_data.feature_mask();
+                    let mask = vox.state.feature_mask();
 
                     for (i, edge) in Aabb::FACES_VERTEX_IDS.iter().enumerate() {
                         if mask & (1 << i) != 0 {
-                            f(center + vtx[edge.0].coords, center + vtx[edge.1].coords);
+                            f(vox.center + vtx[edge.0].coords, vox.center + vtx[edge.1].coords);
                         }
                     }
                 }

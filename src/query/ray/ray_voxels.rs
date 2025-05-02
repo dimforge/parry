@@ -26,13 +26,13 @@ impl RayCast for Voxels {
 
         max_t = max_t.min(max_time_of_impact);
         let clip_ray_a = ray.point_at(min_t);
-        let voxel_key_signed = self.key_at_point_unchecked(clip_ray_a);
-        let mut voxel_key = self.clamp_key(voxel_key_signed);
+        let voxel_key_signed = self.voxel_at_point_unchecked(clip_ray_a);
+        let mut voxel_key = self.clamp_voxel(voxel_key_signed);
         let [domain_mins, domain_maxs] = self.domain();
 
         loop {
-            let voxel = self.voxel_data_at_key(voxel_key);
-            let aabb = self.voxel_aabb_at_key(voxel_key);
+            let voxel = self.voxel_state(voxel_key);
+            let aabb = self.voxel_aabb(voxel_key);
 
             if !voxel.is_empty() {
                 // We hit a voxel!
