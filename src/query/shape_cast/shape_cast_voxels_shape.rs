@@ -1,7 +1,6 @@
-use crate::math::{Isometry, Point, Real, Vector, Translation};
+use crate::math::{Isometry, Point, Real, Translation, Vector};
 use crate::query::{QueryDispatcher, ShapeCastHit, ShapeCastOptions};
 use crate::shape::{Cuboid, Shape, Voxels};
-
 
 /// Time Of Impact of a voxels shape with any other shape, under a translational movement.
 pub fn cast_shapes_voxels_shape<D>(
@@ -21,7 +20,6 @@ where
     let mut smallest_t = options.max_time_of_impact;
     let start_aabb2_1 = g2.compute_aabb(pos12);
 
-
     let mut check_voxels_in_range = |search_domain: [Point<i32>; 2]| {
         for vox in g1.voxels_in_range(search_domain[0], search_domain[1]) {
             if !vox.state.is_empty() {
@@ -29,9 +27,11 @@ where
                 let center = g1.voxel_center(vox.grid_coords);
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
                 let vox_pos12 = Translation::from(center).inverse() * pos12;
-                if let Some(new_hit) = dispatcher.cast_shapes(
-                    &vox_pos12, vel12, &cuboid, g2, options,
-                ).ok().flatten() {
+                if let Some(new_hit) = dispatcher
+                    .cast_shapes(&vox_pos12, vel12, &cuboid, g2, options)
+                    .ok()
+                    .flatten()
+                {
                     if new_hit.time_of_impact < smallest_t {
                         smallest_t = new_hit.time_of_impact;
                         hit = Some(new_hit);
@@ -82,7 +82,10 @@ where
         }
 
         #[cfg(feature = "dim3")]
-        if toi[0].0 > options.max_time_of_impact && toi[1].0 > options.max_time_of_impact && toi[2].0 > options.max_time_of_impact {
+        if toi[0].0 > options.max_time_of_impact
+            && toi[1].0 > options.max_time_of_impact
+            && toi[2].0 > options.max_time_of_impact
+        {
             break;
         }
 
@@ -97,10 +100,7 @@ where
                 let mut prev_row = search_domain[0];
                 prev_row[imin] = search_domain[1][imin] - 1;
 
-                let range_to_check = [
-                    prev_row,
-                    search_domain[1]
-                ];
+                let range_to_check = [prev_row, search_domain[1]];
                 check_voxels_in_range(range_to_check);
             } else if search_domain[0][imin] >= domain_maxs[imin] {
                 // Leaving the shape’s bounds.
@@ -115,10 +115,7 @@ where
                 let mut next_row = search_domain[1];
                 next_row[imin] = search_domain[0][imin] + 1;
 
-                let range_to_check = [
-                    search_domain[0],
-                    next_row,
-                ];
+                let range_to_check = [search_domain[0], next_row];
                 check_voxels_in_range(range_to_check);
             } else if search_domain[1][imin] <= domain_mins[imin] {
                 // Leaving the shape’s bounds.
@@ -150,5 +147,5 @@ where
         g1,
         options,
     )
-        .map(|time_of_impact| time_of_impact.swapped())
+    .map(|time_of_impact| time_of_impact.swapped())
 }

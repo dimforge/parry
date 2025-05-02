@@ -66,7 +66,15 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
             }
 
             detect_hit_voxel_ball(
-                *pos12, vox1.center, radius1, vox1.state, geometry1, center2, radius2, prediction, flipped,
+                *pos12,
+                vox1.center,
+                radius1,
+                vox1.state,
+                geometry1,
+                center2,
+                radius2,
+                prediction,
+                flipped,
                 manifolds,
             );
         }
