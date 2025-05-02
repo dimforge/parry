@@ -13,6 +13,7 @@ pub use self::{
     },
     shape_cast_heightfield_shape::{cast_shapes_heightfield_shape, cast_shapes_shape_heightfield},
     shape_cast_support_map_support_map::cast_shapes_support_map_support_map,
+    shape_cast_voxels_shape::{cast_shapes_shape_voxels, cast_shapes_voxels_shape},
 };
 
 mod shape_cast;
@@ -24,3 +25,5 @@ mod shape_cast_halfspace_support_map;
 mod shape_cast_heightfield_shape;
 #[cfg(feature = "alloc")]
 mod shape_cast_support_map_support_map;
+#[cfg(feature = "alloc")]
+mod shape_cast_voxels_shape;
