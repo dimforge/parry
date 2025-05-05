@@ -447,9 +447,9 @@ impl Voxels {
 
             self.resize_domain(new_domain_mins, new_domain_maxs);
 
-            self.set_voxel(key, is_filled)
+            self.try_set_voxel(key, is_filled)
         } else {
-            self.set_voxel(key, is_filled)
+            self.try_set_voxel(key, is_filled)
         }
     }
 
