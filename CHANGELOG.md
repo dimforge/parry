@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.20.2
+
+### Fixed
+
+- Fix infinite loop in `Voxels::set_voxel`.
+
 ## v0.20.1
 
 ### Added
