@@ -1,7 +1,12 @@
 use crate::math::Real;
+use crate::query::ray::{
+    RayCompositeShapeToiAndNormalBestFirstVisitor, RayCompositeShapeToiBestFirstVisitor,
+};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, TriMesh};
-use crate::query::ray::{RayCompositeShapeToiAndNormalBestFirstVisitor, RayCompositeShapeToiBestFirstVisitor};
+
+#[cfg(feature = "dim3")]
+pub use ray_cast_with_culling::RayCullingMode;
 
 impl RayCast for TriMesh {
     #[inline]
@@ -47,26 +52,26 @@ impl RayCast for TriMesh {
 #[cfg(feature = "dim3")]
 mod ray_cast_with_culling {
     use crate::math::{Isometry, Real, Vector};
-    use crate::partitioning::{Qbvh};
+    use crate::partitioning::Qbvh;
+    use crate::query::details::NormalConstraints;
+    use crate::query::ray::RayCompositeShapeToiAndNormalBestFirstVisitor;
     use crate::query::{Ray, RayIntersection};
     use crate::shape::{FeatureId, Shape, TriMesh, Triangle, TypedSimdCompositeShape};
-    use crate::query::details::NormalConstraints;
-    use crate::query::ray::{RayCompositeShapeToiAndNormalBestFirstVisitor};
 
     /// Controls which side of a triangle a ray-cast is allowed to hit.
     #[derive(Copy, Clone, PartialEq, Eq, Debug)]
     pub enum RayCullingMode {
         /// Ray-casting won’t hit back faces.
-        BackFacesCulling,
+        IgnoreBackfaces,
         /// Ray-casting won’t hit front faces.
-        FrontFacesCulling,
+        IgnoreFrontfaces,
     }
 
     impl RayCullingMode {
         fn check(self, tri_normal: &Vector<Real>, ray_dir: &Vector<Real>) -> bool {
             match self {
-                RayCullingMode::BackFacesCulling => tri_normal.dot(ray_dir) < 0.0,
-                RayCullingMode::FrontFacesCulling => tri_normal.dot(ray_dir) > 0.0
+                RayCullingMode::IgnoreBackfaces => tri_normal.dot(ray_dir) < 0.0,
+                RayCullingMode::IgnoreFrontfaces => tri_normal.dot(ray_dir) > 0.0,
             }
         }
     }
@@ -112,11 +117,7 @@ mod ray_cast_with_culling {
             let tri_normal = tri.scaled_normal();
 
             if self.culling.check(&tri_normal, &self.ray.dir) {
-                f(
-                    None,
-                    &tri,
-                    None,
-                )
+                f(None, &tri, None)
             }
         }
 
@@ -180,6 +181,40 @@ mod ray_cast_with_culling {
                     }
                     res
                 })
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        use crate::query::{Ray, RayCullingMode};
+        use crate::shape::TriMesh;
+        use nalgebra::{Point3, Vector3};
+
+        #[test]
+        fn cast_ray_on_trimesh_with_culling() {
+            let vertices = vec![
+                Point3::new(0.0, 0.0, 0.0),
+                Point3::new(1.0, 0.0, 0.0),
+                Point3::new(0.0, 1.0, 0.0),
+            ];
+            let indices = vec![[0, 1, 2]];
+            let ray_up = Ray::new(Point3::new(0.0, 0.0, -1.0), Vector3::new(0.0, 0.0, 1.0));
+            let ray_down = Ray::new(Point3::new(0.0, 0.0, 1.0), Vector3::new(0.0, 0.0, -1.0));
+
+            let mesh = TriMesh::new(vertices, indices).unwrap();
+            assert!(mesh
+                .cast_local_ray_with_culling(&ray_up, 1000.0, RayCullingMode::IgnoreFrontfaces)
+                .is_some());
+            assert!(mesh
+                .cast_local_ray_with_culling(&ray_down, 1000.0, RayCullingMode::IgnoreFrontfaces)
+                .is_none());
+
+            assert!(mesh
+                .cast_local_ray_with_culling(&ray_up, 1000.0, RayCullingMode::IgnoreBackfaces)
+                .is_none());
+            assert!(mesh
+                .cast_local_ray_with_culling(&ray_down, 1000.0, RayCullingMode::IgnoreBackfaces)
+                .is_some());
         }
     }
 }

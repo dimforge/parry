@@ -9,9 +9,11 @@ pub use self::ray_composite_shape::{
 };
 pub use self::ray_halfspace::{line_toi_with_halfspace, ray_toi_with_halfspace};
 pub use self::ray_support_map::local_ray_intersection_with_support_map_with_params;
-#[cfg(feature = "dim3")]
-pub use self::ray_triangle::local_ray_intersection_with_triangle;
 pub use self::simd_ray::SimdRay;
+#[cfg(feature = "dim3")]
+pub use {
+    self::ray_triangle::local_ray_intersection_with_triangle, self::ray_trimesh::RayCullingMode,
+};
 
 #[doc(hidden)]
 pub mod ray;

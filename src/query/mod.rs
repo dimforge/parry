@@ -44,6 +44,9 @@ pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
 pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
 pub use self::split::{IntersectResult, SplitResult};
 
+#[cfg(feature = "dim3")]
+pub use self::ray::RayCullingMode;
+
 mod clip;
 pub mod closest_points;
 pub mod contact;
