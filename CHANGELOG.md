@@ -1,5 +1,12 @@
 # Change Log
 
+## Unreleased
+
+### Added
+
+- Add `TriMesh::cast_ray_with_culling` and `TriMesh::cast_local_ray_with_culling` for casting rays on a triangle mesh
+  but with the possibility to prevents hits on front-faces or back-faces.
+
 ## v0.20.2
 
 ### Fixed
