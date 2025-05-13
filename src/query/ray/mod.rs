@@ -11,6 +11,8 @@ pub use self::ray_halfspace::{line_toi_with_halfspace, ray_toi_with_halfspace};
 pub use self::ray_support_map::local_ray_intersection_with_support_map_with_params;
 #[cfg(feature = "dim3")]
 pub use self::ray_triangle::local_ray_intersection_with_triangle;
+#[cfg(all(feature = "dim3", feature = "std"))]
+pub use self::ray_trimesh::RayCullingMode;
 pub use self::simd_ray::SimdRay;
 
 #[doc(hidden)]
@@ -27,4 +29,6 @@ mod ray_heightfield;
 mod ray_round_shape;
 mod ray_support_map;
 mod ray_triangle;
+#[cfg(feature = "std")]
+mod ray_trimesh;
 mod simd_ray;
