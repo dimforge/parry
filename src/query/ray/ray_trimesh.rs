@@ -84,7 +84,7 @@ mod ray_cast_with_culling {
         ray: &'a Ray,
     }
 
-    impl<'a> TypedSimdCompositeShape for TriMeshWithCulling<'a> {
+    impl TypedSimdCompositeShape for TriMeshWithCulling<'_> {
         type PartShape = Triangle;
         type PartNormalConstraints = ();
         type PartId = u32;
