@@ -74,6 +74,14 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 return Ok(query::details::intersection_test_shape_composite_shape(
                     self, pos12, shape1, c2,
                 ));
+            } else if let Some(v1) = shape1.as_voxels() {
+                return Ok(query::details::intersection_test_voxels_shape(
+                    self, pos12, v1, shape2,
+                ));
+            } else if let Some(v2) = shape2.as_voxels() {
+                return Ok(query::details::intersection_test_shape_voxels(
+                    self, pos12, shape1, v2,
+                ));
             }
 
             Err(Unsupported)

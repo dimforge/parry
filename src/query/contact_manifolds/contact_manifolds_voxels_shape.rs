@@ -65,7 +65,7 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
     )));
 }
 
-/// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
+/// Computes the contact manifold between a convex shape and a voxels shape, both represented as a `Shape` trait-object.
 pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
@@ -96,7 +96,7 @@ pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
     }
 }
 
-/// Computes the contact manifold between a convex shape and a ball.
+/// Computes the contact manifold between a convex shape and a voxels shape.
 pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
