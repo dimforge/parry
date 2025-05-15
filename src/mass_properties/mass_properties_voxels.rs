@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real, Vector};
+use crate::math::{Point, Real};
 use crate::shape::Voxels;
 
 impl MassProperties {
@@ -8,8 +8,7 @@ impl MassProperties {
         let mut com = Point::origin();
         let mut num_not_empty = 0;
         let mut angular_inertia = na::zero();
-        let block_ref_mprops =
-            MassProperties::from_cuboid(density, voxels.voxel_size() / 2.0);
+        let block_ref_mprops = MassProperties::from_cuboid(density, voxels.voxel_size() / 2.0);
 
         for vox in voxels.voxels() {
             if !vox.state.is_empty() {
@@ -22,7 +21,8 @@ impl MassProperties {
 
         for vox in voxels.voxels() {
             if !vox.state.is_empty() {
-                angular_inertia += block_ref_mprops.construct_shifted_inertia_matrix(vox.center - com);
+                angular_inertia +=
+                    block_ref_mprops.construct_shifted_inertia_matrix(vox.center - com);
             }
         }
 

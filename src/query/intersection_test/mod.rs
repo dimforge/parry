@@ -26,7 +26,8 @@ pub use self::{
         IntersectionCompositeShapeShapeVisitor,
     },
     intersection_test_voxels_shape::{
-        intersection_test_voxels_shape, intersection_test_voxels_shape_shapes, intersection_test_shape_voxels
+        intersection_test_shape_voxels, intersection_test_voxels_shape,
+        intersection_test_voxels_shape_shapes,
     },
 };
 

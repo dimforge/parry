@@ -37,6 +37,9 @@ pub use self::contact_manifolds_voxels_shape::{
     contact_manifolds_voxels_shape, contact_manifolds_voxels_shape_shapes,
     VoxelsShapeContactManifoldsWorkspace,
 };
+pub(crate) use self::contact_manifolds_voxels_shape::{
+    CanonicalVoxelShape, VoxelsShapeSubDetector,
+};
 pub use self::contact_manifolds_voxels_voxels::{
     contact_manifolds_voxels_voxels, contact_manifolds_voxels_voxels_shapes,
 };
