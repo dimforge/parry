@@ -1537,12 +1537,12 @@ impl Shape for Voxels {
         Box::new(self.clone())
     }
 
-    fn scale_dyn(&self, _scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
-        todo!()
+    fn scale_dyn(&self, scale: &Vector<Real>, _num_subdivisions: u32) -> Option<Box<dyn Shape>> {
+        Some(Box::new(self.clone().scaled(scale)))
     }
 
-    fn mass_properties(&self, _density: Real) -> MassProperties {
-        MassProperties::default()
+    fn mass_properties(&self, density: Real) -> MassProperties {
+        MassProperties::from_voxels(density, self)
     }
 
     fn shape_type(&self) -> ShapeType {
