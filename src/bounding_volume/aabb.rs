@@ -477,6 +477,15 @@ impl Aabb {
         ]
     }
 
+    /// Enlarges this AABB on each side by the given `half_extents`.
+    #[must_use]
+    pub fn add_half_extents(&self, half_extents: &Vector<Real>) -> Self {
+        Self {
+            mins: self.mins - half_extents,
+            maxs: self.maxs + half_extents,
+        }
+    }
+
     /// Projects every point of `Aabb` on an arbitrary axis.
     pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());

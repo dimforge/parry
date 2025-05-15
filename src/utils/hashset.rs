@@ -27,7 +27,7 @@ pub fn deserialize_hashset_capacity<
     d: D,
 ) -> Result<StdHashSet<K, H>, D::Error> {
     struct CapacityVisitor;
-    impl<'de> serde::de::Visitor<'de> for CapacityVisitor {
+    impl serde::de::Visitor<'_> for CapacityVisitor {
         type Value = u64;
 
         fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {

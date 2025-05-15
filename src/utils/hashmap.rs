@@ -27,10 +27,10 @@ pub fn deserialize_hashmap_capacity<
     d: D,
 ) -> Result<StdHashMap<K, V, H>, D::Error> {
     struct CapacityVisitor;
-    impl<'de> serde::de::Visitor<'de> for CapacityVisitor {
+    impl serde::de::Visitor<'_> for CapacityVisitor {
         type Value = u64;
 
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
             write!(formatter, "an integer between 0 and 2^64")
         }
 
