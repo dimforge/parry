@@ -378,9 +378,9 @@ impl Voxels {
     }
 
     /// Scale this shape.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
+    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.voxel_size.component_mul_assign(scale);
-        Some(self)
+        self
     }
 
     /// Sets the voxel at the given grid coordinates, returning `None` if it lies outside [`Self::domain`].
