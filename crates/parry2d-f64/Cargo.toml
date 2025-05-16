@@ -1,6 +1,6 @@
 [package]
 name = "parry2d-f64"
-version = "0.20.2"
+version = "0.21.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "2 dimensional collision detection library in Rust. 64-bit precision version."
