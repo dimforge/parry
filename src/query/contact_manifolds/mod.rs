@@ -33,6 +33,9 @@ pub use self::contact_manifolds_trimesh_shape::{
     contact_manifolds_trimesh_shape, contact_manifolds_trimesh_shape_shapes,
 };
 pub use self::contact_manifolds_voxels_ball::contact_manifolds_voxels_ball_shapes;
+pub use self::contact_manifolds_voxels_composite_shape::{
+    contact_manifolds_voxels_composite_shape, contact_manifolds_voxels_composite_shape_shapes,
+};
 pub use self::contact_manifolds_voxels_shape::{
     contact_manifolds_voxels_shape, contact_manifolds_voxels_shape_shapes,
     VoxelsShapeContactManifoldsWorkspace,
@@ -71,6 +74,7 @@ mod contact_manifolds_heightfield_shape;
 mod contact_manifolds_pfm_pfm;
 mod contact_manifolds_trimesh_shape;
 mod contact_manifolds_voxels_ball;
+mod contact_manifolds_voxels_composite_shape;
 mod contact_manifolds_voxels_shape;
 mod contact_manifolds_voxels_voxels;
 mod contact_manifolds_workspace;
