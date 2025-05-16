@@ -2,29 +2,6 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use alloc::{vec, vec::Vec};
 
-/// The primitive shape all voxels from a [`Voxels`] is given.
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
-#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-pub enum VoxelPrimitiveGeometry {
-    /// Each voxel is modeled as a pseudo-ball, i.e., in flat areas it will act like a planar
-    /// surface but corners and edges will be rounded like a sphere.
-    ///
-    /// This is an approximation that is particularly relevant if the voxels are small and in large
-    /// number. This can significantly improve collision-detection performances (as well as solver
-    /// performances by generating less contacts points). However,this can introduce visual
-    /// artifacts around edges and corners where objects in contact with the voxel will appear to
-    /// slightly penetrate the corners/edges due to the spherical approximation.
-    PseudoBall,
-    /// Each voxel is modeled as a pseudo-cube, i.e., in flat areas it will act like a planar
-    /// surface but corner and edges will be sharp like a cube.
-    ///
-    /// This is what you would expect for the collision to match the rendered voxels. Use
-    /// [`VoxelPrimitiveGeometry::PseudoBall`] instead if some approximation around corners are acceptable
-    /// in exchange for better performances.
-    #[default]
-    PseudoCube,
-}
-
 /// Categorization of a voxel based on its neighbors.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VoxelType {
@@ -214,7 +191,6 @@ pub struct Voxels {
     domain_mins: Point<i32>,
     domain_maxs: Point<i32>,
     states: Vec<VoxelState>, // Somehow switch to a sparse representation?
-    primitive_geometry: VoxelPrimitiveGeometry,
     voxel_size: Vector<Real>,
 }
 
@@ -224,16 +200,9 @@ impl Voxels {
     /// Each voxel will have its bottom-left-back corner located at
     /// `grid_coordinates * voxel_size`; and its center at `(grid_coordinates + 0.5) * voxel_size`.
     pub fn new(
-        primitive_geometry: VoxelPrimitiveGeometry,
         voxel_size: Vector<Real>,
         grid_coordinates: &[Point<i32>],
     ) -> Self {
-        // Ensure pseudo-balls always use uniform voxel sizes.
-        let voxel_size = match primitive_geometry {
-            VoxelPrimitiveGeometry::PseudoBall => Vector::repeat(voxel_size.x),
-            VoxelPrimitiveGeometry::PseudoCube => voxel_size,
-        };
-
         let mut domain_mins = grid_coordinates[0];
         let mut domain_maxs = grid_coordinates[0];
 
@@ -249,7 +218,6 @@ impl Voxels {
             domain_mins,
             domain_maxs,
             states: vec![VoxelState::EMPTY; voxels_count as usize],
-            primitive_geometry,
             voxel_size,
         };
 
@@ -268,16 +236,9 @@ impl Voxels {
     /// coordinates, and with grid cell size equal to `scale`. It is OK if multiple points
     /// fall into the same grid cell.
     pub fn from_points(
-        primitive_geometry: VoxelPrimitiveGeometry,
         voxel_size: Vector<Real>,
         points: &[Point<Real>],
     ) -> Self {
-        // Ensure pseudo-balls always use uniform voxel sizes.
-        let voxel_size = match primitive_geometry {
-            VoxelPrimitiveGeometry::PseudoBall => Vector::repeat(voxel_size.x),
-            VoxelPrimitiveGeometry::PseudoCube => voxel_size,
-        };
-
         let voxels: Vec<_> = points
             .iter()
             .map(|pt| {
@@ -288,7 +249,7 @@ impl Voxels {
                 )
             })
             .collect();
-        Self::new(primitive_geometry, voxel_size, &voxels)
+        Self::new(voxel_size, &voxels)
     }
 
     // TODO: support a crate like get_size2 (will require support on nalgebra too)?
@@ -305,7 +266,6 @@ impl Voxels {
             domain_mins: _,
             domain_maxs: _,
             states: data,
-            primitive_geometry: _,
             voxel_size: _,
         } = self;
         data.capacity() * size_of::<VoxelState>()
@@ -333,18 +293,8 @@ impl Voxels {
     }
 
     /// Sets the size of each voxel along each local coordinate axis.
-    ///
-    /// If [`Self::primitive_geometry`] is [`VoxelPrimitiveGeometry::PseudoBall`], then all voxels
-    /// must be square, and only `size.x` is taken into account for setting the size.
     pub fn set_voxel_size(&mut self, size: Vector<Real>) {
-        match self.primitive_geometry {
-            VoxelPrimitiveGeometry::PseudoBall => {
-                self.voxel_size = Vector::repeat(size.x);
-            }
-            VoxelPrimitiveGeometry::PseudoCube => {
-                self.voxel_size = size;
-            }
-        }
+        self.voxel_size = size;
     }
 
     /// The valid semi-open range of voxel grid indices.
@@ -363,11 +313,6 @@ impl Voxels {
     /// The size of each voxel part this [`Voxels`] shape.
     pub fn voxel_size(&self) -> Vector<Real> {
         self.voxel_size
-    }
-
-    /// The shape each voxel is assumed to have.
-    pub fn primitive_geometry(&self) -> VoxelPrimitiveGeometry {
-        self.primitive_geometry
     }
 
     fn recompute_voxels_data(&mut self) {
@@ -501,7 +446,6 @@ impl Voxels {
             domain_mins,
             domain_maxs,
             states: vec![VoxelState::EMPTY; new_len],
-            primitive_geometry: self.primitive_geometry,
             voxel_size: self.voxel_size,
         };
 
@@ -729,7 +673,6 @@ impl Voxels {
 
         let in_box = if !in_box.is_empty() {
             Some(Voxels::from_points(
-                self.primitive_geometry,
                 self.voxel_size,
                 &in_box,
             ))
@@ -739,7 +682,6 @@ impl Voxels {
 
         let rest = if !rest.is_empty() {
             Some(Voxels::from_points(
-                self.primitive_geometry,
                 self.voxel_size,
                 &rest,
             ))

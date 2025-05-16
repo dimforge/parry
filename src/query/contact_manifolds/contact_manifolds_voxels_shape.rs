@@ -5,7 +5,7 @@ use crate::query::{
     TypedWorkspaceData, WorkspaceData,
 };
 use crate::shape::{
-    AxisMask, Cuboid, RoundShape, Shape, SupportMap, VoxelData, VoxelPrimitiveGeometry, VoxelType,
+    AxisMask, Cuboid, Shape, SupportMap, VoxelData, VoxelType,
     Voxels,
 };
 use crate::utils::hashmap::{Entry, HashMap};
@@ -196,16 +196,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 let (canonical_center1, canonical_pseudo_cube1) =
                     canon1.cuboid(voxels1, &vox1, domain2_1);
 
-                let canonical_pseudo_ball1 = RoundShape {
-                    inner_shape: Cuboid::new(canonical_pseudo_cube1.half_extents - radius1),
-                    border_radius: radius1.x,
-                };
-
-                let canonical_shape1 = match voxels1.primitive_geometry() {
-                    VoxelPrimitiveGeometry::PseudoBall => &canonical_pseudo_ball1 as &dyn Shape,
-                    VoxelPrimitiveGeometry::PseudoCube => &canonical_pseudo_cube1 as &dyn Shape,
-                };
-
+                let canonical_shape1 = &canonical_pseudo_cube1 as &dyn Shape;
                 let canonical_pos12 = Translation::from(-canonical_center1) * pos12;
 
                 // If we already computed contacts in the previous simulation step, their
