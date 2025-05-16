@@ -8,6 +8,7 @@
   but with the possibility to prevents hits on front-faces or back-faces.
 - Add contact manifold calculation between two voxels shapes, or a voxels shape and compound shape.
 - Add intersection check between voxels and other shapes.
+- Add `MassProperties::from_voxels` to compute the mass and angular inertia tensor from a voxels shape.
 
 ### Modified
 

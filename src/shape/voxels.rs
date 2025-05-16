@@ -201,10 +201,7 @@ impl Voxels {
     ///
     /// Each voxel will have its bottom-left-back corner located at
     /// `grid_coordinates * voxel_size`; and its center at `(grid_coordinates + 0.5) * voxel_size`.
-    pub fn new(
-        voxel_size: Vector<Real>,
-        grid_coordinates: &[Point<i32>],
-    ) -> Self {
+    pub fn new(voxel_size: Vector<Real>, grid_coordinates: &[Point<i32>]) -> Self {
         let mut domain_mins = grid_coordinates[0];
         let mut domain_maxs = grid_coordinates[0];
 
@@ -237,10 +234,7 @@ impl Voxels {
     /// The points are mapped to a regular grid centered at the provided point with smallest
     /// coordinates, and with grid cell size equal to `scale`. It is OK if multiple points
     /// fall into the same grid cell.
-    pub fn from_points(
-        voxel_size: Vector<Real>,
-        points: &[Point<Real>],
-    ) -> Self {
+    pub fn from_points(voxel_size: Vector<Real>, points: &[Point<Real>]) -> Self {
         let voxels: Vec<_> = points
             .iter()
             .map(|pt| {
@@ -674,19 +668,13 @@ impl Voxels {
         }
 
         let in_box = if !in_box.is_empty() {
-            Some(Voxels::from_points(
-                self.voxel_size,
-                &in_box,
-            ))
+            Some(Voxels::from_points(self.voxel_size, &in_box))
         } else {
             None
         };
 
         let rest = if !rest.is_empty() {
-            Some(Voxels::from_points(
-                self.voxel_size,
-                &rest,
-            ))
+            Some(Voxels::from_points(self.voxel_size, &rest))
         } else {
             None
         };

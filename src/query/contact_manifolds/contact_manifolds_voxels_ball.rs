@@ -2,8 +2,7 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{ContactManifold, PointQuery, TrackedContact};
 use crate::shape::{
-    Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelState,
-    VoxelType, Voxels,
+    Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelState, VoxelType, Voxels,
 };
 use alloc::vec::Vec;
 

@@ -225,10 +225,7 @@ impl SharedShape {
     /// For initializing a voxels shape from a mesh to voxelize, see [`Self::voxelized_mesh`].
     /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
     /// [`Self::voxelized_convex_decomposition`].
-    pub fn voxels(
-        voxel_size: Vector<Real>,
-        grid_coords: &[Point<i32>],
-    ) -> Self {
+    pub fn voxels(voxel_size: Vector<Real>, grid_coords: &[Point<i32>]) -> Self {
         let shape = Voxels::new(voxel_size, grid_coords);
         SharedShape::new(shape)
     }
@@ -237,10 +234,7 @@ impl SharedShape {
     ///
     /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
-    pub fn voxels_from_points(
-        voxel_size: Vector<Real>,
-        points: &[Point<Real>],
-    ) -> Self {
+    pub fn voxels_from_points(voxel_size: Vector<Real>, points: &[Point<Real>]) -> Self {
         let shape = Voxels::from_points(voxel_size, points);
         SharedShape::new(shape)
     }
@@ -264,8 +258,7 @@ impl SharedShape {
             .iter()
             .map(|v| vox_set.get_voxel_point(v))
             .collect();
-        let shape =
-            Voxels::from_points(Vector::repeat(vox_set.scale), &centers);
+        let shape = Voxels::from_points(Vector::repeat(vox_set.scale), &centers);
         SharedShape::new(shape)
     }
 
