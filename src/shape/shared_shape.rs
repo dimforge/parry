@@ -1,6 +1,5 @@
 use super::TriMeshBuilderError;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
-use crate::shape::voxels::VoxelPrimitiveGeometry;
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "serde-serialize")]
@@ -227,11 +226,10 @@ impl SharedShape {
     /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
     /// [`Self::voxelized_convex_decomposition`].
     pub fn voxels(
-        primitive_geometry: VoxelPrimitiveGeometry,
         voxel_size: Vector<Real>,
         grid_coords: &[Point<i32>],
     ) -> Self {
-        let shape = Voxels::new(primitive_geometry, voxel_size, grid_coords);
+        let shape = Voxels::new(voxel_size, grid_coords);
         SharedShape::new(shape)
     }
 
@@ -240,18 +238,16 @@ impl SharedShape {
     /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
     /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
     pub fn voxels_from_points(
-        primitive_geometry: VoxelPrimitiveGeometry,
         voxel_size: Vector<Real>,
         points: &[Point<Real>],
     ) -> Self {
-        let shape = Voxels::from_points(primitive_geometry, voxel_size, points);
+        let shape = Voxels::from_points(voxel_size, points);
         SharedShape::new(shape)
     }
 
     /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_mesh(
-        primitive_geometry: VoxelPrimitiveGeometry,
         vertices: &[Point<Real>],
         indices: &[[u32; DIM]],
         voxel_size: Real,
@@ -259,29 +255,27 @@ impl SharedShape {
     ) -> Self {
         let mut voxels = VoxelSet::with_voxel_size(vertices, indices, voxel_size, fill_mode, true);
         voxels.compute_bb();
-        Self::from_voxel_set(primitive_geometry, &voxels)
+        Self::from_voxel_set(&voxels)
     }
 
-    fn from_voxel_set(primitive_geometry: VoxelPrimitiveGeometry, vox_set: &VoxelSet) -> Self {
+    fn from_voxel_set(vox_set: &VoxelSet) -> Self {
         let centers: Vec<_> = vox_set
             .voxels()
             .iter()
             .map(|v| vox_set.get_voxel_point(v))
             .collect();
         let shape =
-            Voxels::from_points(primitive_geometry, Vector::repeat(vox_set.scale), &centers);
+            Voxels::from_points(Vector::repeat(vox_set.scale), &centers);
         SharedShape::new(shape)
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_convex_decomposition(
-        primitive_geometry: VoxelPrimitiveGeometry,
         vertices: &[Point<Real>],
         indices: &[[u32; DIM]],
     ) -> Vec<Self> {
         Self::voxelized_convex_decomposition_with_params(
-            primitive_geometry,
             vertices,
             indices,
             &VHACDParameters::default(),
@@ -291,7 +285,6 @@ impl SharedShape {
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
     /// or polyline (in 2D) into voxelized convex parts.
     pub fn voxelized_convex_decomposition_with_params(
-        primitive_geometry: VoxelPrimitiveGeometry,
         vertices: &[Point<Real>],
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
@@ -300,7 +293,7 @@ impl SharedShape {
         let decomp = VHACD::decompose(params, vertices, indices, true);
 
         for vox_set in decomp.voxel_parts() {
-            parts.push(Self::from_voxel_set(primitive_geometry, vox_set));
+            parts.push(Self::from_voxel_set(vox_set));
         }
 
         parts
