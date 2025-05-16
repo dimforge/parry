@@ -547,9 +547,15 @@ where
                 contact_manifolds_voxels_ball_shapes(pos12, shape1, shape2, prediction, manifolds)
             }
             (ShapeType::Voxels, _) | (_, ShapeType::Voxels) => {
-                contact_manifolds_voxels_shape_shapes(
-                    self, pos12, shape1, shape2, prediction, manifolds, workspace,
-                )
+                if composite1.is_some() || composite2.is_some() {
+                    contact_manifolds_voxels_composite_shape_shapes(
+                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                    )
+                } else {
+                    contact_manifolds_voxels_shape_shapes(
+                        self, pos12, shape1, shape2, prediction, manifolds, workspace,
+                    )
+                }
             }
             _ => {
                 if let Some(composite1) = composite1 {

@@ -1,4 +1,4 @@
-use crate::bounding_volume::{BoundingVolume};
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real, Translation, Vector};
 use crate::query::contact_manifolds::{CanonicalVoxelShape, VoxelsShapeContactManifoldsWorkspace};
 use crate::query::details::VoxelsShapeSubDetector;
@@ -7,7 +7,7 @@ use crate::query::{
     TypedWorkspaceData, WorkspaceData,
 };
 use crate::shape::{Cuboid, Shape, SupportMap, VoxelData, VoxelType, Voxels};
-use crate::utils::hashmap::{Entry};
+use crate::utils::hashmap::Entry;
 use crate::utils::IsometryOpt;
 use alloc::{boxed::Box, vec::Vec};
 use na::Vector4;
@@ -78,9 +78,7 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
         aabb1.aligned_intersections(pos12, &aabb2)
     {
         let domain_margin = (radius1 + radius2) * 10.0;
-        let full_domain2_1 = voxels2
-            .compute_aabb(pos12)
-            .add_half_extents(&domain_margin);
+        let full_domain2_1 = voxels2.compute_aabb(pos12).add_half_extents(&domain_margin);
         let domain2_1 = full_domain2_1
             .intersection(&aabb1.add_half_extents(&domain_margin))
             .unwrap_or(full_domain2_1);

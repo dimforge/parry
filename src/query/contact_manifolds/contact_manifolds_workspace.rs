@@ -30,6 +30,8 @@ pub enum TypedWorkspaceData<'a> {
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
     /// A voxels vs. shape workspace.
     VoxelsShapeContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<2>),
+    /// A voxels vs. composite shape workspace.
+    VoxelsCompositeShapeContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<3>),
     /// A voxels vs. voxels workspace.
     VoxelsVoxelsContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<4>),
     /// A custom workspace.
@@ -50,6 +52,7 @@ enum DeserializableWorkspaceData {
     ),
     CompositeShapeShapeContactManifoldsWorkspace(CompositeShapeShapeContactManifoldsWorkspace),
     VoxelsShapeContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<2>),
+    VoxelsCompositeShapeContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<3>),
     VoxelsVoxelsContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<4>),
     #[allow(dead_code)]
     Custom,
@@ -75,6 +78,9 @@ impl DeserializableWorkspaceData {
                 Some(ContactManifoldsWorkspace(Box::new(w)))
             }
             DeserializableWorkspaceData::VoxelsShapeContactManifoldsWorkspace(w) => {
+                Some(ContactManifoldsWorkspace(Box::new(w)))
+            }
+            DeserializableWorkspaceData::VoxelsCompositeShapeContactManifoldsWorkspace(w) => {
                 Some(ContactManifoldsWorkspace(Box::new(w)))
             }
             DeserializableWorkspaceData::VoxelsVoxelsContactManifoldsWorkspace(w) => {
