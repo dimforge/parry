@@ -1,11 +1,19 @@
 # Change Log
 
-## Unreleased
+## 0.21.0
 
 ### Added
 
 - Add `TriMesh::cast_ray_with_culling` and `TriMesh::cast_local_ray_with_culling` for casting rays on a triangle mesh
   but with the possibility to prevents hits on front-faces or back-faces.
+- Add contact manifold calculation between two voxels shapes, or a voxels shape and compound shape.
+- Add intersection check between voxels and other shapes.
+
+### Modified
+
+- Add new variants to `TypedWorkspaceData` for voxels-voxels and voxels-compound collision detection workspace
+  data.
+- The `Voxels` shape now only support cuboids as their leaf geometries (pseudo-balls were removed). 
 
 ## v0.20.2
 
