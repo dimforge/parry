@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.21.1
+
+### Added
+
+- Add `Voxels::combine_voxel_states` to merge the voxel state of two `Voxels` shapes, updating their internal voxels
+  state as if both shapes were part of a single one. In particular, this will prevent any internal edge that would
+  arise at the boundaries of both shapes if they were adjacent.
+- Add `Voxels::propagate_voxel_change` to propagate a single-voxel modification from one `Voxels` shape to another,
+  in order to update their internal neighborhood information as if both were part of the same `Voxels` shape. 
+
 ## 0.21.0
 
 ### Added
