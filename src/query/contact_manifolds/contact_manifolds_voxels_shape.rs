@@ -324,8 +324,12 @@ impl CanonicalVoxelShape {
     pub fn from_voxel(voxels: &Voxels, vox: &VoxelData) -> Self {
         let mut key_low = vox.grid_coords;
         let mut key_high = key_low;
-        let mins = voxels.domain()[0];
-        let maxs = voxels.domain()[1] - Vector::repeat(1);
+
+        // NOTE: the mins/maxs here are offset by 1 so we can expand past the last voxel if it
+        //       happens to also be infinite along the same axis (due to cross-voxels internal edges
+        //       detection).
+        let mins = voxels.domain()[0] - Vector::repeat(1);
+        let maxs = voxels.domain()[1];
         let mask1 = vox.state.free_faces();
 
         let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {

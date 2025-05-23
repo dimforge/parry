@@ -311,6 +311,85 @@ impl Voxels {
         self.voxel_size
     }
 
+    /// Merges voxel state (neighborhood) information of a given voxel (and all its neighbors)
+    /// from `self` and `other`, to account for a recent change to the given `voxel` in `self`.
+    ///
+    /// This is designed to be called after `self` was modified with [`Voxels::set_voxel`] or
+    /// [`Voxels::try_set_voxel`].
+    ///
+    /// This is the same as [`Voxels::combine_voxel_states`] but localized to a single voxel and its
+    /// neighbors.
+    pub fn propagate_voxel_change(&mut self, other: &mut Self, voxel: Point<i32>, origin_shift: Vector<i32>) {
+        let center_is_empty = self.get_voxel_state(voxel).map(|vox| vox.is_empty()).unwrap_or(true);
+        let center_state_delta = other.update_neighbors_state(voxel - origin_shift, center_is_empty);
+
+        if let Some(state_id) = self.get_linear_index(voxel) {
+            self.states[state_id as usize].0 |= center_state_delta.0;
+        }
+    }
+
+    /// Merges voxel state (neighborhood) information of each voxel from `self` and `other`.
+    ///
+    /// This allows each voxel from one shape to be aware of the presence of neighbors belonging to
+    /// the other so that collision detection is capable of transitioning between the boundaries of
+    /// one shape to the other without hitting an internal edge.
+    ///
+    /// Both voxels shapes are assumed to have the same [`Self::voxel_size`].
+    /// If `other` lives in a coordinate space with a different origin than `self`, then
+    /// `origin_shift` represents the distance (as a multiple of the `voxel_size`) from the origin
+    /// of `self` to the origin of `other`. Therefore, a voxel with coordinates `key` on `other`
+    /// will have coordinates `key + origin_shift` on `self`.
+    pub fn combine_voxel_states(&mut self, other: &mut Self, origin_shift: Vector<i32>) {
+        let one = Vector::repeat(1);
+
+        // Intersect the domains + 1 cell.
+        let d0 = [self.domain_mins - one, self.domain_maxs + one * 2];
+        let d1 = [other.domain_mins - one + origin_shift, other.domain_maxs + one * 2 + origin_shift];
+
+        let d01 = [
+            d0[0].sup(&d1[0]),
+            d0[1].inf(&d1[1]),
+        ];
+        // Iterate on the domain intersection. If the voxel exists (and is non-empty) on both shapes, we
+        // simply need to combine their bitmasks. If it doesn’t exist on both shapes, we need to
+        // actually check the neighbors.
+        //
+        // The `domain` is expressed in the grid coordinate space of `self`.
+        for i in d01[0].x..d01[1].x {
+            for j in d01[0].y..d01[1].y {
+                #[cfg(feature = "dim2")]
+                let k_range = 0..1;
+                #[cfg(feature = "dim3")]
+                let k_range = d01[0].z..d01[1].z;
+                for _k in k_range {
+                    #[cfg(feature = "dim2")]
+                    let key0 = Point::new(i, j);
+                    #[cfg(feature = "dim3")]
+                    let key0 = Point::new(i, j, _k);
+                    let key1 = key0 - origin_shift;
+                    let id0 = self.get_linear_index(key0).filter(|id| !self.states[*id as usize].is_empty());
+                    let id1 = other.get_linear_index(key1).filter(|id| !other.states[*id as usize].is_empty());
+
+                    match (id0, id1) {
+                        (Some(id0), Some(id1)) => {
+                            self.states[id0 as usize].0 |= other.states[id1 as usize].0;
+                            other.states[id1 as usize].0 |= self.states[id0 as usize].0;
+                        }
+                        (Some(id0), None) => {
+                            self.states[id0 as usize].0 |= other.compute_voxel_neighborhood_bits(key1).0;
+                        }
+                        (None, Some(id1)) => {
+                            other.states[id1 as usize].0 |= self.compute_voxel_neighborhood_bits(key0).0;
+                        }
+                        (None, None) => {
+                            /* Nothing to adjust. */
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fn recompute_voxels_data(&mut self) {
         for i in 0..self.states.len() {
             let key = self.voxel_at_id(i as u32);
@@ -329,30 +408,12 @@ impl Voxels {
     /// See [`Self::set_voxel`] for a method that automatically resizes the internal
     /// storage of `self` if the key is out of the valid bounds.
     pub fn try_set_voxel(&mut self, key: Point<i32>, is_filled: bool) -> Option<VoxelState> {
-        if key[0] < self.domain_mins[0]
-            || key[0] >= self.domain_maxs[0]
-            || key[1] < self.domain_mins[1]
-            || key[1] >= self.domain_maxs[1]
-        {
-            return None;
-        }
-
-        #[cfg(feature = "dim3")]
-        if key[2] < self.domain_mins[2] || key[2] >= self.domain_maxs[2] {
-            return None;
-        }
-
-        let id = self.linear_index(key);
+        let id = self.get_linear_index(key)?;
         let prev = self.states[id as usize];
-        let new = if is_filled {
-            VoxelState::INTERIOR
-        } else {
-            VoxelState::EMPTY
-        };
+        let new_is_empty = !is_filled;
 
-        if prev.is_empty() ^ new.is_empty() {
-            self.states[id as usize] = new;
-            self.update_voxel_and_neighbors_state(key);
+        if prev.is_empty() ^ new_is_empty {
+            self.states[id as usize] = self.update_neighbors_state(key, new_is_empty);
         }
 
         Some(prev)
@@ -474,45 +535,47 @@ impl Voxels {
             && key[2] < self.domain_maxs[2]
     }
 
-    fn update_voxel_and_neighbors_state(&mut self, key: Point<i32>) {
-        let key_id = self.linear_index(key) as usize;
+    /// Updates the state of the neighbors of the voxel `key`.
+    ///
+    /// Modifies the state of the neighbors of `key` to account for it being empty or full.
+    /// Returns (but doesn’t modify) the new state of the voxel specified by `key`.
+    #[must_use]
+    fn update_neighbors_state(&mut self, key: Point<i32>, center_is_empty: bool) -> VoxelState {
         let mut key_data = 0;
-        let center_is_empty = self.states[key_id].is_empty();
 
         for k in 0..DIM {
-            if key[k] > self.domain_mins[k] {
-                let mut left = key;
-                left[k] -= 1;
-                let left_id = self.linear_index(left) as usize;
+            let mut left = key;
+            let mut right = key;
+            left[k] -= 1;
+            right[k] += 1;
 
-                if !self.states[left_id].is_empty() {
+            if let Some(left_id) = self.get_linear_index(left) {
+                if !self.states[left_id as usize].is_empty() {
                     if center_is_empty {
-                        self.states[left_id].0 &= !(1 << (k * 2));
+                        self.states[left_id as usize].0 &= !(1 << (k * 2));
                     } else {
-                        self.states[left_id].0 |= 1 << (k * 2);
+                        self.states[left_id as usize].0 |= 1 << (k * 2);
                         key_data |= 1 << (k * 2 + 1);
                     }
                 }
             }
 
-            if key[k] + 1 < self.domain_maxs[k] {
-                let mut right = key;
-                right[k] += 1;
-                let right_id = self.linear_index(right) as usize;
-
-                if !self.states[right_id].is_empty() {
+            if let Some(right_id) = self.get_linear_index(right) {
+                if !self.states[right_id as usize].is_empty() {
                     if center_is_empty {
-                        self.states[right_id].0 &= !(1 << (k * 2 + 1));
+                        self.states[right_id as usize].0 &= !(1 << (k * 2 + 1));
                     } else {
-                        self.states[right_id].0 |= 1 << (k * 2 + 1);
+                        self.states[right_id as usize].0 |= 1 << (k * 2 + 1);
                         key_data |= 1 << (k * 2);
                     }
                 }
             }
         }
 
-        if !center_is_empty {
-            self.states[key_id] = VoxelState(key_data);
+        if center_is_empty {
+            VoxelState::EMPTY
+        } else {
+            VoxelState(key_data)
         }
     }
 
@@ -528,6 +591,11 @@ impl Voxels {
     /// Panics if the key is out of the bounds defined by [`Self::domain`].
     pub fn voxel_state(&self, key: Point<i32>) -> VoxelState {
         self.states[self.linear_index(key) as usize]
+    }
+
+    /// Returns the state of a given voxel, if it is within the bounds of [`Self::domain`].
+    pub fn get_voxel_state(&self, key: Point<i32>) -> Option<VoxelState> {
+        Some(self.states[self.get_linear_index(key)? as usize])
     }
 
     /// Calculates the grid coordinates of the voxel containing the given `point`, regardless
@@ -743,6 +811,24 @@ impl Voxels {
         })
     }
 
+    /// Gets linearized index associated to the given voxel key if it lies within [`Self::domain`].
+    pub fn get_linear_index(&self, key: Point<i32>) -> Option<u32> {
+        if key[0] < self.domain_mins[0]
+            || key[0] >= self.domain_maxs[0]
+            || key[1] < self.domain_mins[1]
+            || key[1] >= self.domain_maxs[1]
+        {
+            return None;
+        }
+
+        #[cfg(feature = "dim3")]
+        if key[2] < self.domain_mins[2] || key[2] >= self.domain_maxs[2] {
+            return None;
+        }
+
+        Some(self.linear_index(key))
+    }
+
     /// The linearized index associated to the given voxel key.
     #[cfg(feature = "dim2")]
     pub fn linear_index(&self, voxel_key: Point<i32>) -> u32 {
@@ -793,6 +879,10 @@ impl Voxels {
             return VoxelState::EMPTY;
         }
 
+        self.compute_voxel_neighborhood_bits(key)
+    }
+
+    fn compute_voxel_neighborhood_bits(&self, key: Point<i32>) -> VoxelState {
         let mut occupied_faces = 0;
 
         for k in 0..DIM {
@@ -800,15 +890,17 @@ impl Voxels {
             prev[k] -= 1;
             next[k] += 1;
 
-            if key[k] + 1 < self.domain_maxs[k]
-                && !self.states[self.linear_index(next) as usize].is_empty()
-            {
-                occupied_faces |= 1 << (k * 2);
+            if let Some(next_id) = self.get_linear_index(next) {
+                if !self.states[next_id as usize].is_empty()
+                {
+                    occupied_faces |= 1 << (k * 2);
+                }
             }
-            if key[k] > self.domain_mins[k]
-                && !self.states[self.linear_index(prev) as usize].is_empty()
-            {
-                occupied_faces |= 1 << (k * 2 + 1);
+            if let Some(prev_id) = self.get_linear_index(prev) {
+                if !self.states[prev_id as usize].is_empty()
+                {
+                    occupied_faces |= 1 << (k * 2 + 1);
+                }
             }
         }
 
