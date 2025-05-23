@@ -319,9 +319,18 @@ impl Voxels {
     ///
     /// This is the same as [`Voxels::combine_voxel_states`] but localized to a single voxel and its
     /// neighbors.
-    pub fn propagate_voxel_change(&mut self, other: &mut Self, voxel: Point<i32>, origin_shift: Vector<i32>) {
-        let center_is_empty = self.get_voxel_state(voxel).map(|vox| vox.is_empty()).unwrap_or(true);
-        let center_state_delta = other.update_neighbors_state(voxel - origin_shift, center_is_empty);
+    pub fn propagate_voxel_change(
+        &mut self,
+        other: &mut Self,
+        voxel: Point<i32>,
+        origin_shift: Vector<i32>,
+    ) {
+        let center_is_empty = self
+            .get_voxel_state(voxel)
+            .map(|vox| vox.is_empty())
+            .unwrap_or(true);
+        let center_state_delta =
+            other.update_neighbors_state(voxel - origin_shift, center_is_empty);
 
         if let Some(state_id) = self.get_linear_index(voxel) {
             self.states[state_id as usize].0 |= center_state_delta.0;
@@ -344,12 +353,12 @@ impl Voxels {
 
         // Intersect the domains + 1 cell.
         let d0 = [self.domain_mins - one, self.domain_maxs + one * 2];
-        let d1 = [other.domain_mins - one + origin_shift, other.domain_maxs + one * 2 + origin_shift];
-
-        let d01 = [
-            d0[0].sup(&d1[0]),
-            d0[1].inf(&d1[1]),
+        let d1 = [
+            other.domain_mins - one + origin_shift,
+            other.domain_maxs + one * 2 + origin_shift,
         ];
+
+        let d01 = [d0[0].sup(&d1[0]), d0[1].inf(&d1[1])];
         // Iterate on the domain intersection. If the voxel exists (and is non-empty) on both shapes, we
         // simply need to combine their bitmasks. If it doesn’t exist on both shapes, we need to
         // actually check the neighbors.
@@ -367,8 +376,12 @@ impl Voxels {
                     #[cfg(feature = "dim3")]
                     let key0 = Point::new(i, j, _k);
                     let key1 = key0 - origin_shift;
-                    let id0 = self.get_linear_index(key0).filter(|id| !self.states[*id as usize].is_empty());
-                    let id1 = other.get_linear_index(key1).filter(|id| !other.states[*id as usize].is_empty());
+                    let id0 = self
+                        .get_linear_index(key0)
+                        .filter(|id| !self.states[*id as usize].is_empty());
+                    let id1 = other
+                        .get_linear_index(key1)
+                        .filter(|id| !other.states[*id as usize].is_empty());
 
                     match (id0, id1) {
                         (Some(id0), Some(id1)) => {
@@ -376,14 +389,14 @@ impl Voxels {
                             other.states[id1 as usize].0 |= self.states[id0 as usize].0;
                         }
                         (Some(id0), None) => {
-                            self.states[id0 as usize].0 |= other.compute_voxel_neighborhood_bits(key1).0;
+                            self.states[id0 as usize].0 |=
+                                other.compute_voxel_neighborhood_bits(key1).0;
                         }
                         (None, Some(id1)) => {
-                            other.states[id1 as usize].0 |= self.compute_voxel_neighborhood_bits(key0).0;
+                            other.states[id1 as usize].0 |=
+                                self.compute_voxel_neighborhood_bits(key0).0;
                         }
-                        (None, None) => {
-                            /* Nothing to adjust. */
-                        }
+                        (None, None) => { /* Nothing to adjust. */ }
                     }
                 }
             }
@@ -891,14 +904,12 @@ impl Voxels {
             next[k] += 1;
 
             if let Some(next_id) = self.get_linear_index(next) {
-                if !self.states[next_id as usize].is_empty()
-                {
+                if !self.states[next_id as usize].is_empty() {
                     occupied_faces |= 1 << (k * 2);
                 }
             }
             if let Some(prev_id) = self.get_linear_index(prev) {
-                if !self.states[prev_id as usize].is_empty()
-                {
+                if !self.states[prev_id as usize].is_empty() {
                     occupied_faces |= 1 << (k * 2 + 1);
                 }
             }
