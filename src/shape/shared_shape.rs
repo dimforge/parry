@@ -78,7 +78,7 @@ impl SharedShape {
     }
 
     /// Initialize a cylindrical shape defined by its half-height
-    /// (along along the y axis) and its radius.
+    /// (along the y axis) and its radius.
     #[cfg(feature = "dim3")]
     pub fn cylinder(half_height: Real, radius: Real) -> Self {
         SharedShape(Arc::new(Cylinder::new(half_height, radius)))
