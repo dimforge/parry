@@ -598,6 +598,8 @@ impl TriMesh {
                             continue 'traversal;
                         }
                     }
+
+                    next = None;
                 }
             }
         }
