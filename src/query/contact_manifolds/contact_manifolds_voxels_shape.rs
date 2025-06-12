@@ -349,11 +349,28 @@ impl CanonicalVoxelShape {
             adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, mins[2]);
         }
 
+        /// The linearized index associated to the given voxel key.
+        ///
+        /// This function allows to override the dimensions, that would lead to out of bounds index.
+        ///
+        /// It can be useful to keep a cache on voxels information when it would not fit the original dimension.
+        pub fn linear_index_for_dimensions(
+            voxel_key: Point<i32>,
+            domain_mins: Point<i32>,
+            domain_maxs: Point<i32>,
+        ) -> u32 {
+            let dims = (domain_maxs - domain_mins).map(|e| e as u32);
+            let rel_key = voxel_key - domain_mins;
+            (rel_key.x + rel_key.y * dims[0] as i32) as u32
+        }
+
+        let mut domain_dilated: [Point<i32>; 2] = voxels.domain().map(|v| *v);
+        domain_dilated[0].coords -= Vector::repeat(1);
         Self {
             range: [key_low, key_high],
             workspace_key: Vector2::new(
-                voxels.linear_index(key_low),
-                voxels.linear_index(key_high),
+                linear_index_for_dimensions(key_low, domain_dilated[0], domain_dilated[1]),
+                linear_index_for_dimensions(key_high, domain_dilated[0], domain_dilated[1]),
             ),
         }
     }
