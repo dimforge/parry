@@ -294,7 +294,7 @@ impl SharedShape {
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts.
-    pub fn convex_decomposition(vertices: &[Point<Real>], indices: &[[u32; DIM]]) -> Self {
+    pub fn convex_decomposition(vertices: &[Point<Real>], indices: &[[u32; DIM]]) -> Option<Self> {
         Self::convex_decomposition_with_params(vertices, indices, &VHACDParameters::default())
     }
 
@@ -319,7 +319,7 @@ impl SharedShape {
         vertices: &[Point<Real>],
         indices: &[[u32; DIM]],
         params: &VHACDParameters,
-    ) -> Self {
+    ) -> Option<Self> {
         let mut parts = vec![];
         let decomp = VHACD::decompose(params, vertices, indices, true);
 
@@ -336,8 +336,11 @@ impl SharedShape {
                 parts.push((Isometry::identity(), convex));
             }
         }
-
-        Self::compound(parts)
+        if parts.is_empty() {
+            // input was likely incorrect because no convex decomposition succeeded.
+            return None;
+        }
+        Some(Self::compound(parts))
     }
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
@@ -508,5 +511,33 @@ impl<'de> serde::Deserialize<'de> for SharedShape {
         DeserializableTypedShape::deserialize(deserializer)?
             .into_shared_shape()
             .ok_or(D::Error::custom("Cannot deserialize custom shape."))
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::math::Point;
+    use crate::{shape::SharedShape, transformation::vhacd::VHACDParameters};
+
+    use super::*;
+
+    #[test]
+    fn convex_decomp_same_points_error() {
+        let vertices = [Point::default(), Point::default(), Point::default()];
+        #[cfg(feature = "dim2")]
+        let indices = vec![[0, 1], [1, 2], [2, 0]];
+        #[cfg(feature = "dim3")]
+        let indices = [[0, 1, 2], [1, 2, 0]];
+
+        assert!(SharedShape::convex_decomposition_with_params(
+            &vertices,
+            &indices,
+            &VHACDParameters {
+                resolution: 11,
+                ..Default::default()
+            },
+        )
+        .is_none());
     }
 }

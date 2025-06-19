@@ -20,6 +20,7 @@ use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
 use crate::math::{Matrix, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::CutPlane;
+use crate::transformation::ConvexHullError;
 use alloc::sync::Arc;
 use alloc::{vec, vec::Vec};
 
@@ -53,6 +54,7 @@ impl Default for Voxel {
 /// A sparse set of voxels.
 ///
 /// It only contains voxels that are considered as "full" after a voxelization.
+#[derive(Debug)]
 pub struct VoxelSet {
     /// The 3D origin of this voxel-set.
     pub origin: Point<Real>,
@@ -225,7 +227,7 @@ impl VoxelSet {
         &self,
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
-    ) -> Vec<Point<Real>> {
+    ) -> Result<Vec<Point<Real>>, ConvexHullError> {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
@@ -238,7 +240,7 @@ impl VoxelSet {
         &self,
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
-    ) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    ) -> Result<(Vec<Point<Real>>, Vec<[u32; DIM]>), ConvexHullError> {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
@@ -246,7 +248,7 @@ impl VoxelSet {
         &self,
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
-    ) -> ConvexHull {
+    ) -> Result<ConvexHull, ConvexHullError> {
         assert!(!self.intersections.is_empty(),
                 "Cannot compute exact convex hull without voxel-to-primitives-map. Consider passing voxel_to_primitives_map = true to the voxelizer.");
         let mut surface_points = Vec::new();
@@ -387,10 +389,10 @@ impl VoxelSet {
     ///
     /// # Parameters
     /// * `sampling` - The convex-hull computation will ignore `sampling` voxels at
-    ///   regular intervals. Useful to save some computation times if an exact result isn't need.
+    ///   regular intervals. Useful to save some computation times if an exact result isn't needed.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim2")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> Vec<Point<Real>> {
+    pub fn compute_convex_hull(&self, sampling: u32) -> Result<Vec<Point<Real>>, ConvexHullError> {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -414,7 +416,10 @@ impl VoxelSet {
     ///   regular intervals. Useful to save some computation times if an exact result isn't need.
     ///   Use `0` to make sure no voxel is being ignored.
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hull(&self, sampling: u32) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub fn compute_convex_hull(
+        &self,
+        sampling: u32,
+    ) -> Result<(Vec<Point<Real>>, Vec<[u32; DIM]>), ConvexHullError> {
         let mut points = Vec::new();
 
         // Grab all the points.
@@ -674,19 +679,13 @@ impl VoxelSet {
 }
 
 #[cfg(feature = "dim2")]
-fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
-    if vertices.len() > 1 {
-        crate::transformation::convex_hull(vertices)
-    } else {
-        Vec::new()
-    }
+fn convex_hull(vertices: &[Point<Real>]) -> Result<Vec<Point<Real>>, ConvexHullError> {
+    crate::transformation::convex_hull(vertices)
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
-    if vertices.len() > 2 {
-        crate::transformation::convex_hull(vertices)
-    } else {
-        (Vec::new(), Vec::new())
-    }
+fn convex_hull(
+    vertices: &[Point<Real>],
+) -> Result<(Vec<Point<Real>>, Vec<[u32; DIM]>), ConvexHullError> {
+    crate::transformation::try_convex_hull(vertices)
 }

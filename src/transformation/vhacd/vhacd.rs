@@ -19,6 +19,7 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
+use crate::transformation::ConvexHullError;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
@@ -36,6 +37,7 @@ pub(crate) struct CutPlane {
 }
 
 /// Approximate convex decomposition using the VHACD algorithm.
+#[derive(Debug)]
 pub struct VHACD {
     // raycast_mesh: Option<RaycastMesh>,
     voxel_parts: Vec<VoxelSet>,
@@ -74,7 +76,6 @@ impl VHACD {
             keep_voxel_to_primitives_map,
             // &self.raycast_mesh,
         );
-
         let mut result = Self::from_voxels(params, voxelized.into());
 
         let primitive_classes = Arc::new(result.classify_primitives(indices.len()));
@@ -239,12 +240,18 @@ impl VHACD {
                     &mut right_ch_pts,
                     &mut left_ch_pts,
                 );
-                right_ch = convex_hull(&right_ch_pts);
-                left_ch = convex_hull(&left_ch_pts);
+                right_ch = convex_hull(&right_ch_pts)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty);
+                left_ch =
+                    convex_hull(&left_ch_pts).unwrap_or_else(ConvexHullError::into_incorrect_empty);
             } else {
                 on_surface_voxels.clip(plane, &mut right_voxels, &mut left_voxels);
-                right_ch = right_voxels.compute_convex_hull(convex_hull_downsampling);
-                left_ch = left_voxels.compute_convex_hull(convex_hull_downsampling);
+                right_ch = right_voxels
+                    .compute_convex_hull(convex_hull_downsampling)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty);
+                left_ch = left_voxels
+                    .compute_convex_hull(convex_hull_downsampling)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty);
             }
 
             let volume_left_ch = compute_volume(&left_ch);
@@ -283,7 +290,9 @@ impl VHACD {
     ) {
         let volume = voxels.compute_volume(); // Compute the volume for this primitive set
         voxels.compute_bb(); // Compute the bounding box for this primitive set.
-        let voxels_convex_hull = voxels.compute_convex_hull(params.convex_hull_downsampling); // Generate the convex hull for this primitive set.
+        let voxels_convex_hull = voxels
+            .compute_convex_hull(params.convex_hull_downsampling)
+            .unwrap_or_else(ConvexHullError::into_incorrect_empty); // Generate the convex hull for this primitive set.
 
         // Compute the volume of the convex hull
         let volume_ch = compute_volume(&voxels_convex_hull);
@@ -486,7 +495,10 @@ impl VHACD {
     ) -> Vec<Vec<Point<Real>>> {
         self.voxel_parts
             .iter()
-            .map(|part| part.compute_exact_convex_hull(points, indices))
+            .map(|part| {
+                part.compute_exact_convex_hull(points, indices)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty)
+            })
             .collect()
     }
 
@@ -503,7 +515,10 @@ impl VHACD {
     ) -> Vec<(Vec<Point<Real>>, Vec<[u32; DIM]>)> {
         self.voxel_parts
             .iter()
-            .map(|part| part.compute_exact_convex_hull(points, indices))
+            .map(|part| {
+                part.compute_exact_convex_hull(points, indices)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty)
+            })
             .collect()
     }
 
@@ -517,7 +532,10 @@ impl VHACD {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
-            .map(|part| part.compute_convex_hull(downsampling))
+            .map(|part| {
+                part.compute_convex_hull(downsampling)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty)
+            })
             .collect()
     }
 
@@ -534,7 +552,10 @@ impl VHACD {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
-            .map(|part| part.compute_convex_hull(downsampling))
+            .map(|part| {
+                part.compute_convex_hull(downsampling)
+                    .unwrap_or_else(ConvexHullError::into_incorrect_empty)
+            })
             .collect()
     }
 }
@@ -564,21 +585,15 @@ fn clip_mesh(
 }
 
 #[cfg(feature = "dim2")]
-fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
-    if vertices.len() > 1 {
-        crate::transformation::convex_hull(vertices)
-    } else {
-        Vec::new()
-    }
+fn convex_hull(vertices: &[Point<Real>]) -> Result<Vec<Point<Real>>, ConvexHullError> {
+    crate::transformation::convex_hull(vertices)
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
-    if vertices.len() > 2 {
-        crate::transformation::convex_hull(vertices)
-    } else {
-        (Vec::new(), Vec::new())
-    }
+fn convex_hull(
+    vertices: &[Point<Real>],
+) -> Result<(Vec<Point<Real>>, Vec<[u32; DIM]>), ConvexHullError> {
+    crate::transformation::try_convex_hull(vertices)
 }
 
 #[cfg(feature = "dim2")]

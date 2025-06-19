@@ -1,9 +1,10 @@
-use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
-use crate::shape::Triangle;
-use crate::transformation;
-use crate::transformation::convex_hull_utils::support_point_id;
-use crate::utils;
+use super::TriangleFacet;
+use crate::{
+    math::Real,
+    shape::Triangle,
+    transformation::{self, convex_hull_utils::support_point_id, ConvexHullError},
+    utils,
+};
 use alloc::{vec, vec::Vec};
 use core::cmp::Ordering;
 use na::{Point2, Point3, Vector3};
@@ -117,7 +118,7 @@ pub fn try_get_initial_mesh(
             }
 
             // … and compute the 2d convex hull.
-            let idx = transformation::convex_hull2_idx(&subspace_points[..]);
+            let idx = transformation::convex_hull2_idx(&subspace_points[..])?;
 
             // Finalize the result, triangulating the polyline.
             let npoints = idx.len();

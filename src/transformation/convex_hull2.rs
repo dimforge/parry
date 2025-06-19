@@ -1,3 +1,4 @@
+use crate::transformation::ConvexHullError;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
@@ -10,20 +11,20 @@ use num_traits::Zero;
 ///
 /// The computed convex-hull have its points given in counter-clockwise order.
 #[cfg(feature = "dim2")]
-pub fn convex_hull2(points: &[Point2<Real>]) -> Vec<Point2<Real>> {
-    convex_hull2_idx(points)
+pub fn convex_hull2(points: &[Point2<Real>]) -> Result<Vec<Point2<Real>>, ConvexHullError> {
+    Ok(convex_hull2_idx(points)?
         .into_iter()
         .map(|id| points[id])
-        .collect()
+        .collect())
 }
 
 /// Computes the convex hull of a set of 2d points and returns only the indices of the hull
 /// vertices.
 ///
 /// The computed convex-hull have its points given in counter-clockwise order.
-pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
+pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Result<Vec<usize>, ConvexHullError> {
     let mut undecidable_points = Vec::new();
-    let mut segments = get_initial_polyline(points, &mut undecidable_points);
+    let mut segments = get_initial_polyline(points, &mut undecidable_points)?;
 
     let mut i = 0;
     while i != segments.len() {
@@ -78,24 +79,25 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
         }
     }
 
-    idx
+    Ok(idx)
 }
 
 fn get_initial_polyline(
     points: &[Point2<Real>],
     undecidable: &mut Vec<usize>,
-) -> Vec<SegmentFacet> {
+) -> Result<Vec<SegmentFacet>, ConvexHullError> {
+    if std::dbg!(points).len() < 2 {
+        return Err(ConvexHullError::IncompleteInput);
+    }
     let mut res = Vec::new();
 
-    assert!(points.len() >= 2);
-
-    let p1 = support_point_id(&Vector2::x(), points).unwrap();
+    let p1 = support_point_id(&Vector2::x(), points).ok_or(ConvexHullError::MissingSupportPoint)?;
     let mut p2 = p1;
 
     let direction = [-Vector2::x(), -Vector2::y(), Vector2::y()];
 
     for dir in direction.iter() {
-        p2 = support_point_id(dir, points).unwrap();
+        p2 = support_point_id(dir, points).ok_or(ConvexHullError::MissingSupportPoint)?;
 
         let p1p2 = points[p2] - points[p1];
 
@@ -104,10 +106,9 @@ fn get_initial_polyline(
         }
     }
 
-    assert!(
-        p1 != p2,
-        "Failed to build the 2d convex hull of this point cloud."
-    );
+    if p1 == p2 {
+        return Err(ConvexHullError::MissingSupportPoint);
+    }
 
     // Build two facets with opposite normals.
     let mut f1 = SegmentFacet::new(p1, p2, 1, 1, points);
@@ -131,7 +132,7 @@ fn get_initial_polyline(
     res.push(f1);
     res.push(f2);
 
-    res
+    Ok(res)
 }
 
 fn attach_and_push_facets2(
