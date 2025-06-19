@@ -20,7 +20,12 @@ pub enum ConvexHullError {
     /// or if they are almost coplanar.
     #[error("Input points are either invalid (NaN) or are almost coplanar.")]
     MissingSupportPoint,
+    /// The convex-hull calculation failed because less than 2 points were provided.
+    #[cfg(feature = "dim2")]
+    #[error("Less than 2 points were given to the convex-hull algorithm.")]
+    IncompleteInput,
     /// The convex-hull calculation failed because less than 3 points were provided.
+    #[cfg(feature = "dim3")]
     #[error("Less than 3 points were given to the convex-hull algorithm.")]
     IncompleteInput,
     /// Reached a piece of code we shouldn’t (internal error).
@@ -30,21 +35,21 @@ pub enum ConvexHullError {
 
 impl ConvexHullError {
     #[cfg(feature = "dim2")]
-    pub fn incorrect_empty() -> Vec<Point<Real>> {
+    pub(crate) fn incorrect_empty() -> Vec<Point<Real>> {
         return Vec::new();
     }
 
     #[cfg(feature = "dim3")]
-    pub fn incorrect_empty() -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub(crate) fn incorrect_empty() -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         return (Vec::new(), Vec::new());
     }
     #[cfg(feature = "dim2")]
-    pub fn into_incorrect_empty(self) -> Vec<Point<Real>> {
+    pub(crate) fn into_incorrect_empty(self) -> Vec<Point<Real>> {
         Self::incorrect_empty()
     }
 
     #[cfg(feature = "dim3")]
-    pub fn into_incorrect_empty(self) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+    pub(crate) fn into_incorrect_empty(self) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
         Self::incorrect_empty()
     }
 }

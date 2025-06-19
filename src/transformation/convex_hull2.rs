@@ -86,7 +86,7 @@ fn get_initial_polyline(
     points: &[Point2<Real>],
     undecidable: &mut Vec<usize>,
 ) -> Result<Vec<SegmentFacet>, ConvexHullError> {
-    if std::dbg!(points).len() < 2 {
+    if points.len() < 2 {
         return Err(ConvexHullError::IncompleteInput);
     }
     let mut res = Vec::new();

@@ -520,8 +520,6 @@ mod test {
     use crate::math::Point;
     use crate::{shape::SharedShape, transformation::vhacd::VHACDParameters};
 
-    use super::*;
-
     #[test]
     fn convex_decomp_same_points_error() {
         let vertices = [Point::default(), Point::default(), Point::default()];
