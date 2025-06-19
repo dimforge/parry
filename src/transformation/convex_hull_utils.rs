@@ -1,4 +1,4 @@
-use std::vec::Vec;
+use alloc::vec::Vec;
 
 #[cfg(feature = "dim3")]
 use crate::bounding_volume;
@@ -36,12 +36,12 @@ pub enum ConvexHullError {
 impl ConvexHullError {
     #[cfg(feature = "dim2")]
     pub(crate) fn incorrect_empty() -> Vec<Point<Real>> {
-        return Vec::new();
+        Vec::new()
     }
 
     #[cfg(feature = "dim3")]
     pub(crate) fn incorrect_empty() -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
-        return (Vec::new(), Vec::new());
+        (Vec::new(), Vec::new())
     }
     #[cfg(feature = "dim2")]
     pub(crate) fn into_incorrect_empty(self) -> Vec<Point<Real>> {
