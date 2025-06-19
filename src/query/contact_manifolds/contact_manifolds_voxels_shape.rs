@@ -26,7 +26,6 @@ pub(crate) struct VoxelsShapeSubDetector {
 // NOTE: this is using a similar kind of cache as compound shape and height-field.
 //       It is different from the trimesh cash though. Which one is better?
 /// A workspace for collision-detection against voxels shape.
-
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Clone, Default)]
 pub struct VoxelsShapeContactManifoldsWorkspace<const N: usize> {
