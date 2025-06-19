@@ -193,7 +193,7 @@ impl VoxelizedVolume {
         fill_mode: FillMode,
         keep_voxel_to_primitives_map: bool,
     ) -> Self {
-        debug_assert!(resolution > 1);
+        assert!(resolution > 1);
         let mut result = VoxelizedVolume {
             resolution: [0; DIM],
             origin: Point::origin(),
