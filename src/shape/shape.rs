@@ -1502,7 +1502,6 @@ impl Shape for HalfSpace {
     fn ccd_thickness(&self) -> Real {
         #[cfg_attr(feature = "f32", expect(clippy::unnecessary_cast))]
         let result = f32::MAX as Real;
-        #[cfg_attr(feature = "f64", expect(clippy::let_and_return))]
         result
     }
 
