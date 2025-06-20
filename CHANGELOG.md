@@ -4,6 +4,7 @@
 
 - Fix `clip_aabb_line` crashing when given incorrect inputs (zero length direction or NAN).
 - Fix `Segment::intersects_ray` returning false-positive when the segment is zero-length. ([#31](https://github.com/dimforge/parry/issues/31)).
+- Expose `utils::sort3` and `utils::sort2`.
 
 ## 0.21.1
 
