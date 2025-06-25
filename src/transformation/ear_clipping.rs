@@ -5,6 +5,7 @@ use crate::{
     math::{Point, Real},
     utils::point_in_triangle::{corner_direction, is_point_in_triangle, Orientation},
 };
+use alloc::{vec, vec::Vec};
 
 /// The information stored for each vertex in the ear clipping algorithm.
 #[derive(Clone, Default)]

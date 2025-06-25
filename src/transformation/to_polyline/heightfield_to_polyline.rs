@@ -1,5 +1,6 @@
 use crate::math::Real;
 use crate::shape::HeightField;
+use alloc::{vec, vec::Vec};
 use na::Point2;
 
 impl HeightField {

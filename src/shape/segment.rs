@@ -3,8 +3,8 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::{FeatureId, SupportMap};
 
+use core::mem;
 use na::{self, Unit};
-use std::mem;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};

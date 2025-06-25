@@ -3,6 +3,7 @@ use crate::math::Vector;
 use crate::math::{Point, Real};
 use crate::query::SplitResult;
 use crate::simd::SimdReal;
+use alloc::{vec, vec::Vec};
 use simba::simd::SimdValue;
 
 use super::utils::split_indices_wrt_dim;

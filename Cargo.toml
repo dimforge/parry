@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/parry2d", "crates/parry3d", "crates/parry2d-f64", "crates/parry3d-f64"]
+members = [
+    "crates/parry2d",
+    "crates/parry3d",
+    "crates/parry2d-f64",
+    "crates/parry3d-f64",
+]
 resolver = "2"
 
 [workspace.lints]
@@ -8,6 +13,11 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
     # "wavefront" is only used for 3D crates.
     'cfg(feature, values("wavefront"))',
 ] }
+
+[workspace.lints.clippy]
+alloc_instead_of_core = "warn"
+std_instead_of_alloc = "warn"
+std_instead_of_core = "warn"
 
 [patch.crates-io]
 parry2d = { path = "crates/parry2d" }

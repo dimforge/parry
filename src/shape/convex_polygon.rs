@@ -1,6 +1,7 @@
 use crate::math::{Point, Real, Vector};
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
+use alloc::vec::Vec;
 use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.
@@ -29,7 +30,14 @@ impl ConvexPolygon {
     /// Creates a new 2D convex polygon from a set of points assumed to
     /// describe a counter-clockwise convex polyline.
     ///
-    /// Convexity of the input polyline is not checked.
+    /// This does **not** compute the convex-hull of the input points: convexity of the input is
+    /// assumed and not checked. For a version that calculates the convex hull of the given points,
+    /// use [`ConvexPolygon::from_convex_hull`] instead.
+    ///
+    /// The generated [`ConvexPolygon`] will contain the given `points` with any point
+    /// collinear to the previous and next ones removed. For a version that leaves the input
+    /// `points` unmodified, use [`ConvexPolygon::from_convex_polyline_unmodified`].
+    ///
     /// Returns `None` if all points form an almost flat line.
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         if points.is_empty() {
@@ -71,6 +79,27 @@ impl ConvexPolygon {
         } else {
             None
         }
+    }
+
+    /// Creates a new 2D convex polygon from a set of points assumed to
+    /// describe a counter-clockwise convex polyline.
+    ///
+    /// This is the same as [`ConvexPolygon::from_convex_polyline`] but without removing any point
+    /// from the input even if some are coplanar.
+    ///
+    /// Returns `None` if `points` doesn’t contain at least three points.
+    pub fn from_convex_polyline_unmodified(points: Vec<Point<Real>>) -> Option<Self> {
+        if points.len() <= 2 {
+            return None;
+        }
+        let mut normals = Vec::with_capacity(points.len());
+        // First, compute all normals.
+        for i1 in 0..points.len() {
+            let i2 = (i1 + 1) % points.len();
+            normals.push(utils::ccw_face_normal([&points[i1], &points[i2]])?);
+        }
+
+        Some(ConvexPolygon { points, normals })
     }
 
     /// The vertices of this convex polygon.

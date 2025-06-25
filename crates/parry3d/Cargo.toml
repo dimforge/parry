@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.18.0"
+version = "0.21.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -20,21 +20,26 @@ maintenance = { status = "actively-developed" }
 workspace = true
 
 [features]
-default = ["required-features", "std"]
+default = ["required-features", "std", "spade"]
 required-features = ["dim3", "f32"]
 std = [
     "nalgebra/std",
     "slab",
-    "rustc-hash",
     "simba/std",
     "arrayvec/std",
-    "spade",
+    "spade?/std",
     "thiserror/std",
-    "ena"
+    "ena",
 ]
 dim3 = []
 f32 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
+serde-serialize = [
+    "serde",
+    "nalgebra/serde-serialize",
+    "bitflags/serde",
+    "hashbrown?/serde",
+    "spade?/serde",
+]
 rkyv-serialize = [
     "rkyv/validation",
     "nalgebra/rkyv-serialize",
@@ -48,7 +53,8 @@ enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
 # Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
-alloc = []
+alloc = ["nalgebra/alloc", "hashbrown"]
+spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
@@ -65,7 +71,6 @@ either = { version = "1", default-features = false }
 bitflags = "2.3"
 downcast-rs = { version = "2", default-features = false, features = ["sync"] }
 num-traits = { version = "0.2", default-features = false }
-smallvec = "1"
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
@@ -75,17 +80,18 @@ serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
-rustc-hash = { version = "2", optional = true }
-cust_core = { version = "0.1", optional = true }
-spade = { version = "2.9", optional = true } # Make this optional?
+hashbrown = { version = "0.15", optional = true, default-features = false, features = [
+    "default-hasher",
+] }
+spade = { version = "2.9", optional = true, default-features = false }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
-ordered-float = { version = "4", default-features = false }
+ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
-ena = { version = "0.14.3", optional = true }
+ena = { version = "0.14.3", optional = true, default-features = false }
 
 [dev-dependencies]
 oorandom = "11"
@@ -137,16 +143,19 @@ doc-scrape-examples = true
 [[example]]
 name = "convex3d"
 path = "examples/convex3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "convex_hull3d"
 path = "examples/convex_hull3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "convex_try_new3d"
 path = "examples/convex_try_new3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
@@ -172,6 +181,7 @@ doc-scrape-examples = true
 [[example]]
 name = "mesh3d"
 path = "examples/mesh3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
@@ -182,16 +192,24 @@ doc-scrape-examples = true
 [[example]]
 name = "plane_intersection"
 path = "examples/plane_intersection.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "polyline3d"
 path = "examples/polyline3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "proximity_query3d"
 path = "examples/proximity_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "project_point3d"
+path = "examples/project_point3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]

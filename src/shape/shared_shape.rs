@@ -1,3 +1,4 @@
+use super::TriMeshBuilderError;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
 #[cfg(feature = "dim2")]
 use crate::shape::ConvexPolygon;
@@ -7,17 +8,17 @@ use crate::shape::DeserializableTypedShape;
 use crate::shape::HeightFieldFlags;
 use crate::shape::{
     Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, TriMeshFlags, Triangle, TypedShape,
+    TriMesh, TriMeshFlags, Triangle, TypedShape, Voxels,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
 use crate::transformation::vhacd::{VHACDParameters, VHACD};
+use crate::transformation::voxelization::{FillMode, VoxelSet};
+use alloc::sync::Arc;
+use alloc::{vec, vec::Vec};
+use core::fmt;
+use core::ops::Deref;
 use na::Unit;
-use std::fmt;
-use std::ops::Deref;
-use std::sync::Arc;
-
-use super::TriMeshBuilderError;
 
 /// The shape of a collider.
 #[derive(Clone)]
@@ -77,7 +78,7 @@ impl SharedShape {
     }
 
     /// Initialize a cylindrical shape defined by its half-height
-    /// (along along the y axis) and its radius.
+    /// (along the y axis) and its radius.
     #[cfg(feature = "dim3")]
     pub fn cylinder(half_height: Real, radius: Real) -> Self {
         SharedShape(Arc::new(Cylinder::new(half_height, radius)))
@@ -215,6 +216,82 @@ impl SharedShape {
         )?)))
     }
 
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and grid coordinate given by `grid_coords`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    ///
+    /// For initializing a voxels shape from points in space, see [`Self::voxels_from_points`].
+    /// For initializing a voxels shape from a mesh to voxelize, see [`Self::voxelized_mesh`].
+    /// For initializing multiple voxels shape from the convex decomposition of a mesh, see
+    /// [`Self::voxelized_convex_decomposition`].
+    pub fn voxels(voxel_size: Vector<Real>, grid_coords: &[Point<i32>]) -> Self {
+        let shape = Voxels::new(voxel_size, grid_coords);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a shape made of voxels.
+    ///
+    /// Each voxel has the size `voxel_size` and contains at least one point from `centers`.
+    /// The `primitive_geometry` controls the behavior of collision detection at voxels boundaries.
+    pub fn voxels_from_points(voxel_size: Vector<Real>, points: &[Point<Real>]) -> Self {
+        let shape = Voxels::from_points(voxel_size, points);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a voxels shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_mesh(
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        voxel_size: Real,
+        fill_mode: FillMode,
+    ) -> Self {
+        let mut voxels = VoxelSet::with_voxel_size(vertices, indices, voxel_size, fill_mode, true);
+        voxels.compute_bb();
+        Self::from_voxel_set(&voxels)
+    }
+
+    fn from_voxel_set(vox_set: &VoxelSet) -> Self {
+        let centers: Vec<_> = vox_set
+            .voxels()
+            .iter()
+            .map(|v| vox_set.get_voxel_point(v))
+            .collect();
+        let shape = Voxels::from_points(Vector::repeat(vox_set.scale), &centers);
+        SharedShape::new(shape)
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition(
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+    ) -> Vec<Self> {
+        Self::voxelized_convex_decomposition_with_params(
+            vertices,
+            indices,
+            &VHACDParameters::default(),
+        )
+    }
+
+    /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D)
+    /// or polyline (in 2D) into voxelized convex parts.
+    pub fn voxelized_convex_decomposition_with_params(
+        vertices: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        params: &VHACDParameters,
+    ) -> Vec<Self> {
+        let mut parts = vec![];
+        let decomp = VHACD::decompose(params, vertices, indices, true);
+
+        for vox_set in decomp.voxel_parts() {
+            parts.push(Self::from_voxel_set(vox_set));
+        }
+
+        parts
+    }
+
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts.
     pub fn convex_decomposition(vertices: &[Point<Real>], indices: &[[u32; DIM]]) -> Self {
@@ -299,12 +376,33 @@ impl SharedShape {
         return ConvexPolyhedron::from_convex_hull(points).map(|ch| SharedShape(Arc::new(ch)));
     }
 
-    /// Creates a new shared shape that is a convex polygon formed by the
-    /// given set of points assumed to form a convex polyline (no convex-hull will be automatically
-    /// computed).
+    /// Creates a new shared shape that is a 2D convex polygon from a set of points assumed to
+    /// describe a counter-clockwise convex polyline.
+    ///
+    /// This does **not** compute the convex-hull of the input points: convexity of the input is
+    /// assumed and not checked. For a version that calculates the convex hull of the input points,
+    /// use [`SharedShape::convex_hull`] instead.
+    ///
+    /// The generated [`ConvexPolygon`] will contain the given `points` with any point
+    /// collinear to the previous and next ones removed. For a version that leaves the input
+    /// `points` unmodified, use [`SharedShape::convex_polyline_unmodified`].
+    ///
+    /// Returns `None` if all points form an almost flat line.
     #[cfg(feature = "dim2")]
     pub fn convex_polyline(points: Vec<Point<Real>>) -> Option<Self> {
         ConvexPolygon::from_convex_polyline(points).map(|ch| SharedShape(Arc::new(ch)))
+    }
+
+    /// Creates a new shared shape that is a 2D convex polygon from a set of points assumed to
+    /// describe a counter-clockwise convex polyline.
+    ///
+    /// This is the same as [`SharedShape::convex_polyline`] but without removing any point
+    /// from the input even if some are coplanar.
+    ///
+    /// Returns `None` if `points` doesn’t contain at least three points.
+    #[cfg(feature = "dim2")]
+    pub fn convex_polyline_unmodified(points: Vec<Point<Real>>) -> Option<Self> {
+        ConvexPolygon::from_convex_polyline_unmodified(points).map(|ch| SharedShape(Arc::new(ch)))
     }
 
     /// Creates a new shared shape that is a convex polyhedron formed by the

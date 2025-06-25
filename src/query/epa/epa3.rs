@@ -5,10 +5,11 @@ use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::query::PointQueryWithLocation;
 use crate::shape::{SupportMap, Triangle, TrianglePointLocation};
 use crate::utils;
+use alloc::collections::BinaryHeap;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 use na::{self, Unit};
 use num::Bounded;
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
 
 #[derive(Copy, Clone, PartialEq)]
 struct FaceId {
@@ -467,7 +468,10 @@ impl EPA {
     }
 
     #[allow(dead_code)]
+    #[cfg(feature = "std")]
     fn print_silhouette(&self) {
+        use std::{print, println};
+
         print!("Silhouette points: ");
         for i in 0..self.silhouette.len() {
             let edge = &self.silhouette[i];

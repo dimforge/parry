@@ -2,7 +2,7 @@ mod common_macroquad3d;
 
 extern crate nalgebra as na;
 
-use std::ops::Rem;
+use core::ops::Rem;
 
 use common_macroquad3d::{lissajous_3d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;

@@ -3,7 +3,8 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::Qbvh;
 use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
 use crate::utils::HashablePartialEq;
-use std::fmt;
+use alloc::{vec, vec::Vec};
+use core::fmt;
 #[cfg(feature = "dim3")]
 use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 
@@ -269,7 +270,7 @@ bitflags::bitflags! {
         ///
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
-        const FIX_INTERNAL_EDGES = (1 << 7) | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
+        const FIX_INTERNAL_EDGES = (1 << 7) | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
@@ -349,7 +350,7 @@ impl TriMesh {
         }
 
         #[cfg(feature = "dim3")]
-        if !flags.contains(TriMeshFlags::ORIENTED) {
+        if !flags.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.pseudo_normals = None;
         }
 
@@ -377,12 +378,13 @@ impl TriMesh {
                 self.compute_topology(flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES));
         }
 
+        #[cfg(feature = "std")]
         if difference.intersects(TriMeshFlags::CONNECTED_COMPONENTS) {
             self.compute_connected_components();
         }
 
         #[cfg(feature = "dim3")]
-        if difference.contains(TriMeshFlags::ORIENTED) {
+        if difference.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.compute_pseudo_normals();
         }
 
@@ -392,6 +394,64 @@ impl TriMesh {
 
         self.flags = flags;
         result
+    }
+
+    // TODO: support a crate like get_size2 (will require support on nalgebra too)?
+    /// An approximation of the memory usage (in bytes) for this struct plus
+    /// the memory it allocates dynamically.
+    pub fn total_memory_size(&self) -> usize {
+        size_of::<Self>() + self.heap_memory_size()
+    }
+
+    /// An approximation of the memory dynamically-allocated by this struct.
+    pub fn heap_memory_size(&self) -> usize {
+        // NOTE: if a new field is added to `Self`, adjust this function result.
+        let Self {
+            qbvh,
+            vertices,
+            indices,
+            topology,
+            connected_components,
+            flags: _,
+            #[cfg(feature = "dim3")]
+            pseudo_normals,
+        } = self;
+        let sz_qbvh = qbvh.heap_memory_size();
+        let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
+        let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
+        #[cfg(feature = "dim3")]
+        let sz_pseudo_normals = pseudo_normals
+            .as_ref()
+            .map(|pn| {
+                pn.vertices_pseudo_normal.capacity() * size_of::<Vector<Real>>()
+                    + pn.edges_pseudo_normal.capacity() * size_of::<[Vector<Real>; 3]>()
+            })
+            .unwrap_or(0);
+        #[cfg(feature = "dim2")]
+        let sz_pseudo_normals = 0;
+        let sz_topology = topology
+            .as_ref()
+            .map(|t| {
+                t.vertices.capacity() * size_of::<TopoVertex>()
+                    + t.faces.capacity() * size_of::<TopoFace>()
+                    + t.half_edges.capacity() * size_of::<TopoHalfEdge>()
+            })
+            .unwrap_or(0);
+        let sz_connected_components = connected_components
+            .as_ref()
+            .map(|c| {
+                c.face_colors.capacity() * size_of::<u32>()
+                    + c.grouped_faces.capacity() * size_of::<f32>()
+                    + c.ranges.capacity() * size_of::<usize>()
+            })
+            .unwrap_or(0);
+
+        sz_qbvh
+            + sz_vertices
+            + sz_indices
+            + sz_pseudo_normals
+            + sz_topology
+            + sz_connected_components
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
@@ -461,8 +521,8 @@ impl TriMesh {
                 .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
         );
 
-        let vertices = std::mem::take(&mut self.vertices);
-        let indices = std::mem::take(&mut self.indices);
+        let vertices = core::mem::take(&mut self.vertices);
+        let indices = core::mem::take(&mut self.indices);
         *self = TriMesh::with_flags(vertices, indices, self.flags).unwrap();
     }
 
@@ -479,7 +539,7 @@ impl TriMesh {
         unsafe {
             let len = self.indices.len() * 3;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
@@ -805,6 +865,8 @@ impl TriMesh {
 
     // NOTE: this is private because that calculation is controlled by TriMeshFlags::CONNECTED_COMPONENTS
     // TODO: we should remove the CONNECTED_COMPONENTS flags and just have this be a free function.
+    // TODO: this should be no_std compatible once ena is or once we have an alternative for it.
+    #[cfg(feature = "std")]
     fn compute_connected_components(&mut self) {
         use ena::unify::{InPlaceUnificationTable, UnifyKey};
 
@@ -1059,6 +1121,17 @@ impl TriMesh {
     #[cfg(feature = "dim3")]
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
         self.pseudo_normals.as_ref()
+    }
+
+    /// The pseudo-normals of this triangle mesh, if they have been computed **and** this mesh was
+    /// marked as [`TriMeshFlags::ORIENTED`].
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals_if_oriented(&self) -> Option<&TriMeshPseudoNormals> {
+        if self.flags.intersects(TriMeshFlags::ORIENTED) {
+            self.pseudo_normals.as_ref()
+        } else {
+            None
+        }
     }
 }
 

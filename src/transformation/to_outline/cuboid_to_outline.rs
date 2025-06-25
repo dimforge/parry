@@ -2,6 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 
 impl Aabb {
     /// Outlines this Aabb’s shape using polylines.

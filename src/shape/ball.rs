@@ -1,4 +1,3 @@
-#[cfg(feature = "std")]
 use either::Either;
 use na::Unit;
 
@@ -33,7 +32,7 @@ impl Ball {
     /// ball. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(all(feature = "dim2", feature = "std"))]
+    #[cfg(all(feature = "dim2", feature = "alloc"))]
     #[inline]
     pub fn scaled(
         self,
@@ -60,7 +59,7 @@ impl Ball {
     /// ball. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(all(feature = "dim3", feature = "std"))]
+    #[cfg(all(feature = "dim3", feature = "alloc"))]
     #[inline]
     pub fn scaled(
         self,

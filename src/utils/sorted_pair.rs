@@ -1,6 +1,6 @@
-use std::cmp::PartialOrd;
-use std::mem;
-use std::ops::Deref;
+use core::cmp::PartialOrd;
+use core::mem;
+use core::ops::Deref;
 
 /// A pair of elements sorted in increasing order.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -33,11 +33,11 @@ impl<T: PartialOrd> Deref for SortedPair<T> {
 
 // TODO: can we avoid these manual impls of Hash/PartialEq/Eq for the archived types?
 #[cfg(feature = "rkyv")]
-impl<T: rkyv::Archive + PartialOrd> std::hash::Hash for ArchivedSortedPair<T>
+impl<T: rkyv::Archive + PartialOrd> core::hash::Hash for ArchivedSortedPair<T>
 where
-    [<T as rkyv::Archive>::Archived; 2]: std::hash::Hash,
+    [<T as rkyv::Archive>::Archived; 2]: core::hash::Hash,
 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state)
     }
 }

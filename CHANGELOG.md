@@ -1,5 +1,82 @@
 # Change Log
 
+## 0.21.1
+
+### Added
+
+- Add `Voxels::combine_voxel_states` to merge the voxel state of two `Voxels` shapes, updating their internal voxels
+  state as if both shapes were part of a single one. In particular, this will prevent any internal edge that would
+  arise at the boundaries of both shapes if they were adjacent.
+- Add `Voxels::propagate_voxel_change` to propagate a single-voxel modification from one `Voxels` shape to another,
+  in order to update their internal neighborhood information as if both were part of the same `Voxels` shape. 
+
+## 0.21.0
+
+### Added
+
+- Add `TriMesh::cast_ray_with_culling` and `TriMesh::cast_local_ray_with_culling` for casting rays on a triangle mesh
+  but with the possibility to prevents hits on front-faces or back-faces.
+- Add contact manifold calculation between two voxels shapes, or a voxels shape and compound shape.
+- Add intersection check between voxels and other shapes.
+- Add `MassProperties::from_voxels` to compute the mass and angular inertia tensor from a voxels shape.
+
+### Modified
+
+- Add new variants to `TypedWorkspaceData` for voxels-voxels and voxels-compound collision detection workspace
+  data.
+- The `Voxels` shape now only support cuboids as their leaf geometries (pseudo-balls were removed). 
+
+## v0.20.2
+
+### Fixed
+
+- Fix infinite loop in `Voxels::set_voxel`.
+
+## v0.20.1
+
+### Added
+
+- Rework the `Voxels` shape API to use better method names.
+- Added implementations for linear and non-linear shape-casting involving `Voxels` shapes.
+
+## v0.20.0 (yanked)
+
+### Added
+
+- Added the `Voxels` type: a dedicated shape for voxel models. This is currently experimental because some features are
+  still missing (in particular: shape-casting, mass properties, and collision-detection against non-convex shapes).
+- Added `SharedShape::voxels`, `SharedShape::voxels_from_points`, and `::voxelized_mesh` for creating a voxels shape
+  from grid coordinates, points, or automatic voxelization of a triangle mesh.
+
+## v0.19.0
+
+### Added
+
+- Derive `Copy` for `VHACDParameters`.
+- Add `spade` default feature for algorithms using Delaunay triangulation from `spade`.
+- Add `SharedShape::from_convex_polyline_unmodified` and `ConvexPolygon::from_convex_polyline_unmodified`
+  to initialize a polyline from a set of points assumed to be convex, and without modifying this set even
+  if some points are collinear.
+- Add `TriMesh::pseudo_normals_if_oriented` that returns `Some` only if the mesh has the `TriMeshFlags::ORIENTED`
+  flag enabled.
+
+### Modified
+
+- The `TriMeshFlags::FIX_INTERNAL_EDGES` flag no longer automatically enable the `TriMeshFlags::ORIENTED`
+  flag (but the mesh pseudo-normals will still be computed).
+- Improve `no_std` compatibility.
+  - Everything is now compatible, except `mesh_intersections`, `split_trimesh`,
+    convex hull validation, and computation of connected components for `TriMesh`.
+  - Add the `alloc_instead_of_core`, `std_instead_of_alloc`, and `std_instead_of_core` Clippy lints to the workspace.
+  - Use `core` and `alloc` directly rather than using an `std` alias.
+  - Use `hashbrown` instead of `rustc-hash` when `enhanced-determinism` is not enabled.
+  - Make `spade` optional.
+
+### Fix
+
+- Fix trimesh inertia tensor computation [#331](https://github.com/dimforge/parry/pull/331).
+- Fix shifted inertia tensor computation [#334](https://github.com/dimforge/parry/pull/334).
+
 ## v0.18.0
 
 ### Added
@@ -152,7 +229,7 @@ This version modifies many names related to shape-casting:
   now prefixed with `cast_shapes_` (e.g. `cast_shapes_ball_ball`).
 - Rename `QueryDispatcher::time_of_impact` to `QueryDispatcher::cast_shapes`.
 - The (linear) shape-casting functions like `query::cast_shapes` (previously named
-  `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
+  `query::time_of_impact`) now take a `ShapeCastOptions` instead of the `max_toi` and
   `stop_at_penetration` arguments.
 - Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
 - Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_shapes_nonlinear`.

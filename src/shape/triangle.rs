@@ -5,12 +5,12 @@ use crate::shape::SupportMap;
 use crate::shape::{PolygonalFeature, Segment};
 use crate::utils;
 
+use core::mem;
 use na::{self, ComplexField, Unit};
 use num::Zero;
-use std::mem;
 
 #[cfg(feature = "dim3")]
-use {crate::shape::FeatureId, std::f64};
+use {crate::shape::FeatureId, core::f64};
 
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
@@ -412,7 +412,7 @@ impl Triangle {
         let denom = 2.0 * (na * nb - dab * dab);
 
         if denom.is_zero() {
-            // The triangle is degenerate (the three points are colinear).
+            // The triangle is degenerate (the three points are collinear).
             // So we find the longest segment and take its center.
             let c = self.a - self.b;
             let nc = c.norm_squared();

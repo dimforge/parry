@@ -18,12 +18,12 @@ impl Default for FxHasher32 {
 impl FxHasher32 {
     #[inline]
     fn add_to_hash(&mut self, i: u32) {
-        use std::ops::BitXor;
+        use core::ops::BitXor;
         self.hash = self.hash.rotate_left(5).bitxor(i).wrapping_mul(K);
     }
 }
 
-impl std::hash::Hasher for FxHasher32 {
+impl core::hash::Hasher for FxHasher32 {
     #[inline]
     fn write(&mut self, mut bytes: &[u8]) {
         let read_u32 = |bytes: &[u8]| u32::from_ne_bytes(bytes[..4].try_into().unwrap());

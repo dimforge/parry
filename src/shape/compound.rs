@@ -11,6 +11,7 @@ use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
+use alloc::vec::Vec;
 
 /// A compound shape with an aabb bounding volume.
 ///

@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Matrix, Real};
+use alloc::vec::Vec;
 
 /// Spatial partitioning data structure visitor collecting interferences with a given bounding volume.
 pub struct AabbSetsInterferencesCollector<'a, T: 'a> {

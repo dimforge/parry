@@ -7,10 +7,13 @@ use crate::utils;
 use crate::utils::hashmap::Entry;
 use crate::utils::hashmap::HashMap;
 use crate::utils::hashset::HashSet;
+use alloc::collections::BTreeMap;
+use alloc::{vec, vec::Vec};
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
-use std::collections::BTreeMap;
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
@@ -106,7 +109,8 @@ pub fn intersect_meshes_with_tolerances(
         return Err(MeshIntersectionError::MissingTopology);
     }
 
-    if mesh1.pseudo_normals().is_none() || mesh2.pseudo_normals().is_none() {
+    if mesh1.pseudo_normals_if_oriented().is_none() || mesh2.pseudo_normals_if_oriented().is_none()
+    {
         return Err(MeshIntersectionError::MissingPseudoNormals);
     }
 

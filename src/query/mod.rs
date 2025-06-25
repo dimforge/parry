@@ -27,7 +27,7 @@
 
 pub use self::closest_points::{closest_points, ClosestPoints};
 pub use self::contact::{contact, Contact};
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::contact_manifolds::{
     ContactManifold, ContactManifoldsWorkspace, TrackedContact, TypedWorkspaceData, WorkspaceData,
 };
@@ -37,21 +37,24 @@ pub use self::error::Unsupported;
 pub use self::intersection_test::intersection_test;
 pub use self::nonlinear_shape_cast::{cast_shapes_nonlinear, NonlinearRigidMotion};
 pub use self::point::{PointProjection, PointQuery, PointQueryWithLocation};
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::query_dispatcher::PersistentQueryDispatcher;
 pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
 pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
 pub use self::split::{IntersectResult, SplitResult};
 
+#[cfg(all(feature = "dim3", feature = "alloc"))]
+pub use self::ray::RayCullingMode;
+
 mod clip;
 pub mod closest_points;
 pub mod contact;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod contact_manifolds;
 mod default_query_dispatcher;
 mod distance;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod epa;
 mod error;
 pub mod gjk;
@@ -63,7 +66,7 @@ mod ray;
 pub mod sat;
 mod shape_cast;
 mod split;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod visitors;
 
 /// Queries dedicated to specific pairs of shapes.
@@ -71,7 +74,7 @@ pub mod details {
     pub use super::clip::*;
     pub use super::closest_points::*;
     pub use super::contact::*;
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub use super::contact_manifolds::*;
     pub use super::distance::*;
     pub use super::intersection_test::*;
