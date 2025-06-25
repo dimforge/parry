@@ -170,3 +170,46 @@ pub fn clip_aabb_line(
 
     Some((near, far))
 }
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn clip_empty_aabb_line() {
+        assert!(clip_aabb_line(
+            &Aabb::new(Point::origin(), Point::origin()),
+            &Point::origin(),
+            &[
+                0.0,
+                0.0,
+                #[cfg(feature = "dim3")]
+                0.0,
+            ]
+            .into(),
+        )
+        .is_none());
+    }
+
+    #[test]
+    pub fn clip_empty_aabb_segment() {
+        let aabb_empty = Aabb::new(Point::origin(), Point::origin());
+        assert!(aabb_empty
+            .clip_segment(
+                &[
+                    0.0,
+                    0.0,
+                    #[cfg(feature = "dim3")]
+                    0.0,
+                ]
+                .into(),
+                &[
+                    Real::NAN,
+                    Real::NAN,
+                    #[cfg(feature = "dim3")]
+                    Real::NAN,
+                ]
+                .into(),
+            )
+            .is_none());
+    }
+}
