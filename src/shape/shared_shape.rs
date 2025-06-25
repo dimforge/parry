@@ -315,6 +315,7 @@ impl SharedShape {
 
     /// Initializes a compound shape obtained from the decomposition of the given trimesh (in 3D) or
     /// polyline (in 2D) into convex parts.
+    // TODO: Error should report any failed convex decomposition and its relevant actionable information.
     pub fn convex_decomposition_with_params(
         vertices: &[Point<Real>],
         indices: &[[u32; DIM]],
