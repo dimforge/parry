@@ -1,5 +1,9 @@
 # Change Log
 
+### Fixed
+
+- Fix `clip_aabb_line` crashing when given incorrect inputs (zero length direction or NAN).
+
 ## 0.21.1
 
 ### Added
