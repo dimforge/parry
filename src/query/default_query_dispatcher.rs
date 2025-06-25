@@ -1,5 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::details::ShapeCastOptions;
+use crate::query::gjk;
 use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
     QueryDispatcher, ShapeCastHit, Unsupported,
@@ -14,7 +15,18 @@ use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
 /// A dispatcher that exposes built-in queries
 #[derive(Debug, Clone)]
-pub struct DefaultQueryDispatcher;
+pub struct DefaultQueryDispatcher {
+    /// The absolute tolerance used by the GJK algorithm.
+    pub gjk_espilon_tolerance: Real,
+}
+
+impl Default for DefaultQueryDispatcher {
+    fn default() -> Self {
+        Self {
+            gjk_espilon_tolerance: gjk::eps_tol(),
+        }
+    }
+}
 
 impl QueryDispatcher for DefaultQueryDispatcher {
     fn intersection_test(
@@ -333,6 +345,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     s1,
                     s2,
                     options,
+                    self.gjk_espilon_tolerance,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_composite_shape_shape(

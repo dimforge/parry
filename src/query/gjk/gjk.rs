@@ -35,7 +35,7 @@ pub enum GJKResult {
 /// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
-    _eps * 10_000.0
+    _eps
 }
 
 /// Projects the origin on the boundary of the given shape.
@@ -197,6 +197,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
         ray,
         max_time_of_impact,
         simplex,
+        eps_tol(),
     )
 }
 
@@ -210,25 +211,33 @@ pub fn directional_distance<G1, G2>(
     g2: &G2,
     dir: &Vector<Real>,
     simplex: &mut VoronoiSimplex,
+    gjk_espilon_tolerance: Real,
 ) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
-    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(
-        |(time_of_impact, normal)| {
-            let witnesses = if !time_of_impact.is_zero() {
-                result(simplex, simplex.dimension() == DIM)
-            } else {
-                // If there is penetration, the witness points
-                // are undefined.
-                (Point::origin(), Point::origin())
-            };
-
-            (time_of_impact, normal, witnesses.0, witnesses.1)
-        },
+    minkowski_ray_cast(
+        pos12,
+        g1,
+        g2,
+        &ray,
+        Real::max_value(),
+        simplex,
+        gjk_espilon_tolerance,
     )
+    .map(|(time_of_impact, normal)| {
+        let witnesses = if !time_of_impact.is_zero() {
+            result(simplex, simplex.dimension() == DIM)
+        } else {
+            // If there is penetration, the witness points
+            // are undefined.
+            (Point::origin(), Point::origin())
+        };
+
+        (time_of_impact, normal, witnesses.0, witnesses.1)
+    })
 }
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
@@ -239,13 +248,14 @@ fn minkowski_ray_cast<G1, G2>(
     ray: &Ray,
     max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
+    gjk_espilon_tolerance: Real,
 ) -> Option<(Real, Vector<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = eps_tol();
+    let _eps_tol: Real = gjk_espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     let ray_length = ray.dir.norm();

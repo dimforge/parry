@@ -4,7 +4,8 @@ use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2};
 use parry2d::math::Isometry;
-use parry2d::query::{self, Ray, ShapeCastOptions};
+use parry2d::query::gjk::eps_tol;
+use parry2d::query::{self, DefaultQueryDispatcher, Ray, ShapeCastOptions};
 use parry2d::shape::{Ball, ConvexPolygon, Shape};
 
 const RENDER_SCALE: f32 = 1.0;
@@ -101,7 +102,7 @@ fn shape_cast_debug(
     let vel2 = [0.0, 0.0];
     let g2 = to_cast_against.clone_dyn();
 
-    let toi = query::cast_shapes(
+    let toi = query::cast_shapes_with_dispatcher(
         &pos1.into(),
         &vel1,
         &g1,
@@ -109,6 +110,9 @@ fn shape_cast_debug(
         &vel2.into(),
         &*g2,
         ShapeCastOptions::with_max_time_of_impact(1.0),
+        DefaultQueryDispatcher {
+            gjk_espilon_tolerance: eps_tol() * 1000f32,
+        },
     )
     .unwrap();
 

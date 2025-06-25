@@ -28,7 +28,7 @@ fn cuboids_large_size_ratio_issue_181() {
 
     let pos_b = Isometry2::new(Vector2::new(5.0, 0.0), 1.5);
 
-    let dispatcher = DefaultQueryDispatcher;
+    let dispatcher = DefaultQueryDispatcher::default();
     let mut p = Vector2::new(0.0, 0.0);
     let mut angle = 0.0;
 

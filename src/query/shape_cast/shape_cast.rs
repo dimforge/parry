@@ -149,5 +149,25 @@ pub fn cast_shapes(
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
     let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));
-    DefaultQueryDispatcher.cast_shapes(&pos12, &vel12, g1, g2, options)
+    DefaultQueryDispatcher::default().cast_shapes(&pos12, &vel12, g1, g2, options)
+}
+
+/// Computes the smallest time when two shapes under translational movement are separated by a
+/// distance smaller or equal to `distance`.
+///
+/// Returns `0.0` if the objects are touching or closer than `options.target_distance`,
+/// or penetrating.
+pub fn cast_shapes_with_dispatcher(
+    pos1: &Isometry<Real>,
+    vel1: &Vector<Real>,
+    g1: &dyn Shape,
+    pos2: &Isometry<Real>,
+    vel2: &Vector<Real>,
+    g2: &dyn Shape,
+    options: ShapeCastOptions,
+    dispatcher: impl QueryDispatcher,
+) -> Result<Option<ShapeCastHit>, Unsupported> {
+    let pos12 = pos1.inv_mul(pos2);
+    let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));
+    dispatcher.cast_shapes(&pos12, &vel12, g1, g2, options)
 }

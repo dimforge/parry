@@ -14,7 +14,7 @@ pub fn closest_points(
     max_dist: Real,
 ) -> Result<ClosestPoints, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    DefaultQueryDispatcher
+    DefaultQueryDispatcher::default()
         .closest_points(&pos12, g1, g2, max_dist)
         .map(|res| res.transform_by(pos1, pos2))
 }

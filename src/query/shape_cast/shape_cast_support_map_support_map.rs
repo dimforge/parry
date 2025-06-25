@@ -15,6 +15,7 @@ pub fn cast_shapes_support_map_support_map<G1, G2>(
     g1: &G1,
     g2: &G2,
     options: ShapeCastOptions,
+    gjk_espilon_tolerance: Real,
 ) -> Option<ShapeCastHit>
 where
     G1: ?Sized + SupportMap,
@@ -25,9 +26,23 @@ where
             inner_shape: g1,
             border_radius: options.target_distance,
         };
-        gjk::directional_distance(pos12, &round_g1, g2, vel12, &mut VoronoiSimplex::new())
+        gjk::directional_distance(
+            pos12,
+            &round_g1,
+            g2,
+            vel12,
+            &mut VoronoiSimplex::new(),
+            gjk_espilon_tolerance,
+        )
     } else {
-        gjk::directional_distance(pos12, g1, g2, vel12, &mut VoronoiSimplex::new())
+        gjk::directional_distance(
+            pos12,
+            g1,
+            g2,
+            vel12,
+            &mut VoronoiSimplex::new(),
+            gjk_espilon_tolerance,
+        )
     };
 
     gjk_result.and_then(|(time_of_impact, normal1, witness1, witness2)| {
