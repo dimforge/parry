@@ -45,6 +45,8 @@ jobs:
         run: cargo check --features enhanced-determinism
       - name: Run tests
         run: cargo test --features wavefront
+      - name: Run tests
+        run: cargo test --features parallel
   build-wasm:
     runs-on: ubuntu-latest
     env:

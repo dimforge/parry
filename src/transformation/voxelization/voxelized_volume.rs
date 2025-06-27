@@ -22,8 +22,8 @@ use crate::query;
 use crate::transformation::voxelization::{Voxel, VoxelSet};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
-use na::ComplexField;
+//#[cfg(not(feature = "std"))]
+//use na::ComplexField;
 
 /// Controls how the voxelization determines which voxel needs
 /// to be considered empty, and which ones will be considered full.
