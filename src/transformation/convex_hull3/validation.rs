@@ -79,11 +79,7 @@ pub fn check_convex_hull(
                 }
                 Entry::Occupied(mut e) => {
                     if e.get().adjacent_triangles[1] != usize::MAX {
-                        panic!(
-                            "Detected t-junction for triangle {}, edge: {:?}.",
-                            itri,
-                            (ivtx1, ivtx2)
-                        );
+                        return Some(ConvexHullError::TJunction(itri, ivtx1, ivtx2));
                     }
 
                     e.get_mut().adjacent_triangles[1] = itri;

@@ -19,4 +19,7 @@ pub enum ConvexHullError {
     ///
     #[error("Detected unfinished triangle")]
     UnfinishedTriangle,
+    ///
+    #[error("Detected t-junction for triangle {0}, edge: ({1}, {2})")]
+    TJunction(usize, u32, u32),
 }
