@@ -29,13 +29,10 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
 }
 
 /// Checks if a convex-hull is properly formed.
-#[cfg(feature = "std")]
 pub fn check_convex_hull(
     points: &[Point3<Real>],
     triangles: &[[u32; 3]],
 ) -> Option<ConvexHullError> {
-    use std::println;
-
     use crate::utils::hashmap::{Entry, HashMap};
     use crate::utils::SortedPair;
     let mut edges = HashMap::default();
@@ -55,8 +52,7 @@ pub fn check_convex_hull(
     for i in 0..points.len() {
         for j in i + 1..points.len() {
             if points[i] == points[j] {
-                println!("Duplicate: {}", points[i]);
-                panic!("Found duplicate points.")
+                return Some(ConvexHullError::DuplicatePoints(i, j));
             }
         }
     }

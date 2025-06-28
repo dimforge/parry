@@ -22,4 +22,7 @@ pub enum ConvexHullError {
     ///
     #[error("Detected t-junction for triangle {0}, edge: ({1}, {2})")]
     TJunction(usize, u32, u32),
+    ///
+    #[error("Detected duplicate points {0} and {1}")]
+    DuplicatePoints(usize, usize),
 }
