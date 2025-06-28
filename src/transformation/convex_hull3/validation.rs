@@ -94,7 +94,7 @@ pub fn check_convex_hull(
 
     for edge in &edges {
         if edge.1.adjacent_triangles[1] == usize::MAX {
-            panic!("Detected unfinished triangle.");
+            return Some(ConvexHullError::UnfinishedTriangle);
         }
     }
 
