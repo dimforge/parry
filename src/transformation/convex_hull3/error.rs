@@ -16,4 +16,7 @@ pub enum ConvexHullError {
     /// Reached a piece of code we shouldn’t (internal error).
     #[error("Internal error: unreachable code path")]
     Unreachable,
+    ///
+    #[error("Detected unfinished triangle")]
+    UnfinishedTriangle,
 }
