@@ -143,10 +143,18 @@ impl Aabb {
         Self::new(center - half_extents, center + half_extents)
     }
 
-    /// Creates a new `Aabb` from a set of points.
-    pub fn from_points<'a, I>(pts: I) -> Self
+    /// Creates a new `Aabb` from a set of point references.
+    pub fn from_points_ref<'a, I>(pts: I) -> Self
     where
         I: IntoIterator<Item = &'a Point<Real>>,
+    {
+        super::aabb_utils::local_point_cloud_aabb(pts.into_iter().copied())
+    }
+
+    /// Creates a new `Aabb` from a set of points.
+    pub fn from_points<I>(pts: I) -> Self
+    where
+        I: IntoIterator<Item = Point<Real>>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }

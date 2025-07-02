@@ -6,6 +6,12 @@
 - Fix `Segment::intersects_ray` returning false-positive when the segment is zero-length. ([#31](https://github.com/dimforge/parry/issues/31)).
 - Expose `utils::sort3` and `utils::sort2`.
 
+### Modified
+
+- The `local_point_cloud_aabb`, `point_cloud_aabb`, and `Aabb::from_points` now take an iterator over point values instead
+  of an iterator to point references. Variants taking point references still exist and are named `local_point_cloud_aabb_ref`,
+  `point_cloud_aabb_ref` and `Aabb::from_points_ref`.
+
 ## 0.21.1
 
 ### Added

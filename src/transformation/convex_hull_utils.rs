@@ -77,7 +77,7 @@ where
 /// Scale and center the given set of point depending on their Aabb.
 #[cfg(feature = "dim3")]
 pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
-    let aabb = bounding_volume::details::local_point_cloud_aabb(&*coords);
+    let aabb = bounding_volume::details::local_point_cloud_aabb_ref(coords);
     let diag = na::distance(&aabb.mins, &aabb.maxs);
     let center = aabb.center();
 
