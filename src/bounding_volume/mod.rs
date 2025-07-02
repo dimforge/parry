@@ -65,6 +65,6 @@ mod simd_aabb;
 pub mod details {
     #[cfg(feature = "dim3")]
     pub use super::aabb_utils::support_map_aabb;
-    pub use super::aabb_utils::{local_point_cloud_aabb, local_support_map_aabb, point_cloud_aabb};
+    pub use super::aabb_utils::{local_point_cloud_aabb, local_point_cloud_aabb_ref, local_support_map_aabb, point_cloud_aabb, point_cloud_aabb_ref};
     pub use super::bounding_sphere_utils::point_cloud_bounding_sphere;
 }
