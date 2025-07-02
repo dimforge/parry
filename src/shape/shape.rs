@@ -918,13 +918,10 @@ impl Shape for Triangle {
 
     fn feature_normal_at_point(
         &self,
-        _feature: FeatureId,
+        feature: FeatureId,
         _point: &Point<Real>,
     ) -> Option<Unit<Vector<Real>>> {
-        #[cfg(feature = "dim2")]
-        return None;
-        #[cfg(feature = "dim3")]
-        return self.feature_normal(_feature);
+        self.feature_normal(feature)
     }
 }
 
@@ -1469,6 +1466,13 @@ impl Shape for Cone {
 
     fn as_polygonal_feature_map(&self) -> Option<(&dyn PolygonalFeatureMap, Real)> {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
+    }
+    fn feature_normal_at_point(
+        &self,
+        feature: FeatureId,
+        point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        self.feature_normal_at_point(feature, point)
     }
 }
 
