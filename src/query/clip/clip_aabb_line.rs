@@ -179,13 +179,7 @@ mod test {
         assert!(clip_aabb_line(
             &Aabb::new(Point::origin(), Point::origin()),
             &Point::origin(),
-            &[
-                0.0,
-                0.0,
-                #[cfg(feature = "dim3")]
-                0.0,
-            ]
-            .into(),
+            &Vector::zeros(),
         )
         .is_none());
     }
@@ -194,22 +188,7 @@ mod test {
     pub fn clip_empty_aabb_segment() {
         let aabb_empty = Aabb::new(Point::origin(), Point::origin());
         assert!(aabb_empty
-            .clip_segment(
-                &[
-                    0.0,
-                    0.0,
-                    #[cfg(feature = "dim3")]
-                    0.0,
-                ]
-                .into(),
-                &[
-                    Real::NAN,
-                    Real::NAN,
-                    #[cfg(feature = "dim3")]
-                    Real::NAN,
-                ]
-                .into(),
-            )
+            .clip_segment(&Point::origin(), &Point::from(Vector::repeat(Real::NAN)))
             .is_none());
     }
 }
