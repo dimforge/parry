@@ -71,6 +71,8 @@ jobs:
         run: cargo build --verbose --no-default-features --features required-features --target=x86_64-unknown-linux-gnu
       - name: build thumbv7em-none-eabihf
         run: cargo build --verbose --no-default-features --features required-features --target=thumbv7em-none-eabihf
+      - name: build thumbv7em-none-eabihf with alloc
+        run: cargo build --verbose --no-default-features --features required-features,alloc --target=thumbv7em-none-eabihf
   build-doc:
     runs-on: ubuntu-latest
     env:
