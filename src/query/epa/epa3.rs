@@ -17,8 +17,8 @@ struct FaceId {
 }
 
 impl FaceId {
-    fn new(id: usize, neg_dist: Real) -> Option<Self> {
-        if neg_dist > gjk::eps_tol() {
+    fn new(id: usize, neg_dist: Real, gjk_espilon_tolerance: Real) -> Option<Self> {
+        if neg_dist > gjk_espilon_tolerance {
             None
         } else {
             Some(FaceId { id, neg_dist })
@@ -275,22 +275,42 @@ impl EPA {
 
             if proj_inside1 {
                 let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-                self.heap.push(FaceId::new(0, -dist1)?);
+                self.heap.push(FaceId::new(
+                    0,
+                    -dist1,
+                    // TODO: allow custom options
+                    gjk::eps_tol(),
+                )?);
             }
 
             if proj_inside2 {
                 let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
-                self.heap.push(FaceId::new(1, -dist2)?);
+                self.heap.push(FaceId::new(
+                    1,
+                    -dist2,
+                    // TODO: allow custom options
+                    gjk::eps_tol(),
+                )?);
             }
 
             if proj_inside3 {
                 let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
-                self.heap.push(FaceId::new(2, -dist3)?);
+                self.heap.push(FaceId::new(
+                    2,
+                    -dist3,
+                    // TODO: allow custom options
+                    gjk::eps_tol(),
+                )?);
             }
 
             if proj_inside4 {
                 let dist4 = self.faces[3].normal.dot(&self.vertices[3].point.coords);
-                self.heap.push(FaceId::new(3, -dist4)?);
+                self.heap.push(FaceId::new(
+                    3,
+                    -dist4,
+                    // TODO: allow custom options
+                    gjk::eps_tol(),
+                )?);
             }
 
             if !(proj_inside1 || proj_inside2 || proj_inside3 || proj_inside4) {
@@ -324,8 +344,18 @@ impl EPA {
             self.faces.push(face1);
             self.faces.push(face2);
 
-            self.heap.push(FaceId::new(0, 0.0)?);
-            self.heap.push(FaceId::new(1, 0.0)?);
+            self.heap.push(FaceId::new(
+                0,
+                0.0,
+                // TODO: allow custom options
+                gjk::eps_tol(),
+            )?);
+            self.heap.push(FaceId::new(
+                1,
+                0.0,
+                // TODO: allow custom options
+                gjk::eps_tol(),
+            )?);
         }
 
         let mut niter = 0;
@@ -412,7 +442,12 @@ impl EPA {
                             return Some((points.0, points.1, face.normal));
                         }
 
-                        self.heap.push(FaceId::new(new_face_id, -dist)?);
+                        self.heap.push(FaceId::new(
+                            new_face_id,
+                            -dist,
+                            // TODO: allow custom options
+                            gjk::eps_tol(),
+                        )?);
                     }
                 }
             }

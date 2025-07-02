@@ -3,7 +3,7 @@ use na::Unit;
 use crate::math::{Isometry, Real, Vector};
 use crate::query::details;
 use crate::query::details::ShapeCastOptions;
-use crate::query::gjk::{self, VoronoiSimplex};
+use crate::query::gjk::{self, GjkOptions, VoronoiSimplex};
 use crate::query::{ShapeCastHit, ShapeCastStatus};
 use crate::shape::{RoundShapeRef, SupportMap};
 use num::Zero;
@@ -15,7 +15,7 @@ pub fn cast_shapes_support_map_support_map<G1, G2>(
     g1: &G1,
     g2: &G2,
     options: ShapeCastOptions,
-    gjk_espilon_tolerance: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<ShapeCastHit>
 where
     G1: ?Sized + SupportMap,
@@ -32,7 +32,7 @@ where
             g2,
             vel12,
             &mut VoronoiSimplex::new(),
-            gjk_espilon_tolerance,
+            gjk_options,
         )
     } else {
         gjk::directional_distance(
@@ -41,7 +41,7 @@ where
             g2,
             vel12,
             &mut VoronoiSimplex::new(),
-            gjk_espilon_tolerance,
+            gjk_options,
         )
     };
 
@@ -51,7 +51,8 @@ where
         } else if (options.compute_impact_geometry_on_penetration || !options.stop_at_penetration)
             && time_of_impact < 1.0e-5
         {
-            let contact = details::contact_support_map_support_map(pos12, g1, g2, Real::MAX)?;
+            let contact =
+                details::contact_support_map_support_map(pos12, g1, g2, Real::MAX, gjk_options)?;
             let normal_vel = contact.normal1.dot(vel12);
 
             if !options.stop_at_penetration && normal_vel >= 0.0 {

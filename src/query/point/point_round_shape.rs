@@ -1,4 +1,6 @@
 use crate::math::{Point, Real};
+#[cfg(feature = "std")]
+use crate::query::gjk::GjkOptions;
 use crate::query::gjk::VoronoiSimplex;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{FeatureId, RoundShape, SupportMap};
@@ -19,6 +21,8 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
             &mut VoronoiSimplex::new(),
             point,
             solid,
+            // TODO: allow custom options
+            &GjkOptions::default(),
         );
     }
 

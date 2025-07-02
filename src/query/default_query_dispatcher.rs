@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::details::ShapeCastOptions;
-use crate::query::gjk;
+use crate::query::gjk::GjkOptions;
 use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
     QueryDispatcher, ShapeCastHit, Unsupported,
@@ -14,18 +14,10 @@ use crate::query::{
 use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 
 /// A dispatcher that exposes built-in queries
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DefaultQueryDispatcher {
-    /// The absolute tolerance used by the GJK algorithm.
-    pub gjk_espilon_tolerance: Real,
-}
-
-impl Default for DefaultQueryDispatcher {
-    fn default() -> Self {
-        Self {
-            gjk_espilon_tolerance: gjk::eps_tol(),
-        }
-    }
+    /// Options for the GJK algorithm.
+    pub gjk_options: GjkOptions,
 }
 
 impl QueryDispatcher for DefaultQueryDispatcher {
@@ -72,7 +64,10 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::intersection_test_support_map_support_map(
-                pos12, s1, s2,
+                pos12,
+                s1,
+                s2,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "std")]
@@ -131,7 +126,10 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::distance_support_map_support_map(
-                pos12, s1, s2,
+                pos12,
+                s1,
+                s2,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "std")]
@@ -189,7 +187,11 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             #[cfg(feature = "std")]
             if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
                 return Ok(query::details::contact_support_map_support_map(
-                    pos12, s1, s2, prediction,
+                    pos12,
+                    s1,
+                    s2,
+                    prediction,
+                    &self.gjk_options,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::contact_composite_shape_shape(
@@ -263,7 +265,11 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::closest_points_support_map_support_map(
-                pos12, s1, s2, max_dist,
+                pos12,
+                s1,
+                s2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "std")]
@@ -345,7 +351,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     s1,
                     s2,
                     options,
-                    self.gjk_espilon_tolerance,
+                    &self.gjk_options,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_composite_shape_shape(
@@ -613,7 +619,7 @@ where
                     shape2.as_polygonal_feature_map(),
                 ) {
                     contact_manifold_pfm_pfm(
-                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold,
+                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold, &self.gjk_options
                     )
                 } else {
                     return Err(Unsupported);

@@ -3,7 +3,7 @@ use na::Unit;
 use crate::math::{Isometry, Point, Real, Vector};
 #[cfg(feature = "std")]
 use crate::query::epa::EPA;
-use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, ConstantOrigin, GjkOptions, VoronoiSimplex};
 use crate::query::{PointProjection, PointQuery};
 #[cfg(feature = "dim2")]
 #[cfg(feature = "std")]
@@ -19,6 +19,7 @@ pub fn local_point_projection_on_support_map<G>(
     simplex: &mut VoronoiSimplex,
     point: &Point<Real>,
     solid: bool,
+    gjk_options: &GjkOptions,
 ) -> PointProjection
 where
     G: SupportMap,
@@ -31,7 +32,7 @@ where
 
     simplex.reset(support_point);
 
-    if let Some(proj) = gjk::project_origin(&m, shape, simplex) {
+    if let Some(proj) = gjk::project_origin(&m, shape, simplex, gjk_options) {
         PointProjection::new(false, proj)
     } else if solid {
         PointProjection::new(true, *point)
@@ -55,7 +56,14 @@ where
 impl PointQuery for ConvexPolyhedron {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
+        local_point_projection_on_support_map(
+            self,
+            &mut VoronoiSimplex::new(),
+            point,
+            solid,
+            // TODO: allow custom options
+            &GjkOptions::default(),
+        )
     }
 
     #[inline]
@@ -80,7 +88,14 @@ impl PointQuery for ConvexPolyhedron {
 impl PointQuery for ConvexPolygon {
     #[inline]
     fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
+        local_point_projection_on_support_map(
+            self,
+            &mut VoronoiSimplex::new(),
+            point,
+            solid,
+            // TODO: allow custom options
+            &GjkOptions::default(),
+        )
     }
 
     #[inline]

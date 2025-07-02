@@ -32,6 +32,26 @@ pub enum GJKResult {
     NoIntersection(Unit<Vector<Real>>),
 }
 
+/// Options for the GJK algorithm.
+#[derive(Debug, Clone)]
+pub struct GjkOptions {
+    /// The absolute tolerance used by the GJK algorithm.
+    ///
+    /// Defaults to [math::DEFAULT_EPSILON][crate::math::DEFAULT_EPSILON]
+    pub espilon_tolerance: Real,
+    /// The maximum number of iterations of the GJK algorithm.
+    pub nb_max_iterations: u32,
+}
+
+impl Default for GjkOptions {
+    fn default() -> Self {
+        Self {
+            espilon_tolerance: crate::math::DEFAULT_EPSILON,
+            nb_max_iterations: 100,
+        }
+    }
+}
+
 /// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
@@ -50,6 +70,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry<Real>,
     g: &G,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> Option<Point<Real>> {
     match closest_points(
         &m.inverse(),
@@ -58,6 +79,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
         Real::max_value(),
         true,
         simplex,
+        gjk_options,
     ) {
         GJKResult::Intersection => None,
         GJKResult::ClosestPoints(p, _, _) => Some(p),
@@ -87,13 +109,14 @@ pub fn closest_points<G1, G2>(
     max_dist: Real,
     exact_dist: bool,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> GJKResult
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = eps_tol();
+    let _eps_tol: Real = gjk_options.espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     // TODO: reset the simplex if it is empty?
@@ -149,7 +172,7 @@ where
             }
         }
 
-        if !simplex.add_point(cso_point) {
+        if !simplex.add_point(cso_point, _eps_tol) {
             if exact_dist {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
@@ -176,7 +199,7 @@ where
         }
         niter += 1;
 
-        if niter == 100 {
+        if niter == gjk_options.nb_max_iterations {
             return GJKResult::NoIntersection(Vector::x_axis());
         }
     }
@@ -188,6 +211,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_time_of_impact: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>)> {
     let g2 = ConstantOrigin;
     minkowski_ray_cast(
@@ -197,7 +221,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
         ray,
         max_time_of_impact,
         simplex,
-        eps_tol(),
+        gjk_options,
     )
 }
 
@@ -211,33 +235,26 @@ pub fn directional_distance<G1, G2>(
     g2: &G2,
     dir: &Vector<Real>,
     simplex: &mut VoronoiSimplex,
-    gjk_espilon_tolerance: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
-    minkowski_ray_cast(
-        pos12,
-        g1,
-        g2,
-        &ray,
-        Real::max_value(),
-        simplex,
-        gjk_espilon_tolerance,
-    )
-    .map(|(time_of_impact, normal)| {
-        let witnesses = if !time_of_impact.is_zero() {
-            result(simplex, simplex.dimension() == DIM)
-        } else {
-            // If there is penetration, the witness points
-            // are undefined.
-            (Point::origin(), Point::origin())
-        };
+    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex, gjk_options).map(
+        |(time_of_impact, normal)| {
+            let witnesses = if !time_of_impact.is_zero() {
+                result(simplex, simplex.dimension() == DIM)
+            } else {
+                // If there is penetration, the witness points
+                // are undefined.
+                (Point::origin(), Point::origin())
+            };
 
-        (time_of_impact, normal, witnesses.0, witnesses.1)
-    })
+            (time_of_impact, normal, witnesses.0, witnesses.1)
+        },
+    )
 }
 
 // Ray-cast on the Minkowski Difference `g1 - pos12 * g2`.
@@ -248,14 +265,14 @@ fn minkowski_ray_cast<G1, G2>(
     ray: &Ray,
     max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
-    gjk_espilon_tolerance: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = gjk_espilon_tolerance;
+    let _eps_tol: Real = gjk_options.espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     let ray_length = ray.dir.norm();
@@ -361,7 +378,7 @@ where
             }
         }
 
-        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.coords));
+        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.coords), _eps_tol);
         proj = simplex.project_origin_and_reduce();
 
         if simplex.dimension() == DIM {
@@ -373,7 +390,7 @@ where
         }
 
         niter += 1;
-        if niter == 100 {
+        if niter == gjk_options.nb_max_iterations {
             return None;
         }
     }

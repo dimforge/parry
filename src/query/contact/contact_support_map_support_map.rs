@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::epa::EPA;
-use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, GJKResult, GjkOptions, VoronoiSimplex};
 use crate::query::Contact;
 use crate::shape::SupportMap;
 
@@ -12,13 +12,22 @@ pub fn contact_support_map_support_map<G1, G2>(
     g1: &G1,
     g2: &G2,
     prediction: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<Contact>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let simplex = &mut VoronoiSimplex::new();
-    match contact_support_map_support_map_with_params(pos12, g1, g2, prediction, simplex, None) {
+    match contact_support_map_support_map_with_params(
+        pos12,
+        g1,
+        g2,
+        prediction,
+        simplex,
+        None,
+        gjk_options,
+    ) {
         GJKResult::ClosestPoints(point1, point2_1, normal1) => {
             let dist = (point2_1 - point1).dot(&normal1);
             let point2 = pos12.inverse_transform_point(&point2_1);
@@ -44,6 +53,7 @@ pub fn contact_support_map_support_map_with_params<G1, G2>(
     prediction: Real,
     simplex: &mut VoronoiSimplex,
     init_dir: Option<Unit<Vector<Real>>>,
+    gjk_options: &GjkOptions,
 ) -> GJKResult
 where
     G1: ?Sized + SupportMap,
@@ -61,7 +71,7 @@ where
 
     simplex.reset(CSOPoint::from_shapes(pos12, g1, g2, &dir));
 
-    let cpts = gjk::closest_points(pos12, g1, g2, prediction, true, simplex);
+    let cpts = gjk::closest_points(pos12, g1, g2, prediction, true, simplex, gjk_options);
     if cpts != GJKResult::Intersection {
         return cpts;
     }

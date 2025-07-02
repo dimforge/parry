@@ -1,5 +1,5 @@
 use crate::math::{Point, Real};
-use crate::query::gjk::{self, CSOPoint};
+use crate::query::gjk::CSOPoint;
 use crate::query::{PointQuery, PointQueryWithLocation};
 use crate::shape::{Segment, SegmentPointLocation, Triangle, TrianglePointLocation};
 
@@ -48,13 +48,13 @@ impl VoronoiSimplex {
     }
 
     /// Add a point to this simplex.
-    pub fn add_point(&mut self, pt: CSOPoint) -> bool {
+    pub fn add_point(&mut self, pt: CSOPoint, gjk_epsilon_tolerance: Real) -> bool {
         self.prev_dim = self.dim;
         self.prev_proj = self.proj;
         self.prev_vertices = [0, 1, 2];
 
         for i in 0..self.dim + 1 {
-            if (self.vertices[i].point - pt.point).norm_squared() < gjk::eps_tol() {
+            if (self.vertices[i].point - pt.point).norm_squared() < gjk_epsilon_tolerance {
                 return false;
             }
         }

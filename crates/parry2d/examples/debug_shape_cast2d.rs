@@ -3,7 +3,7 @@ mod common_macroquad2d;
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2};
-use parry2d::math::Isometry;
+use parry2d::math::{self, Isometry};
 use parry2d::query::gjk::eps_tol;
 use parry2d::query::{self, DefaultQueryDispatcher, Ray, ShapeCastOptions};
 use parry2d::shape::{Ball, ConvexPolygon, Shape};
@@ -111,7 +111,10 @@ fn shape_cast_debug(
         &*g2,
         ShapeCastOptions::with_max_time_of_impact(1.0),
         DefaultQueryDispatcher {
-            gjk_espilon_tolerance: eps_tol() * 1000f32,
+            gjk_options: query::gjk::GjkOptions {
+                espilon_tolerance: math::DEFAULT_EPSILON * 1000f32,
+                nb_max_iterations: 100,
+            },
         },
     )
     .unwrap();

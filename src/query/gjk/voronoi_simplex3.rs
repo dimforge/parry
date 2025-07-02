@@ -1,5 +1,5 @@
 use crate::math::{Point, Real};
-use crate::query::gjk::{self, CSOPoint};
+use crate::query::gjk::CSOPoint;
 use crate::query::{PointQuery, PointQueryWithLocation};
 use crate::shape::{
     Segment, SegmentPointLocation, Tetrahedron, TetrahedronPointLocation, Triangle,
@@ -54,14 +54,14 @@ impl VoronoiSimplex {
     }
 
     /// Add a point to this simplex.
-    pub fn add_point(&mut self, pt: CSOPoint) -> bool {
+    pub fn add_point(&mut self, pt: CSOPoint, gjk_epsilon_tolerance: Real) -> bool {
         self.prev_dim = self.dim;
         self.prev_proj = self.proj;
         self.prev_vertices = [0, 1, 2, 3];
 
         match self.dim {
             0 => {
-                if (self.vertices[0] - pt).norm_squared() < gjk::eps_tol() {
+                if (self.vertices[0] - pt).norm_squared() < gjk_epsilon_tolerance {
                     return false;
                 }
             }
@@ -69,7 +69,7 @@ impl VoronoiSimplex {
                 let ab = self.vertices[1] - self.vertices[0];
                 let ac = pt - self.vertices[0];
 
-                if ab.cross(&ac).norm_squared() < gjk::eps_tol() {
+                if ab.cross(&ac).norm_squared() < gjk_epsilon_tolerance {
                     return false;
                 }
             }
@@ -79,7 +79,7 @@ impl VoronoiSimplex {
                 let ap = pt - self.vertices[0];
                 let n = ab.cross(&ac).normalize();
 
-                if n.dot(&ap).abs() < gjk::eps_tol() {
+                if n.dot(&ap).abs() < gjk_epsilon_tolerance {
                     return false;
                 }
             }
