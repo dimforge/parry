@@ -359,3 +359,32 @@ impl ConvexPolyhedron for Segment {
     }
 }
 */
+
+#[cfg(test)]
+mod test {
+    use crate::query::{Ray, RayCast};
+
+    pub use super::*;
+    #[test]
+    fn segment_intersect_zero_length_issue_31() {
+        // never intersect each other
+        let ray = Ray::new(Point::origin(), Vector::x());
+        let segment = Segment {
+            a: Point::new(
+                10.0,
+                10.0,
+                #[cfg(feature = "dim3")]
+                10.0,
+            ),
+            b: Point::new(
+                10.0,
+                10.0,
+                #[cfg(feature = "dim3")]
+                10.0,
+            ),
+        };
+
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        assert_eq!(hit, false);
+    }
+}
