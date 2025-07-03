@@ -78,13 +78,15 @@ impl Cone {
     /// Computes the normal for given [FeatureId] at a given point.
     ///
     /// Supports only `FeatureId::Face(0)` (base) and `FeatureId::Face(1)` (side).
-    pub fn feature_normal_at_point(
+    ///
+    /// Exposed through [Shape::feature_normal_at_point][crate::shape::Shape::feature_normal_at_point]
+    pub fn feature_normal_at(
         &self,
         feature_id: FeatureId,
         point: &Point<Real>,
     ) -> Option<Unit<Vector<Real>>> {
         match feature_id {
-            FeatureId::Vertex(vertex) => {
+            FeatureId::Vertex(_) => {
                 // TODO: if top of the cone, return (0,0,1) ?
                 None
             }
@@ -152,39 +154,48 @@ impl SupportMap for Cone {
 }
 
 #[cfg(test)]
+#[cfg(feature = "dim3")]
 mod test {
+    use approx::RelativeEq;
+
+    use crate::shape::Shape;
+
     use super::*;
 
     #[test]
     fn cone_normal() {
+        let espilon = 0.00001
         let cone = Cone::new(0.5, 1.0);
 
         let point = Point::new(1.0, 1.0, 1.0);
         let normal = cone
             .feature_normal_at_point(FeatureId::Face(1), &point)
             .unwrap();
-        assert_relative_eq!(
-            Vector::new(normal.x, normal.y, normal.z),
-            Vector::new(0.5, 0.70710677, 0.5)
-        );
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.5, 0.70710677, 0.5),
+            espilon,
+            espilon
+        ),);
         // Higher point, not aligned with normal
         let point = Point::new(1.0, 2.0, 1.0);
         let normal = cone
             .feature_normal_at_point(FeatureId::Face(1), &point)
             .unwrap();
-        assert_relative_eq!(
-            Vector::new(normal.x, normal.y, normal.z),
-            Vector::new(0.5, 0.70710677, 0.5)
-        );
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.5, 0.70710677, 0.5),
+            espilon,
+            espilon
+        ),);
         // longer cone
         let cone = Cone::new(1.0, 1.0);
         let point = Point::new(0.5, 2.0, 1.0);
         let normal = cone
             .feature_normal_at_point(FeatureId::Face(1), &point)
             .unwrap();
-        assert_relative_eq!(
-            Vector::new(normal.x, normal.y, normal.z),
-            Vector::new(0.39999998, 0.44721365, 0.79999995)
-        );
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.39999998, 0.44721365, 0.79999995),
+            espilon,
+            espilon
+        ),);
     }
 }

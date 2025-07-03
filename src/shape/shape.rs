@@ -1472,7 +1472,7 @@ impl Shape for Cone {
         feature: FeatureId,
         point: &Point<Real>,
     ) -> Option<Unit<Vector<Real>>> {
-        self.feature_normal_at_point(feature, point)
+        self.feature_normal_at(feature, point)
     }
 }
 
