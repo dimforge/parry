@@ -52,7 +52,7 @@ async fn main() {
     next_frame().await;
     let mesh_vertices = bunny_mesh.vertices();
     let mesh_indices = bunny_mesh.indices();
-    let convex_mesh = SharedShape::convex_decomposition(&mesh_vertices, &mesh_indices);
+    let convex_mesh = SharedShape::convex_decomposition(&mesh_vertices, &mesh_indices).unwrap();
     let trimesh_convex_compound = convex_mesh.as_compound().unwrap();
 
     let shapes_count = trimesh_convex_compound.shapes().len() as u32;

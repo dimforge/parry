@@ -1,9 +1,12 @@
-use super::InitialMesh;
-use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
-use crate::transformation::convex_hull_utils::indexed_support_point_nth;
-use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
+use super::{InitialMesh, TriangleFacet};
 use crate::utils;
+use crate::{
+    math::Real,
+    transformation::{
+        convex_hull_utils::{indexed_support_point_id, indexed_support_point_nth, normalize},
+        ConvexHullError,
+    },
+};
 use alloc::{vec, vec::Vec};
 use na::{self, Point3};
 

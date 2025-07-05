@@ -1,5 +1,12 @@
 # Change Log
 
+## Unreleased
+
+### Modified
+
+- `SharedShape::convex_decomposition` now returns an `Option` when it failed to create any shape, rather than panicking.
+- `convex_hull2` now returns a `Result` rather than crashing on incorrect input.
+
 ## 0.21.1
 
 ### Added

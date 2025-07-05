@@ -37,7 +37,7 @@ async fn main() {
          * Compute the convex hull.
          *
          */
-        let convex_hull = transformation::convex_hull(&pts);
+        let convex_hull = transformation::convex_hull(&pts).unwrap();
         draw_polygon(&convex_hull, RENDER_SCALE, render_pos, WHITE);
         next_frame().await
     }
