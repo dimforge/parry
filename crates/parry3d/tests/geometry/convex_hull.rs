@@ -4061,7 +4061,9 @@ fn test_complex_convex_hull() {
     ];
 
     let (vertices, indices) = transformation::convex_hull(&input);
-    transformation::check_convex_hull(&vertices, &indices);
+    if let Err(error) = transformation::check_convex_hull(&vertices, &indices) {
+        panic!("{}", error);
+    }
 }
 
 #[test]
@@ -4078,5 +4080,7 @@ fn test_planar_convex_hull() {
     ];
 
     let (vertices, indices) = transformation::convex_hull(&input);
-    transformation::check_convex_hull(&vertices, &indices);
+    if let Err(error) = transformation::check_convex_hull(&vertices, &indices) {
+        panic!("{}", error);
+    }
 }
