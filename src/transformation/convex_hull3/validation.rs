@@ -1,3 +1,4 @@
+#[cfg(feature = "std")]
 use super::ConvexHullError;
 use super::TriangleFacet;
 #[cfg(feature = "std")]
@@ -29,6 +30,7 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
 }
 
 /// Checks if a convex-hull is properly formed.
+#[cfg(feature = "std")]
 pub fn check_convex_hull(
     points: &[Point3<Real>],
     triangles: &[[u32; 3]],
