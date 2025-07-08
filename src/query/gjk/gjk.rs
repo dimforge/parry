@@ -3,6 +3,7 @@
 use na::{self, ComplexField, Unit};
 
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::point::point_query::QueryOptions;
 use crate::shape::SupportMap;
 // use query::Proximity;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
@@ -49,6 +50,12 @@ impl Default for GjkOptions {
             espilon_tolerance: crate::math::DEFAULT_EPSILON,
             nb_max_iterations: 100,
         }
+    }
+}
+
+impl QueryOptions for GjkOptions {
+    fn as_any(&self) -> &dyn core::any::Any {
+        self
     }
 }
 
@@ -426,7 +433,7 @@ mod test {
 
     use crate::{
         math::Real,
-        query::{self, ShapeCastOptions},
+        query::{self, gjk::GjkOptions, DefaultQueryDispatcher, ShapeCastOptions},
         shape::{Ball, ConvexPolygon, Shape},
     };
 
@@ -460,7 +467,13 @@ mod test {
         let vel2 = [0.0, 0.0];
         let g2 = to_cast_against.clone_dyn();
 
-        let toi = query::cast_shapes(
+        let dispatcher = DefaultQueryDispatcher {
+            gjk_options: GjkOptions {
+                espilon_tolerance: crate::math::DEFAULT_EPSILON * 10000.0,
+                ..GjkOptions::default()
+            },
+        };
+        let toi = query::cast_shapes_with_dispatcher(
             &source_pos.into(),
             &vel1,
             &g1,
@@ -468,6 +481,7 @@ mod test {
             &vel2.into(),
             &*g2,
             ShapeCastOptions::with_max_time_of_impact(1.0),
+            dispatcher,
         )
         .unwrap();
         assert!(

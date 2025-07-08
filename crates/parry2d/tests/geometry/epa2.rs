@@ -1,4 +1,5 @@
 use na::{self, Isometry2, Vector2};
+use parry2d::query::gjk::GjkOptions;
 use parry2d::query::{self, ContactManifold, DefaultQueryDispatcher, PersistentQueryDispatcher};
 use parry2d::shape::Cuboid;
 
@@ -8,15 +9,17 @@ fn cuboid_cuboid_EPA() {
     let c = Cuboid::new(Vector2::new(2.0, 1.0));
     let m1 = Isometry2::translation(3.5, 0.0);
     let m2 = Isometry2::identity();
-
-    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
-        .expect("Penetration not found.");
+    let options = GjkOptions::default();
+    let res =
+        query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0, &options)
+            .expect("Penetration not found.");
     assert_eq!(res.dist, -0.5);
     assert_eq!(res.normal1, -Vector2::x_axis());
 
     let m1 = Isometry2::translation(0.0, 0.2);
-    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
-        .expect("Penetration not found.");
+    let res =
+        query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0, &options)
+            .expect("Penetration not found.");
     assert_eq!(res.dist, -1.8);
     assert_eq!(res.normal1, -Vector2::y_axis());
 }

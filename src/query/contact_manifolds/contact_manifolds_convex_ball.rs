@@ -1,5 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{ContactManifold, Ray, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
 use na::Unit;
@@ -13,6 +14,7 @@ pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
     normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    options: &dyn QueryOptions,
 ) where
     ContactData: Default + Copy,
 {
@@ -26,6 +28,7 @@ pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
             prediction,
             manifold,
             true,
+            options,
         );
     } else if let Some(ball2) = shape2.as_ball() {
         contact_manifold_convex_ball(
@@ -37,6 +40,7 @@ pub fn contact_manifold_convex_ball_shapes<ManifoldData, ContactData>(
             prediction,
             manifold,
             false,
+            options,
         );
     }
 }
@@ -51,12 +55,13 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
     flipped: bool,
+    options: &dyn QueryOptions,
 ) where
     S1: ?Sized + Shape,
     ContactData: Default + Copy,
 {
     let local_p2_1 = Point::from(pos12.translation.vector);
-    let (proj, mut fid1) = shape1.project_local_point_and_get_feature(&local_p2_1);
+    let (proj, mut fid1) = shape1.project_local_point_and_get_feature(&local_p2_1, options);
     let mut local_p1 = proj.point;
     let dpos = local_p2_1 - local_p1;
 

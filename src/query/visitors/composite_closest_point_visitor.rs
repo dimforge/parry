@@ -52,9 +52,9 @@ impl<S: SimdCompositeShape + PointQuery> SimdBestFirstVisitor<u32, SimdAabb>
                     self.shape
                         .map_part_at(*data[ii].unwrap(), &mut |part_pos, obj, _| {
                             let proj = if let Some(part_pos) = part_pos {
-                                obj.project_point(part_pos, self.point, self.solid)
+                                obj.project_point(part_pos, self.point, self.solid, &())
                             } else {
-                                obj.project_local_point(self.point, self.solid)
+                                obj.project_local_point(self.point, self.solid, &())
                             };
 
                             weights[ii] = na::distance(self.point, &proj.point);

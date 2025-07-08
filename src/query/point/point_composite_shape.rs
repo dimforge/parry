@@ -3,6 +3,7 @@
 use crate::bounding_volume::SimdAabb;
 use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
 use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
@@ -15,14 +16,21 @@ use crate::shape::{Compound, Polyline};
 
 impl PointQuery for Polyline {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_and_get_location(point, solid).0
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        self.project_local_point_and_get_location(point, solid, options)
+            .0
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         let mut visitor =
             PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
@@ -35,7 +43,7 @@ impl PointQuery for Polyline {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
         let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
@@ -44,19 +52,27 @@ impl PointQuery for Polyline {
 
 impl PointQuery for TriMesh {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_and_get_location(point, solid).0
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        self.project_local_point_and_get_location(point, solid, options)
+            .0
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
-            let (proj, (id, _feature)) = self.project_local_point_and_get_location(point, false);
+            let (proj, (id, _feature)) =
+                self.project_local_point_and_get_location(point, false, _options);
             let feature_id = FeatureId::Face(id);
             return (proj, feature_id);
         }
@@ -73,12 +89,12 @@ impl PointQuery for TriMesh {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             return self
-                .project_local_point_and_get_location(point, true)
+                .project_local_point_and_get_location(point, true, _options)
                 .0
                 .is_inside;
         }
@@ -94,15 +110,21 @@ impl PointQuery for TriMesh {
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,
+        _options: &dyn QueryOptions,
     ) -> Option<PointProjection> {
-        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist)
+        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist, _options)
             .map(|proj| proj.0)
     }
 }
 
 impl PointQuery for Compound {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        _options: &dyn QueryOptions,
+    ) -> PointProjection {
         let mut visitor = PointCompositeShapeProjBestFirstVisitor::new(self, point, solid);
         self.qbvh().traverse_best_first(&mut visitor).unwrap().1 .0
     }
@@ -111,12 +133,16 @@ impl PointQuery for Compound {
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        (self.project_local_point(point, false), FeatureId::Unknown)
+        (
+            self.project_local_point(point, false, options),
+            FeatureId::Unknown,
+        )
     }
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
         let mut visitor = CompositePointContainmentTest::new(self, point);
         let _ = self.qbvh().traverse_depth_first(&mut visitor);
         visitor.found
@@ -131,6 +157,7 @@ impl PointQueryWithLocation for Polyline {
         &self,
         point: &Point<Real>,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
@@ -147,8 +174,9 @@ impl PointQueryWithLocation for TriMesh {
         &self,
         point: &Point<Real>,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
-        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
+        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX, options)
             .unwrap()
     }
 
@@ -158,6 +186,7 @@ impl PointQueryWithLocation for TriMesh {
         point: &Point<Real>,
         solid: bool,
         max_dist: Real,
+        _options: &dyn QueryOptions,
     ) -> Option<(PointProjection, Self::Location)> {
         let mut visitor =
             PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
@@ -254,12 +283,12 @@ macro_rules! gen_visitor(
                                     part_shape.$project_point(
                                         part_pos,
                                         self.point
-                                        $(, self.$args)*
+                                        $(, self.$args)*, &()
                                     )
                                 } else {
                                     part_shape.$project_local_point(
                                         self.point
-                                        $(, self.$args)*
+                                        $(, self.$args)*, &()
                                     )
                                 };
 

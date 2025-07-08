@@ -1,7 +1,6 @@
 use crate::math::{Point, Real};
-#[cfg(feature = "std")]
-use crate::query::gjk::GjkOptions;
 use crate::query::gjk::VoronoiSimplex;
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{FeatureId, RoundShape, SupportMap};
 
@@ -9,11 +8,17 @@ use crate::shape::{FeatureId, RoundShape, SupportMap};
 // call this and adjust the projected point accordingly.
 impl<S: SupportMap> PointQuery for RoundShape<S> {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
         #[cfg(not(feature = "std"))] // TODO: can’t be used without std because of EPA
         return unimplemented!(
             "The projection of points on a round shapes isn’t supported on no-std platforms yet."
         );
+        let options = options.as_any().downcast_ref().unwrap();
 
         #[cfg(feature = "std")] // TODO: can’t be used without std because of EPA
         return crate::query::details::local_point_projection_on_support_map(
@@ -21,8 +26,7 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
             &mut VoronoiSimplex::new(),
             point,
             solid,
-            // TODO: allow custom options
-            &GjkOptions::default(),
+            options,
         );
     }
 
@@ -30,7 +34,11 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        (self.project_local_point(point, false), FeatureId::Unknown)
+        (
+            self.project_local_point(point, false, options),
+            FeatureId::Unknown,
+        )
     }
 }

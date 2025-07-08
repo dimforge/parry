@@ -41,7 +41,7 @@ pub fn closest_points_cuboid_triangle(
         // from triangle2 on the support-face of triangle1. For simplicity, we just
         // project the support point from triangle2 on cuboid1 itself (not just the face).
         let pt2_1 = triangle2.support_point(pos12, &-sep1.1);
-        let proj1 = cuboid1.project_local_point(&pt2_1, true);
+        let proj1 = cuboid1.project_local_point(&pt2_1, true, &());
         if na::distance_squared(&proj1.point, &pt2_1) > margin * margin {
             return ClosestPoints::Disjoint;
         } else {
@@ -55,7 +55,7 @@ pub fn closest_points_cuboid_triangle(
         // from cuboid1 on the support-face of triangle2. For simplicity, we just
         // project the support point from cuboid1 on triangle2 itself (not just the face).
         let pt1_2 = cuboid1.support_point(&pos21, &-sep2.1);
-        let proj2 = triangle2.project_local_point(&pt1_2, true);
+        let proj2 = triangle2.project_local_point(&pt1_2, true, &());
 
         if na::distance_squared(&proj2.point, &pt1_2) > margin * margin {
             return ClosestPoints::Disjoint;

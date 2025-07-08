@@ -1,11 +1,17 @@
 use crate::math::{Point, Real, Vector};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cone, FeatureId, Segment};
 use na;
 
 impl PointQuery for Cone {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
         // Project on the basis.
         let mut dir_from_basis_center = pt.coords.xz();
         let planar_dist_from_basis_center = dir_from_basis_center.normalize_mut();
@@ -30,7 +36,7 @@ impl PointQuery for Cone {
         let apex_point = Point::new(0.0, self.half_height, 0.0);
         let conic_side_segment = Segment::new(apex_point, projection_on_basis_circle);
         let conic_side_segment_dir = conic_side_segment.scaled_direction();
-        let mut proj = conic_side_segment.project_local_point(pt, true);
+        let mut proj = conic_side_segment.project_local_point(pt, true, options);
 
         let apex_to_basis_center = Vector::new(0.0, -2.0 * self.half_height, 0.0);
 
@@ -65,8 +71,12 @@ impl PointQuery for Cone {
     fn project_local_point_and_get_feature(
         &self,
         pt: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         // TODO: get the actual feature.
-        (self.project_local_point(pt, false), FeatureId::Unknown)
+        (
+            self.project_local_point(pt, false, options),
+            FeatureId::Unknown,
+        )
     }
 }

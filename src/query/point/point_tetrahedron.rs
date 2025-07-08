@@ -1,19 +1,27 @@
 use crate::math::{Point, Real, Vector};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Tetrahedron, TetrahedronPointLocation};
 
 impl PointQuery for Tetrahedron {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_and_get_location(pt, solid).0
+    fn project_local_point(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        self.project_local_point_and_get_location(pt, solid, options)
+            .0
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         pt: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let (proj, loc) = self.project_local_point_and_get_location(pt, false);
+        let (proj, loc) = self.project_local_point_and_get_location(pt, false, options);
         let feature = match loc {
             TetrahedronPointLocation::OnVertex(i) => FeatureId::Vertex(i),
             TetrahedronPointLocation::OnEdge(i, _) => FeatureId::Edge(i),
@@ -33,6 +41,7 @@ impl PointQueryWithLocation for Tetrahedron {
         &self,
         pt: &Point<Real>,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
         let ab = self.b - self.a;
         let ac = self.c - self.a;

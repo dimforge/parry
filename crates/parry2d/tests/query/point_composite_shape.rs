@@ -1,5 +1,8 @@
 use na::Point2;
-use parry2d::{query::PointQuery, shape::TriMesh};
+use parry2d::{
+    query::{gjk::GjkOptions, PointQuery},
+    shape::TriMesh,
+};
 
 #[test]
 fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {
@@ -11,14 +14,15 @@ fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {
     ];
 
     let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]).unwrap();
+    let options = &();
     let query_pt = Point2::new(0.6, 0.6); // Inside the top-right triangle (index 1)
 
-    let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
+    let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt, options);
 
     let correct_tri_idx = 1;
     let correct_tri = mesh.triangle(correct_tri_idx);
 
-    let is_inside_correct = correct_tri.contains_local_point(&query_pt);
+    let is_inside_correct = correct_tri.contains_local_point(&query_pt, options);
 
     assert!(is_inside_correct);
     assert_eq!(proj.is_inside, is_inside_correct);
@@ -35,16 +39,16 @@ fn project_local_point_and_get_feature_projects_correctly_from_outside() {
     ];
 
     let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [3, 0, 2]]).unwrap();
-
+    let options = &();
     {
         let query_pt = Point2::new(-1.0, 0.0); // Left from the bottom-left triangle (index 0)
 
-        let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
+        let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt, options);
 
         let correct_tri_idx = 0;
         let correct_tri = mesh.triangle(correct_tri_idx);
 
-        let is_inside_correct = correct_tri.contains_local_point(&query_pt);
+        let is_inside_correct = correct_tri.contains_local_point(&query_pt, options);
 
         assert_eq!(is_inside_correct, false);
         assert_eq!(proj.is_inside, is_inside_correct);
@@ -54,12 +58,12 @@ fn project_local_point_and_get_feature_projects_correctly_from_outside() {
     {
         let query_pt = Point2::new(0.5, 2.0); // Above the top-right triangle (index 1)
 
-        let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt);
+        let (proj, feat) = mesh.project_local_point_and_get_feature(&query_pt, options);
 
         let correct_tri_idx = 1;
         let correct_tri = mesh.triangle(correct_tri_idx);
 
-        let is_inside_correct = correct_tri.contains_local_point(&query_pt);
+        let is_inside_correct = correct_tri.contains_local_point(&query_pt, options);
 
         assert_eq!(is_inside_correct, false);
         assert_eq!(proj.is_inside, is_inside_correct);

@@ -99,7 +99,7 @@ impl VoronoiSimplex {
             self.vertices[0].point
         } else if self.dim == 1 {
             let (proj, location) = Segment::new(self.vertices[0].point, self.vertices[1].point)
-                .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+                .project_local_point_and_get_location(&Point::<Real>::origin(), true, &());
 
             match location {
                 SegmentPointLocation::OnVertex(0) => {
@@ -125,7 +125,7 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             )
-            .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+            .project_local_point_and_get_location(&Point::<Real>::origin(), true, &());
 
             match location {
                 TrianglePointLocation::OnVertex(i) => {
@@ -161,7 +161,7 @@ impl VoronoiSimplex {
             self.vertices[0].point
         } else if self.dim == 1 {
             let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-            seg.project_local_point(&Point::<Real>::origin(), true)
+            seg.project_local_point(&Point::<Real>::origin(), true, &())
                 .point
         } else {
             assert!(self.dim == 2);
@@ -170,7 +170,7 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             );
-            tri.project_local_point(&Point::<Real>::origin(), true)
+            tri.project_local_point(&Point::<Real>::origin(), true, &())
                 .point
         }
     }

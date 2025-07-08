@@ -102,11 +102,17 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             Ok(query::details::distance_ball_ball(b1, &p2, b2))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::distance_ball_convex_polyhedron(
-                pos12, b1, shape2,
+                pos12,
+                b1,
+                shape2,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::distance_convex_polyhedron_ball(
-                pos12, shape1, b2,
+                pos12,
+                shape1,
+                b2,
+                &self.gjk_options,
             ))
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
             Ok(query::details::distance_cuboid_cuboid(pos12, c1, c2))
@@ -177,11 +183,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::contact_ball_convex_polyhedron(
-                pos12, b1, shape2, prediction,
+                pos12,
+                b1,
+                shape2,
+                prediction,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::contact_convex_polyhedron_ball(
-                pos12, shape1, b2, prediction,
+                pos12,
+                shape1,
+                b2,
+                prediction,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "std")]
@@ -223,11 +237,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::closest_points_ball_convex_polyhedron(
-                pos12, b1, shape2, max_dist,
+                pos12,
+                b1,
+                shape2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::closest_points_convex_polyhedron_ball(
-                pos12, shape1, b2, max_dist,
+                pos12,
+                shape1,
+                b2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else if let (Some(s1), Some(s2)) =
             (shape1.as_shape::<Segment>(), shape2.as_shape::<Segment>())
@@ -576,7 +598,7 @@ where
                 contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold)
             }
             (_, ShapeType::Ball) | (ShapeType::Ball, _) => {
-                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold)
+                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold, &self.gjk_options)
             }
             // (ShapeType::Capsule, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Capsule) =>
             //     contact_manifold_cuboid_capsule_shapes(pos12, shape1, shape2, prediction, manifold),

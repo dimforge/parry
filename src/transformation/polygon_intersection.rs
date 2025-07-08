@@ -735,18 +735,18 @@ mod test {
             println!(
                 "tri1 is in tri2: {}",
                 tri1.vertices().iter().all(|pt| tri2
-                    .project_local_point(pt, false)
+                    .project_local_point(pt, false, &())
                     .is_inside_eps(pt, 1.0e-5))
             );
             println!(
                 "tri2 is in tri1: {}",
                 tri2.vertices().iter().all(|pt| tri1
-                    .project_local_point(pt, false)
+                    .project_local_point(pt, false, &())
                     .is_inside_eps(pt, 1.0e-5))
             );
             for pt in &inter {
-                let proj1 = tri1.project_local_point(&pt, false);
-                let proj2 = tri2.project_local_point(&pt, false);
+                let proj1 = tri1.project_local_point(&pt, false, &());
+                let proj2 = tri2.project_local_point(&pt, false, &());
                 assert!(proj1.is_inside_eps(&pt, 1.0e-5));
                 assert!(proj2.is_inside_eps(&pt, 1.0e-5));
             }

@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Real};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::ClosestPoints;
 use crate::shape::{Ball, Shape};
 
@@ -12,8 +13,11 @@ pub fn closest_points_ball_convex_polyhedron(
     ball1: &Ball,
     shape2: &(impl Shape + ?Sized),
     prediction: Real,
+    options: &dyn QueryOptions,
 ) -> ClosestPoints {
-    match crate::query::details::contact_ball_convex_polyhedron(pos12, ball1, shape2, prediction) {
+    match crate::query::details::contact_ball_convex_polyhedron(
+        pos12, ball1, shape2, prediction, options,
+    ) {
         Some(contact) => {
             if contact.dist <= 0.0 {
                 ClosestPoints::Intersecting
@@ -35,8 +39,11 @@ pub fn closest_points_convex_polyhedron_ball(
     shape1: &(impl Shape + ?Sized),
     ball2: &Ball,
     prediction: Real,
+    options: &dyn QueryOptions,
 ) -> ClosestPoints {
-    match crate::query::details::contact_convex_polyhedron_ball(pos12, shape1, ball2, prediction) {
+    match crate::query::details::contact_convex_polyhedron_ball(
+        pos12, shape1, ball2, prediction, options,
+    ) {
         Some(contact) => {
             if contact.dist <= 0.0 {
                 ClosestPoints::Intersecting

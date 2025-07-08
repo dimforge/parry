@@ -24,7 +24,8 @@ async fn main() {
         let slow_elapsed_time = elapsed_time / 3.0;
 
         let point_to_project = lissajous_3d(slow_elapsed_time);
-        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
+        let projected_point =
+            trimesh.project_local_point(&na_from_mquad(point_to_project), true, &());
 
         let slow_elapsed_time = slow_elapsed_time * 0.7;
         // Setup 3D camera.
@@ -65,7 +66,8 @@ async fn main() {
 
         // fixed point inside the shape
         let point_to_project = Vec3::ZERO;
-        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
+        let projected_point =
+            trimesh.project_local_point(&na_from_mquad(point_to_project), true, &());
         let color = if projected_point.is_inside {
             RED
         } else {

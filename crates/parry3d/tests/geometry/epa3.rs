@@ -1,6 +1,6 @@
 use na::{self, Isometry3, Point3, Vector3};
 use parry3d::query;
-use parry3d::query::gjk::VoronoiSimplex;
+use parry3d::query::gjk::{GjkOptions, VoronoiSimplex};
 use parry3d::shape::{Cuboid, Triangle};
 
 #[test]
@@ -9,15 +9,18 @@ fn cuboid_cuboid_EPA() {
     let c = Cuboid::new(Vector3::new(2.0, 1.0, 1.0));
     let m1 = Isometry3::translation(3.5, 0.0, 0.0);
     let m2 = Isometry3::identity();
+    let options = GjkOptions::default();
 
-    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
-        .expect("Penetration not found.");
+    let res =
+        query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0, &options)
+            .expect("Penetration not found.");
     assert_eq!(res.dist, -0.5);
     assert_eq!(res.normal1, -Vector3::x_axis());
 
     let m1 = Isometry3::translation(0.0, 0.2, 0.0);
-    let res = query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0)
-        .expect("Penetration not found.");
+    let res =
+        query::details::contact_support_map_support_map(&m1.inv_mul(&m2), &c, &c, 10.0, &options)
+            .expect("Penetration not found.");
     assert_eq!(res.dist, -1.8);
     assert_eq!(res.normal1, -Vector3::y_axis());
 }
@@ -38,6 +41,7 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         Point3::new(-2.349647, 0.0, 11.037681),
         Point3::new(-2.349647, 1.0, 11.037681),
     );
+    let options = GjkOptions::default();
 
     let gjk_result = query::details::contact_support_map_support_map_with_params(
         &Isometry3::identity(),
@@ -46,6 +50,7 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         0.00999999977,
         &mut VoronoiSimplex::new(),
         None,
+        &options,
     );
 
     let query::gjk::GJKResult::ClosestPoints(a, _b, _normal) = &gjk_result else {

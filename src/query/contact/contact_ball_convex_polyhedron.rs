@@ -1,4 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::Contact;
 use crate::shape::{Ball, Shape};
 
@@ -14,8 +15,10 @@ pub fn contact_ball_convex_polyhedron(
     ball1: &Ball,
     shape2: &(impl Shape + ?Sized),
     prediction: Real,
+    options: &dyn QueryOptions,
 ) -> Option<Contact> {
-    contact_convex_polyhedron_ball(&pos12.inverse(), shape2, ball1, prediction).map(|c| c.flipped())
+    contact_convex_polyhedron_ball(&pos12.inverse(), shape2, ball1, prediction, options)
+        .map(|c| c.flipped())
 }
 
 /// Contact between a convex polyhedron and a ball.
@@ -28,9 +31,10 @@ pub fn contact_convex_polyhedron_ball(
     shape1: &(impl Shape + ?Sized),
     ball2: &Ball,
     prediction: Real,
+    options: &dyn QueryOptions,
 ) -> Option<Contact> {
     let center2_1 = Point::from(pos12.translation.vector);
-    let (proj, f1) = shape1.project_local_point_and_get_feature(&center2_1);
+    let (proj, f1) = shape1.project_local_point_and_get_feature(&center2_1, options);
 
     let dist;
     let normal1;

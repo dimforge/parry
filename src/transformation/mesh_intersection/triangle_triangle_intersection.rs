@@ -214,7 +214,7 @@ fn segment_plane_intersection(
     }
 }
 
-/// Prints debug information if the calulated intersection of two triangles is detected to be
+/// Prints debug information if the calculated intersection of two triangles is detected to be
 /// invalid.
 ///
 /// If the intersection is valid, this prints nothing. If it isn’t valid, this will print a few
@@ -231,9 +231,11 @@ fn debug_check_intersections(
 ) {
     let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
     let mut incorrect = false;
+    // FIXME: Thierry: safer type checking. (associated type?)
+    let options = ();
     for pt in intersections {
         if !tri1
-            .project_local_point(&pt.p1, false)
+            .project_local_point(&pt.p1, false, &options)
             .is_inside_eps(&pt.p1, 1.0e-5)
         {
             incorrect = true;
@@ -241,7 +243,7 @@ fn debug_check_intersections(
         }
 
         if !tri2
-            .project_local_point(&pt.p1, false)
+            .project_local_point(&pt.p1, false, &options)
             .is_inside_eps(&pt.p1, 1.0e-5)
         {
             incorrect = true;
@@ -273,7 +275,7 @@ fn debug_check_intersections(
         }
         println!(")");
 
-        println!("~~~~~~~ (copy/paste the folliwing input in the `intersect_triangle_common_vertex` test)");
+        println!("~~~~~~~ (copy/paste the following input in the `intersect_triangle_common_vertex` test)");
         println!("(Triangle::new(");
         for pt1 in poly1 {
             println!("    Point2::new({},{}),", pt1.x, pt1.y);

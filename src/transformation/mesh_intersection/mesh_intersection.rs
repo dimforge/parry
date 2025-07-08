@@ -322,7 +322,11 @@ fn extract_connected_components(
                     let tri1 = mesh1.triangle(twin.face);
 
                     if flip2
-                        ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center()))
+                        ^ mesh2.contains_local_point(
+                            &pos12.inverse_transform_point(&tri1.center()),
+                            // FIXME: Thierry: safer type checking
+                            &(),
+                        )
                     {
                         to_visit.push(twin.face);
                     }
@@ -368,7 +372,13 @@ fn extract_connected_components(
                 let repr_pt = mesh1.triangle(repr_face).center();
                 let indices = mesh1.indices();
 
-                if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+                if flip2
+                    ^ mesh2.contains_local_point(
+                        &pos12.inverse_transform_point(&repr_pt),
+                        // FIXME: Thierry: safer type checking
+                        &(),
+                    )
+                {
                     new_indices1.extend(
                         cc.grouped_faces[range[0]..range[1]]
                             .iter()
@@ -381,7 +391,13 @@ fn extract_connected_components(
         // Deal with the case where there is no intersection between the meshes.
         let repr_pt = mesh1.triangle(0).center();
 
-        if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+        if flip2
+            ^ mesh2.contains_local_point(
+                &pos12.inverse_transform_point(&repr_pt),
+                // FIXME: Thierry: safer type checking
+                &(),
+            )
+        {
             new_indices1.extend_from_slice(mesh1.indices());
         }
     }
@@ -665,7 +681,11 @@ fn merge_triangle_sets(
 
             let epsilon = metadata.global_insertion_epsilon;
             let projection = mesh2
-                .project_local_point_and_get_location(&pos2.inverse_transform_point(&center), true)
+                .project_local_point_and_get_location(
+                    &pos2.inverse_transform_point(&center),
+                    true,
+                    &(),
+                )
                 .0;
 
             if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {

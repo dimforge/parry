@@ -1,19 +1,27 @@
 use crate::math::{Point, Real};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Segment, SegmentPointLocation};
 
 impl PointQuery for Segment {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_and_get_location(pt, solid).0
+    fn project_local_point(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        self.project_local_point_and_get_location(pt, solid, options)
+            .0
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         pt: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let (proj, loc) = self.project_local_point_and_get_location(pt, false);
+        let (proj, loc) = self.project_local_point_and_get_location(pt, false, options);
         let feature = match loc {
             SegmentPointLocation::OnVertex(i) => FeatureId::Vertex(i),
             SegmentPointLocation::OnEdge(..) => {
@@ -50,6 +58,7 @@ impl PointQueryWithLocation for Segment {
         &self,
         pt: &Point<Real>,
         _: bool,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
         let ab = self.b - self.a;
         let ap = pt - self.a;
