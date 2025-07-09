@@ -20,12 +20,11 @@ fn mesh_connected_components_grouped_faces() {
     if let Err(e) =
         roof.set_flags(TriMeshFlags::MERGE_DUPLICATE_VERTICES | TriMeshFlags::CONNECTED_COMPONENTS)
     {
-        dbg!(e);
-        assert!(false);
+        panic!("{:?}", e);
     }
 
     let components = roof.connected_components().unwrap();
-    println!("components: {:?}", components);
+    println!("components: {components:?}");
     assert_eq!(components.ranges.len(), 2); // Only one connected-component (two range values).
     assert_eq!(components.grouped_faces.len(), 2); // Only two faces in the connected-component.
 }

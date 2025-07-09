@@ -121,19 +121,19 @@ pub fn mquad_mesh_from_points(
         mquad_compute_normals_and_bake_light(&mquad_points, &mquad_indices, light_pos);
     // Regenerate the index for each vertex.
     let indices: Vec<u16> = (0..vertices.len() * 3).map(|i| i as u16).collect();
-    let mesh = Mesh {
+
+    Mesh {
         vertices,
         indices,
         texture: None,
-    };
-    mesh
+    }
 }
 
 /// Bakes light into vertices, using an hardcoded light strength.
 #[allow(dead_code)]
 pub fn mquad_compute_normals_and_bake_light(
-    points: &Vec<Vertex>,
-    indices: &Vec<u16>,
+    points: &[Vertex],
+    indices: &[u16],
     light_pos: Vec3,
 ) -> Vec<Vertex> {
     let mut vertices: Vec<Vertex> = Vec::<Vertex>::new();
@@ -155,7 +155,7 @@ pub fn mquad_compute_normals_and_bake_light(
             vertices.push(Vertex {
                 position: points[i as usize].position,
                 uv: Vec2::ZERO,
-                color: color,
+                color,
                 normal: Vec4::ZERO,
             });
         }

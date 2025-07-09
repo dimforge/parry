@@ -246,7 +246,7 @@ impl QbvhTester {
             *self
                 .aabbs
                 .get(*index)
-                .expect(&format!("invalid index {}", index))
+                .unwrap_or_else(|| panic!("invalid index {index}"))
         });
     }
 

@@ -11,12 +11,10 @@ use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
 async fn main() {
     //
     // This is useful to test for https://github.com/dimforge/parry/pull/248
-    let _points = vec![
-        Point3::from([0.0, 0.0, 0.0]),
+    let _points = [Point3::from([0.0, 0.0, 0.0]),
         Point3::from([0.0, 0.0, 1.0]),
         Point3::from([1.0, 0.0, 0.0]),
-        Point3::from([1.0, 0.0, 1.0]),
-    ];
+        Point3::from([1.0, 0.0, 1.0])];
     let _indices: Vec<[u32; 3]> = vec![[0, 1, 2], [1, 3, 2]];
 
     let scale = 200f32;

@@ -89,7 +89,7 @@ async fn main() {
 
 fn star_polygon() -> Vec<Point2<f32>> {
     let mut star = Ball::new(1.5).to_polyline(10);
-    star.iter_mut().step_by(2).for_each(|pt| *pt = *pt * 0.6);
+    star.iter_mut().step_by(2).for_each(|pt| *pt *= 0.6);
     star
 }
 

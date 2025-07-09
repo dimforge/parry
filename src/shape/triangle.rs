@@ -860,15 +860,11 @@ mod test {
             match i {
                 ii if ii < 0 || ii > 85 => assert!(
                     !tri.contains_point(&p),
-                    "Should not contain: i = {}, b = {}",
-                    i,
-                    b
+                    "Should not contain: i = {i}, b = {b}"
                 ),
                 ii if ii > 0 && ii < 85 => assert!(
                     tri.contains_point(&p),
-                    "Should contain: i = {}, b = {}",
-                    i,
-                    b
+                    "Should contain: i = {i}, b = {b}"
                 ),
                 _ => (), // Points at the edge may be seen as inside or outside
             }

@@ -21,6 +21,6 @@ fn ball_triangle_toi_infinite_loop_issue() {
     let cast =
         query::cast_shapes(&m1, &vel1, &b, &m2, &vel2, &t, ShapeCastOptions::default()).unwrap();
 
-    println!("ShapeCastHit: {:?}", cast);
+    println!("ShapeCastHit: {cast:?}");
     assert!(cast.is_none()); // The provided velocity is too small.
 }

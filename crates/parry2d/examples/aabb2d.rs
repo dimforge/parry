@@ -85,17 +85,15 @@ fn draw_aabb(aabb: Aabb, offset: Vec2, color: Color) {
     let mins = mquad_from_na(aabb.mins) * RENDER_SCALE + offset;
     let maxs = mquad_from_na(aabb.maxs) * RENDER_SCALE + offset;
 
-    let line = vec![
-        Vec2::new(mins.x, mins.y),
+    let line = [Vec2::new(mins.x, mins.y),
         Vec2::new(mins.x, maxs.y),
         Vec2::new(maxs.x, maxs.y),
         Vec2::new(maxs.x, mins.y),
-        Vec2::new(mins.x, mins.y),
-    ];
+        Vec2::new(mins.x, mins.y)];
     let drawable_line = line
         .iter()
         .zip(line.iter().cycle().skip(1).take(line.len()))
-        .map(|item| (item.0.clone(), item.1.clone()))
+        .map(|item| (*item.0, *item.1))
         .collect();
     draw_polyline(drawable_line, color);
 }

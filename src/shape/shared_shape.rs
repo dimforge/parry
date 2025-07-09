@@ -40,7 +40,7 @@ impl AsRef<dyn Shape> for SharedShape {
 impl fmt::Debug for SharedShape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let typed_shape: TypedShape = (*self.0).as_typed_shape();
-        write!(f, "SharedShape ( Arc<{:?}> )", typed_shape)
+        write!(f, "SharedShape ( Arc<{typed_shape:?}> )")
     }
 }
 

@@ -506,7 +506,7 @@ impl Voxels {
 
         let new_dim = domain_maxs - domain_mins;
         if new_dim.iter().any(|d| *d <= 0) {
-            log::error!("Invalid domain provided for resizing a voxels shape. New domain: {:?} - {:?}; new domain size: {:?}", domain_mins, domain_maxs, new_dim);
+            log::error!("Invalid domain provided for resizing a voxels shape. New domain: {domain_mins:?} - {domain_maxs:?}; new domain size: {new_dim:?}");
             return None;
         }
 
@@ -1041,7 +1041,7 @@ fn gen_const_tables() {
                 set_mask(mask, vid.1);
             }
         }
-        std::println!("0b{:b},", octant_mask);
+        std::println!("0b{octant_mask:b},");
     }
     std::println!("0,");
     std::println!("];");
@@ -1239,7 +1239,7 @@ fn gen_const_tables() {
                 set_mask(mask, vid.3);
             }
         }
-        std::println!("0b{:b},", octant_mask);
+        std::println!("0b{octant_mask:b},");
     }
     std::println!("0,");
     std::println!("];");

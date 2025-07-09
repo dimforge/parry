@@ -43,7 +43,7 @@ fn triangle_vertex_touches_triangle_edge_epa() {
         &Isometry3::identity(),
         &mesh1,
         &mesh2,
-        0.00999999977,
+        0.01,
         &mut VoronoiSimplex::new(),
         None,
     );
