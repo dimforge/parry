@@ -32,7 +32,9 @@ where
 
         let intersection = shape
             .cast_ray_and_get_normal(&position, &ray, f32::MAX, true)
-            .unwrap_or_else(|| panic!("Ray {ray:?} did not hit Shape {name} rotated with {rotation:?}"));
+            .unwrap_or_else(|| {
+                panic!("Ray {ray:?} did not hit Shape {name} rotated with {rotation:?}")
+            });
 
         let point = ray.origin + ray.dir * intersection.time_of_impact;
         let point_nudged_in = point + intersection.normal * -0.001;
