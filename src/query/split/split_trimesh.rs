@@ -322,7 +322,6 @@ impl TriMesh {
                     vertices_lhs[idx1[2] as usize],
                 );
 
-                // FIXME: Thierry: pass an option?
                 if self.contains_local_point(&tri.center(), &()) {
                     indices_lhs.push(idx1);
 

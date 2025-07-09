@@ -1,5 +1,7 @@
+use log::warn;
+
 use crate::math::{Point, Real};
-use crate::query::gjk::VoronoiSimplex;
+use crate::query::gjk::{GjkOptions, VoronoiSimplex};
 use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{FeatureId, RoundShape, SupportMap};
@@ -18,16 +20,27 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
         return unimplemented!(
             "The projection of points on a round shapes isn’t supported on no-std platforms yet."
         );
-        let options = options.as_any().downcast_ref().unwrap();
 
         #[cfg(feature = "std")] // TODO: can’t be used without std because of EPA
-        return crate::query::details::local_point_projection_on_support_map(
-            self,
-            &mut VoronoiSimplex::new(),
-            point,
-            solid,
-            options,
-        );
+        {
+            let Some(options) = options.as_any().downcast_ref() else {
+                warn!("Incorrect option passed to project_local_point: using default options.");
+                return crate::query::details::local_point_projection_on_support_map(
+                    self,
+                    &mut VoronoiSimplex::new(),
+                    point,
+                    solid,
+                    &GjkOptions::default(),
+                );
+            };
+            return crate::query::details::local_point_projection_on_support_map(
+                self,
+                &mut VoronoiSimplex::new(),
+                point,
+                solid,
+                options,
+            );
+        }
     }
 
     #[inline]

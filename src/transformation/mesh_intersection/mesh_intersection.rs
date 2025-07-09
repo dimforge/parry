@@ -324,7 +324,6 @@ fn extract_connected_components(
                     if flip2
                         ^ mesh2.contains_local_point(
                             &pos12.inverse_transform_point(&tri1.center()),
-                            // FIXME: Thierry: safer type checking
                             &(),
                         )
                     {
@@ -372,12 +371,7 @@ fn extract_connected_components(
                 let repr_pt = mesh1.triangle(repr_face).center();
                 let indices = mesh1.indices();
 
-                if flip2
-                    ^ mesh2.contains_local_point(
-                        &pos12.inverse_transform_point(&repr_pt),
-                        // FIXME: Thierry: safer type checking
-                        &(),
-                    )
+                if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt), &())
                 {
                     new_indices1.extend(
                         cc.grouped_faces[range[0]..range[1]]
@@ -391,13 +385,7 @@ fn extract_connected_components(
         // Deal with the case where there is no intersection between the meshes.
         let repr_pt = mesh1.triangle(0).center();
 
-        if flip2
-            ^ mesh2.contains_local_point(
-                &pos12.inverse_transform_point(&repr_pt),
-                // FIXME: Thierry: safer type checking
-                &(),
-            )
-        {
+        if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt), &()) {
             new_indices1.extend_from_slice(mesh1.indices());
         }
     }

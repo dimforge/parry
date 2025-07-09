@@ -228,6 +228,8 @@ impl PointQueryWithLocation for TriMesh {
     }
 }
 
+use crate::query::gjk::GjkOptions;
+
 /*
  * Visitors
  */
@@ -283,12 +285,18 @@ macro_rules! gen_visitor(
                                     part_shape.$project_point(
                                         part_pos,
                                         self.point
-                                        $(, self.$args)*, &()
+                                        $(, self.$args)*, &GjkOptions {
+                    espilon_tolerance: f32::EPSILON * 10000.0,
+                    nb_max_iterations: 100,
+                }
                                     )
                                 } else {
                                     part_shape.$project_local_point(
                                         self.point
-                                        $(, self.$args)*, &()
+                                        $(, self.$args)*, &GjkOptions {
+                    espilon_tolerance: f32::EPSILON * 10000.0,
+                    nb_max_iterations: 100,
+                }
                                     )
                                 };
 

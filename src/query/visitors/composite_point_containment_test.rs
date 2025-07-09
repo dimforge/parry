@@ -49,7 +49,7 @@ impl<S: TypedSimdCompositeShape> SimdVisitor<S::PartId, SimdAabb>
                     self.shape.map_typed_part_at(*data, |part_pos, obj, _| {
                         if obj.contains_local_point(
                             &part_pos.inverse_transform_point(self.point),
-                            // FIXME: Thierry: safer type checking
+                            // FIXME: Thierry: passed option should be depending on shape...
                             &(),
                         ) {
                             self.found = true;

@@ -231,7 +231,6 @@ fn debug_check_intersections(
 ) {
     let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
     let mut incorrect = false;
-    // FIXME: Thierry: safer type checking. (associated type?)
     let options = ();
     for pt in intersections {
         if !tri1

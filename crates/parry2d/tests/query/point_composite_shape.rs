@@ -1,8 +1,5 @@
 use na::Point2;
-use parry2d::{
-    query::{gjk::GjkOptions, PointQuery},
-    shape::TriMesh,
-};
+use parry2d::{query::PointQuery, shape::TriMesh};
 
 #[test]
 fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {

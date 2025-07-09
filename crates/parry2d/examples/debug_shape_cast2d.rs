@@ -4,7 +4,6 @@ use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry2, Point2};
 use parry2d::math::{self, Isometry};
-use parry2d::query::gjk::eps_tol;
 use parry2d::query::{self, DefaultQueryDispatcher, Ray, ShapeCastOptions};
 use parry2d::shape::{Ball, ConvexPolygon, Shape};
 
