@@ -108,8 +108,12 @@ pub fn mquad_mesh_from_points(
                 color: color.into(),
                 normal: Vec4::ZERO,
             })
-            .collect(),
-        indices.iter().flatten().map(|v| *v as u16).collect(),
+            .collect::<Vec<_>>(),
+        indices
+            .iter()
+            .flatten()
+            .map(|v| *v as u16)
+            .collect::<Vec<_>>(),
     );
 
     // Macroquad does support adding normals to vertices, but we´d have to provide shaders for them.
