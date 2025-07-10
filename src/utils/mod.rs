@@ -55,6 +55,7 @@ mod interval;
 mod inv;
 mod isometry_ops;
 mod median;
+pub mod morton;
 mod obb;
 mod point_cloud_support_point;
 mod point_in_poly2d;
