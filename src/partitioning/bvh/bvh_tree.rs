@@ -137,7 +137,6 @@ impl BvhNodeWide {
         [&self.left, &self.right]
     }
 
-
     /// The two nodes in `self` seen as an array of mutable references.
     ///
     /// Useful for accessing the nodes mutable by index.

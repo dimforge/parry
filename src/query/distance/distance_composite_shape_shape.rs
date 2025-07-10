@@ -20,26 +20,24 @@ impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
         let msum_shift = -ls_aabb2.center().coords;
         let msum_margin = ls_aabb2.half_extents();
 
-        self.0
-            .typed_bvh()
-            .find_best(
-                Real::MAX,
-                |node: &BvhNode, _| {
-                    // Compute the minkowski sum of the two Aabbs.
-                    let msum = Aabb {
-                        mins: node.mins() + msum_shift - msum_margin,
-                        maxs: node.maxs() + msum_shift + msum_margin,
-                    };
-                    msum.distance_to_origin()
-                },
-                |part_id, _| {
-                    self.0
-                        .map_untyped_part_at(part_id, |part_pos1, part_g1, _| {
-                            dispatcher.distance(&part_pos1.inv_mul(pose12), part_g1, shape2)
-                        })?
-                        .ok()
-                },
-            )
+        self.0.typed_bvh().find_best(
+            Real::MAX,
+            |node: &BvhNode, _| {
+                // Compute the minkowski sum of the two Aabbs.
+                let msum = Aabb {
+                    mins: node.mins() + msum_shift - msum_margin,
+                    maxs: node.maxs() + msum_shift + msum_margin,
+                };
+                msum.distance_to_origin()
+            },
+            |part_id, _| {
+                self.0
+                    .map_untyped_part_at(part_id, |part_pos1, part_g1, _| {
+                        dispatcher.distance(&part_pos1.inv_mul(pose12), part_g1, shape2)
+                    })?
+                    .ok()
+            },
+        )
     }
 }
 
@@ -54,7 +52,10 @@ where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedSimdCompositeShape,
 {
-    CompositeShapeRef(g1).distance_to_shape(dispatcher, pos12, g2).unwrap_or((u32::MAX, Real::MAX)).1
+    CompositeShapeRef(g1)
+        .distance_to_shape(dispatcher, pos12, g2)
+        .unwrap_or((u32::MAX, Real::MAX))
+        .1
 }
 
 /// Smallest distance between a shape and a composite shape.

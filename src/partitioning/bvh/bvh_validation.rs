@@ -1,5 +1,5 @@
-use crate::partitioning::Bvh;
 use crate::partitioning::bvh::bvh_tree::BvhNodeIndex;
+use crate::partitioning::Bvh;
 use crate::utils::hashset::HashSet;
 
 impl Bvh {
@@ -71,11 +71,7 @@ impl Bvh {
         let _ = self.assert_well_formed_recurse(0, &mut loop_detection);
     }
 
-    fn assert_well_formed_recurse(
-        &self,
-        node_id: u32,
-        loop_detection: &mut HashSet<u32>,
-    ) -> u32 {
+    fn assert_well_formed_recurse(&self, node_id: u32, loop_detection: &mut HashSet<u32>) -> u32 {
         let node = &self.nodes[node_id as usize];
 
         if !loop_detection.insert(node_id) {
@@ -193,7 +189,6 @@ impl Bvh {
 
         left_count + right_count
     }
-
 
     /// Panics if the nodes of `self` are not stored in depth-first order on its internal storage.
     ///

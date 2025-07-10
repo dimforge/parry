@@ -82,7 +82,10 @@ where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedSimdCompositeShape,
 {
-    CompositeShapeRef(g1).closest_points_to_shape(dispatcher, pos12, g2, margin).map(|cp| cp.1).unwrap_or(ClosestPoints::Disjoint)
+    CompositeShapeRef(g1)
+        .closest_points_to_shape(dispatcher, pos12, g2, margin)
+        .map(|cp| cp.1)
+        .unwrap_or(ClosestPoints::Disjoint)
 }
 
 /// Closest points between a shape and a composite shape.

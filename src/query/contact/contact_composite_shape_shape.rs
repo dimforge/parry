@@ -54,7 +54,9 @@ where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + SimdCompositeShape,
 {
-    CompositeShapeRef(g1).contact_with_shape(dispatcher, &pose12.inverse(), g2, prediction).map(|c| c.1)
+    CompositeShapeRef(g1)
+        .contact_with_shape(dispatcher, &pose12.inverse(), g2, prediction)
+        .map(|c| c.1)
 }
 
 /// Best contact between a shape and a composite (`Mesh`, `Compound`) shape.

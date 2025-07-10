@@ -42,7 +42,9 @@ where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedSimdCompositeShape,
 {
-    CompositeShapeRef(g1).intersects_shape(dispatcher, pos12, g2).is_some()
+    CompositeShapeRef(g1)
+        .intersects_shape(dispatcher, pos12, g2)
+        .is_some()
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.

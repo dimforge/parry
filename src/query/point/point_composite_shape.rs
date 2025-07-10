@@ -155,7 +155,9 @@ impl PointQuery for Polyline {
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
-        CompositeShapeRef(self).contains_local_point(point).is_some()
+        CompositeShapeRef(self)
+            .contains_local_point(point)
+            .is_some()
     }
 }
 
@@ -196,7 +198,9 @@ impl PointQuery for TriMesh {
                 .is_inside;
         }
 
-        CompositeShapeRef(self).contains_local_point(point).is_some()
+        CompositeShapeRef(self)
+            .contains_local_point(point)
+            .is_some()
     }
 
     /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
@@ -233,7 +237,9 @@ impl PointQuery for Compound {
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>) -> bool {
-        CompositeShapeRef(self).contains_local_point(point).is_some()
+        CompositeShapeRef(self)
+            .contains_local_point(point)
+            .is_some()
     }
 }
 
