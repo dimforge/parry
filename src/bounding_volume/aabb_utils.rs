@@ -57,7 +57,8 @@ where
 /// Computes the [`Aabb`] of a set of point references transformed by `m`.
 pub fn point_cloud_aabb_ref<'a, I>(m: &Isometry<Real>, pts: I) -> Aabb
 where
-    I: IntoIterator<Item = &'a Point<Real>>, {
+    I: IntoIterator<Item = &'a Point<Real>>,
+{
     point_cloud_aabb(m, pts.into_iter().copied())
 }
 

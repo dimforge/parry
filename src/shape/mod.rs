@@ -18,7 +18,7 @@ pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 
 #[cfg(feature = "alloc")]
 pub use self::{
-    composite_shape::{SimdCompositeShape, TypedSimdCompositeShape},
+    composite_shape::{CompositeShapeRef, SimdCompositeShape, TypedSimdCompositeShape},
     compound::Compound,
     polyline::Polyline,
     shared_shape::SharedShape,

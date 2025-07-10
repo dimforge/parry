@@ -8,7 +8,6 @@ pub use self::closest_points_ball_convex_polyhedron::{
 #[cfg(feature = "alloc")]
 pub use self::closest_points_composite_shape_shape::{
     closest_points_composite_shape_shape, closest_points_shape_composite_shape,
-    CompositeShapeAgainstShapeClosestPointsVisitor,
 };
 pub use self::closest_points_cuboid_cuboid::closest_points_cuboid_cuboid;
 pub use self::closest_points_cuboid_triangle::{

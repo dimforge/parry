@@ -1071,7 +1071,7 @@ impl Shape for Polyline {
     }
 
     fn compute_local_aabb(&self) -> Aabb {
-        *self.local_aabb()
+        self.local_aabb()
     }
 
     fn compute_local_bounding_sphere(&self) -> BoundingSphere {
@@ -1121,7 +1121,7 @@ impl Shape for TriMesh {
     }
 
     fn compute_local_aabb(&self) -> Aabb {
-        *self.local_aabb()
+        self.local_aabb()
     }
 
     fn compute_local_bounding_sphere(&self) -> BoundingSphere {

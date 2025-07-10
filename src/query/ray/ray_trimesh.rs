@@ -1,9 +1,6 @@
 use crate::math::Real;
-use crate::query::ray::{
-    RayCompositeShapeToiAndNormalBestFirstVisitor, RayCompositeShapeToiBestFirstVisitor,
-};
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{FeatureId, TriMesh};
+use crate::shape::{CompositeShapeRef, FeatureId, TriMesh};
 
 #[cfg(feature = "dim3")]
 pub use ray_cast_with_culling::RayCullingMode;
@@ -11,12 +8,9 @@ pub use ray_cast_with_culling::RayCullingMode;
 impl RayCast for TriMesh {
     #[inline]
     fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
-        let mut visitor =
-            RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_time_of_impact, solid);
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|res| res.1 .1)
+        CompositeShapeRef(self)
+            .cast_local_ray(ray, max_time_of_impact, solid)
+            .map(|hit| hit.1)
     }
 
     #[inline]
@@ -26,16 +20,9 @@ impl RayCast for TriMesh {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let mut visitor = RayCompositeShapeToiAndNormalBestFirstVisitor::new(
-            self,
-            ray,
-            max_time_of_impact,
-            solid,
-        );
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|(_, (best, mut res))| {
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|(best, mut res)| {
                 // We hit a backface.
                 // NOTE: we need this for `TriMesh::is_backface` to work properly.
                 if res.feature == FeatureId::Face(1) {
@@ -52,11 +39,12 @@ impl RayCast for TriMesh {
 #[cfg(feature = "dim3")]
 mod ray_cast_with_culling {
     use crate::math::{Isometry, Real, Vector};
-    use crate::partitioning::Qbvh;
+    use crate::partitioning::Bvh;
     use crate::query::details::NormalConstraints;
-    use crate::query::ray::RayCompositeShapeToiAndNormalBestFirstVisitor;
     use crate::query::{Ray, RayIntersection};
-    use crate::shape::{FeatureId, Shape, TriMesh, Triangle, TypedSimdCompositeShape};
+    use crate::shape::{
+        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedSimdCompositeShape,
+    };
 
     /// Controls which side of a triangle a ray-cast is allowed to hit.
     #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -87,42 +75,45 @@ mod ray_cast_with_culling {
     impl TypedSimdCompositeShape for TriMeshWithCulling<'_> {
         type PartShape = Triangle;
         type PartNormalConstraints = ();
-        type PartId = u32;
 
         #[inline(always)]
-        fn map_typed_part_at(
+        fn map_typed_part_at<T>(
             &self,
             i: u32,
             mut f: impl FnMut(
                 Option<&Isometry<Real>>,
                 &Self::PartShape,
                 Option<&Self::PartNormalConstraints>,
-            ),
-        ) {
+            ) -> T,
+        ) -> Option<T> {
             let tri = self.trimesh.triangle(i);
             let tri_normal = tri.scaled_normal();
 
             if self.culling.check(&tri_normal, &self.ray.dir) {
-                f(None, &tri, None)
+                Some(f(None, &tri, None))
+            } else {
+                None
             }
         }
 
         #[inline(always)]
-        fn map_untyped_part_at(
+        fn map_untyped_part_at<T>(
             &self,
             i: u32,
-            mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-        ) {
+            mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+        ) -> Option<T> {
             let tri = self.trimesh.triangle(i);
             let tri_normal = tri.scaled_normal();
 
             if self.culling.check(&tri_normal, &self.ray.dir) {
-                f(None, &tri, None)
+                Some(f(None, &tri, None))
+            } else {
+                None
             }
         }
 
-        fn typed_qbvh(&self) -> &Qbvh<u32> {
-            self.trimesh.qbvh()
+        fn typed_bvh(&self) -> &Bvh {
+            self.trimesh.bvh()
         }
     }
 
@@ -161,17 +152,9 @@ mod ray_cast_with_culling {
                 culling,
                 ray,
             };
-
-            let mut visitor = RayCompositeShapeToiAndNormalBestFirstVisitor::new(
-                &mesh_with_culling,
-                ray,
-                max_time_of_impact,
-                false,
-            );
-
-            self.qbvh()
-                .traverse_best_first(&mut visitor)
-                .map(|(_, (best, mut res))| {
+            CompositeShapeRef(&mesh_with_culling)
+                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false)
+                .map(|(best, mut res)| {
                     // We hit a backface.
                     // NOTE: we need this for `TriMesh::is_backface` to work properly.
                     if res.feature == FeatureId::Face(1) {

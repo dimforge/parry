@@ -1,6 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::Qbvh;
+use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
 use crate::utils::HashablePartialEq;
 use alloc::{vec, vec::Vec};
@@ -284,7 +284,7 @@ bitflags::bitflags! {
 #[derive(Clone)]
 /// A triangle mesh.
 pub struct TriMesh {
-    qbvh: Qbvh<u32>,
+    bvh: Bvh,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
@@ -320,7 +320,7 @@ impl TriMesh {
         }
 
         let mut result = Self {
-            qbvh: Qbvh::new(),
+            bvh: Bvh::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
@@ -332,7 +332,7 @@ impl TriMesh {
 
         let _ = result.set_flags(flags);
 
-        if result.qbvh.raw_nodes().is_empty() {
+        if result.bvh.is_empty() {
             // The Qbvh hasn’t been computed by `.set_flags`.
             result.rebuild_qbvh();
         }
@@ -407,7 +407,7 @@ impl TriMesh {
     pub fn heap_memory_size(&self) -> usize {
         // NOTE: if a new field is added to `Self`, adjust this function result.
         let Self {
-            qbvh,
+            bvh: qbvh,
             vertices,
             indices,
             topology,
@@ -499,8 +499,11 @@ impl TriMesh {
             });
         }
 
+        let mut bvh = self.bvh.clone();
+        bvh.scale(scale);
+
         Self {
-            qbvh: self.qbvh.scaled(scale),
+            bvh,
             vertices: self.vertices,
             indices: self.indices,
             #[cfg(feature = "dim3")]
@@ -544,19 +547,17 @@ impl TriMesh {
     }
 
     fn rebuild_qbvh(&mut self) {
-        let data = self.indices.iter().enumerate().map(|(i, idx)| {
+        let leaves = self.indices.iter().enumerate().map(|(i, idx)| {
             let aabb = Triangle::new(
                 self.vertices[idx[0] as usize],
                 self.vertices[idx[1] as usize],
                 self.vertices[idx[2] as usize],
             )
             .local_aabb();
-            (i as u32, aabb)
+            (i, aabb)
         });
 
-        // NOTE: we apply no dilation factor because we won't
-        // update this tree dynamically.
-        self.qbvh.clear_and_rebuild(data, 0.0);
+        self.bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves)
     }
 
     /// Reverse the orientation of the triangle mesh.
@@ -1016,17 +1017,17 @@ impl TriMesh {
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
-        self.qbvh.root_aabb().transform_by(pos)
+        self.bvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
-    pub fn local_aabb(&self) -> &Aabb {
-        self.qbvh.root_aabb()
+    pub fn local_aabb(&self) -> Aabb {
+        self.bvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    pub fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 
     /// The number of triangles forming this mesh.
@@ -1166,48 +1167,47 @@ impl SimdCompositeShape for TriMesh {
         )
     }
 
-    fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
 impl TypedSimdCompositeShape for TriMesh {
     type PartShape = Triangle;
     type PartNormalConstraints = TrianglePseudoNormals;
-    type PartId = u32;
 
     #[inline(always)]
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         i: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
+        ) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(None, &tri, pseudo_normals.as_ref())
+        Some(f(None, &tri, pseudo_normals.as_ref()))
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    ) {
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(
+        Some(f(
             None,
             &tri,
             pseudo_normals.as_ref().map(|n| n as &dyn NormalConstraints),
-        )
+        ))
     }
 
-    fn typed_qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn typed_bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 

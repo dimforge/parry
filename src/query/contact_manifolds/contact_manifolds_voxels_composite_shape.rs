@@ -3,7 +3,6 @@ use crate::math::{Isometry, Real, Translation, Vector};
 use crate::query::details::{
     CanonicalVoxelShape, VoxelsShapeContactManifoldsWorkspace, VoxelsShapeSubDetector,
 };
-use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
@@ -78,13 +77,12 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
 
     // TODO: avoid reallocating the new `manifolds` vec at each step.
     let mut old_manifolds = core::mem::take(manifolds);
-    let qbvh2 = shape2.qbvh();
-    let mut stack2 = Vec::new();
+    let bvh2 = shape2.bvh();
 
     let radius1 = voxels1.voxel_size() / 2.0;
 
     let aabb1 = voxels1.local_aabb();
-    let aabb2_1 = shape2.qbvh().root_aabb().transform_by(pos12);
+    let aabb2_1 = shape2.bvh().root_aabb().transform_by(pos12);
     let domain2_1 = Aabb {
         mins: aabb2_1.mins - radius1 * 10.0,
         maxs: aabb2_1.maxs + radius1 * 10.0,
@@ -107,8 +105,8 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
             let (canonical_center1, canonical_shape1) = canon1.cuboid(voxels1, &vox1, domain2_1);
             let canonical_pose12 = Translation::from(-canonical_center1) * pos12;
 
-            let mut detect_hit = |leaf2: &u32| {
-                let key = Vector3::new(canon1.workspace_key.x, canon1.workspace_key.y, *leaf2);
+            let mut detect_hit = |leaf2: u32| {
+                let key = Vector3::new(canon1.workspace_key.x, canon1.workspace_key.y, leaf2);
 
                 // TODO: could we refactor the workspace system between Voxels, HeightField, and CompoundShape?
                 //       (and maybe TriMesh too but it’s using a different approach).
@@ -139,9 +137,9 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
 
                         let vox_id = vox1.linear_id;
                         let (id1, id2) = if flipped {
-                            (*leaf2, vox_id)
+                            (leaf2, vox_id)
                         } else {
-                            (vox_id, *leaf2)
+                            (vox_id, leaf2)
                         };
                         manifolds.push(ContactManifold::with_data(
                             id1,
@@ -158,7 +156,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                  */
                 let manifold = &mut manifolds[sub_detector.manifold_id];
 
-                shape2.map_part_at(*leaf2, &mut |part_pos2, part_shape2, _| {
+                shape2.map_part_at(leaf2, &mut |part_pos2, part_shape2, _| {
                     let relative_pos12 = part_pos2.prepend_to(&canonical_pose12);
 
                     if !manifold_updated {
@@ -265,14 +263,13 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                             (test_voxel.contains_local_point(&pt_in_voxel_space) as u32) << i;
                     }
                 });
-
-                true
             };
 
             let canon_aabb1_2 = canonical_shape1.compute_aabb(&canonical_pose12.inverse());
-            let mut visitor2 =
-                BoundingVolumeIntersectionsVisitor::new(&canon_aabb1_2, &mut detect_hit);
-            let _ = qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+
+            for leaf_id in bvh2.intersect_aabb(&canon_aabb1_2) {
+                detect_hit(leaf_id);
+            }
         }
     }
 

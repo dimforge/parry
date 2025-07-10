@@ -276,7 +276,7 @@ fn debug_check_intersections(
         println!("Y=polygon(D,E,F)");
         print!("Z=polygon({}", lbls[0]);
         for lbl in lbls.iter().skip(1) {
-            print!(",{}", lbl);
+            print!(",{lbl}");
         }
         println!(")");
 

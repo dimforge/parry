@@ -8,7 +8,6 @@ pub use self::distance_ball_convex_polyhedron::{
 #[cfg(feature = "alloc")]
 pub use self::distance_composite_shape_shape::{
     distance_composite_shape_shape, distance_shape_composite_shape,
-    CompositeShapeAgainstAnyDistanceVisitor,
 };
 pub use self::distance_cuboid_cuboid::distance_cuboid_cuboid;
 pub use self::distance_halfspace_support_map::{
