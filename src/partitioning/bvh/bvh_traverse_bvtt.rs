@@ -15,7 +15,7 @@ impl Bvh {
     ///
     /// The closure `f` will be called on each pair of leaf that passed the AABB intersection checks.
     /// If `CHANGE_DETECTION` is `true`, then only pairs of leaves where at least one was detected
-    /// as changed during [`Self::insert_or_pre_update`] will be traversed.
+    /// as changed during [`Self::insert_or_update_partially`] will be traversed.
     pub fn traverse_bvtt_single_tree<const CHANGE_DETECTION: bool>(
         &self,
         workspace: &mut BvhWorkspace,

@@ -32,10 +32,17 @@ impl From<Ray> for SimdInvRay {
 }
 
 impl Bvh {
+    /// Iterates through all the leaves with an AABB intersecting the given `aabb`.
     pub fn intersect_aabb<'a>(&'a self, aabb: &'a Aabb) -> impl Iterator<Item = u32> + 'a {
         self.leaves(|node: &BvhNode| node.aabb().intersects(aabb))
     }
 
+    /// Projects a point on this BVH using the provided leaf projection function.
+    ///
+    /// The `primitive_check` delegates the point-projection task to an external function that
+    /// is assumed to map a leaf index to an actual geometry to project on. The `Real` argument
+    /// given to that closure is the distance to the closest point found so far (or is equal to
+    /// `max_distance` if no projection was found so far).
     pub fn project_point(
         &self,
         point: &Point<Real>,
@@ -52,29 +59,43 @@ impl Bvh {
         )
     }
 
+    /// Casts a ray on this BVH using the provided leaf ray-cast function.
+    ///
+    /// The `primitive_check` delegates the ray-casting task to an external function that
+    /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
+    /// given to that closure is the distance to the closest ray hit found so far (or is equal to
+    /// `max_time_of_impact` if no projection was found so far).
     #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3")))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         primitive_check: impl Fn(u32, Real) -> Option<Real>,
     ) -> Option<(u32, Real)> {
         self.find_best(
-            max_toi,
+            max_time_of_impact,
             |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
             primitive_check,
         )
     }
 
+    /// Casts a ray on this BVH using the provided leaf ray-cast function.
+    ///
+    /// The `primitive_check` delegates the ray-casting task to an external function that
+    /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
+    /// given to that closure is the distance to the closest ray hit found so far (or is equal to
+    /// `max_time_of_impact` if no projection was found so far).
     #[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
-        max_toi: Real,
+        max_time_of_impact: Real,
         primitive_check: impl Fn(u32, Real) -> Option<Real>,
     ) -> Option<(u32, Real)> {
-        // The commented code below relies on depth-fisrt traversal instead of
-        // depth first. Interestin to compare both approaches.
+        // The commented code below relies on depth-first traversal instead of
+        // depth first. Interesting to compare both approaches (the best-first is
+        // expected to be consistently faster though).
+        //
         // let simd_inv_ray = SimdInvRay::from(*ray);
         // let mut best_primitive = u32::MAX;
         // let mut best_toi = Real::MAX;
@@ -97,7 +118,7 @@ impl Bvh {
 
         let simd_inv_ray = SimdInvRay::from(*ray);
         self.find_best(
-            max_toi,
+            max_time_of_impact,
             |node: &BvhNode, _best_so_far| node.cast_inv_ray_simd(&simd_inv_ray),
             |primitive, best_so_far| primitive_check(primitive, best_so_far),
         )

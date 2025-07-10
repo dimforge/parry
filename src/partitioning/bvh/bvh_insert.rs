@@ -6,7 +6,65 @@ use crate::partitioning::Bvh;
 use alloc::vec;
 
 impl Bvh {
-    pub fn insert_or_pre_update(
+    /// Inserts a leaf into this BVH, or updates it if already exists.
+    pub fn insert(&mut self, aabb: Aabb, leaf_index: u32) {
+        if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
+            let node = &mut self.nodes[*leaf];
+            node.mins = aabb.mins;
+            node.maxs = aabb.maxs;
+
+            // Propagate up.
+            // TODO: maybe we should offer multiple propagation strategy.
+            //       The one we currently implement simply stops as soon as a
+            //       parent node contains the given `aabb`, but it won’t try
+            //       to make the parent AABBs smaller even if we could.
+            //       There could be two additional strategies that are slower but would leave the
+            //       tree in a tighter state:
+            //       - Make the parent smaller if possible by merging the aabb with
+            //         the sibling.
+            //       - In addition to merging with the sibling, we could apply bottom-up
+            //         tree rotations to optimize part of the tree on our way up to the
+            //         root.
+            let wide_node_id = leaf.decompose().0;
+            if wide_node_id == 0 {
+                // Already at the root, no propagation possible.
+                return;
+            }
+
+            let mut parent = self.parents[wide_node_id];
+            loop {
+                let node = &mut self.nodes[parent];
+                if node.contains_aabb(&aabb) {
+                    // No more propagation needed, the parent is big enough.
+                    break;
+                }
+
+                node.mins = node.mins.inf(&aabb.mins);
+                node.maxs = node.maxs.sup(&aabb.maxs);
+
+                let wide_node_id = parent.decompose().0;
+                if wide_node_id == 0 {
+                    break;
+                }
+
+                parent = self.parents[wide_node_id];
+            }
+        } else {
+            self.insert_new_unchecked(aabb, leaf_index);
+        }
+    }
+
+    /// Either inserts a node on this tree, or, if it already exists, updates its associated bounding
+    /// but doesn’t update its ascendant nodes.
+    ///
+    /// This method is primarily designed to be called for inserting new nodes or updating existing
+    /// ones, and then running a [`Bvh::refit`]. Until [`Bvh::refit`] or [`Bvh::refit_without_opt`]
+    /// is called, the BVH will effectively be left in an invalid state where some internal nodes
+    /// might no longer enclose their children.
+    ///
+    /// For an alternative that inserts a node while also making sure all its ascendants are
+    /// up to date, see [`Bvh::insert`].
+    pub fn insert_or_update_partially(
         &mut self,
         aabb: Aabb,
         leaf_index: u32,
@@ -26,19 +84,12 @@ impl Bvh {
                 node.maxs = aabb.maxs;
             }
         } else {
-            let _ = self.insert_new(aabb, leaf_index);
+            self.insert_new_unchecked(aabb, leaf_index);
         }
     }
 
-    /// Inserts a `node` into this BVH if it doesn’t already exist.
-    ///
-    /// Return `true` if the insertion happened, or `false` if a node with the same `leaf_index`
-    /// already exists (in which case `self` is left unmodified).
-    pub fn insert_new(&mut self, aabb: Aabb, leaf_index: u32) -> bool {
-        if self.leaf_node_indices.contains_key(leaf_index as usize) {
-            return false;
-        }
-
+    /// Inserts a new leaf into this BVH without checking if it already exists.
+    fn insert_new_unchecked(&mut self, aabb: Aabb, leaf_index: u32) {
         let _ = self
             .leaf_node_indices
             .insert(leaf_index as usize, BvhNodeIndex::default());
@@ -52,14 +103,14 @@ impl Bvh {
             });
             self.parents.push(BvhNodeIndex::default());
             *leaf_index_mut = BvhNodeIndex::left(0);
-            return true;
+            return;
         }
 
         // If we have a root, but it is partial, just complete it.
         if self.nodes[0].right.leaf_count() == 0 {
             self.nodes[0].right = BvhNode::leaf(aabb, leaf_index);
             *leaf_index_mut = BvhNodeIndex::right(0);
-            return true;
+            return;
         }
 
         // General case: traverse the tree to find room for the new leaf.
@@ -174,8 +225,6 @@ impl Bvh {
                 self.maybe_apply_rotation(node);
             }
         }
-
-        true
     }
 
     // Applies a tree rotation at the given `node` if this improves the SAH metric at that node.

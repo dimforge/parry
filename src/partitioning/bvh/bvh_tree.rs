@@ -86,11 +86,6 @@ impl BvhNodeData {
     }
 
     #[inline(always)]
-    pub(super) fn set_leaf_count(&mut self, count: u32) {
-        self.0 = (self.0 & !0x3fff_ffff) | count;
-    }
-
-    #[inline(always)]
     pub(super) fn resolve_pending_change(&mut self) {
         if self.is_change_pending() {
             *self = Self((self.0 & 0x3fff_ffff) | (CHANGED << 30));
@@ -556,7 +551,9 @@ impl Bvh {
 
         match strategy {
             BvhBuildStrategy::Ploc => result.rebuild_range_ploc(0, &mut workspace.rebuild_leaves),
-            BvhBuildStrategy::Binned => result.rebuild_range_ploc(0, &mut workspace.rebuild_leaves),
+            BvhBuildStrategy::Binned => {
+                result.rebuild_range_binned(0, &mut workspace.rebuild_leaves)
+            }
         }
 
         result.refit(&mut workspace); // Layout in depth-first order.

@@ -6,32 +6,14 @@ use smallvec::SmallVec;
 
 const TRAVERSAL_STACK_SIZE: usize = 32;
 
-pub trait NodeCheck {
-    fn check(&self, node: &BvhNode) -> bool;
-}
-
-impl<F: Fn(&BvhNode) -> bool> NodeCheck for F {
-    #[inline(always)]
-    fn check(&self, node: &BvhNode) -> bool {
-        self(node)
-    }
-}
-
-impl NodeCheck for () {
-    #[inline(always)]
-    fn check(&self, _: &BvhNode) -> bool {
-        true
-    }
-}
-
-pub struct Leaves<'a, Check: NodeCheck> {
+pub struct Leaves<'a, Check: Fn(&BvhNode) -> bool> {
     tree: &'a Bvh,
     next: Option<&'a BvhNode>,
     stack: SmallVec<[&'a BvhNode; TRAVERSAL_STACK_SIZE]>,
     check: Check,
 }
 
-impl<'a, Check: NodeCheck> Iterator for Leaves<'a, Check> {
+impl<'a, Check: Fn(&BvhNode) -> bool> Iterator for Leaves<'a, Check> {
     type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -49,11 +31,11 @@ impl<'a, Check: NodeCheck> Iterator for Leaves<'a, Check> {
             let left = &children.left;
             let right = &children.right;
 
-            if self.check.check(left) {
+            if (self.check)(left) {
                 self.next = Some(left);
             }
 
-            if self.check.check(right) {
+            if (self.check)(right) {
                 if self.next.is_none() {
                     self.next = Some(right);
                 } else {
@@ -64,43 +46,22 @@ impl<'a, Check: NodeCheck> Iterator for Leaves<'a, Check> {
     }
 }
 
-pub trait AabbCost {
-    fn cost(&self, node: &BvhNode, best_so_far: Real) -> Real;
-}
-
-pub trait LeafCost {
-    type CostValue: LeafCostValue;
-    fn cost(&self, leaf: u32, best_so_far: Real) -> Option<Self::CostValue>;
-}
-
-impl<F: Fn(&BvhNode, Real) -> Real> AabbCost for F {
-    #[inline(always)]
-    fn cost(&self, node: &BvhNode, best_so_far: Real) -> Real {
-        self(node, best_so_far)
-    }
-}
-
-impl<C: LeafCostValue, F: Fn(u32, Real) -> Option<C>> LeafCost for F {
-    type CostValue = C;
-
-    #[inline(always)]
-    fn cost(&self, leaf: u32, best_so_far: Real) -> Option<Self::CostValue> {
-        self(leaf, best_so_far)
-    }
-}
-
-pub trait LeafCostValue {
+/// Cost associated to a BVH leaf during best-first traversal.
+pub trait BvhLeafCost {
+    /// The cost value associated to the leaf.
+    ///
+    /// Best-first searches for the leaf with lowest cost.
     fn cost(&self) -> Real;
 }
 
-impl LeafCostValue for Real {
+impl BvhLeafCost for Real {
     #[inline(always)]
     fn cost(&self) -> Real {
         *self
     }
 }
 
-impl<T> LeafCostValue for (Real, T) {
+impl<T> BvhLeafCost for (Real, T) {
     #[inline(always)]
     fn cost(&self) -> Real {
         self.0
@@ -108,14 +69,14 @@ impl<T> LeafCostValue for (Real, T) {
 }
 
 // TODO: move this to ray.rs
-impl LeafCostValue for RayIntersection {
+impl BvhLeafCost for RayIntersection {
     #[inline]
     fn cost(&self) -> Real {
         self.time_of_impact
     }
 }
 
-impl LeafCostValue for ShapeCastHit {
+impl BvhLeafCost for ShapeCastHit {
     #[inline]
     fn cost(&self) -> Real {
         self.time_of_impact
@@ -123,7 +84,15 @@ impl LeafCostValue for ShapeCastHit {
 }
 
 impl Bvh {
-    pub fn leaves<F: NodeCheck>(&self, check: F) -> Leaves<F> {
+    /// Iterates through the leaves, in depth-first odrer.
+    ///
+    /// The `check_node` closure is called on every traversed node. If it returns `false` then the
+    /// node and all its descendants won’t be iterated on. This is useful for pruning whole
+    /// sub-trees based on a geometric predicate on the node’s AABB.
+    ///
+    /// See also the [`Bvh::traverse`] function which is slightly less convenient since it doesn’t
+    /// rely on the iterator system, but takes a closure that implements [`FnMut`] instead of [`Fn`].
+    pub fn leaves<F: Fn(&BvhNode) -> bool>(&self, check_node: F) -> Leaves<F> {
         if let Some(root) = self.nodes.first() {
             let mut stack = SmallVec::default();
             if root.right.leaf_count() > 0 {
@@ -134,14 +103,14 @@ impl Bvh {
                 tree: self,
                 next: Some(&root.left),
                 stack,
-                check,
+                check: check_node,
             }
         } else {
             Leaves {
                 tree: self,
                 next: None,
                 stack: Default::default(),
-                check,
+                check: check_node,
             }
         }
     }
@@ -153,24 +122,24 @@ pub enum TraversalAction {
     EarlyExit,
 }
 
-pub trait NodeVisitor {
-    fn visit(&mut self, node: &BvhNode) -> TraversalAction;
-}
-
-impl<F: FnMut(&BvhNode) -> TraversalAction> NodeVisitor for F {
-    #[inline(always)]
-    fn visit(&mut self, node: &BvhNode) -> TraversalAction {
-        self(node)
-    }
-}
-
 impl Bvh {
     #[inline(always)]
     pub(crate) fn traversal_stack() -> SmallVec<[u32; 32]> {
         Default::default()
     }
 
-    pub fn traverse(&self, mut check_node: impl NodeVisitor) {
+    /// Traverse the tree in depth-first order.
+    ///
+    /// The `check_node` closure is called on every traversed node. The returned [`TraversalAction`]
+    /// controls whether a given node (and all its subtree) needs to be traversed, skipped, or if
+    /// the traversal needs to exit immediately (for example if you were looking for only one
+    /// particular node).
+    ///
+    /// See also the [`Bvh::leaves`] iterator which is a more convenient way of traversing the tree,
+    /// but is slightly limited in terms of node checking. In particular the closure
+    /// given to [`Bvh::traverse`] is mutable can hold any state so its check can depend on previous
+    /// execution of itself during the traversal.
+    pub fn traverse(&self, mut check_node: impl FnMut(&BvhNode) -> TraversalAction) {
         let mut stack = Self::traversal_stack();
         let mut curr_id = 0;
 
@@ -178,7 +147,7 @@ impl Bvh {
             return;
         } else if self.nodes[0].right.leaf_count() == 0 {
             // Special case for partial root.
-            let _ = check_node.visit(&self.nodes[0].left);
+            let _ = check_node(&self.nodes[0].left);
             return;
         }
 
@@ -186,12 +155,12 @@ impl Bvh {
             let node = &self.nodes[curr_id as usize];
             let left = &node.left;
             let right = &node.right;
-            let go_left = match check_node.visit(left) {
+            let go_left = match check_node(left) {
                 TraversalAction::Continue => !left.is_leaf(),
                 TraversalAction::Prune => false,
                 TraversalAction::EarlyExit => return,
             };
-            let go_right = match check_node.visit(right) {
+            let go_right = match check_node(right) {
                 TraversalAction::Continue => !right.is_leaf(),
                 TraversalAction::Prune => false,
                 TraversalAction::EarlyExit => return,
@@ -215,12 +184,12 @@ impl Bvh {
     }
 
     /// Find the leaf that minimizes their associated cost.
-    pub fn find_best<L: LeafCost>(
+    pub fn find_best<L: BvhLeafCost>(
         &self,
         max_cost: Real,
-        aabb_cost: impl AabbCost, // impl Fn(&BvhNode, Real) -> Real,
-        leaf_cost: L,             // impl Fn(u32, Real) -> L,
-    ) -> Option<(u32, L::CostValue)> {
+        aabb_cost: impl Fn(&BvhNode, Real) -> Real,
+        leaf_cost: impl Fn(u32, Real) -> Option<L>,
+    ) -> Option<(u32, L)> {
         // A stack with 32 elements should be more than enough in most cases.
         let mut stack = Self::traversal_stack();
         let mut best_val = None;
@@ -233,8 +202,8 @@ impl Bvh {
         } else if self.nodes[0].right.leaf_count() == 0 {
             // Special case for partial root.
             let leaf = &self.nodes[0].left;
-            if aabb_cost.cost(leaf, max_cost) < max_cost {
-                let cost = leaf_cost.cost(leaf.children, best_cost)?;
+            if aabb_cost(leaf, max_cost) < max_cost {
+                let cost = leaf_cost(leaf.children, best_cost)?;
                 return (cost.cost() < max_cost).then_some((leaf.children, cost));
             } else {
                 return None;
@@ -246,8 +215,8 @@ impl Bvh {
             let mut left = &node.left;
             let mut right = &node.right;
 
-            let mut left_score = aabb_cost.cost(left, best_cost);
-            let mut right_score = aabb_cost.cost(right, best_cost);
+            let mut left_score = aabb_cost(left, best_cost);
+            let mut right_score = aabb_cost(right, best_cost);
 
             if left_score > right_score {
                 core::mem::swap(&mut left_score, &mut right_score);
@@ -257,7 +226,7 @@ impl Bvh {
             let mut found_next = false;
             if left_score < best_cost && left_score != Real::MAX {
                 if left.is_leaf() {
-                    if let Some(primitive_val) = leaf_cost.cost(left.children, best_cost) {
+                    if let Some(primitive_val) = leaf_cost(left.children, best_cost) {
                         let primitive_score = primitive_val.cost();
                         if primitive_score < best_cost {
                             best_val = Some(primitive_val);
@@ -273,7 +242,7 @@ impl Bvh {
 
             if right_score < best_cost && right_score != Real::MAX {
                 if right.is_leaf() {
-                    if let Some(primitive_val) = leaf_cost.cost(right.children, best_cost) {
+                    if let Some(primitive_val) = leaf_cost(right.children, best_cost) {
                         let primitive_score = primitive_val.cost();
                         if primitive_score < best_cost {
                             best_val = Some(primitive_val);
