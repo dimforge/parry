@@ -1,0 +1,105 @@
+use super::{Bvh, BvhNode};
+use crate::bounding_volume::{Aabb, BoundingVolume};
+use crate::math::Point;
+use crate::math::Real;
+use crate::query::PointProjection;
+use crate::query::{PointQuery, Ray};
+
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+use crate::simd::SimdReal;
+
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+pub(super) struct SimdInvRay {
+    pub origin: SimdReal,
+    pub inv_dir: SimdReal,
+}
+
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+impl From<Ray> for SimdInvRay {
+    fn from(ray: Ray) -> Self {
+        let inv_dir = ray.dir.map(|r| {
+            if r.abs() < Real::EPSILON {
+                r.signum() / Real::EPSILON
+            } else {
+                1.0 / r
+            }
+        });
+        Self {
+            origin: SimdReal::from([ray.origin.x, ray.origin.y, ray.origin.z, 0.0]),
+            inv_dir: SimdReal::from([inv_dir.x, inv_dir.y, inv_dir.z, 0.0]),
+        }
+    }
+}
+
+impl Bvh {
+    pub fn intersect_aabb<'a>(&'a self, aabb: &'a Aabb) -> impl Iterator<Item = u32> + 'a {
+        self.leaves(|node: &BvhNode| node.aabb().intersects(aabb))
+    }
+
+    pub fn project_point(
+        &self,
+        point: &Point<Real>,
+        max_distance: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<PointProjection>,
+    ) -> Option<(u32, (Real, PointProjection))> {
+        self.find_best(
+            max_distance,
+            |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
+            |primitive, _| {
+                let proj = primitive_check(primitive, max_distance)?;
+                Some((na::distance(&proj.point, point), proj))
+            },
+        )
+    }
+
+    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3")))]
+    pub fn cast_ray(
+        &self,
+        ray: &Ray,
+        max_toi: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<Real>,
+    ) -> Option<(u32, Real)> {
+        self.find_best(
+            max_toi,
+            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+            primitive_check,
+        )
+    }
+
+    #[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+    pub fn cast_ray(
+        &self,
+        ray: &Ray,
+        max_toi: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<Real>,
+    ) -> Option<(u32, Real)> {
+        // The commented code below relies on depth-fisrt traversal instead of
+        // depth first. Interestin to compare both approaches.
+        // let simd_inv_ray = SimdInvRay::from(*ray);
+        // let mut best_primitive = u32::MAX;
+        // let mut best_toi = Real::MAX;
+        // self.traverse(|node: &BvhNode| {
+        //     if node.cast_inv_ray_simd(&simd_inv_ray) >= best_toi {
+        //         return TraversalAction::Prune;
+        //     }
+        //
+        //     if let Some(primitive) = node.leaf_data() {
+        //         let toi = primitive_check(primitive as u32, best_toi);
+        //         if toi < best_toi {
+        //             best_primitive = primitive as u32;
+        //             best_toi = toi;
+        //         }
+        //     }
+        //
+        //     TraversalAction::Continue
+        // });
+        // (best_primitive, best_toi)
+
+        let simd_inv_ray = SimdInvRay::from(*ray);
+        self.find_best(
+            max_toi,
+            |node: &BvhNode, _best_so_far| node.cast_inv_ray_simd(&simd_inv_ray),
+            |primitive, best_so_far| primitive_check(primitive, best_so_far),
+        )
+    }
+}
