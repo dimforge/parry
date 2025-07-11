@@ -1,13 +1,14 @@
 use super::BvhOptimizationHeapEntry;
 use crate::bounding_volume::{Aabb, BoundingVolume};
-#[cfg(feature = "simd-is-enabled")]
-use crate::math::SimdReal;
 use crate::math::{Point, Real, Vector};
 use crate::query::{Ray, RayCast};
 use crate::utils::VecMap;
 use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Index, IndexMut};
+
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+use crate::math::SimdReal;
 
 /// The strategy for one-time build of the tree.
 ///
@@ -163,8 +164,8 @@ impl BvhNodeWide {
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
 #[cfg_attr(feature = "f32", repr(align(32)))]
 #[cfg_attr(feature = "f64", repr(align(64)))]
-#[cfg(feature = "simd-is-enabled")]
-struct BvhNodeSimd {
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+pub(super) struct BvhNodeSimd {
     mins: SimdReal,
     maxs: SimdReal,
 }
@@ -367,7 +368,7 @@ impl BvhNode {
     ///
     /// Returns `Real::MAX` if there is no hit.
     #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-    pub(crate) fn cast_inv_ray_simd(&self, ray: &super::bvh_queries::SimdInvRay) -> f32 {
+    pub(super) fn cast_inv_ray_simd(&self, ray: &super::bvh_queries::SimdInvRay) -> f32 {
         let simd_self = self.as_simd();
         let t1 = (simd_self.mins - ray.origin) * ray.inv_dir;
         let t2 = (simd_self.maxs - ray.origin) * ray.inv_dir;

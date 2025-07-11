@@ -5,16 +5,16 @@ use crate::math::Real;
 use crate::query::PointProjection;
 use crate::query::{PointQuery, Ray};
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 use crate::simd::SimdReal;
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 pub(super) struct SimdInvRay {
     pub origin: SimdReal,
     pub inv_dir: SimdReal,
 }
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 impl From<Ray> for SimdInvRay {
     fn from(ray: Ray) -> Self {
         let inv_dir = ray.dir.map(|r| {
