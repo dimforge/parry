@@ -362,10 +362,7 @@ impl ConvexPolyhedron for Segment {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        math,
-        query::{Ray, RayCast},
-    };
+    use crate::query::{Ray, RayCast};
 
     pub use super::*;
     #[test]
