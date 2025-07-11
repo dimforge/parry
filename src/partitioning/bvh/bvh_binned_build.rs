@@ -9,7 +9,9 @@ impl Bvh {
     /// This rebuilds a BVH with the same leaves, but different intermediate nodes and depth using
     /// the specified building strategy.
     pub fn rebuild(&mut self, workspace: &mut BvhWorkspace, strategy: BvhBuildStrategy) {
-        if self.nodes.is_empty() {
+        if self.nodes.len() < 2 {
+            // Nothing to rebuild if the tree is empty or only contains the root.
+            // This takes care of the case where we have a partial root too.
             return;
         }
 
@@ -24,8 +26,8 @@ impl Bvh {
         }
 
         self.nodes.clear();
-        self.nodes.push(BvhNodeWide::zeros());
         self.parents.clear();
+        self.nodes.push(BvhNodeWide::zeros());
         self.parents.push(BvhNodeIndex::default());
 
         match strategy {

@@ -558,25 +558,43 @@ impl Bvh {
                 .insert(leaf_id, BvhNodeIndex::default());
         }
 
-        if workspace.rebuild_leaves.is_empty() {
-            // The tree is empty.
-            return Self::new();
-        }
+        // Handle special cases that don’t play well with the rebuilds.
+        match workspace.rebuild_leaves.len() {
+            0 => {}
+            1 => {
+                result.nodes.push(BvhNodeWide {
+                    left: workspace.rebuild_leaves[0],
+                    right: BvhNode::zeros(),
+                });
+                result.parents.push(BvhNodeIndex::default());
+            }
+            2 => {
+                result.nodes.push(BvhNodeWide {
+                    left: workspace.rebuild_leaves[0],
+                    right: workspace.rebuild_leaves[1],
+                });
+                result.parents.push(BvhNodeIndex::default());
+            }
+            _ => {
+                result.nodes.reserve(capacity);
+                result.parents.reserve(capacity);
+                result.parents.clear();
+                result.nodes.push(BvhNodeWide::zeros());
+                result.parents.push(BvhNodeIndex::default());
 
-        result.nodes.reserve(capacity);
-        result.parents.reserve(capacity);
-        result.parents.clear();
-        result.nodes.push(BvhNodeWide::zeros());
-        result.parents.push(BvhNodeIndex::default());
+                match strategy {
+                    BvhBuildStrategy::Ploc => {
+                        result.rebuild_range_ploc(0, &mut workspace.rebuild_leaves)
+                    }
+                    BvhBuildStrategy::Binned => {
+                        result.rebuild_range_binned(0, &mut workspace.rebuild_leaves)
+                    }
+                }
 
-        match strategy {
-            BvhBuildStrategy::Ploc => result.rebuild_range_ploc(0, &mut workspace.rebuild_leaves),
-            BvhBuildStrategy::Binned => {
-                result.rebuild_range_binned(0, &mut workspace.rebuild_leaves)
+                // Layout in depth-first order.
+                result.refit(&mut workspace);
             }
         }
-
-        result.refit(&mut workspace); // Layout in depth-first order.
 
         result
     }

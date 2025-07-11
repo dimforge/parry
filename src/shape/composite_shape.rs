@@ -21,7 +21,7 @@ pub trait CompositeShape {
     ///
     /// Note that if your structure also implements `TypedCompositeShape`, this method
     /// can be implemented simply as:
-    /// ```rust
+    /// ```rust .ignore
     /// self.map_untyped_part_at(shape_id, f);
     /// ```
     fn map_part_at(
