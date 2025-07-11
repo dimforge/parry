@@ -67,7 +67,7 @@ impl Bvh {
             return;
         }
 
-        let mut loop_detection = HashSet::new();
+        let mut loop_detection = HashSet::default();
         let _ = self.assert_well_formed_recurse(0, &mut loop_detection);
     }
 
