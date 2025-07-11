@@ -1,7 +1,9 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection};
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
+use crate::partitioning::BvhNode;
 use crate::query::point::point_query::PointQueryWithLocation;
-use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
+use crate::query::PointQuery;
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
 use crate::utils::hashmap::Entry;
@@ -117,16 +119,14 @@ pub fn intersect_meshes_with_tolerances(
     let pos12 = pos1.inv_mul(pos2);
 
     // 1: collect all the potential triangle-triangle intersections.
-    let mut intersection_candidates = vec![];
-    let mut visitor = BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(
-        pos12,
-        |tri1: &u32, tri2: &u32| {
-            intersection_candidates.push((*tri1, *tri2));
-            true
-        },
-    );
-
-    mesh1.qbvh().traverse_bvtt(mesh2.qbvh(), &mut visitor);
+    let intersection_candidates: Vec<_> = mesh1
+        .bvh()
+        .leaf_pairs(mesh2.bvh(), |node1: &BvhNode, node2: &BvhNode| {
+            let aabb1 = node1.aabb();
+            let aabb2 = node2.aabb().transform_by(&pos12);
+            aabb1.intersects(&aabb2)
+        })
+        .collect();
 
     let mut deleted_faces1: HashSet<u32> = HashSet::default();
     let mut deleted_faces2: HashSet<u32> = HashSet::default();

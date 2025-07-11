@@ -1,6 +1,5 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
-use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation::{intersect_meshes, MeshIntersectionError};
@@ -676,12 +675,7 @@ impl TriMesh {
         }
 
         let cuboid_aabb = cuboid.compute_aabb(cuboid_position);
-        let mut intersecting_tris = vec![];
-        let mut visitor = BoundingVolumeIntersectionsVisitor::new(&cuboid_aabb, |id| {
-            intersecting_tris.push(*id);
-            true
-        });
-        let _ = self.qbvh().traverse_depth_first(&mut visitor);
+        let intersecting_tris: Vec<_> = self.bvh().intersect_aabb(&cuboid_aabb).collect();
 
         if intersecting_tris.is_empty() {
             return Ok(None);

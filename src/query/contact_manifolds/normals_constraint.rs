@@ -1,7 +1,7 @@
 use crate::math::{Isometry, Real, Vector};
 
 // NOTE: the 'static requirement is only needed for the following impl to work:
-//       impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape
+//       impl<'a> TypedCompositeShape for dyn CompositeShape
 //       We can probably work something out if that becomes too restrictive in
 //       the future.
 /// Constraints of contact normals, generally for internal edges resolution.

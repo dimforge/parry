@@ -3,7 +3,6 @@
 #[cfg(feature = "alloc")]
 pub use self::nonlinear_shape_cast_composite_shape_shape::{
     cast_shapes_nonlinear_composite_shape_shape, cast_shapes_nonlinear_shape_composite_shape,
-    NonlinearTOICompositeShapeShapeBestFirstVisitor,
 };
 #[cfg(feature = "alloc")]
 pub use self::nonlinear_shape_cast_voxels_shape::{

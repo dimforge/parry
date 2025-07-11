@@ -1,10 +1,32 @@
 # Change Log
 
+### Added
+
+- Add a new `Bvh` acceleration data-structure. It replaces `Qbvh` entirely. It supports:
+  - Traversals (best-first, depth-first, BVTT, leaf iterators, and leaf pairs iterator).
+  - It can be constructed either incrementally by inserting nodes, or from a set of leaves using either the
+    binned building strategy or the PLOC (without parallelism) strategy.
+  - Dynamic leaf insertion, update, removal.
+  - Incremental tree rebalancing.
+
 ### Fixed
 
 - Fix `clip_aabb_line` crashing when given incorrect inputs (zero length direction or NAN).
 - Fix `Segment::intersects_ray` returning false-positive when the segment is zero-length. ([#31](https://github.com/dimforge/parry/issues/31)).
 - Expose `utils::sort3` and `utils::sort2`.
+
+### Modified
+
+- The `local_point_cloud_aabb`, `point_cloud_aabb`, and `Aabb::from_points` now takes an iterator over point values instead
+  of an iterator to point references. Variants taking point references still exist and are named `local_point_cloud_aabb_ref`,
+  `point_cloud_aabb_ref` and `Aabb::from_points_ref`.
+- Renamed `SimdCompositeShape` and `TypedSimdCompositeShape` to `CompositeShape` and TypedCompositeShape`.
+- The `TypedCompositeShape` trait now derives from `CompositeShape`.
+- Removed every `*Visitor` structures. Instead, either call `Bvh::traverse` (or `Bvh::search_best`, or `Bvh::leaves`, or
+  `bvh::leaf_pairs`), or wrap your composite shape into `CompositeShapeRef` to access some generic implementation of
+  various geometric queries for any composite shape.
+- All composite shapes now rely on the new `Bvh` acceleration structure instead of `Qbvh`.
+- The `Qbvh` has been removed. Use `Bvh` instead.
 
 ## 0.21.1
 

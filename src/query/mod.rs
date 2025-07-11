@@ -66,8 +66,6 @@ mod ray;
 pub mod sat;
 mod shape_cast;
 mod split;
-#[cfg(feature = "alloc")]
-pub mod visitors;
 
 /// Queries dedicated to specific pairs of shapes.
 pub mod details {

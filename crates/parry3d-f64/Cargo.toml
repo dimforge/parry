@@ -89,6 +89,7 @@ bytemuck = { version = "1", features = ["derive"], optional = true }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
 ena = { version = "0.14.3", optional = true, default-features = false }
+smallvec = "1"
 
 log = "0.4"
 ordered-float = { version = "5", default-features = false }

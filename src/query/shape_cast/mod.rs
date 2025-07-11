@@ -9,7 +9,6 @@ pub use self::shape_cast_halfspace_support_map::{
 pub use self::{
     shape_cast_composite_shape_shape::{
         cast_shapes_composite_shape_shape, cast_shapes_shape_composite_shape,
-        TOICompositeShapeShapeBestFirstVisitor,
     },
     shape_cast_heightfield_shape::{cast_shapes_heightfield_shape, cast_shapes_shape_heightfield},
     shape_cast_support_map_support_map::cast_shapes_support_map_support_map,
