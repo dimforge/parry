@@ -703,7 +703,9 @@ impl Bvh {
                     // There is no parent pointer to update.
                     if !is_right {
                         // We remove the left leaf. Move the right leaf in its place.
+                        let moved_index = self.nodes[0].right.children;
                         self.nodes[0].left = self.nodes[0].right;
+                        self.leaf_node_indices[moved_index as usize] = BvhNodeIndex::left(0);
                     }
 
                     // Now we can just clear the right leaf.
