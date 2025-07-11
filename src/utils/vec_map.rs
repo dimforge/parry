@@ -41,7 +41,7 @@ use core::slice;
 ///
 /// # Examples
 ///
-/// ```.ignore
+/// ```ignore
 /// use parry::utils::VecMap;
 ///
 /// let mut months = VecMap::new();
@@ -133,7 +133,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let mut map: VecMap<&str> = VecMap::new();
     /// ```
@@ -149,7 +149,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let mut map: VecMap<&str> = VecMap::with_capacity(10);
     /// ```
@@ -167,7 +167,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let map: VecMap<String> = VecMap::with_capacity(10);
     /// assert!(map.capacity() >= 10);
@@ -185,7 +185,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let mut map: VecMap<&str> = VecMap::new();
     /// map.reserve_len(10);
@@ -208,7 +208,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let mut map: VecMap<&str> = VecMap::new();
     /// map.reserve_len_exact(10);
@@ -227,7 +227,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     /// let mut map: VecMap<&str> = VecMap::with_capacity(10);
     /// map.shrink_to_fit();
@@ -269,7 +269,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -298,7 +298,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -328,7 +328,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut a = VecMap::new();
@@ -361,7 +361,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut a = VecMap::new();
@@ -425,7 +425,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -453,7 +453,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut a = VecMap::new();
@@ -469,7 +469,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut a = VecMap::new();
@@ -485,7 +485,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut a = VecMap::new();
@@ -502,7 +502,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -522,7 +522,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -539,7 +539,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -565,7 +565,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -593,7 +593,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
@@ -617,7 +617,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut count: VecMap<u32> = VecMap::new();
@@ -653,7 +653,7 @@ impl<V> VecMap<V> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map: VecMap<usize> = (0..8).map(|x|(x, x*10)).collect();
@@ -813,7 +813,7 @@ impl<T> IntoIterator for VecMap<T> {
     ///
     /// # Examples
     ///
-    /// ```.ignore
+    /// ```ignore
     /// use parry::utils::VecMap;
     ///
     /// let mut map = VecMap::new();
