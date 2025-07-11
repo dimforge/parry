@@ -59,7 +59,7 @@ improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = []
+simd-is-enabled = [ "glam" ]
 
 [lib]
 name = "parry3d"
@@ -93,7 +93,11 @@ rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
 ena = { version = "0.14.3", optional = true, default-features = false }
 smallvec = "1"
-wide = { version = "0.7", default-features = false }
+
+# NOTE: needed only for element_min for SIMD BVH ray-casting.
+#       can be removed once `wide` supports it (and allows filtering-out the
+#       fourth element).
+glam = { version = "0.30.4", optional = true }
 
 [dev-dependencies]
 oorandom = "11"

@@ -7,9 +7,6 @@ use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Index, IndexMut};
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-use crate::math::SimdReal;
-
 /// The strategy for one-time build of the tree.
 ///
 /// For general-purpose usage [`BvhBuildStrategy::Binned`] is recommended. If the focus is
@@ -166,8 +163,8 @@ impl BvhNodeWide {
 #[cfg_attr(feature = "f64", repr(align(64)))]
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 pub(super) struct BvhNodeSimd {
-    mins: SimdReal,
-    maxs: SimdReal,
+    mins: glam::Vec3A,
+    maxs: glam::Vec3A,
 }
 
 /// The note (internal or leaf) of a BVH.
@@ -324,12 +321,9 @@ impl BvhNode {
     /// Checks if the AABB of `self` intersects the `other` node’s AABB.
     #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
     pub fn intersects(&self, other: &Self) -> bool {
-        use wide::{CmpGe, CmpLe};
         let simd_self = self.as_simd();
         let simd_other = other.as_simd();
-        let check =
-            simd_self.mins.0.cmp_le(simd_other.maxs.0) & simd_self.maxs.0.cmp_ge(simd_other.mins.0);
-        (check.move_mask() & 0b0111) == 0b0111
+        (simd_self.mins.cmple(simd_other.maxs) & simd_self.maxs.cmpge(simd_other.mins)).all()
     }
 
     /// Checks if the AABB of `self` fully encloses the `other` node’s AABB.
@@ -341,12 +335,9 @@ impl BvhNode {
     /// Checks if the AABB of `self` fully encloses the `other` node’s AABB.
     #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
     pub fn contains(&self, other: &Self) -> bool {
-        use wide::{CmpGe, CmpLe};
         let simd_self = self.as_simd();
         let simd_other = other.as_simd();
-        let check =
-            simd_self.mins.0.cmp_le(simd_other.mins.0) & simd_self.maxs.0.cmp_ge(simd_other.maxs.0);
-        (check.move_mask() & 0b0111) == 0b0111
+        (simd_self.mins.cmple(simd_other.mins) & simd_self.maxs.cmpge(simd_other.maxs)).all()
     }
 
     /// Checks if the AABB of `self` fully encloses the `other` AABB.
@@ -373,12 +364,12 @@ impl BvhNode {
         let t1 = (simd_self.mins - ray.origin) * ray.inv_dir;
         let t2 = (simd_self.maxs - ray.origin) * ray.inv_dir;
 
-        let tmin = t1.0.fast_min(t2.0);
-        let tmax = t1.0.fast_max(t2.0);
-        let tmin = tmin.as_array_ref();
-        let tmax = tmax.as_array_ref();
-        let tmin_n = tmin[0].max(tmin[1].max(tmin[2]));
-        let tmax_n = tmax[0].min(tmax[1].min(tmax[2]));
+        let tmin = t1.min(t2);
+        let tmax = t1.max(t2);
+        // let tmin = tmin.as_array_ref();
+        // let tmax = tmax.as_array_ref();
+        let tmin_n = tmin.max_element(); // tmin[0].max(tmin[1].max(tmin[2]));
+        let tmax_n = tmax.min_element(); // tmax[0].min(tmax[1].min(tmax[2]));
 
         if tmax_n >= tmin_n && tmax_n >= 0.0 {
             tmin_n

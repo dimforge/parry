@@ -6,12 +6,12 @@ use crate::query::PointProjection;
 use crate::query::{PointQuery, Ray};
 
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-use crate::simd::SimdReal;
-
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 pub(super) struct SimdInvRay {
-    pub origin: SimdReal,
-    pub inv_dir: SimdReal,
+    // TODO: we need to use `glam` here instead of `wide` because `wide` is lacking
+    //       operations for getting the min/max vector element.
+    //       We can switch back to `wide` once it's supported.
+    pub origin: glam::Vec3A,
+    pub inv_dir: glam::Vec3A,
 }
 
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
@@ -25,8 +25,8 @@ impl From<Ray> for SimdInvRay {
             }
         });
         Self {
-            origin: SimdReal::from([ray.origin.x, ray.origin.y, ray.origin.z, 0.0]),
-            inv_dir: SimdReal::from([inv_dir.x, inv_dir.y, inv_dir.z, 0.0]),
+            origin: glam::Vec3A::from([ray.origin.x, ray.origin.y, ray.origin.z]),
+            inv_dir: glam::Vec3A::from([inv_dir.x, inv_dir.y, inv_dir.z]),
         }
     }
 }

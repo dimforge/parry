@@ -90,7 +90,6 @@ log = "0.4"
 thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true, default-features = false }
 smallvec = "1"
-wide = { version = "0.7", default-features = false }
 
 [dev-dependencies]
 simba = { version = "0.9", default-features = false }
