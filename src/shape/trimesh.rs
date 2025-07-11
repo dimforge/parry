@@ -333,8 +333,8 @@ impl TriMesh {
         let _ = result.set_flags(flags);
 
         if result.bvh.is_empty() {
-            // The Qbvh hasn’t been computed by `.set_flags`.
-            result.rebuild_qbvh();
+            // The BVH hasn’t been computed by `.set_flags`.
+            result.rebuild_bvh();
         }
 
         Ok(result)
@@ -389,7 +389,7 @@ impl TriMesh {
         }
 
         if prev_indices_len != self.indices.len() {
-            self.rebuild_qbvh();
+            self.rebuild_bvh();
         }
 
         self.flags = flags;
@@ -407,7 +407,7 @@ impl TriMesh {
     pub fn heap_memory_size(&self) -> usize {
         // NOTE: if a new field is added to `Self`, adjust this function result.
         let Self {
-            bvh: qbvh,
+            bvh: bvh,
             vertices,
             indices,
             topology,
@@ -416,7 +416,7 @@ impl TriMesh {
             #[cfg(feature = "dim3")]
             pseudo_normals,
         } = self;
-        let sz_qbvh = qbvh.heap_memory_size();
+        let sz_bvh = bvh.heap_memory_size();
         let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
         let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
         #[cfg(feature = "dim3")]
@@ -446,7 +446,7 @@ impl TriMesh {
             })
             .unwrap_or(0);
 
-        sz_qbvh
+        sz_bvh
             + sz_vertices
             + sz_indices
             + sz_pseudo_normals
@@ -459,7 +459,7 @@ impl TriMesh {
         self.vertices
             .iter_mut()
             .for_each(|pt| *pt = transform * *pt);
-        self.rebuild_qbvh();
+        self.rebuild_bvh();
 
         // The pseudo-normals must be rotated too.
         #[cfg(feature = "dim3")]
@@ -546,7 +546,7 @@ impl TriMesh {
         }
     }
 
-    fn rebuild_qbvh(&mut self) {
+    fn rebuild_bvh(&mut self) {
         let leaves = self.indices.iter().enumerate().map(|(i, idx)| {
             let aabb = Triangle::new(
                 self.vertices[idx[0] as usize],
@@ -564,7 +564,7 @@ impl TriMesh {
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
-        // NOTE: the Qbvh, and connected components are not changed by this operation.
+        // NOTE: the BVH, and connected components are not changed by this operation.
         //       The pseudo-normals just have to be flipped.
         //       The topology must be recomputed.
 

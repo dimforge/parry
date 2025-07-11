@@ -80,7 +80,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     let pos12 = *pos12;
     let pos21 = pos12.inverse();
 
-    // Traverse qbvh1 first.
+    // Traverse bvh1 first.
     let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
 

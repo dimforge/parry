@@ -97,10 +97,10 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                 continue;
             }
 
-            // PERF: could we avoid repeated QBVH traversals involving the same canonical shape?
+            // PERF: could we avoid repeated BVH traversals involving the same canonical shape?
             //       The issue is that we need to figure out what contact manifolds are associated
             //       to that canonical shape so we can update the included contact bitmask (and
-            //       one way of figuring this out is to re-traverse the qbvh).
+            //       one way of figuring this out is to re-traverse the bvh).
             let canon1 = CanonicalVoxelShape::from_voxel(voxels1, &vox1);
             let (canonical_center1, canonical_shape1) = canon1.cuboid(voxels1, &vox1, domain2_1);
             let canonical_pose12 = Translation::from(-canonical_center1) * pos12;
