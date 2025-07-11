@@ -47,7 +47,12 @@ pub struct BvhWorkspace {
 
 /// A piece of data packing state flags as well as leaf counts for a BVH tree node.
 #[derive(Default, Copy, Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 #[repr(transparent)]
 pub struct BvhNodeData(u32);
 const CHANGED: u32 = 0b01;
@@ -107,7 +112,12 @@ impl BvhNodeData {
 /// cases where the tree contains at least 2 leaves, booth `left` and `right` are guaranteed
 /// to be valid.
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
 pub struct BvhNodeWide {
     pub(super) left: BvhNode,
@@ -163,7 +173,12 @@ struct BvhNodeSimd {
 #[derive(Copy, Clone, Debug)]
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
 #[cfg_attr(all(feature = "f32", feature = "dim3"), repr(align(32)))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 pub struct BvhNode {
     /// Mins coordinates of the node’s bounding volume.
     pub(super) mins: Point<Real>,
@@ -374,7 +389,12 @@ impl BvhNode {
 
 /// An index identifying a single BVH tree node.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 pub struct BvhNodeIndex(pub usize);
 
 impl BvhNodeIndex {
@@ -419,7 +439,12 @@ impl BvhNodeIndex {
 }
 
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 pub(crate) struct BvhNodeVec(pub(crate) Vec<BvhNodeWide>);
 
 impl Deref for BvhNodeVec {
@@ -469,7 +494,8 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 
 /// A Bounding Volume Hierarchy designed for spatial queries and physics engine broad-phases.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+// TODO: we can’t derive rkyv because VecMap doesn’t support it.
 pub struct Bvh {
     pub(super) nodes: BvhNodeVec,
     // Parent indices for elements in `nodes`.

@@ -11,11 +11,12 @@ use crate::query::details::NormalConstraints;
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-#[cfg_attr(
-    feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
-)]
+// NOTE: Bvh doesn’t support rkyv because VecMap doesn’t.
+// #[cfg_attr(
+//     feature = "rkyv",
+//     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+//     archive(check_bytes)
+// )]
 /// A polyline.
 pub struct Polyline {
     bvh: Bvh,
