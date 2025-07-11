@@ -11,7 +11,7 @@ impl Bvh {
     /// - Ensure that nodes are stored internally in depth-first order for better cache locality
     ///   on depth-first searches.
     /// - Ensure that the leaf count on each node is correct.
-    /// - Propagate the [`SahTreeNode::is_changed`] flag changes detected by [`Self::insert_or_update_partially`]
+    /// - Propagate the [`BvhNode::is_changed`] flag changes detected by [`Self::insert_or_update_partially`]
     ///   (if `change_detection_margin` was nonzero) from leaves to its ascendants.
     pub fn refit(&mut self, workspace: &mut BvhWorkspace) {
         Self::refit_buffers(

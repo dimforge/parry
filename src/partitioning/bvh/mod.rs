@@ -1,4 +1,4 @@
-pub use bvh_traverse::BvhLeafCost;
+pub use bvh_traverse::{BvhLeafCost, TraversalAction};
 pub use bvh_tree::{Bvh, BvhBuildStrategy, BvhNode, BvhWorkspace};
 
 use bvh_optimize::BvhOptimizationHeapEntry;

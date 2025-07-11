@@ -39,12 +39,12 @@ impl Bvh {
         } else {
             let node = &self.nodes[id as usize];
             let left_count = if node.left.is_leaf() {
-                node.left.changed() as u32
+                node.left.is_changed() as u32
             } else {
                 self.changed_leaf_count(node.left.children)
             };
             let right_count = if node.right.is_leaf() {
-                node.right.changed() as u32
+                node.right.is_changed() as u32
             } else {
                 self.changed_leaf_count(node.right.children)
             };
@@ -91,8 +91,8 @@ impl Bvh {
                 BvhNodeIndex::left(node_id)
             );
             assert_eq!(
-                child.right.changed() || child.left.changed(),
-                node.left.changed()
+                child.right.is_changed() || child.left.is_changed(),
+                node.left.is_changed()
             );
             assert!(node.left.contains(&child.left));
             assert!(node.left.contains(&child.right));
@@ -117,8 +117,8 @@ impl Bvh {
                 BvhNodeIndex::right(node_id)
             );
             assert_eq!(
-                child.right.changed() || child.left.changed(),
-                node.right.changed()
+                child.right.is_changed() || child.left.is_changed(),
+                node.right.is_changed()
             );
             assert!(node.right.contains(&child.left));
             assert!(node.right.contains(&child.right));

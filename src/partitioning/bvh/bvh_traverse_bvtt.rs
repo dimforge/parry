@@ -43,7 +43,7 @@ impl Bvh {
     ) {
         let node = &self.nodes[id as usize];
 
-        if CHANGE_DETECTION && !node.right.changed() && !node.left.changed() {
+        if CHANGE_DETECTION && !node.right.is_changed() && !node.left.is_changed() {
             return;
         }
 
@@ -53,11 +53,11 @@ impl Bvh {
         let left_is_leaf = node.left.is_leaf();
         let right_is_leaf = node.right.is_leaf();
 
-        if (!CHANGE_DETECTION || node.left.changed()) && !left_is_leaf {
+        if (!CHANGE_DETECTION || node.left.is_changed()) && !left_is_leaf {
             self.self_intersect_node::<CHANGE_DETECTION>(workspace, left_child, f);
         }
 
-        if (!CHANGE_DETECTION || node.right.changed()) && !right_is_leaf {
+        if (!CHANGE_DETECTION || node.right.is_changed()) && !right_is_leaf {
             self.self_intersect_node::<CHANGE_DETECTION>(workspace, right_child, f);
         }
 
@@ -102,12 +102,12 @@ impl Bvh {
         let right2 = &node2.right;
 
         let left_left =
-            (!CHANGE_DETECTION || left1.changed() || left2.changed()) && left1.intersects(left2);
+            (!CHANGE_DETECTION || left1.is_changed() || left2.is_changed()) && left1.intersects(left2);
         let left_right =
-            (!CHANGE_DETECTION || left1.changed() || right2.changed()) && left1.intersects(right2);
+            (!CHANGE_DETECTION || left1.is_changed() || right2.is_changed()) && left1.intersects(right2);
         let right_left =
-            (!CHANGE_DETECTION || right1.changed() || left2.changed()) && right1.intersects(left2);
-        let right_right = (!CHANGE_DETECTION || right1.changed() || right2.changed())
+            (!CHANGE_DETECTION || right1.is_changed() || left2.is_changed()) && right1.intersects(left2);
+        let right_right = (!CHANGE_DETECTION || right1.is_changed() || right2.is_changed())
             && right1.intersects(right2);
 
         macro_rules! dispatch(
@@ -155,16 +155,16 @@ impl Bvh {
         // around and traverse the branch using a manual stack. Left branches are traversed by the main
         // loop whereas the right branches are pushed to the stack.
         let mut curr_id = subtree;
-        let node_changed = node.changed();
+        let node_changed = node.is_changed();
 
         loop {
             let curr = &self.nodes[curr_id as usize];
             let left = &curr.left;
             let right = &curr.right;
             let left_check =
-                (!CHANGE_DETECTION || node_changed || left.changed()) && node.intersects(left);
+                (!CHANGE_DETECTION || node_changed || left.is_changed()) && node.intersects(left);
             let right_check =
-                (!CHANGE_DETECTION || node_changed || right.changed()) && node.intersects(right);
+                (!CHANGE_DETECTION || node_changed || right.is_changed()) && node.intersects(right);
             let left_is_leaf = left.is_leaf();
             let right_is_leaf = right.is_leaf();
             let mut found_next = false;

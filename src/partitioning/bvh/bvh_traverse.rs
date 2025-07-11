@@ -100,9 +100,13 @@ impl Bvh {
     }
 }
 
+/// Controls the execution flowo of [`Bvh::traverse`].
 pub enum TraversalAction {
+    /// The traversal will continue on the children of the tested node.
     Continue,
+    /// The traversal will skip all descendants of the tested node.
     Prune,
+    /// The traversal will exit immediately.
     EarlyExit,
 }
 

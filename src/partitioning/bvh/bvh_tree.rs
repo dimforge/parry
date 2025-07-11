@@ -212,11 +212,6 @@ impl BvhNode {
     }
 
     #[inline(always)]
-    pub(super) fn changed(&self) -> bool {
-        self.data.is_changed()
-    }
-
-    #[inline(always)]
     pub(super) fn leaf_count(&self) -> u32 {
         self.data.leaf_count()
     }
@@ -268,7 +263,7 @@ impl BvhNode {
     }
 
     /// Return `true` if this node has been marked as changed.
-    #[inline]
+    #[inline(always)]
     pub fn is_changed(&self) -> bool {
         self.data.is_changed()
     }
