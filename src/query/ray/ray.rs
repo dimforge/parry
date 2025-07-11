@@ -5,6 +5,7 @@ use crate::shape::FeatureId;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
+use crate::partitioning::BvhLeafCost;
 
 /// A Ray.
 #[derive(Debug, Clone, Copy)]
@@ -116,6 +117,13 @@ impl RayIntersection {
             normal: transform * self.normal,
             feature: self.feature,
         }
+    }
+}
+
+impl BvhLeafCost for RayIntersection {
+    #[inline]
+    fn cost(&self) -> Real {
+        self.time_of_impact
     }
 }
 

@@ -407,7 +407,7 @@ impl TriMesh {
     pub fn heap_memory_size(&self) -> usize {
         // NOTE: if a new field is added to `Self`, adjust this function result.
         let Self {
-            bvh: bvh,
+            bvh,
             vertices,
             indices,
             topology,
@@ -1204,10 +1204,6 @@ impl TypedCompositeShape for TriMesh {
             &tri,
             pseudo_normals.as_ref().map(|n| n as &dyn NormalConstraints),
         ))
-    }
-
-    fn typed_bvh(&self) -> &Bvh {
-        &self.bvh
     }
 }
 

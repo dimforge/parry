@@ -30,7 +30,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
         let msum_margin = ls_aabb2.half_extents();
 
         self.0
-            .typed_bvh()
+            .bvh()
             .find_best(
                 margin,
                 |node: &BvhNode, _| {

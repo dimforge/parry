@@ -18,7 +18,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     ) -> Option<u32> {
         let ls_aabb2 = shape.compute_aabb(pose12);
         self.0
-            .typed_bvh()
+            .bvh()
             .leaves(|node: &BvhNode| node.aabb().intersects(&ls_aabb2))
             .find(|leaf_id| {
                 self.0

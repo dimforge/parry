@@ -23,7 +23,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     ) -> Option<(u32, ShapeCastHit)> {
         let sphere2 = shape2.compute_local_bounding_sphere();
 
-        self.0.typed_bvh().find_best(
+        self.0.bvh().find_best(
             end_time,
             |node: &BvhNode, _| {
                 let aabb1 = node.aabb();

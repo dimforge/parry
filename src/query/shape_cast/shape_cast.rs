@@ -1,6 +1,7 @@
 use na::Unit;
 
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::partitioning::BvhLeafCost;
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
@@ -86,6 +87,13 @@ impl ShapeCastHit {
             normal2: self.normal2,
             status: self.status,
         }
+    }
+}
+
+impl BvhLeafCost for ShapeCastHit {
+    #[inline]
+    fn cost(&self) -> Real {
+        self.time_of_impact
     }
 }
 

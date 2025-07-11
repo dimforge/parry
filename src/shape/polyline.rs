@@ -325,8 +325,4 @@ impl TypedCompositeShape for Polyline {
         let seg = self.segment(i);
         Some(f(None, &seg, None))
     }
-
-    fn typed_bvh(&self) -> &Bvh {
-        &self.bvh
-    }
 }

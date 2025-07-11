@@ -170,9 +170,4 @@ impl TypedCompositeShape for Compound {
         let (part_pos, part) = &self.shapes[i as usize];
         Some(f(Some(part_pos), &**part, None))
     }
-
-    #[inline]
-    fn typed_bvh(&self) -> &Bvh {
-        &self.bvh
-    }
 }

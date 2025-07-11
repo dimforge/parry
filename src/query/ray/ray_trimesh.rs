@@ -43,7 +43,7 @@ mod ray_cast_with_culling {
     use crate::query::details::NormalConstraints;
     use crate::query::{Ray, RayIntersection};
     use crate::shape::{
-        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape,
+        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape, CompositeShape
     };
 
     /// Controls which side of a triangle a ray-cast is allowed to hit.
@@ -70,6 +70,21 @@ mod ray_cast_with_culling {
         trimesh: &'a TriMesh,
         culling: RayCullingMode,
         ray: &'a Ray,
+    }
+
+    impl CompositeShape for TriMeshWithCulling<'_> {
+        fn map_part_at(
+            &self,
+            shape_id: u32,
+            f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        ) {
+            let _ = self.map_untyped_part_at(shape_id, f);
+        }
+
+        /// Gets the acceleration structure of the composite shape.
+        fn bvh(&self) -> &Bvh {
+            self.trimesh.bvh()
+        }
     }
 
     impl TypedCompositeShape for TriMeshWithCulling<'_> {
@@ -110,10 +125,6 @@ mod ray_cast_with_culling {
             } else {
                 None
             }
-        }
-
-        fn typed_bvh(&self) -> &Bvh {
-            self.trimesh.bvh()
         }
     }
 

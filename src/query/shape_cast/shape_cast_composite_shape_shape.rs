@@ -26,7 +26,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
         let msum_margin =
             Vector::splat(ls_aabb2.half_extents() + Vector::repeat(options.target_distance));
 
-        self.0.typed_bvh().find_best(
+        self.0.bvh().find_best(
             options.max_time_of_impact,
             |node: &BvhNode, best_so_far| {
                 // Compute the minkowski sum of the two Aabbs.

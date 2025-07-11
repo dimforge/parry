@@ -33,7 +33,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         S::PartShape: PointQueryWithLocation,
     {
         self.0
-            .typed_bvh()
+            .bvh()
             .find_best(
                 max_dist,
                 |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
@@ -60,7 +60,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point(&self, point: &Point<Real>, solid: bool) -> (u32, PointProjection) {
         let (best_id, (_, proj)) = self
             .0
-            .typed_bvh()
+            .bvh()
             .find_best(
                 Real::MAX,
                 |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
@@ -92,7 +92,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     ) -> (u32, (PointProjection, FeatureId)) {
         let (best_id, (_, (proj, feature_id))) = self
             .0
-            .typed_bvh()
+            .bvh()
             .find_best(
                 Real::MAX,
                 |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
@@ -118,7 +118,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     #[inline]
     pub fn contains_local_point(&self, point: &Point<Real>) -> Option<u32> {
         self.0
-            .typed_bvh()
+            .bvh()
             .leaves(|node: &BvhNode| node.aabb().contains_local_point(point))
             .find(|leaf_id| {
                 self.0

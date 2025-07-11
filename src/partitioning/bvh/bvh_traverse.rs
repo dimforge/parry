@@ -1,7 +1,6 @@
 use super::BvhNode;
 use crate::math::Real;
 use crate::partitioning::Bvh;
-use crate::query::{RayIntersection, ShapeCastHit};
 use smallvec::SmallVec;
 
 const TRAVERSAL_STACK_SIZE: usize = 32;
@@ -50,7 +49,7 @@ impl<'a, Check: Fn(&BvhNode) -> bool> Iterator for Leaves<'a, Check> {
 pub trait BvhLeafCost {
     /// The cost value associated to the leaf.
     ///
-    /// Best-first searches for the leaf with lowest cost.
+    /// Best-first searches for the leaf with the lowest cost.
     fn cost(&self) -> Real;
 }
 
@@ -68,23 +67,8 @@ impl<T> BvhLeafCost for (Real, T) {
     }
 }
 
-// TODO: move this to ray.rs
-impl BvhLeafCost for RayIntersection {
-    #[inline]
-    fn cost(&self) -> Real {
-        self.time_of_impact
-    }
-}
-
-impl BvhLeafCost for ShapeCastHit {
-    #[inline]
-    fn cost(&self) -> Real {
-        self.time_of_impact
-    }
-}
-
 impl Bvh {
-    /// Iterates through the leaves, in depth-first odrer.
+    /// Iterates through the leaves, in depth-first order.
     ///
     /// The `check_node` closure is called on every traversed node. If it returns `false` then the
     /// node and all its descendants won’t be iterated on. This is useful for pruning whole

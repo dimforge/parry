@@ -7,9 +7,23 @@ use crate::shape::Shape;
 ///
 /// A composite shape is composed of several shapes. For example, this can
 /// be a convex decomposition of a concave shape; or a triangle-mesh.
+///
+/// This trait is mostly useful for using composite shapes as trait-objects.
+/// For other use-cases, call methods from [`TypedCompositeShape`] to avoid
+/// dynamic dispatches instead.
 #[cfg(feature = "alloc")]
 pub trait CompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
+    ///
+    /// This method is mostly useful for using composite shapes as trait-objects.
+    /// For other use-cases, call methods from [`TypedCompositeShape`] to avoid
+    /// dynamic dispatches instead.
+    ///
+    /// Note that if your structure also implements `TypedCompositeShape`, this method
+    /// can be implemented simply as:
+    /// ```rust
+    /// self.map_untyped_part_at(shape_id, f);
+    /// ```
     fn map_part_at(
         &self,
         shape_id: u32,
@@ -21,11 +35,10 @@ pub trait CompositeShape {
 }
 
 #[cfg(feature = "alloc")]
-pub trait TypedCompositeShape {
+pub trait TypedCompositeShape: CompositeShape {
     type PartShape: ?Sized + Shape;
     type PartNormalConstraints: ?Sized + NormalConstraints;
 
-    // TODO: have this return a T instead of taking an FnMut?
     fn map_typed_part_at<T>(
         &self,
         shape_id: u32,
@@ -44,8 +57,6 @@ pub trait TypedCompositeShape {
         shape_id: u32,
         f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T>;
-
-    fn typed_bvh(&self) -> &Bvh;
 }
 
 #[cfg(feature = "alloc")]
@@ -79,10 +90,6 @@ impl TypedCompositeShape for dyn CompositeShape + '_ {
             result = Some(f(pose, part, normals));
         });
         result
-    }
-
-    fn typed_bvh(&self) -> &Bvh {
-        self.bvh()
     }
 }
 
