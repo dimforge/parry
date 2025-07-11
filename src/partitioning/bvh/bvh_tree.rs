@@ -7,7 +7,7 @@ use crate::query::{Ray, RayCast};
 use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Index, IndexMut};
-use vec_map::VecMap;
+use crate::utils::VecMap;
 
 /// The strategy for one-time build of the tree.
 ///
@@ -495,7 +495,11 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// A Bounding Volume Hierarchy designed for spatial queries and physics engine broad-phases.
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-// TODO: we can’t derive rkyv because VecMap doesn’t support it.
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 pub struct Bvh {
     pub(super) nodes: BvhNodeVec,
     // Parent indices for elements in `nodes`.

@@ -275,12 +275,11 @@ bitflags::bitflags! {
 }
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
-// NOTE: Bvh doesn’t support rkyv because VecMap doesn’t.
-// #[cfg_attr(
-//     feature = "rkyv",
-//     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-//     archive(check_bytes)
-// )]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
+    archive(check_bytes)
+)]
 #[repr(C)]
 #[derive(Clone)]
 /// A triangle mesh.
