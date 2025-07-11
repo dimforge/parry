@@ -101,12 +101,12 @@ impl Bvh {
         let left2 = &node2.left;
         let right2 = &node2.right;
 
-        let left_left =
-            (!CHANGE_DETECTION || left1.is_changed() || left2.is_changed()) && left1.intersects(left2);
-        let left_right =
-            (!CHANGE_DETECTION || left1.is_changed() || right2.is_changed()) && left1.intersects(right2);
-        let right_left =
-            (!CHANGE_DETECTION || right1.is_changed() || left2.is_changed()) && right1.intersects(left2);
+        let left_left = (!CHANGE_DETECTION || left1.is_changed() || left2.is_changed())
+            && left1.intersects(left2);
+        let left_right = (!CHANGE_DETECTION || left1.is_changed() || right2.is_changed())
+            && left1.intersects(right2);
+        let right_left = (!CHANGE_DETECTION || right1.is_changed() || left2.is_changed())
+            && right1.intersects(left2);
         let right_right = (!CHANGE_DETECTION || right1.is_changed() || right2.is_changed())
             && right1.intersects(right2);
 

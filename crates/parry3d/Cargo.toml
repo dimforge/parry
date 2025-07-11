@@ -40,7 +40,6 @@ serde-serialize = [
     "hashbrown?/serde",
     "spade?/serde",
     "vec_map/serde",
-    "aligned-vec/serde",
 ]
 rkyv-serialize = [
     "rkyv/validation",
@@ -94,9 +93,8 @@ thiserror = { version = "2", default-features = false }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
 ena = { version = "0.14.3", optional = true, default-features = false }
-smallvec = "1"
-aligned-vec = "0.6"
 vec_map = "0.8"
+smallvec = "1"
 wide = "0.7"
 
 [dev-dependencies]
