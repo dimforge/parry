@@ -8,7 +8,7 @@ use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
-use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
+use crate::shape::{Shape, SharedShape, CompositeShape, TypedCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
 use alloc::vec::Vec;
@@ -121,7 +121,7 @@ impl Compound {
     }
 }
 
-impl SimdCompositeShape for Compound {
+impl CompositeShape for Compound {
     #[inline]
     fn map_part_at(
         &self,
@@ -139,7 +139,7 @@ impl SimdCompositeShape for Compound {
     }
 }
 
-impl TypedSimdCompositeShape for Compound {
+impl TypedCompositeShape for Compound {
     type PartShape = dyn Shape;
     type PartNormalConstraints = ();
 

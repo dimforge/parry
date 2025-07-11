@@ -10,7 +10,7 @@ use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 #[cfg(feature = "dim2")]
 use crate::shape::Capsule;
-use crate::shape::{HeightField, Shape, SimdCompositeShape};
+use crate::shape::{HeightField, Shape, CompositeShape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
@@ -61,7 +61,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     pos21: &Isometry<Real>,
     heightfield1: &HeightField,
-    composite2: &dyn SimdCompositeShape,
+    composite2: &dyn CompositeShape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,

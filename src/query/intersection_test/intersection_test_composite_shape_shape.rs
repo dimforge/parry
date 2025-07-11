@@ -2,10 +2,10 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::partitioning::BvhNode;
 use crate::query::QueryDispatcher;
-use crate::shape::{CompositeShapeRef, Shape, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use crate::utils::IsometryOpt;
 
-impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the index of the shape in `self` that intersects the given other `shape` positioned
     /// at `pose12` relative to `self`.
     ///
@@ -40,7 +40,7 @@ pub fn intersection_test_composite_shape_shape<D, G1>(
 ) -> bool
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
     CompositeShapeRef(g1)
         .intersects_shape(dispatcher, pos12, g2)
@@ -56,7 +56,7 @@ pub fn intersection_test_shape_composite_shape<D, G2>(
 ) -> bool
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     intersection_test_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }

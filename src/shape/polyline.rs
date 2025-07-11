@@ -2,8 +2,8 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::{PointProjection, PointQueryWithLocation};
-use crate::shape::composite_shape::SimdCompositeShape;
-use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
+use crate::shape::composite_shape::CompositeShape;
+use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedCompositeShape};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
@@ -283,7 +283,7 @@ impl Polyline {
     }
 }
 
-impl SimdCompositeShape for Polyline {
+impl CompositeShape for Polyline {
     fn map_part_at(
         &self,
         i: u32,
@@ -298,7 +298,7 @@ impl SimdCompositeShape for Polyline {
     }
 }
 
-impl TypedSimdCompositeShape for Polyline {
+impl TypedCompositeShape for Polyline {
     type PartShape = Segment;
     type PartNormalConstraints = ();
 

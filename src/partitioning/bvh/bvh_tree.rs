@@ -4,7 +4,6 @@ use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::SimdReal;
 use crate::math::{Point, Real, Vector};
 use crate::query::{Ray, RayCast};
-use aligned_vec::AVec;
 use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Index, IndexMut};
@@ -155,7 +154,7 @@ impl BvhNodeWide {
 #[cfg_attr(feature = "f32", repr(align(32)))]
 #[cfg_attr(feature = "f64", repr(align(64)))]
 #[cfg(feature = "simd-is-enabled")]
-struct BvhSimdTreeNode {
+struct BvhNodeSimd {
     mins: SimdReal,
     maxs: SimdReal,
 }
@@ -224,7 +223,7 @@ impl BvhNode {
 
     #[inline(always)]
     #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-    pub(super) fn as_simd(&self) -> &BvhSimdTreeNode {
+    pub(super) fn as_simd(&self) -> &BvhNodeSimd {
         // SAFETY: BvhNode is declared with the alignment
         //         and size of two SimdReal.
         unsafe { core::mem::transmute(self) }
@@ -424,22 +423,12 @@ impl BvhNodeIndex {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub(crate) struct BvhNodeVec(pub(crate) AVec<BvhNodeWide>);
-
-impl Default for BvhNodeVec {
-    fn default() -> Self {
-        #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-        {
-            assert_eq!(align_of::<BvhNodeWide>(), 32);
-        }
-        Self(AVec::new(align_of::<BvhNodeWide>()))
-    }
-}
+pub(crate) struct BvhNodeVec(pub(crate) Vec<BvhNodeWide>);
 
 impl Deref for BvhNodeVec {
-    type Target = AVec<BvhNodeWide>;
+    type Target = Vec<BvhNodeWide>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -497,6 +486,11 @@ pub struct Bvh {
 impl Bvh {
     /// An empty BVH.
     pub fn new() -> Self {
+        #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+        {
+            assert_eq!(align_of::<BvhNode>(), align_of::<BvhNodeSimd>());
+            assert_eq!(size_of::<BvhNode>(), size_of::<BvhNodeSimd>());
+        }
         Self::default()
     }
 

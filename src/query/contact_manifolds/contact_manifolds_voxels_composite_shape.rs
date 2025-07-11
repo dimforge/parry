@@ -7,7 +7,7 @@ use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::shape::{Cuboid, Shape, SimdCompositeShape, SupportMap, VoxelType, Voxels};
+use crate::shape::{Cuboid, Shape, CompositeShape, SupportMap, VoxelType, Voxels};
 use crate::utils::hashmap::Entry;
 use crate::utils::IsometryOpt;
 use alloc::{boxed::Box, vec::Vec};
@@ -60,7 +60,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
     voxels1: &Voxels,
-    shape2: &dyn SimdCompositeShape,
+    shape2: &dyn CompositeShape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,

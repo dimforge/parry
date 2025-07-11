@@ -1,7 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
-use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
+use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedCompositeShape};
 use crate::utils::HashablePartialEq;
 use alloc::{vec, vec::Vec};
 use core::fmt;
@@ -9,7 +9,7 @@ use core::fmt;
 use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 
 use {
-    crate::shape::composite_shape::SimdCompositeShape,
+    crate::shape::composite_shape::CompositeShape,
     crate::utils::hashmap::{Entry, HashMap},
     crate::utils::hashset::HashSet,
 };
@@ -1152,7 +1152,7 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
-impl SimdCompositeShape for TriMesh {
+impl CompositeShape for TriMesh {
     fn map_part_at(
         &self,
         i: u32,
@@ -1172,7 +1172,7 @@ impl SimdCompositeShape for TriMesh {
     }
 }
 
-impl TypedSimdCompositeShape for TriMesh {
+impl TypedCompositeShape for TriMesh {
     type PartShape = Triangle;
     type PartNormalConstraints = TrianglePseudoNormals;
 

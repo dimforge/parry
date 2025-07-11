@@ -2,10 +2,10 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Real};
 use crate::partitioning::BvhNode;
 use crate::query::QueryDispatcher;
-use crate::shape::{CompositeShapeRef, Shape, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use crate::utils::IsometryOpt;
 
-impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Calculates the closest distance between `self` and the given `shape2` positioned at
     /// `pose12` relative to `self`.
     ///
@@ -50,7 +50,7 @@ pub fn distance_composite_shape_shape<D, G1>(
 ) -> Real
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
     CompositeShapeRef(g1)
         .distance_to_shape(dispatcher, pos12, g2)
@@ -67,7 +67,7 @@ pub fn distance_shape_composite_shape<D, G2>(
 ) -> Real
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     distance_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
 }

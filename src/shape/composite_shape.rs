@@ -8,7 +8,7 @@ use crate::shape::Shape;
 /// A composite shape is composed of several shapes. For example, this can
 /// be a convex decomposition of a concave shape; or a triangle-mesh.
 #[cfg(feature = "alloc")]
-pub trait SimdCompositeShape {
+pub trait CompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
     fn map_part_at(
         &self,
@@ -21,7 +21,7 @@ pub trait SimdCompositeShape {
 }
 
 #[cfg(feature = "alloc")]
-pub trait TypedSimdCompositeShape {
+pub trait TypedCompositeShape {
     type PartShape: ?Sized + Shape;
     type PartNormalConstraints: ?Sized + NormalConstraints;
 
@@ -49,7 +49,7 @@ pub trait TypedSimdCompositeShape {
 }
 
 #[cfg(feature = "alloc")]
-impl TypedSimdCompositeShape for dyn SimdCompositeShape + '_ {
+impl TypedCompositeShape for dyn CompositeShape + '_ {
     type PartShape = dyn Shape;
     type PartNormalConstraints = dyn NormalConstraints;
 

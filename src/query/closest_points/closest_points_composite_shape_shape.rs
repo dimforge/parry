@@ -2,11 +2,11 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Real};
 use crate::partitioning::BvhNode;
 use crate::query::{ClosestPoints, QueryDispatcher};
-use crate::shape::{CompositeShapeRef, Shape, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use crate::utils::IsometryOpt;
 use na;
 
-impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the closest points between `self` and the given `shape2` positioned at
     /// `pose12` relative to `self`.
     ///
@@ -80,7 +80,7 @@ pub fn closest_points_composite_shape_shape<D, G1>(
 ) -> ClosestPoints
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
     CompositeShapeRef(g1)
         .closest_points_to_shape(dispatcher, pos12, g2, margin)
@@ -98,7 +98,7 @@ pub fn closest_points_shape_composite_shape<D, G2>(
 ) -> ClosestPoints
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     closest_points_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1, margin).flipped()
 }

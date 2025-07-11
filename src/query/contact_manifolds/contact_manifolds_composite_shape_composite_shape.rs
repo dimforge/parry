@@ -9,7 +9,7 @@ use crate::query::contact_manifolds::contact_manifolds_workspace::{
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
-use crate::shape::SimdCompositeShape;
+use crate::shape::CompositeShape;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
@@ -58,8 +58,8 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Isometry<Real>,
-    mut composite1: &'a dyn SimdCompositeShape,
-    mut composite2: &'a dyn SimdCompositeShape,
+    mut composite1: &'a dyn CompositeShape,
+    mut composite2: &'a dyn CompositeShape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,

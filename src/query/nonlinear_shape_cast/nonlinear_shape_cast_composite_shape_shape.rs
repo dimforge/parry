@@ -3,9 +3,9 @@ use crate::partitioning::BvhNode;
 use crate::query::{
     self, details::NonlinearShapeCastMode, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit,
 };
-use crate::shape::{Ball, CompositeShapeRef, Shape, TypedSimdCompositeShape};
+use crate::shape::{Ball, CompositeShapeRef, Shape, TypedCompositeShape};
 
-impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Performs a non-linear shape-cast between `self` animated subject to the `motion1` and
     /// the `shape2` subject to the `motion2`.
     ///
@@ -97,7 +97,7 @@ pub fn cast_shapes_nonlinear_composite_shape_shape<D, G1>(
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
     CompositeShapeRef(shape1)
         .cast_shape_nonlinear(
@@ -125,7 +125,7 @@ pub fn cast_shapes_nonlinear_shape_composite_shape<D, G2>(
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     cast_shapes_nonlinear_composite_shape_shape(
         dispatcher,

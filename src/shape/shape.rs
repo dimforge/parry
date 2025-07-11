@@ -11,7 +11,7 @@ use crate::query::{PointQuery, RayCast};
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;
 #[cfg(feature = "alloc")]
-use crate::shape::{composite_shape::SimdCompositeShape, Compound, HeightField, Polyline, TriMesh};
+use crate::shape::{composite_shape::CompositeShape, Compound, HeightField, Polyline, TriMesh};
 use crate::shape::{
     Ball, Capsule, Cuboid, FeatureId, HalfSpace, PolygonalFeatureMap, RoundCuboid, RoundShape,
     RoundTriangle, Segment, SupportMap, Triangle,
@@ -408,7 +408,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
+    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
         None
     }
 
@@ -1055,8 +1055,8 @@ impl Shape for Compound {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
-        Some(self as &dyn SimdCompositeShape)
+    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
+        Some(self as &dyn CompositeShape)
     }
 }
 
@@ -1105,8 +1105,8 @@ impl Shape for Polyline {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
-        Some(self as &dyn SimdCompositeShape)
+    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
+        Some(self as &dyn CompositeShape)
     }
 }
 
@@ -1168,8 +1168,8 @@ impl Shape for TriMesh {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn SimdCompositeShape> {
-        Some(self as &dyn SimdCompositeShape)
+    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
+        Some(self as &dyn CompositeShape)
     }
 }
 

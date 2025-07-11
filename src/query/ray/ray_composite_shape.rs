@@ -1,9 +1,9 @@
 use crate::math::Real;
 use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
 
-impl<S: TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Casts a ray on this composite shape.
     ///
     /// The ray is effectively limited to a segment that starts at `Ray::origin` and ends at

@@ -5,13 +5,13 @@ use crate::partitioning::BvhNode;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
-    TypedSimdCompositeShape,
+    TypedCompositeShape,
 };
 use na;
 
 use crate::shape::{Compound, Polyline};
 
-impl<S: TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Project a point on this composite shape.
     ///
     /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.

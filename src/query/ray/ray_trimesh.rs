@@ -43,7 +43,7 @@ mod ray_cast_with_culling {
     use crate::query::details::NormalConstraints;
     use crate::query::{Ray, RayIntersection};
     use crate::shape::{
-        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedSimdCompositeShape,
+        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape,
     };
 
     /// Controls which side of a triangle a ray-cast is allowed to hit.
@@ -64,7 +64,7 @@ mod ray_cast_with_culling {
         }
     }
 
-    /// A utility shape with a `TypedSimdCompositeShape` implementation that skips triangles that
+    /// A utility shape with a `TypedCompositeShape` implementation that skips triangles that
     /// are back-faces or front-faces relative to a given ray and culling mode.
     struct TriMeshWithCulling<'a> {
         trimesh: &'a TriMesh,
@@ -72,7 +72,7 @@ mod ray_cast_with_culling {
         ray: &'a Ray,
     }
 
-    impl TypedSimdCompositeShape for TriMeshWithCulling<'_> {
+    impl TypedCompositeShape for TriMeshWithCulling<'_> {
         type PartShape = Triangle;
         type PartNormalConstraints = ();
 

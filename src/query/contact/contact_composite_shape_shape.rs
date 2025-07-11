@@ -1,10 +1,10 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::{Contact, QueryDispatcher};
-use crate::shape::{CompositeShapeRef, Shape, SimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, CompositeShape};
 use crate::utils::IsometryOpt;
 
-impl<S: ?Sized + SimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + CompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the closest/deepest contact between `self` and the given `shape2` positioned at
     /// `pose12` relative to `self`.
     ///
@@ -52,7 +52,7 @@ pub fn contact_composite_shape_shape<D, G1>(
 ) -> Option<Contact>
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + SimdCompositeShape,
+    G1: ?Sized + CompositeShape,
 {
     CompositeShapeRef(g1)
         .contact_with_shape(dispatcher, &pose12.inverse(), g2, prediction)
@@ -69,7 +69,7 @@ pub fn contact_shape_composite_shape<D, G2>(
 ) -> Option<Contact>
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + SimdCompositeShape,
+    G2: ?Sized + CompositeShape,
 {
     contact_composite_shape_shape(dispatcher, &pose12.inverse(), g2, g1, prediction)
         .map(|c| c.flipped())

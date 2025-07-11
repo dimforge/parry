@@ -3,10 +3,10 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::BvhNode;
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit};
-use crate::shape::{CompositeShapeRef, Shape, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use simba::simd::SimdValue;
 
-impl<S: ?Sized + TypedSimdCompositeShape> CompositeShapeRef<'_, S> {
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Performs a shape-cast between `self` and a `shape2` positioned at `pose12` and subject to
     /// a linear velocity `vel12`, relative to `self`.
     ///
@@ -75,7 +75,7 @@ pub fn cast_shapes_composite_shape_shape<D, G1>(
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
     CompositeShapeRef(g1)
         .cast_shape(dispatcher, pos12, vel12, g2, options)
@@ -93,7 +93,7 @@ pub fn cast_shapes_shape_composite_shape<D, G2>(
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     cast_shapes_composite_shape_shape(
         dispatcher,
