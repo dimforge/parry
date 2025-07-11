@@ -1,7 +1,7 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::{Contact, QueryDispatcher};
-use crate::shape::{CompositeShapeRef, Shape, CompositeShape};
+use crate::shape::{CompositeShape, CompositeShapeRef, Shape};
 use crate::utils::IsometryOpt;
 
 impl<S: ?Sized + CompositeShape> CompositeShapeRef<'_, S> {

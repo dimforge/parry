@@ -23,18 +23,18 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<(u32, Real)> {
-        let hit =
-            self.0
-                .bvh()
-                .cast_ray(ray, max_time_of_impact, |primitive, best_so_far| {
-                    self.0.map_typed_part_at(primitive, |pose, part, _| {
-                        if let Some(pose) = pose {
-                            part.cast_ray(pose, ray, best_so_far, solid)
-                        } else {
-                            part.cast_local_ray(ray, best_so_far, solid)
-                        }
-                    })?
-                })?;
+        let hit = self
+            .0
+            .bvh()
+            .cast_ray(ray, max_time_of_impact, |primitive, best_so_far| {
+                self.0.map_typed_part_at(primitive, |pose, part, _| {
+                    if let Some(pose) = pose {
+                        part.cast_ray(pose, ray, best_so_far, solid)
+                    } else {
+                        part.cast_local_ray(ray, best_so_far, solid)
+                    }
+                })?
+            })?;
         (hit.1 < max_time_of_impact).then_some(hit)
     }
 

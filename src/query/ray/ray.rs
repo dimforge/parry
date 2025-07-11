@@ -3,9 +3,9 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::FeatureId;
 
+use crate::partitioning::BvhLeafCost;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
-use crate::partitioning::BvhLeafCost;
 
 /// A Ray.
 #[derive(Debug, Clone, Copy)]

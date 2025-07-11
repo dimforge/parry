@@ -43,7 +43,7 @@ mod ray_cast_with_culling {
     use crate::query::details::NormalConstraints;
     use crate::query::{Ray, RayIntersection};
     use crate::shape::{
-        CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape, CompositeShape
+        CompositeShape, CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape,
     };
 
     /// Controls which side of a triangle a ray-cast is allowed to hit.

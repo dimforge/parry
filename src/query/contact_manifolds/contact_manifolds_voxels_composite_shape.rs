@@ -7,7 +7,7 @@ use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::shape::{Cuboid, Shape, CompositeShape, SupportMap, VoxelType, Voxels};
+use crate::shape::{CompositeShape, Cuboid, Shape, SupportMap, VoxelType, Voxels};
 use crate::utils::hashmap::Entry;
 use crate::utils::IsometryOpt;
 use alloc::{boxed::Box, vec::Vec};

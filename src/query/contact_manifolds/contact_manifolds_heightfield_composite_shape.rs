@@ -10,7 +10,7 @@ use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
 #[cfg(feature = "dim2")]
 use crate::shape::Capsule;
-use crate::shape::{HeightField, Shape, CompositeShape};
+use crate::shape::{CompositeShape, HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 

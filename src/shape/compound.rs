@@ -6,9 +6,9 @@ use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::math::{Isometry, Real};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
+use crate::shape::{CompositeShape, Shape, SharedShape, TypedCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
-use crate::shape::{Shape, SharedShape, CompositeShape, TypedCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
 use alloc::vec::Vec;

@@ -8,7 +8,7 @@ use crate::query::contact_manifolds::contact_manifolds_workspace::{
 use crate::query::contact_manifolds::ContactManifoldsWorkspace;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
-use crate::shape::{Shape, CompositeShape};
+use crate::shape::{CompositeShape, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
