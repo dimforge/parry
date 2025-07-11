@@ -159,18 +159,22 @@ impl BvhNodeWide {
 }
 
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
-#[cfg_attr(feature = "f32", repr(align(32)))]
-#[cfg_attr(feature = "f64", repr(align(64)))]
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 pub(super) struct BvhNodeSimd {
     mins: glam::Vec3A,
     maxs: glam::Vec3A,
 }
 
+// SAFETY: compile-time assertions to ensure we can transmute between `BvhNode` and `BvhNodeSimd`.
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+static_assertions::assert_eq_align!(BvhNode, BvhNodeSimd);
+#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+static_assertions::assert_eq_size!(BvhNode, BvhNodeSimd);
+
 /// The note (internal or leaf) of a BVH.
 #[derive(Copy, Clone, Debug)]
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
-#[cfg_attr(all(feature = "f32", feature = "dim3"), repr(align(32)))]
+#[cfg_attr(all(feature = "f32", feature = "dim3"), repr(align(16)))]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -503,11 +507,6 @@ pub struct Bvh {
 impl Bvh {
     /// An empty BVH.
     pub fn new() -> Self {
-        #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-        {
-            assert_eq!(align_of::<BvhNode>(), align_of::<BvhNodeSimd>());
-            assert_eq!(size_of::<BvhNode>(), size_of::<BvhNodeSimd>());
-        }
         Self::default()
     }
 
