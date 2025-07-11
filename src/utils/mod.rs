@@ -26,8 +26,8 @@ pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, 
 pub use self::obb::obb;
 pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
-pub(crate) use self::sort::sort2;
-pub(crate) use self::sort::sort3;
+pub use self::sort::sort2;
+pub use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
