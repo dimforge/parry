@@ -1,8 +1,10 @@
+use super::{Bvh, BvhWorkspace};
 use crate::math::Real;
 use core::cmp::Ordering;
 use ordered_float::OrderedFloat;
 
-use super::{Bvh, BvhWorkspace};
+#[cfg(not(feature = "std"))]
+use na::ComplexField; // For `round` and `sqrt` in no-std+alloc builds.
 
 impl Bvh {
     fn optimization_config(&self, frame_index: u32) -> OptimizationConfig {

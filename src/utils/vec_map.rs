@@ -33,7 +33,7 @@ use core::cmp::{max, Ordering};
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::iter::{Enumerate, FilterMap, FromIterator};
-use core::mem::{swap};
+use core::mem::swap;
 use core::ops::{Index, IndexMut};
 use core::slice;
 
@@ -378,8 +378,7 @@ impl<V> VecMap<V> {
     /// assert_eq!(b[3], "c");
     /// assert_eq!(b[4], "d");
     /// ```
-    pub fn split_off(&mut self, at: usize) -> Self
-    {
+    pub fn split_off(&mut self, at: usize) -> Self {
         let mut other = VecMap::new();
 
         if at == 0 {
@@ -765,9 +764,9 @@ where
     fn eq(&self, other: &VecMap<W>) -> bool {
         self.n == other.n
             && self
-            .iter()
-            .zip(other.iter())
-            .all(|((i, x), (j, y))| i == j && x == y)
+                .iter()
+                .zip(other.iter())
+                .all(|((i, x), (j, y))| i == j && x == y)
     }
 }
 
@@ -1125,9 +1124,7 @@ fn assert_properties() {
         map
     }
 
-    fn into_iter_covariant<'a, T>(
-        iter: IntoIter<&'static T>,
-    ) -> IntoIter<&'a T> {
+    fn into_iter_covariant<'a, T>(iter: IntoIter<&'static T>) -> IntoIter<&'a T> {
         iter
     }
 
@@ -1148,8 +1145,10 @@ fn assert_properties() {
 mod test {
     use super::Entry::{Occupied, Vacant};
     use super::VecMap;
+    use std::boxed::Box;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
+    use std::vec::Vec;
 
     #[test]
     fn test_get_mut() {
@@ -1205,7 +1204,7 @@ mod test {
     #[test]
     fn test_remove() {
         let mut m = VecMap::new();
-        m.insert(1, 2);
+        let _ = m.insert(1, 2);
         assert_eq!(m.remove(1), Some(2));
         assert_eq!(m.remove(1), None);
     }
@@ -1213,9 +1212,9 @@ mod test {
     #[test]
     fn test_keys() {
         let mut map = VecMap::new();
-        map.insert(1, 'a');
-        map.insert(2, 'b');
-        map.insert(3, 'c');
+        let _ = map.insert(1, 'a');
+        let _ = map.insert(2, 'b');
+        let _ = map.insert(3, 'c');
         let keys: Vec<_> = map.keys().collect();
         assert_eq!(keys.len(), 3);
         assert!(keys.contains(&1));
@@ -1226,9 +1225,9 @@ mod test {
     #[test]
     fn test_values() {
         let mut map = VecMap::new();
-        map.insert(1, 'a');
-        map.insert(2, 'b');
-        map.insert(3, 'c');
+        let _ = map.insert(1, 'a');
+        let _ = map.insert(2, 'b');
+        let _ = map.insert(3, 'c');
         let values: Vec<_> = map.values().cloned().collect();
         assert_eq!(values.len(), 3);
         assert!(values.contains(&'a'));
@@ -1345,7 +1344,7 @@ mod test {
     #[test]
     fn test_move_iter() {
         let mut m: VecMap<Box<_>> = VecMap::new();
-        m.insert(1, Box::new(2));
+        let _ = m.insert(1, Box::new(2));
         let mut called = false;
         for (k, v) in m {
             assert!(!called);
@@ -1359,9 +1358,9 @@ mod test {
     #[test]
     fn test_drain_iterator() {
         let mut map = VecMap::new();
-        map.insert(1, "a");
-        map.insert(3, "c");
-        map.insert(2, "b");
+        let _ = map.insert(1, "a");
+        let _ = map.insert(3, "c");
+        let _ = map.insert(2, "b");
 
         let vec: Vec<_> = map.drain().collect();
 
@@ -1372,14 +1371,14 @@ mod test {
     #[test]
     fn test_append() {
         let mut a = VecMap::new();
-        a.insert(1, "a");
-        a.insert(2, "b");
-        a.insert(3, "c");
+        let _ = a.insert(1, "a");
+        let _ = a.insert(2, "b");
+        let _ = a.insert(3, "c");
 
         let mut b = VecMap::new();
-        b.insert(3, "d"); // Overwrite element from a
-        b.insert(4, "e");
-        b.insert(5, "f");
+        let _ = b.insert(3, "d"); // Overwrite element from a
+        let _ = b.insert(4, "e");
+        let _ = b.insert(5, "f");
 
         a.append(&mut b);
 
@@ -1399,10 +1398,10 @@ mod test {
     fn test_split_off() {
         // Split within the key range
         let mut a = VecMap::new();
-        a.insert(1, "a");
-        a.insert(2, "b");
-        a.insert(3, "c");
-        a.insert(4, "d");
+        let _ = a.insert(1, "a");
+        let _ = a.insert(2, "b");
+        let _ = a.insert(3, "c");
+        let _ = a.insert(4, "d");
 
         let b = a.split_off(3);
 
@@ -1417,10 +1416,10 @@ mod test {
 
         // Split at 0
         a.clear();
-        a.insert(1, "a");
-        a.insert(2, "b");
-        a.insert(3, "c");
-        a.insert(4, "d");
+        let _ = a.insert(1, "a");
+        let _ = a.insert(2, "b");
+        let _ = a.insert(3, "c");
+        let _ = a.insert(4, "d");
 
         let b = a.split_off(0);
 
@@ -1433,10 +1432,10 @@ mod test {
 
         // Split behind max_key
         a.clear();
-        a.insert(1, "a");
-        a.insert(2, "b");
-        a.insert(3, "c");
-        a.insert(4, "d");
+        let _ = a.insert(1, "a");
+        let _ = a.insert(2, "b");
+        let _ = a.insert(3, "c");
+        let _ = a.insert(4, "d");
 
         let b = a.split_off(5);
 
@@ -1453,8 +1452,8 @@ mod test {
         let mut map = VecMap::new();
         let empty = VecMap::<i32>::new();
 
-        map.insert(1, 2);
-        map.insert(3, 4);
+        let _ = map.insert(1, 2);
+        let _ = map.insert(3, 4);
 
         let map_str = format!("{:?}", map);
         assert!(map_str == "{1: 2, 3: 4}" || map_str == "{3: 4, 1: 2}");
@@ -1465,9 +1464,9 @@ mod test {
     fn test_clone() {
         let mut a = VecMap::new();
 
-        a.insert(1, 'x');
-        a.insert(4, 'y');
-        a.insert(6, 'z');
+        let _ = a.insert(1, 'x');
+        let _ = a.insert(4, 'y');
+        let _ = a.insert(6, 'z');
 
         assert_eq!(
             a.clone().iter().collect::<Vec<_>>(),
@@ -1541,18 +1540,18 @@ mod test {
         let mut y = VecMap::new();
 
         assert!(hash(&x) == hash(&y));
-        x.insert(1, 'a');
-        x.insert(2, 'b');
-        x.insert(3, 'c');
+        let _ = x.insert(1, 'a');
+        let _ = x.insert(2, 'b');
+        let _ = x.insert(3, 'c');
 
-        y.insert(3, 'c');
-        y.insert(2, 'b');
-        y.insert(1, 'a');
+        let _ = y.insert(3, 'c');
+        let _ = y.insert(2, 'b');
+        let _ = y.insert(1, 'a');
 
         assert!(hash(&x) == hash(&y));
 
-        x.insert(1000, 'd');
-        x.remove(1000);
+        let _ = x.insert(1000, 'd');
+        let _ = x.remove(1000);
 
         assert!(hash(&x) == hash(&y));
     }
@@ -1572,9 +1571,9 @@ mod test {
     fn test_index() {
         let mut map = VecMap::new();
 
-        map.insert(1, 2);
-        map.insert(2, 1);
-        map.insert(3, 4);
+        let _ = map.insert(1, 2);
+        let _ = map.insert(2, 1);
+        let _ = map.insert(3, 4);
 
         assert_eq!(map[3], 4);
     }
@@ -1584,11 +1583,11 @@ mod test {
     fn test_index_nonexistent() {
         let mut map = VecMap::new();
 
-        map.insert(1, 2);
-        map.insert(2, 1);
-        map.insert(3, 4);
+        let _ = map.insert(1, 2);
+        let _ = map.insert(2, 1);
+        let _ = map.insert(3, 4);
 
-        map[4];
+        let _ = map[4];
     }
 
     #[test]
@@ -1647,10 +1646,10 @@ mod test {
     #[test]
     fn test_extend_ref() {
         let mut a = VecMap::new();
-        a.insert(1, "one");
+        let _ = a.insert(1, "one");
         let mut b = VecMap::new();
-        b.insert(2, "two");
-        b.insert(3, "three");
+        let _ = b.insert(2, "two");
+        let _ = b.insert(3, "three");
 
         a.extend(&b);
 
@@ -1672,9 +1671,9 @@ mod test {
     #[test]
     fn test_retain() {
         let mut map = VecMap::new();
-        map.insert(1, "one");
-        map.insert(2, "two");
-        map.insert(3, "three");
+        let _ = map.insert(1, "one");
+        let _ = map.insert(2, "two");
+        let _ = map.insert(3, "three");
         map.retain(|k, v| match k {
             1 => false,
             2 => {

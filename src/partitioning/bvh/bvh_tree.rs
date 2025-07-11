@@ -4,10 +4,10 @@ use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::SimdReal;
 use crate::math::{Point, Real, Vector};
 use crate::query::{Ray, RayCast};
+use crate::utils::VecMap;
 use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut, Index, IndexMut};
-use crate::utils::VecMap;
 
 /// The strategy for one-time build of the tree.
 ///
@@ -315,7 +315,7 @@ impl BvhNode {
     }
 
     /// Checks if the AABB of `self` intersects the `other` node’s AABB.
-    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3")))]
+    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
     pub fn intersects(&self, other: &Self) -> bool {
         na::partial_le(&self.mins, &other.maxs) && na::partial_ge(&self.maxs, &other.mins)
     }

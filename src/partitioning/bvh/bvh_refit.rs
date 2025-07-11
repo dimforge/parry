@@ -1,7 +1,7 @@
 use super::bvh_tree::{BvhNodeIndex, BvhNodeVec, BvhNodeWide};
 use super::{Bvh, BvhNode, BvhWorkspace};
-use alloc::vec::Vec;
 use crate::utils::VecMap;
+use alloc::vec::Vec;
 
 impl Bvh {
     /// Performs a tree refitting with internal storage cache optimizations.

@@ -65,7 +65,7 @@ impl Bvh {
     /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
     /// given to that closure is the distance to the closest ray hit found so far (or is equal to
     /// `max_time_of_impact` if no projection was found so far).
-    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3")))]
+    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
@@ -85,7 +85,7 @@ impl Bvh {
     /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
     /// given to that closure is the distance to the closest ray hit found so far (or is equal to
     /// `max_time_of_impact` if no projection was found so far).
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3"))]
+    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
