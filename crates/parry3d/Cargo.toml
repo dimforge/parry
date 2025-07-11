@@ -46,7 +46,6 @@ rkyv-serialize = [
     "simba/rkyv-serialize",
 ]
 bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
-
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 enhanced-determinism = ["simba/libm_force", "indexmap"]
@@ -100,6 +99,7 @@ rand = { version = "0.8" }
 macroquad = "0.4.12"
 nalgebra = { version = "0.33", default-features = false, features = ["rand"] }
 rand_isaac = "0.3"
+rerun = "*"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

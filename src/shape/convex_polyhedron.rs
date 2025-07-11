@@ -664,3 +664,80 @@ impl ConvexPolyhedron for ConvexPolyhedron {
     }
 }
 */
+#[cfg(test)]
+mod tests {
+    static RR_CELL: std::sync::OnceLock<rerun::RecordingStream> = std::sync::OnceLock::new();
+
+    pub fn get_rr() -> &'static rerun::RecordingStream {
+        RR_CELL.get().unwrap()
+    }
+    use rerun::{LineStrip3D, LineStrips3D, Position3D, Vec3D};
+
+    use crate::shape::{TopologyError, TriMeshFlags};
+
+    use super::*;
+
+    #[test]
+    fn test_311_convex_hull() {
+        let _ = RR_CELL.get_or_init(|| {
+            rerun::RecordingStreamBuilder::new("rerun_test_311_convex_hull")
+                .spawn()
+                .unwrap()
+        });
+        let mut points: Vec<Point<Real>> = vec![
+            [-0.9759494, 0.08367488, 1.1975889].into(),
+            [-0.9760843, 0.08125789, 1.2047149].into(),
+            [-0.9695144, 0.08282869, 1.2013979].into(),
+            [-1.2464869, -0.07542472, 1.6015025].into(),
+            [-0.55810887, -0.47650382, 1.4873786].into(),
+        ];
+
+        std::dbg!(points.len());
+        get_rr().set_time_seconds("frame_idx", 0);
+        get_rr()
+            .log(
+                "points",
+                &rerun::Points3D::new(
+                    points
+                        .iter()
+                        .map(|p| Vec3D::new(p.x, p.y, p.z))
+                        .collect::<Vec<_>>(),
+                ),
+            )
+            .unwrap();
+        let convex = ConvexPolyhedron::from_convex_hull(&points)
+            .expect("Failed to compute convex hull of mesh");
+
+        let (vertices, mut indices) = convex.to_trimesh();
+
+        get_rr().set_time_seconds("frame_idx", 1);
+        //let mut triangles = Vec::new();
+        for (i, [a, b, c]) in indices.iter().enumerate() {
+            let (a, b, c) = (
+                vertices[*a as usize],
+                vertices[*b as usize],
+                vertices[*c as usize],
+            );
+            let (a, b, c) = (
+                Vec3D::new(a.x, a.y, a.z),
+                Vec3D::new(b.x, b.y, b.z),
+                Vec3D::new(c.x, c.y, c.z),
+            );
+            let ls = LineStrip3D::from_iter([a, b, c, a].iter());
+            //triangles.push(ls);
+            get_rr()
+                .log(format!("triangle {i}"), &LineStrips3D::new([ls]))
+                .unwrap();
+        }
+        get_rr().set_time_seconds("frame_idx", 2);
+        let mut convex_mesh = crate::shape::TriMesh::new(vertices, indices)
+            .expect("Failed to convert convex polyhedron to triangle mesh");
+
+        // This should not error out, I'm keeping this assert to make sure we don't change the result unexpectedly.
+        assert!(matches!(
+            std::dbg!(convex_mesh.set_flags(TriMeshFlags::HALF_EDGE_TOPOLOGY)),
+            Err(TopologyError::BadAdjacentTrianglesOrientation { .. })
+        ));
+        loop {}
+    }
+}
