@@ -229,10 +229,15 @@ impl RayCast for Segment {
             } else if s >= 0.0 && s <= max_time_of_impact && t >= 0.0 && t <= 1.0 {
                 let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
-                if normal.dot(&ray.dir) > 0.0 {
+                let dot = normal.dot(&ray.dir);
+                if dot > 0.0 {
                     Some(RayIntersection::new(s, -normal, FeatureId::Face(1)))
-                } else {
+                } else if dot < 0.0 {
                     Some(RayIntersection::new(s, normal, FeatureId::Face(0)))
+                } else {
+                    // dot == 0 happens when lines are parallel, which is normally handled before,
+                    // but this may happen if segment is zero length, as the ray is not considered parallel.
+                    None
                 }
             } else {
                 // The closest points are outside of
