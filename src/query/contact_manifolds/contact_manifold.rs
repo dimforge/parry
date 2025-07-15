@@ -1,5 +1,7 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::PackedFeatureId;
+#[cfg(feature = "dim3")]
+use alloc::vec::Vec;
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -141,7 +143,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         #[cfg(feature = "dim2")]
         let points = self.points.clone();
         #[cfg(feature = "dim3")]
-        let points = std::mem::take(&mut self.points);
+        let points = core::mem::take(&mut self.points);
         self.points.clear();
 
         ContactManifold {

@@ -16,4 +16,13 @@ pub enum ConvexHullError {
     /// Reached a piece of code we shouldn’t (internal error).
     #[error("Internal error: unreachable code path")]
     Unreachable,
+    /// One of convex-hull's triangle was not constructed properly
+    #[error("Detected unfinished triangle")]
+    UnfinishedTriangle,
+    /// Edge has more than 2 vertexes
+    #[error("Detected t-junction for triangle {0}, edge: ({1}, {2})")]
+    TJunction(usize, u32, u32),
+    /// The convex-hull contains duplicate points
+    #[error("Detected duplicate points {0} and {1}")]
+    DuplicatePoints(usize, usize),
 }

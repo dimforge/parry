@@ -1,5 +1,9 @@
+#[cfg(feature = "std")]
+use super::ConvexHullError;
 use super::TriangleFacet;
+#[cfg(feature = "std")]
 use crate::math::Real;
+#[cfg(feature = "std")]
 use na::Point3;
 
 pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
@@ -26,7 +30,11 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
 }
 
 /// Checks if a convex-hull is properly formed.
-pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
+#[cfg(feature = "std")]
+pub fn check_convex_hull(
+    points: &[Point3<Real>],
+    triangles: &[[u32; 3]],
+) -> Result<(), ConvexHullError> {
     use crate::utils::hashmap::{Entry, HashMap};
     use crate::utils::SortedPair;
     let mut edges = HashMap::default();
@@ -46,8 +54,7 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
     for i in 0..points.len() {
         for j in i + 1..points.len() {
             if points[i] == points[j] {
-                println!("Duplicate: {}", points[i]);
-                panic!("Found duplicate points.")
+                return Err(ConvexHullError::DuplicatePoints(i, j));
             }
         }
     }
@@ -70,11 +77,7 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
                 }
                 Entry::Occupied(mut e) => {
                     if e.get().adjacent_triangles[1] != usize::MAX {
-                        panic!(
-                            "Detected t-junction for triangle {}, edge: {:?}.",
-                            itri,
-                            (ivtx1, ivtx2)
-                        );
+                        return Err(ConvexHullError::TJunction(itri, ivtx1, ivtx2));
                     }
 
                     e.get_mut().adjacent_triangles[1] = itri;
@@ -85,15 +88,17 @@ pub fn check_convex_hull(points: &[Point3<Real>], triangles: &[[u32; 3]]) {
 
     for edge in &edges {
         if edge.1.adjacent_triangles[1] == usize::MAX {
-            panic!("Detected unfinished triangle.");
+            return Err(ConvexHullError::UnfinishedTriangle);
         }
     }
 
     // Check Euler characteristic.
     assert_eq!(points.len() + triangles.len() - edges.len(), 2);
+
+    Ok(())
 }
 
-// fn print_buildable_vec<T: std::fmt::Display + na::Scalar>(desc: &str, elts: &[Point3<T>]) {
+// fn print_buildable_vec<T: core::fmt::Display + na::Scalar>(desc: &str, elts: &[Point3<T>]) {
 //     print!("let {} = vec![", desc);
 //     for elt in elts {
 //         print!("Point3::new({},{},{}),", elt.x, elt.y, elt.z);

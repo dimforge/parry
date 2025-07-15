@@ -14,6 +14,11 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(feature, values("wavefront"))',
 ] }
 
+[workspace.lints.clippy]
+alloc_instead_of_core = "warn"
+std_instead_of_alloc = "warn"
+std_instead_of_core = "warn"
+
 [patch.crates-io]
 parry2d = { path = "crates/parry2d" }
 parry3d = { path = "crates/parry3d" }

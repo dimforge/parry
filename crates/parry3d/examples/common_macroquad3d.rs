@@ -1,4 +1,4 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
+use core::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
 use macroquad::{
     color::{Color, WHITE},
@@ -36,9 +36,9 @@ pub fn hue_to_rgb(h: f32) -> (f32, f32, f32) {
     let kg = (3.0 + h * 6.0).rem_euclid(6.0);
     let kb = (1.0 + h * 6.0).rem_euclid(6.0);
 
-    let r = 1.0 - kr.min(4.0 - kr).min(1.0).max(0.0);
-    let g = 1.0 - kg.min(4.0 - kg).min(1.0).max(0.0);
-    let b = 1.0 - kb.min(4.0 - kb).min(1.0).max(0.0);
+    let r = 1.0 - kr.min(4.0 - kr).clamp(0.0, 1.0);
+    let g = 1.0 - kg.min(4.0 - kg).clamp(0.0, 1.0);
+    let b = 1.0 - kb.min(4.0 - kb).clamp(0.0, 1.0);
 
     (r, g, b)
 }
@@ -120,10 +120,7 @@ pub fn mquad_mesh_from_points(
     let vertices: Vec<Vertex> =
         mquad_compute_normals_and_bake_light(&mquad_points, &mquad_indices, light_pos);
     // Regenerate the index for each vertex.
-    let indices: Vec<u16> = (0..vertices.len() * 3)
-        .into_iter()
-        .map(|i| i as u16)
-        .collect();
+    let indices: Vec<u16> = (0..vertices.len() * 3).map(|i| i as u16).collect();
     let mesh = Mesh {
         vertices,
         indices,

@@ -1,5 +1,6 @@
 use crate::math::{Point, Real, Vector};
 use crate::query::{self, Ray};
+use alloc::vec::Vec;
 
 /// Cuts a polygon with the given half-space.
 ///

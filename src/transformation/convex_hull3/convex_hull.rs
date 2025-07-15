@@ -4,6 +4,7 @@ use crate::math::Real;
 use crate::transformation::convex_hull_utils::indexed_support_point_nth;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
 use crate::utils;
+use alloc::{vec, vec::Vec};
 use na::{self, Point3};
 
 /// Computes the convex hull of a set of 3d points.
@@ -250,7 +251,7 @@ fn fix_silhouette_topology(
         }
 
         let mut removing = None;
-        let old_facets_and_idx = std::mem::take(out_facets_and_idx);
+        let old_facets_and_idx = core::mem::take(out_facets_and_idx);
 
         for i in 0..old_facets_and_idx.len() {
             let facet_id = (loop_start + i) % old_facets_and_idx.len();

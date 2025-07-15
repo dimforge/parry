@@ -1,8 +1,8 @@
+use core::ops::Range;
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use na::DVector;
-use std::ops::Range;
 
 use na::Point2;
 
@@ -33,7 +33,7 @@ pub struct HeightField {
     aabb: Aabb,
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
     pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {

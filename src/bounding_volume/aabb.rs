@@ -8,8 +8,9 @@ use arrayvec::ArrayVec;
 use na;
 use num::Bounded;
 
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
+#[cfg(all(feature = "dim3", not(feature = "std")))]
+use na::ComplexField;
+// for .sin_cos()
 
 use crate::query::{Ray, RayCast};
 #[cfg(feature = "rkyv")]
@@ -77,12 +78,42 @@ impl Aabb {
     /// ```
     #[cfg(feature = "dim3")]
     pub const FACES_VERTEX_IDS: [(usize, usize, usize, usize); 6] = [
+        // Face with normal +X
         (1, 2, 6, 5),
+        // Face with normal -X
         (0, 3, 7, 4),
+        // Face with normal +Y
         (2, 3, 7, 6),
+        // Face with normal -Y
         (1, 0, 4, 5),
+        // Face with normal +Z
         (4, 5, 6, 7),
+        // Face with normal -Z
         (0, 1, 2, 3),
+    ];
+
+    /// The vertex indices of each face of this `Aabb`.
+    ///
+    /// This gives, for each face of this `Aabb`, the indices of its
+    /// vertices when taken from the `self.vertices()` array.
+    /// Here is how the faces are numbered, assuming
+    /// a right-handed coordinate system:
+    ///
+    /// ```text
+    ///    y             3 - 2
+    ///    |             |   |
+    ///    ___ x         0 - 1
+    /// ```
+    #[cfg(feature = "dim2")]
+    pub const FACES_VERTEX_IDS: [(usize, usize); 4] = [
+        // Face with normal +X
+        (1, 2),
+        // Face with normal -X
+        (3, 0),
+        // Face with normal +Y
+        (2, 3),
+        // Face with normal -Y
+        (0, 1),
     ];
 
     /// Creates a new Aabb.
@@ -113,10 +144,18 @@ impl Aabb {
         Self::new(center - half_extents, center + half_extents)
     }
 
-    /// Creates a new `Aabb` from a set of points.
-    pub fn from_points<'a, I>(pts: I) -> Self
+    /// Creates a new `Aabb` from a set of point references.
+    pub fn from_points_ref<'a, I>(pts: I) -> Self
     where
         I: IntoIterator<Item = &'a Point<Real>>,
+    {
+        super::aabb_utils::local_point_cloud_aabb(pts.into_iter().copied())
+    }
+
+    /// Creates a new `Aabb` from a set of points.
+    pub fn from_points<I>(pts: I) -> Self
+    where
+        I: IntoIterator<Item = Point<Real>>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
@@ -144,6 +183,28 @@ impl Aabb {
         return extents.x * extents.y * extents.z;
     }
 
+    /// In 3D, returns the half-area. In 2D returns the half-perimeter of the AABB.
+    pub fn half_area_or_perimeter(&self) -> Real {
+        #[cfg(feature = "dim2")]
+        return self.half_perimeter();
+        #[cfg(feature = "dim3")]
+        return self.half_area();
+    }
+
+    /// The half perimeter of this `Aabb`.
+    #[cfg(feature = "dim2")]
+    pub fn half_perimeter(&self) -> Real {
+        let extents = self.extents();
+        extents.x + extents.y
+    }
+
+    /// The half area of this `Aabb`.
+    #[cfg(feature = "dim3")]
+    pub fn half_area(&self) -> Real {
+        let extents = self.extents();
+        extents.x * (extents.y + extents.z) + extents.y * extents.z
+    }
+
     /// The extents of this `Aabb`.
     #[inline]
     pub fn extents(&self) -> Vector<Real> {
@@ -166,6 +227,14 @@ impl Aabb {
         Aabb::new(center + (-ws_half_extents), center + ws_half_extents)
     }
 
+    /// Computes the Aabb bounding `self` translated by `translation`.
+    #[inline]
+    pub fn translated(mut self, translation: &Vector<Real>) -> Self {
+        self.mins += translation;
+        self.maxs += translation;
+        self
+    }
+
     #[inline]
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         let a = self.mins.coords.component_mul(scale);
@@ -180,8 +249,8 @@ impl Aabb {
     ///
     /// # Parameters
     /// - `scale`: the scaling factor. It can be non-uniform and/or negative. The AABB being
-    ///            symmetric wrt. its center, a negative scale value has the same effect as scaling
-    ///            by its absolute value.
+    ///   symmetric wrt. its center, a negative scale value has the same effect as scaling
+    ///   by its absolute value.
     #[inline]
     #[must_use]
     pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
@@ -213,6 +282,15 @@ impl Aabb {
         true
     }
 
+    /// Computes the distance between the origin and this AABB.
+    pub fn distance_to_origin(&self) -> Real {
+        self.mins
+            .coords
+            .sup(&-self.maxs.coords)
+            .sup(&Vector::zeros())
+            .norm()
+    }
+
     /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`?
     #[inline]
     pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector<Real>) -> bool {
@@ -240,6 +318,31 @@ impl Aabb {
         }
 
         Some(result)
+    }
+
+    /// Computes two AABBs for the intersection between two translated and rotated AABBs.
+    ///
+    /// This method returns two AABBs: the first is expressed in the local-space of `self`,
+    /// and the second is expressed in the local-space of `aabb2`.
+    pub fn aligned_intersections(
+        &self,
+        pos12: &Isometry<Real>,
+        aabb2: &Self,
+    ) -> Option<(Aabb, Aabb)> {
+        let pos21 = pos12.inverse();
+
+        let aabb2_1 = aabb2.transform_by(pos12);
+        let inter1_1 = self.intersection(&aabb2_1)?;
+        let inter1_2 = inter1_1.transform_by(&pos21);
+
+        let aabb1_2 = self.transform_by(&pos21);
+        let inter2_2 = aabb2.intersection(&aabb1_2)?;
+        let inter2_1 = inter2_2.transform_by(pos12);
+
+        Some((
+            inter1_1.intersection(&inter2_1)?,
+            inter1_2.intersection(&inter2_2)?,
+        ))
     }
 
     /// Returns the difference between this `Aabb` and `rhs`.
@@ -309,18 +412,34 @@ impl Aabb {
     }
 
     /// Computes the vertices of this `Aabb`.
+    ///
+    /// The vertices are given in the following order in a right-handed coordinate system:
+    /// ```text
+    ///    y             3 - 2
+    ///    |             |   |
+    ///    ___ x         0 - 1
+    /// ```
     #[inline]
     #[cfg(feature = "dim2")]
     pub fn vertices(&self) -> [Point<Real>; 4] {
         [
             Point::new(self.mins.x, self.mins.y),
-            Point::new(self.mins.x, self.maxs.y),
             Point::new(self.maxs.x, self.mins.y),
             Point::new(self.maxs.x, self.maxs.y),
+            Point::new(self.mins.x, self.maxs.y),
         ]
     }
 
     /// Computes the vertices of this `Aabb`.
+    ///
+    /// The vertices are given in the following order, in a right-handed coordinate system:
+    /// ```text
+    ///    y             3 - 2
+    ///    |           7 − 6 |
+    ///    ___ x       |   | 1  (the zero is below 3 and on the left of 1,
+    ///   /            4 - 5     hidden by the 4-5-6-7 face.)
+    ///  z
+    /// ```
     #[inline]
     #[cfg(feature = "dim3")]
     pub fn vertices(&self) -> [Point<Real>; 8] {
@@ -398,6 +517,15 @@ impl Aabb {
         ]
     }
 
+    /// Enlarges this AABB on each side by the given `half_extents`.
+    #[must_use]
+    pub fn add_half_extents(&self, half_extents: &Vector<Real>) -> Self {
+        Self {
+            mins: self.mins - half_extents,
+            maxs: self.maxs + half_extents,
+        }
+    }
+
     /// Projects every point of `Aabb` on an arbitrary axis.
     pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());
@@ -411,7 +539,7 @@ impl Aabb {
     }
 
     #[cfg(feature = "dim3")]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn intersects_spiral(
         &self,
         point: &Point<Real>,
@@ -422,6 +550,7 @@ impl Aabb {
     ) -> bool {
         use crate::utils::WBasis;
         use crate::utils::{Interval, IntervalFunction};
+        use alloc::vec;
 
         struct SpiralPlaneDistance {
             center: Point<Real>,

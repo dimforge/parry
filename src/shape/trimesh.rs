@@ -1,14 +1,15 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::Qbvh;
-use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
+use crate::partitioning::{Bvh, BvhBuildStrategy};
+use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedCompositeShape};
 use crate::utils::HashablePartialEq;
-use std::fmt;
+use alloc::{vec, vec::Vec};
+use core::fmt;
 #[cfg(feature = "dim3")]
 use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 
 use {
-    crate::shape::composite_shape::SimdCompositeShape,
+    crate::shape::composite_shape::CompositeShape,
     crate::utils::hashmap::{Entry, HashMap},
     crate::utils::hashset::HashSet,
 };
@@ -230,7 +231,7 @@ pub struct TriMeshTopology {
 )]
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-/// The status of the cell of an heightfield.
+/// Controls how a [`TriMesh`] should be loaded.
 pub struct TriMeshFlags(u16);
 
 bitflags::bitflags! {
@@ -269,7 +270,7 @@ bitflags::bitflags! {
         ///
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
-        const FIX_INTERNAL_EDGES = 1 << 7 | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
+        const FIX_INTERNAL_EDGES = (1 << 7) | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
@@ -283,7 +284,7 @@ bitflags::bitflags! {
 #[derive(Clone)]
 /// A triangle mesh.
 pub struct TriMesh {
-    qbvh: Qbvh<u32>,
+    bvh: Bvh,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
@@ -319,7 +320,7 @@ impl TriMesh {
         }
 
         let mut result = Self {
-            qbvh: Qbvh::new(),
+            bvh: Bvh::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
@@ -331,9 +332,9 @@ impl TriMesh {
 
         let _ = result.set_flags(flags);
 
-        if result.qbvh.raw_nodes().is_empty() {
-            // The Qbvh hasn’t been computed by `.set_flags`.
-            result.rebuild_qbvh();
+        if result.bvh.is_empty() {
+            // The BVH hasn’t been computed by `.set_flags`.
+            result.rebuild_bvh();
         }
 
         Ok(result)
@@ -349,7 +350,7 @@ impl TriMesh {
         }
 
         #[cfg(feature = "dim3")]
-        if !flags.contains(TriMeshFlags::ORIENTED) {
+        if !flags.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.pseudo_normals = None;
         }
 
@@ -377,21 +378,80 @@ impl TriMesh {
                 self.compute_topology(flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES));
         }
 
+        #[cfg(feature = "std")]
         if difference.intersects(TriMeshFlags::CONNECTED_COMPONENTS) {
             self.compute_connected_components();
         }
 
         #[cfg(feature = "dim3")]
-        if difference.contains(TriMeshFlags::ORIENTED) {
+        if difference.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.compute_pseudo_normals();
         }
 
         if prev_indices_len != self.indices.len() {
-            self.rebuild_qbvh();
+            self.rebuild_bvh();
         }
 
         self.flags = flags;
         result
+    }
+
+    // TODO: support a crate like get_size2 (will require support on nalgebra too)?
+    /// An approximation of the memory usage (in bytes) for this struct plus
+    /// the memory it allocates dynamically.
+    pub fn total_memory_size(&self) -> usize {
+        size_of::<Self>() + self.heap_memory_size()
+    }
+
+    /// An approximation of the memory dynamically-allocated by this struct.
+    pub fn heap_memory_size(&self) -> usize {
+        // NOTE: if a new field is added to `Self`, adjust this function result.
+        let Self {
+            bvh,
+            vertices,
+            indices,
+            topology,
+            connected_components,
+            flags: _,
+            #[cfg(feature = "dim3")]
+            pseudo_normals,
+        } = self;
+        let sz_bvh = bvh.heap_memory_size();
+        let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
+        let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
+        #[cfg(feature = "dim3")]
+        let sz_pseudo_normals = pseudo_normals
+            .as_ref()
+            .map(|pn| {
+                pn.vertices_pseudo_normal.capacity() * size_of::<Vector<Real>>()
+                    + pn.edges_pseudo_normal.capacity() * size_of::<[Vector<Real>; 3]>()
+            })
+            .unwrap_or(0);
+        #[cfg(feature = "dim2")]
+        let sz_pseudo_normals = 0;
+        let sz_topology = topology
+            .as_ref()
+            .map(|t| {
+                t.vertices.capacity() * size_of::<TopoVertex>()
+                    + t.faces.capacity() * size_of::<TopoFace>()
+                    + t.half_edges.capacity() * size_of::<TopoHalfEdge>()
+            })
+            .unwrap_or(0);
+        let sz_connected_components = connected_components
+            .as_ref()
+            .map(|c| {
+                c.face_colors.capacity() * size_of::<u32>()
+                    + c.grouped_faces.capacity() * size_of::<f32>()
+                    + c.ranges.capacity() * size_of::<usize>()
+            })
+            .unwrap_or(0);
+
+        sz_bvh
+            + sz_vertices
+            + sz_indices
+            + sz_pseudo_normals
+            + sz_topology
+            + sz_connected_components
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
@@ -399,7 +459,7 @@ impl TriMesh {
         self.vertices
             .iter_mut()
             .for_each(|pt| *pt = transform * *pt);
-        self.rebuild_qbvh();
+        self.rebuild_bvh();
 
         // The pseudo-normals must be rotated too.
         #[cfg(feature = "dim3")]
@@ -439,8 +499,11 @@ impl TriMesh {
             });
         }
 
+        let mut bvh = self.bvh.clone();
+        bvh.scale(scale);
+
         Self {
-            qbvh: self.qbvh.scaled(scale),
+            bvh,
             vertices: self.vertices,
             indices: self.indices,
             #[cfg(feature = "dim3")]
@@ -461,8 +524,8 @@ impl TriMesh {
                 .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
         );
 
-        let vertices = std::mem::take(&mut self.vertices);
-        let indices = std::mem::take(&mut self.indices);
+        let vertices = core::mem::take(&mut self.vertices);
+        let indices = core::mem::take(&mut self.indices);
         *self = TriMesh::with_flags(vertices, indices, self.flags).unwrap();
     }
 
@@ -479,31 +542,29 @@ impl TriMesh {
         unsafe {
             let len = self.indices.len() * 3;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
-    fn rebuild_qbvh(&mut self) {
-        let data = self.indices.iter().enumerate().map(|(i, idx)| {
+    fn rebuild_bvh(&mut self) {
+        let leaves = self.indices.iter().enumerate().map(|(i, idx)| {
             let aabb = Triangle::new(
                 self.vertices[idx[0] as usize],
                 self.vertices[idx[1] as usize],
                 self.vertices[idx[2] as usize],
             )
             .local_aabb();
-            (i as u32, aabb)
+            (i, aabb)
         });
 
-        // NOTE: we apply no dilation factor because we won't
-        // update this tree dynamically.
-        self.qbvh.clear_and_rebuild(data, 0.0);
+        self.bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves)
     }
 
     /// Reverse the orientation of the triangle mesh.
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
-        // NOTE: the Qbvh, and connected components are not changed by this operation.
+        // NOTE: the BVH, and connected components are not changed by this operation.
         //       The pseudo-normals just have to be flipped.
         //       The topology must be recomputed.
 
@@ -805,6 +866,8 @@ impl TriMesh {
 
     // NOTE: this is private because that calculation is controlled by TriMeshFlags::CONNECTED_COMPONENTS
     // TODO: we should remove the CONNECTED_COMPONENTS flags and just have this be a free function.
+    // TODO: this should be no_std compatible once ena is or once we have an alternative for it.
+    #[cfg(feature = "std")]
     fn compute_connected_components(&mut self) {
         use ena::unify::{InPlaceUnificationTable, UnifyKey};
 
@@ -954,17 +1017,17 @@ impl TriMesh {
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
-        self.qbvh.root_aabb().transform_by(pos)
+        self.bvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
-    pub fn local_aabb(&self) -> &Aabb {
-        self.qbvh.root_aabb()
+    pub fn local_aabb(&self) -> Aabb {
+        self.bvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    pub fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 
     /// The number of triangles forming this mesh.
@@ -1060,6 +1123,17 @@ impl TriMesh {
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
         self.pseudo_normals.as_ref()
     }
+
+    /// The pseudo-normals of this triangle mesh, if they have been computed **and** this mesh was
+    /// marked as [`TriMeshFlags::ORIENTED`].
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals_if_oriented(&self) -> Option<&TriMeshPseudoNormals> {
+        if self.flags.intersects(TriMeshFlags::ORIENTED) {
+            self.pseudo_normals.as_ref()
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(feature = "dim3")]
@@ -1078,7 +1152,7 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
-impl SimdCompositeShape for TriMesh {
+impl CompositeShape for TriMesh {
     fn map_part_at(
         &self,
         i: u32,
@@ -1093,48 +1167,43 @@ impl SimdCompositeShape for TriMesh {
         )
     }
 
-    fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
-impl TypedSimdCompositeShape for TriMesh {
+impl TypedCompositeShape for TriMesh {
     type PartShape = Triangle;
     type PartNormalConstraints = TrianglePseudoNormals;
-    type PartId = u32;
 
     #[inline(always)]
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         i: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
+        ) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(None, &tri, pseudo_normals.as_ref())
+        Some(f(None, &tri, pseudo_normals.as_ref()))
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    ) {
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(
+        Some(f(
             None,
             &tri,
             pseudo_normals.as_ref().map(|n| n as &dyn NormalConstraints),
-        )
-    }
-
-    fn typed_qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+        ))
     }
 }
 

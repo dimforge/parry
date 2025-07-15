@@ -1,8 +1,9 @@
 // "Complete Interval Arithmetic and its Implementation on the Computer"
 // Ulrich W. Kulisch
+use alloc::{vec, vec::Vec};
+use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use na::{RealField, SimdPartialOrd};
 use num::{One, Zero};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// A derivable valued function which can be bounded on intervals.
 pub trait IntervalFunction<T> {

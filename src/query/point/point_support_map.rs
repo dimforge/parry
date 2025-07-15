@@ -1,7 +1,7 @@
 use na::Unit;
 
 use crate::math::{Isometry, Point, Real, Vector};
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::query::epa::EPA;
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, GjkOptions, VoronoiSimplex};
 #[cfg(feature = "dim2")]
@@ -10,10 +10,10 @@ use crate::query::point::point_query::QueryOptions;
 use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::shape::ConvexPolygon;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::shape::ConvexPolyhedron;
 use crate::shape::{FeatureId, SupportMap};
 

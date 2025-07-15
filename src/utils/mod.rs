@@ -6,7 +6,7 @@ pub use self::center::center;
 pub use self::deterministic_state::DeterministicState;
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::cleanup::remove_unused_points;
 pub(crate) use self::inv::inv;
 pub use self::isometry_ops::{IsometryOps, IsometryOpt};
@@ -17,28 +17,30 @@ pub use self::point_cloud_support_point::{
 pub use self::point_in_poly2d::{point_in_convex_poly2d, point_in_poly2d};
 pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
+#[cfg(feature = "alloc")]
+pub use self::vec_map::VecMap;
+
 pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::cov::{center_cov, cov};
 pub use self::hashable_partial_eq::HashablePartialEq;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
 pub use self::obb::obb;
 pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
-pub(crate) use self::sort::sort2;
-pub(crate) use self::sort::sort3;
+pub use self::sort::sort2;
+pub use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
-#[cfg(all(feature = "dim3", feature = "std"))]
+#[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
-pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
 
 mod as_bytes;
 mod ccw_face_normal;
 mod center;
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod cleanup;
 mod consts;
 mod cov;
@@ -47,15 +49,16 @@ mod deterministic_state;
 #[cfg(feature = "enhanced-determinism")]
 mod fx_hasher;
 mod hashable_partial_eq;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod hashmap;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod hashset;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 mod interval;
 mod inv;
 mod isometry_ops;
 mod median;
+pub mod morton;
 mod obb;
 mod point_cloud_support_point;
 mod point_in_poly2d;
@@ -65,7 +68,9 @@ mod sdp_matrix;
 mod segments_intersection;
 mod sort;
 mod sorted_pair;
-#[cfg(all(feature = "dim3", feature = "std"))]
+#[cfg(all(feature = "dim3", feature = "spade"))]
 mod spade;
-mod weighted_value;
 mod wops;
+
+#[cfg(feature = "alloc")]
+mod vec_map;

@@ -16,12 +16,12 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
-        #[cfg(not(feature = "std"))] // TODO: can’t be used without std because of EPA
+        #[cfg(not(feature = "alloc"))]
         return unimplemented!(
-            "The projection of points on a round shapes isn’t supported on no-std platforms yet."
+            "The projection of points on a round shape isn't supported without alloc yet."
         );
 
-        #[cfg(feature = "std")] // TODO: can’t be used without std because of EPA
+        #[cfg(feature = "alloc")] // TODO: can’t be used without alloc because of EPA
         {
             let Some(options) = options.as_any().downcast_ref() else {
                 warn!("Incorrect option passed to project_local_point: using default options.");

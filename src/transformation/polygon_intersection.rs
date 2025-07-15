@@ -1,3 +1,4 @@
+use alloc::{vec, vec::Vec};
 use log::error;
 use na::Point2;
 use ordered_float::OrderedFloat;
@@ -415,7 +416,7 @@ pub fn polygons_intersection_points(
         } else if let Some(loc2) = loc2 {
             curr_poly.push(loc2.to_point(poly2))
         } else if !curr_poly.is_empty() {
-            result.push(std::mem::take(&mut curr_poly));
+            result.push(core::mem::take(&mut curr_poly));
         }
     })?;
 
@@ -663,7 +664,9 @@ mod test {
     use crate::shape::Triangle;
     use crate::transformation::convex_polygons_intersection_points_with_tolerances;
     use crate::transformation::polygon_intersection::PolygonIntersectionTolerances;
+    use alloc::vec::Vec;
     use na::Point2;
+    use std::println;
 
     #[test]
     fn intersect_triangle_common_vertex() {

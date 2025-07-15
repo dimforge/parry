@@ -1,18 +1,176 @@
-#![allow(unused_parens)] // Needed by the macro.
-
-use crate::bounding_volume::SimdAabb;
-use crate::math::{Point, Real, SimdReal, SIMD_WIDTH};
-use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
+use crate::math::{Point, Real};
+use crate::partitioning::BvhNode;
 use crate::query::point::point_query::QueryOptions;
-use crate::query::visitors::CompositePointContainmentTest;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
-    FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation, TypedSimdCompositeShape,
+    CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
+    TypedCompositeShape,
 };
 use na;
-use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
 
 use crate::shape::{Compound, Polyline};
+
+impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
+    /// Project a point on this composite shape.
+    ///
+    /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
+    /// The third tuple element contains some shape-specific information about the projected point.
+    #[inline]
+    pub fn project_local_point_and_get_location(
+        &self,
+        point: &Point<Real>,
+        max_dist: Real,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> Option<(
+        u32,
+        (
+            PointProjection,
+            <S::PartShape as PointQueryWithLocation>::Location,
+        ),
+    )>
+    where
+        S::PartShape: PointQueryWithLocation,
+    {
+        self.0
+            .bvh()
+            .find_best(
+                max_dist,
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
+                |primitive, _best_so_far| {
+                    let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
+                        if let Some(pose) = pose {
+                            shape.project_point_and_get_location(
+                                pose,
+                                point,
+                                solid,
+                                // TODO: Get the correct option for the shape
+                                &(),
+                            )
+                        } else {
+                            shape.project_local_point_and_get_location(
+                                point,
+                                solid,
+                                // TODO: Get the correct option for the shape
+                                &(),
+                            )
+                        }
+                    })?;
+                    let cost = na::distance(&proj.0.point, point);
+                    Some((cost, proj))
+                },
+            )
+            .map(|(best_id, (_, (proj, location)))| (best_id, (proj, location)))
+    }
+
+    /// Project a point on this composite shape.
+    ///
+    /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
+    /// If `solid` is `false` then the point will be projected to the closest boundary of `self` even
+    /// if it is contained by one of its sub-shapes.
+    pub fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> (u32, PointProjection) {
+        let (best_id, (_, proj)) = self
+            .0
+            .bvh()
+            .find_best(
+                Real::MAX,
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
+                |primitive, _best_so_far| {
+                    let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
+                        if let Some(pose) = pose {
+                            shape.project_point(
+                                pose,
+                                point,
+                                solid,
+                                // TODO: Get the correct option for the shape
+                                &(),
+                            )
+                        } else {
+                            shape.project_local_point(
+                                point,
+                                solid,
+                                // TODO: Get the correct option for the shape
+                                &(),
+                            )
+                        }
+                    })?;
+                    let dist = na::distance(&proj.point, point);
+                    Some((dist, proj))
+                },
+            )
+            .unwrap();
+        (best_id, proj)
+    }
+
+    /// Project a point on this composite shape.
+    ///
+    /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
+    /// The third tuple element contains some shape-specific information about the shape feature
+    /// hit by the projection.
+    #[inline]
+    pub fn project_local_point_and_get_feature(
+        &self,
+        point: &Point<Real>,
+        options: &dyn QueryOptions,
+    ) -> (u32, (PointProjection, FeatureId)) {
+        let (best_id, (_, (proj, feature_id))) = self
+            .0
+            .bvh()
+            .find_best(
+                Real::MAX,
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
+                |primitive, _best_so_far| {
+                    let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
+                        if let Some(pose) = pose {
+                            shape.project_point_and_get_feature(pose, point, &())
+                        } else {
+                            shape.project_local_point_and_get_feature(point, &())
+                        }
+                    })?;
+                    let cost = na::distance(&proj.0.point, point);
+                    Some((cost, proj))
+                },
+            )
+            .unwrap();
+        (best_id, (proj, feature_id))
+    }
+
+    // TODO: implement distance_to_point too?
+
+    /// Returns the index of any sub-shape of `self` that contains the given point.
+    #[inline]
+    pub fn contains_local_point(
+        &self,
+        point: &Point<Real>,
+        options: &dyn QueryOptions,
+    ) -> Option<u32> {
+        self.0
+            .bvh()
+            .leaves(|node: &BvhNode| node.aabb().contains_local_point(point))
+            .find(|leaf_id| {
+                self.0
+                    .map_typed_part_at(*leaf_id, |pose, shape, _| {
+                        if let Some(pose) = pose {
+                            shape.contains_point(pose, point, &())
+                        } else {
+                            shape.contains_local_point(point, &())
+                        }
+                    })
+                    .unwrap_or(false)
+            })
+    }
+}
 
 impl PointQuery for Polyline {
     #[inline]
@@ -22,31 +180,30 @@ impl PointQuery for Polyline {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
-        self.project_local_point_and_get_location(point, solid, options)
-            .0
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let mut visitor =
-            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, false);
-        let (proj, (id, feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
-        let polyline_feature = self.segment_feature_to_polyline_feature(id, feature);
-
+        let (seg_id, (proj, feature)) =
+            CompositeShapeRef(self).project_local_point_and_get_feature(point, options);
+        let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
     }
 
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
-        let mut visitor = CompositePointContainmentTest::new(self, point);
-        let _ = self.qbvh().traverse_depth_first(&mut visitor);
-        visitor.found
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        CompositeShapeRef(self)
+            .contains_local_point(point, options)
+            .is_some()
     }
 }
 
@@ -58,50 +215,47 @@ impl PointQuery for TriMesh {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
-        self.project_local_point_and_get_location(point, solid, options)
-            .0
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             let (proj, (id, _feature)) =
-                self.project_local_point_and_get_location(point, false, _options);
+                self.project_local_point_and_get_location(point, false, options);
             let feature_id = FeatureId::Face(id);
             return (proj, feature_id);
         }
 
         let solid = cfg!(feature = "dim2");
-
-        let mut visitor =
-            PointCompositeShapeProjWithFeatureBestFirstVisitor::new(self, point, solid);
-        let (proj, (id, _feature)) = self.qbvh().traverse_best_first(&mut visitor).unwrap().1;
-        let feature_id = FeatureId::Face(id);
-        (proj, feature_id)
+        let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid, options);
+        (proj, FeatureId::Face(tri_id))
     }
 
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             return self
-                .project_local_point_and_get_location(point, true, _options)
+                .project_local_point_and_get_location(point, true, options)
                 .0
                 .is_inside;
         }
 
-        let mut visitor = CompositePointContainmentTest::new(self, point);
-        let _ = self.qbvh().traverse_depth_first(&mut visitor);
-        visitor.found
+        CompositeShapeRef(self)
+            .contains_local_point(point, options)
+            .is_some()
     }
 
     /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
@@ -110,9 +264,9 @@ impl PointQuery for TriMesh {
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> Option<PointProjection> {
-        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist, _options)
+        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist, options)
             .map(|proj| proj.0)
     }
 }
@@ -123,10 +277,11 @@ impl PointQuery for Compound {
         &self,
         point: &Point<Real>,
         solid: bool,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> PointProjection {
-        let mut visitor = PointCompositeShapeProjBestFirstVisitor::new(self, point, solid);
-        self.qbvh().traverse_best_first(&mut visitor).unwrap().1 .0
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
@@ -136,16 +291,19 @@ impl PointQuery for Compound {
         options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         (
-            self.project_local_point(point, false, options),
+            CompositeShapeRef(self)
+                .project_local_point_and_get_feature(point, options)
+                .1
+                 .0,
             FeatureId::Unknown,
         )
     }
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
-        let mut visitor = CompositePointContainmentTest::new(self, point);
-        let _ = self.qbvh().traverse_depth_first(&mut visitor);
-        visitor.found
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        CompositeShapeRef(self)
+            .contains_local_point(point, options)
+            .is_some()
     }
 }
 
@@ -157,11 +315,12 @@ impl PointQueryWithLocation for Polyline {
         &self,
         point: &Point<Real>,
         solid: bool,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
-        let mut visitor =
-            PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-        self.qbvh().traverse_best_first(&mut visitor).unwrap().1
+        let (seg_id, (proj, loc)) = CompositeShapeRef(self)
+            .project_local_point_and_get_location(point, Real::MAX, solid, options)
+            .unwrap();
+        (proj, (seg_id, loc))
     }
 }
 
@@ -186,18 +345,14 @@ impl PointQueryWithLocation for TriMesh {
         point: &Point<Real>,
         solid: bool,
         max_dist: Real,
-        _options: &dyn QueryOptions,
+        options: &dyn QueryOptions,
     ) -> Option<(PointProjection, Self::Location)> {
-        let mut visitor =
-            PointCompositeShapeProjWithLocationBestFirstVisitor::new(self, point, solid);
-
         #[allow(unused_mut)] // mut is needed in 3D.
-        if let Some((_, (mut proj, (part_id, location)))) =
-            self.qbvh()
-                .traverse_best_first_node(&mut visitor, 0, max_dist)
+        if let Some((part_id, (mut proj, location))) = CompositeShapeRef(self)
+            .project_local_point_and_get_location(point, max_dist, solid, options)
         {
             #[cfg(feature = "dim3")]
-            if let Some(pseudo_normals) = self.pseudo_normals() {
+            if let Some(pseudo_normals) = self.pseudo_normals_if_oriented() {
                 let pseudo_normal = match location {
                     TrianglePointLocation::OnFace(..) | TrianglePointLocation::OnSolid => {
                         Some(self.triangle(part_id).scaled_normal())
@@ -227,125 +382,3 @@ impl PointQueryWithLocation for TriMesh {
         }
     }
 }
-
-use crate::query::gjk::GjkOptions;
-
-/*
- * Visitors
- */
-macro_rules! gen_visitor(
-    ($Visitor: ident, $project_local_point: ident, $project_point: ident $(, $Location: ty, $extra_info: ident)* $(| $args: ident)* $(where $PartShapeBound: ident)*) => {
-        /// A visitor for the projection of a point on a composite shape.
-        pub struct $Visitor<'a, S> {
-            shape: &'a S,
-            point: &'a Point<Real>,
-            simd_point: Point<SimdReal>,
-            solid: bool,
-        }
-
-        impl<'a, S> $Visitor<'a, S> {
-            /// Initialize a visitor for the projection of a point on a composite shape.
-            pub fn new(shape: &'a S, point: &'a Point<Real>, solid: bool) -> Self {
-                Self {
-                    shape,
-                    point,
-                    simd_point: Point::splat(*point),
-                    solid,
-                }
-            }
-        }
-
-        impl<'a, S> SimdBestFirstVisitor<S::PartId, SimdAabb> for $Visitor<'a, S>
-        where S: TypedSimdCompositeShape
-              $(, $Location: Copy)*
-              $(, S::PartShape: $PartShapeBound)* {
-            type Result = (PointProjection, (S::PartId $(, $Location)*));
-
-            #[inline]
-            fn visit(
-                &mut self,
-                best: Real,
-                aabb: &SimdAabb,
-                data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
-            ) -> SimdBestFirstVisitStatus<Self::Result> {
-                let dist = aabb.distance_to_local_point(&self.simd_point);
-                let mask = dist.simd_lt(SimdReal::splat(best));
-
-                if let Some(data) = data {
-                    let mut weights = [0.0; SIMD_WIDTH];
-                    let mut results = [None; SIMD_WIDTH];
-                    let bitmask = mask.bitmask();
-
-                    for ii in 0..SIMD_WIDTH {
-                        if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                            let mut is_inside = false;
-                            let subshape_id = *data[ii].unwrap();
-                            self.shape.map_typed_part_at(subshape_id, |part_pos, part_shape, _| {
-                                let (proj $(, $extra_info)*) = if let Some(part_pos) = part_pos {
-                                    part_shape.$project_point(
-                                        part_pos,
-                                        self.point
-                                        $(, self.$args)*, &GjkOptions {
-                    espilon_tolerance: f32::EPSILON * 10000.0,
-                    nb_max_iterations: 100,
-                }
-                                    )
-                                } else {
-                                    part_shape.$project_local_point(
-                                        self.point
-                                        $(, self.$args)*, &GjkOptions {
-                    espilon_tolerance: f32::EPSILON * 10000.0,
-                    nb_max_iterations: 100,
-                }
-                                    )
-                                };
-
-                                is_inside = proj.is_inside;
-                                weights[ii] = na::distance(self.point, &proj.point);
-                                results[ii] = Some((proj, (subshape_id $(, $extra_info)*)));
-                            });
-
-                            if self.solid && is_inside {
-                                return SimdBestFirstVisitStatus::ExitEarly(results[ii]);
-                            }
-                        }
-                    }
-
-                    SimdBestFirstVisitStatus::MaybeContinue {
-                        weights: SimdReal::from(weights),
-                        mask,
-                        results,
-                    }
-                } else {
-                    SimdBestFirstVisitStatus::MaybeContinue {
-                        weights: dist,
-                        mask,
-                        results: [None; SIMD_WIDTH],
-                    }
-                }
-            }
-        }
-    }
-);
-
-gen_visitor!(
-    PointCompositeShapeProjBestFirstVisitor,
-    project_local_point,
-    project_point | solid
-);
-gen_visitor!(
-    PointCompositeShapeProjWithLocationBestFirstVisitor,
-    project_local_point_and_get_location,
-    project_point_and_get_location,
-    <S::PartShape as PointQueryWithLocation>::Location,
-    extra_info | solid
-    where PointQueryWithLocation
-    where Copy
-);
-gen_visitor!(
-    PointCompositeShapeProjWithFeatureBestFirstVisitor,
-    project_local_point_and_get_feature,
-    project_point_and_get_feature,
-    FeatureId,
-    extra_info
-);

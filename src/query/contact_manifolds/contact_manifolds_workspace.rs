@@ -1,12 +1,13 @@
 #![allow(clippy::multiple_bound_locations)] // for impl_downcast
 
+use alloc::boxed::Box;
 use downcast_rs::{impl_downcast, DowncastSync};
 
 use crate::query::contact_manifolds::{
     CompositeShapeCompositeShapeContactManifoldsWorkspace,
     CompositeShapeShapeContactManifoldsWorkspace,
     HeightFieldCompositeShapeContactManifoldsWorkspace, HeightFieldShapeContactManifoldsWorkspace,
-    TriMeshShapeContactManifoldsWorkspace,
+    TriMeshShapeContactManifoldsWorkspace, VoxelsShapeContactManifoldsWorkspace,
 };
 
 #[derive(Copy, Clone)]
@@ -27,6 +28,12 @@ pub enum TypedWorkspaceData<'a> {
     ),
     /// A composite shape vs. shape workspace.
     CompositeShapeShapeContactManifoldsWorkspace(&'a CompositeShapeShapeContactManifoldsWorkspace),
+    /// A voxels vs. shape workspace.
+    VoxelsShapeContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<2>),
+    /// A voxels vs. composite shape workspace.
+    VoxelsCompositeShapeContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<3>),
+    /// A voxels vs. voxels workspace.
+    VoxelsVoxelsContactManifoldsWorkspace(&'a VoxelsShapeContactManifoldsWorkspace<4>),
     /// A custom workspace.
     Custom,
 }
@@ -44,6 +51,9 @@ enum DeserializableWorkspaceData {
         CompositeShapeCompositeShapeContactManifoldsWorkspace,
     ),
     CompositeShapeShapeContactManifoldsWorkspace(CompositeShapeShapeContactManifoldsWorkspace),
+    VoxelsShapeContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<2>),
+    VoxelsCompositeShapeContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<3>),
+    VoxelsVoxelsContactManifoldsWorkspace(VoxelsShapeContactManifoldsWorkspace<4>),
     #[allow(dead_code)]
     Custom,
 }
@@ -65,6 +75,15 @@ impl DeserializableWorkspaceData {
                 w,
             ) => Some(ContactManifoldsWorkspace(Box::new(w))),
             DeserializableWorkspaceData::CompositeShapeShapeContactManifoldsWorkspace(w) => {
+                Some(ContactManifoldsWorkspace(Box::new(w)))
+            }
+            DeserializableWorkspaceData::VoxelsShapeContactManifoldsWorkspace(w) => {
+                Some(ContactManifoldsWorkspace(Box::new(w)))
+            }
+            DeserializableWorkspaceData::VoxelsCompositeShapeContactManifoldsWorkspace(w) => {
+                Some(ContactManifoldsWorkspace(Box::new(w)))
+            }
+            DeserializableWorkspaceData::VoxelsVoxelsContactManifoldsWorkspace(w) => {
                 Some(ContactManifoldsWorkspace(Box::new(w)))
             }
             DeserializableWorkspaceData::Custom => None,

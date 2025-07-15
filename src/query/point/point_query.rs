@@ -8,7 +8,7 @@ use na;
 use rkyv::{bytecheck, CheckBytes};
 
 /// Description of the projection of a point on a shape.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",

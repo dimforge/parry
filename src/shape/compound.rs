@@ -4,13 +4,14 @@
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::math::{Isometry, Real};
-use crate::partitioning::Qbvh;
+use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
+use crate::shape::{CompositeShape, Shape, SharedShape, TypedCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
-use crate::shape::{Shape, SharedShape, SimdCompositeShape, TypedSimdCompositeShape};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
+use alloc::vec::Vec;
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -21,7 +22,7 @@ use crate::transformation::hertel_mehlhorn;
 #[derive(Clone, Debug)]
 pub struct Compound {
     shapes: Vec<(Isometry<Real>, SharedShape)>,
-    qbvh: Qbvh<u32>,
+    bvh: Bvh,
     aabbs: Vec<Aabb>,
     aabb: Aabb,
 }
@@ -45,21 +46,20 @@ impl Compound {
 
             aabb.merge(&bv);
             aabbs.push(bv);
-            leaves.push((i as u32, bv));
+            leaves.push((i, bv));
 
             if shape.as_composite_shape().is_some() {
                 panic!("Nested composite shapes are not allowed.");
             }
         }
 
-        let mut qbvh = Qbvh::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        qbvh.clear_and_rebuild(leaves.into_iter(), 0.0);
+        let bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves);
 
         Compound {
             shapes,
-            qbvh,
+            bvh,
             aabbs,
             aabb,
         }
@@ -116,12 +116,12 @@ impl Compound {
 
     /// The acceleration structure used by this compound shape.
     #[inline]
-    pub fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    pub fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
-impl SimdCompositeShape for Compound {
+impl CompositeShape for Compound {
     #[inline]
     fn map_part_at(
         &self,
@@ -134,44 +134,40 @@ impl SimdCompositeShape for Compound {
     }
 
     #[inline]
-    fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
-impl TypedSimdCompositeShape for Compound {
+impl TypedCompositeShape for Compound {
     type PartShape = dyn Shape;
     type PartNormalConstraints = ();
-    type PartId = u32;
 
     #[inline(always)]
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         i: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
-        if let Some((part_pos, part)) = self.shapes.get(i as usize) {
-            f(Some(part_pos), &**part, None)
-        }
+        ) -> T,
+    ) -> Option<T> {
+        let (part_pos, part) = &self.shapes[i as usize];
+        Some(f(Some(part_pos), &**part, None))
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape, Option<&dyn NormalConstraints>),
-    ) {
-        if let Some((part_pos, part)) = self.shapes.get(i as usize) {
-            f(Some(part_pos), &**part, None)
-        }
-    }
-
-    #[inline]
-    fn typed_qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+        mut f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&dyn NormalConstraints>,
+        ) -> T,
+    ) -> Option<T> {
+        let (part_pos, part) = &self.shapes[i as usize];
+        Some(f(Some(part_pos), &**part, None))
     }
 }

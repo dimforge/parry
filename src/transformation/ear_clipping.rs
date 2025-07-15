@@ -5,6 +5,7 @@ use crate::{
     math::{Point, Real},
     utils::point_in_triangle::{corner_direction, is_point_in_triangle, Orientation},
 };
+use alloc::{vec, vec::Vec};
 
 /// The information stored for each vertex in the ear clipping algorithm.
 #[derive(Clone, Default)]
@@ -87,10 +88,7 @@ pub(crate) fn triangulate_ear_clipping(vertices: &[Point<Real>]) -> Option<Vec<[
             });
 
         // If we found an ear, clip it. Else the algorithm failed.
-        let (ear_i, _) = match maybe_ear {
-            Some(ear) => ear,
-            None => return None,
-        };
+        let (ear_i, _) = maybe_ear?;
 
         // Deactivate the tip of the ear.
         vertex_info[ear_i].is_active = false;

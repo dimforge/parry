@@ -102,9 +102,9 @@ pub fn project_origin<G: ?Sized + SupportMap>(
 /// from the origin.
 ///
 /// # Arguments:
-/// * simplex - the simplex to be used by the GJK algorithm. It must be already initialized
-///             with at least one point on the shape boundary.
-/// * exact_dist - if `false`, the gjk will stop as soon as it can prove that the origin is at
+/// * `simplex` - the simplex to be used by the GJK algorithm. It must be already initialized
+///   with at least one point on the shape boundary.
+/// * `exact_dist` - if `false`, the gjk will stop as soon as it can prove that the origin is at
 ///   a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
 ///   `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
 ///   compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
