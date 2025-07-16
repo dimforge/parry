@@ -65,15 +65,11 @@ impl PointQuery for ConvexPolyhedron {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
-        let Some(options) = options.as_any().downcast_ref() else {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
             log::warn!("Incorrect option passed to project_local_point: using default options.");
-            return local_point_projection_on_support_map(
-                self,
-                &mut VoronoiSimplex::new(),
-                point,
-                solid,
-                &GjkOptions::default(),
-            );
+            &GjkOptions::default()
         };
         local_point_projection_on_support_map(
             self,
@@ -112,24 +108,19 @@ impl PointQuery for ConvexPolygon {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
-        let Some(options) = options.as_any().downcast_ref() else {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
             log::warn!("Incorrect option passed to project_local_point: using default options.");
-            return local_point_projection_on_support_map(
-                self,
-                &mut VoronoiSimplex::new(),
-                point,
-                solid,
-                &GjkOptions::default(),
-            );
+            &GjkOptions::default()
         };
-
-        return local_point_projection_on_support_map(
+        local_point_projection_on_support_map(
             self,
             &mut VoronoiSimplex::new(),
             point,
             solid,
-            &options,
-        );
+            options,
+        )
     }
 
     #[inline]

@@ -4,7 +4,9 @@
 pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation};
 #[cfg(feature = "alloc")]
 pub use self::{
-    point_composite_shape::{QueryOptionsDispatcher, QueryOptionsDispatcherMap},
+    point_composite_shape::query_options_dispatcher::{
+        QueryOptionsDispatcher, QueryOptionsDispatcherMap,
+    },
     point_support_map::local_point_projection_on_support_map,
 };
 

@@ -5,7 +5,7 @@ use core::f32;
 
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
-use nalgebra::{Isometry, Point2, Rotation, Translation, UnitComplex};
+use nalgebra::{Isometry, Point2, Rotation, Translation};
 use parry2d::query::details::point_query::QueryOptions;
 use parry2d::query::gjk::GjkOptions;
 use parry2d::query::point::QueryOptionsDispatcherMap;
@@ -19,14 +19,13 @@ const RENDER_SCALE: f32 = 30.0;
 #[macroquad::main("points_in_poly2d")]
 async fn main() {
     env_logger::init();
-    let mut simple_convex = SharedShape::new(simple_convex());
-    let mut simple_compound = Box::new(Compound::new(vec![(
+    let simple_convex = SharedShape::new(simple_convex());
+    let simple_compound = Box::new(Compound::new(vec![(
         Isometry::default(),
         simple_convex.clone(),
     )]));
     let test_points = grid_points();
 
-    let animation_rotation = UnitComplex::new(0.02);
     let polygon_render_pos = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
 
     // Create an initial dispatcher

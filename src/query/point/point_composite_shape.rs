@@ -1,111 +1,21 @@
-use alloc::boxed::Box;
-use core::any::{Any, TypeId};
-use downcast_rs::Downcast;
+pub mod query_options_dispatcher;
+
+use core::any::Any;
 
 use crate::math::{Point, Real};
 use crate::partitioning::BvhNode;
-use crate::query::gjk::GjkOptions;
+use crate::query::point::point_composite_shape::query_options_dispatcher::{
+    QueryOptionsDispatcher, QueryOptionsDispatcherMap,
+};
 use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
     TypedCompositeShape,
 };
-use hashbrown::HashMap;
 use na;
 
 use crate::shape::{Compound, Polyline};
-
-/// Retrieves a stored option which should be used for given shape.
-pub trait QueryOptionsDispatcher {
-    /// Retrieves a stored option which should be used for given shape.
-    fn get_option_for_shape(&self, shape_type_id: &TypeId) -> &dyn QueryOptions;
-}
-
-impl QueryOptionsDispatcher for () {
-    fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
-        &()
-    }
-}
-
-/// Implements [QueryOptionsDispatcher] with a generic dispatch of options.
-/// This supports Compound shapes, user-defined shapes and user-defined algorithms.
-pub struct QueryOptionsDispatcherMap {
-    /// Contains options to apply for shapes query algorithms.
-    ///
-    /// - Because algorithms can be recursive, Rc is used.
-    /// - Because algorithms can contain user-defined shapes, TypeId is used.
-    /// - Because algorithms can contain user-defined algorithms (and options), Box<dyn> is used.
-    pub options_for_shape: HashMap<TypeId, Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions>>,
-
-    /// Store options inside here.
-    /// It's used to capture variables, as [Self::options_for_shape] should be cloneable.
-    pub options: HashMap<TypeId, Box<dyn QueryOptions>>,
-}
-
-impl Default for QueryOptionsDispatcherMap {
-    fn default() -> QueryOptionsDispatcherMap {
-        let self_ref: Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions> =
-            Box::new(|s: &QueryOptionsDispatcherMap| -> &dyn QueryOptions { s });
-        let gjk_options: Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions> =
-            Box::new(|s: &QueryOptionsDispatcherMap| -> &dyn QueryOptions {
-                s.options[&TypeId::of::<GjkOptions>()].as_ref()
-            });
-        let query_options_dispatcher = QueryOptionsDispatcherMap {
-            options_for_shape: [
-                (TypeId::of::<Compound>(), self_ref),
-                #[cfg(feature = "dim2")]
-                (
-                    TypeId::of::<crate::shape::ConvexPolygon>(),
-                    gjk_options.clone(),
-                ),
-                #[cfg(feature = "dim3")]
-                (TypeId::of::<crate::shape::ConvexPolyhedron>(), gjk_options),
-            ]
-            .into(),
-            options: [(
-                TypeId::of::<GjkOptions>(),
-                Box::new(GjkOptions::default()) as Box<dyn QueryOptions>,
-            )]
-            .into(),
-        };
-        query_options_dispatcher
-    }
-}
-
-impl<'a> QueryOptions for QueryOptionsDispatcherMap {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
-
-impl QueryOptionsDispatcherMap {
-    pub fn get_option<T: 'static>(&self) -> Option<&T> {
-        let option = self.options.get(&TypeId::of::<T>());
-        let Some(option) = option else {
-            return None;
-        };
-        option.as_ref().as_any().downcast_ref::<T>()
-    }
-    pub fn get_option_mut<T: 'static>(&mut self) -> Option<&mut T> {
-        let option = self.options.get_mut(&TypeId::of::<T>())?;
-        option.as_mut().as_any_mut().downcast_mut::<T>()
-    }
-}
-
-impl QueryOptionsDispatcher for QueryOptionsDispatcherMap {
-    fn get_option_for_shape(&self, shape_type_id: &TypeId) -> &dyn QueryOptions {
-        let option = self.options_for_shape.get(shape_type_id);
-        if let Some(option) = option {
-            return (*option)(self);
-        } else {
-            return &();
-        }
-    }
-}
 
 fn to_dispatcher_map_or_default(options: &dyn QueryOptions) -> &dyn QueryOptionsDispatcher {
     let options = options

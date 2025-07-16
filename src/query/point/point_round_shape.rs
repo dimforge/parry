@@ -23,23 +23,19 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
 
         #[cfg(feature = "alloc")] // TODO: can’t be used without alloc because of EPA
         {
-            let Some(options) = options.as_any().downcast_ref() else {
+            let options = if let Some(options) = options.as_any().downcast_ref() {
+                options
+            } else {
                 warn!("Incorrect option passed to project_local_point: using default options.");
-                return crate::query::details::local_point_projection_on_support_map(
-                    self,
-                    &mut VoronoiSimplex::new(),
-                    point,
-                    solid,
-                    &GjkOptions::default(),
-                );
+                &GjkOptions::default()
             };
-            return crate::query::details::local_point_projection_on_support_map(
+            crate::query::details::local_point_projection_on_support_map(
                 self,
                 &mut VoronoiSimplex::new(),
                 point,
                 solid,
                 options,
-            );
+            )
         }
     }
 
