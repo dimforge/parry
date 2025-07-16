@@ -1,14 +1,121 @@
+use alloc::boxed::Box;
+use core::any::{Any, TypeId};
+use downcast_rs::Downcast;
+
 use crate::math::{Point, Real};
 use crate::partitioning::BvhNode;
+use crate::query::gjk::GjkOptions;
 use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
     TypedCompositeShape,
 };
+use hashbrown::HashMap;
 use na;
 
 use crate::shape::{Compound, Polyline};
+
+/// Retrieves a stored option which should be used for given shape.
+pub trait QueryOptionsDispatcher {
+    /// Retrieves a stored option which should be used for given shape.
+    fn get_option_for_shape(&self, shape_type_id: &TypeId) -> &dyn QueryOptions;
+}
+
+impl QueryOptionsDispatcher for () {
+    fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
+        &()
+    }
+}
+
+/// Implements [QueryOptionsDispatcher] with a generic dispatch of options.
+/// This supports Compound shapes, user-defined shapes and user-defined algorithms.
+pub struct QueryOptionsDispatcherMap {
+    /// Contains options to apply for shapes query algorithms.
+    ///
+    /// - Because algorithms can be recursive, Rc is used.
+    /// - Because algorithms can contain user-defined shapes, TypeId is used.
+    /// - Because algorithms can contain user-defined algorithms (and options), Box<dyn> is used.
+    pub options_for_shape: HashMap<TypeId, Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions>>,
+
+    /// Store options inside here.
+    /// It's used to capture variables, as [Self::options_for_shape] should be cloneable.
+    pub options: HashMap<TypeId, Box<dyn QueryOptions>>,
+}
+
+impl Default for QueryOptionsDispatcherMap {
+    fn default() -> QueryOptionsDispatcherMap {
+        let self_ref: Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions> =
+            Box::new(|s: &QueryOptionsDispatcherMap| -> &dyn QueryOptions { s });
+        let gjk_options: Box<for<'a> fn(&'a Self) -> &'a dyn QueryOptions> =
+            Box::new(|s: &QueryOptionsDispatcherMap| -> &dyn QueryOptions {
+                s.options[&TypeId::of::<GjkOptions>()].as_ref()
+            });
+        let query_options_dispatcher = QueryOptionsDispatcherMap {
+            options_for_shape: [
+                (TypeId::of::<Compound>(), self_ref),
+                #[cfg(feature = "dim2")]
+                (
+                    TypeId::of::<crate::shape::ConvexPolygon>(),
+                    gjk_options.clone(),
+                ),
+                #[cfg(feature = "dim3")]
+                (TypeId::of::<crate::shape::ConvexPolyhedron>(), gjk_options),
+            ]
+            .into(),
+            options: [(
+                TypeId::of::<GjkOptions>(),
+                Box::new(GjkOptions::default()) as Box<dyn QueryOptions>,
+            )]
+            .into(),
+        };
+        query_options_dispatcher
+    }
+}
+
+impl<'a> QueryOptions for QueryOptionsDispatcherMap {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+impl QueryOptionsDispatcherMap {
+    pub fn get_option<T: 'static>(&self) -> Option<&T> {
+        let option = self.options.get(&TypeId::of::<T>());
+        let Some(option) = option else {
+            return None;
+        };
+        option.as_ref().as_any().downcast_ref::<T>()
+    }
+    pub fn get_option_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        let option = self.options.get_mut(&TypeId::of::<T>())?;
+        option.as_mut().as_any_mut().downcast_mut::<T>()
+    }
+}
+
+impl QueryOptionsDispatcher for QueryOptionsDispatcherMap {
+    fn get_option_for_shape(&self, shape_type_id: &TypeId) -> &dyn QueryOptions {
+        let option = self.options_for_shape.get(shape_type_id);
+        if let Some(option) = option {
+            return (*option)(self);
+        } else {
+            return &();
+        }
+    }
+}
+
+fn to_dispatcher_map_or_default(options: &dyn QueryOptions) -> &dyn QueryOptionsDispatcher {
+    let options = options
+        .as_any()
+        .downcast_ref::<QueryOptionsDispatcherMap>()
+        .map_or(&() as &dyn QueryOptionsDispatcher, |m| {
+            m as &dyn QueryOptionsDispatcher
+        });
+    options
+}
 
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Project a point on this composite shape.
@@ -21,7 +128,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         point: &Point<Real>,
         max_dist: Real,
         solid: bool,
-        options: &dyn QueryOptions,
+        options: &dyn QueryOptionsDispatcher,
     ) -> Option<(
         u32,
         (
@@ -46,15 +153,13 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                                 pose,
                                 point,
                                 solid,
-                                // TODO: Get the correct option for the shape
-                                &(),
+                                options.get_option_for_shape(&shape.type_id()),
                             )
                         } else {
                             shape.project_local_point_and_get_location(
                                 point,
                                 solid,
-                                // TODO: Get the correct option for the shape
-                                &(),
+                                options.get_option_for_shape(&shape.type_id()),
                             )
                         }
                     })?;
@@ -74,7 +179,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         &self,
         point: &Point<Real>,
         solid: bool,
-        options: &dyn QueryOptions,
+        options: &dyn QueryOptionsDispatcher,
     ) -> (u32, PointProjection) {
         let (best_id, (_, proj)) = self
             .0
@@ -91,15 +196,13 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                                 pose,
                                 point,
                                 solid,
-                                // TODO: Get the correct option for the shape
-                                &(),
+                                options.get_option_for_shape(&shape.type_id()),
                             )
                         } else {
                             shape.project_local_point(
                                 point,
                                 solid,
-                                // TODO: Get the correct option for the shape
-                                &(),
+                                options.get_option_for_shape(&shape.type_id()),
                             )
                         }
                     })?;
@@ -120,7 +223,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
-        options: &dyn QueryOptions,
+        options: &dyn QueryOptionsDispatcher,
     ) -> (u32, (PointProjection, FeatureId)) {
         let (best_id, (_, (proj, feature_id))) = self
             .0
@@ -133,9 +236,16 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                 |primitive, _best_so_far| {
                     let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.project_point_and_get_feature(pose, point, &())
+                            shape.project_point_and_get_feature(
+                                pose,
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.project_local_point_and_get_feature(point, &())
+                            shape.project_local_point_and_get_feature(
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })?;
                     let cost = na::distance(&proj.0.point, point);
@@ -153,7 +263,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn contains_local_point(
         &self,
         point: &Point<Real>,
-        options: &dyn QueryOptions,
+        options: &dyn QueryOptionsDispatcher,
     ) -> Option<u32> {
         self.0
             .bvh()
@@ -162,9 +272,16 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                 self.0
                     .map_typed_part_at(*leaf_id, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.contains_point(pose, point, &())
+                            shape.contains_point(
+                                pose,
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.contains_local_point(point, &())
+                            shape.contains_local_point(
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })
                     .unwrap_or(false)
@@ -180,6 +297,7 @@ impl PointQuery for Polyline {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .project_local_point(point, solid, options)
             .1
@@ -191,6 +309,7 @@ impl PointQuery for Polyline {
         point: &Point<Real>,
         options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
+        let options = to_dispatcher_map_or_default(options);
         let (seg_id, (proj, feature)) =
             CompositeShapeRef(self).project_local_point_and_get_feature(point, options);
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
@@ -201,6 +320,7 @@ impl PointQuery for Polyline {
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .contains_local_point(point, options)
             .is_some()
@@ -215,6 +335,7 @@ impl PointQuery for TriMesh {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .project_local_point(point, solid, options)
             .1
@@ -234,7 +355,7 @@ impl PointQuery for TriMesh {
             let feature_id = FeatureId::Face(id);
             return (proj, feature_id);
         }
-
+        let options = to_dispatcher_map_or_default(options);
         let solid = cfg!(feature = "dim2");
         let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid, options);
         (proj, FeatureId::Face(tri_id))
@@ -253,6 +374,7 @@ impl PointQuery for TriMesh {
                 .is_inside;
         }
 
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .contains_local_point(point, options)
             .is_some()
@@ -279,6 +401,7 @@ impl PointQuery for Compound {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .project_local_point(point, solid, options)
             .1
@@ -290,6 +413,7 @@ impl PointQuery for Compound {
         point: &Point<Real>,
         options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
+        let options = to_dispatcher_map_or_default(options);
         (
             CompositeShapeRef(self)
                 .project_local_point_and_get_feature(point, options)
@@ -301,6 +425,7 @@ impl PointQuery for Compound {
 
     #[inline]
     fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
             .contains_local_point(point, options)
             .is_some()
@@ -317,6 +442,7 @@ impl PointQueryWithLocation for Polyline {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
+        let options = to_dispatcher_map_or_default(options);
         let (seg_id, (proj, loc)) = CompositeShapeRef(self)
             .project_local_point_and_get_location(point, Real::MAX, solid, options)
             .unwrap();
@@ -347,6 +473,7 @@ impl PointQueryWithLocation for TriMesh {
         max_dist: Real,
         options: &dyn QueryOptions,
     ) -> Option<(PointProjection, Self::Location)> {
+        let options = to_dispatcher_map_or_default(options);
         #[allow(unused_mut)] // mut is needed in 3D.
         if let Some((part_id, (mut proj, location))) = CompositeShapeRef(self)
             .project_local_point_and_get_location(point, max_dist, solid, options)

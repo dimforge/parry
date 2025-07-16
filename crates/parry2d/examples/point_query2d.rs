@@ -1,15 +1,18 @@
 //! Builds on top of `point_in_poly2d` example but uses [PointQuery] methods and different shapes.
 
 mod common_macroquad2d;
-
 use core::f32;
 
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry, Point2, Rotation, Translation, UnitComplex};
+use parry2d::query::details::point_query::QueryOptions;
 use parry2d::query::gjk::GjkOptions;
+use parry2d::query::point::QueryOptionsDispatcherMap;
 use parry2d::shape::Compound;
 use parry2d::shape::{ConvexPolygon, Shape, SharedShape};
+
+use crate::common_macroquad2d::easy_draw_text;
 
 const RENDER_SCALE: f32 = 30.0;
 
@@ -26,43 +29,41 @@ async fn main() {
     let animation_rotation = UnitComplex::new(0.02);
     let polygon_render_pos = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
 
-    for i in 0.. {
-        let shape_to_query = if (i) % 2 == 0 {
-            simple_convex.0.as_ref()
-        } else {
-            (simple_compound.as_ref() as &dyn Shape)
-        };
+    // Create an initial dispatcher
+    let mut query_options_dispatcher = QueryOptionsDispatcherMap::default();
 
+    for i in 0.. {
         clear_background(BLACK);
 
-        // TODO: Display the shape
-        /*         polygon
-                    .iter_mut()
-                    .for_each(|pt| *pt = animation_rotation * *pt);
+        let gjk_options = query_options_dispatcher
+            .get_option_mut::<GjkOptions>()
+            .unwrap();
 
-                draw_polygon(&polygon, RENDER_SCALE, polygon_render_pos, BLUE);
-        */
-        /*
-         * Compute polygon intersections.
-         */
+        // loops from default epsilon to an arbitrarily chosen slightly higher value.
+        gjk_options.espilon_tolerance =
+            f32::EPSILON + (((i as f32 / 10f32).sin() + 1f32) / 2f32) * 0.000002f32;
+        let (shape_to_query, options) = if (i) % 2 == 0 {
+            (simple_convex.0.as_ref(), &*gjk_options as &dyn QueryOptions)
+        } else {
+            (
+                simple_compound.as_ref() as &dyn Shape,
+                &query_options_dispatcher as &dyn QueryOptions,
+            )
+        };
         for point in &test_points {
             let pos12 = Isometry::default().inv_mul(&Isometry::from_parts(
                 Translation::from(point.coords),
                 Rotation::identity(),
             ));
-            if shape_to_query.contains_local_point(
-                &(pos12 * point),
-                // FIXME: Thierry (pr 298): options should contain everything necessary to be dispatched.
-                &GjkOptions {
-                    espilon_tolerance: f32::EPSILON * 10000.0,
-                    nb_max_iterations: 100,
-                },
-            ) {
-                draw_point(*point, RENDER_SCALE, polygon_render_pos, RED);
-            } else {
+            if shape_to_query.contains_local_point(&(pos12 * point), options) {
                 draw_point(*point, RENDER_SCALE, polygon_render_pos, GREEN);
+            } else {
+                draw_point(*point, RENDER_SCALE, polygon_render_pos, DARKGRAY);
             }
         }
+        let gjk_options = query_options_dispatcher.get_option::<GjkOptions>().unwrap();
+
+        easy_draw_text(&format!("tolerance: {:.7}", gjk_options.espilon_tolerance));
 
         next_frame().await
     }
@@ -83,8 +84,8 @@ fn simple_convex() -> ConvexPolygon {
 }
 
 fn grid_points() -> Vec<Point2<f32>> {
-    let count = 80 * 5;
-    let spacing = 0.6 / 5.0;
+    let count = 50;
+    let spacing = 0.4;
     let mut pts = vec![];
     for i in 0..count {
         for j in 0..count {
