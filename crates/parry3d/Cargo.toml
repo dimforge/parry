@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.21.1"
+version = "0.22.0-beta.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -59,7 +59,7 @@ improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = []
+simd-is-enabled = [ "glam" ]
 
 [lib]
 name = "parry3d"
@@ -92,6 +92,13 @@ thiserror = { version = "2", default-features = false }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
 ena = { version = "0.14.3", optional = true, default-features = false }
+smallvec = "1"
+static_assertions = "1"
+
+# NOTE: needed only for element_min for SIMD BVH ray-casting.
+#       can be removed once `wide` supports it (and allows filtering-out the
+#       fourth element).
+glam = { version = "0.30.4", optional = true }
 
 [dev-dependencies]
 oorandom = "11"

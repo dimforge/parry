@@ -359,3 +359,86 @@ impl ConvexPolyhedron for Segment {
     }
 }
 */
+
+#[cfg(test)]
+mod test {
+    use crate::query::{Ray, RayCast};
+
+    pub use super::*;
+    #[test]
+    fn segment_intersect_zero_length_issue_31() {
+        // never intersect each other
+        let ray = Ray::new(Point::origin(), Vector::x());
+        let segment = Segment {
+            a: Point::new(
+                10.0,
+                10.0,
+                #[cfg(feature = "dim3")]
+                10.0,
+            ),
+            b: Point::new(
+                10.0,
+                10.0,
+                #[cfg(feature = "dim3")]
+                10.0,
+            ),
+        };
+
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        assert_eq!(hit, false);
+    }
+    #[test]
+    fn segment_very_close_points_hit() {
+        let epsilon = 1.1920929e-7;
+        // intersect each other
+        let ray = Ray::new(
+            Point::new(
+                epsilon * 0.5,
+                0.3,
+                #[cfg(feature = "dim3")]
+                0.0,
+            ),
+            -Vector::y(),
+        );
+        let segment = Segment {
+            a: Point::origin(),
+            b: Point::new(
+                // Theoretically, epsilon would suffice but imprecisions force us to add some more offset.
+                epsilon * 1.01,
+                0.0,
+                #[cfg(feature = "dim3")]
+                0.0,
+            ),
+        };
+
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        assert_eq!(hit, true);
+    }
+    #[test]
+    fn segment_very_close_points_no_hit() {
+        let epsilon = 1.1920929e-7;
+        // never intersect each other
+        let ray = Ray::new(
+            Point::new(
+                // Theoretically, epsilon would suffice  but imprecisions force us to add some more offset.
+                epsilon * 11.0,
+                0.1,
+                #[cfg(feature = "dim3")]
+                0.0,
+            ),
+            -Vector::y(),
+        );
+        let segment = Segment {
+            a: Point::origin(),
+            b: Point::new(
+                epsilon * 0.9,
+                0.0,
+                #[cfg(feature = "dim3")]
+                0.0,
+            ),
+        };
+
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        assert_eq!(hit, false);
+    }
+}

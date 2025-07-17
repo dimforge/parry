@@ -7,11 +7,10 @@ use crate::query::contact_manifolds::contact_manifolds_workspace::{
 };
 use crate::query::contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints};
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
-use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::ContactManifold;
 #[cfg(feature = "dim2")]
 use crate::shape::Capsule;
-use crate::shape::{HeightField, Shape, SimdCompositeShape};
+use crate::shape::{CompositeShape, HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::IsometryOpt;
 
@@ -62,7 +61,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     pos12: &Isometry<Real>,
     pos21: &Isometry<Real>,
     heightfield1: &HeightField,
-    composite2: &dyn SimdCompositeShape,
+    composite2: &dyn CompositeShape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,
@@ -80,9 +79,8 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     /*
      * Compute interferences.
      */
-    let qbvh2 = composite2.qbvh();
-    let mut stack2 = Vec::new();
-    let ls_aabb2_1 = qbvh2.root_aabb().transform_by(pos12).loosened(prediction);
+    let bvh2 = composite2.bvh();
+    let ls_aabb2_1 = bvh2.root_aabb().transform_by(pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2_1, &mut |leaf1, part1| {
@@ -92,81 +90,77 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
         let sub_shape1 = *part1;
 
         let ls_aabb1_2 = part1.compute_aabb(pos21).loosened(prediction);
-        let mut leaf_fn2 = |leaf2: &u32| {
-            composite2.map_part_at(
-                *leaf2,
-                &mut |part_pos2, part_shape2, normal_constraints2| {
-                    let sub_detector = match workspace.sub_detectors.entry((leaf1, *leaf2)) {
-                        Entry::Occupied(entry) => {
-                            let sub_detector = entry.into_mut();
-                            let manifold = old_manifolds[sub_detector.manifold_id].take();
-                            sub_detector.manifold_id = manifolds.len();
-                            sub_detector.timestamp = new_timestamp;
-                            manifolds.push(manifold);
-                            sub_detector
-                        }
-                        Entry::Vacant(entry) => {
-                            let sub_detector = SubDetector {
-                                manifold_id: manifolds.len(),
-                                timestamp: new_timestamp,
-                            };
-
-                            let mut manifold = ContactManifold::new();
-
-                            if flipped {
-                                manifold.subshape1 = *leaf2;
-                                manifold.subshape2 = leaf1;
-                                manifold.subshape_pos1 = part_pos2.copied();
-                            } else {
-                                manifold.subshape1 = leaf1;
-                                manifold.subshape2 = *leaf2;
-                                manifold.subshape_pos2 = part_pos2.copied();
-                            };
-
-                            manifolds.push(manifold);
-                            entry.insert(sub_detector)
-                        }
-                    };
-
-                    let manifold = &mut manifolds[sub_detector.manifold_id];
-
-                    #[cfg(feature = "dim2")]
-                    let triangle_normals = None::<()>;
-                    #[cfg(feature = "dim3")]
-                    let triangle_normals = heightfield1.triangle_normal_constraints(leaf1);
-                    let normal_constraints1 = triangle_normals
-                        .as_ref()
-                        .map(|proj| proj as &dyn NormalConstraints);
-
-                    if flipped {
-                        let _ = dispatcher.contact_manifold_convex_convex(
-                            &part_pos2.inv_mul(pos21),
-                            part_shape2,
-                            &sub_shape1,
-                            normal_constraints2,
-                            normal_constraints1,
-                            prediction,
-                            manifold,
-                        );
-                    } else {
-                        let _ = dispatcher.contact_manifold_convex_convex(
-                            &part_pos2.prepend_to(pos12),
-                            &sub_shape1,
-                            part_shape2,
-                            normal_constraints1,
-                            normal_constraints2,
-                            prediction,
-                            manifold,
-                        );
+        let mut leaf_fn2 = |leaf2: u32| {
+            composite2.map_part_at(leaf2, &mut |part_pos2, part_shape2, normal_constraints2| {
+                let sub_detector = match workspace.sub_detectors.entry((leaf1, leaf2)) {
+                    Entry::Occupied(entry) => {
+                        let sub_detector = entry.into_mut();
+                        let manifold = old_manifolds[sub_detector.manifold_id].take();
+                        sub_detector.manifold_id = manifolds.len();
+                        sub_detector.timestamp = new_timestamp;
+                        manifolds.push(manifold);
+                        sub_detector
                     }
-                },
-            );
+                    Entry::Vacant(entry) => {
+                        let sub_detector = SubDetector {
+                            manifold_id: manifolds.len(),
+                            timestamp: new_timestamp,
+                        };
 
-            true
+                        let mut manifold = ContactManifold::new();
+
+                        if flipped {
+                            manifold.subshape1 = leaf2;
+                            manifold.subshape2 = leaf1;
+                            manifold.subshape_pos1 = part_pos2.copied();
+                        } else {
+                            manifold.subshape1 = leaf1;
+                            manifold.subshape2 = leaf2;
+                            manifold.subshape_pos2 = part_pos2.copied();
+                        };
+
+                        manifolds.push(manifold);
+                        entry.insert(sub_detector)
+                    }
+                };
+
+                let manifold = &mut manifolds[sub_detector.manifold_id];
+
+                #[cfg(feature = "dim2")]
+                let triangle_normals = None::<()>;
+                #[cfg(feature = "dim3")]
+                let triangle_normals = heightfield1.triangle_normal_constraints(leaf1);
+                let normal_constraints1 = triangle_normals
+                    .as_ref()
+                    .map(|proj| proj as &dyn NormalConstraints);
+
+                if flipped {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos2.inv_mul(pos21),
+                        part_shape2,
+                        &sub_shape1,
+                        normal_constraints2,
+                        normal_constraints1,
+                        prediction,
+                        manifold,
+                    );
+                } else {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos2.prepend_to(pos12),
+                        &sub_shape1,
+                        part_shape2,
+                        normal_constraints1,
+                        normal_constraints2,
+                        prediction,
+                        manifold,
+                    );
+                }
+            });
         };
 
-        let mut visitor2 = BoundingVolumeIntersectionsVisitor::new(&ls_aabb1_2, &mut leaf_fn2);
-        let _ = qbvh2.traverse_depth_first_with_stack(&mut visitor2, &mut stack2);
+        for leaf_id in bvh2.intersect_aabb(&ls_aabb1_2) {
+            leaf_fn2(leaf_id);
+        }
     });
 
     workspace

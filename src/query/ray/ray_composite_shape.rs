@@ -1,19 +1,73 @@
-use crate::bounding_volume::SimdAabb;
-use crate::math::{Real, SimdBool, SimdReal, SIMD_WIDTH};
-use crate::partitioning::{SimdBestFirstVisitStatus, SimdBestFirstVisitor};
-use crate::query::{Ray, RayCast, RayIntersection, SimdRay};
-use crate::shape::{Compound, Polyline, TypedSimdCompositeShape};
-use simba::simd::{SimdBool as _, SimdPartialOrd, SimdValue};
+use crate::math::Real;
+use crate::partitioning::BvhNode;
+use crate::query::{Ray, RayCast, RayIntersection};
+use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
+
+impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
+    /// Casts a ray on this composite shape.
+    ///
+    /// The ray is effectively limited to a segment that starts at `Ray::origin` and ends at
+    /// `Ray::origin + Ray::direction * max_time_of_impact`. Set `max_time_of_impact` to `Real::MAX`
+    /// for an unbounded ray.
+    ///
+    /// If `solid` is `false`, then the sub-shapes of `self` are seen as hollow and the ray won’t
+    /// immediately stop until it reaches a boundary even if it started inside a shape.
+    ///
+    /// Returns the ray’s time of impact and the index of the sub-shape of `self` that was hit.
+    /// The hit point can be retrieved with `ray.point_at(t)` where `t` is the value returned
+    /// by this function.
+    #[inline]
+    pub fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+    ) -> Option<(u32, Real)> {
+        let hit = self
+            .0
+            .bvh()
+            .cast_ray(ray, max_time_of_impact, |primitive, best_so_far| {
+                self.0.map_typed_part_at(primitive, |pose, part, _| {
+                    if let Some(pose) = pose {
+                        part.cast_ray(pose, ray, best_so_far, solid)
+                    } else {
+                        part.cast_local_ray(ray, best_so_far, solid)
+                    }
+                })?
+            })?;
+        (hit.1 < max_time_of_impact).then_some(hit)
+    }
+
+    /// Same as [`Self::cast_local_ray`] but also computes the normal at the hit location.
+    #[inline]
+    pub fn cast_local_ray_and_get_normal(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+    ) -> Option<(u32, RayIntersection)> {
+        self.0.bvh().find_best(
+            max_time_of_impact,
+            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+            |primitive, best_so_far| {
+                self.0.map_typed_part_at(primitive, |pose, part, _| {
+                    if let Some(pose) = pose {
+                        part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
+                    } else {
+                        part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
+                    }
+                })?
+            },
+        )
+    }
+}
 
 impl RayCast for Polyline {
     #[inline]
     fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
-        let mut visitor =
-            RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_time_of_impact, solid);
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|res| res.1 .1)
+        CompositeShapeRef(self)
+            .cast_local_ray(ray, max_time_of_impact, solid)
+            .map(|hit| hit.1)
     }
 
     #[inline]
@@ -23,28 +77,18 @@ impl RayCast for Polyline {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let mut visitor = RayCompositeShapeToiAndNormalBestFirstVisitor::new(
-            self,
-            ray,
-            max_time_of_impact,
-            solid,
-        );
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|(_, (_, res))| res)
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|hit| hit.1)
     }
 }
 
 impl RayCast for Compound {
     #[inline]
     fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
-        let mut visitor =
-            RayCompositeShapeToiBestFirstVisitor::new(self, ray, max_time_of_impact, solid);
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|res| res.1 .1)
+        CompositeShapeRef(self)
+            .cast_local_ray(ray, max_time_of_impact, solid)
+            .map(|hit| hit.1)
     }
 
     #[inline]
@@ -54,197 +98,8 @@ impl RayCast for Compound {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        let mut visitor = RayCompositeShapeToiAndNormalBestFirstVisitor::new(
-            self,
-            ray,
-            max_time_of_impact,
-            solid,
-        );
-
-        self.qbvh()
-            .traverse_best_first(&mut visitor)
-            .map(|(_, (_, res))| res)
-    }
-}
-
-/*
- * Visitors
- */
-/// A visitor for casting a ray on a composite shape.
-pub struct RayCompositeShapeToiBestFirstVisitor<'a, S> {
-    shape: &'a S,
-    ray: &'a Ray,
-    simd_ray: SimdRay,
-    max_time_of_impact: Real,
-    solid: bool,
-}
-
-impl<'a, S> RayCompositeShapeToiBestFirstVisitor<'a, S> {
-    /// Initialize a visitor for casting a ray on a composite shape.
-    pub fn new(shape: &'a S, ray: &'a Ray, max_time_of_impact: Real, solid: bool) -> Self {
-        Self {
-            shape,
-            ray,
-            simd_ray: SimdRay::splat(*ray),
-            max_time_of_impact,
-            solid,
-        }
-    }
-}
-
-impl<S> SimdBestFirstVisitor<S::PartId, SimdAabb> for RayCompositeShapeToiBestFirstVisitor<'_, S>
-where
-    S: TypedSimdCompositeShape,
-{
-    type Result = (S::PartId, Real);
-
-    #[inline]
-    fn visit(
-        &mut self,
-        best: Real,
-        aabb: &SimdAabb,
-        data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
-    ) -> SimdBestFirstVisitStatus<Self::Result> {
-        let (hit, time_of_impact) =
-            aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_time_of_impact));
-
-        if let Some(data) = data {
-            let mut weights = [0.0; SIMD_WIDTH];
-            let mut mask = [false; SIMD_WIDTH];
-            let mut results = [None; SIMD_WIDTH];
-
-            let better_toi = time_of_impact.simd_lt(SimdReal::splat(best));
-            let bitmask = (hit & better_toi).bitmask();
-
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    let part_id = *data[ii].unwrap();
-                    self.shape
-                        .map_typed_part_at(part_id, |part_pos, part_shape, _| {
-                            let time_of_impact = if let Some(part_pos) = part_pos {
-                                part_shape.cast_ray(
-                                    part_pos,
-                                    self.ray,
-                                    self.max_time_of_impact,
-                                    self.solid,
-                                )
-                            } else {
-                                part_shape.cast_local_ray(
-                                    self.ray,
-                                    self.max_time_of_impact,
-                                    self.solid,
-                                )
-                            };
-                            if let Some(time_of_impact) = time_of_impact {
-                                results[ii] = Some((part_id, time_of_impact));
-                                mask[ii] = true;
-                                weights[ii] = time_of_impact;
-                            }
-                        })
-                }
-            }
-
-            SimdBestFirstVisitStatus::MaybeContinue {
-                weights: SimdReal::from(weights),
-                mask: SimdBool::from(mask),
-                results,
-            }
-        } else {
-            SimdBestFirstVisitStatus::MaybeContinue {
-                weights: time_of_impact,
-                mask: hit,
-                results: [None; SIMD_WIDTH],
-            }
-        }
-    }
-}
-
-/// A visitor for casting a ray on a composite shape.
-pub struct RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
-    shape: &'a S,
-    ray: &'a Ray,
-    simd_ray: SimdRay,
-    max_time_of_impact: Real,
-    solid: bool,
-}
-
-impl<'a, S> RayCompositeShapeToiAndNormalBestFirstVisitor<'a, S> {
-    /// Initialize a visitor for casting a ray on a composite shape.
-    pub fn new(shape: &'a S, ray: &'a Ray, max_time_of_impact: Real, solid: bool) -> Self {
-        Self {
-            shape,
-            ray,
-            simd_ray: SimdRay::splat(*ray),
-            max_time_of_impact,
-            solid,
-        }
-    }
-}
-
-impl<S> SimdBestFirstVisitor<S::PartId, SimdAabb>
-    for RayCompositeShapeToiAndNormalBestFirstVisitor<'_, S>
-where
-    S: TypedSimdCompositeShape,
-{
-    type Result = (S::PartId, RayIntersection);
-
-    #[inline]
-    fn visit(
-        &mut self,
-        best: Real,
-        aabb: &SimdAabb,
-        data: Option<[Option<&S::PartId>; SIMD_WIDTH]>,
-    ) -> SimdBestFirstVisitStatus<Self::Result> {
-        let (hit, time_of_impact) =
-            aabb.cast_local_ray(&self.simd_ray, SimdReal::splat(self.max_time_of_impact));
-
-        if let Some(data) = data {
-            let mut weights = [0.0; SIMD_WIDTH];
-            let mut mask = [false; SIMD_WIDTH];
-            let mut results = [None; SIMD_WIDTH];
-
-            let better_toi = time_of_impact.simd_lt(SimdReal::splat(best));
-            let bitmask = (hit & better_toi).bitmask();
-
-            for ii in 0..SIMD_WIDTH {
-                if (bitmask & (1 << ii)) != 0 && data[ii].is_some() {
-                    self.shape
-                        .map_typed_part_at(*data[ii].unwrap(), |part_pos, part_shape, _| {
-                            let result = if let Some(part_pos) = part_pos {
-                                part_shape.cast_ray_and_get_normal(
-                                    part_pos,
-                                    self.ray,
-                                    self.max_time_of_impact,
-                                    self.solid,
-                                )
-                            } else {
-                                part_shape.cast_local_ray_and_get_normal(
-                                    self.ray,
-                                    self.max_time_of_impact,
-                                    self.solid,
-                                )
-                            };
-
-                            if let Some(result) = result {
-                                results[ii] = Some((*data[ii].unwrap(), result));
-                                mask[ii] = true;
-                                weights[ii] = result.time_of_impact;
-                            }
-                        });
-                }
-            }
-
-            SimdBestFirstVisitStatus::MaybeContinue {
-                weights: SimdReal::from(weights),
-                mask: SimdBool::from(mask),
-                results,
-            }
-        } else {
-            SimdBestFirstVisitStatus::MaybeContinue {
-                weights: time_of_impact,
-                mask: hit,
-                results: [None; SIMD_WIDTH],
-            }
-        }
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|hit| hit.1)
     }
 }

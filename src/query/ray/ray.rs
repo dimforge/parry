@@ -3,6 +3,8 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::shape::FeatureId;
 
+#[cfg(feature = "alloc")]
+use crate::partitioning::BvhLeafCost;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
@@ -116,6 +118,14 @@ impl RayIntersection {
             normal: transform * self.normal,
             feature: self.feature,
         }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BvhLeafCost for RayIntersection {
+    #[inline]
+    fn cost(&self) -> Real {
+        self.time_of_impact
     }
 }
 
