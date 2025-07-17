@@ -1,5 +1,5 @@
 use na::Point3;
-use parry3d::query::gjk::{CSOPoint, VoronoiSimplex};
+use parry3d::query::gjk::{eps_tol, CSOPoint, VoronoiSimplex};
 use test::Bencher;
 
 #[bench]
@@ -14,9 +14,9 @@ fn bench_johnson_simplex(bh: &mut Bencher) {
 
         spl.reset(a);
 
-        spl.add_point(b);
-        spl.add_point(c);
-        spl.add_point(d);
+        spl.add_point(b, eps_tol());
+        spl.add_point(c, eps_tol());
+        spl.add_point(d, eps_tol());
 
         test::black_box(spl.project_origin_and_reduce());
     })
@@ -34,9 +34,9 @@ fn bench_johnson_simplex_tls(bh: &mut Bencher) {
 
         spl.reset(a);
 
-        spl.add_point(b);
-        spl.add_point(c);
-        spl.add_point(d);
+        spl.add_point(b, eps_tol());
+        spl.add_point(c, eps_tol());
+        spl.add_point(d, eps_tol());
 
         test::black_box(spl.project_origin_and_reduce());
     })

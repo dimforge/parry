@@ -47,7 +47,7 @@ pub struct GjkOptions {
 impl Default for GjkOptions {
     fn default() -> Self {
         Self {
-            espilon_tolerance: crate::math::DEFAULT_EPSILON,
+            espilon_tolerance: eps_tol(),
             nb_max_iterations: 100,
         }
     }
@@ -124,7 +124,6 @@ where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
-    let _eps = crate::math::DEFAULT_EPSILON;
     let _eps_tol: Real = gjk_options.espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
