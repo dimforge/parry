@@ -1,6 +1,6 @@
-### Unreleased
+## Unreleased
 
-#### Added
+### Added
 
 - Added `QueryOptions`, a trait to allow customizing `PointQuery` algorithms,
   to help with fixing false negatives in queries. ([#298](https://github.com/dimforge/parry/pull/298))
