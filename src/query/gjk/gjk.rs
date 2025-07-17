@@ -64,7 +64,7 @@ impl QueryOptions for GjkOptions {
 
 /// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
-    crate::math::DEFAULT_EPSILON
+    crate::math::DEFAULT_EPSILON * 10.0
 }
 
 /// Projects the origin on the boundary of the given shape.

@@ -42,6 +42,14 @@ impl PointProjection {
     }
 }
 
+/// Options to pass to [QueryOptions]. The type to be passed depends on each shape implementation.
+/// If you're not sure, use `&()` which will evaluate to default options for included shapes in
+/// [QueryOptions] implementations.
+///
+/// # See Also
+/// - [GjkOptions][crate::query::gjk::GjkOptions]
+/// - [QueryOptionsDispatcher][crate::query::point::QueryOptionsDispatcher]
+///   - [QueryOptionsDispatcherMap][crate::query::point::QueryOptionsDispatcherMap]
 pub trait QueryOptions {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
