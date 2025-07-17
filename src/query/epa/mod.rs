@@ -58,6 +58,7 @@ mod test {
             point_dim(100.0, 0.0),
             point_dim(160.0, 0.0),
         );
+        // point considered "inside" (on the line)
         let res = triangle.project_point_and_get_location(
             &Isometry::identity(),
             &point_dim(10.0, 0.0),
@@ -65,14 +66,14 @@ mod test {
         );
         assert!(res.0.is_inside);
         res.0.point.iter().for_each(|p| assert!(p.is_finite()));
+
+        // point outside
         let res = triangle.project_point_and_get_location(
             &Isometry::identity(),
             &point_dim(10.0, 10.0),
             false,
         );
-        // FIXME: This assert is currently failing !
-        // False negative for inside on edge may be understandable due to floating points imprecisions,
-        // But false positives for points outside is a problem. (maybe related to triangle orientation?)
+
         assert!(res.0.is_inside == false);
         res.0.point.iter().for_each(|p| assert!(p.is_finite()));
     }
