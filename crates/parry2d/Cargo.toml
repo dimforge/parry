@@ -97,6 +97,7 @@ oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
 macroquad = "0.4.12"
+env_logger = "0.11"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
@@ -147,6 +148,11 @@ path = "examples/cuboid2d.rs"
 doc-scrape-examples = true
 
 [[example]]
+name = "debug_shape_cast2d"
+path = "examples/debug_shape_cast2d.rs"
+doc-scrape-examples = true
+
+[[example]]
 name = "distance_query2d"
 path = "examples/distance_query2d.rs"
 doc-scrape-examples = true
@@ -159,6 +165,11 @@ doc-scrape-examples = true
 [[example]]
 name = "point_in_poly2d"
 path = "examples/point_in_poly2d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "point_query2d"
+path = "examples/point_query2d.rs"
 doc-scrape-examples = true
 
 [[example]]

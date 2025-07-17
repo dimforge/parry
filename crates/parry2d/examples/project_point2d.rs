@@ -38,6 +38,7 @@ async fn main() {
             &Isometry::from_parts(translation, rot),
             &na_from_mquad(point_to_project),
             true,
+            &(),
         );
 
         /*
@@ -66,7 +67,8 @@ async fn main() {
 
         // fixed local point inside the shape
         let point_to_project = Vec2::ZERO;
-        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
+        let projected_point =
+            trimesh.project_local_point(&na_from_mquad(point_to_project), true, &());
         let color = if projected_point.is_inside {
             RED
         } else {

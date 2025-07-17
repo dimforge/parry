@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, GJKResult, GjkOptions, VoronoiSimplex};
 use crate::query::ClosestPoints;
 use crate::shape::SupportMap;
 
@@ -11,6 +11,7 @@ pub fn closest_points_support_map_support_map<G1, G2>(
     g1: &G1,
     g2: &G2,
     prediction: Real,
+    options: &GjkOptions,
 ) -> ClosestPoints
 where
     G1: ?Sized + SupportMap,
@@ -23,6 +24,7 @@ where
         prediction,
         &mut VoronoiSimplex::new(),
         None,
+        options,
     ) {
         GJKResult::ClosestPoints(pt1, pt2, _) => {
             ClosestPoints::WithinMargin(pt1, pos12.inverse_transform_point(&pt2))
@@ -43,6 +45,7 @@ pub fn closest_points_support_map_support_map_with_params<G1, G2>(
     prediction: Real,
     simplex: &mut VoronoiSimplex,
     init_dir: Option<Vector<Real>>,
+    options: &GjkOptions,
 ) -> GJKResult
 where
     G1: ?Sized + SupportMap,
@@ -65,5 +68,5 @@ where
         ));
     }
 
-    gjk::closest_points(pos12, g1, g2, prediction, true, simplex)
+    gjk::closest_points(pos12, g1, g2, prediction, true, simplex, options)
 }

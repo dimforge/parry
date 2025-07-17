@@ -1,6 +1,8 @@
 //! Implementation details of the `cast_shapes` function.
 
-pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
+pub use self::shape_cast::{
+    cast_shapes, cast_shapes_with_dispatcher, ShapeCastHit, ShapeCastOptions, ShapeCastStatus,
+};
 pub use self::shape_cast_ball_ball::cast_shapes_ball_ball;
 pub use self::shape_cast_halfspace_support_map::{
     cast_shapes_halfspace_support_map, cast_shapes_support_map_halfspace,

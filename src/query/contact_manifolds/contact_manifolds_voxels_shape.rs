@@ -289,7 +289,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     manifold.subshape_pos1.transform_point(&pt.local_p1) - vox1.center.coords
                 };
                 sub_detector.selected_contacts |=
-                    (test_voxel.contains_local_point(&pt_in_voxel_space) as u32) << i;
+                    (test_voxel.contains_local_point(&pt_in_voxel_space, &()) as u32) << i;
             }
         }
     }

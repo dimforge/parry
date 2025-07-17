@@ -1,7 +1,7 @@
 use na::{self, Unit};
 
 use crate::math::{Isometry, Real, Vector};
-use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, GJKResult, GjkOptions, VoronoiSimplex};
 use crate::shape::SupportMap;
 
 /// Intersection test between support-mapped shapes (`Cuboid`, `ConvexHull`, etc.)
@@ -9,6 +9,7 @@ pub fn intersection_test_support_map_support_map<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
     g2: &G2,
+    gjk_options: &GjkOptions,
 ) -> bool
 where
     G1: ?Sized + SupportMap,
@@ -20,6 +21,7 @@ where
         g2,
         &mut VoronoiSimplex::new(),
         None,
+        gjk_options,
     )
     .0
 }
@@ -33,6 +35,7 @@ pub fn intersection_test_support_map_support_map_with_params<G1, G2>(
     g2: &G2,
     simplex: &mut VoronoiSimplex,
     init_dir: Option<Unit<Vector<Real>>>,
+    gjk_options: &GjkOptions,
 ) -> (bool, Unit<Vector<Real>>)
 where
     G1: ?Sized + SupportMap,
@@ -50,7 +53,7 @@ where
 
     simplex.reset(CSOPoint::from_shapes(pos12, g1, g2, &dir));
 
-    match gjk::closest_points(pos12, g1, g2, 0.0, false, simplex) {
+    match gjk::closest_points(pos12, g1, g2, 0.0, false, simplex, gjk_options) {
         GJKResult::Intersection => (true, dir),
         GJKResult::Proximity(dir) => (false, dir),
         GJKResult::NoIntersection(dir) => (false, dir),

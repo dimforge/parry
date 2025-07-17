@@ -12,8 +12,8 @@ fn project_local_point_point_on_ab() {
 
     let query_pt = Point::new(1.4, 1.0);
 
-    let proj1 = tri1.project_local_point(&query_pt, false); // Used to fail on 0.14 and earlier
-    let proj2 = tri2.project_local_point(&query_pt, false);
+    let proj1 = tri1.project_local_point(&query_pt, false, &()); // Used to fail on 0.14 and earlier
+    let proj2 = tri2.project_local_point(&query_pt, false, &());
 
     assert_eq!(proj1.point, proj2.point);
     assert_eq!(proj1.point, query_pt);

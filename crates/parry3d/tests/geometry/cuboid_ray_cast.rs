@@ -42,7 +42,7 @@ where
         let point_nudged_out = point + intersection.normal * 0.001;
 
         assert!(
-            shape.contains_point(&position, &point_nudged_in),
+            shape.contains_point(&position, &point_nudged_in, &()),
             "Shape {} rotated with {:#?} does not contain point nudged in {:#?}",
             name,
             rotation.axis(),
@@ -50,7 +50,7 @@ where
         );
 
         assert!(
-            !shape.contains_point(&position, &point_nudged_out),
+            !shape.contains_point(&position, &point_nudged_out, &()),
             "Shape {} rotated with {:#?} does contains point nudged out {:#?}",
             name,
             rotation.axis(),

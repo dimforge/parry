@@ -238,9 +238,10 @@ fn debug_check_intersections(
 
     let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
     let mut incorrect = false;
+    let options = ();
     for pt in intersections {
         if !tri1
-            .project_local_point(&pt.p1, false)
+            .project_local_point(&pt.p1, false, &options)
             .is_inside_eps(&pt.p1, 1.0e-5)
         {
             incorrect = true;
@@ -248,7 +249,7 @@ fn debug_check_intersections(
         }
 
         if !tri2
-            .project_local_point(&pt.p1, false)
+            .project_local_point(&pt.p1, false, &options)
             .is_inside_eps(&pt.p1, 1.0e-5)
         {
             incorrect = true;

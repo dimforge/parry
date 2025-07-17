@@ -1,7 +1,7 @@
 use na::Vector2;
 use parry2d::{
     math::{Isometry, Point, Real},
-    query,
+    query::{self, gjk::GjkOptions},
     shape::{Capsule, ConvexPolygon, SharedShape},
 };
 
@@ -23,6 +23,7 @@ fn capsule_convergence() {
         &shape1,
         &shape2,
         10.0,
+        &GjkOptions::default(),
     )
     .expect("Penetration not found.");
     let shared_shape1 = SharedShape::new(shape1);

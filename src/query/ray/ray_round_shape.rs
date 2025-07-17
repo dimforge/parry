@@ -1,5 +1,5 @@
 use crate::math::Real;
-use crate::query::gjk::VoronoiSimplex;
+use crate::query::gjk::{GjkOptions, VoronoiSimplex};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{RoundShape, SupportMap};
 
@@ -16,6 +16,8 @@ impl<S: SupportMap> RayCast for RoundShape<S> {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }

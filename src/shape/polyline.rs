@@ -230,7 +230,7 @@ impl Polyline {
         point: Point<Real>,
         #[cfg(feature = "dim3")] axis: u8,
     ) -> (PointProjection, (u32, SegmentPointLocation)) {
-        let mut proj = self.project_local_point_and_get_location(&point, false);
+        let mut proj = self.project_local_point_and_get_location(&point, false, &());
         let segment1 = self.segment((proj.1).0);
 
         #[cfg(feature = "dim2")]

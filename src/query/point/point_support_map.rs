@@ -3,7 +3,11 @@ use na::Unit;
 use crate::math::{Isometry, Point, Real, Vector};
 #[cfg(feature = "alloc")]
 use crate::query::epa::EPA;
-use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, ConstantOrigin, GjkOptions, VoronoiSimplex};
+#[cfg(feature = "dim2")]
+use crate::query::point::point_query::QueryOptions;
+#[cfg(feature = "dim3")]
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]
@@ -19,6 +23,7 @@ pub fn local_point_projection_on_support_map<G>(
     simplex: &mut VoronoiSimplex,
     point: &Point<Real>,
     solid: bool,
+    gjk_options: &GjkOptions,
 ) -> PointProjection
 where
     G: SupportMap,
@@ -31,7 +36,7 @@ where
 
     simplex.reset(support_point);
 
-    if let Some(proj) = gjk::project_origin(&m, shape, simplex) {
+    if let Some(proj) = gjk::project_origin(&m, shape, simplex, gjk_options) {
         PointProjection::new(false, proj)
     } else if solid {
         PointProjection::new(true, *point)
@@ -54,16 +59,34 @@ where
 #[cfg(feature = "dim3")]
 impl PointQuery for ConvexPolyhedron {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
+        local_point_projection_on_support_map(
+            self,
+            &mut VoronoiSimplex::new(),
+            point,
+            solid,
+            options,
+        )
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let proj = self.project_local_point(point, false);
+        let proj = self.project_local_point(point, false, options);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 
@@ -79,16 +102,34 @@ impl PointQuery for ConvexPolyhedron {
 #[cfg(feature = "dim2")]
 impl PointQuery for ConvexPolygon {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        local_point_projection_on_support_map(self, &mut VoronoiSimplex::new(), point, solid)
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
+        local_point_projection_on_support_map(
+            self,
+            &mut VoronoiSimplex::new(),
+            point,
+            solid,
+            options,
+        )
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let proj = self.project_local_point(point, false);
+        let proj = self.project_local_point(point, false, options);
         let dpt = *point - proj.point;
         let local_dir = if proj.is_inside { -dpt } else { dpt };
 

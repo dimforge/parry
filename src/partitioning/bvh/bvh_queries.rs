@@ -51,7 +51,7 @@ impl Bvh {
     ) -> Option<(u32, (Real, PointProjection))> {
         self.find_best(
             max_distance,
-            |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
+            |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true, &()),
             |primitive, _| {
                 let proj = primitive_check(primitive, max_distance)?;
                 Some((na::distance(&proj.point, point), proj))

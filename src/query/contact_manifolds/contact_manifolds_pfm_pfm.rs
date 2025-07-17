@@ -1,5 +1,6 @@
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
+use crate::query::gjk::GjkOptions;
 use crate::query::{
     self,
     gjk::{GJKResult, VoronoiSimplex},
@@ -18,6 +19,7 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
     normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    gjk_options: &GjkOptions,
 ) where
     ManifoldData: Default,
     ContactData: Default + Copy,
@@ -36,6 +38,7 @@ pub fn contact_manifold_pfm_pfm_shapes<ManifoldData, ContactData>(
             normal_constraints2,
             prediction,
             manifold,
+            gjk_options,
         );
     }
 }
@@ -51,6 +54,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     normal_constraints2: Option<&dyn NormalConstraints>,
     prediction: Real,
     manifold: &mut ContactManifold<ManifoldData, ContactData>,
+    gjk_options: &GjkOptions,
 ) where
     S1: ?Sized + PolygonalFeatureMap,
     S2: ?Sized + PolygonalFeatureMap,
@@ -73,6 +77,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         total_prediction,
         &mut VoronoiSimplex::new(),
         init_dir,
+        gjk_options,
     );
 
     let old_manifold_points = manifold.points.clone();

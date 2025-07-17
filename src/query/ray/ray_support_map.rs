@@ -3,7 +3,7 @@ use na;
 use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::query;
-use crate::query::gjk::{self, CSOPoint, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, GjkOptions, VoronoiSimplex};
 use crate::query::{Ray, RayCast, RayIntersection};
 #[cfg(all(feature = "alloc", feature = "dim2"))]
 use crate::shape::ConvexPolygon;
@@ -22,11 +22,12 @@ pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized + SupportMa
     ray: &Ray,
     max_time_of_impact: Real,
     solid: bool,
+    gjk_options: &GjkOptions,
 ) -> Option<RayIntersection> {
     let supp = shape.local_support_point(&-ray.dir);
     simplex.reset(CSOPoint::single_point(supp - ray.origin.coords));
 
-    let inter = gjk::cast_local_ray(shape, simplex, ray, max_time_of_impact);
+    let inter = gjk::cast_local_ray(shape, simplex, ray, max_time_of_impact, gjk_options);
 
     if !solid {
         inter.and_then(|(time_of_impact, normal)| {
@@ -41,7 +42,7 @@ pub fn local_ray_intersection_with_support_map_with_params<G: ?Sized + SupportMa
                 // TODO: replace by? : simplex.translate_by(&(ray.origin - new_ray.origin));
                 simplex.reset(CSOPoint::single_point(supp - new_ray.origin.coords));
 
-                gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps).and_then(
+                gjk::cast_local_ray(shape, simplex, &new_ray, shift + eps, gjk_options).and_then(
                     |(time_of_impact, outward_normal)| {
                         let time_of_impact = shift - time_of_impact;
                         if time_of_impact <= max_time_of_impact {
@@ -84,6 +85,8 @@ impl RayCast for Cylinder {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }
@@ -102,6 +105,8 @@ impl RayCast for Cone {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }
@@ -119,6 +124,8 @@ impl RayCast for Capsule {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }
@@ -138,6 +145,8 @@ impl RayCast for ConvexPolyhedron {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }
@@ -157,6 +166,8 @@ impl RayCast for ConvexPolygon {
             ray,
             max_time_of_impact,
             solid,
+            // TODO: be able to pass custom option.
+            &GjkOptions::default(),
         )
     }
 }
@@ -254,6 +265,8 @@ impl RayCast for Segment {
                 ray,
                 max_time_of_impact,
                 solid,
+                // TODO: be able to pass custom option.
+                &GjkOptions::default(),
             )
         }
     }

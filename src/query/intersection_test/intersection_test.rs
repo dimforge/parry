@@ -10,5 +10,5 @@ pub fn intersection_test(
     g2: &dyn Shape,
 ) -> Result<bool, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    DefaultQueryDispatcher.intersection_test(&pos12, g1, g2)
+    DefaultQueryDispatcher::default().intersection_test(&pos12, g1, g2)
 }

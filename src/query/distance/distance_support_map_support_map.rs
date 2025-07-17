@@ -1,17 +1,29 @@
 use crate::math::{Isometry, Real, Vector};
-use crate::query::gjk::{self, CSOPoint, GJKResult, VoronoiSimplex};
+use crate::query::gjk::{self, CSOPoint, GJKResult, GjkOptions, VoronoiSimplex};
 use crate::shape::SupportMap;
 
 use na::{self, Unit};
 use num::Bounded;
 
 /// Distance between support-mapped shapes.
-pub fn distance_support_map_support_map<G1, G2>(pos12: &Isometry<Real>, g1: &G1, g2: &G2) -> Real
+pub fn distance_support_map_support_map<G1, G2>(
+    pos12: &Isometry<Real>,
+    g1: &G1,
+    g2: &G2,
+    gjk_options: &GjkOptions,
+) -> Real
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
-    distance_support_map_support_map_with_params(pos12, g1, g2, &mut VoronoiSimplex::new(), None)
+    distance_support_map_support_map_with_params(
+        pos12,
+        g1,
+        g2,
+        &mut VoronoiSimplex::new(),
+        None,
+        gjk_options,
+    )
 }
 
 /// Distance between support-mapped shapes.
@@ -23,6 +35,7 @@ pub fn distance_support_map_support_map_with_params<G1, G2>(
     g2: &G2,
     simplex: &mut VoronoiSimplex,
     init_dir: Option<Vector<Real>>,
+    gjk_options: &GjkOptions,
 ) -> Real
 where
     G1: ?Sized + SupportMap,
@@ -42,7 +55,7 @@ where
         ));
     }
 
-    match gjk::closest_points(pos12, g1, g2, Real::max_value(), true, simplex) {
+    match gjk::closest_points(pos12, g1, g2, Real::max_value(), true, simplex, gjk_options) {
         GJKResult::Intersection => 0.0,
         GJKResult::ClosestPoints(p1, p2, _) => na::distance(&p1, &p2),
         GJKResult::Proximity(_) => unreachable!(),

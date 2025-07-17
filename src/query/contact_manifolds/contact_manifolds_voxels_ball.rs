@@ -163,7 +163,7 @@ pub fn project_point_on_pseudo_cube(
             //       collision.
             let cuboid = Cuboid::new(Vector::repeat(1.0));
             let unit_dpos_pt = Point::from(unit_dpos);
-            let proj = cuboid.project_local_point(&unit_dpos_pt, false);
+            let proj = cuboid.project_local_point(&unit_dpos_pt, false, &());
             let mut normal = unit_dpos_pt - proj.point;
             let dist = normal.try_normalize_mut(1.0e-8)?;
             Some((normal, dist))
@@ -172,7 +172,7 @@ pub fn project_point_on_pseudo_cube(
         OctantPattern::EDGE_X | OctantPattern::EDGE_Y | OctantPattern::EDGE_Z => {
             let cuboid = Cuboid::new(Vector::repeat(1.0));
             let unit_dpos_pt = Point::from(unit_dpos);
-            let proj = cuboid.project_local_point(&unit_dpos_pt, false);
+            let proj = cuboid.project_local_point(&unit_dpos_pt, false, &());
             let mut normal = unit_dpos_pt - proj.point;
             let dist = normal.try_normalize_mut(1.0e-8)?;
             Some((normal, dist))

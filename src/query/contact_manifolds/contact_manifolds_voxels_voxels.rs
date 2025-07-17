@@ -227,8 +227,9 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                 let pt_in_voxel_space2 =
                     manifold.subshape_pos2.transform_point(&pt.local_p2) - vox2.center.coords;
                 sub_detector.selected_contacts |=
-                    ((test_voxel1.contains_local_point(&pt_in_voxel_space1) as u32) << i)
-                        & ((test_voxel2.contains_local_point(&pt_in_voxel_space2) as u32) << i);
+                    ((test_voxel1.contains_local_point(&pt_in_voxel_space1, &()) as u32) << i)
+                        & ((test_voxel2.contains_local_point(&pt_in_voxel_space2, &()) as u32)
+                            << i);
             }
         };
 

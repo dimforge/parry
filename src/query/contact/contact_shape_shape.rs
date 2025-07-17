@@ -14,7 +14,7 @@ pub fn contact(
     prediction: Real,
 ) -> Result<Option<Contact>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    let mut result = DefaultQueryDispatcher.contact(&pos12, g1, g2, prediction);
+    let mut result = DefaultQueryDispatcher::default().contact(&pos12, g1, g2, prediction);
 
     if let Ok(Some(contact)) = &mut result {
         contact.transform_by_mut(pos1, pos2);

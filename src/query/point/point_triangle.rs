@@ -1,4 +1,5 @@
 use crate::math::{Point, Real, Vector, DIM};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
 
@@ -19,19 +20,26 @@ fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
 
 impl PointQuery for Triangle {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point_and_get_location(pt, solid).0
+    fn project_local_point(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        self.project_local_point_and_get_location(pt, solid, options)
+            .0
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         pt: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         let (proj, loc) = if DIM == 2 {
-            self.project_local_point_and_get_location(pt, false)
+            self.project_local_point_and_get_location(pt, false, options)
         } else {
-            self.project_local_point_and_get_location(pt, true)
+            self.project_local_point_and_get_location(pt, true, options)
         };
 
         let feature = match loc {
@@ -59,6 +67,7 @@ impl PointQueryWithLocation for Triangle {
         &self,
         pt: &Point<Real>,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
         // To understand the ideas, consider reading the slides below
         // https://box2d.org/files/ErinCatto_GJK_GDC2010.pdf

@@ -1,11 +1,17 @@
 use crate::math::{Point, Real};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{Cylinder, FeatureId};
 use na;
 
 impl PointQuery for Cylinder {
     #[inline]
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+        _options: &dyn QueryOptions,
+    ) -> PointProjection {
         // Project on the basis.
         let mut dir_from_basis_center = pt.coords.xz();
         let planar_dist_from_basis_center = dir_from_basis_center.normalize_mut();
@@ -74,8 +80,12 @@ impl PointQuery for Cylinder {
     fn project_local_point_and_get_feature(
         &self,
         pt: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         // TODO: get the actual feature.
-        (self.project_local_point(pt, false), FeatureId::Unknown)
+        (
+            self.project_local_point(pt, false, options),
+            FeatureId::Unknown,
+        )
     }
 }

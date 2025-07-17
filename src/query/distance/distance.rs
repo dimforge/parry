@@ -13,5 +13,5 @@ pub fn distance(
     g2: &dyn Shape,
 ) -> Result<Real, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    DefaultQueryDispatcher.distance(&pos12, g1, g2)
+    DefaultQueryDispatcher::default().distance(&pos12, g1, g2)
 }

@@ -29,7 +29,7 @@ pub fn cast_shapes_nonlinear(
     end_time: Real,
     stop_at_penetration: bool,
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
-    DefaultQueryDispatcher.cast_shapes_nonlinear(
+    DefaultQueryDispatcher::default().cast_shapes_nonlinear(
         motion1,
         g1,
         motion2,

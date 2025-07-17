@@ -38,7 +38,7 @@ pub fn contact_cuboid_cuboid(
         // from cuboid2 on the support-face of cuboid1. For simplicity, we just
         // project the support point from cuboid2 on cuboid1 itself (not just the face).
         let pt2_1 = cuboid2.support_point(pos12, &-sep1.1);
-        let proj1 = cuboid1.project_local_point(&pt2_1, false);
+        let proj1 = cuboid1.project_local_point(&pt2_1, false, &());
 
         let separation = (pt2_1 - proj1.point).dot(&sep1.1);
         let normalized_dir = Unit::try_new_and_get(pt2_1 - proj1.point, Real::default_epsilon());
@@ -77,7 +77,7 @@ pub fn contact_cuboid_cuboid(
         // from cuboid1 on the support-face of cuboid2. For simplicity, we just
         // project the support point from cuboid1 on cuboid2 itself (not just the face).
         let pt1_2 = cuboid1.support_point(&pos21, &-sep2.1);
-        let proj2 = cuboid2.project_local_point(&pt1_2, false);
+        let proj2 = cuboid2.project_local_point(&pt1_2, false, &());
 
         let separation = (pt1_2 - proj2.point).dot(&sep2.1);
         let normalized_dir = Unit::try_new_and_get(pt1_2 - proj2.point, Real::default_epsilon());

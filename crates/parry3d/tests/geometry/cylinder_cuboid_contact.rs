@@ -1,5 +1,6 @@
 use na::{self, Isometry3, Vector3};
 use parry3d::query;
+use parry3d::query::gjk::GjkOptions;
 use parry3d::shape::{Cuboid, Cylinder};
 
 // Issue #157.
@@ -9,16 +10,20 @@ fn cylinder_cuboid_contact() {
     let cyl_at = Isometry3::translation(10.97, 0.925, 61.02);
     let cuboid = Cuboid::new(Vector3::new(0.05, 0.75, 0.5));
     let cuboid_at = Isometry3::translation(11.50, 0.75, 60.5);
+    let options = GjkOptions::default();
+
     let distance = query::details::distance_support_map_support_map(
         &cyl_at.inv_mul(&cuboid_at),
         &cyl,
         &cuboid,
+        &options,
     );
 
     let intersecting = query::details::intersection_test_support_map_support_map(
         &cyl_at.inv_mul(&cuboid_at),
         &cyl,
         &cuboid,
+        &options,
     );
 
     let contact = query::details::contact_support_map_support_map(
@@ -26,6 +31,7 @@ fn cylinder_cuboid_contact() {
         &cyl,
         &cuboid,
         10.0,
+        &options,
     );
 
     assert!(distance == 0.0);

@@ -1,5 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::details::ShapeCastOptions;
+use crate::query::gjk::GjkOptions;
 use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
     QueryDispatcher, ShapeCastHit, Unsupported,
@@ -15,8 +16,11 @@ use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 use alloc::vec::Vec;
 
 /// A dispatcher that exposes built-in queries
-#[derive(Debug, Clone)]
-pub struct DefaultQueryDispatcher;
+#[derive(Debug, Clone, Default)]
+pub struct DefaultQueryDispatcher {
+    /// Options for the GJK algorithm.
+    pub gjk_options: GjkOptions,
+}
 
 impl QueryDispatcher for DefaultQueryDispatcher {
     fn intersection_test(
@@ -62,7 +66,10 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::intersection_test_support_map_support_map(
-                pos12, s1, s2,
+                pos12,
+                s1,
+                s2,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "alloc")]
@@ -105,11 +112,17 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             Ok(query::details::distance_ball_ball(b1, &p2, b2))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::distance_ball_convex_polyhedron(
-                pos12, b1, shape2,
+                pos12,
+                b1,
+                shape2,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::distance_convex_polyhedron_ball(
-                pos12, shape1, b2,
+                pos12,
+                shape1,
+                b2,
+                &self.gjk_options,
             ))
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
             Ok(query::details::distance_cuboid_cuboid(pos12, c1, c2))
@@ -129,7 +142,10 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::distance_support_map_support_map(
-                pos12, s1, s2,
+                pos12,
+                s1,
+                s2,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "alloc")]
@@ -177,17 +193,29 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::contact_ball_convex_polyhedron(
-                pos12, b1, shape2, prediction,
+                pos12,
+                b1,
+                shape2,
+                prediction,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::contact_convex_polyhedron_ball(
-                pos12, shape1, b2, prediction,
+                pos12,
+                shape1,
+                b2,
+                prediction,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "alloc")]
             if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
                 return Ok(query::details::contact_support_map_support_map(
-                    pos12, s1, s2, prediction,
+                    pos12,
+                    s1,
+                    s2,
+                    prediction,
+                    &self.gjk_options,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::contact_composite_shape_shape(
@@ -219,11 +247,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::closest_points_ball_convex_polyhedron(
-                pos12, b1, shape2, max_dist,
+                pos12,
+                b1,
+                shape2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
             Ok(query::details::closest_points_convex_polyhedron_ball(
-                pos12, shape1, b2, max_dist,
+                pos12,
+                shape1,
+                b2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else if let (Some(s1), Some(s2)) =
             (shape1.as_shape::<Segment>(), shape2.as_shape::<Segment>())
@@ -261,7 +297,11 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
             Ok(query::details::closest_points_support_map_support_map(
-                pos12, s1, s2, max_dist,
+                pos12,
+                s1,
+                s2,
+                max_dist,
+                &self.gjk_options,
             ))
         } else {
             #[cfg(feature = "alloc")]
@@ -343,6 +383,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                     s1,
                     s2,
                     options,
+                    &self.gjk_options,
                 ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::cast_shapes_composite_shape_shape(
@@ -624,7 +665,7 @@ where
                 contact_manifold_capsule_capsule_shapes(pos12, shape1, shape2, prediction, manifold)
             }
             (_, ShapeType::Ball) | (ShapeType::Ball, _) => {
-                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold)
+                contact_manifold_convex_ball_shapes(pos12, shape1, shape2, normal_constraints1, normal_constraints2, prediction, manifold, &self.gjk_options)
             }
             // (ShapeType::Capsule, ShapeType::Cuboid) | (ShapeType::Cuboid, ShapeType::Capsule) =>
             //     contact_manifold_cuboid_capsule_shapes(pos12, shape1, shape2, prediction, manifold),
@@ -667,7 +708,7 @@ where
                     shape2.as_polygonal_feature_map(),
                 ) {
                     contact_manifold_pfm_pfm(
-                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold,
+                        pos12, pfm1.0, pfm1.1, normal_constraints1, pfm2.0, pfm2.1, normal_constraints2, prediction, manifold, &self.gjk_options
                     )
                 } else {
                     return Err(Unsupported);

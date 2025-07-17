@@ -1,5 +1,5 @@
 use crate::math::{Point, Real};
-use crate::query::gjk::{self, CSOPoint};
+use crate::query::gjk::CSOPoint;
 use crate::query::{PointQuery, PointQueryWithLocation};
 use crate::shape::{Segment, SegmentPointLocation, Triangle, TrianglePointLocation};
 
@@ -48,13 +48,13 @@ impl VoronoiSimplex {
     }
 
     /// Add a point to this simplex.
-    pub fn add_point(&mut self, pt: CSOPoint) -> bool {
+    pub fn add_point(&mut self, pt: CSOPoint, gjk_epsilon_tolerance: Real) -> bool {
         self.prev_dim = self.dim;
         self.prev_proj = self.proj;
         self.prev_vertices = [0, 1, 2];
 
         for i in 0..self.dim + 1 {
-            if (self.vertices[i].point - pt.point).norm_squared() < gjk::eps_tol() {
+            if (self.vertices[i].point - pt.point).norm_squared() < gjk_epsilon_tolerance {
                 return false;
             }
         }
@@ -99,7 +99,7 @@ impl VoronoiSimplex {
             self.vertices[0].point
         } else if self.dim == 1 {
             let (proj, location) = Segment::new(self.vertices[0].point, self.vertices[1].point)
-                .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+                .project_local_point_and_get_location(&Point::<Real>::origin(), true, &());
 
             match location {
                 SegmentPointLocation::OnVertex(0) => {
@@ -125,7 +125,7 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             )
-            .project_local_point_and_get_location(&Point::<Real>::origin(), true);
+            .project_local_point_and_get_location(&Point::<Real>::origin(), true, &());
 
             match location {
                 TrianglePointLocation::OnVertex(i) => {
@@ -161,7 +161,7 @@ impl VoronoiSimplex {
             self.vertices[0].point
         } else if self.dim == 1 {
             let seg = Segment::new(self.vertices[0].point, self.vertices[1].point);
-            seg.project_local_point(&Point::<Real>::origin(), true)
+            seg.project_local_point(&Point::<Real>::origin(), true, &())
                 .point
         } else {
             assert!(self.dim == 2);
@@ -170,7 +170,7 @@ impl VoronoiSimplex {
                 self.vertices[1].point,
                 self.vertices[2].point,
             );
-            tri.project_local_point(&Point::<Real>::origin(), true)
+            tri.project_local_point(&Point::<Real>::origin(), true, &())
                 .point
         }
     }

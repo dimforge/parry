@@ -3,6 +3,7 @@
 use na::{self, ComplexField, Unit};
 
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::point::point_query::QueryOptions;
 use crate::shape::SupportMap;
 // use query::Proximity;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
@@ -32,10 +33,38 @@ pub enum GJKResult {
     NoIntersection(Unit<Vector<Real>>),
 }
 
+/// Options for the GJK algorithm.
+#[derive(Debug, Clone)]
+pub struct GjkOptions {
+    /// The absolute tolerance used by the GJK algorithm.
+    ///
+    /// Defaults to [math::DEFAULT_EPSILON][crate::math::DEFAULT_EPSILON]
+    pub espilon_tolerance: Real,
+    /// The maximum number of iterations of the GJK algorithm.
+    pub nb_max_iterations: u32,
+}
+
+impl Default for GjkOptions {
+    fn default() -> Self {
+        Self {
+            espilon_tolerance: eps_tol(),
+            nb_max_iterations: 100,
+        }
+    }
+}
+
+impl QueryOptions for GjkOptions {
+    fn as_any(&self) -> &dyn core::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn core::any::Any {
+        self
+    }
+}
+
 /// The absolute tolerance used by the GJK algorithm.
 pub fn eps_tol() -> Real {
-    let _eps = crate::math::DEFAULT_EPSILON;
-    _eps * 10.0
+    crate::math::DEFAULT_EPSILON * 10.0
 }
 
 /// Projects the origin on the boundary of the given shape.
@@ -50,6 +79,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry<Real>,
     g: &G,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> Option<Point<Real>> {
     match closest_points(
         &m.inverse(),
@@ -58,6 +88,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
         Real::max_value(),
         true,
         simplex,
+        gjk_options,
     ) {
         GJKResult::Intersection => None,
         GJKResult::ClosestPoints(p, _, _) => Some(p),
@@ -87,13 +118,13 @@ pub fn closest_points<G1, G2>(
     max_dist: Real,
     exact_dist: bool,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> GJKResult
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
-    let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = eps_tol();
+    let _eps_tol: Real = gjk_options.espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     // TODO: reset the simplex if it is empty?
@@ -149,7 +180,7 @@ where
             }
         }
 
-        if !simplex.add_point(cso_point) {
+        if !simplex.add_point(cso_point, _eps_tol) {
             if exact_dist {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
@@ -176,7 +207,7 @@ where
         }
         niter += 1;
 
-        if niter == 100 {
+        if niter == gjk_options.nb_max_iterations {
             return GJKResult::NoIntersection(Vector::x_axis());
         }
     }
@@ -188,6 +219,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
     simplex: &mut VoronoiSimplex,
     ray: &Ray,
     max_time_of_impact: Real,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>)> {
     let g2 = ConstantOrigin;
     minkowski_ray_cast(
@@ -197,6 +229,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
         ray,
         max_time_of_impact,
         simplex,
+        gjk_options,
     )
 }
 
@@ -210,13 +243,14 @@ pub fn directional_distance<G1, G2>(
     g2: &G2,
     dir: &Vector<Real>,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>, Point<Real>, Point<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let ray = Ray::new(Point::origin(), *dir);
-    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex).map(
+    minkowski_ray_cast(pos12, g1, g2, &ray, Real::max_value(), simplex, gjk_options).map(
         |(time_of_impact, normal)| {
             let witnesses = if !time_of_impact.is_zero() {
                 result(simplex, simplex.dimension() == DIM)
@@ -239,13 +273,14 @@ fn minkowski_ray_cast<G1, G2>(
     ray: &Ray,
     max_time_of_impact: Real,
     simplex: &mut VoronoiSimplex,
+    gjk_options: &GjkOptions,
 ) -> Option<(Real, Vector<Real>)>
 where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = eps_tol();
+    let _eps_tol: Real = gjk_options.espilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     let ray_length = ray.dir.norm();
@@ -351,7 +386,7 @@ where
             }
         }
 
-        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.coords));
+        let _ = simplex.add_point(support_point.translate(&-curr_ray.origin.coords), _eps_tol);
         proj = simplex.project_origin_and_reduce();
 
         if simplex.dimension() == DIM {
@@ -363,7 +398,7 @@ where
         }
 
         niter += 1;
-        if niter == 100 {
+        if niter == gjk_options.nb_max_iterations {
             return None;
         }
     }
@@ -389,5 +424,70 @@ fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
         }
 
         res
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "dim2")]
+mod test {
+    use na::Point2;
+
+    use crate::{
+        math::Real,
+        query::{self, gjk::GjkOptions, DefaultQueryDispatcher, ShapeCastOptions},
+        shape::{Ball, ConvexPolygon, Shape},
+    };
+
+    #[test]
+    fn gjk_issue_180() {
+        let to_cast_against = ConvexPolygon::from_convex_polyline(
+            [
+                [-24.0, 0.0].into(),
+                [0.0, 24.0].into(),
+                [24.0, 0.0].into(),
+                [0.0, -24.0].into(),
+            ]
+            .into(),
+        )
+        .unwrap();
+        let target_pos: Point2<Real> = [-312.0, 152.0].into();
+
+        check_converge(&to_cast_against, [47.0, -32.0].into(), target_pos);
+        check_converge(&to_cast_against, [99.0, -33.0].into(), target_pos);
+        check_converge(&to_cast_against, [98.0, -31.0].into(), target_pos);
+    }
+
+    fn check_converge(
+        to_cast_against: &ConvexPolygon,
+        source_pos: Point2<Real>,
+        target_pos: Point2<Real>,
+    ) {
+        let vel1 = target_pos - source_pos;
+        let g1 = Ball::new(16.0);
+        let pos2 = [0.0, 0.0];
+        let vel2 = [0.0, 0.0];
+        let g2 = to_cast_against.clone_dyn();
+
+        let dispatcher = DefaultQueryDispatcher {
+            gjk_options: GjkOptions {
+                espilon_tolerance: crate::math::DEFAULT_EPSILON * 10000.0,
+                ..GjkOptions::default()
+            },
+        };
+        let toi = query::cast_shapes_with_dispatcher(
+            &source_pos.into(),
+            &vel1,
+            &g1,
+            &pos2.into(),
+            &vel2.into(),
+            &*g2,
+            ShapeCastOptions::with_max_time_of_impact(1.0),
+            dispatcher,
+        )
+        .unwrap();
+        assert!(
+            toi.is_some(),
+            "casting against the convex polygon should converge."
+        );
     }
 }

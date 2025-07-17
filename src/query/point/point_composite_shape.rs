@@ -1,7 +1,13 @@
-#![allow(unused_parens)] // Needed by the macro.
+pub mod query_options_dispatcher;
+
+use core::any::Any;
 
 use crate::math::{Point, Real};
 use crate::partitioning::BvhNode;
+use crate::query::point::point_composite_shape::query_options_dispatcher::{
+    QueryOptionsDispatcher, QueryOptionsDispatcherMap,
+};
+use crate::query::point::point_query::QueryOptions;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
@@ -10,6 +16,16 @@ use crate::shape::{
 use na;
 
 use crate::shape::{Compound, Polyline};
+
+fn to_dispatcher_map_or_default(options: &dyn QueryOptions) -> &dyn QueryOptionsDispatcher {
+    let options = options
+        .as_any()
+        .downcast_ref::<QueryOptionsDispatcherMap>()
+        .map_or(&() as &dyn QueryOptionsDispatcher, |m| {
+            m as &dyn QueryOptionsDispatcher
+        });
+    options
+}
 
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Project a point on this composite shape.
@@ -22,6 +38,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         point: &Point<Real>,
         max_dist: Real,
         solid: bool,
+        options: &dyn QueryOptionsDispatcher,
     ) -> Option<(
         u32,
         (
@@ -36,13 +53,24 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
             .bvh()
             .find_best(
                 max_dist,
-                |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
                 |primitive, _best_so_far| {
                     let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.project_point_and_get_location(pose, point, solid)
+                            shape.project_point_and_get_location(
+                                pose,
+                                point,
+                                solid,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.project_local_point_and_get_location(point, solid)
+                            shape.project_local_point_and_get_location(
+                                point,
+                                solid,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })?;
                     let cost = na::distance(&proj.0.point, point);
@@ -57,19 +85,35 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
     /// If `solid` is `false` then the point will be projected to the closest boundary of `self` even
     /// if it is contained by one of its sub-shapes.
-    pub fn project_local_point(&self, point: &Point<Real>, solid: bool) -> (u32, PointProjection) {
+    pub fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptionsDispatcher,
+    ) -> (u32, PointProjection) {
         let (best_id, (_, proj)) = self
             .0
             .bvh()
             .find_best(
                 Real::MAX,
-                |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
                 |primitive, _best_so_far| {
                     let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.project_point(pose, point, solid)
+                            shape.project_point(
+                                pose,
+                                point,
+                                solid,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.project_local_point(point, solid)
+                            shape.project_local_point(
+                                point,
+                                solid,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })?;
                     let dist = na::distance(&proj.point, point);
@@ -89,19 +133,29 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptionsDispatcher,
     ) -> (u32, (PointProjection, FeatureId)) {
         let (best_id, (_, (proj, feature_id))) = self
             .0
             .bvh()
             .find_best(
                 Real::MAX,
-                |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
+                |node: &BvhNode, _best_so_far| {
+                    node.aabb().distance_to_local_point(point, true, &())
+                },
                 |primitive, _best_so_far| {
                     let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.project_point_and_get_feature(pose, point)
+                            shape.project_point_and_get_feature(
+                                pose,
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.project_local_point_and_get_feature(point)
+                            shape.project_local_point_and_get_feature(
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })?;
                     let cost = na::distance(&proj.0.point, point);
@@ -116,7 +170,11 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 
     /// Returns the index of any sub-shape of `self` that contains the given point.
     #[inline]
-    pub fn contains_local_point(&self, point: &Point<Real>) -> Option<u32> {
+    pub fn contains_local_point(
+        &self,
+        point: &Point<Real>,
+        options: &dyn QueryOptionsDispatcher,
+    ) -> Option<u32> {
         self.0
             .bvh()
             .leaves(|node: &BvhNode| node.aabb().contains_local_point(point))
@@ -124,9 +182,16 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                 self.0
                     .map_typed_part_at(*leaf_id, |pose, shape, _| {
                         if let Some(pose) = pose {
-                            shape.contains_point(pose, point)
+                            shape.contains_point(
+                                pose,
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         } else {
-                            shape.contains_local_point(point)
+                            shape.contains_local_point(
+                                point,
+                                options.get_option_for_shape(&shape.type_id()),
+                            )
                         }
                     })
                     .unwrap_or(false)
@@ -136,17 +201,27 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 
 impl PointQuery for Polyline {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
+        let options = to_dispatcher_map_or_default(options);
         let (seg_id, (proj, feature)) =
-            CompositeShapeRef(self).project_local_point_and_get_feature(point);
+            CompositeShapeRef(self).project_local_point_and_get_feature(point, options);
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
     }
@@ -154,52 +229,64 @@ impl PointQuery for Polyline {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
-            .contains_local_point(point)
+            .contains_local_point(point, options)
             .is_some()
     }
 }
 
 impl PointQuery for TriMesh {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
-            let (proj, (id, _feature)) = self.project_local_point_and_get_location(point, false);
+            let (proj, (id, _feature)) =
+                self.project_local_point_and_get_location(point, false, options);
             let feature_id = FeatureId::Face(id);
             return (proj, feature_id);
         }
-
+        let options = to_dispatcher_map_or_default(options);
         let solid = cfg!(feature = "dim2");
-        let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid);
+        let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid, options);
         (proj, FeatureId::Face(tri_id))
     }
 
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             return self
-                .project_local_point_and_get_location(point, true)
+                .project_local_point_and_get_location(point, true, options)
                 .0
                 .is_inside;
         }
 
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
-            .contains_local_point(point)
+            .contains_local_point(point, options)
             .is_some()
     }
 
@@ -209,26 +296,37 @@ impl PointQuery for TriMesh {
         pt: &Point<Real>,
         solid: bool,
         max_dist: Real,
+        options: &dyn QueryOptions,
     ) -> Option<PointProjection> {
-        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist)
+        self.project_local_point_and_get_location_with_max_dist(pt, solid, max_dist, options)
             .map(|proj| proj.0)
     }
 }
 
 impl PointQuery for Compound {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+    fn project_local_point(
+        &self,
+        point: &Point<Real>,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> PointProjection {
+        let options = to_dispatcher_map_or_default(options);
+        CompositeShapeRef(self)
+            .project_local_point(point, solid, options)
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
+        let options = to_dispatcher_map_or_default(options);
         (
             CompositeShapeRef(self)
-                .project_local_point_and_get_feature(point)
+                .project_local_point_and_get_feature(point, options)
                 .1
                  .0,
             FeatureId::Unknown,
@@ -236,9 +334,10 @@ impl PointQuery for Compound {
     }
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+        let options = to_dispatcher_map_or_default(options);
         CompositeShapeRef(self)
-            .contains_local_point(point)
+            .contains_local_point(point, options)
             .is_some()
     }
 }
@@ -251,9 +350,11 @@ impl PointQueryWithLocation for Polyline {
         &self,
         point: &Point<Real>,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
+        let options = to_dispatcher_map_or_default(options);
         let (seg_id, (proj, loc)) = CompositeShapeRef(self)
-            .project_local_point_and_get_location(point, Real::MAX, solid)
+            .project_local_point_and_get_location(point, Real::MAX, solid, options)
             .unwrap();
         (proj, (seg_id, loc))
     }
@@ -268,8 +369,9 @@ impl PointQueryWithLocation for TriMesh {
         &self,
         point: &Point<Real>,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
-        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
+        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX, options)
             .unwrap()
     }
 
@@ -279,10 +381,12 @@ impl PointQueryWithLocation for TriMesh {
         point: &Point<Real>,
         solid: bool,
         max_dist: Real,
+        options: &dyn QueryOptions,
     ) -> Option<(PointProjection, Self::Location)> {
+        let options = to_dispatcher_map_or_default(options);
         #[allow(unused_mut)] // mut is needed in 3D.
-        if let Some((part_id, (mut proj, location))) =
-            CompositeShapeRef(self).project_local_point_and_get_location(point, max_dist, solid)
+        if let Some((part_id, (mut proj, location))) = CompositeShapeRef(self)
+            .project_local_point_and_get_location(point, max_dist, solid, options)
         {
             #[cfg(feature = "dim3")]
             if let Some(pseudo_normals) = self.pseudo_normals_if_oriented() {

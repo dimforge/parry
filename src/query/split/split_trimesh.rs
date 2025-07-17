@@ -322,7 +322,7 @@ impl TriMesh {
                     vertices_lhs[idx1[2] as usize],
                 );
 
-                if self.contains_local_point(&tri.center()) {
+                if self.contains_local_point(&tri.center(), &()) {
                     indices_lhs.push(idx1);
 
                     idx2.swap(1, 2); // Flip orientation for the second half of the split.

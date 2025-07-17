@@ -7,7 +7,7 @@ use na::{self, Unit};
 use num::Bounded;
 
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::gjk::{eps_tol, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::shape::SupportMap;
 use crate::utils;
 
@@ -18,8 +18,8 @@ struct FaceId {
 }
 
 impl FaceId {
-    fn new(id: usize, neg_dist: Real) -> Option<Self> {
-        if neg_dist > gjk::eps_tol() {
+    fn new(id: usize, neg_dist: Real, gjk_espilon_tolerance: Real) -> Option<Self> {
+        if neg_dist > gjk_espilon_tolerance {
             None
         } else {
             Some(FaceId { id, neg_dist })
@@ -59,10 +59,12 @@ struct Face {
 }
 
 impl Face {
-    pub fn new(vertices: &[CSOPoint], pts: [usize; 2]) -> (Self, bool) {
-        if let Some((proj, bcoords)) =
-            project_origin(&vertices[pts[0]].point, &vertices[pts[1]].point)
-        {
+    pub fn new(vertices: &[CSOPoint], pts: [usize; 2], epsilon_tolerance: Real) -> (Self, bool) {
+        if let Some((proj, bcoords)) = project_origin(
+            &vertices[pts[0]].point,
+            &vertices[pts[1]].point,
+            epsilon_tolerance,
+        ) {
             (Self::new_with_proj(vertices, proj, bcoords, pts), true)
         } else {
             (
@@ -226,9 +228,24 @@ impl EPA {
             let pts2 = [1, 2];
             let pts3 = [2, 0];
 
-            let (face1, proj_inside1) = Face::new(&self.vertices, pts1);
-            let (face2, proj_inside2) = Face::new(&self.vertices, pts2);
-            let (face3, proj_inside3) = Face::new(&self.vertices, pts3);
+            let (face1, proj_inside1) = Face::new(
+                &self.vertices,
+                pts1,
+                // TODO: allow custom options
+                eps_tol(),
+            );
+            let (face2, proj_inside2) = Face::new(
+                &self.vertices,
+                pts2,
+                // TODO: allow custom options
+                eps_tol(),
+            );
+            let (face3, proj_inside3) = Face::new(
+                &self.vertices,
+                pts3,
+                // TODO: allow custom options
+                eps_tol(),
+            );
 
             self.faces.push(face1);
             self.faces.push(face2);
@@ -236,17 +253,32 @@ impl EPA {
 
             if proj_inside1 {
                 let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-                self.heap.push(FaceId::new(0, -dist1)?);
+                self.heap.push(FaceId::new(
+                    0,
+                    -dist1,
+                    // TODO: allow custom options
+                    eps_tol(),
+                )?);
             }
 
             if proj_inside2 {
                 let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
-                self.heap.push(FaceId::new(1, -dist2)?);
+                self.heap.push(FaceId::new(
+                    1,
+                    -dist2,
+                    // TODO: allow custom options
+                    eps_tol(),
+                )?);
             }
 
             if proj_inside3 {
                 let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
-                self.heap.push(FaceId::new(2, -dist3)?);
+                self.heap.push(FaceId::new(
+                    2,
+                    -dist3,
+                    // TODO: allow custom options
+                    eps_tol(),
+                )?);
             }
 
             if !(proj_inside1 || proj_inside2 || proj_inside3) {
@@ -276,8 +308,18 @@ impl EPA {
             let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
             let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
 
-            self.heap.push(FaceId::new(0, dist1)?);
-            self.heap.push(FaceId::new(1, dist2)?);
+            self.heap.push(FaceId::new(
+                0,
+                dist1,
+                // TODO: allow custom options
+                eps_tol(),
+            )?);
+            self.heap.push(FaceId::new(
+                1,
+                dist2,
+                // TODO: allow custom options
+                eps_tol(),
+            )?);
         }
 
         let mut niter = 0;
@@ -325,8 +367,18 @@ impl EPA {
             let pts2 = [support_point_id, face.pts[1]];
 
             let new_faces = [
-                Face::new(&self.vertices, pts1),
-                Face::new(&self.vertices, pts2),
+                Face::new(
+                    &self.vertices,
+                    pts1,
+                    // TODO: allow custom options
+                    eps_tol(),
+                ),
+                Face::new(
+                    &self.vertices,
+                    pts2,
+                    // TODO: allow custom options
+                    eps_tol(),
+                ),
             ];
 
             for f in new_faces.iter() {
@@ -340,7 +392,12 @@ impl EPA {
                     }
 
                     if !f.0.deleted {
-                        self.heap.push(FaceId::new(self.faces.len(), -dist)?);
+                        self.heap.push(FaceId::new(
+                            self.faces.len(),
+                            -dist,
+                            // TODO: allow custom options
+                            eps_tol(),
+                        )?);
                     }
                 }
 
@@ -361,7 +418,11 @@ impl EPA {
     }
 }
 
-fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Real; 2])> {
+fn project_origin(
+    a: &Point<Real>,
+    b: &Point<Real>,
+    epsilon_tolerance: Real,
+) -> Option<(Point<Real>, [Real; 2])> {
     let ab = *b - *a;
     let ap = -a.coords;
     let ab_ap = ab.dot(&ap);
@@ -373,7 +434,7 @@ fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Rea
 
     let position_on_segment;
 
-    let _eps: Real = gjk::eps_tol();
+    let _eps: Real = epsilon_tolerance;
 
     if ab_ap < -_eps || ab_ap > sqnab + _eps {
         // Voronoï region of vertex 'a' or 'b'.
