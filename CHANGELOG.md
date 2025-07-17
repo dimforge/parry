@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixes
+
+- Fix point projection on collinear triangles leading to NaN values. ([#358](https://github.com/dimforge/parry/pull/358))
+
 # 0.22.0-beta.1
 
 ### Fixed

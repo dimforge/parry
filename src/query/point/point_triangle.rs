@@ -1,6 +1,6 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
-use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
+use crate::shape::{FeatureId, Segment, Triangle, TrianglePointLocation};
 
 #[inline]
 fn compute_result(pt: &Point<Real>, proj: Point<Real>) -> PointProjection {
@@ -216,23 +216,73 @@ impl PointQueryWithLocation for Triangle {
                 );
             }
             ProjectionInfo::OnFace(face_side, va, vb, vc) => {
-                // Voronoï region of the face.
-                if DIM != 2 {
-                    // NOTE: in some cases, numerical instability
-                    // may result in the denominator being zero
-                    // when the triangle is nearly degenerate.
-                    if va + vb + vc != 0.0 {
-                        let denom = 1.0 / (va + vb + vc);
-                        let v = vb * denom;
-                        let w = vc * denom;
-                        let bcoords = [1.0 - v - w, v, w];
-                        let res = a + ab * v + ac * w;
+                let inv_denom = va + vb + vc;
+                if inv_denom == 0.0 {
+                    // The triangle is degenerate (the three points are collinear).
+                    // So we find the longest segment and project point on it.
 
+                    // TODO: this can probably be optimized using data we already have ?
+                    let length_sq_ab = ab.magnitude_squared();
+                    let length_sq_ac = ac.magnitude_squared();
+                    let length_sq_bc = bc.magnitude_squared();
+
+                    if length_sq_ab >= length_sq_ac && length_sq_ab >= length_sq_bc {
+                        // AB is longest edge.
+                        let pos =
+                            Segment::new(a, b).project_local_point_and_get_location(pt, solid);
                         return (
-                            compute_result(pt, res),
-                            TrianglePointLocation::OnFace(face_side as u32, bcoords),
+                            pos.0,
+                            match pos.1 {
+                                crate::shape::SegmentPointLocation::OnVertex(v) => {
+                                    TrianglePointLocation::OnVertex(v)
+                                }
+                                crate::shape::SegmentPointLocation::OnEdge(v) => {
+                                    TrianglePointLocation::OnEdge(0, v)
+                                }
+                            },
+                        );
+                    } else if length_sq_ac >= length_sq_ab && length_sq_ac >= length_sq_bc {
+                        // AC is longest edge.
+                        let pos =
+                            Segment::new(a, c).project_local_point_and_get_location(pt, solid);
+                        return (
+                            pos.0,
+                            match pos.1 {
+                                crate::shape::SegmentPointLocation::OnVertex(v) => {
+                                    TrianglePointLocation::OnVertex(v)
+                                }
+                                crate::shape::SegmentPointLocation::OnEdge(v) => {
+                                    TrianglePointLocation::OnEdge(1, v)
+                                }
+                            },
+                        );
+                    } else {
+                        // BC is longest edge.
+                        let pos =
+                            Segment::new(b, c).project_local_point_and_get_location(pt, solid);
+                        return (
+                            pos.0,
+                            match pos.1 {
+                                crate::shape::SegmentPointLocation::OnVertex(v) => {
+                                    TrianglePointLocation::OnVertex(v)
+                                }
+                                crate::shape::SegmentPointLocation::OnEdge(v) => {
+                                    TrianglePointLocation::OnEdge(2, v)
+                                }
+                            },
                         );
                     }
+                } else if DIM != 2 {
+                    let denom = 1.0 / inv_denom;
+                    let v = vb * denom;
+                    let w = vc * denom;
+                    let bcoords = [1.0 - v - w, v, w];
+                    let res = a + ab * v + ac * w;
+
+                    return (
+                        compute_result(pt, res),
+                        TrianglePointLocation::OnFace(face_side as u32, bcoords),
+                    );
                 }
             }
         }
