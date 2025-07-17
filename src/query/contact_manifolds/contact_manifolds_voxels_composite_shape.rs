@@ -14,7 +14,7 @@ use alloc::{boxed::Box, vec::Vec};
 use na::Vector3;
 
 impl WorkspaceData for VoxelsShapeContactManifoldsWorkspace<3> {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::VoxelsCompositeShapeContactManifoldsWorkspace(self)
     }
 

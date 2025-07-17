@@ -251,7 +251,7 @@ impl HeightField {
     }
 
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles {
+    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles<'_> {
         let center = self.closest_cell_at_point(point);
         HeightFieldRadialTriangles {
             heightfield: self,

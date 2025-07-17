@@ -218,7 +218,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 }
 
 impl WorkspaceData for TriMeshShapeContactManifoldsWorkspace {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::TriMeshShapeContactManifoldsWorkspace(self)
     }
 

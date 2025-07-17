@@ -76,7 +76,7 @@ impl Bvh {
     ///
     /// See also the [`Bvh::traverse`] function which is slightly less convenient since it doesn’t
     /// rely on the iterator system, but takes a closure that implements [`FnMut`] instead of [`Fn`].
-    pub fn leaves<F: Fn(&BvhNode) -> bool>(&self, check_node: F) -> Leaves<F> {
+    pub fn leaves<F: Fn(&BvhNode) -> bool>(&self, check_node: F) -> Leaves<'_, F> {
         if let Some(root) = self.nodes.first() {
             let mut stack = SmallVec::default();
             if root.right.leaf_count() > 0 {
