@@ -117,10 +117,19 @@ impl BvhNodeData {
     archive(check_bytes)
 )]
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
+// PERF: the size of this struct is 64 bytes but has a default alignment of 16 (in f32 + 3d + simd mode).
+//       Forcing an alignment of 64 won’t add padding, and makes aligns it with most cache lines.
+#[cfg_attr(all(feature = "dim3", feature = "f32"), repr(align(64)))]
 pub struct BvhNodeWide {
     pub(super) left: BvhNode,
     pub(super) right: BvhNode,
 }
+
+// NOTE: if this assertion fails with a weird "0 - 1 would overflow" error, it means the equality doesn’t hold.
+#[cfg(all(feature = "dim3", feature = "f32"))]
+static_assertions::const_assert_eq!(align_of::<BvhNodeWide>(), 64);
+#[cfg(all(feature = "dim3", feature = "f32"))]
+static_assertions::assert_eq_size!(BvhNodeWide, [u8; 64]);
 
 impl BvhNodeWide {
     #[inline(always)]
