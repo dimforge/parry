@@ -169,7 +169,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
 }
 
 impl WorkspaceData for HeightFieldCompositeShapeContactManifoldsWorkspace {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::HeightfieldCompositeShapeContactManifoldsWorkspace(self)
     }
 

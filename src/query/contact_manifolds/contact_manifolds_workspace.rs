@@ -94,7 +94,7 @@ impl DeserializableWorkspaceData {
 /// Data from a [`ContactManifoldsWorkspace`].
 pub trait WorkspaceData: DowncastSync {
     /// Gets the underlying workspace as an enum.
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData;
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_>;
 
     /// Clones `self`.
     fn clone_dyn(&self) -> Box<dyn WorkspaceData>;

@@ -190,7 +190,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
 }
 
 impl WorkspaceData for CompositeShapeCompositeShapeContactManifoldsWorkspace {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::CompositeShapeCompositeShapeContactManifoldsWorkspace(self)
     }
 

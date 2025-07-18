@@ -381,7 +381,7 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     fn shape_type(&self) -> ShapeType;
 
     /// Gets the underlying shape as an enum.
-    fn as_typed_shape(&self) -> TypedShape;
+    fn as_typed_shape(&self) -> TypedShape<'_>;
 
     fn ccd_thickness(&self) -> Real;
 
@@ -717,7 +717,7 @@ impl Shape for Ball {
         ShapeType::Ball
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Ball(self)
     }
 
@@ -771,7 +771,7 @@ impl Shape for Cuboid {
         ShapeType::Cuboid
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Cuboid(self)
     }
 
@@ -836,7 +836,7 @@ impl Shape for Capsule {
         ShapeType::Capsule
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Capsule(self)
     }
 
@@ -895,7 +895,7 @@ impl Shape for Triangle {
         ShapeType::Triangle
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Triangle(self)
     }
 
@@ -971,7 +971,7 @@ impl Shape for Segment {
         ShapeType::Segment
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Segment(self)
     }
 
@@ -1038,7 +1038,7 @@ impl Shape for Compound {
         ShapeType::Compound
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Compound(self)
     }
 
@@ -1090,7 +1090,7 @@ impl Shape for Polyline {
         ShapeType::Polyline
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Polyline(self)
     }
 
@@ -1140,7 +1140,7 @@ impl Shape for TriMesh {
         ShapeType::TriMesh
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::TriMesh(self)
     }
 
@@ -1203,7 +1203,7 @@ impl Shape for HeightField {
         ShapeType::HeightField
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::HeightField(self)
     }
 
@@ -1321,7 +1321,7 @@ impl Shape for ConvexPolyhedron {
         ShapeType::ConvexPolyhedron
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::ConvexPolyhedron(self)
     }
 
@@ -1390,7 +1390,7 @@ impl Shape for Cylinder {
         ShapeType::Cylinder
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Cylinder(self)
     }
 
@@ -1448,7 +1448,7 @@ impl Shape for Cone {
         ShapeType::Cone
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Cone(self)
     }
 
@@ -1517,7 +1517,7 @@ impl Shape for HalfSpace {
         ShapeType::HalfSpace
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::HalfSpace(self)
     }
 }
@@ -1548,7 +1548,7 @@ impl Shape for Voxels {
         ShapeType::Voxels
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::Voxels(self)
     }
 
@@ -1598,7 +1598,7 @@ macro_rules! impl_shape_for_round_shape(
                 ShapeType::$Tag
             }
 
-            fn as_typed_shape(&self) -> TypedShape {
+            fn as_typed_shape(&self) -> TypedShape<'_> {
                 TypedShape::$Tag(self)
             }
 
