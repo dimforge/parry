@@ -22,9 +22,8 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     ) -> Option<(u32, ShapeCastHit)> {
         let ls_aabb2 = g2.compute_aabb(pose12);
         let ray = Ray::new(Point::origin(), *vel12);
-        let msum_shift = Vector::splat(-ls_aabb2.center().coords);
-        let msum_margin =
-            Vector::splat(ls_aabb2.half_extents() + Vector::repeat(options.target_distance));
+        let msum_shift = -ls_aabb2.center().coords;
+        let msum_margin = ls_aabb2.half_extents() + Vector::repeat(options.target_distance);
 
         self.0.bvh().find_best(
             options.max_time_of_impact,
