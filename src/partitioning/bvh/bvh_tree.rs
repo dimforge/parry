@@ -116,7 +116,7 @@ impl BvhNodeData {
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
     archive(check_bytes)
 )]
-#[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
+#[repr(C)]
 // PERF: the size of this struct is 64 bytes but has a default alignment of 16 (in f32 + 3d + simd mode).
 //       Forcing an alignment of 64 won’t add padding, and makes aligns it with most cache lines.
 #[cfg_attr(all(feature = "dim3", feature = "f32"), repr(align(64)))]
