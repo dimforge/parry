@@ -60,7 +60,7 @@ impl<const N: usize> VoxelsShapeContactManifoldsWorkspace<N> {
 }
 
 impl WorkspaceData for VoxelsShapeContactManifoldsWorkspace<2> {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::VoxelsShapeContactManifoldsWorkspace(self)
     }
 
