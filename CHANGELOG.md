@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- Fix contact manifold voxels cached key overflowing. ([#346](https://github.com/dimforge/parry/pull/346))
+
 # 0.22.0-beta.1
 
 ### Fixed
