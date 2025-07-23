@@ -557,6 +557,7 @@ impl Bvh {
                     right: BvhNode::zeros(),
                 });
                 result.parents.push(BvhNodeIndex::default());
+                result.leaf_node_indices[0] = BvhNodeIndex::left(0);
             }
             2 => {
                 result.nodes.push(BvhNodeWide {
@@ -564,6 +565,8 @@ impl Bvh {
                     right: workspace.rebuild_leaves[1],
                 });
                 result.parents.push(BvhNodeIndex::default());
+                result.leaf_node_indices[0] = BvhNodeIndex::left(0);
+                result.leaf_node_indices[1] = BvhNodeIndex::right(0);
             }
             _ => {
                 result.nodes.reserve(capacity);
@@ -712,7 +715,7 @@ impl Bvh {
                     self.nodes[0].right = BvhNode::zeros();
                 } else {
                     // The sibling isn’t a leaf. It becomes the new root at index 0.
-                    self.nodes[0] = self.nodes[sibling.decompose().0];
+                    self.nodes[0] = self.nodes[self.nodes[sibling].children as usize];
                     // Both parent pointers need to be updated since both nodes moved to the root.
                     let new_root = &mut self.nodes[0];
                     if new_root.left.is_leaf() {
