@@ -712,7 +712,7 @@ impl Bvh {
                     self.nodes[0].right = BvhNode::zeros();
                 } else {
                     // The sibling isn’t a leaf. It becomes the new root at index 0.
-                    self.nodes[0] = self.nodes[sibling.decompose().0];
+                    self.nodes[0] = self.nodes[self.nodes[sibling].children as usize];
                     // Both parent pointers need to be updated since both nodes moved to the root.
                     let new_root = &mut self.nodes[0];
                     if new_root.left.is_leaf() {
