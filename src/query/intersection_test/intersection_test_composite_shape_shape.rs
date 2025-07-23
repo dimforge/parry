@@ -1,10 +1,35 @@
-use crate::bounding_volume::SimdAabb;
-use crate::math::{Isometry, Real, SIMD_WIDTH};
-use crate::partitioning::{SimdVisitStatus, SimdVisitor};
+use crate::bounding_volume::BoundingVolume;
+use crate::math::{Isometry, Real};
+use crate::partitioning::BvhNode;
 use crate::query::QueryDispatcher;
-use crate::shape::{Shape, TypedSimdCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use crate::utils::IsometryOpt;
-use simba::simd::SimdBool as _;
+
+impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
+    /// Returns the index of the shape in `self` that intersects the given other `shape` positioned
+    /// at `pose12` relative to `self`.
+    ///
+    /// Returns `None` if no intersection is found.
+    pub fn intersects_shape<D: ?Sized + QueryDispatcher>(
+        &self,
+        dispatcher: &D,
+        pose12: &Isometry<Real>,
+        shape: &dyn Shape,
+    ) -> Option<u32> {
+        let ls_aabb2 = shape.compute_aabb(pose12);
+        self.0
+            .bvh()
+            .leaves(|node: &BvhNode| node.aabb().intersects(&ls_aabb2))
+            .find(|leaf_id| {
+                self.0
+                    .map_untyped_part_at(*leaf_id, |part_pose1, sub1, _| {
+                        dispatcher.intersection_test(&part_pose1.inv_mul(pose12), sub1, shape)
+                            == Ok(true)
+                    })
+                    .unwrap_or(false)
+            })
+    }
+}
 
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D, G1>(
@@ -15,12 +40,11 @@ pub fn intersection_test_composite_shape_shape<D, G1>(
 ) -> bool
 where
     D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
+    G1: ?Sized + TypedCompositeShape,
 {
-    let mut visitor = IntersectionCompositeShapeShapeVisitor::new(dispatcher, pos12, g1, g2);
-
-    let _ = g1.typed_qbvh().traverse_depth_first(&mut visitor);
-    visitor.found_intersection.is_some()
+    CompositeShapeRef(g1)
+        .intersects_shape(dispatcher, pos12, g2)
+        .is_some()
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
@@ -32,90 +56,7 @@ pub fn intersection_test_shape_composite_shape<D, G2>(
 ) -> bool
 where
     D: ?Sized + QueryDispatcher,
-    G2: ?Sized + TypedSimdCompositeShape,
+    G2: ?Sized + TypedCompositeShape,
 {
     intersection_test_composite_shape_shape(dispatcher, &pos12.inverse(), g2, g1)
-}
-
-/// A visitor for checking if a composite-shape and a shape intersect.
-pub struct IntersectionCompositeShapeShapeVisitor<'a, D: ?Sized, G1: 'a>
-where
-    G1: ?Sized + TypedSimdCompositeShape,
-{
-    ls_aabb2: SimdAabb,
-
-    dispatcher: &'a D,
-    pos12: &'a Isometry<Real>,
-    g1: &'a G1,
-    g2: &'a dyn Shape,
-
-    /// Populated after the traversal.
-    ///
-    /// Is [`None`] if no intersection was found.
-    pub found_intersection: Option<G1::PartId>,
-}
-
-impl<'a, D, G1> IntersectionCompositeShapeShapeVisitor<'a, D, G1>
-where
-    D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
-{
-    /// Initialize a visitor for checking if a composite-shape and a shape intersect.
-    pub fn new(
-        dispatcher: &'a D,
-        pos12: &'a Isometry<Real>,
-        g1: &'a G1,
-        g2: &'a dyn Shape,
-    ) -> IntersectionCompositeShapeShapeVisitor<'a, D, G1> {
-        let ls_aabb2 = g2.compute_aabb(pos12);
-
-        IntersectionCompositeShapeShapeVisitor {
-            dispatcher,
-            ls_aabb2: SimdAabb::splat(ls_aabb2),
-            pos12,
-            g1,
-            g2,
-            found_intersection: None,
-        }
-    }
-}
-
-impl<D, G1> SimdVisitor<G1::PartId, SimdAabb> for IntersectionCompositeShapeShapeVisitor<'_, D, G1>
-where
-    D: ?Sized + QueryDispatcher,
-    G1: ?Sized + TypedSimdCompositeShape,
-{
-    fn visit(
-        &mut self,
-        bv: &SimdAabb,
-        data: Option<[Option<&G1::PartId>; SIMD_WIDTH]>,
-    ) -> SimdVisitStatus {
-        let mask = self.ls_aabb2.intersects(bv);
-
-        if let Some(data) = data {
-            let bitmask = mask.bitmask();
-            let mut found_intersection = false;
-
-            for (ii, data) in data.into_iter().enumerate() {
-                if (bitmask & (1 << ii)) != 0 {
-                    let Some(data) = data else { continue };
-                    let part_id = *data;
-                    self.g1.map_untyped_part_at(part_id, |part_pos1, g1, _| {
-                        found_intersection = self.dispatcher.intersection_test(
-                            &part_pos1.inv_mul(self.pos12),
-                            g1,
-                            self.g2,
-                        ) == Ok(true);
-                    });
-
-                    if found_intersection {
-                        self.found_intersection = Some(part_id);
-                        return SimdVisitStatus::ExitEarly;
-                    }
-                }
-            }
-        }
-
-        SimdVisitStatus::MaybeContinue(mask)
-    }
 }

@@ -17,6 +17,9 @@ pub use self::point_cloud_support_point::{
 pub use self::point_in_poly2d::{point_in_convex_poly2d, point_in_poly2d};
 pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 
+#[cfg(feature = "alloc")]
+pub use self::vec_map::VecMap;
+
 pub use self::as_bytes::AsBytes;
 pub(crate) use self::consts::*;
 pub use self::cov::{center_cov, cov};
@@ -26,12 +29,11 @@ pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, 
 pub use self::obb::obb;
 pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
-pub(crate) use self::sort::sort2;
-pub(crate) use self::sort::sort3;
+pub use self::sort::sort2;
+pub use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
-pub(crate) use self::weighted_value::WeightedValue;
 pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
 
 mod as_bytes;
@@ -56,6 +58,7 @@ mod interval;
 mod inv;
 mod isometry_ops;
 mod median;
+pub mod morton;
 mod obb;
 mod point_cloud_support_point;
 mod point_in_poly2d;
@@ -67,5 +70,7 @@ mod sort;
 mod sorted_pair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 mod spade;
-mod weighted_value;
 mod wops;
+
+#[cfg(feature = "alloc")]
+mod vec_map;

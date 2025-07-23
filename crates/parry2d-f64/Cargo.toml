@@ -1,6 +1,6 @@
 [package]
 name = "parry2d-f64"
-version = "0.21.1"
+version = "0.22.0-beta.1"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "2 dimensional collision detection library in Rust. 64-bit precision version."
@@ -89,6 +89,7 @@ log = "0.4"
 ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true, default-features = false }
+smallvec = "1"
 
 [dev-dependencies]
 simba = { version = "0.9", default-features = false }

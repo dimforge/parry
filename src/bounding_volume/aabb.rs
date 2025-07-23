@@ -9,7 +9,8 @@ use na;
 use num::Bounded;
 
 #[cfg(all(feature = "dim3", not(feature = "std")))]
-use na::ComplexField; // for .sin_cos()
+use na::ComplexField;
+// for .sin_cos()
 
 use crate::query::{Ray, RayCast};
 #[cfg(feature = "rkyv")]
@@ -143,10 +144,18 @@ impl Aabb {
         Self::new(center - half_extents, center + half_extents)
     }
 
-    /// Creates a new `Aabb` from a set of points.
-    pub fn from_points<'a, I>(pts: I) -> Self
+    /// Creates a new `Aabb` from a set of point references.
+    pub fn from_points_ref<'a, I>(pts: I) -> Self
     where
         I: IntoIterator<Item = &'a Point<Real>>,
+    {
+        super::aabb_utils::local_point_cloud_aabb(pts.into_iter().copied())
+    }
+
+    /// Creates a new `Aabb` from a set of points.
+    pub fn from_points<I>(pts: I) -> Self
+    where
+        I: IntoIterator<Item = Point<Real>>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
@@ -172,6 +181,28 @@ impl Aabb {
         return extents.x * extents.y;
         #[cfg(feature = "dim3")]
         return extents.x * extents.y * extents.z;
+    }
+
+    /// In 3D, returns the half-area. In 2D returns the half-perimeter of the AABB.
+    pub fn half_area_or_perimeter(&self) -> Real {
+        #[cfg(feature = "dim2")]
+        return self.half_perimeter();
+        #[cfg(feature = "dim3")]
+        return self.half_area();
+    }
+
+    /// The half perimeter of this `Aabb`.
+    #[cfg(feature = "dim2")]
+    pub fn half_perimeter(&self) -> Real {
+        let extents = self.extents();
+        extents.x + extents.y
+    }
+
+    /// The half area of this `Aabb`.
+    #[cfg(feature = "dim3")]
+    pub fn half_area(&self) -> Real {
+        let extents = self.extents();
+        extents.x * (extents.y + extents.z) + extents.y * extents.z
     }
 
     /// The extents of this `Aabb`.
@@ -249,6 +280,15 @@ impl Aabb {
         }
 
         true
+    }
+
+    /// Computes the distance between the origin and this AABB.
+    pub fn distance_to_origin(&self) -> Real {
+        self.mins
+            .coords
+            .sup(&-self.maxs.coords)
+            .sup(&Vector::zeros())
+            .norm()
     }
 
     /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`?

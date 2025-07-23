@@ -1,10 +1,5 @@
 //! Point inclusion and projection.
 
-#[cfg(feature = "alloc")]
-pub use self::point_composite_shape::{
-    PointCompositeShapeProjBestFirstVisitor, PointCompositeShapeProjWithFeatureBestFirstVisitor,
-    PointCompositeShapeProjWithLocationBestFirstVisitor,
-};
 #[doc(inline)]
 pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation};
 #[cfg(feature = "alloc")]

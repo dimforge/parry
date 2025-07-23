@@ -23,7 +23,6 @@ pub use self::intersection_test_support_map_support_map::intersection_test_suppo
 pub use self::{
     intersection_test_composite_shape_shape::{
         intersection_test_composite_shape_shape, intersection_test_shape_composite_shape,
-        IntersectionCompositeShapeShapeVisitor,
     },
     intersection_test_voxels_shape::{
         intersection_test_shape_voxels, intersection_test_voxels_shape,

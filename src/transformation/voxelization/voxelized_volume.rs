@@ -162,7 +162,7 @@ impl VoxelizedVolume {
             return result;
         }
 
-        let aabb = crate::bounding_volume::details::local_point_cloud_aabb(points);
+        let aabb = crate::bounding_volume::details::local_point_cloud_aabb_ref(points);
         result.origin = aabb.mins;
         result.resolution = (aabb.extents() / voxel_size)
             .map(|x| (x.ceil() as u32).max(2) + 1)
@@ -205,7 +205,7 @@ impl VoxelizedVolume {
             return result;
         }
 
-        let aabb = crate::bounding_volume::details::local_point_cloud_aabb(points);
+        let aabb = crate::bounding_volume::details::local_point_cloud_aabb_ref(points);
         result.origin = aabb.mins;
 
         let d = aabb.maxs - aabb.mins;
