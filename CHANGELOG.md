@@ -11,7 +11,7 @@
 
 - Fix invalid BVH state that could be reached after a removal resulting in a partial root.
 
-# 0.22.0-beta.0
+## 0.22.0-beta.0
 
 ### Added
 
