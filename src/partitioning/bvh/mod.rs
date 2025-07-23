@@ -13,3 +13,6 @@ mod bvh_traverse;
 mod bvh_traverse_bvtt;
 mod bvh_tree;
 mod bvh_validation;
+
+#[cfg(test)]
+mod bvh_tests;
