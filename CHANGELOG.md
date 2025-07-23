@@ -1,3 +1,10 @@
+## Unreleased
+
+### Fixed
+
+- Fix bug in BVH tree node removal.
+- Fix bug in BVH tree building from exactly two leaves.
+
 ## 0.22.0-beta.1
 
 ### Fixed
