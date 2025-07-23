@@ -716,14 +716,16 @@ impl Bvh {
                     // Both parent pointers need to be updated since both nodes moved to the root.
                     let new_root = &mut self.nodes[0];
                     if new_root.left.is_leaf() {
-                        self.leaf_node_indices[new_root.left.children as usize] =
-                            BvhNodeIndex::left(0);
+                        let _ = self
+                            .leaf_node_indices
+                            .insert(new_root.left.children as usize, BvhNodeIndex::left(0));
                     } else {
                         self.parents[new_root.left.children as usize] = BvhNodeIndex::left(0);
                     }
                     if new_root.right.is_leaf() {
-                        self.leaf_node_indices[new_root.right.children as usize] =
-                            BvhNodeIndex::right(0);
+                        let _ = self
+                            .leaf_node_indices
+                            .insert(new_root.right.children as usize, BvhNodeIndex::right(0));
                     } else {
                         self.parents[new_root.right.children as usize] = BvhNodeIndex::right(0);
                     }
