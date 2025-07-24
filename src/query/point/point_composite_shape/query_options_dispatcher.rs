@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use core::any::{Any, TypeId};
 
 use crate::query::gjk::GjkOptions;
-use crate::query::QueryOptions;
+use crate::query::{DefaultQueryOptions, QueryOptions, QueryOptionsNotUsed};
 use crate::shape::Compound;
 use hashbrown::HashMap;
 
@@ -14,7 +14,22 @@ pub trait QueryOptionsDispatcher {
 
 impl QueryOptionsDispatcher for () {
     fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
-        &()
+        self
+    }
+}
+impl QueryOptionsDispatcher for DefaultQueryOptions {
+    fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
+        self
+    }
+}
+impl QueryOptionsDispatcher for QueryOptionsNotUsed {
+    fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
+        self
+    }
+}
+impl QueryOptionsDispatcher for GjkOptions {
+    fn get_option_for_shape(&self, _shape_type_id: &TypeId) -> &dyn QueryOptions {
+        self
     }
 }
 

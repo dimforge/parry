@@ -6,9 +6,9 @@ use core::f32;
 use common_macroquad2d::draw_point;
 use macroquad::prelude::*;
 use nalgebra::{Isometry, Point2, Rotation, Translation};
-use parry2d::query::details::point_query::QueryOptions;
 use parry2d::query::gjk::GjkOptions;
 use parry2d::query::point::QueryOptionsDispatcherMap;
+use parry2d::query::QueryOptions;
 use parry2d::shape::Compound;
 use parry2d::shape::{ConvexPolygon, Shape, SharedShape};
 

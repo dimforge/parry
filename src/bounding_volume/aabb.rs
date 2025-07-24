@@ -12,7 +12,7 @@ use num::Bounded;
 use na::ComplexField;
 // for .sin_cos()
 
-use crate::query::{Ray, RayCast};
+use crate::query::{QueryOptionsNotUsed, Ray, RayCast};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
@@ -301,7 +301,7 @@ impl Aabb {
         };
         let ray = Ray::new(Point::origin(), vel12);
 
-        msum.intersects_local_ray(&ray, 1.0, &())
+        msum.intersects_local_ray(&ray, 1.0, &QueryOptionsNotUsed)
     }
 
     /// Computes the intersection of this `Aabb` and another one.

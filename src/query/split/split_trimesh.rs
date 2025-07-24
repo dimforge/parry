@@ -1,6 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
-use crate::query::{IntersectResult, PointQuery, SplitResult};
+use crate::query::{IntersectResult, PointQuery, QueryOptionsNotUsed, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation::{intersect_meshes, MeshIntersectionError};
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
@@ -322,7 +322,7 @@ impl TriMesh {
                     vertices_lhs[idx1[2] as usize],
                 );
 
-                if self.contains_local_point(&tri.center(), &()) {
+                if self.contains_local_point(&tri.center(), &QueryOptionsNotUsed) {
                     indices_lhs.push(idx1);
 
                     idx2.swap(1, 2); // Flip orientation for the second half of the split.

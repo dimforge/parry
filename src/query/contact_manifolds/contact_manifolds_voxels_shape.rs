@@ -2,7 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Translation, Vector, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
-    TypedWorkspaceData, WorkspaceData,
+    QueryOptionsNotUsed, TypedWorkspaceData, WorkspaceData,
 };
 use crate::shape::{AxisMask, Cuboid, Shape, SupportMap, VoxelData, VoxelType, Voxels};
 use crate::utils::hashmap::{Entry, HashMap};
@@ -288,8 +288,10 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 } else {
                     manifold.subshape_pos1.transform_point(&pt.local_p1) - vox1.center.coords
                 };
-                sub_detector.selected_contacts |=
-                    (test_voxel.contains_local_point(&pt_in_voxel_space, &()) as u32) << i;
+                sub_detector.selected_contacts |= (test_voxel
+                    .contains_local_point(&pt_in_voxel_space, &QueryOptionsNotUsed)
+                    as u32)
+                    << i;
             }
         }
     }

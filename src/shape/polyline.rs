@@ -1,7 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
-use crate::query::{PointProjection, PointQueryWithLocation};
+use crate::query::{PointProjection, PointQueryWithLocation, QueryOptionsNotUsed};
 use crate::shape::composite_shape::CompositeShape;
 use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedCompositeShape};
 #[cfg(feature = "alloc")]
@@ -230,7 +230,8 @@ impl Polyline {
         point: Point<Real>,
         #[cfg(feature = "dim3")] axis: u8,
     ) -> (PointProjection, (u32, SegmentPointLocation)) {
-        let mut proj = self.project_local_point_and_get_location(&point, false, &());
+        let mut proj =
+            self.project_local_point_and_get_location(&point, false, &QueryOptionsNotUsed);
         let segment1 = self.segment((proj.1).0);
 
         #[cfg(feature = "dim2")]

@@ -1,5 +1,5 @@
 use crate::math::Real;
-use crate::query::point::QueryOptionsDispatcherMap;
+use crate::query::gjk::GjkOptions;
 use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{CompositeShapeRef, FeatureId, TriMesh};
 
@@ -15,8 +15,12 @@ impl RayCast for TriMesh {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> Option<Real> {
-        // FIXME: Polyline is made of Triangles, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to cast_local_ray: using default options.");
+            &GjkOptions::default()
+        };
         CompositeShapeRef(self)
             .cast_local_ray(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
@@ -30,8 +34,14 @@ impl RayCast for TriMesh {
         solid: bool,
         options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
-        // FIXME: Polyline is made of Triangles, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!(
+                "Incorrect option passed to cast_local_ray_and_get_normal: using default options."
+            );
+            &GjkOptions::default()
+        };
         CompositeShapeRef(self)
             .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             .map(|(best, mut res)| {
@@ -53,6 +63,7 @@ mod ray_cast_with_culling {
     use crate::math::{Isometry, Real, Vector};
     use crate::partitioning::Bvh;
     use crate::query::details::NormalConstraints;
+    use crate::query::gjk::GjkOptions;
     use crate::query::{Ray, RayIntersection};
     use crate::shape::{
         CompositeShape, CompositeShapeRef, FeatureId, Shape, TriMesh, Triangle, TypedCompositeShape,
@@ -154,9 +165,10 @@ mod ray_cast_with_culling {
             ray: &Ray,
             max_time_of_impact: Real,
             culling: RayCullingMode,
+            gjk_options: &GjkOptions,
         ) -> Option<RayIntersection> {
             let ls_ray = ray.inverse_transform_by(m);
-            self.cast_local_ray_with_culling(&ls_ray, max_time_of_impact, culling)
+            self.cast_local_ray_with_culling(&ls_ray, max_time_of_impact, culling, gjk_options)
                 .map(|inter| inter.transform_by(m))
         }
 
@@ -169,6 +181,7 @@ mod ray_cast_with_culling {
             ray: &Ray,
             max_time_of_impact: Real,
             culling: RayCullingMode,
+            gjk_options: &GjkOptions,
         ) -> Option<RayIntersection> {
             let mesh_with_culling = TriMeshWithCulling {
                 trimesh: self,
@@ -176,7 +189,7 @@ mod ray_cast_with_culling {
                 ray,
             };
             CompositeShapeRef(&mesh_with_culling)
-                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false, &())
+                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false, gjk_options)
                 .map(|(best, mut res)| {
                     // We hit a backface.
                     // NOTE: we need this for `TriMesh::is_backface` to work properly.
@@ -192,6 +205,7 @@ mod ray_cast_with_culling {
 
     #[cfg(test)]
     mod test {
+        use super::GjkOptions;
         use crate::query::{Ray, RayCullingMode};
         use crate::shape::TriMesh;
         use nalgebra::{Point3, Vector3};
@@ -208,18 +222,39 @@ mod ray_cast_with_culling {
             let ray_down = Ray::new(Point3::new(0.0, 0.0, 1.0), Vector3::new(0.0, 0.0, -1.0));
 
             let mesh = TriMesh::new(vertices, indices).unwrap();
+            let query_options = GjkOptions::default();
             assert!(mesh
-                .cast_local_ray_with_culling(&ray_up, 1000.0, RayCullingMode::IgnoreFrontfaces)
+                .cast_local_ray_with_culling(
+                    &ray_up,
+                    1000.0,
+                    RayCullingMode::IgnoreFrontfaces,
+                    &query_options
+                )
                 .is_some());
             assert!(mesh
-                .cast_local_ray_with_culling(&ray_down, 1000.0, RayCullingMode::IgnoreFrontfaces)
+                .cast_local_ray_with_culling(
+                    &ray_down,
+                    1000.0,
+                    RayCullingMode::IgnoreFrontfaces,
+                    &query_options,
+                )
                 .is_none());
 
             assert!(mesh
-                .cast_local_ray_with_culling(&ray_up, 1000.0, RayCullingMode::IgnoreBackfaces)
+                .cast_local_ray_with_culling(
+                    &ray_up,
+                    1000.0,
+                    RayCullingMode::IgnoreBackfaces,
+                    &query_options,
+                )
                 .is_none());
             assert!(mesh
-                .cast_local_ray_with_culling(&ray_down, 1000.0, RayCullingMode::IgnoreBackfaces)
+                .cast_local_ray_with_culling(
+                    &ray_down,
+                    1000.0,
+                    RayCullingMode::IgnoreBackfaces,
+                    &query_options
+                )
                 .is_some());
         }
     }

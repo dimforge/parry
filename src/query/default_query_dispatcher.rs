@@ -49,7 +49,9 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12,
                 b1,
                 shape2,
-                // FIXME: This may need a query option dispatcher, because a user custom shape against a ball may need a different option.
+                // FIXME: This needs a query option dispatcher, because a user custom shape against a ball may need a different option.
+                // Currently, some paths lead to an unused option.
+                // (Gjk is used for intersections with convex shapes and cylinder)
                 &self.gjk_options,
             ))
         } else if let Some(b2) = shape2.as_ball() {
@@ -57,7 +59,9 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 pos12,
                 shape1,
                 b2,
-                // FIXME: This may need a query option dispatcher, because a user custom shape against a ball may need a different option.
+                // FIXME: This needs a query option dispatcher, because a user custom shape against a ball may need a different option.
+                // Currently, some paths lead to an unused option.
+                // (Gjk is used for intersections with convex shapes and cylinder)
                 &self.gjk_options,
             ))
         } else if let (Some(p1), Some(s2)) =

@@ -3,7 +3,7 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::partitioning::BvhNode;
 use crate::query::point::point_query::PointQueryWithLocation;
-use crate::query::PointQuery;
+use crate::query::{PointQuery, QueryOptionsNotUsed};
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
 use crate::utils::hashmap::Entry;
@@ -328,7 +328,7 @@ fn extract_connected_components(
                     if flip2
                         ^ mesh2.contains_local_point(
                             &pos12.inverse_transform_point(&tri1.center()),
-                            &(),
+                            &QueryOptionsNotUsed,
                         )
                     {
                         to_visit.push(twin.face);
@@ -375,7 +375,11 @@ fn extract_connected_components(
                 let repr_pt = mesh1.triangle(repr_face).center();
                 let indices = mesh1.indices();
 
-                if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt), &())
+                if flip2
+                    ^ mesh2.contains_local_point(
+                        &pos12.inverse_transform_point(&repr_pt),
+                        &QueryOptionsNotUsed,
+                    )
                 {
                     new_indices1.extend(
                         cc.grouped_faces[range[0]..range[1]]
@@ -389,7 +393,12 @@ fn extract_connected_components(
         // Deal with the case where there is no intersection between the meshes.
         let repr_pt = mesh1.triangle(0).center();
 
-        if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt), &()) {
+        if flip2
+            ^ mesh2.contains_local_point(
+                &pos12.inverse_transform_point(&repr_pt),
+                &QueryOptionsNotUsed,
+            )
+        {
             new_indices1.extend_from_slice(mesh1.indices());
         }
     }
@@ -676,7 +685,7 @@ fn merge_triangle_sets(
                 .project_local_point_and_get_location(
                     &pos2.inverse_transform_point(&center),
                     true,
-                    &(),
+                    &QueryOptionsNotUsed,
                 )
                 .0;
 

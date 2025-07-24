@@ -7,12 +7,14 @@ use parry2d::math::{self, Isometry};
 use parry2d::query::{self, DefaultQueryDispatcher, Ray, ShapeCastOptions};
 use parry2d::shape::{Ball, ConvexPolygon, Shape};
 
+use crate::common_macroquad2d::easy_draw_text;
+
 const RENDER_SCALE: f32 = 1.0;
 const BALLCAST_WIDTH: f32 = 16.0;
 
 #[macroquad::main("raycasts_animated")]
 async fn main() {
-    for _i in 1.. {
+    for i in 1.. {
         clear_background(BLACK);
 
         let screen_shift = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
@@ -33,19 +35,22 @@ async fn main() {
         let mouse_position_world =
             (Point2::<f32>::new(mouse_pos.0, mouse_pos.1) - screen_shift.coords) / RENDER_SCALE;
         let target_pos: Point2<f32> = [-312.0, 152.0].into();
-
+        let epsilon_tolerance =
+            f32::EPSILON + (((i as f32 / 10f32).sin() + 1f32) / 2f32) * 0.002f32;
         // Those 2 fail with `min_bound >= _eps_tol`, fixed with a tolerance * 100
         shape_cast_debug(
             screen_shift,
             [99.0, -33.0].into(),
             target_pos,
             to_cast_against.clone(),
+            epsilon_tolerance,
         );
         shape_cast_debug(
             screen_shift,
             [98.0, -31.0].into(),
             target_pos,
             to_cast_against.clone(),
+            epsilon_tolerance,
         );
         // This fails with `niter == 100` (and `niter == 100_000`), fixed with a tolerance * 10_000
         shape_cast_debug(
@@ -53,6 +58,7 @@ async fn main() {
             [47.0, -32.0].into(),
             target_pos,
             to_cast_against.clone(),
+            epsilon_tolerance,
         );
 
         // For debug purposes, raycast to mouse position.
@@ -62,6 +68,7 @@ async fn main() {
             target_pos,
             mouse_position_world,
             to_cast_against.clone(),
+            epsilon_tolerance,
         );
 
         /*
@@ -76,6 +83,7 @@ async fn main() {
             screen_shift,
             GREEN,
         );
+        easy_draw_text(&format!("tolerance: {:.7}", epsilon_tolerance));
 
         next_frame().await
     }
@@ -86,6 +94,7 @@ fn shape_cast_debug(
     source_pos: Point2<f32>,
     target_pos: Point2<f32>,
     to_cast_against: ConvexPolygon,
+    epsilon_tolerance: f32,
 ) {
     /*
      *
@@ -111,7 +120,7 @@ fn shape_cast_debug(
         ShapeCastOptions::with_max_time_of_impact(1.0),
         DefaultQueryDispatcher {
             gjk_options: query::gjk::GjkOptions {
-                epsilon_tolerance: math::DEFAULT_EPSILON * 1000f32,
+                epsilon_tolerance,
                 nb_max_iterations: 100,
             },
         },

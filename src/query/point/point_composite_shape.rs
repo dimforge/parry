@@ -199,11 +199,10 @@ impl PointQuery for Polyline {
         &self,
         point: &Point<Real>,
         solid: bool,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> PointProjection {
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .project_local_point(point, solid, options)
+            .project_local_point(point, solid, &QueryOptionsNotUsed)
             .1
     }
 
@@ -211,11 +210,10 @@ impl PointQuery for Polyline {
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
-        let (seg_id, (proj, feature)) =
-            CompositeShapeRef(self).project_local_point_and_get_feature(point, options);
+        let (seg_id, (proj, feature)) = CompositeShapeRef(self)
+            .project_local_point_and_get_feature(point, &QueryOptionsNotUsed);
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
     }
@@ -237,11 +235,10 @@ impl PointQuery for TriMesh {
         &self,
         point: &Point<Real>,
         solid: bool,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> PointProjection {
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .project_local_point(point, solid, options)
+            .project_local_point(point, solid, &QueryOptionsNotUsed)
             .1
     }
 
@@ -249,38 +246,37 @@ impl PointQuery for TriMesh {
     fn project_local_point_and_get_feature(
         &self,
         point: &Point<Real>,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             let (proj, (id, _feature)) =
-                self.project_local_point_and_get_location(point, false, options);
+                self.project_local_point_and_get_location(point, false, &QueryOptionsNotUsed);
             let feature_id = FeatureId::Face(id);
             return (proj, feature_id);
         }
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         let solid = cfg!(feature = "dim2");
-        let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid, options);
+        let (tri_id, proj) =
+            CompositeShapeRef(self).project_local_point(point, solid, &QueryOptionsNotUsed);
         (proj, FeatureId::Face(tri_id))
     }
 
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>, options: &dyn QueryOptions) -> bool {
+    fn contains_local_point(&self, point: &Point<Real>, _options: &dyn QueryOptions) -> bool {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
             return self
-                .project_local_point_and_get_location(point, true, options)
+                .project_local_point_and_get_location(point, true, &QueryOptionsNotUsed)
                 .0
                 .is_inside;
         }
 
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .contains_local_point(point, options)
+            .contains_local_point(point, &QueryOptionsNotUsed)
             .is_some()
     }
 
@@ -344,11 +340,10 @@ impl PointQueryWithLocation for Polyline {
         &self,
         point: &Point<Real>,
         solid: bool,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> (PointProjection, Self::Location) {
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         let (seg_id, (proj, loc)) = CompositeShapeRef(self)
-            .project_local_point_and_get_location(point, Real::MAX, solid, options)
+            .project_local_point_and_get_location(point, Real::MAX, solid, &QueryOptionsNotUsed)
             .unwrap();
         (proj, (seg_id, loc))
     }
@@ -375,12 +370,11 @@ impl PointQueryWithLocation for TriMesh {
         point: &Point<Real>,
         solid: bool,
         max_dist: Real,
-        options: &dyn QueryOptions,
+        _options: &dyn QueryOptions,
     ) -> Option<(PointProjection, Self::Location)> {
-        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         #[allow(unused_mut)] // mut is needed in 3D.
         if let Some((part_id, (mut proj, location))) = CompositeShapeRef(self)
-            .project_local_point_and_get_location(point, max_dist, solid, options)
+            .project_local_point_and_get_location(point, max_dist, solid, &QueryOptionsNotUsed)
         {
             #[cfg(feature = "dim3")]
             if let Some(pseudo_normals) = self.pseudo_normals_if_oriented() {

@@ -1,7 +1,7 @@
 use super::BvhOptimizationHeapEntry;
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Point, Real, Vector};
-use crate::query::{Ray, RayCast};
+use crate::query::{QueryOptionsNotUsed, Ray, RayCast};
 use crate::utils::VecMap;
 use alloc::collections::{BinaryHeap, VecDeque};
 use alloc::vec::Vec;
@@ -355,7 +355,7 @@ impl BvhNode {
     /// Returns `Real::MAX` if there is no hit.
     pub fn cast_ray(&self, ray: &Ray, max_toi: Real) -> Real {
         self.aabb()
-            .cast_local_ray(ray, max_toi, true, &())
+            .cast_local_ray(ray, max_toi, true, &QueryOptionsNotUsed)
             .unwrap_or(Real::MAX)
     }
 

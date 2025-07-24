@@ -35,7 +35,7 @@ async fn main() {
             Point2::new(2.0, 2.0),
             UnitComplex::new(animation_rotation * i as f32) * -Vector2::x(),
         );
-        let toi = cube.cast_ray(&cube_pose, &ray, f32::MAX, true);
+        let toi = cube.cast_ray(&cube_pose, &ray, f32::MAX, true, &());
 
         /*
          *

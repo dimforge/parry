@@ -5,7 +5,7 @@ use crate::query::details::{
 };
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
-    TypedWorkspaceData, WorkspaceData,
+    QueryOptionsNotUsed, TypedWorkspaceData, WorkspaceData,
 };
 use crate::shape::{CompositeShape, Cuboid, Shape, SupportMap, VoxelType, Voxels};
 use crate::utils::hashmap::Entry;
@@ -259,8 +259,10 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                             manifold.subshape_pos1.transform_point(&pt.local_p1)
                                 - vox1.center.coords
                         };
-                        sub_detector.selected_contacts |=
-                            (test_voxel.contains_local_point(&pt_in_voxel_space, &()) as u32) << i;
+                        sub_detector.selected_contacts |= (test_voxel
+                            .contains_local_point(&pt_in_voxel_space, &QueryOptionsNotUsed)
+                            as u32)
+                            << i;
                     }
                 });
             };
