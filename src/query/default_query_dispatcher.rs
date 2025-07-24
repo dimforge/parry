@@ -46,11 +46,19 @@ impl QueryDispatcher for DefaultQueryDispatcher {
             ))
         } else if let Some(b1) = shape1.as_ball() {
             Ok(query::details::intersection_test_ball_point_query(
-                pos12, b1, shape2,
+                pos12,
+                b1,
+                shape2,
+                // FIXME: This may need a query option dispatcher, because a user custom shape against a ball may need a different option.
+                &self.gjk_options,
             ))
         } else if let Some(b2) = shape2.as_ball() {
             Ok(query::details::intersection_test_point_query_ball(
-                pos12, shape1, b2,
+                pos12,
+                shape1,
+                b2,
+                // FIXME: This may need a query option dispatcher, because a user custom shape against a ball may need a different option.
+                &self.gjk_options,
             ))
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())

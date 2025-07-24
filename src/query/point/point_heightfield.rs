@@ -1,7 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
+use crate::query::{PointProjection, PointQuery, PointQueryWithLocation, QueryOptions};
 use crate::shape::{FeatureId, HeightField, TrianglePointLocation};
 #[cfg(not(feature = "std"))]
 use na::ComplexField; // For sqrt.

@@ -1,6 +1,9 @@
+use core::any::Any;
+
 use crate::math::Real;
 use crate::partitioning::BvhNode;
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::point::{QueryOptionsDispatcher, QueryOptionsDispatcherMap};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
 
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
@@ -22,6 +25,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptionsDispatcher,
     ) -> Option<(u32, Real)> {
         let hit = self
             .0
@@ -29,9 +33,20 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
             .cast_ray(ray, max_time_of_impact, |primitive, best_so_far| {
                 self.0.map_typed_part_at(primitive, |pose, part, _| {
                     if let Some(pose) = pose {
-                        part.cast_ray(pose, ray, best_so_far, solid)
+                        part.cast_ray(
+                            pose,
+                            ray,
+                            best_so_far,
+                            solid,
+                            options.get_option_for_shape(&part.type_id()),
+                        )
                     } else {
-                        part.cast_local_ray(ray, best_so_far, solid)
+                        part.cast_local_ray(
+                            ray,
+                            best_so_far,
+                            solid,
+                            options.get_option_for_shape(&part.type_id()),
+                        )
                     }
                 })?
             })?;
@@ -45,6 +60,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptionsDispatcher,
     ) -> Option<(u32, RayIntersection)> {
         self.0.bvh().find_best(
             max_time_of_impact,
@@ -52,9 +68,20 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
             |primitive, best_so_far| {
                 self.0.map_typed_part_at(primitive, |pose, part, _| {
                     if let Some(pose) = pose {
-                        part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
+                        part.cast_ray_and_get_normal(
+                            pose,
+                            ray,
+                            best_so_far,
+                            solid,
+                            options.get_option_for_shape(&part.type_id()),
+                        )
                     } else {
-                        part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
+                        part.cast_local_ray_and_get_normal(
+                            ray,
+                            best_so_far,
+                            solid,
+                            options.get_option_for_shape(&part.type_id()),
+                        )
                     }
                 })?
             },
@@ -64,9 +91,17 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 
 impl RayCast for Polyline {
     #[inline]
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> Option<Real> {
+        // FIXME: Polyline is made of Segments, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray(ray, max_time_of_impact, solid)
+            .cast_local_ray(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
     }
 
@@ -76,18 +111,28 @@ impl RayCast for Polyline {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        // FIXME: Polyline is made of Segments, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
     }
 }
 
 impl RayCast for Compound {
     #[inline]
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> Option<Real> {
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray(ray, max_time_of_impact, solid)
+            .cast_local_ray(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
     }
 
@@ -97,9 +142,11 @@ impl RayCast for Compound {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
     }
 }

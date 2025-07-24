@@ -1,7 +1,6 @@
 use crate::approx::AbsDiffEq;
 use crate::math::{Point, Real, Vector};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery};
+use crate::query::{PointProjection, PointQuery, QueryOptions};
 use crate::shape::{Capsule, FeatureId, Segment};
 use na::{self, Unit};
 

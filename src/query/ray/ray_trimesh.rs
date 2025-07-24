@@ -1,5 +1,6 @@
 use crate::math::Real;
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::point::QueryOptionsDispatcherMap;
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{CompositeShapeRef, FeatureId, TriMesh};
 
 #[cfg(feature = "dim3")]
@@ -7,9 +8,17 @@ pub use ray_cast_with_culling::RayCullingMode;
 
 impl RayCast for TriMesh {
     #[inline]
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> Option<Real> {
+        // FIXME: Polyline is made of Triangles, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray(ray, max_time_of_impact, solid)
+            .cast_local_ray(ray, max_time_of_impact, solid, options)
             .map(|hit| hit.1)
     }
 
@@ -19,9 +28,12 @@ impl RayCast for TriMesh {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        // FIXME: Polyline is made of Triangles, which casts only require GjkOptions. So ideally we shouldn't need a full dispatcher.
+        let options = QueryOptionsDispatcherMap::from_dyn_or_default(options);
         CompositeShapeRef(self)
-            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             .map(|(best, mut res)| {
                 // We hit a backface.
                 // NOTE: we need this for `TriMesh::is_backface` to work properly.
@@ -164,7 +176,7 @@ mod ray_cast_with_culling {
                 ray,
             };
             CompositeShapeRef(&mesh_with_culling)
-                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false)
+                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false, &())
                 .map(|(best, mut res)| {
                     // We hit a backface.
                     // NOTE: we need this for `TriMesh::is_backface` to work properly.

@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Real, Vector};
 use crate::query::details::ShapeCastOptions;
-use crate::query::{Ray, RayCast, ShapeCastHit, ShapeCastStatus};
+use crate::query::{QueryOptionsNotUsed, Ray, RayCast, ShapeCastHit, ShapeCastStatus};
 use crate::shape::{HalfSpace, RoundShapeRef, SupportMap};
 
 /// Time Of Impact of a halfspace with a support-mapped shape under translational movement.
@@ -29,7 +29,9 @@ pub fn cast_shapes_halfspace_support_map<G: ?Sized + SupportMap>(
     let closest_point = support_point;
     let ray = Ray::new(closest_point, *vel12);
 
-    if let Some(time_of_impact) = halfspace.cast_local_ray(&ray, options.max_time_of_impact, true) {
+    if let Some(time_of_impact) =
+        halfspace.cast_local_ray(&ray, options.max_time_of_impact, true, &QueryOptionsNotUsed)
+    {
         if time_of_impact > options.max_time_of_impact {
             return None;
         }

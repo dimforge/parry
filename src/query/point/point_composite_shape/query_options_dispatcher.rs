@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use core::any::{Any, TypeId};
 
 use crate::query::gjk::GjkOptions;
-use crate::query::point::point_query::QueryOptions;
+use crate::query::QueryOptions;
 use crate::shape::Compound;
 use hashbrown::HashMap;
 
@@ -81,6 +81,18 @@ impl QueryOptionsDispatcherMap {
     pub fn get_option_mut<T: 'static + QueryOptions>(&mut self) -> Option<&mut T> {
         let option = self.options.get_mut(&TypeId::of::<T>())?;
         option.as_mut().as_any_mut().downcast_mut::<T>()
+    }
+
+    /// Downcasts a [QueryOptions] into a [QueryOptionsDispatcher], if it's one, otherwise returns `()`,
+    /// which will result in default options being used.
+    pub fn from_dyn_or_default(options: &dyn QueryOptions) -> &dyn QueryOptionsDispatcher {
+        let options = options
+            .as_any()
+            .downcast_ref::<QueryOptionsDispatcherMap>()
+            .map_or(&() as &dyn QueryOptionsDispatcher, |m| {
+                m as &dyn QueryOptionsDispatcher
+            });
+        options
     }
 }
 

@@ -2,7 +2,7 @@ use super::{Bvh, BvhNode};
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::Point;
 use crate::math::Real;
-use crate::query::PointProjection;
+use crate::query::{PointProjection, QueryOptionsNotUsed};
 use crate::query::{PointQuery, Ray};
 
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
@@ -51,7 +51,10 @@ impl Bvh {
     ) -> Option<(u32, (Real, PointProjection))> {
         self.find_best(
             max_distance,
-            |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true, &()),
+            |node: &BvhNode, _| {
+                node.aabb()
+                    .distance_to_local_point(point, true, &QueryOptionsNotUsed)
+            },
             |primitive, _| {
                 let proj = primitive_check(primitive, max_distance)?;
                 Some((na::distance(&proj.point, point), proj))

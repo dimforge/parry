@@ -1,6 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::Contact;
+use crate::query::{Contact, QueryOptions};
 use crate::shape::{Ball, Shape};
 
 use na::{self, Unit};

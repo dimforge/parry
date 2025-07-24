@@ -1,7 +1,6 @@
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{ContactManifold, Ray, TrackedContact};
+use crate::query::{ContactManifold, QueryOptions, Ray, TrackedContact};
 use crate::shape::{Ball, PackedFeatureId, Shape};
 use na::Unit;
 
@@ -106,7 +105,9 @@ pub fn contact_manifold_convex_ball<'a, ManifoldData, ContactData, S1>(
                 },
             );
 
-            if let Some(hit) = shape1.cast_local_ray_and_get_normal(&ray1, Real::MAX, false) {
+            if let Some(hit) =
+                shape1.cast_local_ray_and_get_normal(&ray1, Real::MAX, false, options)
+            {
                 local_p1 = ray1.point_at(hit.time_of_impact);
                 dist = if proj.is_inside {
                     -hit.time_of_impact

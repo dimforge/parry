@@ -45,6 +45,7 @@ pub use self::shape_cast::{
     cast_shapes, cast_shapes_with_dispatcher, ShapeCastHit, ShapeCastOptions, ShapeCastStatus,
 };
 pub use self::split::{IntersectResult, SplitResult};
+pub use query_options::{DefaultQueryOptions, QueryOptions, QueryOptionsNotUsed};
 
 #[cfg(all(feature = "dim3", feature = "alloc"))]
 pub use self::ray::RayCullingMode;
@@ -64,6 +65,7 @@ mod intersection_test;
 mod nonlinear_shape_cast;
 pub mod point;
 mod query_dispatcher;
+mod query_options;
 mod ray;
 pub mod sat;
 mod shape_cast;

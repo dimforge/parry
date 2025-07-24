@@ -4,7 +4,7 @@ use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::query;
 use crate::query::gjk::{self, CSOPoint, GjkOptions, VoronoiSimplex};
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 #[cfg(all(feature = "alloc", feature = "dim2"))]
 use crate::shape::ConvexPolygon;
 #[cfg(all(feature = "alloc", feature = "dim3"))]
@@ -78,15 +78,21 @@ impl RayCast for Cylinder {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
             max_time_of_impact,
             solid,
-            // TODO: be able to pass custom option.
-            &GjkOptions::default(),
+            options,
         )
     }
 }
@@ -98,15 +104,21 @@ impl RayCast for Cone {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
             max_time_of_impact,
             solid,
-            // TODO: be able to pass custom option.
-            &GjkOptions::default(),
+            options,
         )
     }
 }
@@ -117,15 +129,21 @@ impl RayCast for Capsule {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
             max_time_of_impact,
             solid,
-            // TODO: be able to pass custom option.
-            &GjkOptions::default(),
+            options,
         )
     }
 }
@@ -138,15 +156,21 @@ impl RayCast for ConvexPolyhedron {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
             max_time_of_impact,
             solid,
-            // TODO: be able to pass custom option.
-            &GjkOptions::default(),
+            options,
         )
     }
 }
@@ -159,15 +183,21 @@ impl RayCast for ConvexPolygon {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         local_ray_intersection_with_support_map_with_params(
             self,
             &mut VoronoiSimplex::new(),
             ray,
             max_time_of_impact,
             solid,
-            // TODO: be able to pass custom option.
-            &GjkOptions::default(),
+            options,
         )
     }
 }
@@ -179,7 +209,14 @@ impl RayCast for Segment {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
+        let options = if let Some(options) = options.as_any().downcast_ref() {
+            options
+        } else {
+            log::warn!("Incorrect option passed to project_local_point: using default options.");
+            &GjkOptions::default()
+        };
         #[cfg(feature = "dim2")]
         {
             use crate::math::Vector;
@@ -190,7 +227,7 @@ impl RayCast for Segment {
                 &ray.dir,
                 &self.a,
                 &seg_dir,
-                crate::math::DEFAULT_EPSILON,
+                options.epsilon_tolerance,
             );
 
             if parallel {
@@ -200,7 +237,7 @@ impl RayCast for Segment {
                 let dpos = self.a - ray.origin;
                 let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
-                if dpos.dot(&normal).abs() < crate::math::DEFAULT_EPSILON {
+                if dpos.dot(&normal).abs() < options.epsilon_tolerance {
                     // The rays and the segment are collinear.
                     let dist1 = dpos.dot(&ray.dir);
                     let dist2 = dist1 + seg_dir.dot(&ray.dir);
@@ -265,8 +302,7 @@ impl RayCast for Segment {
                 ray,
                 max_time_of_impact,
                 solid,
-                // TODO: be able to pass custom option.
-                &GjkOptions::default(),
+                options,
             )
         }
     }

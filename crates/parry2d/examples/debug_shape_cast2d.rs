@@ -111,7 +111,7 @@ fn shape_cast_debug(
         ShapeCastOptions::with_max_time_of_impact(1.0),
         DefaultQueryDispatcher {
             gjk_options: query::gjk::GjkOptions {
-                espilon_tolerance: math::DEFAULT_EPSILON * 1000f32,
+                epsilon_tolerance: math::DEFAULT_EPSILON * 1000f32,
                 nb_max_iterations: 100,
             },
         },

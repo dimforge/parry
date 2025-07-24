@@ -1,13 +1,19 @@
 use na::{self, ComplexField};
 
 use crate::math::{Point, Real};
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{Ball, FeatureId};
 use num::Zero;
 
 impl RayCast for Ball {
     #[inline]
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        _options: &dyn QueryOptions,
+    ) -> Option<Real> {
         ray_toi_with_ball(&Point::origin(), self.radius, ray, solid)
             .1
             .filter(|time_of_impact| *time_of_impact <= max_time_of_impact)
@@ -19,6 +25,7 @@ impl RayCast for Ball {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         ray_toi_and_normal_with_ball(&Point::origin(), self.radius, ray, solid)
             .1

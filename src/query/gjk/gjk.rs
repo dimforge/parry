@@ -3,11 +3,10 @@
 use na::{self, ComplexField, Unit};
 
 use crate::query::gjk::{CSOPoint, ConstantOrigin, VoronoiSimplex};
-use crate::query::point::point_query::QueryOptions;
 use crate::shape::SupportMap;
 // use query::Proximity;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
-use crate::query::{self, Ray};
+use crate::query::{self, QueryOptions, Ray};
 
 use num::{Bounded, Zero};
 
@@ -39,7 +38,7 @@ pub struct GjkOptions {
     /// The absolute tolerance used by the GJK algorithm.
     ///
     /// Defaults to [math::DEFAULT_EPSILON][crate::math::DEFAULT_EPSILON]
-    pub espilon_tolerance: Real,
+    pub epsilon_tolerance: Real,
     /// The maximum number of iterations of the GJK algorithm.
     pub nb_max_iterations: u32,
 }
@@ -47,7 +46,7 @@ pub struct GjkOptions {
 impl Default for GjkOptions {
     fn default() -> Self {
         Self {
-            espilon_tolerance: eps_tol(),
+            epsilon_tolerance: eps_tol(),
             nb_max_iterations: 100,
         }
     }
@@ -124,7 +123,7 @@ where
     G1: ?Sized + SupportMap,
     G2: ?Sized + SupportMap,
 {
-    let _eps_tol: Real = gjk_options.espilon_tolerance;
+    let _eps_tol: Real = gjk_options.epsilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     // TODO: reset the simplex if it is empty?
@@ -280,7 +279,7 @@ where
     G2: ?Sized + SupportMap,
 {
     let _eps = crate::math::DEFAULT_EPSILON;
-    let _eps_tol: Real = gjk_options.espilon_tolerance;
+    let _eps_tol: Real = gjk_options.epsilon_tolerance;
     let _eps_rel: Real = ComplexField::sqrt(_eps_tol);
 
     let ray_length = ray.dir.norm();
@@ -434,7 +433,7 @@ mod test {
 
     use crate::{
         math::Real,
-        query::{self, gjk::GjkOptions, DefaultQueryDispatcher, ShapeCastOptions},
+        query::{self, gjk::gjk::GjkOptions, DefaultQueryDispatcher, ShapeCastOptions},
         shape::{Ball, ConvexPolygon, Shape},
     };
 
@@ -470,7 +469,7 @@ mod test {
 
         let dispatcher = DefaultQueryDispatcher {
             gjk_options: GjkOptions {
-                espilon_tolerance: crate::math::DEFAULT_EPSILON * 10000.0,
+                epsilon_tolerance: crate::math::DEFAULT_EPSILON * 10000.0,
                 ..GjkOptions::default()
             },
         };

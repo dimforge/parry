@@ -1,6 +1,5 @@
 use crate::math::{Point, Real};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
+use crate::query::{PointProjection, PointQuery, PointQueryWithLocation, QueryOptions};
 use crate::shape::{FeatureId, Segment, SegmentPointLocation};
 
 impl PointQuery for Segment {

@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real};
-use crate::query::point::point_query::QueryOptions;
+use crate::query::QueryOptions;
 use crate::shape::{Ball, Shape};
 
 /// Distance between a ball and a convex polyhedron.

@@ -1,7 +1,7 @@
 use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::query;
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 #[cfg(feature = "dim2")]
 use crate::shape::FeatureId;
 use crate::shape::HeightField;
@@ -14,6 +14,7 @@ impl RayCast for HeightField {
         ray: &Ray,
         max_time_of_impact: Real,
         _: bool,
+        _options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         let aabb = self.local_aabb();
         let (min_t, mut max_t) = aabb.clip_ray_parameters(ray)?;
@@ -126,6 +127,7 @@ impl RayCast for HeightField {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         use num_traits::Bounded;
 
@@ -155,12 +157,12 @@ impl RayCast for HeightField {
 
         loop {
             let tris = self.triangles_at(cell.0, cell.1);
-            let inter1 = tris
-                .0
-                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
-            let inter2 = tris
-                .1
-                .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
+            let inter1 = tris.0.and_then(|tri| {
+                tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
+            });
+            let inter2 = tris.1.and_then(|tri| {
+                tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
+            });
 
             match (inter1, inter2) {
                 (Some(mut inter1), Some(mut inter2)) => {

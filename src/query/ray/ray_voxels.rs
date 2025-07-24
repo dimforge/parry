@@ -1,5 +1,5 @@
 use crate::math::{Real, Vector};
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, Voxels};
 
 impl RayCast for Voxels {
@@ -9,6 +9,7 @@ impl RayCast for Voxels {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         use num_traits::Bounded;
 
@@ -38,7 +39,7 @@ impl RayCast for Voxels {
                 // We hit a voxel!
                 // TODO: if `solid` is false, and we started hitting from the first iteration,
                 //       then we should continue the ray propagation until we reach empty space again.
-                let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid);
+                let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid, options);
 
                 if let Some(mut hit) = hit {
                     // TODO: have the feature id be based on the voxel type?

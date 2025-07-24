@@ -1,7 +1,7 @@
 //! Point inclusion and projection.
 
 #[doc(inline)]
-pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation, QueryOptions};
+pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation};
 #[cfg(feature = "alloc")]
 pub use self::{
     point_composite_shape::query_options_dispatcher::{

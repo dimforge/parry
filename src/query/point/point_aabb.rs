@@ -1,8 +1,7 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real, Vector, DIM};
 use crate::num::{Bounded, Zero};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery};
+use crate::query::{PointProjection, PointQuery, QueryOptions};
 use crate::shape::FeatureId;
 use na;
 

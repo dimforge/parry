@@ -384,7 +384,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX, &());
         assert_eq!(hit, false);
     }
     #[test]
@@ -411,7 +411,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX, &());
         assert_eq!(hit, true);
     }
     #[test]
@@ -438,7 +438,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX, &());
         assert_eq!(hit, false);
     }
 }

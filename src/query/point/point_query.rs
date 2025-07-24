@@ -1,6 +1,5 @@
-use core::any::Any;
-
 use crate::math::{Isometry, Point, Real};
+use crate::query::QueryOptions;
 use crate::shape::FeatureId;
 use na;
 
@@ -39,28 +38,6 @@ impl PointProjection {
     /// Returns `true` if `Self::is_inside` is `true` or if the distance between the projected point and `point` is smaller than `min_dist`.
     pub fn is_inside_eps(&self, original_point: &Point<Real>, min_dist: Real) -> bool {
         self.is_inside || na::distance_squared(original_point, &self.point) < min_dist * min_dist
-    }
-}
-
-/// Options to pass to [QueryOptions]. The type to be passed depends on each shape implementation.
-/// If you're not sure, use `&()` which will evaluate to default options for included shapes in
-/// [QueryOptions] implementations.
-///
-/// # See Also
-/// - [GjkOptions][crate::query::gjk::GjkOptions]
-/// - [QueryOptionsDispatcher][crate::query::point::QueryOptionsDispatcher]
-///   - [QueryOptionsDispatcherMap][crate::query::point::QueryOptionsDispatcherMap]
-pub trait QueryOptions {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-impl QueryOptions for () {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
     }
 }
 

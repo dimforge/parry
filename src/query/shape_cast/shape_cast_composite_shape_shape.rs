@@ -2,7 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::partitioning::BvhNode;
 use crate::query::shape_cast::ShapeCastOptions;
-use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit};
+use crate::query::{QueryDispatcher, QueryOptionsNotUsed, Ray, RayCast, ShapeCastHit};
 use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
 use simba::simd::SimdValue;
 
@@ -36,7 +36,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
                 };
 
                 // Compute the time of impact.
-                msum.cast_local_ray(&ray, best_so_far, true)
+                msum.cast_local_ray(&ray, best_so_far, true, &QueryOptionsNotUsed)
                     .unwrap_or(Real::MAX)
             },
             |part_id, _| {

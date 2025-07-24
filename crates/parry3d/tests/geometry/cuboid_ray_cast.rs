@@ -31,7 +31,7 @@ where
         let position = Isometry3::from_parts(Translation3::identity(), rotation);
 
         let intersection = shape
-            .cast_ray_and_get_normal(&position, &ray, f32::MAX, true)
+            .cast_ray_and_get_normal(&position, &ray, f32::MAX, true, &())
             .expect(&format!(
                 "Ray {:?} did not hit Shape {} rotated with {:?}",
                 ray, name, rotation
@@ -61,14 +61,14 @@ where
 
         assert!(
             shape
-                .cast_ray_and_get_normal(&position, &new_ray, f32::MAX, true)
+                .cast_ray_and_get_normal(&position, &new_ray, f32::MAX, true, &())
                 .is_none(),
             "Ray {:#?} from outside Shape {} rotated with {:#?} did hit at t={}",
             ray,
             name,
             rotation,
             shape
-                .cast_ray_and_get_normal(&position, &new_ray, f32::MAX, true)
+                .cast_ray_and_get_normal(&position, &new_ray, f32::MAX, true, &())
                 .expect("recurring ray cast produced a different answer")
                 .time_of_impact
         );

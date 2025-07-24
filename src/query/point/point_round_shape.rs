@@ -1,9 +1,8 @@
 use log::warn;
 
 use crate::math::{Point, Real};
-use crate::query::gjk::{GjkOptions, VoronoiSimplex};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery};
+use crate::query::gjk::VoronoiSimplex;
+use crate::query::{PointProjection, PointQuery, QueryOptions};
 use crate::shape::{FeatureId, RoundShape, SupportMap};
 
 // TODO: if PointQuery had a `project_point_with_normal` method, we could just
@@ -27,7 +26,7 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
                 options
             } else {
                 warn!("Incorrect option passed to project_local_point: using default options.");
-                &GjkOptions::default()
+                &crate::query::gjk::GjkOptions::default()
             };
             crate::query::details::local_point_projection_on_support_map(
                 self,

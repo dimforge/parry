@@ -301,7 +301,7 @@ impl Aabb {
         };
         let ray = Ray::new(Point::origin(), vel12);
 
-        msum.intersects_local_ray(&ray, 1.0)
+        msum.intersects_local_ray(&ray, 1.0, &())
     }
 
     /// Computes the intersection of this `Aabb` and another one.

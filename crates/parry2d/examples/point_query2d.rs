@@ -39,7 +39,7 @@ async fn main() {
             .unwrap();
 
         // loops from default epsilon to an arbitrarily chosen slightly higher value.
-        gjk_options.espilon_tolerance =
+        gjk_options.epsilon_tolerance =
             f32::EPSILON + (((i as f32 / 10f32).sin() + 1f32) / 2f32) * 0.000002f32;
         let (shape_to_query, options) = if (i) % 2 == 0 {
             (simple_convex.0.as_ref(), &*gjk_options as &dyn QueryOptions)
@@ -62,7 +62,7 @@ async fn main() {
         }
         let gjk_options = query_options_dispatcher.get_option::<GjkOptions>().unwrap();
 
-        easy_draw_text(&format!("tolerance: {:.7}", gjk_options.espilon_tolerance));
+        easy_draw_text(&format!("tolerance: {:.7}", gjk_options.epsilon_tolerance));
 
         next_frame().await
     }

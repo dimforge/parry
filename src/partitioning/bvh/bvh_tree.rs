@@ -355,7 +355,7 @@ impl BvhNode {
     /// Returns `Real::MAX` if there is no hit.
     pub fn cast_ray(&self, ray: &Ray, max_toi: Real) -> Real {
         self.aabb()
-            .cast_local_ray(ray, max_toi, true)
+            .cast_local_ray(ray, max_toi, true, &())
             .unwrap_or(Real::MAX)
     }
 

@@ -1,6 +1,7 @@
 //! Traits and structure needed to cast rays.
 
 use crate::math::{Isometry, Point, Real, Vector};
+use crate::query::QueryOptions;
 use crate::shape::FeatureId;
 
 #[cfg(feature = "alloc")]
@@ -132,8 +133,14 @@ impl BvhLeafCost for RayIntersection {
 /// Traits of objects which can be transformed and tested for intersection with a ray.
 pub trait RayCast {
     /// Computes the time of impact between this transform shape and a ray.
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
-        self.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        options: &dyn QueryOptions,
+    ) -> Option<Real> {
+        self.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             .map(|inter| inter.time_of_impact)
     }
 
@@ -143,12 +150,19 @@ pub trait RayCast {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection>;
 
     /// Tests whether a ray intersects this transformed shape.
     #[inline]
-    fn intersects_local_ray(&self, ray: &Ray, max_time_of_impact: Real) -> bool {
-        self.cast_local_ray(ray, max_time_of_impact, true).is_some()
+    fn intersects_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        options: &dyn QueryOptions,
+    ) -> bool {
+        self.cast_local_ray(ray, max_time_of_impact, true, options)
+            .is_some()
     }
 
     /// Computes the time of impact between this transform shape and a ray.
@@ -158,9 +172,10 @@ pub trait RayCast {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<Real> {
         let ls_ray = ray.inverse_transform_by(m);
-        self.cast_local_ray(&ls_ray, max_time_of_impact, solid)
+        self.cast_local_ray(&ls_ray, max_time_of_impact, solid, options)
     }
 
     /// Computes the time of impact, and normal between this transformed shape and a ray.
@@ -170,16 +185,23 @@ pub trait RayCast {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         let ls_ray = ray.inverse_transform_by(m);
-        self.cast_local_ray_and_get_normal(&ls_ray, max_time_of_impact, solid)
+        self.cast_local_ray_and_get_normal(&ls_ray, max_time_of_impact, solid, options)
             .map(|inter| inter.transform_by(m))
     }
 
     /// Tests whether a ray intersects this transformed shape.
     #[inline]
-    fn intersects_ray(&self, m: &Isometry<Real>, ray: &Ray, max_time_of_impact: Real) -> bool {
+    fn intersects_ray(
+        &self,
+        m: &Isometry<Real>,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        options: &dyn QueryOptions,
+    ) -> bool {
         let ls_ray = ray.inverse_transform_by(m);
-        self.intersects_local_ray(&ls_ray, max_time_of_impact)
+        self.intersects_local_ray(&ls_ray, max_time_of_impact, options)
     }
 }

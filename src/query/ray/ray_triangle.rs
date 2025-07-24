@@ -1,7 +1,7 @@
 use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, Triangle};
 #[cfg(feature = "dim3")]
 use {crate::math::Point, na::Vector3};
@@ -14,6 +14,7 @@ impl RayCast for Triangle {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         let edges = self.edges();
 
@@ -32,7 +33,8 @@ impl RayCast for Triangle {
         let mut smallest_toi = Real::MAX;
 
         for edge in &edges {
-            if let Some(inter) = edge.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            if let Some(inter) =
+                edge.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid, options)
             {
                 if inter.time_of_impact < smallest_toi {
                     smallest_toi = inter.time_of_impact;
@@ -51,8 +53,10 @@ impl RayCast for Triangle {
         ray: &Ray,
         max_time_of_impact: Real,
         _: bool,
+        options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
-        let inter = local_ray_intersection_with_triangle(&self.a, &self.b, &self.c, ray)?.0;
+        let inter =
+            local_ray_intersection_with_triangle(&self.a, &self.b, &self.c, ray, options)?.0;
 
         if inter.time_of_impact <= max_time_of_impact {
             Some(inter)
@@ -72,6 +76,7 @@ pub fn local_ray_intersection_with_triangle(
     b: &Point<Real>,
     c: &Point<Real>,
     ray: &Ray,
+    _options: &dyn QueryOptions,
 ) -> Option<(RayIntersection, Vector3<Real>)> {
     let ab = *b - *a;
     let ac = *c - *a;

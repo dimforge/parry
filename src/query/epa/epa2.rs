@@ -18,8 +18,8 @@ struct FaceId {
 }
 
 impl FaceId {
-    fn new(id: usize, neg_dist: Real, gjk_espilon_tolerance: Real) -> Option<Self> {
-        if neg_dist > gjk_espilon_tolerance {
+    fn new(id: usize, neg_dist: Real, gjk_epsilon_tolerance: Real) -> Option<Self> {
+        if neg_dist > gjk_epsilon_tolerance {
             None
         } else {
             Some(FaceId { id, neg_dist })

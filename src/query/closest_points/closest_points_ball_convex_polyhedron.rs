@@ -1,6 +1,5 @@
 use crate::math::{Isometry, Real};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::ClosestPoints;
+use crate::query::{ClosestPoints, QueryOptions};
 use crate::shape::{Ball, Shape};
 
 /// ClosestPoints between a ball and a convex polyhedron.

@@ -1,7 +1,7 @@
 use na;
 
 use crate::math::{Point, Real, Vector};
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, HalfSpace};
 
 /// Computes the time_of_impact of an unbounded line with a halfspace described by its center and normal.
@@ -45,6 +45,7 @@ impl RayCast for HalfSpace {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         let dpos = -ray.origin;
 

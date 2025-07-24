@@ -105,6 +105,8 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     g2: &dyn Shape,
     options: ShapeCastOptions,
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
+    use crate::query::QueryOptionsNotUsed;
+
     let aabb1 = heightfield1.local_aabb();
     let mut aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), *vel12);
@@ -112,7 +114,9 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     // Find the first hit between the aabbs.
     let hext2_1 = aabb2_1.half_extents();
     let msum = Aabb::new(aabb1.mins - hext2_1, aabb1.maxs + hext2_1);
-    if let Some(time_of_impact) = msum.cast_local_ray(&ray, options.max_time_of_impact, true) {
+    if let Some(time_of_impact) =
+        msum.cast_local_ray(&ray, options.max_time_of_impact, true, &QueryOptionsNotUsed)
+    {
         // Advance the aabb2 to the hit point.
         aabb2_1.mins += ray.dir * time_of_impact;
         aabb2_1.maxs += ray.dir * time_of_impact;

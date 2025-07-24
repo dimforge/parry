@@ -4,12 +4,18 @@ use na;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector, DIM};
-use crate::query::{Ray, RayCast, RayIntersection};
+use crate::query::{QueryOptions, Ray, RayCast, RayIntersection};
 use crate::shape::FeatureId;
 use num::Zero;
 
 impl RayCast for Aabb {
-    fn cast_local_ray(&self, ray: &Ray, max_time_of_impact: Real, solid: bool) -> Option<Real> {
+    fn cast_local_ray(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+        _options: &dyn QueryOptions,
+    ) -> Option<Real> {
         let mut tmin: Real = 0.0;
         let mut tmax: Real = max_time_of_impact;
 
@@ -54,6 +60,7 @@ impl RayCast for Aabb {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
+        _options: &dyn QueryOptions,
     ) -> Option<RayIntersection> {
         ray_aabb(self, ray, max_time_of_impact, solid).map(|(t, n, i)| {
             let feature = if i < 0 {

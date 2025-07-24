@@ -1,6 +1,5 @@
 use crate::math::{Point, Real, Vector, DIM};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
+use crate::query::{PointProjection, PointQuery, PointQueryWithLocation, QueryOptions};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
 
 #[inline]

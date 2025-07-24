@@ -1,6 +1,5 @@
 use crate::math::{Point, Real};
-use crate::query::point::point_query::QueryOptions;
-use crate::query::{PointProjection, PointQuery};
+use crate::query::{PointProjection, PointQuery, QueryOptions};
 use crate::shape::{Cuboid, FeatureId, VoxelType, Voxels};
 
 impl PointQuery for Voxels {

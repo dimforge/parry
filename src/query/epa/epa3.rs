@@ -2,6 +2,7 @@
 
 use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::query::query_options::QueryOptionsNotUsed;
 use crate::query::PointQueryWithLocation;
 use crate::shape::{SupportMap, Triangle, TrianglePointLocation};
 use crate::utils;
@@ -18,8 +19,8 @@ struct FaceId {
 }
 
 impl FaceId {
-    fn new(id: usize, neg_dist: Real, gjk_espilon_tolerance: Real) -> Option<Self> {
-        if neg_dist > gjk_espilon_tolerance {
+    fn new(id: usize, neg_dist: Real, gjk_epsilon_tolerance: Real) -> Option<Self> {
+        if neg_dist > gjk_epsilon_tolerance {
             None
         } else {
             Some(FaceId { id, neg_dist })
@@ -96,8 +97,11 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (proj, loc) =
-            tri.project_local_point_and_get_location(&Point::<Real>::origin(), true, &());
+        let (proj, loc) = tri.project_local_point_and_get_location(
+            &Point::<Real>::origin(),
+            true,
+            &QueryOptionsNotUsed,
+        );
 
         match loc {
             TrianglePointLocation::OnVertex(_) | TrianglePointLocation::OnEdge(_, _) => {
