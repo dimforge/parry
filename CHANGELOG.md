@@ -1,3 +1,7 @@
+## 0.23.0
+
+- Update to nalgebra 0.34.
+
 ## 0.22.1
 
 ### Added
