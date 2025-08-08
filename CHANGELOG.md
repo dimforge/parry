@@ -1,3 +1,11 @@
+## 0.22.1
+
+### Added
+
+- Add `Bvh::insert_with_change_detection` which runs an insertion unless the inserted aabb is enclosed in the
+  existing one. This differs from `insert_or_update_partially` because the former will update parent AABBs so
+  they enclose their descendants.
+
 ## 0.22.0
 
 ### Fixed

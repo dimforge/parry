@@ -11,13 +11,17 @@ impl Bvh {
         self.insert_with_change_detection(aabb, leaf_index, 0.0)
     }
 
-
     /// Inserts a leaf into this BVH, or updates it if already exists.
     ///
     /// If the `aabb` is already contained by the existing leaf node AABB, nothing is modified.
     /// Otherwise, the aabb being effectively inserted is equal to `aabb` enlarged by the
     /// `change_detection_margin`.
-    pub fn insert_with_change_detection(&mut self, aabb: Aabb, leaf_index: u32, change_detection_margin: Real) {
+    pub fn insert_with_change_detection(
+        &mut self,
+        aabb: Aabb,
+        leaf_index: u32,
+        change_detection_margin: Real,
+    ) {
         if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
             let node = &mut self.nodes[*leaf];
 
