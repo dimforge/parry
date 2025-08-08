@@ -98,7 +98,7 @@ thiserror = { version = "2", default-features = false }
 [dev-dependencies]
 oorandom = "11"
 ptree = "0.4.0"
-rand = { version = "0.8" }
+rand = { version = "0.9" }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
