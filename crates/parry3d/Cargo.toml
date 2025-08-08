@@ -74,7 +74,7 @@ num-traits = { version = "0.2", default-features = false }
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
-nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
+nalgebra = { version = "0.34", default-features = false, features = ["libm"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 rkyv = { version = "0.7.41", optional = true }
@@ -105,7 +105,7 @@ oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.8" }
 macroquad = "0.4.12"
-nalgebra = { version = "0.33", default-features = false, features = ["rand"] }
+nalgebra = { version = "0.34", default-features = false, features = ["rand"] }
 rand_isaac = "0.3"
 
 [package.metadata.docs.rs]
