@@ -4,7 +4,6 @@ use crate::partitioning::BvhNode;
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit};
 use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
-use simba::simd::SimdValue;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Performs a shape-cast between `self` and a `shape2` positioned at `pose12` and subject to
