@@ -56,33 +56,40 @@ fn bvh_build_and_removal() {
                     }
                 };
 
-                bvh.assert_well_formed();
+                for _ in 0..3 {
+                    bvh.assert_well_formed();
 
-                match removal_pattern {
-                    RemovalPattern::InOrder => {
-                        // Remove in insertion order.
-                        for i in 0..len {
-                            bvh.remove(i as u32);
-                            bvh.assert_well_formed();
+                    match removal_pattern {
+                        RemovalPattern::InOrder => {
+                            // Remove in insertion order.
+                            for i in 0..len {
+                                bvh.remove(i as u32);
+                                bvh.assert_well_formed();
+                            }
+                        }
+                        RemovalPattern::RevOrder => {
+                            // Remove in reverse insertion order.
+                            for i in (0..len).rev() {
+                                bvh.remove(i as u32);
+                                bvh.assert_well_formed();
+                            }
+                        }
+                        RemovalPattern::EvenOdd => {
+                            // Remove even indices first, then odd.
+                            for i in (0..len).filter(|i| i % 2 == 0) {
+                                bvh.remove(i as u32);
+                                bvh.assert_well_formed();
+                            }
+                            for i in (0..len).filter(|i| i % 2 != 0) {
+                                bvh.remove(i as u32);
+                                bvh.assert_well_formed();
+                            }
                         }
                     }
-                    RemovalPattern::RevOrder => {
-                        // Remove in reverse insertion order.
-                        for i in (0..len).rev() {
-                            bvh.remove(i as u32);
-                            bvh.assert_well_formed();
-                        }
-                    }
-                    RemovalPattern::EvenOdd => {
-                        // Remove even indices first, then odd.
-                        for i in (0..len).filter(|i| i % 2 == 0) {
-                            bvh.remove(i as u32);
-                            bvh.assert_well_formed();
-                        }
-                        for i in (0..len).filter(|i| i % 2 != 0) {
-                            bvh.remove(i as u32);
-                            bvh.assert_well_formed();
-                        }
+
+                    // Re-insert everything.
+                    for (i, leaf) in leaves.iter().enumerate() {
+                        bvh.insert(*leaf, i as u32);
                     }
                 }
             }

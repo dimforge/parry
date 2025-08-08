@@ -4,7 +4,6 @@ use crate::partitioning::BvhNode;
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit};
 use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
-use simba::simd::SimdValue;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Performs a shape-cast between `self` and a `shape2` positioned at `pose12` and subject to
@@ -22,9 +21,8 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     ) -> Option<(u32, ShapeCastHit)> {
         let ls_aabb2 = g2.compute_aabb(pose12);
         let ray = Ray::new(Point::origin(), *vel12);
-        let msum_shift = Vector::splat(-ls_aabb2.center().coords);
-        let msum_margin =
-            Vector::splat(ls_aabb2.half_extents() + Vector::repeat(options.target_distance));
+        let msum_shift = -ls_aabb2.center().coords;
+        let msum_margin = ls_aabb2.half_extents() + Vector::repeat(options.target_distance);
 
         self.0.bvh().find_best(
             options.max_time_of_impact,
