@@ -8,10 +8,32 @@ use alloc::vec;
 impl Bvh {
     /// Inserts a leaf into this BVH, or updates it if already exists.
     pub fn insert(&mut self, aabb: Aabb, leaf_index: u32) {
+        self.insert_with_change_detection(aabb, leaf_index, 0.0)
+    }
+
+
+    /// Inserts a leaf into this BVH, or updates it if already exists.
+    ///
+    /// If the `aabb` is already contained by the existing leaf node AABB, nothing is modified.
+    /// Otherwise, the aabb being effectively inserted is equal to `aabb` enlarged by the
+    /// `change_detection_margin`.
+    pub fn insert_with_change_detection(&mut self, aabb: Aabb, leaf_index: u32, change_detection_margin: Real) {
         if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
             let node = &mut self.nodes[*leaf];
-            node.mins = aabb.mins;
-            node.maxs = aabb.maxs;
+
+            if change_detection_margin > 0.0 {
+                if !node.contains_aabb(&aabb) {
+                    node.mins = aabb.mins - Vector::repeat(change_detection_margin);
+                    node.maxs = aabb.maxs + Vector::repeat(change_detection_margin);
+                    node.data.set_change_pending();
+                } else {
+                    // No change detected, no propagation needed.
+                    return;
+                }
+            } else {
+                node.mins = aabb.mins;
+                node.maxs = aabb.maxs;
+            }
 
             // Propagate up.
             // TODO: maybe we should offer multiple propagation strategy.
