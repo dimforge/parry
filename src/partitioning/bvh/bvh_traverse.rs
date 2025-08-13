@@ -23,9 +23,13 @@ impl<'a, Check: Fn(&BvhNode) -> bool> Iterator for Leaves<'a, Check> {
             let node = self.next.take()?;
 
             if node.is_leaf() {
-                return Some(node.children);
+                if (self.check)(node) {
+                    return Some(node.children);
+                } else {
+                    continue;
+                }
             }
-
+            
             let children = &self.tree.nodes[node.children as usize];
             let left = &children.left;
             let right = &children.right;
