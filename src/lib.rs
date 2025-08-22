@@ -39,7 +39,10 @@ macro_rules! array(
             #[inline(always)]
             #[allow(dead_code)]
             fn create_arr<T>(mut callback: impl FnMut(usize) -> T) -> [T; SIMD_WIDTH] {
-                [callback(0usize), callback(1usize), callback(2usize), callback(3usize)]
+                #[cfg(not(feature = "simd-is-enabled"))]
+                return [callback(0usize)];
+                #[cfg(feature = "simd-is-enabled")]
+                return [callback(0usize), callback(1usize), callback(2usize), callback(3usize)];
             }
 
             create_arr($callback)
@@ -228,22 +231,21 @@ pub mod math {
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
-    use simba::simd::AutoBoolx4;
     /// The number of lanes of a SIMD number.
-    pub const SIMD_WIDTH: usize = 4;
+    pub const SIMD_WIDTH: usize = 1;
     /// SIMD_WIDTH - 1
-    pub const SIMD_LAST_INDEX: usize = 3;
+    pub const SIMD_LAST_INDEX: usize = 0;
 
     /// A SIMD float with SIMD_WIDTH lanes.
     #[cfg(feature = "f32")]
-    pub type SimdReal = simba::simd::AutoF32x4;
+    pub type SimdReal = f32;
 
     /// A SIMD float with SIMD_WIDTH lanes.
     #[cfg(feature = "f64")]
-    pub type SimdReal = simba::simd::AutoF64x4;
+    pub type SimdReal = f64;
 
     /// A SIMD bool with SIMD_WIDTH lanes.
-    pub type SimdBool = AutoBoolx4;
+    pub type SimdBool = bool;
 }
 
 #[cfg(feature = "simd-is-enabled")]

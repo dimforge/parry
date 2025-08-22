@@ -16,6 +16,7 @@ impl IsometryOps<Real> for Isometry<Real> {
     }
 }
 
+#[cfg(feature = "simd-is-enabled")]
 impl IsometryOps<SimdReal> for Isometry<SimdReal> {
     #[inline]
     fn absolute_transform_vector(&self, v: &Vector<SimdReal>) -> Vector<SimdReal> {
