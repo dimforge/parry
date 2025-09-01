@@ -431,7 +431,7 @@ fn triangulate_constraints_and_merge_duplicates(
                 point_pair[1] = Point3::from(proj2);
             }
 
-            assert_ne!(point_pair[0], point_pair[1]);
+            debug_assert_ne!(point_pair[0], point_pair[1]);
         }
     }
 
