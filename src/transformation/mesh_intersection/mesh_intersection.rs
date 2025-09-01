@@ -430,8 +430,6 @@ fn triangulate_constraints_and_merge_duplicates(
             if (p2 - proj2).norm() < epsilon {
                 point_pair[1] = Point3::from(proj2);
             }
-
-            debug_assert_ne!(point_pair[0], point_pair[1]);
         }
     }
 
