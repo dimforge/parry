@@ -440,7 +440,7 @@ fn triangulate_constraints_and_merge_duplicates(
         let p2_id = insert_into_set(point_pair[1], &mut point_set, epsilon);
 
         if p1_id == p2_id {
-            // delta betwen p1 and p1 < epsilon, 
+            // delta betwen p1 and p2 < epsilon, 
             // so it is the same point, skip
             continue;
         }
