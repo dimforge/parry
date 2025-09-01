@@ -430,6 +430,8 @@ fn triangulate_constraints_and_merge_duplicates(
             if (p2 - proj2).norm() < epsilon {
                 point_pair[1] = Point3::from(proj2);
             }
+
+            assert_ne!(point_pair[0], point_pair[1]);
         }
     }
 
@@ -438,6 +440,12 @@ fn triangulate_constraints_and_merge_duplicates(
     for point_pair in constraints {
         let p1_id = insert_into_set(point_pair[0], &mut point_set, epsilon);
         let p2_id = insert_into_set(point_pair[1], &mut point_set, epsilon);
+
+        if p1_id == p2_id {
+            // delta betwen p1 and p1 < epsilon, 
+            // so it is the same point, skip
+            continue;
+        }
 
         edges.push([p1_id, p2_id]);
     }
@@ -463,7 +471,7 @@ fn triangulate_constraints_and_merge_duplicates(
         })
         .collect();
     let cdt_triangulation =
-        ConstrainedDelaunayTriangulation::bulk_load_cdt_stable(planar_points, edges)?;
+        ConstrainedDelaunayTriangulation::bulk_load_cdt(planar_points, edges)?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
