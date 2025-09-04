@@ -82,7 +82,7 @@ indexmap = { version = "2", features = ["serde"], optional = true }
 hashbrown = { version = "0.15", optional = true, default-features = false, features = [
     "default-hasher",
 ] }
-foldhash = { version = "0.1", optional = true, default-features = false }
+foldhash = { version = "0.2", optional = true, default-features = false }
 spade = { version = "2.9", optional = true, default-features = false }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }

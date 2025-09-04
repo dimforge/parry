@@ -1,7 +1,6 @@
 use crate::math::{AngVector, AngularInertia, Isometry, Point, Real, Rotation, Vector};
 use crate::utils;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use na::ComplexField;
 use num::Zero;
 #[cfg(feature = "dim3")]
 use {core::ops::MulAssign, na::Matrix3};

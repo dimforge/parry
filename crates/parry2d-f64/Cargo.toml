@@ -90,6 +90,7 @@ ordered-float = { version = "5", default-features = false }
 thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true, default-features = false }
 smallvec = "1"
+foldhash = "0.2"
 
 [dev-dependencies]
 simba = { version = "0.9", default-features = false }

@@ -33,6 +33,7 @@ std::compile_error!(
     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
 );
 
+#[cfg(feature = "simd-is-enabled")]
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
         {

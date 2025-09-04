@@ -60,4 +60,4 @@ pub use {self::FxHashMap32 as HashMap, indexmap::map::Entry};
 pub use hashbrown::hash_map::Entry;
 /// Hashmap using [`hashbrown::HashMap`]
 #[cfg(not(feature = "enhanced-determinism"))]
-pub type HashMap<K, V> = hashbrown::hash_map::HashMap<K, V, hashbrown::DefaultHashBuilder>;
+pub type HashMap<K, V> = hashbrown::hash_map::HashMap<K, V, foldhash::fast::FixedState>;
