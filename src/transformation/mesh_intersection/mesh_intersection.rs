@@ -439,7 +439,9 @@ fn triangulate_constraints_and_merge_duplicates(
         let p1_id = insert_into_set(point_pair[0], &mut point_set, epsilon);
         let p2_id = insert_into_set(point_pair[1], &mut point_set, epsilon);
 
-        edges.push([p1_id, p2_id]);
+        if p1_id != p2_id {
+            edges.push([p1_id, p2_id]);
+        }
     }
 
     let mut points: Vec<_> = point_set.iter().cloned().collect();
