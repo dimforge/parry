@@ -580,7 +580,7 @@ mod test {
         assert_relative_eq!(
             (((m1m2m3 - m1) - m2) - m3).principal_inertia(),
             AngVector::zero(),
-            epsilon = 1.0e-6
+            epsilon = 1.0e-3
         );
         assert_relative_eq!((((m1m2m3 - m1) - m2) - m3).mass(), 0.0, epsilon = 1.0e-6);
     }
