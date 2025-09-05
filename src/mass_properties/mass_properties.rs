@@ -74,7 +74,7 @@ impl MassProperties {
         principal_inertia_local_frame: Rotation<Real>,
     ) -> Self {
         let inv_mass = utils::inv(mass);
-        let inv_principal_inertia = principal_inertia.map(|e| utils::inv(e));
+        let inv_principal_inertia = principal_inertia.map(utils::inv);
         Self {
             local_com,
             inv_mass,
@@ -121,7 +121,7 @@ impl MassProperties {
         #[cfg(feature = "dim2")]
         return utils::inv(self.inv_principal_inertia);
         #[cfg(feature = "dim3")]
-        return self.inv_principal_inertia.map(|e| utils::inv(e));
+        return self.inv_principal_inertia.map(utils::inv);
     }
 
     /// The world-space center of mass of the rigid-body.
@@ -168,7 +168,7 @@ impl MassProperties {
     #[cfg(feature = "dim3")]
     /// Reconstructs the angular inertia tensor of the rigid body from its principal inertia values and axes.
     pub fn reconstruct_inertia_matrix(&self) -> Matrix3<Real> {
-        let principal_inertia = self.inv_principal_inertia.map(|e| utils::inv(e));
+        let principal_inertia = self.inv_principal_inertia.map(utils::inv);
         self.principal_inertia_local_frame.to_rotation_matrix()
             * Matrix3::from_diagonal(&principal_inertia)
             * self

@@ -38,7 +38,7 @@ where
     } else {
         let mut epa = EPA::new();
         if let Some(pt) = epa.project_origin(&m, shape, simplex) {
-            return PointProjection::new(true, pt);
+            PointProjection::new(true, pt)
         } else {
             // return match minkowski_sampling::project_origin(&m, shape, simplex) {
             //     Some(p) => PointProjection::new(true, p + point.coords),
