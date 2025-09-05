@@ -74,8 +74,7 @@ impl MassProperties {
         principal_inertia_local_frame: Rotation<Real>,
     ) -> Self {
         let inv_mass = utils::inv(mass);
-        let inv_principal_inertia =
-            principal_inertia.map(|e| utils::inv(e));
+        let inv_principal_inertia = principal_inertia.map(|e| utils::inv(e));
         Self {
             local_com,
             inv_mass,
@@ -144,12 +143,9 @@ impl MassProperties {
                 .to_rotation_matrix()
                 .into_inner();
             let rhs = lhs.transpose();
-            lhs.column_mut(0)
-                .mul_assign(self.inv_principal_inertia.x);
-            lhs.column_mut(1)
-                .mul_assign(self.inv_principal_inertia.y);
-            lhs.column_mut(2)
-                .mul_assign(self.inv_principal_inertia.z);
+            lhs.column_mut(0).mul_assign(self.inv_principal_inertia.x);
+            lhs.column_mut(1).mul_assign(self.inv_principal_inertia.y);
+            lhs.column_mut(2).mul_assign(self.inv_principal_inertia.z);
             let inertia = lhs * rhs;
             AngularInertia::from_sdp_matrix(inertia)
         } else {
