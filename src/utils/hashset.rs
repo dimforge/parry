@@ -57,4 +57,4 @@ pub use self::FxHashSet32 as HashSet;
 pub use hashbrown::hash_set::Entry;
 /// Hashset using [`hashbrown::HashSet`]
 #[cfg(not(feature = "enhanced-determinism"))]
-pub type HashSet<K> = hashbrown::hash_set::HashSet<K, hashbrown::DefaultHashBuilder>;
+pub type HashSet<K> = hashbrown::hash_set::HashSet<K, foldhash::fast::FixedState>;

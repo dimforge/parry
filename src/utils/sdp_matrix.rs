@@ -118,7 +118,7 @@ impl Mul<Real> for SdpMatrix2<Real> {
 }
 
 /// A 3x3 symmetric-definite-positive matrix.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",

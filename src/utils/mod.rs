@@ -2,8 +2,6 @@
 
 pub use self::ccw_face_normal::ccw_face_normal;
 pub use self::center::center;
-#[cfg(feature = "std")]
-pub use self::deterministic_state::DeterministicState;
 
 #[cfg(feature = "dim3")]
 #[cfg(feature = "alloc")]
@@ -34,7 +32,10 @@ pub use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
-pub(crate) use self::wops::{simd_swap, WBasis, WCross, WSign};
+pub(crate) use self::wops::{WBasis, WCross, WSign};
+
+#[cfg(feature = "simd-is-enabled")]
+pub(crate) use self::wops::simd_swap;
 
 mod as_bytes;
 mod ccw_face_normal;
@@ -44,8 +45,6 @@ mod center;
 mod cleanup;
 mod consts;
 mod cov;
-#[cfg(feature = "std")]
-mod deterministic_state;
 #[cfg(feature = "enhanced-determinism")]
 mod fx_hasher;
 mod hashable_partial_eq;

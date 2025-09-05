@@ -365,7 +365,7 @@ pub struct BvhOptimizationHeapEntry {
 
 impl PartialOrd for BvhOptimizationHeapEntry {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.score.cmp(&other.score))
+        Some(self.cmp(other))
     }
 }
 

@@ -52,7 +52,9 @@ pub fn contact_cuboid_cuboid(
             normal1 = Unit::new_unchecked(sep1.1);
             dist = separation;
         } else {
-            let (dir, norm) = normalized_dir.unwrap();
+            let Some((dir, norm)) = normalized_dir else {
+                unreachable!()
+            };
             // No penetration.
             normal1 = dir;
             dist = norm;
@@ -92,7 +94,9 @@ pub fn contact_cuboid_cuboid(
             dist = separation;
         } else {
             // No penetration.
-            let (dir, norm) = normalized_dir.unwrap();
+            let Some((dir, norm)) = normalized_dir else {
+                unreachable!()
+            };
             normal2 = dir;
             dist = norm;
         }
