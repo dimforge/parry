@@ -13,24 +13,21 @@ fn test_leaves_iteration() {
         make_test_aabb(5), // mins at (5,5,5) - should be filtered out
     ];
     let bvh = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves);
-    
+
     // Only allow nodes with mins.x <= 3.0 (should only pass leaf 0)
-    let check = |node: &crate::partitioning::BvhNode| -> bool {
-        node.mins.x <= 3.0
-    };
-    
+    let check = |node: &crate::partitioning::BvhNode| -> bool { node.mins.x <= 3.0 };
+
     let mut found_invalid_leaf = false;
     for leaf_index in bvh.leaves(check) {
-        if leaf_index == 1 { // This is the leaf that should be filtered out
+        if leaf_index == 1 {
+            // This is the leaf that should be filtered out
             found_invalid_leaf = true;
             break;
         }
     }
-    
+
     if found_invalid_leaf {
-        panic!(
-            "Leaves iterator returned an invalid leaf"
-        );
+        panic!("Leaves iterator returned an invalid leaf");
     }
 }
 

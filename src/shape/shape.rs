@@ -1253,7 +1253,7 @@ impl Shape for ConvexPolygon {
         ShapeType::ConvexPolygon
     }
 
-    fn as_typed_shape(&self) -> TypedShape {
+    fn as_typed_shape(&self) -> TypedShape<'_> {
         TypedShape::ConvexPolygon(self)
     }
 
