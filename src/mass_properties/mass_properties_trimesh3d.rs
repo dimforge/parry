@@ -335,8 +335,8 @@ mod test {
             mprops.principal_inertia(),
             epsilon = 1.0e-4
         );
-        let w1 = trimesh_origin_mprops.world_inv_inertia_sqrt(&pose.rotation);
-        let w2 = trimesh_transformed_mprops.world_inv_inertia_sqrt(&UnitQuaternion::identity());
+        let w1 = trimesh_origin_mprops.world_inv_inertia(&pose.rotation);
+        let w2 = trimesh_transformed_mprops.world_inv_inertia(&UnitQuaternion::identity());
         assert_relative_eq!(w1.m11, w2.m11, epsilon = 1.0e-7);
         assert_relative_eq!(w1.m12, w2.m12, epsilon = 1.0e-7);
         assert_relative_eq!(w1.m13, w2.m13, epsilon = 1.0e-7);
