@@ -12,6 +12,30 @@ pub struct Leaves<'a, Check: Fn(&BvhNode) -> bool> {
     check: Check,
 }
 
+impl<'a, Check: Fn(&BvhNode) -> bool> Leaves<'a, Check> {
+    pub fn new(tree: &'a Bvh, check: Check) -> Leaves<'a, Check> {
+        let mut stack = SmallVec::default();
+        let mut next = None;
+
+        if let Some(root) = tree.nodes.first() {
+            if check(&root.left) {
+                next = Some(&root.left);
+            }
+
+            if root.right.leaf_count() > 0 && check(&root.right) {
+                stack.push(&root.right);
+            }
+        }
+
+        Leaves {
+            tree,
+            next,
+            stack,
+            check,
+        }
+    }
+}
+
 impl<'a, Check: Fn(&BvhNode) -> bool> Iterator for Leaves<'a, Check> {
     type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
@@ -23,13 +47,9 @@ impl<'a, Check: Fn(&BvhNode) -> bool> Iterator for Leaves<'a, Check> {
             let node = self.next.take()?;
 
             if node.is_leaf() {
-                if (self.check)(node) {
-                    return Some(node.children);
-                } else {
-                    continue;
-                }
+                return Some(node.children);
             }
-            
+
             let children = &self.tree.nodes[node.children as usize];
             let left = &children.left;
             let right = &children.right;
@@ -81,30 +101,11 @@ impl Bvh {
     /// See also the [`Bvh::traverse`] function which is slightly less convenient since it doesn’t
     /// rely on the iterator system, but takes a closure that implements [`FnMut`] instead of [`Fn`].
     pub fn leaves<F: Fn(&BvhNode) -> bool>(&self, check_node: F) -> Leaves<'_, F> {
-        if let Some(root) = self.nodes.first() {
-            let mut stack = SmallVec::default();
-            if root.right.leaf_count() > 0 {
-                stack.push(&root.right);
-            }
-
-            Leaves {
-                tree: self,
-                next: Some(&root.left),
-                stack,
-                check: check_node,
-            }
-        } else {
-            Leaves {
-                tree: self,
-                next: None,
-                stack: Default::default(),
-                check: check_node,
-            }
-        }
+        Leaves::new(self, check_node)
     }
 }
 
-/// Controls the execution flowo of [`Bvh::traverse`].
+/// Controls the execution flow of [`Bvh::traverse`].
 pub enum TraversalAction {
     /// The traversal will continue on the children of the tested node.
     Continue,
