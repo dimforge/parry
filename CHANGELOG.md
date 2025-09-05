@@ -1,3 +1,14 @@
+## 0.24.0
+
+- Fixed same-machine determinism of the re-exported hashmap when building without the `enhanced-determinism` feature.
+- Replace all the square-root angular inertia tensors by the same tensor without taking it square root.
+  As a result `MassProperties::world_inv_inertia_sqrt` has been renamed to `world_inv_inertia`,
+  `MassProperties::inv_principal_inertia_sqrt` renamed to `inv_principal_inertia`.
+- Modified the type aliases from the `simd` module when neither the `simd-stable` nor `simd-nightly` are enabled.
+  Without these simd features all type aliases are single-lane non-simd types (`f32`, `f64`, `bool`) instead of 4-lanes auto-simd
+  types.
+- Moved the `SimdAabb` type behind the `simd-stable` or `simd-nightly` cargo feature.
+
 ## 0.23.0
 
 - Update to nalgebra 0.34.

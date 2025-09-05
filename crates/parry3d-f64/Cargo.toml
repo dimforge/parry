@@ -1,6 +1,6 @@
 [package]
 name = "parry3d-f64"
-version = "0.23.0"
+version = "0.24.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust. 64-bits precision version."
@@ -79,7 +79,7 @@ serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
-hashbrown = { version = "0.15", optional = true, default-features = false, features = [
+hashbrown = { version = "0.16", optional = true, default-features = false, features = [
     "default-hasher",
 ] }
 foldhash = { version = "0.2", optional = true, default-features = false }
