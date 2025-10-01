@@ -1,6 +1,7 @@
 use crate::math::Real;
 use crate::shape::Cylinder;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 use na::{self, Point3, Vector3};
 
 impl Cylinder {

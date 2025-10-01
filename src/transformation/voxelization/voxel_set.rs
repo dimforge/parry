@@ -20,7 +20,8 @@ use super::{FillMode, VoxelizedVolume};
 use crate::bounding_volume::Aabb;
 use crate::math::{Matrix, Point, Real, Vector, DIM};
 use crate::transformation::vhacd::CutPlane;
-use std::sync::Arc;
+use alloc::sync::Arc;
+use alloc::{vec, vec::Vec};
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
@@ -103,10 +104,37 @@ impl VoxelSet {
     /// # Parameters
     /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
     /// * `indices` - The index buffer of the boundary of the shape to voxelize.
+    /// * `voxel_size` - The size of each voxel.
+    /// * `fill_mode` - Controls what is being voxelized.
+    /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
+    ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
+    pub fn with_voxel_size(
+        points: &[Point<Real>],
+        indices: &[[u32; DIM]],
+        voxel_size: Real,
+        fill_mode: FillMode,
+        keep_voxel_to_primitives_map: bool,
+    ) -> Self {
+        VoxelizedVolume::with_voxel_size(
+            points,
+            indices,
+            voxel_size,
+            fill_mode,
+            keep_voxel_to_primitives_map,
+        )
+        .into()
+    }
+
+    /// Voxelizes the given shape described by its boundary:
+    /// a triangle mesh (in 3D) or polyline (in 2D).
+    ///
+    /// # Parameters
+    /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
+    /// * `indices` - The index buffer of the boundary of the shape to voxelize.
     /// * `resolution` - Controls the number of subdivision done along each axis. This number
-    ///    is the number of subdivisions along the axis where the input shape has the largest extent.
-    ///    The other dimensions will have a different automatically-determined resolution (in order to
-    ///    keep the voxels cubic).
+    ///   is the number of subdivisions along the axis where the input shape has the largest extent.
+    ///   The other dimensions will have a different automatically-determined resolution (in order to
+    ///   keep the voxels cubic).
     /// * `fill_mode` - Controls what is being voxelized.
     /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
     ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
@@ -142,7 +170,8 @@ impl VoxelSet {
         self.voxel_volume() * self.voxels.len() as Real
     }
 
-    fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
+    /// Gets the coordinates of the center of the given voxel.
+    pub fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
         self.get_point(na::convert(voxel.coords))
     }
 
@@ -616,6 +645,31 @@ impl VoxelSet {
         }
 
         cov_mat.symmetric_eigenvalues()
+    }
+
+    pub(crate) fn compute_axes_aligned_clipping_planes(
+        &self,
+        downsampling: u32,
+        planes: &mut Vec<CutPlane>,
+    ) {
+        let min_v = self.min_bb_voxels();
+        let max_v = self.max_bb_voxels();
+
+        for dim in 0..DIM {
+            let i0 = min_v[dim];
+            let i1 = max_v[dim];
+
+            for i in (i0..=i1).step_by(downsampling as usize) {
+                let plane = CutPlane {
+                    abc: Vector::ith(dim, 1.0),
+                    axis: dim as u8,
+                    d: -(self.origin[dim] + (i as Real + 0.5) * self.scale),
+                    index: i,
+                };
+
+                planes.push(plane);
+            }
+        }
     }
 }
 

@@ -4,6 +4,9 @@ use crate::math::{Isometry, Point, Real, Vector};
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
+#[cfg(feature = "alloc")]
+use crate::partitioning::BvhLeafCost;
+
 /// The status of the time-of-impact computation algorithm.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ShapeCastStatus {
@@ -86,6 +89,14 @@ impl ShapeCastHit {
             normal2: self.normal2,
             status: self.status,
         }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BvhLeafCost for ShapeCastHit {
+    #[inline]
+    fn cost(&self) -> Real {
+        self.time_of_impact
     }
 }
 

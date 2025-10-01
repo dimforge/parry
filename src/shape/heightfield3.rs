@@ -1,6 +1,6 @@
-#[cfg(feature = "std")]
+use core::ops::Range;
+#[cfg(feature = "alloc")]
 use na::DMatrix;
-use std::ops::Range;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
@@ -76,7 +76,7 @@ pub struct HeightField {
     flags: HeightFieldFlags,
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl HeightField {
     /// Initializes a new heightfield with the given heights, scaling factor, and flags.
     pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {
@@ -251,7 +251,7 @@ impl HeightField {
     }
 
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles {
+    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles<'_> {
         let center = self.closest_cell_at_point(point);
         HeightFieldRadialTriangles {
             heightfield: self,
@@ -782,7 +782,7 @@ struct HeightFieldTriangles<'a> {
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a> Iterator for HeightFieldTriangles<'a> {
+impl Iterator for HeightFieldTriangles<'_> {
     type Item = Triangle;
 
     fn next(&mut self) -> Option<Triangle> {
@@ -819,7 +819,7 @@ pub struct HeightFieldRadialTriangles<'a> {
     tris: (Option<Triangle>, Option<Triangle>),
 }
 
-impl<'a> HeightFieldRadialTriangles<'a> {
+impl HeightFieldRadialTriangles<'_> {
     /// Returns the next triangle in this iterator.
     ///
     /// Returns `None` no triangle closest than `max_dist` remain

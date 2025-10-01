@@ -7,30 +7,38 @@ use parry2d::utils::point_in_poly2d;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::point_in_poly2d")]
+#[macroquad::main("points_in_poly2d")]
 async fn main() {
     let mut spikes = spikes_polygon();
+    let mut squares = squares_polygon();
     let test_points = grid_points();
 
     let animation_rotation = UnitComplex::new(0.02);
-    let spikes_render_pos = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
+    let polygon_render_pos = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
 
-    loop {
+    for i in 0.. {
+        let polygon = if (i / 350) % 2 == 0 {
+            &mut spikes
+        } else {
+            &mut squares
+        };
+
         clear_background(BLACK);
 
-        spikes
+        polygon
             .iter_mut()
             .for_each(|pt| *pt = animation_rotation * *pt);
-        draw_polygon(&spikes, RENDER_SCALE, spikes_render_pos, BLUE);
+
+        draw_polygon(&polygon, RENDER_SCALE, polygon_render_pos, BLUE);
 
         /*
          * Compute polygon intersections.
          */
         for point in &test_points {
-            if point_in_poly2d(point, &spikes) {
-                draw_point(*point, RENDER_SCALE, spikes_render_pos, RED);
+            if point_in_poly2d(point, &polygon) {
+                draw_point(*point, RENDER_SCALE, polygon_render_pos, RED);
             } else {
-                draw_point(*point, RENDER_SCALE, spikes_render_pos, GREEN);
+                draw_point(*point, RENDER_SCALE, polygon_render_pos, GREEN);
             }
         }
 
@@ -58,6 +66,21 @@ fn spikes_polygon() -> Vec<Point2<f32>> {
     }
 
     polygon
+}
+
+fn squares_polygon() -> Vec<Point2<f32>> {
+    let scale = 3.0;
+    [
+        Point2::new(-1.0, -1.0) * scale,
+        Point2::new(0.0, -1.0) * scale,
+        Point2::new(0.0, 1.0) * scale,
+        Point2::new(-2.0, 1.0) * scale,
+        Point2::new(-2.0, -2.0) * scale,
+        Point2::new(1.0, -2.0) * scale,
+        Point2::new(1.0, 2.0) * scale,
+        Point2::new(-1.0, 2.0) * scale,
+    ]
+    .to_vec()
 }
 
 fn grid_points() -> Vec<Point2<f32>> {

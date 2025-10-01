@@ -1,9 +1,8 @@
-use crate::math::{Isometry, Point, Real, SimdReal, Vector};
-use na::SimdComplexField;
-use na::Unit; // for .abs()
+use crate::math::{Isometry, Point, Real, Vector};
+use na::Unit;
 
-#[cfg(not(feature = "std"))]
-use na::ComplexField;
+#[cfg(feature = "simd-is-enabled")]
+use crate::math::SimdReal;
 
 /// Extra operations with isometries.
 pub trait IsometryOps<T> {
@@ -19,9 +18,11 @@ impl IsometryOps<Real> for Isometry<Real> {
     }
 }
 
+#[cfg(feature = "simd-is-enabled")]
 impl IsometryOps<SimdReal> for Isometry<SimdReal> {
     #[inline]
     fn absolute_transform_vector(&self, v: &Vector<SimdReal>) -> Vector<SimdReal> {
+        use na::SimdComplexField;
         self.rotation
             .to_rotation_matrix()
             .into_inner()
@@ -51,7 +52,7 @@ pub trait IsometryOpt {
     fn inverse_transform_unit_vector(self, v: &Unit<Vector<Real>>) -> Unit<Vector<Real>>;
 }
 
-impl<'a> IsometryOpt for Option<&'a Isometry<Real>> {
+impl IsometryOpt for Option<&Isometry<Real>> {
     #[inline]
     fn inv_mul(self, rhs: &Isometry<Real>) -> Isometry<Real> {
         if let Some(iso) = self {

@@ -1,11 +1,157 @@
-# Change Log
+## 0.24.0
 
-## Unreleased
+- Fixed same-machine determinism of the re-exported hashmap when building without the `enhanced-determinism` feature.
+- Replace all the square-root angular inertia tensors by the same tensor without taking it square root.
+  As a result `MassProperties::world_inv_inertia_sqrt` has been renamed to `world_inv_inertia`,
+  `MassProperties::inv_principal_inertia_sqrt` renamed to `inv_principal_inertia`.
+- Modified the type aliases from the `simd` module when neither the `simd-stable` nor `simd-nightly` are enabled.
+  Without these simd features all type aliases are single-lane non-simd types (`f32`, `f64`, `bool`) instead of 4-lanes auto-simd
+  types.
+- Moved the `SimdAabb` type behind the `simd-stable` or `simd-nightly` cargo feature.
+
+## 0.23.0
+
+- Update to nalgebra 0.34.
+
+## 0.22.1
+
+### Added
+
+- Add `Bvh::insert_with_change_detection` which runs an insertion unless the inserted aabb is enclosed in the
+  existing one. This differs from `insert_or_update_partially` because the former will update parent AABBs so
+  they enclose their descendants.
+
+## 0.22.0
+
+### Fixed
+
+- Fix bug in BVH tree node removal.
+- Fix bug in BVH tree building from exactly two leaves.
+
+## 0.22.0-beta.1
+
+### Fixed
+
+- Fix invalid BVH state that could be reached after a removal resulting in a partial root.
+
+## 0.22.0-beta.0
+
+### Added
+
+- Add a new `Bvh` acceleration data-structure. It replaces `Qbvh` entirely. It supports:
+  - Traversals (best-first, depth-first, BVTT, leaf iterators, and leaf pairs iterator).
+  - It can be constructed either incrementally by inserting nodes, or from a set of leaves using either the
+    binned building strategy or the PLOC (without parallelism) strategy.
+  - Dynamic leaf insertion, update, removal.
+  - Incremental tree rebalancing.
+
+### Fixed
+
+- Fix `clip_aabb_line` crashing when given incorrect inputs (zero length direction or NAN).
+- Fix `Segment::intersects_ray` returning false-positive when the segment is zero-length. ([#31](https://github.com/dimforge/parry/issues/31)).
+- Expose `utils::sort3` and `utils::sort2`.
+
+### Modified
+
+- The `local_point_cloud_aabb`, `point_cloud_aabb`, and `Aabb::from_points` now takes an iterator over point values instead
+  of an iterator to point references. Variants taking point references still exist and are named `local_point_cloud_aabb_ref`,
+  `point_cloud_aabb_ref` and `Aabb::from_points_ref`.
+- Renamed `SimdCompositeShape` and `TypedSimdCompositeShape` to `CompositeShape` and TypedCompositeShape`.
+- The `TypedCompositeShape` trait now derives from `CompositeShape`.
+- Removed every `*Visitor` structures. Instead, either call `Bvh::traverse` (or `Bvh::search_best`, or `Bvh::leaves`, or
+  `bvh::leaf_pairs`), or wrap your composite shape into `CompositeShapeRef` to access some generic implementation of
+  various geometric queries for any composite shape.
+- All composite shapes now rely on the new `Bvh` acceleration structure instead of `Qbvh`.
+- The `Qbvh` has been removed. Use `Bvh` instead.
+
+## 0.21.1
+
+### Added
+
+- Add `Voxels::combine_voxel_states` to merge the voxel state of two `Voxels` shapes, updating their internal voxels
+  state as if both shapes were part of a single one. In particular, this will prevent any internal edge that would
+  arise at the boundaries of both shapes if they were adjacent.
+- Add `Voxels::propagate_voxel_change` to propagate a single-voxel modification from one `Voxels` shape to another,
+  in order to update their internal neighborhood information as if both were part of the same `Voxels` shape. 
+
+## 0.21.0
+
+### Added
+
+- Add `TriMesh::cast_ray_with_culling` and `TriMesh::cast_local_ray_with_culling` for casting rays on a triangle mesh
+  but with the possibility to prevents hits on front-faces or back-faces.
+- Add contact manifold calculation between two voxels shapes, or a voxels shape and compound shape.
+- Add intersection check between voxels and other shapes.
+- Add `MassProperties::from_voxels` to compute the mass and angular inertia tensor from a voxels shape.
+
+### Modified
+
+- Add new variants to `TypedWorkspaceData` for voxels-voxels and voxels-compound collision detection workspace
+  data.
+- The `Voxels` shape now only support cuboids as their leaf geometries (pseudo-balls were removed). 
+
+## v0.20.2
+
+### Fixed
+
+- Fix infinite loop in `Voxels::set_voxel`.
+
+## v0.20.1
+
+### Added
+
+- Rework the `Voxels` shape API to use better method names.
+- Added implementations for linear and non-linear shape-casting involving `Voxels` shapes.
+
+## v0.20.0 (yanked)
+
+### Added
+
+- Added the `Voxels` type: a dedicated shape for voxel models. This is currently experimental because some features are
+  still missing (in particular: shape-casting, mass properties, and collision-detection against non-convex shapes).
+- Added `SharedShape::voxels`, `SharedShape::voxels_from_points`, and `::voxelized_mesh` for creating a voxels shape
+  from grid coordinates, points, or automatic voxelization of a triangle mesh.
+
+## v0.19.0
+
+### Added
+
+- Derive `Copy` for `VHACDParameters`.
+- Add `spade` default feature for algorithms using Delaunay triangulation from `spade`.
+- Add `SharedShape::from_convex_polyline_unmodified` and `ConvexPolygon::from_convex_polyline_unmodified`
+  to initialize a polyline from a set of points assumed to be convex, and without modifying this set even
+  if some points are collinear.
+- Add `TriMesh::pseudo_normals_if_oriented` that returns `Some` only if the mesh has the `TriMeshFlags::ORIENTED`
+  flag enabled.
+
+### Modified
+
+- The `TriMeshFlags::FIX_INTERNAL_EDGES` flag no longer automatically enable the `TriMeshFlags::ORIENTED`
+  flag (but the mesh pseudo-normals will still be computed).
+- Improve `no_std` compatibility.
+  - Everything is now compatible, except `mesh_intersections`, `split_trimesh`,
+    convex hull validation, and computation of connected components for `TriMesh`.
+  - Add the `alloc_instead_of_core`, `std_instead_of_alloc`, and `std_instead_of_core` Clippy lints to the workspace.
+  - Use `core` and `alloc` directly rather than using an `std` alias.
+  - Use `hashbrown` instead of `rustc-hash` when `enhanced-determinism` is not enabled.
+  - Make `spade` optional.
+
+### Fix
+
+- Fix trimesh inertia tensor computation [#331](https://github.com/dimforge/parry/pull/331).
+- Fix shifted inertia tensor computation [#334](https://github.com/dimforge/parry/pull/334).
+
+## v0.18.0
 
 ### Added
 
 - Implement `::to_trimesh` in 2d for `Cuboid` and `Aabb`.
-- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a `FeatureId::Face`.
+- Fix some edge-cases in `point_in_poly2d` for self-intersecting polygons.
+- Fix some edge-cases in mesh/mesh intersection that could result in degenerate triangles being generated.
+
+### Fix
+
+- Fix panic in `epa3::EPA::closest_points` and `epa2::EPA::closest_points`. Related issues: [#253](https://github.com/dimforge/parry/issues/253), [#246](https://github.com/dimforge/parry/issues/246)
 
 ### Modified
 
@@ -14,6 +160,53 @@
   - `TriMesh::intersection_with_aabb`
   - `SharedShape::trimesh`
   - `SharedShape::trimesh_with_flags`
+- `point_cloud_bounding_sphere` and `point_cloud_bounding_sphere_with_center` now returns a `BoundingSphere`.
+- Removed `IntersectionCompositeShapeShapeBestFirstVisitor` (which had been deprecated for a while):
+  use `IntersectionCompositeShapeShapeVisitor` instead.
+
+## v0.17.5
+
+### Fix
+
+- Always compute connected-components from union-find instead of topology. It is faster and the function based on
+  topology could result in a crash for non-manifold meshes.
+
+## v0.17.4
+
+### Added
+
+- Add `TriMeshConnectedComponents::to_meshes` and `::to_mesh_buffers` to easily extract individual meshes from the set
+  of connected components.
+- Add `TriMesh::connected_component_meshes` to get the connected components as meshes directly.
+
+### Modified
+
+- Connected-components extraction will never fail now, and no longer require the successful calculation of the mesh’s
+  half-edge topology.
+
+## v0.17.3
+
+### Fix
+
+- Fix compiling with `enhanced-determinism` feature enabled.
+  - This is now checked on CI.
+
+## v0.17.2
+
+### Added
+
+- Implement `Shape::feature_normal_at_point` for `TriMesh` to retrieve the normal of a face, when passing a
+  `FeatureId::Face`.
+- Add `convex_polygons_intersection_points_with_tolerances`, `convex_polygons_intersection_with_tolerances`, and
+  `intersect_meshes_with_tolerances` that let the user specify tolerances value for the collinearity check.
+
+### Fix
+
+- Fix some robustness issues in mesh/mesh intersection when parts of both meshes overlap perfectly.
+- Improve robustness of convex polygons intersections when all the vertices of one polygon are located in either the
+  edges or vertices of the other polygon.
+- Fix incorrect orientation sometimes given to the polygon output by the convex polygon intersections when one of the
+  polygon is completely inside the other.
 
 ## v0.17.1
 
@@ -100,7 +293,7 @@ This version modifies many names related to shape-casting:
   now prefixed with `cast_shapes_` (e.g. `cast_shapes_ball_ball`).
 - Rename `QueryDispatcher::time_of_impact` to `QueryDispatcher::cast_shapes`.
 - The (linear) shape-casting functions like `query::cast_shapes` (previously named
-  `query::time_of_impact) now take a `ShapeCastOptions` instead of the `max_toi` and
+  `query::time_of_impact`) now take a `ShapeCastOptions` instead of the `max_toi` and
   `stop_at_penetration` arguments.
 - Rename `query::nonlinear_time_of_impact` to `query::cast_shapes_nonlinear`.
 - Rename `QueryDispatcher::nonlinear_time_of_impact` to `QueryDispatcher::cast_shapes_nonlinear`.
@@ -292,7 +485,8 @@ This version was yanked. See the release notes for 0.13.3 instead.
   for most shapes.
 - Add the `parallel` feature that enables methods for the parallel traversal of Qbvh
   trees: `Qbvh::traverse_bvtt_parallel`,
-  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`, `Qbvh::traverse_depth_first_node_parallel`.
+  `Qbvh::traverse_bvtt_node_parallel`, `Qbvh::traverse_depth_first_parallel`,
+  `Qbvh::traverse_depth_first_node_parallel`.
 
 ### Fixed
 

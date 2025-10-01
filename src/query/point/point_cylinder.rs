@@ -56,16 +56,16 @@ impl PointQuery for Cylinder {
                 if planar_dist_from_basis_center <= self.radius {
                     let projection_on_bottom =
                         Point::new(pt.coords.x, -self.half_height, pt.coords.z);
-                    return PointProjection::new(false, projection_on_bottom);
+                    PointProjection::new(false, projection_on_bottom)
                 } else {
                     let projection_on_bottom_circle =
                         Point::new(proj2d[0], -self.half_height, proj2d[1]);
-                    return PointProjection::new(false, projection_on_bottom_circle);
+                    PointProjection::new(false, projection_on_bottom_circle)
                 }
             } else {
                 // Project on the side.
                 let projection_on_side = Point::new(proj2d[0], pt.y, proj2d[1]);
-                return PointProjection::new(false, projection_on_side);
+                PointProjection::new(false, projection_on_side)
             }
         }
     }

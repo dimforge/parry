@@ -19,7 +19,8 @@
 use crate::math::{Point, Real, Vector, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
-use std::sync::Arc;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 #[cfg(feature = "dim2")]
 type ConvexHull = Vec<Point<Real>>;
@@ -164,32 +165,6 @@ impl VHACD {
         }
     }
 
-    // TODO: this should be a method of VoxelSet.
-    fn compute_axes_aligned_clipping_planes(
-        vset: &VoxelSet,
-        downsampling: u32,
-        planes: &mut Vec<CutPlane>,
-    ) {
-        let min_v = vset.min_bb_voxels();
-        let max_v = vset.max_bb_voxels();
-
-        for dim in 0..DIM {
-            let i0 = min_v[dim];
-            let i1 = max_v[dim];
-
-            for i in (i0..=i1).step_by(downsampling as usize) {
-                let plane = CutPlane {
-                    abc: Vector::ith(dim, 1.0),
-                    axis: dim as u8,
-                    d: -(vset.origin[dim] + (i as Real + 0.5) * vset.scale),
-                    index: i,
-                };
-
-                planes.push(plane);
-            }
-        }
-    }
-
     fn refine_axes_aligned_clipping_planes(
         vset: &VoxelSet,
         best_plane: &CutPlane,
@@ -328,11 +303,7 @@ impl VHACD {
                 Self::compute_preferred_cutting_direction(&eigenvalues);
 
             let mut planes = Vec::new();
-            Self::compute_axes_aligned_clipping_planes(
-                &voxels,
-                params.plane_downsampling,
-                &mut planes,
-            );
+            voxels.compute_axes_aligned_clipping_planes(params.plane_downsampling, &mut planes);
 
             let (mut best_plane, mut min_concavity) = self.compute_best_clipping_plane(
                 &voxels,
@@ -393,7 +364,7 @@ impl VHACD {
         let mut input_parts = Vec::new();
         let mut parts = Vec::new();
         let mut temp = Vec::new();
-        input_parts.push(std::mem::replace(&mut voxels, VoxelSet::new()));
+        input_parts.push(core::mem::take(&mut voxels));
 
         let mut first_iteration = true;
         self.volume_ch0 = 1.0;
@@ -436,7 +407,7 @@ impl VHACD {
                 first_iteration = false;
             }
 
-            std::mem::swap(&mut input_parts, &mut temp);
+            core::mem::swap(&mut input_parts, &mut temp);
             // Note that temp is already clear because our previous for
             // loop used `drain`. However we call `clear` here explicitly
             // to make sure it still works if we remove the `drain` in the

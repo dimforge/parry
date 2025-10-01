@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Point, Real, Vector};
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use crate::query::{self, ContactManifold, TrackedContact};
 use crate::shape::{PackedFeatureId, Segment};
 
@@ -47,7 +47,7 @@ impl PolygonalFeature {
     }
 
     /// Computes the contacts between two polygonal features.
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         pos21: &Isometry<Real>,
@@ -75,7 +75,7 @@ impl PolygonalFeature {
     /// Compute contacts points between a face and a vertex.
     ///
     /// This method assume we already know that at least one contact exists.
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn face_vertex_contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         face1: &Self,
@@ -105,7 +105,7 @@ impl PolygonalFeature {
     }
 
     /// Computes the contacts between two polygonal faces.
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn face_face_contacts<ManifoldData, ContactData: Default + Copy>(
         pos12: &Isometry<Real>,
         face1: &Self,

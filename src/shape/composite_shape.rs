@@ -1,5 +1,5 @@
 use crate::math::{Isometry, Real};
-use crate::partitioning::{IndexedData, Qbvh};
+use crate::partitioning::Bvh;
 use crate::query::details::NormalConstraints;
 use crate::shape::Shape;
 
@@ -7,9 +7,23 @@ use crate::shape::Shape;
 ///
 /// A composite shape is composed of several shapes. For example, this can
 /// be a convex decomposition of a concave shape; or a triangle-mesh.
-#[cfg(feature = "std")]
-pub trait SimdCompositeShape {
+///
+/// This trait is mostly useful for using composite shapes as trait-objects.
+/// For other use-cases, call methods from [`TypedCompositeShape`] to avoid
+/// dynamic dispatches instead.
+#[cfg(feature = "alloc")]
+pub trait CompositeShape {
     /// Applies a function to one sub-shape of this composite shape.
+    ///
+    /// This method is mostly useful for using composite shapes as trait-objects.
+    /// For other use-cases, call methods from [`TypedCompositeShape`] to avoid
+    /// dynamic dispatches instead.
+    ///
+    /// Note that if your structure also implements `TypedCompositeShape`, this method
+    /// can be implemented simply as:
+    /// ```rust ignore
+    /// self.map_untyped_part_at(shape_id, f);
+    /// ```
     fn map_part_at(
         &self,
         shape_id: u32,
@@ -17,60 +31,72 @@ pub trait SimdCompositeShape {
     );
 
     /// Gets the acceleration structure of the composite shape.
-    fn qbvh(&self) -> &Qbvh<u32>;
+    fn bvh(&self) -> &Bvh;
 }
 
-#[cfg(feature = "std")]
-pub trait TypedSimdCompositeShape {
+#[cfg(feature = "alloc")]
+pub trait TypedCompositeShape: CompositeShape {
     type PartShape: ?Sized + Shape;
     type PartNormalConstraints: ?Sized + NormalConstraints;
-    type PartId: IndexedData;
 
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
-        shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &Self::PartShape, Option<&Self::PartNormalConstraints>),
-    );
+        shape_id: u32,
+        f: impl FnMut(
+            Option<&Isometry<Real>>,
+            &Self::PartShape,
+            Option<&Self::PartNormalConstraints>,
+        ) -> T,
+    ) -> Option<T>;
 
     // TODO: we need this method because the compiler won't want
     // to cast `&Self::PartShape` to `&dyn Shape` because it complains
     // that `PartShape` is not `Sized`.
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
-        shape_id: Self::PartId,
-        f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    );
-
-    fn typed_qbvh(&self) -> &Qbvh<Self::PartId>;
+        shape_id: u32,
+        f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T>;
 }
 
-#[cfg(feature = "std")]
-impl<'a> TypedSimdCompositeShape for dyn SimdCompositeShape + 'a {
+#[cfg(feature = "alloc")]
+impl TypedCompositeShape for dyn CompositeShape + '_ {
     type PartShape = dyn Shape;
     type PartNormalConstraints = dyn NormalConstraints;
-    type PartId = u32;
 
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         shape_id: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
-        self.map_part_at(shape_id, &mut f)
+        ) -> T,
+    ) -> Option<T> {
+        let mut result = None;
+        self.map_part_at(shape_id, &mut |pose, part, normals| {
+            result = Some(f(pose, part, normals));
+        });
+        result
     }
 
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    ) {
-        self.map_part_at(shape_id, &mut f)
-    }
-
-    fn typed_qbvh(&self) -> &Qbvh<Self::PartId> {
-        self.qbvh()
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T> {
+        let mut result = None;
+        self.map_part_at(shape_id, &mut |pose, part, normals| {
+            result = Some(f(pose, part, normals));
+        });
+        result
     }
 }
+
+/// A helper struct that implements scene queries on any composite shapes.
+///
+/// For example, the `RayCast` implementation of a composite shape can use this wrapper or
+/// provide its own implementation. This is for working around the lack of specialization in
+/// (stable) rust. If we did have specialization, this would just be a blanket implementation
+/// of all the geometric query traits for all `S: CompositeShape`.
+pub struct CompositeShapeRef<'a, S: ?Sized>(pub &'a S);

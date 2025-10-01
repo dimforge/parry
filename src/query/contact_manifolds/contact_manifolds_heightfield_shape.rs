@@ -1,3 +1,5 @@
+use alloc::{boxed::Box, vec::Vec};
+
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
@@ -115,7 +117,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
      */
     // TODO: somehow precompute the Aabb and reuse it?
     let ls_aabb2 = shape2.compute_aabb(pos12).loosened(prediction);
-    let mut old_manifolds = std::mem::take(manifolds);
+    let mut old_manifolds = core::mem::take(manifolds);
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2, &mut |i, part1| {
         #[cfg(feature = "dim2")]
@@ -187,7 +189,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
 }
 
 impl WorkspaceData for HeightFieldShapeContactManifoldsWorkspace {
-    fn as_typed_workspace_data(&self) -> TypedWorkspaceData {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
         TypedWorkspaceData::HeightfieldShapeContactManifoldsWorkspace(self)
     }
 

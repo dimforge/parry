@@ -2,7 +2,7 @@ use crate::math::{Isometry, Point, Real, Rotation, Vector};
 use crate::shape::{Segment, SupportMap};
 use na::Unit;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 use either::Either;
 
 #[cfg(feature = "rkyv")]
@@ -109,7 +109,7 @@ impl Capsule {
     /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(all(feature = "dim2", feature = "std"))]
+    #[cfg(all(feature = "dim2", feature = "alloc"))]
     pub fn scaled(
         self,
         scale: &Vector<Real>,
@@ -139,7 +139,7 @@ impl Capsule {
     /// capsule. Instead, a convex polygon approximation (with `nsubdivs`
     /// subdivisions) is returned. Returns `None` if that approximation had degenerate
     /// normals (for example if the scaling factor along one axis is zero).
-    #[cfg(all(feature = "dim3", feature = "std"))]
+    #[cfg(all(feature = "dim3", feature = "alloc"))]
     pub fn scaled(
         self,
         scale: &Vector<Real>,

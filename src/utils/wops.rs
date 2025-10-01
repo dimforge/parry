@@ -1,10 +1,15 @@
 //! Miscellaneous utilities.
 
 use crate::math::Real;
-use crate::simd::{SimdBool, SimdReal};
 use na::{Scalar, SimdRealField, Vector2, Vector3};
-use simba::simd::SimdValue;
 
+#[cfg(feature = "simd-is-enabled")]
+use {
+    crate::simd::{SimdBool, SimdReal},
+    simba::simd::SimdValue,
+};
+
+#[cfg(feature = "simd-is-enabled")]
 /// Conditionally swaps each lanes of `a` with those of `b`.
 ///
 /// For each `i in [0..SIMD_WIDTH[`, if `do_swap.extract(i)` is `true` then

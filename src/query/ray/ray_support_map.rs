@@ -1,15 +1,13 @@
 use na;
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
 
 use crate::math::Real;
 #[cfg(feature = "dim2")]
 use crate::query;
 use crate::query::gjk::{self, CSOPoint, VoronoiSimplex};
 use crate::query::{Ray, RayCast, RayIntersection};
-#[cfg(all(feature = "std", feature = "dim2"))]
+#[cfg(all(feature = "alloc", feature = "dim2"))]
 use crate::shape::ConvexPolygon;
-#[cfg(all(feature = "std", feature = "dim3"))]
+#[cfg(all(feature = "alloc", feature = "dim3"))]
 use crate::shape::ConvexPolyhedron;
 use crate::shape::{Capsule, FeatureId, Segment, SupportMap};
 #[cfg(feature = "dim3")]
@@ -126,7 +124,7 @@ impl RayCast for Capsule {
 }
 
 #[cfg(feature = "dim3")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl RayCast for ConvexPolyhedron {
     fn cast_local_ray_and_get_normal(
         &self,
@@ -145,7 +143,7 @@ impl RayCast for ConvexPolyhedron {
 }
 
 #[cfg(feature = "dim2")]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl RayCast for ConvexPolygon {
     fn cast_local_ray_and_get_normal(
         &self,
@@ -231,10 +229,15 @@ impl RayCast for Segment {
             } else if s >= 0.0 && s <= max_time_of_impact && t >= 0.0 && t <= 1.0 {
                 let normal = self.normal().map(|n| *n).unwrap_or_else(Vector::zeros);
 
-                if normal.dot(&ray.dir) > 0.0 {
+                let dot = normal.dot(&ray.dir);
+                if dot > 0.0 {
                     Some(RayIntersection::new(s, -normal, FeatureId::Face(1)))
-                } else {
+                } else if dot < 0.0 {
                     Some(RayIntersection::new(s, normal, FeatureId::Face(0)))
+                } else {
+                    // dot == 0 happens when lines are parallel, which is normally handled before,
+                    // but this may happen if segment is zero length, as the ray is not considered parallel.
+                    None
                 }
             } else {
                 // The closest points are outside of

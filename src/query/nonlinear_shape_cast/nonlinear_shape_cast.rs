@@ -14,12 +14,12 @@ use crate::shape::Shape;
 /// * `start_time` - The starting time of the interval where the motion takes place.
 /// * `end_time` - The end time of the interval where the motion takes place.
 /// * `stop_at_penetration` - If the casted shape starts in a penetration state with any
-///    collider, two results are possible. If `stop_at_penetration` is `true` then, the
-///    result will have a `time_of_impact` equal to `start_time`. If `stop_at_penetration` is `false`
-///    then the nonlinear shape-casting will see if further motion wrt. the penetration normal
-///    would result in tunnelling. If it does not (i.e. we have a separating velocity along
-///    that normal) then the nonlinear shape-casting will attempt to find another impact,
-///    at a time `> start_time` that could result in tunnelling.
+///   collider, two results are possible. If `stop_at_penetration` is `true` then, the
+///   result will have a `time_of_impact` equal to `start_time`. If `stop_at_penetration` is `false`
+///   then the nonlinear shape-casting will see if further motion wrt. the penetration normal
+///   would result in tunnelling. If it does not (i.e. we have a separating velocity along
+///   that normal) then the nonlinear shape-casting will attempt to find another impact,
+///   at a time `> start_time` that could result in tunnelling.
 pub fn cast_shapes_nonlinear(
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,

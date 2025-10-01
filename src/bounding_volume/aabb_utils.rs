@@ -1,4 +1,4 @@
-use std::iter::IntoIterator;
+use core::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector, DIM};
@@ -54,17 +54,25 @@ where
     Aabb::new(Point::from(min), Point::from(max))
 }
 
-/// Computes the [`Aabb`] of a set of points transformed by `m`.
-pub fn point_cloud_aabb<'a, I>(m: &Isometry<Real>, pts: I) -> Aabb
+/// Computes the [`Aabb`] of a set of point references transformed by `m`.
+pub fn point_cloud_aabb_ref<'a, I>(m: &Isometry<Real>, pts: I) -> Aabb
 where
     I: IntoIterator<Item = &'a Point<Real>>,
+{
+    point_cloud_aabb(m, pts.into_iter().copied())
+}
+
+/// Computes the [`Aabb`] of a set of points transformed by `m`.
+pub fn point_cloud_aabb<I>(m: &Isometry<Real>, pts: I) -> Aabb
+where
+    I: IntoIterator<Item = Point<Real>>,
 {
     let mut it = pts.into_iter();
 
     let p0 = it.next().expect(
         "Point cloud Aabb construction: the input iterator should yield at least one point.",
     );
-    let wp0 = m.transform_point(p0);
+    let wp0 = m.transform_point(&p0);
     let mut min: Point<Real> = wp0;
     let mut max: Point<Real> = wp0;
 
@@ -78,21 +86,29 @@ where
 }
 
 /// Computes the [`Aabb`] of a set of points.
-pub fn local_point_cloud_aabb<'a, I>(pts: I) -> Aabb
+pub fn local_point_cloud_aabb_ref<'a, I>(pts: I) -> Aabb
 where
     I: IntoIterator<Item = &'a Point<Real>>,
+{
+    local_point_cloud_aabb(pts.into_iter().copied())
+}
+
+/// Computes the [`Aabb`] of a set of points.
+pub fn local_point_cloud_aabb<I>(pts: I) -> Aabb
+where
+    I: IntoIterator<Item = Point<Real>>,
 {
     let mut it = pts.into_iter();
 
     let p0 = it.next().expect(
         "Point cloud Aabb construction: the input iterator should yield at least one point.",
     );
-    let mut min: Point<Real> = *p0;
-    let mut max: Point<Real> = *p0;
+    let mut min: Point<Real> = p0;
+    let mut max: Point<Real> = p0;
 
     for pt in it {
-        min = min.inf(pt);
-        max = max.sup(pt);
+        min = min.inf(&pt);
+        max = max.sup(&pt);
     }
 
     Aabb::new(min, max)

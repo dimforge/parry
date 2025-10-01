@@ -1,10 +1,10 @@
-use crate::common::{generate, generate_trimesh_around_origin, unref};
+use crate::common::generate_trimesh_around_origin;
+use crate::common::{generate, unref};
 use na::Isometry3;
 use parry3d::bounding_volume::BoundingVolume;
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
-use parry3d::shape::{
-    Ball, Capsule, Cone, ConvexPolyhedron, Cuboid, Cylinder, Segment, TriMesh, Triangle,
-};
+use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
+use parry3d::shape::{ConvexPolyhedron, TriMesh};
 use rand::SeedableRng;
 use rand_isaac::IsaacRng;
 use test::Bencher;

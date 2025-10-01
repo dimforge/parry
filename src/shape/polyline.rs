@@ -1,13 +1,13 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::Qbvh;
+use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::{PointProjection, PointQueryWithLocation};
-use crate::shape::composite_shape::SimdCompositeShape;
-use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedSimdCompositeShape};
+use crate::shape::composite_shape::CompositeShape;
+use crate::shape::{FeatureId, Segment, SegmentPointLocation, Shape, TypedCompositeShape};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 use crate::query::details::NormalConstraints;
-#[cfg(not(feature = "std"))]
-use na::ComplexField; // for .abs()
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -18,7 +18,7 @@ use na::ComplexField; // for .abs()
 )]
 /// A polyline.
 pub struct Polyline {
-    qbvh: Qbvh<u32>,
+    bvh: Bvh,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 2]>,
 }
@@ -28,19 +28,18 @@ impl Polyline {
     pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
         let indices =
             indices.unwrap_or_else(|| (0..vertices.len() as u32 - 1).map(|i| [i, i + 1]).collect());
-        let data = indices.iter().enumerate().map(|(i, idx)| {
+        let leaves = indices.iter().enumerate().map(|(i, idx)| {
             let aabb =
                 Segment::new(vertices[idx[0] as usize], vertices[idx[1] as usize]).local_aabb();
-            (i as u32, aabb)
+            (i, aabb)
         });
 
-        let mut qbvh = Qbvh::new();
         // NOTE: we apply no dilation factor because we won't
         // update this tree dynamically.
-        qbvh.clear_and_rebuild(data, 0.0);
+        let bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves);
 
         Self {
-            qbvh,
+            bvh,
             vertices,
             indices,
         }
@@ -48,16 +47,17 @@ impl Polyline {
 
     /// Compute the axis-aligned bounding box of this polyline.
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
-        self.qbvh.root_aabb().transform_by(pos)
+        self.bvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this polyline.
-    pub fn local_aabb(&self) -> &Aabb {
-        self.qbvh.root_aabb()
+    pub fn local_aabb(&self) -> Aabb {
+        self.bvh.root_aabb()
     }
 
-    pub(crate) fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    /// The BVH acceleration structure for this polyline.
+    pub fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 
     /// The number of segments forming this polyline.
@@ -112,7 +112,7 @@ impl Polyline {
         unsafe {
             let len = self.indices.len() * 2;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
@@ -121,8 +121,10 @@ impl Polyline {
         self.vertices
             .iter_mut()
             .for_each(|pt| pt.coords.component_mul_assign(scale));
+        let mut bvh = self.bvh.clone();
+        bvh.scale(scale);
         Self {
-            qbvh: self.qbvh.scaled(scale),
+            bvh,
             vertices: self.vertices,
             indices: self.indices,
         }
@@ -137,11 +139,13 @@ impl Polyline {
 
         self.indices.reverse();
 
-        // Because we reversed the indices, we need to
-        // adjust the segment indices stored in the Qbvh.
-        for (_, seg_id) in self.qbvh.iter_data_mut() {
-            *seg_id = self.indices.len() as u32 - *seg_id - 1;
-        }
+        // Rebuild the bvh since the segment indices no longer map to the correct element.
+        // TODO PERF: should the Bvh have a function for efficient leaf index remapping?
+        //            Probably not worth it unless this function starts showing up as a
+        //            bottleneck for someone.
+        let leaves = self.segments().map(|seg| seg.local_aabb()).enumerate();
+        let bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves);
+        self.bvh = bvh;
     }
 
     /// Extracts the connected components of this polyline, consuming `self`.
@@ -192,8 +196,8 @@ impl Polyline {
                     // Start node reached: build polyline and start next component
                     component_indices.push([(i - start_i) as u32, 0]);
                     components.push(Polyline::new(
-                        std::mem::take(&mut component_vertices),
-                        Some(std::mem::take(&mut component_indices)),
+                        core::mem::take(&mut component_vertices),
+                        Some(core::mem::take(&mut component_indices)),
                     ));
 
                     if i + 1 < indices.len() {
@@ -279,7 +283,7 @@ impl Polyline {
     }
 }
 
-impl SimdCompositeShape for Polyline {
+impl CompositeShape for Polyline {
     fn map_part_at(
         &self,
         i: u32,
@@ -289,41 +293,36 @@ impl SimdCompositeShape for Polyline {
         f(None, &tri, None)
     }
 
-    fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
-impl TypedSimdCompositeShape for Polyline {
+impl TypedCompositeShape for Polyline {
     type PartShape = Segment;
     type PartNormalConstraints = ();
-    type PartId = u32;
 
     #[inline(always)]
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         i: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
+        ) -> T,
+    ) -> Option<T> {
         let seg = self.segment(i);
-        f(None, &seg, None)
+        Some(f(None, &seg, None))
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    ) {
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T> {
         let seg = self.segment(i);
-        f(None, &seg, None)
-    }
-
-    fn typed_qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+        Some(f(None, &seg, None))
     }
 }

@@ -1,9 +1,10 @@
 use crate::math::Real;
+use core::ops::{Add, Mul};
 use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
-use std::ops::{Add, Mul};
 
 #[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
+#[cfg(feature = "rkyv")]
+use rkyv::{bytecheck, Archive, CheckBytes};
 
 /// A 2x2 symmetric-definite-positive matrix.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -11,7 +12,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>"))
+    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
 )]
 pub struct SdpMatrix2<N> {
     /// The component at the first row and first column of this matrix.
@@ -117,12 +118,12 @@ impl Mul<Real> for SdpMatrix2<Real> {
 }
 
 /// A 3x3 symmetric-definite-positive matrix.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: rkyv::Archive<Archived = N>"))
+    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
 )]
 pub struct SdpMatrix3<N> {
     /// The component at the first row and first column of this matrix.

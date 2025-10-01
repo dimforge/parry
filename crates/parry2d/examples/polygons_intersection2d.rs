@@ -8,7 +8,7 @@ use parry2d::transformation::polygons_intersection_points;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::utils::polygons_intersection_points")]
+#[macroquad::main("polygons_intersection2d")]
 async fn main() {
     let spikes = spikes_polygon();
     let mut animated_spikes = spikes.clone();

@@ -1,19 +1,41 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection};
+use crate::bounding_volume::BoundingVolume;
 use crate::math::{Isometry, Real};
+use crate::partitioning::BvhNode;
 use crate::query::point::point_query::PointQueryWithLocation;
-use crate::query::{visitors::BoundingVolumeIntersectionsSimultaneousVisitor, PointQuery};
+use crate::query::PointQuery;
 use crate::shape::{TriMesh, Triangle};
 use crate::utils;
+use crate::utils::hashmap::Entry;
+use crate::utils::hashmap::HashMap;
+use crate::utils::hashset::HashSet;
+use alloc::collections::BTreeMap;
+use alloc::{vec, vec::Vec};
+#[cfg(not(feature = "std"))]
+use na::ComplexField;
 use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
-use std::collections::BTreeMap;
-use std::collections::HashSet;
 #[cfg(feature = "wavefront")]
 use std::path::PathBuf;
 
+/// A triangle with indices sorted in increasing order for deduplication in a hashmap.
+///
+/// Note that when converting a `[u32; 3]` into a `HashableTriangleIndices`, the result’s orientation
+/// might not match the input’s.
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+struct HashableTriangleIndices([u32; 3]);
+
+impl From<[u32; 3]> for HashableTriangleIndices {
+    fn from([a, b, c]: [u32; 3]) -> Self {
+        let (sa, sb, sc) = utils::sort3(&a, &b, &c);
+        HashableTriangleIndices([*sa, *sb, *sc])
+    }
+}
+
 /// Metadata that specifies thresholds to use when making construction choices
 /// in mesh intersections.
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct MeshIntersectionTolerances {
     /// The smallest angle (in radians) that will be tolerated. A triangle with
     /// a smaller angle is considered degenerate and will be deleted.
@@ -25,9 +47,11 @@ pub struct MeshIntersectionTolerances {
     /// A multiplier coefficient to scale [`Self::global_insertion_epsilon`] when checking for
     /// point duplication within a single triangle.
     ///
-    /// Inside of an individual triangle the distance at which two points are considered
+    /// Inside an individual triangle the distance at which two points are considered
     /// to be the same is `global_insertion_epsilon * local_insertion_epsilon_mod`.
     pub local_insertion_epsilon_scale: Real,
+    /// Three points forming a triangle with an area smaller than this epsilon are considered collinear.
+    pub collinearity_epsilon: Real,
 }
 
 impl Default for MeshIntersectionTolerances {
@@ -37,6 +61,7 @@ impl Default for MeshIntersectionTolerances {
             angle_epsilon: (0.005 as Real).to_radians(), // 0.005 degrees
             global_insertion_epsilon: Real::EPSILON * 100.0,
             local_insertion_epsilon_scale: 10.,
+            collinearity_epsilon: Real::EPSILON * 100.0,
         }
     }
 }
@@ -75,7 +100,7 @@ pub fn intersect_meshes_with_tolerances(
     pos2: &Isometry<Real>,
     mesh2: &TriMesh,
     flip2: bool,
-    meta_data: MeshIntersectionTolerances,
+    tolerances: MeshIntersectionTolerances,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
     if cfg!(debug_assertions) {
         mesh1.assert_half_edge_topology_is_valid();
@@ -86,23 +111,22 @@ pub fn intersect_meshes_with_tolerances(
         return Err(MeshIntersectionError::MissingTopology);
     }
 
-    if mesh1.pseudo_normals().is_none() || mesh2.pseudo_normals().is_none() {
+    if mesh1.pseudo_normals_if_oriented().is_none() || mesh2.pseudo_normals_if_oriented().is_none()
+    {
         return Err(MeshIntersectionError::MissingPseudoNormals);
     }
 
     let pos12 = pos1.inv_mul(pos2);
 
     // 1: collect all the potential triangle-triangle intersections.
-    let mut intersection_candidates = vec![];
-    let mut visitor = BoundingVolumeIntersectionsSimultaneousVisitor::with_relative_pos(
-        pos12,
-        |tri1: &u32, tri2: &u32| {
-            intersection_candidates.push((*tri1, *tri2));
-            true
-        },
-    );
-
-    mesh1.qbvh().traverse_bvtt(mesh2.qbvh(), &mut visitor);
+    let intersection_candidates: Vec<_> = mesh1
+        .bvh()
+        .leaf_pairs(mesh2.bvh(), |node1: &BvhNode, node2: &BvhNode| {
+            let aabb1 = node1.aabb();
+            let aabb2 = node2.aabb().transform_by(&pos12);
+            aabb1.intersects(&aabb2)
+        })
+        .collect();
 
     let mut deleted_faces1: HashSet<u32> = HashSet::default();
     let mut deleted_faces2: HashSet<u32> = HashSet::default();
@@ -115,7 +139,9 @@ pub fn intersect_meshes_with_tolerances(
         let tri1 = mesh1.triangle(*fid1);
         let tri2 = mesh2.triangle(*fid2).transformed(&pos12);
 
-        if super::triangle_triangle_intersection(&tri1, &tri2).is_some() {
+        if super::triangle_triangle_intersection(&tri1, &tri2, tolerances.collinearity_epsilon)
+            .is_some()
+        {
             intersections.push((*fid1, *fid2));
             let _ = deleted_faces1.insert(*fid1);
             let _ = deleted_faces2.insert(*fid2);
@@ -143,21 +169,30 @@ pub fn intersect_meshes_with_tolerances(
     // 4: Initialize a new mesh by inserting points into a set. Duplicate points should
     // hash to the same index.
     let mut point_set = RTree::<TreePoint, _>::new();
-    let mut topology_indices = Vec::new();
+    let mut topology_indices = HashMap::default();
     {
         let mut insert_point = |position: Point3<Real>| {
-            insert_into_set(position, &mut point_set, meta_data.global_insertion_epsilon) as u32
+            insert_into_set(
+                position,
+                &mut point_set,
+                tolerances.global_insertion_epsilon,
+            ) as u32
         };
         // Add the inside vertices and triangles from mesh1
         for mut face in new_indices1 {
             if flip1 {
                 face.swap(0, 1);
             }
-            topology_indices.push([
+
+            let idx = [
                 insert_point(pos1 * mesh1.vertices()[face[0] as usize]),
                 insert_point(pos1 * mesh1.vertices()[face[1] as usize]),
                 insert_point(pos1 * mesh1.vertices()[face[2] as usize]),
-            ]);
+            ];
+
+            if !is_topologically_degenerate(idx) {
+                insert_topology_indices(&mut topology_indices, idx);
+            }
         }
 
         // Add the inside vertices and triangles from mesh2
@@ -165,11 +200,15 @@ pub fn intersect_meshes_with_tolerances(
             if flip2 {
                 face.swap(0, 1);
             }
-            topology_indices.push([
+            let idx = [
                 insert_point(pos2 * mesh2.vertices()[face[0] as usize]),
                 insert_point(pos2 * mesh2.vertices()[face[1] as usize]),
                 insert_point(pos2 * mesh2.vertices()[face[2] as usize]),
-            ]);
+            ];
+
+            if !is_topologically_degenerate(idx) {
+                insert_topology_indices(&mut topology_indices, idx);
+            }
         }
     }
 
@@ -184,7 +223,8 @@ pub fn intersect_meshes_with_tolerances(
         let list1 = constraints1.entry(fid1).or_default();
         let list2 = constraints2.entry(fid2).or_default();
 
-        let intersection = super::triangle_triangle_intersection(&tri1, &tri2);
+        let intersection =
+            super::triangle_triangle_intersection(&tri1, &tri2, tolerances.collinearity_epsilon);
         if let Some(intersection) = intersection {
             match intersection {
                 TriangleTriangleIntersection::Segment { a, b } => {
@@ -219,7 +259,7 @@ pub fn intersect_meshes_with_tolerances(
         pos2,
         flip1,
         flip2,
-        &meta_data,
+        &tolerances,
         &mut point_set,
         &mut topology_indices,
     )?;
@@ -232,7 +272,7 @@ pub fn intersect_meshes_with_tolerances(
         pos1,
         flip2,
         flip1,
-        &meta_data,
+        &tolerances,
         &mut point_set,
         &mut topology_indices,
     )?;
@@ -243,7 +283,10 @@ pub fn intersect_meshes_with_tolerances(
     let vertices: Vec<_> = vertices.iter().map(|p| Point3::from(p.point)).collect();
 
     if !topology_indices.is_empty() {
-        Ok(Some(TriMesh::new(vertices, topology_indices)?))
+        Ok(Some(TriMesh::new(
+            vertices,
+            topology_indices.into_values().collect(),
+        )?))
     } else {
         Ok(None)
     }
@@ -396,7 +439,9 @@ fn triangulate_constraints_and_merge_duplicates(
         let p1_id = insert_into_set(point_pair[0], &mut point_set, epsilon);
         let p2_id = insert_into_set(point_pair[1], &mut point_set, epsilon);
 
-        edges.push([p1_id, p2_id]);
+        if p1_id != p2_id {
+            edges.push([p1_id, p2_id]);
+        }
     }
 
     let mut points: Vec<_> = point_set.iter().cloned().collect();
@@ -419,8 +464,7 @@ fn triangulate_constraints_and_merge_duplicates(
             utils::sanitize_spade_point(point_proj)
         })
         .collect();
-    let cdt_triangulation =
-        ConstrainedDelaunayTriangulation::bulk_load_cdt_stable(planar_points, edges)?;
+    let cdt_triangulation = ConstrainedDelaunayTriangulation::bulk_load_cdt(planar_points, edges)?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
@@ -558,28 +602,20 @@ fn is_triangle_degenerate(
         return true;
     }
 
-    let mut shortest_side = Real::MAX;
     for i in 0..3 {
-        let p1 = triangle[i];
-        let p2 = triangle[(i + 1) % 3];
-
-        shortest_side = shortest_side.min((p1 - p2).norm());
-    }
-
-    let mut worse_projection_distance = Real::MAX;
-    for i in 0..3 {
-        let dir = triangle[(i + 1) % 3] - triangle[(i + 2) % 3];
-        if dir.norm() < epsilon_distance {
+        let mut dir = triangle[(i + 1) % 3] - triangle[(i + 2) % 3];
+        if dir.normalize_mut() < epsilon_distance {
             return true;
         }
 
-        let dir = dir.normalize();
         let proj = triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
 
-        worse_projection_distance = worse_projection_distance.min((proj - triangle[i]).norm());
+        if (proj - triangle[i]).norm() < epsilon_distance {
+            return true;
+        }
     }
 
-    worse_projection_distance < epsilon_distance
+    false
 }
 
 fn merge_triangle_sets(
@@ -592,10 +628,10 @@ fn merge_triangle_sets(
     flip2: bool,
     metadata: &MeshIntersectionTolerances,
     point_set: &mut RTree<TreePoint>,
-    topology_indices: &mut Vec<[u32; 3]>,
+    topology_indices: &mut HashMap<HashableTriangleIndices, [u32; 3]>,
 ) -> Result<(), MeshIntersectionError> {
     // For each triangle, and each constraint edge associated to that triangle,
-    // make a triangulation of the face and sort whether or not each generated
+    // make a triangulation of the face and sort whether each generated
     // sub-triangle is part of the intersection.
     // For each sub-triangle that is part of the intersection, add them to the
     // output mesh.
@@ -638,29 +674,71 @@ fn merge_triangle_sets(
                 .0;
 
             if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
-                topology_indices.push([
+                let mut new_tri_idx = [
                     insert_into_set(p1, point_set, epsilon) as u32,
                     insert_into_set(p2, point_set, epsilon) as u32,
                     insert_into_set(p3, point_set, epsilon) as u32,
-                ]);
+                ];
 
                 if flip1 {
-                    topology_indices.last_mut().unwrap().swap(0, 1)
+                    new_tri_idx.swap(0, 1)
                 }
-
-                let [id1, id2, id3] = topology_indices.last().unwrap();
 
                 // This should *never* trigger. If it does
                 // it means the code has created a triangle with duplicate vertices,
                 // which means we encountered an unaccounted for edge case.
-                if id1 == id2 || id1 == id3 || id2 == id3 {
+                if is_topologically_degenerate(new_tri_idx) {
                     return Err(MeshIntersectionError::DuplicateVertices);
                 }
+
+                insert_topology_indices(topology_indices, new_tri_idx);
             }
         }
     }
 
     Ok(())
+}
+
+// Insert in the hashmap with sorted indices to avoid adding duplicates.
+//
+// We also check if we don’t keep pairs of triangles that have the same
+// set of indices but opposite orientations. If this happens, both the new triangle, and the one it
+// matched with are removed (because they describe a degenerate piece of volume).
+fn insert_topology_indices(
+    topology_indices: &mut HashMap<HashableTriangleIndices, [u32; 3]>,
+    new_tri_idx: [u32; 3],
+) {
+    match topology_indices.entry(new_tri_idx.into()) {
+        Entry::Vacant(e) => {
+            let _ = e.insert(new_tri_idx);
+        }
+        Entry::Occupied(e) => {
+            fn same_orientation(a: &[u32; 3], b: &[u32; 3]) -> bool {
+                let ib = if a[0] == b[0] {
+                    0
+                } else if a[0] == b[1] {
+                    1
+                } else {
+                    2
+                };
+                a[1] == b[(ib + 1) % 3]
+            }
+
+            if !same_orientation(e.get(), &new_tri_idx) {
+                // If we are inserting two identical triangles but with mismatching
+                // orientations, we can just ignore both because they cover a degenerate
+                // 2D plane.
+                #[cfg(feature = "enhanced-determinism")]
+                let _ = e.swap_remove();
+                #[cfg(not(feature = "enhanced-determinism"))]
+                let _ = e.remove();
+            }
+        }
+    }
+}
+
+fn is_topologically_degenerate(tri_idx: [u32; 3]) -> bool {
+    tri_idx[0] == tri_idx[1] || tri_idx[0] == tri_idx[2] || tri_idx[1] == tri_idx[2]
 }
 
 #[cfg(feature = "wavefront")]

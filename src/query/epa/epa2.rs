@@ -1,7 +1,7 @@
 //! Two-dimensional penetration depth queries using the Expanding Polytope Algorithm.
 
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
+use alloc::{collections::BinaryHeap, vec::Vec};
+use core::cmp::Ordering;
 
 use na::{self, Unit};
 use num::Bounded;
@@ -226,27 +226,35 @@ impl EPA {
             let pts2 = [1, 2];
             let pts3 = [2, 0];
 
-            let (face1, proj_is_inside1) = Face::new(&self.vertices, pts1);
-            let (face2, proj_is_inside2) = Face::new(&self.vertices, pts2);
-            let (face3, proj_is_inside3) = Face::new(&self.vertices, pts3);
+            let (face1, proj_inside1) = Face::new(&self.vertices, pts1);
+            let (face2, proj_inside2) = Face::new(&self.vertices, pts2);
+            let (face3, proj_inside3) = Face::new(&self.vertices, pts3);
 
             self.faces.push(face1);
             self.faces.push(face2);
             self.faces.push(face3);
 
-            if proj_is_inside1 {
+            if proj_inside1 {
                 let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
                 self.heap.push(FaceId::new(0, -dist1)?);
             }
 
-            if proj_is_inside2 {
+            if proj_inside2 {
                 let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
                 self.heap.push(FaceId::new(1, -dist2)?);
             }
 
-            if proj_is_inside3 {
+            if proj_inside3 {
                 let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
                 self.heap.push(FaceId::new(2, -dist3)?);
+            }
+
+            if !(proj_inside1 || proj_inside2 || proj_inside3) {
+                // Related issues:
+                // https://github.com/dimforge/parry/issues/253
+                // https://github.com/dimforge/parry/issues/246
+                log::debug!("Hit unexpected state in EPA: failed to project the origin on the initial simplex.");
+                return None;
             }
         } else {
             let pts1 = [0, 1];

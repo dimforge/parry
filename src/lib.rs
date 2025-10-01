@@ -11,7 +11,8 @@ the rust programming language.
 #![deny(unused_parens)]
 #![deny(non_upper_case_globals)]
 #![deny(unused_results)]
-#![warn(missing_docs)] // TODO: deny this
+#![deny(unused_qualifications)]
+#![warn(missing_docs)]
 #![warn(unused_imports)]
 #![allow(missing_copy_implementations)]
 #![allow(clippy::too_many_arguments)] // Maybe revisit this one later.
@@ -19,8 +20,7 @@ the rust programming language.
 #![allow(clippy::manual_range_contains)] // This usually makes it way more verbose that it could be.
 #![allow(clippy::type_complexity)] // Complains about closures that are fairly simple.
 #![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "rkyv"), deny(unused_qualifications))] // TODO: deny that everytime
+#![no_std]
 
 #[cfg(all(
     feature = "simd-is-enabled",
@@ -33,13 +33,17 @@ std::compile_error!(
     "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
 );
 
+#[cfg(feature = "simd-is-enabled")]
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
         {
             #[inline(always)]
             #[allow(dead_code)]
             fn create_arr<T>(mut callback: impl FnMut(usize) -> T) -> [T; SIMD_WIDTH] {
-                [callback(0usize), callback(1usize), callback(2usize), callback(3usize)]
+                #[cfg(not(feature = "simd-is-enabled"))]
+                return [callback(0usize)];
+                #[cfg(feature = "simd-is-enabled")]
+                return [callback(0usize), callback(1usize), callback(2usize), callback(3usize)];
             }
 
             create_arr($callback)
@@ -47,12 +51,12 @@ macro_rules! array(
     }
 );
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "alloc")]
 #[cfg_attr(test, macro_use)]
 extern crate alloc;
-
-#[cfg(not(feature = "std"))]
-extern crate core as std;
 
 #[cfg(feature = "serde")]
 #[macro_use]
@@ -70,7 +74,7 @@ pub mod mass_properties;
 pub mod partitioning;
 pub mod query;
 pub mod shape;
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub mod transformation;
 pub mod utils;
 
@@ -228,22 +232,21 @@ pub mod math {
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
-    use simba::simd::AutoBoolx4;
     /// The number of lanes of a SIMD number.
-    pub const SIMD_WIDTH: usize = 4;
+    pub const SIMD_WIDTH: usize = 1;
     /// SIMD_WIDTH - 1
-    pub const SIMD_LAST_INDEX: usize = 3;
+    pub const SIMD_LAST_INDEX: usize = 0;
 
     /// A SIMD float with SIMD_WIDTH lanes.
     #[cfg(feature = "f32")]
-    pub type SimdReal = simba::simd::AutoF32x4;
+    pub type SimdReal = f32;
 
     /// A SIMD float with SIMD_WIDTH lanes.
     #[cfg(feature = "f64")]
-    pub type SimdReal = simba::simd::AutoF64x4;
+    pub type SimdReal = f64;
 
     /// A SIMD bool with SIMD_WIDTH lanes.
-    pub type SimdBool = AutoBoolx4;
+    pub type SimdBool = bool;
 }
 
 #[cfg(feature = "simd-is-enabled")]

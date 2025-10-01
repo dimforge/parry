@@ -5,10 +5,11 @@ use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
 use crate::query::PointQueryWithLocation;
 use crate::shape::{SupportMap, Triangle, TrianglePointLocation};
 use crate::utils;
+use alloc::collections::BinaryHeap;
+use alloc::vec::Vec;
+use core::cmp::Ordering;
 use na::{self, Unit};
 use num::Bounded;
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
 
 #[derive(Copy, Clone, PartialEq)]
 struct FaceId {
@@ -95,9 +96,17 @@ impl Face {
             vertices[pts[1]].point,
             vertices[pts[2]].point,
         );
-        let (_, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
+        let (proj, loc) = tri.project_local_point_and_get_location(&Point::<Real>::origin(), true);
 
         match loc {
+            TrianglePointLocation::OnVertex(_) | TrianglePointLocation::OnEdge(_, _) => {
+                let eps_tol = crate::math::DEFAULT_EPSILON * 100.0; // Same as in closest_points
+                (
+                    // barycentric_coordinates is guaranteed to work in OnVertex and OnEdge locations
+                    Self::new_with_proj(vertices, loc.barycentric_coordinates().unwrap(), pts, adj),
+                    proj.is_inside_eps(&Point::<Real>::origin(), eps_tol),
+                )
+            }
             TrianglePointLocation::OnFace(_, bcoords) => {
                 (Self::new_with_proj(vertices, bcoords, pts, adj), true)
             }
@@ -284,6 +293,14 @@ impl EPA {
                 let dist4 = self.faces[3].normal.dot(&self.vertices[3].point.coords);
                 self.heap.push(FaceId::new(3, -dist4)?);
             }
+
+            if !(proj_inside1 || proj_inside2 || proj_inside3 || proj_inside4) {
+                // Related issues:
+                // https://github.com/dimforge/parry/issues/253
+                // https://github.com/dimforge/parry/issues/246
+                log::debug!("Hit unexpected state in EPA: failed to project the origin on the initial simplex.");
+                return None;
+            }
         } else {
             if simplex.dimension() == 1 {
                 let dpt = self.vertices[1] - self.vertices[0];
@@ -314,7 +331,7 @@ impl EPA {
 
         let mut niter = 0;
         let mut max_dist = Real::max_value();
-        let mut best_face_id = *self.heap.peek().unwrap();
+        let mut best_face_id = *self.heap.peek()?;
         let mut old_dist = 0.0;
 
         /*
@@ -373,20 +390,16 @@ impl EPA {
             for edge in &self.silhouette {
                 if !self.faces[edge.face_id].deleted {
                     let new_face_id = self.faces.len();
-                    let new_face;
 
-                    // TODO: NLL
-                    {
-                        let face_adj = &mut self.faces[edge.face_id];
-                        let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
-                        let pt_id2 = face_adj.pts[(edge.opp_pt_id + 1) % 3];
+                    let face_adj = &mut self.faces[edge.face_id];
+                    let pt_id1 = face_adj.pts[(edge.opp_pt_id + 2) % 3];
+                    let pt_id2 = face_adj.pts[(edge.opp_pt_id + 1) % 3];
 
-                        let pts = [pt_id1, pt_id2, support_point_id];
-                        let adj = [edge.face_id, new_face_id + 1, new_face_id - 1];
-                        new_face = Face::new(&self.vertices, pts, adj);
+                    let pts = [pt_id1, pt_id2, support_point_id];
+                    let adj = [edge.face_id, new_face_id + 1, new_face_id - 1];
+                    let new_face = Face::new(&self.vertices, pts, adj);
 
-                        face_adj.adj[(edge.opp_pt_id + 1) % 3] = new_face_id;
-                    }
+                    face_adj.adj[(edge.opp_pt_id + 1) % 3] = new_face_id;
 
                     self.faces.push(new_face.0);
 
@@ -455,7 +468,10 @@ impl EPA {
     }
 
     #[allow(dead_code)]
+    #[cfg(feature = "std")]
     fn print_silhouette(&self) {
+        use std::{print, println};
+
         print!("Silhouette points: ");
         for i in 0..self.silhouette.len() {
             let edge = &self.silhouette[i];

@@ -1,12 +1,12 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, UnitVector, Vector};
-use crate::query::visitors::BoundingVolumeIntersectionsVisitor;
 use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation::{intersect_meshes, MeshIntersectionError};
 use crate::utils::{hashmap::HashMap, SortedPair, WBasis};
+use alloc::{vec, vec::Vec};
+use core::cmp::Ordering;
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triangulation as _};
-use std::cmp::Ordering;
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
@@ -93,7 +93,7 @@ impl TriMesh {
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
-        let mut triangulation = if self.pseudo_normals().is_some() {
+        let mut triangulation = if self.pseudo_normals_if_oriented().is_some() {
             Some(Triangulation::new(*local_axis, self.vertices()[0]))
         } else {
             None
@@ -231,7 +231,7 @@ impl TriMesh {
                     // The plane splits the triangle into 1 + 2 triangles.
                     // First, make sure the edge indices are consecutive.
                     if e2 != (e1 + 1) % 3 {
-                        std::mem::swap(&mut e1, &mut e2);
+                        core::mem::swap(&mut e1, &mut e2);
                     }
 
                     let ia = e2; // The first point of the second edge is the vertex shared by both edges.
@@ -549,7 +549,7 @@ impl TriMesh {
                     // The plane splits the triangle into 1 + 2 triangles.
                     // First, make sure the edge indices are consecutive.
                     if e2 != (e1 + 1) % 3 {
-                        std::mem::swap(&mut e1, &mut e2);
+                        core::mem::swap(&mut e1, &mut e2);
                     }
 
                     let ia = e2; // The first point of the second edge is the vertex shared by both edges.
@@ -653,7 +653,7 @@ impl TriMesh {
         flip_cuboid: bool,
         _epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
-        if self.topology().is_some() && self.pseudo_normals().is_some() {
+        if self.topology().is_some() && self.pseudo_normals_if_oriented().is_some() {
             let (cuboid_vtx, cuboid_idx) = cuboid.to_trimesh();
             let cuboid_trimesh = TriMesh::with_flags(
                 cuboid_vtx,
@@ -675,12 +675,7 @@ impl TriMesh {
         }
 
         let cuboid_aabb = cuboid.compute_aabb(cuboid_position);
-        let mut intersecting_tris = vec![];
-        let mut visitor = BoundingVolumeIntersectionsVisitor::new(&cuboid_aabb, |id| {
-            intersecting_tris.push(*id);
-            true
-        });
-        let _ = self.qbvh().traverse_depth_first(&mut visitor);
+        let intersecting_tris: Vec<_> = self.bvh().intersect_aabb(&cuboid_aabb).collect();
 
         if intersecting_tris.is_empty() {
             return Ok(None);

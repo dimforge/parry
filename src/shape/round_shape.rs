@@ -36,7 +36,7 @@ pub(crate) struct RoundShapeRef<'a, S: ?Sized> {
     pub border_radius: Real,
 }
 
-impl<'a, S: ?Sized + SupportMap> SupportMap for RoundShapeRef<'a, S> {
+impl<S: ?Sized + SupportMap> SupportMap for RoundShapeRef<'_, S> {
     fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
         self.local_support_point_toward(&Unit::new_normalize(*dir))
     }

@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.17.1"
+version = "0.24.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -20,20 +20,26 @@ maintenance = { status = "actively-developed" }
 workspace = true
 
 [features]
-default = ["required-features", "std"]
+default = ["required-features", "std", "spade"]
 required-features = ["dim3", "f32"]
 std = [
     "nalgebra/std",
     "slab",
-    "rustc-hash",
     "simba/std",
     "arrayvec/std",
-    "spade",
-    "thiserror",
+    "spade?/std",
+    "thiserror/std",
+    "ena",
 ]
 dim3 = []
 f32 = []
-serde-serialize = ["serde", "nalgebra/serde-serialize", "bitflags/serde"]
+serde-serialize = [
+    "serde",
+    "nalgebra/serde-serialize",
+    "bitflags/serde",
+    "hashbrown?/serde",
+    "spade?/serde",
+]
 rkyv-serialize = [
     "rkyv/validation",
     "nalgebra/rkyv-serialize",
@@ -47,12 +53,13 @@ enhanced-determinism = ["simba/libm_force", "indexmap"]
 parallel = ["rayon"]
 # Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
-alloc = []
+alloc = ["nalgebra/alloc", "hashbrown"]
+spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = []
+simd-is-enabled = [ "glam" ]
 
 [lib]
 name = "parry3d"
@@ -62,36 +69,45 @@ required-features = ["required-features"]
 [dependencies]
 either = { version = "1", default-features = false }
 bitflags = "2.3"
-downcast-rs = { version = "1", default-features = false }
+downcast-rs = { version = "2", default-features = false, features = ["sync"] }
 num-traits = { version = "0.2", default-features = false }
-smallvec = "1"
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
-nalgebra = { version = "0.33", default-features = false, features = ["libm"] }
+nalgebra = { version = "0.34", default-features = false, features = ["libm"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 rkyv = { version = "0.7.41", optional = true }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
-rustc-hash = { version = "2", optional = true }
-cust_core = { version = "0.1", optional = true }
-spade = { version = "2.9", optional = true } # Make this optional?
+hashbrown = { version = "0.16", optional = true, default-features = false, features = [
+    "default-hasher",
+] }
+spade = { version = "2.9", optional = true, default-features = false }
 rayon = { version = "1", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 log = "0.4"
-ordered-float = { version = "4", default-features = false }
-thiserror = { version = "1", optional = true }
+ordered-float = { version = "5", default-features = false }
+thiserror = { version = "2", default-features = false }
 rstar = "0.12.0"
 obj = { version = "0.10.2", optional = true }
+ena = { version = "0.14.3", optional = true, default-features = false }
+smallvec = "1"
+static_assertions = "1"
+foldhash = { version = "0.2", default-features = false }
+
+# NOTE: needed only for element_min for SIMD BVH ray-casting.
+#       can be removed once `wide` supports it (and allows filtering-out the
+#       fourth element).
+glam = { version = "0.30.4", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
 ptree = "0.4.0"
-rand = { version = "0.8" }
+rand = { version = "0.9" }
 macroquad = "0.4.12"
-nalgebra = { version = "0.33", default-features = false, features = ["rand"] }
-rand_isaac = "0.3"
+nalgebra = { version = "0.34", default-features = false, features = ["rand"] }
+rand_isaac = "0.4"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
@@ -135,16 +151,19 @@ doc-scrape-examples = true
 [[example]]
 name = "convex3d"
 path = "examples/convex3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "convex_hull3d"
 path = "examples/convex_hull3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "convex_try_new3d"
 path = "examples/convex_try_new3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
@@ -170,6 +189,7 @@ doc-scrape-examples = true
 [[example]]
 name = "mesh3d"
 path = "examples/mesh3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
@@ -180,16 +200,24 @@ doc-scrape-examples = true
 [[example]]
 name = "plane_intersection"
 path = "examples/plane_intersection.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "polyline3d"
 path = "examples/polyline3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
 name = "proximity_query3d"
 path = "examples/proximity_query3d.rs"
+doc-scrape-examples = true
+
+[[example]]
+name = "project_point3d"
+path = "examples/project_point3d.rs"
+required-features = ["alloc"]
 doc-scrape-examples = true
 
 [[example]]
@@ -206,3 +234,9 @@ doc-scrape-examples = true
 name = "time_of_impact_query3d"
 path = "examples/time_of_impact_query3d.rs"
 doc-scrape-examples = true
+
+[[example]]
+name = "convex_decomposition"
+path = "examples/convex_decomposition.rs"
+doc-scrape-examples = true
+required-features = ["wavefront"]

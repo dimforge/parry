@@ -1,6 +1,7 @@
 use crate::math::Real;
 use crate::shape::RoundCylinder;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 use na::{self, Point3};
 
 impl RoundCylinder {

@@ -61,7 +61,7 @@ pub struct DilatedShape<'a, S: ?Sized + SupportMap> {
     pub radius: Real,
 }
 
-impl<'a, S: ?Sized + SupportMap> SupportMap for DilatedShape<'a, S> {
+impl<S: ?Sized + SupportMap> SupportMap for DilatedShape<'_, S> {
     #[inline]
     fn support_point(&self, m: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
         self.support_point_toward(m, &Unit::new_normalize(*dir))

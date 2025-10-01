@@ -2,6 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Point, Real};
 use crate::shape::Cuboid;
 use crate::transformation::utils;
+use alloc::vec::Vec;
 
 impl Aabb {
     /// Discretize the boundary of this Aabb as a triangle-mesh.

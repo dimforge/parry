@@ -27,13 +27,13 @@ pub fn clip_segment_segment_with_normal(
     if range1[1] < range1[0] {
         range1.swap(0, 1);
         features1.swap(0, 1);
-        std::mem::swap(&mut seg1.0, &mut seg1.1);
+        core::mem::swap(&mut seg1.0, &mut seg1.1);
     }
 
     if range2[1] < range2[0] {
         range2.swap(0, 1);
         features2.swap(0, 1);
-        std::mem::swap(&mut seg2.0, &mut seg2.1);
+        core::mem::swap(&mut seg2.0, &mut seg2.1);
     }
 
     if range2[0] > range1[1] || range1[0] > range2[1] {
@@ -92,13 +92,13 @@ pub fn clip_segment_segment(
     if range1[1] < range1[0] {
         range1.swap(0, 1);
         features1.swap(0, 1);
-        std::mem::swap(&mut seg1.0, &mut seg1.1);
+        core::mem::swap(&mut seg1.0, &mut seg1.1);
     }
 
     if range2[1] < range2[0] {
         range2.swap(0, 1);
         features2.swap(0, 1);
-        std::mem::swap(&mut seg2.0, &mut seg2.1);
+        core::mem::swap(&mut seg2.0, &mut seg2.1);
     }
 
     if range2[0] > range1[1] || range1[0] > range2[1] {

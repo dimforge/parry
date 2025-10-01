@@ -7,7 +7,7 @@ use num::{Bounded, Zero};
 impl Aabb {
     /// Computes the intersection of a segment with this Aabb.
     ///
-    /// Returns `None` if there is no intersection.
+    /// Returns `None` if there is no intersection or if `pa` is invalid (contains `NaN`).
     #[inline]
     pub fn clip_segment(&self, pa: &Point<Real>, pb: &Point<Real>) -> Option<Segment> {
         let ab = pb - pa;
@@ -18,7 +18,7 @@ impl Aabb {
     /// Computes the parameters of the two intersection points between a line and this Aabb.
     ///
     /// The parameters are such that the point are given by `orig + dir * parameter`.
-    /// Returns `None` if there is no intersection.
+    /// Returns `None` if there is no intersection or if `orig` is invalid (contains `NaN`).
     #[inline]
     pub fn clip_line_parameters(
         &self,
@@ -30,7 +30,7 @@ impl Aabb {
 
     /// Computes the intersection segment between a line and this Aabb.
     ///
-    /// Returns `None` if there is no intersection.
+    /// Returns `None` if there is no intersection or if `orig` is invalid (contains `NaN`).
     #[inline]
     pub fn clip_line(&self, orig: &Point<Real>, dir: &Vector<Real>) -> Option<Segment> {
         clip_aabb_line(self, orig, dir)
@@ -40,7 +40,7 @@ impl Aabb {
     /// Computes the parameters of the two intersection points between a ray and this Aabb.
     ///
     /// The parameters are such that the point are given by `ray.orig + ray.dir * parameter`.
-    /// Returns `None` if there is no intersection.
+    /// Returns `None` if there is no intersection or if `ray.orig` is invalid (contains `NaN`).
     #[inline]
     pub fn clip_ray_parameters(&self, ray: &Ray) -> Option<(Real, Real)> {
         self.clip_line_parameters(&ray.origin, &ray.dir)
@@ -67,6 +67,15 @@ impl Aabb {
 }
 
 /// Computes the segment given by the intersection of a line and an Aabb.
+///
+/// Returns the two intersections represented as `(t, normal, side)` such that:
+/// - `origin + dir * t` gives the intersection points.
+/// - `normal` is the face normal at the intersection. This is equal to the zero vector if `dir`
+///   is invalid (a zero vector or NaN) and `origin` is inside the AABB.
+/// - `side` is the side of the AABB that was hit. This is an integer in [-3, 3] where `1` represents
+///   the `+X` axis, `2` the `+Y` axis, etc., and negative values represent the corresponding
+///   negative axis. The special value of `0` indicates that the provided `dir` is zero or `NaN`
+///   and the line origin is inside the AABB.
 pub fn clip_aabb_line(
     aabb: &Aabb,
     origin: &Point<Real>,
@@ -92,7 +101,7 @@ pub fn clip_aabb_line(
 
             if inter_with_near_halfspace > inter_with_far_halfspace {
                 flip_sides = true;
-                std::mem::swap(
+                core::mem::swap(
                     &mut inter_with_near_halfspace,
                     &mut inter_with_far_halfspace,
                 )
@@ -133,6 +142,14 @@ pub fn clip_aabb_line(
     let near = if near_diag {
         (tmin, -dir.normalize(), near_side)
     } else {
+        // If near_side is 0, we are in a special case where `dir` is
+        // zero or NaN. Return `Some` only if the ray starts inside the
+        // aabb.
+        if near_side == 0 {
+            let zero = (0.0, Vector::zeros(), 0);
+            return aabb.contains_local_point(origin).then_some((zero, zero));
+        }
+
         let mut normal = Vector::zeros();
 
         if near_side < 0 {
@@ -147,6 +164,14 @@ pub fn clip_aabb_line(
     let far = if far_diag {
         (tmax, -dir.normalize(), far_side)
     } else {
+        // If far_side is 0, we are in a special case where `dir` is
+        // zero or NaN. Return `Some` only if the ray starts inside the
+        // aabb.
+        if far_side == 0 {
+            let zero = (0.0, Vector::zeros(), 0);
+            return aabb.contains_local_point(origin).then_some((zero, zero));
+        }
+
         let mut normal = Vector::zeros();
 
         if far_side < 0 {
@@ -159,4 +184,36 @@ pub fn clip_aabb_line(
     };
 
     Some((near, far))
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn clip_empty_aabb_line() {
+        assert!(clip_aabb_line(
+            &Aabb::new(Point::origin(), Point::origin()),
+            &Point::origin(),
+            &Vector::zeros(),
+        )
+        .is_some());
+        assert!(clip_aabb_line(
+            &Aabb::new(Vector::repeat(1.0).into(), Vector::repeat(2.0).into()),
+            &Point::origin(),
+            &Vector::zeros(),
+        )
+        .is_none());
+    }
+
+    #[test]
+    pub fn clip_empty_aabb_segment() {
+        let aabb_origin = Aabb::new(Point::origin(), Point::origin());
+        let aabb_shifted = Aabb::new(Vector::repeat(1.0).into(), Vector::repeat(2.0).into());
+        assert!(aabb_origin
+            .clip_segment(&Point::origin(), &Point::from(Vector::repeat(Real::NAN)))
+            .is_some());
+        assert!(aabb_shifted
+            .clip_segment(&Point::origin(), &Point::from(Vector::repeat(Real::NAN)))
+            .is_none());
+    }
 }

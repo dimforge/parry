@@ -7,9 +7,6 @@ use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 use na::Unit;
 
-#[cfg(not(feature = "std"))]
-use na::RealField; // for .copysign()
-
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 

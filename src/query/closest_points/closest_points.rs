@@ -1,6 +1,6 @@
 use crate::math::{Isometry, Point, Real};
 
-use std::mem;
+use core::mem;
 
 /// Closest points information.
 #[derive(Debug, PartialEq, Clone, Copy)]

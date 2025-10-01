@@ -1,17 +1,17 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Isometry, Point, Real, Vector};
-use crate::partitioning::Qbvh;
-use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedSimdCompositeShape};
-use std::fmt;
-
+use crate::partitioning::{Bvh, BvhBuildStrategy};
+use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedCompositeShape};
 use crate::utils::HashablePartialEq;
+use alloc::{vec, vec::Vec};
+use core::fmt;
 #[cfg(feature = "dim3")]
 use {crate::shape::Cuboid, crate::utils::SortedPair, na::Unit};
 
 use {
-    crate::shape::composite_shape::SimdCompositeShape,
+    crate::shape::composite_shape::CompositeShape,
     crate::utils::hashmap::{Entry, HashMap},
-    std::collections::HashSet,
+    crate::utils::hashset::HashSet,
 };
 
 #[cfg(feature = "dim2")]
@@ -97,6 +97,61 @@ impl TriMeshConnectedComponents {
     pub fn num_connected_components(&self) -> usize {
         self.ranges.len() - 1
     }
+
+    /// Convert the connected-component description into actual meshes (returned as raw index and
+    /// vertex buffers).
+    ///
+    /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
+    /// unexpected result.
+    pub fn to_mesh_buffers(&self, mesh: &TriMesh) -> Vec<(Vec<Point<Real>>, Vec<[u32; 3]>)> {
+        let mut result = vec![];
+        let mut new_vtx_index: Vec<_> = vec![u32::MAX; mesh.vertices.len()];
+
+        for ranges in self.ranges.windows(2) {
+            let num_faces = ranges[1] - ranges[0];
+
+            if num_faces == 0 {
+                continue;
+            }
+
+            let mut vertices = Vec::with_capacity(num_faces);
+            let mut indices = Vec::with_capacity(num_faces);
+
+            for fid in ranges[0]..ranges[1] {
+                let vids = mesh.indices[self.grouped_faces[fid] as usize];
+                let new_vids = vids.map(|id| {
+                    if new_vtx_index[id as usize] == u32::MAX {
+                        vertices.push(mesh.vertices[id as usize]);
+                        new_vtx_index[id as usize] = vertices.len() as u32 - 1;
+                    }
+
+                    new_vtx_index[id as usize]
+                });
+                indices.push(new_vids);
+            }
+
+            result.push((vertices, indices));
+        }
+
+        result
+    }
+
+    /// Convert the connected-component description into actual meshes.
+    ///
+    /// The `mesh` must be the one used to generate `self`, otherwise it might panic or produce an
+    /// unexpected result.
+    ///
+    /// All the meshes are constructed with the given `flags`.
+    pub fn to_meshes(
+        &self,
+        mesh: &TriMesh,
+        flags: TriMeshFlags,
+    ) -> Vec<Result<TriMesh, TriMeshBuilderError>> {
+        self.to_mesh_buffers(mesh)
+            .into_iter()
+            .map(|(vtx, idx)| TriMesh::with_flags(vtx, idx, flags))
+            .collect()
+    }
 }
 
 /// A vertex of a triangle-mesh’s half-edge topology.
@@ -176,18 +231,14 @@ pub struct TriMeshTopology {
 )]
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-/// The status of the cell of an heightfield.
+/// Controls how a [`TriMesh`] should be loaded.
 pub struct TriMeshFlags(u16);
 
 bitflags::bitflags! {
     impl TriMeshFlags: u16 {
         /// If set, the half-edge topology of the trimesh will be computed if possible.
         const HALF_EDGE_TOPOLOGY = 1;
-        /// If set, the half-edge topology and connected components of the trimesh will be computed if possible.
-        ///
-        /// Because of the way it is currently implemented, connected components can only be computed on
-        /// a mesh where the half-edge topology computation succeeds. It will no longer be the case in the
-        /// future once we decouple the computations.
+        /// If set, the connected components of the trimesh will be computed.
         const CONNECTED_COMPONENTS = 1 << 1;
         /// If set, any triangle that results in a failing half-hedge topology computation will be deleted.
         const DELETE_BAD_TOPOLOGY_TRIANGLES = 1 << 2;
@@ -219,7 +270,7 @@ bitflags::bitflags! {
         ///
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
-        const FIX_INTERNAL_EDGES = 1 << 7 | Self::ORIENTED.bits() | Self::MERGE_DUPLICATE_VERTICES.bits();
+        const FIX_INTERNAL_EDGES = (1 << 7) | Self::MERGE_DUPLICATE_VERTICES.bits();
     }
 }
 
@@ -233,7 +284,7 @@ bitflags::bitflags! {
 #[derive(Clone)]
 /// A triangle mesh.
 pub struct TriMesh {
-    qbvh: Qbvh<u32>,
+    bvh: Bvh,
     vertices: Vec<Point<Real>>,
     indices: Vec<[u32; 3]>,
     #[cfg(feature = "dim3")]
@@ -269,7 +320,7 @@ impl TriMesh {
         }
 
         let mut result = Self {
-            qbvh: Qbvh::new(),
+            bvh: Bvh::new(),
             vertices,
             indices,
             #[cfg(feature = "dim3")]
@@ -281,9 +332,9 @@ impl TriMesh {
 
         let _ = result.set_flags(flags);
 
-        if result.qbvh.raw_nodes().is_empty() {
-            // The Qbvh hasn’t been computed by `.set_flags`.
-            result.rebuild_qbvh();
+        if result.bvh.is_empty() {
+            // The BVH hasn’t been computed by `.set_flags`.
+            result.rebuild_bvh();
         }
 
         Ok(result)
@@ -299,7 +350,7 @@ impl TriMesh {
         }
 
         #[cfg(feature = "dim3")]
-        if !flags.contains(TriMeshFlags::ORIENTED) {
+        if !flags.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.pseudo_normals = None;
         }
 
@@ -321,27 +372,86 @@ impl TriMesh {
         }
 
         if difference.intersects(
-            TriMeshFlags::HALF_EDGE_TOPOLOGY
-                | TriMeshFlags::CONNECTED_COMPONENTS
-                | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
+            TriMeshFlags::HALF_EDGE_TOPOLOGY | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
         ) {
-            result = self.compute_topology(
-                flags.contains(TriMeshFlags::CONNECTED_COMPONENTS),
-                flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES),
-            );
+            result =
+                self.compute_topology(flags.contains(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES));
+        }
+
+        #[cfg(feature = "std")]
+        if difference.intersects(TriMeshFlags::CONNECTED_COMPONENTS) {
+            self.compute_connected_components();
         }
 
         #[cfg(feature = "dim3")]
-        if difference.contains(TriMeshFlags::ORIENTED) {
+        if difference.intersects(TriMeshFlags::ORIENTED | TriMeshFlags::FIX_INTERNAL_EDGES) {
             self.compute_pseudo_normals();
         }
 
         if prev_indices_len != self.indices.len() {
-            self.rebuild_qbvh();
+            self.rebuild_bvh();
         }
 
         self.flags = flags;
         result
+    }
+
+    // TODO: support a crate like get_size2 (will require support on nalgebra too)?
+    /// An approximation of the memory usage (in bytes) for this struct plus
+    /// the memory it allocates dynamically.
+    pub fn total_memory_size(&self) -> usize {
+        size_of::<Self>() + self.heap_memory_size()
+    }
+
+    /// An approximation of the memory dynamically-allocated by this struct.
+    pub fn heap_memory_size(&self) -> usize {
+        // NOTE: if a new field is added to `Self`, adjust this function result.
+        let Self {
+            bvh,
+            vertices,
+            indices,
+            topology,
+            connected_components,
+            flags: _,
+            #[cfg(feature = "dim3")]
+            pseudo_normals,
+        } = self;
+        let sz_bvh = bvh.heap_memory_size();
+        let sz_vertices = vertices.capacity() * size_of::<Point<Real>>();
+        let sz_indices = indices.capacity() * size_of::<[u32; 3]>();
+        #[cfg(feature = "dim3")]
+        let sz_pseudo_normals = pseudo_normals
+            .as_ref()
+            .map(|pn| {
+                pn.vertices_pseudo_normal.capacity() * size_of::<Vector<Real>>()
+                    + pn.edges_pseudo_normal.capacity() * size_of::<[Vector<Real>; 3]>()
+            })
+            .unwrap_or(0);
+        #[cfg(feature = "dim2")]
+        let sz_pseudo_normals = 0;
+        let sz_topology = topology
+            .as_ref()
+            .map(|t| {
+                t.vertices.capacity() * size_of::<TopoVertex>()
+                    + t.faces.capacity() * size_of::<TopoFace>()
+                    + t.half_edges.capacity() * size_of::<TopoHalfEdge>()
+            })
+            .unwrap_or(0);
+        let sz_connected_components = connected_components
+            .as_ref()
+            .map(|c| {
+                c.face_colors.capacity() * size_of::<u32>()
+                    + c.grouped_faces.capacity() * size_of::<f32>()
+                    + c.ranges.capacity() * size_of::<usize>()
+            })
+            .unwrap_or(0);
+
+        sz_bvh
+            + sz_vertices
+            + sz_indices
+            + sz_pseudo_normals
+            + sz_topology
+            + sz_connected_components
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
@@ -349,7 +459,7 @@ impl TriMesh {
         self.vertices
             .iter_mut()
             .for_each(|pt| *pt = transform * *pt);
-        self.rebuild_qbvh();
+        self.rebuild_bvh();
 
         // The pseudo-normals must be rotated too.
         #[cfg(feature = "dim3")]
@@ -389,8 +499,11 @@ impl TriMesh {
             });
         }
 
+        let mut bvh = self.bvh.clone();
+        bvh.scale(scale);
+
         Self {
-            qbvh: self.qbvh.scaled(scale),
+            bvh,
             vertices: self.vertices,
             indices: self.indices,
             #[cfg(feature = "dim3")]
@@ -411,8 +524,8 @@ impl TriMesh {
                 .map(|idx| [idx[0] + base_id, idx[1] + base_id, idx[2] + base_id]),
         );
 
-        let vertices = std::mem::take(&mut self.vertices);
-        let indices = std::mem::take(&mut self.indices);
+        let vertices = core::mem::take(&mut self.vertices);
+        let indices = core::mem::take(&mut self.indices);
         *self = TriMesh::with_flags(vertices, indices, self.flags).unwrap();
     }
 
@@ -429,31 +542,29 @@ impl TriMesh {
         unsafe {
             let len = self.indices.len() * 3;
             let data = self.indices.as_ptr() as *const u32;
-            std::slice::from_raw_parts(data, len)
+            core::slice::from_raw_parts(data, len)
         }
     }
 
-    fn rebuild_qbvh(&mut self) {
-        let data = self.indices.iter().enumerate().map(|(i, idx)| {
+    fn rebuild_bvh(&mut self) {
+        let leaves = self.indices.iter().enumerate().map(|(i, idx)| {
             let aabb = Triangle::new(
                 self.vertices[idx[0] as usize],
                 self.vertices[idx[1] as usize],
                 self.vertices[idx[2] as usize],
             )
             .local_aabb();
-            (i as u32, aabb)
+            (i, aabb)
         });
 
-        // NOTE: we apply no dilation factor because we won't
-        // update this tree dynamically.
-        self.qbvh.clear_and_rebuild(data, 0.0);
+        self.bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves)
     }
 
     /// Reverse the orientation of the triangle mesh.
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
-        // NOTE: the Qbvh, and connected components are not changed by this operation.
+        // NOTE: the BVH, and connected components are not changed by this operation.
         //       The pseudo-normals just have to be flipped.
         //       The topology must be recomputed.
 
@@ -472,7 +583,7 @@ impl TriMesh {
 
         if self.flags.contains(TriMeshFlags::HALF_EDGE_TOPOLOGY) {
             // TODO: this could be done more efficiently.
-            let _ = self.compute_topology(false, false);
+            let _ = self.compute_topology(false);
         }
     }
 
@@ -492,7 +603,7 @@ impl TriMesh {
         let mut vtx_to_id = HashMap::default();
         let mut new_vertices = Vec::with_capacity(self.vertices.len());
         let mut new_indices = Vec::with_capacity(self.indices.len());
-        let mut triangle_set = HashSet::new();
+        let mut triangle_set = HashSet::default();
 
         fn resolve_coord_id(
             coord: &Point<Real>,
@@ -559,7 +670,7 @@ impl TriMesh {
         // Vertices and indices changed: the topology no longer valid.
         #[cfg(feature = "dim3")]
         if self.topology.is_some() {
-            let _ = self.compute_topology(self.connected_components.is_some(), false);
+            let _ = self.compute_topology(false);
         }
     }
 
@@ -643,7 +754,7 @@ impl TriMesh {
     }
 
     fn delete_bad_topology_triangles(&mut self) {
-        let mut half_edge_set = HashSet::new();
+        let mut half_edge_set = HashSet::default();
         let mut deleted_any = false;
 
         // First, create three half-edges for each face.
@@ -681,11 +792,7 @@ impl TriMesh {
     /// # Return
     /// Returns `true` if the computation succeeded. Returns `false` if this mesh can’t have an half-edge representation
     /// because at least three faces share the same edge.
-    fn compute_topology(
-        &mut self,
-        compute_connected_components: bool,
-        delete_bad_triangles: bool,
-    ) -> Result<(), TopologyError> {
+    fn compute_topology(&mut self, delete_bad_triangles: bool) -> Result<(), TopologyError> {
         if delete_bad_triangles {
             self.delete_bad_topology_triangles();
         }
@@ -754,58 +861,101 @@ impl TriMesh {
 
         self.topology = Some(topology);
 
-        if compute_connected_components {
-            self.compute_connected_components();
-        }
-
         Ok(())
     }
 
-    // NOTE: we can only compute connected components if the topology
-    //       has been computed too. So instead of making this method
-    //       public, the `.compute_topology` method has a boolean to
-    //       compute the connected components too.
+    // NOTE: this is private because that calculation is controlled by TriMeshFlags::CONNECTED_COMPONENTS
+    // TODO: we should remove the CONNECTED_COMPONENTS flags and just have this be a free function.
+    // TODO: this should be no_std compatible once ena is or once we have an alternative for it.
+    #[cfg(feature = "std")]
     fn compute_connected_components(&mut self) {
-        let topo = self.topology.as_ref().unwrap();
-        let mut face_colors = vec![u32::MAX; topo.faces.len()];
-        let mut grouped_faces = Vec::new();
-        let mut ranges = vec![0];
-        let mut stack = vec![];
+        use ena::unify::{InPlaceUnificationTable, UnifyKey};
 
-        for i in 0..topo.faces.len() {
-            if face_colors[i] == u32::MAX {
-                let color = ranges.len() as u32 - 1;
-                face_colors[i] = color;
-                grouped_faces.push(i as u32);
-                stack.push(i as u32);
+        #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
+        struct IntKey(u32);
 
-                while let Some(tri_id) = stack.pop() {
-                    let eid = topo.faces[tri_id as usize].half_edge;
-                    let edge_a = &topo.half_edges[eid as usize];
-                    let edge_b = &topo.half_edges[edge_a.next as usize];
-                    let edge_c = &topo.half_edges[edge_b.next as usize];
-                    let edges = [edge_a, edge_b, edge_c];
-
-                    for edge in edges {
-                        if let Some(twin) = topo.half_edges.get(edge.twin as usize) {
-                            if face_colors[twin.face as usize] == u32::MAX {
-                                face_colors[twin.face as usize] = color;
-                                grouped_faces.push(twin.face);
-                                stack.push(twin.face);
-                            }
-                        }
-                    }
-                }
-
-                ranges.push(grouped_faces.len());
+        impl UnifyKey for IntKey {
+            type Value = ();
+            fn index(&self) -> u32 {
+                self.0
             }
+            fn from_index(u: u32) -> IntKey {
+                IntKey(u)
+            }
+            fn tag() -> &'static str {
+                "IntKey"
+            }
+        }
+
+        let mut ufind: InPlaceUnificationTable<IntKey> = InPlaceUnificationTable::new();
+        let mut face_colors = vec![u32::MAX; self.indices.len()];
+        let mut ranges = vec![0];
+        let mut vertex_to_range = vec![u32::MAX; self.vertices.len()];
+        let mut grouped_faces = vec![u32::MAX; self.indices.len()];
+        let mut vertex_to_key = vec![IntKey(u32::MAX); self.vertices.len()];
+
+        let mut vertex_key = |id: u32, ufind: &mut InPlaceUnificationTable<IntKey>| {
+            if vertex_to_key[id as usize].0 == u32::MAX {
+                let new_key = ufind.new_key(());
+                vertex_to_key[id as usize] = new_key;
+                new_key
+            } else {
+                vertex_to_key[id as usize]
+            }
+        };
+
+        for idx in self.indices() {
+            let keys = idx.map(|i| vertex_key(i, &mut ufind));
+            ufind.union(keys[0], keys[1]);
+            ufind.union(keys[1], keys[2]);
+            ufind.union(keys[2], keys[0]);
+        }
+
+        for (idx, face_color) in self.indices().iter().zip(face_colors.iter_mut()) {
+            debug_assert_eq!(
+                ufind.find(vertex_to_key[idx[0] as usize]),
+                ufind.find(vertex_to_key[idx[1] as usize])
+            );
+            debug_assert_eq!(
+                ufind.find(vertex_to_key[idx[0] as usize]),
+                ufind.find(vertex_to_key[idx[2] as usize])
+            );
+
+            let group_index = ufind.find(vertex_to_key[idx[0] as usize]).0 as usize;
+
+            if vertex_to_range[group_index] == u32::MAX {
+                // Additional range
+                ranges.push(0);
+                vertex_to_range[group_index] = ranges.len() as u32 - 1;
+            }
+
+            let range_id = vertex_to_range[group_index];
+            ranges[range_id as usize] += 1;
+            // NOTE: the range_id points to the range upper bound. The face color is the range lower bound.
+            *face_color = range_id - 1;
+        }
+
+        // Cumulated sum on range indices, to find the first index faces need to be inserted into
+        // for each range.
+        for i in 1..ranges.len() {
+            ranges[i] += ranges[i - 1];
+        }
+
+        debug_assert_eq!(*ranges.last().unwrap(), self.indices().len());
+
+        // Group faces.
+        let mut insertion_in_range_index = ranges.clone();
+        for (face_id, face_color) in face_colors.iter().enumerate() {
+            let insertion_index = &mut insertion_in_range_index[*face_color as usize];
+            grouped_faces[*insertion_index] = face_id as u32;
+            *insertion_index += 1;
         }
 
         self.connected_components = Some(TriMeshConnectedComponents {
             face_colors,
             grouped_faces,
             ranges,
-        });
+        })
     }
 
     #[allow(dead_code)] // Useful for testing.
@@ -867,17 +1017,17 @@ impl TriMesh {
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
-        self.qbvh.root_aabb().transform_by(pos)
+        self.bvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
-    pub fn local_aabb(&self) -> &Aabb {
-        self.qbvh.root_aabb()
+    pub fn local_aabb(&self) -> Aabb {
+        self.bvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
-    pub fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    pub fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 
     /// The number of triangles forming this mesh.
@@ -957,10 +1107,32 @@ impl TriMesh {
         self.connected_components.as_ref()
     }
 
+    /// Returns the connected-component of this mesh.
+    ///
+    /// The connected-components are returned as a set of `TriMesh` build with the given `flags`.
+    pub fn connected_component_meshes(
+        &self,
+        flags: TriMeshFlags,
+    ) -> Option<Vec<Result<TriMesh, TriMeshBuilderError>>> {
+        self.connected_components()
+            .map(|cc| cc.to_meshes(self, flags))
+    }
+
     /// The pseudo-normals of this triangle mesh, if they have been computed.
     #[cfg(feature = "dim3")]
     pub fn pseudo_normals(&self) -> Option<&TriMeshPseudoNormals> {
         self.pseudo_normals.as_ref()
+    }
+
+    /// The pseudo-normals of this triangle mesh, if they have been computed **and** this mesh was
+    /// marked as [`TriMeshFlags::ORIENTED`].
+    #[cfg(feature = "dim3")]
+    pub fn pseudo_normals_if_oriented(&self) -> Option<&TriMeshPseudoNormals> {
+        if self.flags.intersects(TriMeshFlags::ORIENTED) {
+            self.pseudo_normals.as_ref()
+        } else {
+            None
+        }
     }
 }
 
@@ -980,7 +1152,7 @@ impl From<Cuboid> for TriMesh {
     }
 }
 
-impl SimdCompositeShape for TriMesh {
+impl CompositeShape for TriMesh {
     fn map_part_at(
         &self,
         i: u32,
@@ -995,54 +1167,50 @@ impl SimdCompositeShape for TriMesh {
         )
     }
 
-    fn qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+    fn bvh(&self) -> &Bvh {
+        &self.bvh
     }
 }
 
-impl TypedSimdCompositeShape for TriMesh {
+impl TypedCompositeShape for TriMesh {
     type PartShape = Triangle;
     type PartNormalConstraints = TrianglePseudoNormals;
-    type PartId = u32;
 
     #[inline(always)]
-    fn map_typed_part_at(
+    fn map_typed_part_at<T>(
         &self,
         i: u32,
         mut f: impl FnMut(
             Option<&Isometry<Real>>,
             &Self::PartShape,
             Option<&Self::PartNormalConstraints>,
-        ),
-    ) {
+        ) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(None, &tri, pseudo_normals.as_ref())
+        Some(f(None, &tri, pseudo_normals.as_ref()))
     }
 
     #[inline(always)]
-    fn map_untyped_part_at(
+    fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
-    ) {
+        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+    ) -> Option<T> {
         let tri = self.triangle(i);
         let pseudo_normals = self.triangle_normal_constraints(i);
-        f(
+        Some(f(
             None,
             &tri,
             pseudo_normals.as_ref().map(|n| n as &dyn NormalConstraints),
-        )
-    }
-
-    fn typed_qbvh(&self) -> &Qbvh<u32> {
-        &self.qbvh
+        ))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::shape::{TriMesh, TriMeshFlags};
+    use crate::math::{Real, Vector};
+    use crate::shape::{Cuboid, TriMesh, TriMeshFlags};
 
     #[test]
     fn trimesh_error_empty_indices() {
@@ -1050,5 +1218,35 @@ mod test {
             TriMesh::with_flags(vec![], vec![], TriMeshFlags::empty()).is_err(),
             "A triangle mesh with no triangles is invalid."
         );
+    }
+
+    #[test]
+    fn connected_components() {
+        let (vtx, idx) = Cuboid::new(Vector::repeat(0.5)).to_trimesh();
+
+        // Push 10 copy of the mesh, each time pushed with an offset.
+        let mut mesh = TriMesh::new(vtx.clone(), idx.clone()).unwrap();
+
+        for i in 1..10 {
+            let cc_vtx = vtx
+                .iter()
+                .map(|pt| pt + Vector::repeat(2.0 * i as Real))
+                .collect();
+
+            let to_append = TriMesh::new(cc_vtx, idx.clone()).unwrap();
+            mesh.append(&to_append);
+        }
+
+        mesh.set_flags(TriMeshFlags::CONNECTED_COMPONENTS).unwrap();
+        let connected_components = mesh.connected_components().unwrap();
+        assert_eq!(connected_components.num_connected_components(), 10);
+
+        let cc_meshes = connected_components.to_meshes(&mesh, TriMeshFlags::empty());
+
+        for cc in cc_meshes {
+            let cc = cc.unwrap();
+            assert_eq!(cc.vertices.len(), vtx.len());
+            assert_eq!(cc.indices.len(), idx.len());
+        }
     }
 }

@@ -1,6 +1,7 @@
 use crate::math::Real;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
+use alloc::{vec, vec::Vec};
 use na::{self, Point2};
 
 impl Cuboid {

@@ -1,5 +1,5 @@
+use core::cmp::Ordering;
 use num_traits::float::FloatCore;
-use std::cmp::Ordering;
 
 #[allow(dead_code)] // We don't use this currently, but might in the future.
 pub fn z_cmp_ints(lhs: &[usize], rhs: &[usize]) -> Ordering {

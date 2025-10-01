@@ -9,7 +9,7 @@ use parry2d::shape::Cuboid;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("parry2d::query::RayCast")]
+#[macroquad::main("raycasts_animated")]
 async fn main() {
     let animation_scale = 1.4;
     let animation_rotation = 0.04;
@@ -35,7 +35,7 @@ async fn main() {
             Point2::new(2.0, 2.0),
             UnitComplex::new(animation_rotation * i as f32) * -Vector2::x(),
         );
-        let toi = cube.cast_ray(&cube_pose, &ray, std::f32::MAX, true);
+        let toi = cube.cast_ray(&cube_pose, &ray, f32::MAX, true);
 
         /*
          *
