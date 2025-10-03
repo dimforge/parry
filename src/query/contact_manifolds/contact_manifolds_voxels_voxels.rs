@@ -132,8 +132,8 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                         };
 
                         manifolds.push(ContactManifold::with_data(
-                            vox1.linear_id,
-                            vox2.linear_id,
+                            vox1.linear_id.flat_id() as u32,
+                            vox2.linear_id.flat_id() as u32,
                             ManifoldData::default(),
                         ));
 

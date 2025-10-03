@@ -4,6 +4,7 @@ use crate::math::Point;
 use crate::math::Real;
 use crate::query::PointProjection;
 use crate::query::{PointQuery, Ray};
+use crate::shape::FeatureId;
 
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
 pub(super) struct SimdInvRay {
@@ -55,6 +56,30 @@ impl Bvh {
             |primitive, _| {
                 let proj = primitive_check(primitive, max_distance)?;
                 Some((na::distance(&proj.point, point), proj))
+            },
+        )
+    }
+
+    /// Projects a point on this BVH using the provided leaf projection function.
+    ///
+    /// Also returns the feature the point was projected on.
+    ///
+    /// The `primitive_check` delegates the point-projection task to an external function that
+    /// is assumed to map a leaf index to an actual geometry to project on. The `Real` argument
+    /// given to that closure is the distance to the closest point found so far (or is equal to
+    /// `max_distance` if no projection was found so far).
+    pub fn project_point_and_get_feature(
+        &self,
+        point: &Point<Real>,
+        max_distance: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<(PointProjection, FeatureId)>,
+    ) -> Option<(u32, (Real, (PointProjection, FeatureId)))> {
+        self.find_best(
+            max_distance,
+            |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
+            |primitive, _| {
+                let proj = primitive_check(primitive, max_distance)?;
+                Some((na::distance(&proj.0.point, point), proj))
             },
         )
     }
