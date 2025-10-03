@@ -60,7 +60,12 @@ impl Voxels {
 
             if can_remove_chunk {
                 self.chunk_bvh.remove(chunk_id as u32);
+
+                #[cfg(feature = "enhanced-determinism")]
+                let _ = self.chunk_headers.swap_remove(&chunk_key);
+                #[cfg(not(feature = "enhanced-determinism"))]
                 let _ = self.chunk_headers.remove(&chunk_key);
+
                 self.free_chunks.push(chunk_id);
                 self.chunk_keys[chunk_id] = VoxelsChunk::INVALID_CHUNK_KEY;
             }

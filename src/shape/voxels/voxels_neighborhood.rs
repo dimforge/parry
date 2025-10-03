@@ -104,8 +104,7 @@ impl Voxels {
     /// Merges voxel state (neighborhood) information of a given voxel (and all its neighbors)
     /// from `self` and `other`, to account for a recent change to the given `voxel` in `self`.
     ///
-    /// This is designed to be called after `self` was modified with [`Voxels::set_voxel`] or
-    /// [`Voxels::try_set_voxel`].
+    /// This is designed to be called after `self` was modified with [`Voxels::set_voxel`].
     ///
     /// This is the same as [`Voxels::combine_voxel_states`] but localized to a single voxel and its
     /// neighbors.
