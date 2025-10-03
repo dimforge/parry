@@ -1,8 +1,30 @@
 use crate::math::{Real, Vector};
+use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{FeatureId, Voxels};
+use crate::shape::{FeatureId, Voxels, VoxelsChunkRef};
 
 impl RayCast for Voxels {
+    #[inline]
+    fn cast_local_ray_and_get_normal(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        solid: bool,
+    ) -> Option<RayIntersection> {
+        self.chunk_bvh()
+            .find_best(
+                max_time_of_impact,
+                |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+                |primitive, best_so_far| {
+                    let chunk = self.chunk_ref(primitive);
+                    chunk.cast_local_ray_and_get_normal(ray, best_so_far, solid)
+                },
+            )
+            .map(|(_chunk_id, hit)| hit)
+    }
+}
+
+impl<'a> RayCast for VoxelsChunkRef<'a> {
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
@@ -31,19 +53,22 @@ impl RayCast for Voxels {
         let [domain_mins, domain_maxs] = self.domain();
 
         loop {
-            let voxel = self.voxel_state(voxel_key);
-            let aabb = self.voxel_aabb(voxel_key);
+            let aabb = self.voxel_aabb_unchecked(voxel_key);
 
-            if !voxel.is_empty() {
-                // We hit a voxel!
-                // TODO: if `solid` is false, and we started hitting from the first iteration,
-                //       then we should continue the ray propagation until we reach empty space again.
-                let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid);
+            if let Some(voxel) = self.voxel_state(voxel_key) {
+                if !voxel.is_empty() {
+                    // We hit a voxel!
+                    // TODO: if `solid` is false, and we started hitting from the first iteration,
+                    //       then we should continue the ray propagation until we reach empty space again.
+                    let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid);
 
-                if let Some(mut hit) = hit {
-                    // TODO: have the feature id be based on the voxel type?
-                    hit.feature = FeatureId::Face(self.linear_index(voxel_key));
-                    return Some(hit);
+                    if let Some(mut hit) = hit {
+                        // TODO: have the feature id be based on the voxel type?
+                        hit.feature = FeatureId::Face(
+                            self.flat_id(voxel_key).unwrap_or_else(|| unreachable!()),
+                        );
+                        return Some(hit);
+                    }
                 }
             }
 

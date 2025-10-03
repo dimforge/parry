@@ -171,7 +171,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                             timestamp: new_timestamp,
                         };
 
-                        let vid = vox1.linear_id;
+                        let vid = vox1.linear_id.flat_id() as u32;
                         let (id1, id2) = if flipped { (0, vid) } else { (vid, 0) };
                         manifolds.push(ContactManifold::with_data(
                             id1,
@@ -329,6 +329,7 @@ impl CanonicalVoxelShape {
         //       detection).
         let mins = voxels.domain()[0] - Vector::repeat(1);
         let maxs = voxels.domain()[1];
+        let counts = maxs - mins;
         let mask1 = vox.state.free_faces();
 
         let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {
@@ -348,12 +349,21 @@ impl CanonicalVoxelShape {
             adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, mins[2]);
         }
 
+        #[cfg(feature = "dim2")]
+        let workspace_id = |vox: Point<i32>| {
+            let local = vox - mins;
+            (local.x + local.y * counts.x) as u32
+        };
+
+        #[cfg(feature = "dim3")]
+        let workspace_id = |vox: Point<i32>| {
+            let local = vox - mins;
+            (local.x + local.y * counts.x + local.z * counts.x * counts.y) as u32
+        };
+
         Self {
             range: [key_low, key_high],
-            workspace_key: Vector2::new(
-                voxels.linear_index(key_low),
-                voxels.linear_index(key_high),
-            ),
+            workspace_key: Vector2::new(workspace_id(key_low), workspace_id(key_high)),
         }
     }
 

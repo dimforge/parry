@@ -1,30 +1,18 @@
 use crate::math::{Point, Real};
 use crate::query::{PointProjection, PointQuery};
-use crate::shape::{Cuboid, FeatureId, VoxelType, Voxels};
+use crate::shape::{Cuboid, FeatureId, Voxels, VoxelsChunkRef};
 
 impl PointQuery for Voxels {
     #[inline]
     fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection {
-        // TODO: optimize this very naive implementation.
-        let base_cuboid = Cuboid::new(self.voxel_size() / 2.0);
-        let mut smallest_dist = Real::MAX;
-        let mut result = PointProjection::new(false, *pt);
-
-        for vox in self.voxels() {
-            if vox.state.voxel_type() != VoxelType::Empty {
-                let mut candidate =
-                    base_cuboid.project_local_point(&(pt - vox.center.coords), solid);
-                candidate.point += vox.center.coords;
-
-                let candidate_dist = (candidate.point - pt).norm();
-                if candidate_dist < smallest_dist {
-                    result = candidate;
-                    smallest_dist = candidate_dist;
-                }
-            }
-        }
-
-        result
+        self.chunk_bvh()
+            .project_point(pt, Real::MAX, |chunk_id, _| {
+                let chunk = self.chunk_ref(chunk_id);
+                Some(chunk.project_local_point_and_get_vox_id(pt, solid).0)
+            })
+            .unwrap()
+            .1
+             .1
     }
 
     #[inline]
@@ -32,7 +20,45 @@ impl PointQuery for Voxels {
         &self,
         pt: &Point<Real>,
     ) -> (PointProjection, FeatureId) {
-        // TODO: get the actual feature.
-        (self.project_local_point(pt, false), FeatureId::Unknown)
+        self.chunk_bvh()
+            .project_point_and_get_feature(pt, Real::MAX, |chunk_id, _| {
+                let chunk = self.chunk_ref(chunk_id);
+                let (proj, vox) = chunk.project_local_point_and_get_vox_id(pt, false);
+                // TODO: we need a way to return both the voxel id, and the feature on the voxel.
+                Some((proj, FeatureId::Face(vox)))
+            })
+            .unwrap()
+            .1
+             .1
+    }
+}
+
+impl<'a> VoxelsChunkRef<'a> {
+    #[inline]
+    fn project_local_point_and_get_vox_id(
+        &self,
+        pt: &Point<Real>,
+        solid: bool,
+    ) -> (PointProjection, u32) {
+        // TODO: optimize this naive implementation that just iterates on all the voxels
+        //       from this chunk.
+        let base_cuboid = Cuboid::new(self.parent.voxel_size() / 2.0);
+        let mut smallest_dist = Real::MAX;
+        let mut result = PointProjection::new(false, *pt);
+        let mut result_vox_id = 0;
+
+        for vox in self.voxels() {
+            let mut candidate = base_cuboid.project_local_point(&(pt - vox.center.coords), solid);
+            candidate.point += vox.center.coords;
+
+            let candidate_dist = (candidate.point - pt).norm();
+            if candidate_dist < smallest_dist {
+                result = candidate;
+                result_vox_id = vox.linear_id.flat_id();
+                smallest_dist = candidate_dist;
+            }
+        }
+
+        (result, result_vox_id as u32)
     }
 }

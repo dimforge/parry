@@ -112,7 +112,7 @@ pub enum VoxelValue {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-struct VoxelState {
+struct VoxelData {
     #[cfg(feature = "dim2")]
     multiplicity: u32,
     num_primitive_intersections: u32,
@@ -124,7 +124,7 @@ pub struct VoxelizedVolume {
     scale: Real,
     resolution: [u32; DIM],
     values: Vec<VoxelValue>,
-    data: Vec<VoxelState>,
+    data: Vec<VoxelData>,
     primitive_intersections: Vec<(u32, u32)>,
 }
 
@@ -514,7 +514,7 @@ impl VoxelizedVolume {
             .resize(len as usize, VoxelValue::PrimitiveUndefined);
         self.data.resize(
             len as usize,
-            VoxelState {
+            VoxelData {
                 #[cfg(feature = "dim2")]
                 multiplicity: 0,
                 num_primitive_intersections: 0,

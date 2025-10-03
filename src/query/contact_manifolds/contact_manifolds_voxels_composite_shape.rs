@@ -135,7 +135,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                             timestamp: new_timestamp,
                         };
 
-                        let vox_id = vox1.linear_id;
+                        let vox_id = vox1.linear_id.flat_id() as u32;
                         let (id1, id2) = if flipped {
                             (leaf2, vox_id)
                         } else {
