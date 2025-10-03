@@ -278,27 +278,6 @@ impl Voxels {
         &self.chunk_bvh
     }
 
-    // /// The extents of the total axis-aligned volume covered by this [`Voxels`] shape.
-    // ///
-    // /// This accounts for all the voxels reserved in the internal buffer of `self`, including empty
-    // /// ones.
-    // pub fn extents(&self) -> Vector<Real> {
-    //     self.dimensions()
-    //         .cast::<Real>()
-    //         .component_mul(&self.voxel_size)
-    // }
-
-    // /// The center of this shape’s domain (accounting for both empty and filled voxels).
-    // pub fn domain_center(&self) -> Point<Real> {
-    //     (self
-    //         .domain_mins
-    //         .coords
-    //         .cast::<Real>()
-    //         .component_mul(&self.voxel_size)
-    //         + self.extents() / 2.0)
-    //         .into()
-    // }
-
     /// The semi-open range of voxels in shape.
     ///
     /// This provides conservative bounds on the range of voxel indices that might be set to filled.
