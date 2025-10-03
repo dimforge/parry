@@ -1,7 +1,7 @@
 use super::VoxelType;
 
 #[cfg(test)]
-use {crate::bounding_volume::Aabb, super::OctantPattern};
+use {super::OctantPattern, crate::bounding_volume::Aabb};
 
 // Index to the item of FACES_TO_VOXEL_TYPES which identifies interior voxels.
 #[cfg(feature = "dim2")]
