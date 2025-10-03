@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.24.0"
+version = "0.25.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."

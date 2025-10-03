@@ -1,3 +1,11 @@
+## 0.25.0
+
+- The `Voxels` shape now uses a sparse storage internally.
+- Remove `Voxels::try_set_voxel`. Use `::set_voxel` instead.
+- The `Voxels::domain` function returns values instead of references now.
+- Removed `Voxels::extents` and `Voxels::domain_center`. They can be obtained
+  from `Voxels::local_aabb`.
+
 ## 0.24.0
 
 - Fixed same-machine determinism of the re-exported hashmap when building without the `enhanced-determinism` feature.
