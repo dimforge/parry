@@ -16,9 +16,105 @@ impl Voxels {
         self.voxel_size = new_size;
     }
 
-    /// Inserts or remove a voxel from this shape.
+    /// Adds or removes a voxel at the specified grid coordinates.
     ///
-    /// Return the previous `VoxelState` of this voxel.
+    /// This is the primary method for dynamically modifying a voxel shape. It can:
+    /// - Add a new voxel by setting `is_filled = true`
+    /// - Remove an existing voxel by setting `is_filled = false`
+    ///
+    /// The method automatically updates the neighborhood information for the affected voxel
+    /// and all its neighbors to maintain correct collision detection behavior.
+    ///
+    /// # Returns
+    ///
+    /// The previous [`VoxelState`] of the voxel before modification. This allows you to
+    /// detect whether the operation actually changed anything.
+    ///
+    /// # Examples
+    ///
+    /// ## Adding Voxels
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let mut voxels = Voxels::new(Vector3::new(1.0, 1.0, 1.0), &[]);
+    ///
+    /// // Add a voxel at (0, 0, 0)
+    /// let prev_state = voxels.set_voxel(Point3::new(0, 0, 0), true);
+    /// assert!(prev_state.is_empty()); // Was empty before
+    ///
+    /// // Verify it was added
+    /// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+    /// assert!(!state.is_empty());
+    /// # }
+    /// ```
+    ///
+    /// ## Removing Voxels
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let mut voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+    /// );
+    ///
+    /// // Remove the voxel at (0, 0, 0)
+    /// voxels.set_voxel(Point3::new(0, 0, 0), false);
+    ///
+    /// // Verify it was removed
+    /// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+    /// assert!(state.is_empty());
+    /// # }
+    /// ```
+    ///
+    /// ## Building Shapes Dynamically
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let mut voxels = Voxels::new(Vector3::new(1.0, 1.0, 1.0), &[]);
+    ///
+    /// // Build a 3×3 floor
+    /// for x in 0..3 {
+    ///     for z in 0..3 {
+    ///         voxels.set_voxel(Point3::new(x, 0, z), true);
+    ///     }
+    /// }
+    ///
+    /// // Count filled voxels
+    /// let filled = voxels.voxels()
+    ///     .filter(|v| !v.state.is_empty())
+    ///     .count();
+    /// assert_eq!(filled, 9);
+    /// # }
+    /// ```
+    ///
+    /// ## Detecting Changes
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let mut voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0)],
+    /// );
+    ///
+    /// // Try to add a voxel that already exists
+    /// let prev = voxels.set_voxel(Point3::new(0, 0, 0), true);
+    /// if !prev.is_empty() {
+    ///     println!("Voxel was already filled!");
+    /// }
+    /// # }
+    /// ```
     pub fn set_voxel(&mut self, key: Point<i32>, is_filled: bool) -> VoxelState {
         let (chunk_key, id_in_chunk) = Self::chunk_key_and_id_in_chunk(key);
         let header_entry = self.chunk_headers.entry(chunk_key);
@@ -74,9 +170,41 @@ impl Voxels {
         prev
     }
 
-    /// Crops in-place the voxel shape with a rectangular domain.
+    /// Crops the voxel shape in-place to a rectangular region.
     ///
-    /// This removes every voxels out of the `[domain_mins, domain_maxs]` bounds.
+    /// Removes all voxels outside the specified grid coordinate bounds `[domain_mins, domain_maxs]`
+    /// (inclusive on both ends). This is useful for:
+    /// - Extracting a sub-region of a larger voxel world
+    /// - Removing voxels outside a region of interest
+    /// - Implementing chunk-based world management
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let mut voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[
+    ///         Point3::new(0, 0, 0),
+    ///         Point3::new(1, 0, 0),
+    ///         Point3::new(2, 0, 0),
+    ///         Point3::new(3, 0, 0),
+    ///     ],
+    /// );
+    ///
+    /// // Keep only voxels in the range [1, 2]
+    /// voxels.crop(Point3::new(1, 0, 0), Point3::new(2, 0, 0));
+    ///
+    /// // Only two voxels remain
+    /// let count = voxels.voxels()
+    ///     .filter(|v| !v.state.is_empty())
+    ///     .count();
+    /// assert_eq!(count, 2);
+    /// # }
+    /// ```
     pub fn crop(&mut self, domain_mins: Point<i32>, domain_maxs: Point<i32>) {
         // TODO PERF: this could be done more efficiently.
         if let Some(new_shape) = self.cropped(domain_mins, domain_maxs) {
@@ -105,10 +233,51 @@ impl Voxels {
         }
     }
 
-    /// Splits this voxels shape into two subshapes.
+    /// Splits this voxel shape into two separate shapes based on an AABB.
     ///
-    /// The first subshape contains all the voxels which centers are inside the `aabb`.
-    /// The second subshape contains all the remaining voxels.
+    /// Partitions the voxels into two groups:
+    /// - **Inside**: Voxels whose centers fall inside the given `aabb`
+    /// - **Outside**: All remaining voxels
+    ///
+    /// Returns `(Some(inside), Some(outside))`, or `None` for either if that partition is empty.
+    ///
+    /// # Use Cases
+    ///
+    /// - Spatial partitioning for physics simulation
+    /// - Implementing destructible objects (remove the "inside" part on explosion)
+    /// - Chunk-based world management
+    /// - Level-of-detail systems
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[
+    ///         Point3::new(0, 0, 0),  // Center at (0.5, 0.5, 0.5)
+    ///         Point3::new(2, 0, 0),  // Center at (2.5, 0.5, 0.5)
+    ///         Point3::new(4, 0, 0),  // Center at (4.5, 0.5, 0.5)
+    ///     ],
+    /// );
+    ///
+    /// // Split at X = 3.0
+    /// let split_box = Aabb::new(
+    ///     Point3::new(-10.0, -10.0, -10.0),
+    ///     Point3::new(3.0, 10.0, 10.0),
+    /// );
+    ///
+    /// let (inside, outside) = voxels.split_with_box(&split_box);
+    ///
+    /// // First two voxels inside, last one outside
+    /// assert!(inside.is_some());
+    /// assert!(outside.is_some());
+    /// # }
+    /// ```
     pub fn split_with_box(&self, aabb: &Aabb) -> (Option<Self>, Option<Self>) {
         // TODO PERF: can be optimized significantly.
         let mut in_box = vec![];

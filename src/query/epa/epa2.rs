@@ -1,4 +1,7 @@
 //! Two-dimensional penetration depth queries using the Expanding Polytope Algorithm.
+//!
+//! This module provides the 2D-specific implementation of EPA, which works with
+//! polygons (edges) rather than polyhedra (faces) as in the 3D version.
 
 use alloc::{collections::BinaryHeap, vec::Vec};
 use core::cmp::Ordering;
@@ -110,6 +113,69 @@ impl Face {
 }
 
 /// The Expanding Polytope Algorithm in 2D.
+///
+/// This structure computes the penetration depth between two shapes when they are overlapping.
+/// It's used after GJK (Gilbert-Johnson-Keerthi) determines that two shapes are penetrating.
+///
+/// # What does EPA do?
+///
+/// EPA finds:
+/// - The **penetration depth**: How far the shapes are overlapping
+/// - The **contact normal**: The direction to separate the shapes
+/// - The **contact points**: Where the shapes are touching on each surface
+///
+/// # How it works in 2D
+///
+/// In 2D, EPA maintains a polygon in the Minkowski difference space (CSO - Configuration Space
+/// Obstacle) that encloses the origin. It iteratively:
+///
+/// 1. Finds the edge closest to the origin
+/// 2. Expands the polygon by adding a new support point in the direction of that edge's normal
+/// 3. Updates the polygon structure with the new point
+/// 4. Repeats until the polygon cannot expand further (convergence)
+///
+/// The final closest edge provides the penetration depth (distance to origin) and contact normal.
+///
+/// # Example
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::query::epa::EPA;
+/// use parry2d::query::gjk::VoronoiSimplex;
+/// use parry2d::shape::Ball;
+/// use na::Isometry2;
+///
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+/// let pos12 = Isometry2::translation(1.5, 0.0); // Overlapping circles
+///
+/// // After GJK determines penetration and fills a simplex:
+/// let mut epa = EPA::new();
+/// let simplex = VoronoiSimplex::new(); // Would be filled by GJK
+///
+/// // EPA computes the contact details
+/// // if let Some((pt1, pt2, normal)) = epa.closest_points(&pos12, &ball1, &ball2, &simplex) {
+/// //     println!("Penetration depth: {}", (pt2 - pt1).norm());
+/// //     println!("Contact normal: {}", normal);
+/// // }
+/// # }
+/// ```
+///
+/// # Reusability
+///
+/// The `EPA` structure can be reused across multiple queries to avoid allocations.
+/// Internal buffers are cleared and reused in each call to [`closest_points`](EPA::closest_points).
+///
+/// # Convergence and Failure Cases
+///
+/// EPA may return `None` in these situations:
+/// - The shapes are not actually penetrating (GJK should be used instead)
+/// - Degenerate or nearly-degenerate geometry causes numerical instability
+/// - The initial simplex from GJK is invalid
+/// - The algorithm fails to converge after 100 iterations
+///
+/// When `None` is returned, the shapes may be touching at a single point or edge, or there
+/// may be numerical precision issues with the input geometry.
 #[derive(Default)]
 pub struct EPA {
     vertices: Vec<CSOPoint>,
@@ -119,6 +185,20 @@ pub struct EPA {
 
 impl EPA {
     /// Creates a new instance of the 2D Expanding Polytope Algorithm.
+    ///
+    /// This allocates internal data structures (vertices, faces, and a priority heap).
+    /// The same `EPA` instance can be reused for multiple queries to avoid repeated allocations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::query::epa::EPA;
+    ///
+    /// let mut epa = EPA::new();
+    /// // Use epa for multiple queries...
+    /// # }
+    /// ```
     pub fn new() -> Self {
         EPA::default()
     }
@@ -129,15 +209,53 @@ impl EPA {
         self.heap.clear();
     }
 
-    /// Projects the origin on boundary the given shape.
+    /// Projects the origin onto the boundary of the given shape.
     ///
-    /// The origin is assumed to be inside of the shape. If it is outside, use
-    /// the GJK algorithm instead.
+    /// This is a specialized version of [`closest_points`](EPA::closest_points) for projecting
+    /// a point (the origin) onto a single shape's surface.
     ///
-    /// Return `None` if the origin is not inside of the shape or if
-    /// the EPA algorithm failed to compute the projection.
+    /// # Parameters
     ///
-    /// Return the projected point in the local-space of `g`.
+    /// - `m`: The position and orientation of the shape in world space
+    /// - `g`: The shape to project onto (must implement [`SupportMap`](crate::shape::SupportMap))
+    /// - `simplex`: A Voronoi simplex from GJK that encloses the origin (indicating the origin
+    ///   is inside the shape)
+    ///
+    /// # Returns
+    ///
+    /// - `Some(point)`: The closest point on the shape's boundary to the origin, in the local
+    ///   space of `g`
+    /// - `None`: If the origin is not inside the shape, or if EPA failed to converge
+    ///
+    /// # Prerequisites
+    ///
+    /// The origin **must be inside** the shape. If it's outside, use GJK instead.
+    /// Typically, you would:
+    /// 1. Run GJK to detect if a point is inside a shape
+    /// 2. If inside, use this method to find the closest boundary point
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::query::epa::EPA;
+    /// use parry2d::query::gjk::VoronoiSimplex;
+    /// use parry2d::shape::Ball;
+    /// use na::Isometry2;
+    ///
+    /// let ball = Ball::new(2.0);
+    /// let pos = Isometry2::identity();
+    ///
+    /// // Assume GJK determined the origin is inside and filled simplex
+    /// let simplex = VoronoiSimplex::new();
+    /// let mut epa = EPA::new();
+    ///
+    /// // Find the closest point on the ball's surface to the origin
+    /// // if let Some(surface_point) = epa.project_origin(&pos, &ball, &simplex) {
+    /// //     println!("Closest surface point: {:?}", surface_point);
+    /// // }
+    /// # }
+    /// ```
     pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
         m: &Isometry<Real>,
@@ -148,10 +266,81 @@ impl EPA {
             .map(|(p, _, _)| p)
     }
 
-    /// Projects the origin on a shape using the EPA algorithm.
+    /// Computes the closest points between two penetrating shapes and their contact normal.
     ///
-    /// The origin is assumed to be located inside of the shape.
-    /// Returns `None` if the EPA fails to converge or if `g1` and `g2` are not penetrating.
+    /// This is the main EPA method that computes detailed contact information for overlapping shapes.
+    /// It should be called after GJK determines that two shapes are penetrating.
+    ///
+    /// # Parameters
+    ///
+    /// - `pos12`: The relative position/orientation from `g2`'s frame to `g1`'s frame
+    ///   (typically computed as `pos1.inverse() * pos2`)
+    /// - `g1`: The first shape (must implement [`SupportMap`](crate::shape::SupportMap))
+    /// - `g2`: The second shape (must implement [`SupportMap`](crate::shape::SupportMap))
+    /// - `simplex`: A Voronoi simplex from GJK that encloses the origin, indicating penetration
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some((point1, point2, normal))` where:
+    /// - `point1`: Contact point on shape `g1` in `g1`'s local frame
+    /// - `point2`: Contact point on shape `g2` in `g2`'s local frame
+    /// - `normal`: Contact normal pointing from `g2` toward `g1`, normalized
+    ///
+    /// The **penetration depth** can be computed as `(point1 - point2).norm()` after transforming
+    /// both points to the same coordinate frame.
+    ///
+    /// Returns `None` if:
+    /// - The shapes are not actually penetrating
+    /// - EPA fails to converge (degenerate geometry, numerical issues)
+    /// - The simplex is invalid or empty
+    /// - The algorithm reaches the maximum iteration limit (100 iterations)
+    ///
+    /// # Prerequisites
+    ///
+    /// The shapes **must be penetrating**. The typical workflow is:
+    /// 1. Run GJK to check if shapes intersect
+    /// 2. If GJK detects penetration and returns a simplex enclosing the origin
+    /// 3. Use EPA with that simplex to compute detailed contact information
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::query::epa::EPA;
+    /// use parry2d::query::gjk::{GJKResult, VoronoiSimplex};
+    /// use parry2d::shape::Ball;
+    /// use na::Isometry2;
+    ///
+    /// let ball1 = Ball::new(1.0);
+    /// let ball2 = Ball::new(1.0);
+    ///
+    /// let pos1 = Isometry2::identity();
+    /// let pos2 = Isometry2::translation(1.5, 0.0); // Overlapping
+    /// let pos12 = pos1.inverse() * pos2;
+    ///
+    /// // After GJK detects penetration:
+    /// let mut simplex = VoronoiSimplex::new();
+    /// // ... simplex would be filled by GJK ...
+    ///
+    /// let mut epa = EPA::new();
+    /// // if let Some((pt1, pt2, normal)) = epa.closest_points(&pos12, &ball1, &ball2, &simplex) {
+    /// //     println!("Contact on shape 1: {:?}", pt1);
+    /// //     println!("Contact on shape 2: {:?}", pt2);
+    /// //     println!("Contact normal: {}", normal);
+    /// //     println!("Penetration depth: ~0.5");
+    /// // }
+    /// # }
+    /// ```
+    ///
+    /// # Technical Details
+    ///
+    /// The algorithm works in the **Minkowski difference space** (also called the Configuration
+    /// Space Obstacle or CSO), where the difference between support points of the two shapes
+    /// forms a new shape. When shapes penetrate, this CSO contains the origin.
+    ///
+    /// EPA iteratively expands a polygon (in 2D) that surrounds the origin, finding the edge
+    /// closest to the origin at each iteration. This closest edge defines the penetration
+    /// depth and contact normal.
     pub fn closest_points<G1, G2>(
         &mut self,
         pos12: &Isometry<Real>,

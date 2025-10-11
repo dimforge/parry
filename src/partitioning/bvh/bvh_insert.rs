@@ -6,7 +6,123 @@ use crate::partitioning::Bvh;
 use alloc::vec;
 
 impl Bvh {
-    /// Inserts a leaf into this BVH, or updates it if already exists.
+    /// Inserts a new leaf into the BVH or updates an existing one.
+    ///
+    /// If a leaf with the given `leaf_index` already exists in the tree, its AABB is updated
+    /// to the new value and the tree's internal nodes are adjusted to maintain correctness.
+    /// If the leaf doesn't exist, it's inserted into an optimal position based on the
+    /// Surface Area Heuristic (SAH).
+    ///
+    /// This operation automatically propagates AABB changes up the tree to maintain the
+    /// invariant that each internal node's AABB encloses all its descendants. For better
+    /// performance when updating many leaves, consider using [`insert_or_update_partially`]
+    /// followed by a single [`refit`] call.
+    ///
+    /// # Arguments
+    ///
+    /// * `aabb` - The Axis-Aligned Bounding Box for this leaf
+    /// * `leaf_index` - A unique identifier for this leaf (typically an object ID)
+    ///
+    /// # Performance
+    ///
+    /// - **Insert new leaf**: O(log n) average, O(n) worst case
+    /// - **Update existing leaf**: O(log n) for propagation up the tree
+    ///
+    /// # Examples
+    ///
+    /// ## Adding new objects
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::Bvh;
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    ///
+    /// // Insert objects with custom IDs
+    /// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 100);
+    /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 200);
+    /// bvh.insert(Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), 300);
+    ///
+    /// assert_eq!(bvh.leaf_count(), 3);
+    /// # }
+    /// ```
+    ///
+    /// ## Updating object positions
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::Bvh;
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    ///
+    /// // Insert an object
+    /// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 42);
+    ///
+    /// // Simulate the object moving - just insert with the same ID
+    /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 42);
+    ///
+    /// // The BVH still has only 1 leaf, but at the new position
+    /// assert_eq!(bvh.leaf_count(), 1);
+    /// # }
+    /// ```
+    ///
+    /// ## Bulk updates with better performance
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Add initial objects
+    /// for i in 0..100 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert(aabb, i);
+    /// }
+    ///
+    /// // For better performance on bulk updates, use insert_or_update_partially
+    /// // then refit once at the end
+    /// for i in 0..100 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32 + 0.1, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.1, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert_or_update_partially(aabb, i, 0.0);
+    /// }
+    /// bvh.refit(&mut workspace); // Update tree in one pass
+    /// # }
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// - Leaf indices can be any `u32` value - they don't need to be contiguous
+    /// - The same leaf index can only exist once in the tree
+    /// - For dynamic scenes, call this every frame for moving objects
+    /// - Consider calling [`refit`] or [`optimize_incremental`] periodically for best
+    ///   query performance
+    ///
+    /// # See Also
+    ///
+    /// - [`insert_with_change_detection`](Self::insert_with_change_detection) - Insert with
+    ///   margin for motion prediction
+    /// - [`insert_or_update_partially`](Self::insert_or_update_partially) - Insert without
+    ///   propagation (faster for bulk updates)
+    /// - [`remove`](Self::remove) - Remove a leaf from the tree
+    /// - [`refit`](Self::refit) - Update tree after bulk modifications
+    ///
+    /// [`insert_or_update_partially`]: Self::insert_or_update_partially
+    /// [`refit`]: Self::refit
+    /// [`optimize_incremental`]: Self::optimize_incremental
     pub fn insert(&mut self, aabb: Aabb, leaf_index: u32) {
         self.insert_with_change_detection(aabb, leaf_index, 0.0)
     }

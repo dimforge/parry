@@ -18,28 +18,156 @@ const EPSILON: Real = f32::EPSILON as Real;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
     archive(as = "Self")
 )]
-/// The local mass properties of a rigid-body.
+/// The mass properties of a rigid body.
+///
+/// Mass properties define how an object responds to forces and torques in physics
+/// simulation. They include the mass, center of mass, and angular inertia (resistance
+/// to rotation).
+///
+/// # Fields
+///
+/// - **local_com**: Center of mass in the shape's local coordinate system
+/// - **inv_mass**: Inverse mass (1/mass). Zero = infinite mass (immovable)
+/// - **inv_principal_inertia**: Inverse angular inertia along principal axes
+/// - **principal_inertia_local_frame** (3D only): Rotation to principal inertia axes
+///
+/// # Why Inverse Values?
+///
+/// Physics engines store inverse mass and inertia because:
+/// - Infinite mass/inertia (immovable objects) = zero inverse
+/// - Avoids division in the simulation loop (multiply by inverse instead)
+/// - More numerically stable for very heavy objects
+///
+/// # Angular Inertia
+///
+/// Angular inertia (moment of inertia) describes resistance to rotation:
+/// - **Higher values**: Harder to spin (like a heavy wheel)
+/// - **Lower values**: Easier to spin (like a light rod)
+/// - **Different per axis**: Objects resist rotation differently around different axes
+///
+/// # Principal Inertia
+///
+/// The inertia tensor is diagonalized to principal axes:
+/// - Rotation around principal axes is independent
+/// - Simplifies physics calculations
+/// - In 2D: Only one axis (perpendicular to the plane)
+/// - In 3D: Three orthogonal axes
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::mass_properties::MassProperties;
+/// use parry3d::shape::Ball;
+/// use nalgebra::Point3;
+///
+/// // Compute mass properties for a unit ball with density 1.0
+/// let ball = Ball::new(1.0);
+/// let props = ball.mass_properties(1.0);
+///
+/// // Mass of a unit sphere with density 1.0
+/// let mass = props.mass();
+/// println!("Mass: {}", mass);
+///
+/// // Center of mass (at origin for a ball)
+/// assert_eq!(props.local_com, Point3::origin());
+///
+/// // For simulation, use inverse values
+/// if props.inv_mass > 0.0 {
+///     // Object has finite mass - can be moved
+///     println!("Can apply forces");
+/// } else {
+///     // Object has infinite mass - immovable (like terrain)
+///     println!("Static/kinematic object");
+/// }
+/// # }
+/// ```
+///
+/// # Combining Mass Properties
+///
+/// Mass properties can be added to create compound objects:
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::mass_properties::MassProperties;
+/// use parry3d::shape::{Ball, Cuboid};
+/// use nalgebra::Vector3;
+///
+/// let ball = Ball::new(1.0);
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+///
+/// let ball_props = ball.mass_properties(1.0);
+/// let cuboid_props = cuboid.mass_properties(1.0);
+///
+/// // Combined properties (ball + cuboid)
+/// let combined = ball_props + cuboid_props;
+///
+/// // Total mass is sum of individual masses
+/// let total_mass = combined.mass();
+/// println!("Combined mass: {}", total_mass);
+/// # }
+/// ```
 pub struct MassProperties {
-    /// The center of mass of a rigid-body expressed in its local-space.
+    /// The center of mass in local (shape-relative) coordinates.
+    ///
+    /// This is the balance point of the object. For symmetric shapes, it's typically
+    /// at the geometric center. All angular inertia calculations are relative to this point.
     pub local_com: Point<Real>,
-    /// The inverse of the mass of a rigid-body.
+
+    /// The inverse of the mass (1 / mass).
     ///
-    /// If this is zero, the rigid-body is assumed to have infinite mass.
+    /// - **Positive value**: Normal object with finite mass
+    /// - **Zero**: Infinite mass (immovable/static object)
+    ///
+    /// To get the actual mass, use `mass()` method or compute `1.0 / inv_mass`.
     pub inv_mass: Real,
-    /// The inverse of the principal angular inertia of the rigid-body.
+
+    /// The inverse of the principal angular inertia values.
     ///
-    /// The angular inertia is calculated relative to [`Self::local_com`].
-    /// Components set to zero are assumed to be infinite along the corresponding principal axis.
+    /// These are the angular inertia values along the principal inertia axes:
+    /// - **2D**: Single scalar value (rotation around perpendicular axis)
+    /// - **3D**: Vector of three values (rotation around X, Y, Z principal axes)
+    ///
+    /// Angular inertia relative to the center of mass (`local_com`).
+    /// Zero components indicate infinite inertia (no rotation) along that axis.
     pub inv_principal_inertia: AngVector<Real>,
+
     #[cfg(feature = "dim3")]
-    /// The principal vectors of the local angular inertia tensor of the rigid-body.
+    /// The rotation from local coordinates to principal inertia axes (3D only).
+    ///
+    /// This rotation aligns the object's coordinate system with its principal
+    /// axes of inertia, where the inertia tensor is diagonal.
     pub principal_inertia_local_frame: Rotation<Real>,
 }
 
 impl MassProperties {
-    /// Initializes the mass properties with the given center-of-mass, mass, and angular inertia.
+    /// Creates mass properties from center of mass, mass, and angular inertia (2D).
     ///
-    /// The center-of-mass is specified in the local-space of the rigid-body.
+    /// # Arguments
+    ///
+    /// * `local_com` - Center of mass in local coordinates
+    /// * `mass` - The mass (positive value, use 0.0 for infinite mass)
+    /// * `principal_inertia` - Angular inertia around the perpendicular axis
+    ///
+    /// # Example (2D)
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::mass_properties::MassProperties;
+    /// use nalgebra::Point2;
+    ///
+    /// // Create mass properties for a 10kg object
+    /// let props = MassProperties::new(
+    ///     Point2::origin(),  // Centered at origin
+    ///     10.0,              // 10kg mass
+    ///     5.0                // Angular inertia
+    /// );
+    ///
+    /// assert_eq!(props.mass(), 10.0);
+    /// assert_eq!(props.inv_mass, 0.1);  // 1/10
+    /// # }
+    /// ```
     #[cfg(feature = "dim2")]
     pub fn new(local_com: Point<Real>, mass: Real, principal_inertia: Real) -> Self {
         let inv_mass = utils::inv(mass);

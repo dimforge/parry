@@ -102,7 +102,54 @@ impl VoxelsChunk {
     }
 }
 
-/// A reference to a voxel chunk.
+/// A reference to a chunk of voxels within a [`Voxels`] shape.
+///
+/// # What is a Chunk?
+///
+/// To efficiently manage large voxel worlds, Parry internally divides the voxel grid into
+/// fixed-size chunks. Each chunk contains a small region of voxels (e.g., 8×8×8 in 3D or
+/// 16×16 in 2D). This chunking provides:
+///
+/// - **Spatial acceleration**: Quick queries using a BVH of chunks
+/// - **Memory efficiency**: Empty chunks are not stored
+/// - **Cache locality**: Nearby voxels are stored together
+///
+/// A `VoxelsChunkRef` provides read-only access to a single chunk's data, allowing you to
+/// query voxels within that chunk without iterating through the entire voxel shape.
+///
+/// # When to Use
+///
+/// You typically don't create `VoxelsChunkRef` directly. Instead, you get them from:
+/// - [`Voxels::chunk_ref`]: Get a specific chunk by ID
+/// - BVH traversal for spatial queries on large voxel worlds
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+/// );
+///
+/// // Get a chunk reference (chunk IDs come from BVH traversal)
+/// let chunk_ref = voxels.chunk_ref(0);
+///
+/// // Query voxels within this chunk
+/// for voxel in chunk_ref.voxels() {
+///     if !voxel.state.is_empty() {
+///         println!("Voxel at {:?}", voxel.grid_coords);
+///     }
+/// }
+///
+/// // Get chunk's AABB
+/// let aabb = chunk_ref.local_aabb();
+/// println!("Chunk bounds: {:?}", aabb);
+/// # }
+/// ```
 #[derive(Copy, Clone)]
 pub struct VoxelsChunkRef<'a> {
     /// The linear index of this chunk within the `Voxels` shape.

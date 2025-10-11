@@ -17,56 +17,294 @@ use rkyv::{bytecheck, CheckBytes};
     archive(as = "Self")
 )]
 #[repr(C)]
-/// A capsule shape defined as a round segment.
+/// A capsule shape, also known as a pill or capped cylinder.
+///
+/// A capsule is defined by a line segment (its central axis) and a radius. It can be
+/// visualized as a cylinder with hemispherical (2D: semicircular) caps on both ends.
+/// This makes it perfect for representing elongated round objects.
+///
+/// # Structure
+///
+/// - **Segment**: The central axis from point `a` to point `b`
+/// - **Radius**: The thickness around the segment
+/// - **In 2D**: Looks like a rounded rectangle or "stadium" shape
+/// - **In 3D**: Looks like a cylinder with spherical caps (a pill)
+///
+/// # Properties
+///
+/// - **Convex**: Yes, capsules are always convex
+/// - **Smooth**: Completely smooth surface (no edges or corners)
+/// - **Support mapping**: Efficient (constant time)
+/// - **Rolling**: Excellent for objects that need to roll smoothly
+///
+/// # Use Cases
+///
+/// Capsules are ideal for:
+/// - Characters and humanoid figures (torso, limbs)
+/// - Pills, medicine capsules
+/// - Elongated projectiles (missiles, torpedoes)
+/// - Smooth rolling objects
+/// - Any object that's "cylinder-like" but needs smooth collision at ends
+///
+/// # Advantages Over Cylinders
+///
+/// - **No sharp edges**: Smoother collision response
+/// - **Better for characters**: More natural movement and rotation
+/// - **Simpler collision detection**: Easier to compute contacts than cylinders
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Capsule;
+/// use nalgebra::Point3;
+///
+/// // Create a vertical capsule (aligned with Y axis)
+/// // Half-height of 2.0 means the segment is 4.0 units long
+/// let capsule = Capsule::new_y(2.0, 0.5);
+/// assert_eq!(capsule.radius, 0.5);
+/// assert_eq!(capsule.height(), 4.0);
+///
+/// // Create a custom capsule between two points
+/// let a = Point3::new(0.0, 0.0, 0.0);
+/// let b = Point3::new(3.0, 4.0, 0.0);
+/// let custom = Capsule::new(a, b, 1.0);
+/// assert_eq!(custom.height(), 5.0); // Distance from a to b
+/// # }
+/// ```
 pub struct Capsule {
-    /// The endpoints of the capsule’s principal axis.
+    /// The line segment forming the capsule's central axis.
+    ///
+    /// The capsule extends from `segment.a` to `segment.b`, with hemispherical
+    /// caps centered at each endpoint.
     pub segment: Segment,
+
     /// The radius of the capsule.
+    ///
+    /// This is the distance from the central axis to the surface. Must be positive.
+    /// The total "thickness" of the capsule is `2 * radius`.
     pub radius: Real,
 }
 
 impl Capsule {
-    /// Creates a new capsule aligned with the `x` axis and with the given half-height an radius.
+    /// Creates a new capsule aligned with the X axis.
+    ///
+    /// The capsule is centered at the origin and extends along the X axis.
+    ///
+    /// # Arguments
+    ///
+    /// * `half_height` - Half the length of the central segment (total length = `2 * half_height`)
+    /// * `radius` - The radius of the capsule
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    ///
+    /// // Create a capsule extending 6 units along X axis (3 units in each direction)
+    /// // with radius 0.5
+    /// let capsule = Capsule::new_x(3.0, 0.5);
+    /// assert_eq!(capsule.height(), 6.0);
+    /// assert_eq!(capsule.radius, 0.5);
+    ///
+    /// // The center is at the origin
+    /// let center = capsule.center();
+    /// assert!(center.coords.norm() < 1e-6);
+    /// # }
+    /// ```
     pub fn new_x(half_height: Real, radius: Real) -> Self {
         let b = Point::from(Vector::x() * half_height);
         Self::new(-b, b, radius)
     }
 
-    /// Creates a new capsule aligned with the `y` axis and with the given half-height an radius.
+    /// Creates a new capsule aligned with the Y axis.
+    ///
+    /// The capsule is centered at the origin and extends along the Y axis.
+    /// This is the most common orientation for character capsules (standing upright).
+    ///
+    /// # Arguments
+    ///
+    /// * `half_height` - Half the length of the central segment
+    /// * `radius` - The radius of the capsule
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    ///
+    /// // Create a typical character capsule: 2 units tall with 0.3 radius
+    /// let character = Capsule::new_y(1.0, 0.3);
+    /// assert_eq!(character.height(), 2.0);
+    /// assert_eq!(character.radius, 0.3);
+    ///
+    /// // Total height including the spherical caps: 2.0 + 2 * 0.3 = 2.6
+    /// # }
+    /// ```
     pub fn new_y(half_height: Real, radius: Real) -> Self {
         let b = Point::from(Vector::y() * half_height);
         Self::new(-b, b, radius)
     }
 
-    /// Creates a new capsule aligned with the `z` axis and with the given half-height an radius.
+    /// Creates a new capsule aligned with the Z axis.
+    ///
+    /// The capsule is centered at the origin and extends along the Z axis.
+    ///
+    /// # Arguments
+    ///
+    /// * `half_height` - Half the length of the central segment
+    /// * `radius` - The radius of the capsule
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    ///
+    /// // Create a capsule for a torpedo extending along Z axis
+    /// let torpedo = Capsule::new_z(5.0, 0.4);
+    /// assert_eq!(torpedo.height(), 10.0);
+    /// assert_eq!(torpedo.radius, 0.4);
+    /// # }
+    /// ```
     #[cfg(feature = "dim3")]
     pub fn new_z(half_height: Real, radius: Real) -> Self {
         let b = Point::from(Vector::z() * half_height);
         Self::new(-b, b, radius)
     }
 
-    /// Creates a new capsule defined as the segment between `a` and `b` and with the given `radius`.
+    /// Creates a new capsule with custom endpoints and radius.
+    ///
+    /// This is the most flexible constructor, allowing you to create a capsule
+    /// with any orientation and position.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The first endpoint of the central segment
+    /// * `b` - The second endpoint of the central segment
+    /// * `radius` - The radius of the capsule
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a diagonal capsule
+    /// let a = Point3::new(0.0, 0.0, 0.0);
+    /// let b = Point3::new(3.0, 4.0, 0.0);
+    /// let capsule = Capsule::new(a, b, 0.5);
+    ///
+    /// // Height is the distance between a and b
+    /// assert_eq!(capsule.height(), 5.0); // 3-4-5 triangle
+    ///
+    /// // Center is the midpoint
+    /// let center = capsule.center();
+    /// assert_eq!(center, Point3::new(1.5, 2.0, 0.0));
+    /// # }
+    /// ```
     pub fn new(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
         let segment = Segment::new(a, b);
         Self { segment, radius }
     }
 
-    /// The height of this capsule.
+    /// Returns the length of the capsule's central segment.
+    ///
+    /// This is the distance between the two endpoints, **not** including the
+    /// hemispherical caps. The total length of the capsule including caps is
+    /// `height() + 2 * radius`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    ///
+    /// let capsule = Capsule::new_y(3.0, 0.5);
+    ///
+    /// // Height of the central segment
+    /// assert_eq!(capsule.height(), 6.0);
+    ///
+    /// // Total length including spherical caps
+    /// let total_length = capsule.height() + 2.0 * capsule.radius;
+    /// assert_eq!(total_length, 7.0);
+    /// # }
+    /// ```
     pub fn height(&self) -> Real {
         (self.segment.b - self.segment.a).norm()
     }
 
-    /// The half-height of this capsule.
+    /// Returns half the length of the capsule's central segment.
+    ///
+    /// This is equivalent to `height() / 2.0`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    ///
+    /// let capsule = Capsule::new_y(3.0, 0.5);
+    /// assert_eq!(capsule.half_height(), 3.0);
+    /// assert_eq!(capsule.half_height(), capsule.height() / 2.0);
+    /// # }
+    /// ```
     pub fn half_height(&self) -> Real {
         self.height() / 2.0
     }
 
-    /// The center of this capsule.
+    /// Returns the center point of the capsule.
+    ///
+    /// This is the midpoint between the two endpoints of the central segment.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    /// use nalgebra::Point3;
+    ///
+    /// let a = Point3::new(-2.0, 0.0, 0.0);
+    /// let b = Point3::new(4.0, 0.0, 0.0);
+    /// let capsule = Capsule::new(a, b, 1.0);
+    ///
+    /// let center = capsule.center();
+    /// assert_eq!(center, Point3::new(1.0, 0.0, 0.0));
+    /// # }
+    /// ```
     pub fn center(&self) -> Point<Real> {
         na::center(&self.segment.a, &self.segment.b)
     }
 
     /// Creates a new capsule equal to `self` with all its endpoints transformed by `pos`.
+    ///
+    /// This applies a rigid transformation (translation and rotation) to the capsule.
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - The isometry (rigid transformation) to apply
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Capsule;
+    /// use nalgebra::{Isometry3, Vector3};
+    ///
+    /// let capsule = Capsule::new_y(1.0, 0.5);
+    ///
+    /// // Translate the capsule 5 units along X axis
+    /// let transform = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let transformed = capsule.transform_by(&transform);
+    ///
+    /// // Center moved by 5 units
+    /// assert_eq!(transformed.center().x, 5.0);
+    /// // Radius unchanged
+    /// assert_eq!(transformed.radius, 0.5);
+    /// # }
+    /// ```
     pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
         Self::new(pos * self.segment.a, pos * self.segment.b, self.radius)
     }

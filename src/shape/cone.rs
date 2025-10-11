@@ -14,7 +14,60 @@ use na::RealField; // for .copysign()
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// Cone shape with its principal axis aligned with the `y` axis.
+/// A 3D cone shape with apex pointing upward along the Y axis.
+///
+/// A cone is a shape that tapers from a circular base to a point (apex). In Parry,
+/// cones are always aligned with the Y axis, with the base at y = -half_height and
+/// the apex at y = +half_height.
+///
+/// # Structure
+///
+/// - **Axis**: Always aligned with Y axis (apex points up)
+/// - **Base**: Circular base at y = -half_height with the given radius
+/// - **Apex**: Point at y = +half_height
+/// - **Total height**: `2 * half_height`
+///
+/// # Properties
+///
+/// - **3D only**: Only available with the `dim3` feature
+/// - **Convex**: Yes, cones are convex shapes
+/// - **Apex**: Sharp point at the top
+/// - **Flat base**: Circular base (not rounded)
+/// - **Sharp edge**: Rim where cone surface meets the base
+///
+/// # Coordinate System
+///
+/// The cone is centered at the origin with:
+/// - Base center at `(0, -half_height, 0)`
+/// - Apex at `(0, half_height, 0)`
+/// - Circular base in the XZ plane
+///
+/// # Use Cases
+///
+/// - Projectile nose cones
+/// - Traffic cones and markers
+/// - Funnel shapes
+/// - Spotlight or vision cone representations
+/// - Conical collision bounds
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Cone;
+///
+/// // Create a cone: base radius 3.0, total height 8.0
+/// let cone = Cone::new(4.0, 3.0);
+///
+/// assert_eq!(cone.half_height, 4.0);
+/// assert_eq!(cone.radius, 3.0);
+///
+/// // The cone:
+/// // - Base at y = -4.0 with radius 3.0
+/// // - Apex at y = +4.0 (sharp point)
+/// // - Total height = 8.0
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
@@ -25,18 +78,46 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Cone {
-    /// The half-height of the cone.
+    /// Half the total height of the cone.
+    ///
+    /// The cone extends from y = -half_height (base center) to
+    /// y = +half_height (apex). Must be positive.
     pub half_height: Real,
-    /// The base radius of the cone.
+
+    /// The radius of the circular base.
+    ///
+    /// The base is a circle in the XZ plane at y = -half_height.
+    /// Must be positive.
     pub radius: Real,
 }
 
 impl Cone {
-    /// Creates a new cone.
+    /// Creates a new cone with apex pointing upward along the Y axis.
     ///
-    /// # Arguments:
-    /// * `half_height` - the half length of the cone along the `y` axis.
-    /// * `radius` - the length of the cone along all other axis.
+    /// # Arguments
+    ///
+    /// * `half_height` - Half the total height (apex to base center distance / 2)
+    /// * `radius` - The radius of the circular base
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Cone;
+    ///
+    /// // Create a cone with height 6.0 and base radius 2.0
+    /// let cone = Cone::new(3.0, 2.0);
+    ///
+    /// assert_eq!(cone.half_height, 3.0);
+    /// assert_eq!(cone.radius, 2.0);
+    ///
+    /// // The cone structure:
+    /// // - Apex at (0, 3, 0)  - the top point
+    /// // - Base center at (0, -3, 0)
+    /// // - Base radius 2.0 in the XZ plane
+    /// // - Total height from apex to base = 6.0
+/// # }
+    /// ```
     pub fn new(half_height: Real, radius: Real) -> Cone {
         Cone {
             half_height,

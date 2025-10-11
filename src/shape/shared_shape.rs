@@ -20,7 +20,51 @@ use core::fmt;
 use core::ops::Deref;
 use na::Unit;
 
-/// The shape of a collider.
+/// A reference-counted, shareable geometric shape.
+///
+/// `SharedShape` is a wrapper around [`Arc<dyn Shape>`] that allows multiple parts of your
+/// code to share ownership of the same shape without copying it. This is particularly useful
+/// when the same geometric shape is used by multiple colliders or when you want to avoid
+/// the memory overhead of duplicating complex shapes like triangle meshes.
+///
+/// # Why use SharedShape?
+///
+/// - **Memory efficiency**: Share expensive shapes (like [`TriMesh`] or [`HeightField`]) across multiple colliders
+/// - **Performance**: Cloning a `SharedShape` only increments a reference count, not the shape data
+/// - **Type erasure**: Store different shape types uniformly via the [`Shape`] trait
+/// - **Flexibility**: Can be converted to a unique instance via [`make_mut`](Self::make_mut) when needed
+///
+/// # When to use SharedShape?
+///
+/// Use `SharedShape` when:
+/// - You need multiple colliders with the same geometry
+/// - You're working with large, complex shapes (meshes, compounds, heightfields)
+/// - You want to store heterogeneous shape types in a collection
+///
+/// Use concrete shape types directly when:
+/// - You have a single, simple shape that won't be shared
+/// - You need direct access to shape-specific methods
+///
+/// # Examples
+///
+/// Creating and sharing a ball shape:
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # use parry3d::shape::SharedShape;
+/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # use parry2d::shape::SharedShape;
+///
+/// // Create a ball with radius 1.0
+/// let shape = SharedShape::ball(1.0);
+///
+/// // Clone it cheaply - only the Arc is cloned, not the shape data
+/// let shape_clone = shape.clone();
+///
+/// // Both shapes reference the same underlying ball
+/// assert_eq!(shape.as_ball().unwrap().radius, 1.0);
+/// assert_eq!(shape_clone.as_ball().unwrap().radius, 1.0);
+/// ```
 #[derive(Clone)]
 pub struct SharedShape(pub Arc<dyn Shape>);
 
@@ -45,13 +89,50 @@ impl fmt::Debug for SharedShape {
 }
 
 impl SharedShape {
-    /// Wraps the given shape as a shared shape.
+    /// Wraps any shape type into a `SharedShape`.
+    ///
+    /// This constructor accepts any type that implements the [`Shape`] trait and wraps it
+    /// in an `Arc` for shared ownership.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::{SharedShape, Ball};
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::{SharedShape, Ball};
+    ///
+    /// let ball = Ball::new(1.0);
+    /// let shared = SharedShape::new(ball);
+    /// ```
     pub fn new(shape: impl Shape) -> Self {
         Self(Arc::new(shape))
     }
 
-    /// If this shape is shared, then the content of `self` is cloned into a unique instance,
-    /// and a mutable reference to that instance is returned.
+    /// Returns a mutable reference to the underlying shape, cloning it if necessary.
+    ///
+    /// This method implements copy-on-write semantics. If the `Arc` has multiple references,
+    /// it will clone the shape data to create a unique instance. Otherwise, no cloning occurs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    ///
+    /// let mut shape1 = SharedShape::ball(1.0);
+    /// let shape2 = shape1.clone(); // Shares the same Arc
+    ///
+    /// // This will clone the shape because it's shared
+    /// let ball = shape1.make_mut().as_ball_mut().unwrap();
+    /// ball.radius = 2.0;
+    ///
+    /// // shape1 has been modified, shape2 still has the original value
+    /// assert_eq!(shape1.as_ball().unwrap().radius, 2.0);
+    /// assert_eq!(shape2.as_ball().unwrap().radius, 1.0);
+    /// ```
     pub fn make_mut(&mut self) -> &mut dyn Shape {
         if Arc::get_mut(&mut self.0).is_none() {
             let unique_self = self.0.clone_dyn();
@@ -60,14 +141,58 @@ impl SharedShape {
         Arc::get_mut(&mut self.0).unwrap()
     }
 
-    /// Initialize a compound shape defined by its subshapes.
+    /// Creates a compound shape made of multiple subshapes.
+    ///
+    /// Each subshape has its own position and orientation relative to the compound's origin.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::math::Isometry;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::math::Isometry;
+    ///
+    /// let ball1 = SharedShape::ball(0.5);
+    /// let ball2 = SharedShape::ball(0.5);
+    ///
+    /// #[cfg(feature = "dim3")]
+    /// let compound = SharedShape::compound(vec![
+    ///     (Isometry::translation(1.0, 0.0, 0.0), ball1),
+    ///     (Isometry::translation(-1.0, 0.0, 0.0), ball2),
+    /// ]);
+    ///
+    /// #[cfg(feature = "dim2")]
+    /// let compound = SharedShape::compound(vec![
+    ///     (Isometry::translation(1.0, 0.0), ball1),
+    ///     (Isometry::translation(-1.0, 0.0), ball2),
+    /// ]);
+    /// ```
     pub fn compound(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Self {
         let raw_shapes = shapes.into_iter().map(|s| (s.0, s.1)).collect();
         let compound = Compound::new(raw_shapes);
         SharedShape(Arc::new(compound))
     }
 
-    /// Initialize a ball shape defined by its radius.
+    /// Creates a ball (sphere in 3D, circle in 2D) with the specified radius.
+    ///
+    /// A ball is the simplest and most efficient collision shape.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    ///
+    /// let ball = SharedShape::ball(1.0);
+    /// assert_eq!(ball.as_ball().unwrap().radius, 1.0);
+    /// ```
     pub fn ball(radius: Real) -> Self {
         SharedShape(Arc::new(Ball::new(radius)))
     }
@@ -128,7 +253,24 @@ impl SharedShape {
         }))
     }
 
-    /// Initialize a cuboid shape defined by its half-extents.
+    /// Creates a cuboid (box) with specified half-extents.
+    ///
+    /// In 3D: creates a box defined by half-extents along X, Y, and Z axes.
+    /// In 2D: creates a rectangle defined by half-extents along X and Y axes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    ///
+    /// #[cfg(feature = "dim3")]
+    /// let cuboid = SharedShape::cuboid(1.0, 2.0, 3.0); // Box with dimensions 2x4x6
+    /// #[cfg(feature = "dim2")]
+    /// let cuboid = SharedShape::cuboid(1.0, 2.0); // Rectangle with dimensions 2x4
+    /// ```
     #[cfg(feature = "dim3")]
     pub fn cuboid(hx: Real, hy: Real, hz: Real) -> Self {
         SharedShape(Arc::new(Cuboid::new(Vector::new(hx, hy, hz))))
@@ -154,7 +296,21 @@ impl SharedShape {
         Self::capsule(-p, p, radius)
     }
 
-    /// Initialize a capsule shape aligned with the `y` axis.
+    /// Creates a capsule aligned with the Y axis.
+    ///
+    /// A capsule is a line segment with rounded ends, commonly used for character controllers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    ///
+    /// // Create a character capsule: 1.8 units tall with 0.3 radius
+    /// let character = SharedShape::capsule_y(0.9, 0.3);
+    /// ```
     pub fn capsule_y(half_height: Real, radius: Real) -> Self {
         let p = Point::from(Vector::y() * half_height);
         Self::capsule(-p, p, radius)
@@ -196,7 +352,38 @@ impl SharedShape {
         SharedShape(Arc::new(Polyline::new(vertices, indices)))
     }
 
-    /// Initializes a triangle mesh shape defined by its vertex and index buffers.
+    /// Creates a triangle mesh shape from vertices and triangle indices.
+    ///
+    /// A triangle mesh represents a complex surface as a collection of triangles, useful for
+    /// terrain, static geometry, or any shape that can't be represented by simpler primitives.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(SharedShape)` if the mesh is valid, or an error if indices are out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # use parry3d::math::Point;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::shape::SharedShape;
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # use parry2d::math::Point;
+    ///
+    /// #[cfg(feature = "dim3")]
+    /// let vertices = vec![
+    ///     Point::new(0.0, 0.0, 0.0),
+    ///     Point::new(1.0, 0.0, 0.0),
+    ///     Point::new(0.0, 1.0, 0.0),
+    /// ];
+    /// #[cfg(feature = "dim3")]
+    /// let indices = vec![[0, 1, 2]];
+    /// #[cfg(feature = "dim3")]
+    /// let mesh = SharedShape::trimesh(vertices, indices).unwrap();
+    /// ```
     pub fn trimesh(
         vertices: Vec<Point<Real>>,
         indices: Vec<[u32; 3]>,

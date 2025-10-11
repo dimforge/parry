@@ -96,7 +96,80 @@ impl Triangle {
     archive(check_bytes)
 )]
 #[derive(PartialEq, Debug, Clone)]
-/// A convex polyhedron without degenerate faces.
+/// A 3D convex polyhedron without degenerate faces.
+///
+/// A convex polyhedron is a 3D solid shape where all faces are flat polygons, all interior angles
+/// are less than 180 degrees, and any line segment drawn between two points inside the polyhedron
+/// stays entirely within it. Common examples include cubes, tetrahedra (pyramids), and prisms.
+///
+/// # What is a convex polyhedron?
+///
+/// In 3D space, a polyhedron is **convex** if:
+/// - All faces are flat, convex polygons
+/// - All dihedral angles (angles between adjacent faces) are less than or equal to 180 degrees
+/// - The line segment between any two points inside the polyhedron lies entirely inside
+/// - All vertices "bulge outward" - there are no indentations or concave regions
+///
+/// Examples of **convex** polyhedra: cube, tetrahedron, octahedron, rectangular prism, pyramid
+/// Examples of **non-convex** polyhedra: star shapes, torus, L-shapes, any shape with holes
+///
+/// # Use cases
+///
+/// Convex polyhedra are widely used in:
+/// - **Game development**: Collision hulls for characters, vehicles, and complex objects
+/// - **Physics simulations**: Rigid body dynamics (more efficient than arbitrary meshes)
+/// - **Robotics**: Simplified robot link shapes, workspace boundaries
+/// - **Computer graphics**: Level of detail (LOD) representations, occlusion culling
+/// - **Computational geometry**: Building blocks for complex mesh operations
+/// - **3D printing**: Simplified collision detection for print validation
+///
+/// # Representation
+///
+/// This structure stores the complete topological information:
+/// - **Points**: The 3D coordinates of all vertices
+/// - **Faces**: Polygonal faces with their outward-pointing normals
+/// - **Edges**: Connections between vertices, shared by exactly two faces
+/// - **Adjacency information**: Which faces/edges connect to each vertex, and vice versa
+///
+/// This rich topology enables efficient collision detection algorithms like GJK, EPA, and SAT.
+///
+/// # Important: No degenerate faces
+///
+/// This structure ensures that there are no degenerate (flat or zero-area) faces. Coplanar
+/// adjacent triangles are automatically merged into larger polygonal faces during construction.
+///
+/// # Example: Creating a simple tetrahedron (pyramid)
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::shape::ConvexPolyhedron;
+/// use nalgebra::Point3;
+///
+/// // Define the 4 vertices of a tetrahedron
+/// let points = vec![
+///     Point3::new(0.0, 0.0, 0.0),      // base vertex 1
+///     Point3::new(1.0, 0.0, 0.0),      // base vertex 2
+///     Point3::new(0.5, 1.0, 0.0),      // base vertex 3
+///     Point3::new(0.5, 0.5, 1.0),      // apex
+/// ];
+///
+/// // Define the 4 triangular faces (indices into the points array)
+/// let indices = vec![
+///     [0u32, 1, 2],  // base triangle
+///     [0, 1, 3],     // side 1
+///     [1, 2, 3],     // side 2
+///     [2, 0, 3],     // side 3
+/// ];
+///
+/// let tetrahedron = ConvexPolyhedron::from_convex_mesh(points, &indices)
+///     .expect("Failed to create tetrahedron");
+///
+/// // A tetrahedron has 4 vertices and 4 faces
+/// assert_eq!(tetrahedron.points().len(), 4);
+/// assert_eq!(tetrahedron.faces().len(), 4);
+/// # }
+/// ```
 pub struct ConvexPolyhedron {
     points: Vec<Point<Real>>,
     vertices: Vec<Vertex>,
@@ -113,24 +186,212 @@ pub struct ConvexPolyhedron {
 }
 
 impl ConvexPolyhedron {
-    /// Creates a new convex polyhedron from an arbitrary set of points.
+    /// Creates a new convex polyhedron from an arbitrary set of points by computing their convex hull.
     ///
-    /// This explicitly computes the convex hull of the given set of points. Use
-    /// Returns `None` if the convex hull computation failed.
+    /// This is the most flexible constructor - it automatically computes the **convex hull** of the
+    /// given 3D points, which is the smallest convex polyhedron that contains all the input points.
+    /// Think of it as shrink-wrapping the points with an elastic surface.
+    ///
+    /// Use this when:
+    /// - You have an arbitrary collection of 3D points and want the convex boundary
+    /// - You're not sure if your points form a convex shape
+    /// - You want to simplify a point cloud to its convex outer surface
+    /// - You need to create a collision hull from a detailed mesh
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolyhedron)` if successful
+    /// - `None` if the convex hull computation failed (e.g., all points are coplanar, collinear,
+    ///   or coincident, or if the mesh is not manifold)
+    ///
+    /// # Example: Creating a convex hull from point cloud
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// // Points defining a cube, plus some interior points
+    /// let points = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(0.0, 0.0, 1.0),
+    ///     Point3::new(1.0, 0.0, 1.0),
+    ///     Point3::new(1.0, 1.0, 1.0),
+    ///     Point3::new(0.0, 1.0, 1.0),
+    ///     Point3::new(0.5, 0.5, 0.5),  // Interior point - will be excluded
+    /// ];
+    ///
+    /// let polyhedron = ConvexPolyhedron::from_convex_hull(&points)
+    ///     .expect("Failed to create convex hull");
+    ///
+    /// // The cube has 8 vertices (interior point excluded)
+    /// assert_eq!(polyhedron.points().len(), 8);
+    /// // And 6 faces (one per side of the cube)
+    /// assert_eq!(polyhedron.faces().len(), 6);
+    /// # }
+    /// ```
+    ///
+    /// # Example: Simplifying a complex mesh
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// // Imagine these are vertices from a detailed character mesh
+    /// let detailed_mesh_vertices = vec![
+    ///     Point3::new(-1.0, -1.0, -1.0),
+    ///     Point3::new(1.0, -1.0, -1.0),
+    ///     Point3::new(1.0, 1.0, -1.0),
+    ///     Point3::new(-1.0, 1.0, -1.0),
+    ///     Point3::new(-1.0, -1.0, 1.0),
+    ///     Point3::new(1.0, -1.0, 1.0),
+    ///     Point3::new(1.0, 1.0, 1.0),
+    ///     Point3::new(-1.0, 1.0, 1.0),
+    ///     // ... many more vertices in the original mesh
+    /// ];
+    ///
+    /// // Create a simplified collision hull
+    /// let collision_hull = ConvexPolyhedron::from_convex_hull(&detailed_mesh_vertices)
+    ///     .expect("Failed to create collision hull");
+    ///
+    /// // The hull is much simpler than the original mesh
+    /// println!("Simplified to {} vertices", collision_hull.points().len());
+    /// # }
+    /// ```
     pub fn from_convex_hull(points: &[Point<Real>]) -> Option<ConvexPolyhedron> {
         crate::transformation::try_convex_hull(points)
             .ok()
             .and_then(|(vertices, indices)| Self::from_convex_mesh(vertices, &indices))
     }
 
-    /// Attempts to create a new solid assumed to be convex from the set of points and indices.
+    /// Creates a new convex polyhedron from vertices and face indices, assuming the mesh is already convex.
     ///
-    /// The given points and index information are assumed to describe a convex polyhedron.
-    /// It it is not, weird results may be produced.
+    /// This constructor is more efficient than [`from_convex_hull`] because it **assumes** the input
+    /// mesh is already convex and manifold. The convexity is **not verified** - if you pass a non-convex
+    /// mesh, the resulting shape may behave incorrectly in collision detection.
     ///
-    /// # Return
+    /// The method automatically:
+    /// - Merges coplanar adjacent triangular faces into larger polygonal faces
+    /// - Removes degenerate (zero-area) faces
+    /// - Builds complete topological connectivity information (vertices, edges, faces)
     ///
-    /// Returns `None` if the given solid is not manifold (contains t-junctions, not closed, etc.)
+    /// # Important requirements
+    ///
+    /// The input mesh must be:
+    /// - **Manifold**: Each edge is shared by exactly 2 faces, no T-junctions, no holes
+    /// - **Closed**: The mesh completely encloses a volume with no gaps
+    /// - **Convex** (not enforced, but assumed): All faces bulge outward
+    /// - **Valid**: Faces use counter-clockwise winding when viewed from outside
+    ///
+    /// # When to use this
+    ///
+    /// Use this constructor when:
+    /// - You already have a triangulated convex mesh
+    /// - The mesh comes from a trusted source (e.g., generated procedurally)
+    /// - You want better performance by skipping convex hull computation
+    /// - You're converting from another 3D format (OBJ, STL, etc.)
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - The vertex positions (3D coordinates)
+    /// * `indices` - The face triangles, each containing 3 indices into the `points` array
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolyhedron)` if successful
+    /// - `None` if the mesh is not manifold, has T-junctions, is not closed, or has invalid topology
+    ///
+    /// # Example: Creating a cube from vertices and faces
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// // Define the 8 vertices of a unit cube
+    /// let vertices = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),  // 0: bottom-left-front
+    ///     Point3::new(1.0, 0.0, 0.0),  // 1: bottom-right-front
+    ///     Point3::new(1.0, 1.0, 0.0),  // 2: bottom-right-back
+    ///     Point3::new(0.0, 1.0, 0.0),  // 3: bottom-left-back
+    ///     Point3::new(0.0, 0.0, 1.0),  // 4: top-left-front
+    ///     Point3::new(1.0, 0.0, 1.0),  // 5: top-right-front
+    ///     Point3::new(1.0, 1.0, 1.0),  // 6: top-right-back
+    ///     Point3::new(0.0, 1.0, 1.0),  // 7: top-left-back
+    /// ];
+    ///
+    /// // Define the faces as triangles (2 triangles per cube face)
+    /// let indices = vec![
+    ///     // Bottom face (z = 0)
+    ///     [0, 2, 1], [0, 3, 2],
+    ///     // Top face (z = 1)
+    ///     [4, 5, 6], [4, 6, 7],
+    ///     // Front face (y = 0)
+    ///     [0, 1, 5], [0, 5, 4],
+    ///     // Back face (y = 1)
+    ///     [2, 3, 7], [2, 7, 6],
+    ///     // Left face (x = 0)
+    ///     [0, 4, 7], [0, 7, 3],
+    ///     // Right face (x = 1)
+    ///     [1, 2, 6], [1, 6, 5],
+    /// ];
+    ///
+    /// let cube = ConvexPolyhedron::from_convex_mesh(vertices, &indices)
+    ///     .expect("Failed to create cube");
+    ///
+    /// // The cube has 8 vertices
+    /// assert_eq!(cube.points().len(), 8);
+    /// // The 12 triangles are merged into 6 square faces
+    /// assert_eq!(cube.faces().len(), 6);
+    /// # }
+    /// ```
+    ///
+    /// # Example: Creating a triangular prism
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// // 6 vertices: 3 on bottom, 3 on top
+    /// let vertices = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.5, 1.0, 0.0),
+    ///     Point3::new(0.0, 0.0, 2.0),
+    ///     Point3::new(1.0, 0.0, 2.0),
+    ///     Point3::new(0.5, 1.0, 2.0),
+    /// ];
+    ///
+    /// let indices = vec![
+    ///     // Bottom triangle
+    ///     [0, 2, 1],
+    ///     // Top triangle
+    ///     [3, 4, 5],
+    ///     // Side faces (2 triangles each)
+    ///     [0, 1, 4], [0, 4, 3],
+    ///     [1, 2, 5], [1, 5, 4],
+    ///     [2, 0, 3], [2, 3, 5],
+    /// ];
+    ///
+    /// let prism = ConvexPolyhedron::from_convex_mesh(vertices, &indices)
+    ///     .expect("Failed to create prism");
+    ///
+    /// assert_eq!(prism.points().len(), 6);
+    /// // 2 triangular faces + 3 rectangular faces = 5 faces
+    /// assert_eq!(prism.faces().len(), 5);
+    /// # }
+    /// ```
+    ///
+    /// [`from_convex_hull`]: ConvexPolyhedron::from_convex_hull
     pub fn from_convex_mesh(
         points: Vec<Point<Real>>,
         indices: &[[u32; DIM]],
@@ -395,25 +656,131 @@ impl ConvexPolyhedron {
         }
     }
 
-    /// The set of vertices of this convex polyhedron.
+    /// Returns the 3D coordinates of all vertices in this convex polyhedron.
+    ///
+    /// Each point represents a corner of the polyhedron where three or more edges meet.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// let points = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.5, 1.0, 0.0),
+    ///     Point3::new(0.5, 0.5, 1.0),
+    /// ];
+    /// let indices = vec![[0u32, 1, 2], [0, 1, 3], [1, 2, 3], [2, 0, 3]];
+    ///
+    /// let tetrahedron = ConvexPolyhedron::from_convex_mesh(points, &indices).unwrap();
+    ///
+    /// assert_eq!(tetrahedron.points().len(), 4);
+    /// assert_eq!(tetrahedron.points()[0], Point3::new(0.0, 0.0, 0.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn points(&self) -> &[Point<Real>] {
         &self.points[..]
     }
 
-    /// The topology of the vertices of this convex polyhedron.
+    /// Returns the topology information for all vertices.
+    ///
+    /// Each [`Vertex`] contains indices into the adjacency arrays, telling you which
+    /// faces and edges are connected to that vertex. This is useful for advanced
+    /// topological queries and mesh processing algorithms.
+    ///
+    /// Most users will want [`points()`] instead to get the 3D coordinates.
+    ///
+    /// [`points()`]: ConvexPolyhedron::points
     #[inline]
     pub fn vertices(&self) -> &[Vertex] {
         &self.vertices[..]
     }
 
-    /// The topology of the edges of this convex polyhedron.
+    /// Returns the topology information for all edges.
+    ///
+    /// Each [`Edge`] contains:
+    /// - The two vertex indices it connects
+    /// - The two face indices it borders
+    /// - The edge direction as a unit vector
+    ///
+    /// This is useful for advanced geometric queries and rendering wireframes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// let points = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.5, 1.0, 0.0),
+    ///     Point3::new(0.5, 0.5, 1.0),
+    /// ];
+    /// let indices = vec![[0u32, 1, 2], [0, 1, 3], [1, 2, 3], [2, 0, 3]];
+    ///
+    /// let tetrahedron = ConvexPolyhedron::from_convex_mesh(points, &indices).unwrap();
+    ///
+    /// // A tetrahedron has 6 edges (4 vertices choose 2)
+    /// assert_eq!(tetrahedron.edges().len(), 6);
+    ///
+    /// // Each edge connects two vertices
+    /// let edge = &tetrahedron.edges()[0];
+    /// println!("Edge connects vertices {} and {}", edge.vertices[0], edge.vertices[1]);
+    /// # }
+    /// ```
     #[inline]
     pub fn edges(&self) -> &[Edge] {
         &self.edges[..]
     }
 
-    /// The topology of the faces of this convex polyhedron.
+    /// Returns the topology information for all faces.
+    ///
+    /// Each [`Face`] contains:
+    /// - Indices into the vertex and edge adjacency arrays
+    /// - The number of vertices/edges in the face (faces can be triangles, quads, or larger polygons)
+    /// - The outward-pointing unit normal vector
+    ///
+    /// Faces are polygonal and can have 3 or more vertices. Adjacent coplanar triangles
+    /// are automatically merged into larger polygonal faces.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a cube (8 vertices, 12 triangular input faces)
+    /// let vertices = vec![
+    ///     Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0), Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(0.0, 0.0, 1.0), Point3::new(1.0, 0.0, 1.0),
+    ///     Point3::new(1.0, 1.0, 1.0), Point3::new(0.0, 1.0, 1.0),
+    /// ];
+    /// let indices = vec![
+    ///     [0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7],
+    ///     [0, 1, 5], [0, 5, 4], [2, 3, 7], [2, 7, 6],
+    ///     [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5],
+    /// ];
+    ///
+    /// let cube = ConvexPolyhedron::from_convex_mesh(vertices, &indices).unwrap();
+    ///
+    /// // The 12 triangles are merged into 6 square faces
+    /// assert_eq!(cube.faces().len(), 6);
+    ///
+    /// // Each face has 4 vertices (it's a square)
+    /// assert_eq!(cube.faces()[0].num_vertices_or_edges, 4);
+    /// # }
+    /// ```
     #[inline]
     pub fn faces(&self) -> &[Face] {
         &self.faces[..]
@@ -437,10 +804,78 @@ impl ConvexPolyhedron {
         &self.faces_adj_to_vertex[..]
     }
 
-    /// Computes a scaled version of this convex polygon.
+    /// Computes a scaled version of this convex polyhedron.
     ///
-    /// Returns `None` if the result had degenerate normals (for example if
-    /// the scaling factor along one axis is zero).
+    /// This method scales the polyhedron by multiplying each vertex coordinate by the corresponding
+    /// component of the `scale` vector. This allows for non-uniform scaling (different scale factors
+    /// for x, y, and z axes).
+    ///
+    /// The face normals and edge directions are also updated to reflect the scaling transformation.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolyhedron)` with the scaled shape
+    /// - `None` if the scaling results in degenerate normals (e.g., if the scale factor along
+    ///   one axis is zero or nearly zero)
+    ///
+    /// # Example: Uniform scaling
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let points = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.5, 1.0, 0.0),
+    ///     Point3::new(0.5, 0.5, 1.0),
+    /// ];
+    /// let indices = vec![[0u32, 1, 2], [0, 1, 3], [1, 2, 3], [2, 0, 3]];
+    ///
+    /// let tetrahedron = ConvexPolyhedron::from_convex_mesh(points, &indices).unwrap();
+    ///
+    /// // Scale uniformly by 2x
+    /// let scaled = tetrahedron.scaled(&Vector3::new(2.0, 2.0, 2.0))
+    ///     .expect("Failed to scale");
+    ///
+    /// // All coordinates are doubled
+    /// assert_eq!(scaled.points()[1], Point3::new(2.0, 0.0, 0.0));
+    /// assert_eq!(scaled.points()[3], Point3::new(1.0, 1.0, 2.0));
+    /// # }
+    /// ```
+    ///
+    /// # Example: Non-uniform scaling to create a rectangular prism
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # {
+    /// use parry3d::shape::ConvexPolyhedron;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Start with a unit cube
+    /// let vertices = vec![
+    ///     Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0), Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(0.0, 0.0, 1.0), Point3::new(1.0, 0.0, 1.0),
+    ///     Point3::new(1.0, 1.0, 1.0), Point3::new(0.0, 1.0, 1.0),
+    /// ];
+    /// let indices = vec![
+    ///     [0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7],
+    ///     [0, 1, 5], [0, 5, 4], [2, 3, 7], [2, 7, 6],
+    ///     [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5],
+    /// ];
+    ///
+    /// let cube = ConvexPolyhedron::from_convex_mesh(vertices, &indices).unwrap();
+    ///
+    /// // Scale to make it wider (3x), deeper (2x), and taller (4x)
+    /// let box_shape = cube.scaled(&Vector3::new(3.0, 2.0, 4.0))
+    ///     .expect("Failed to scale");
+    ///
+    /// assert_eq!(box_shape.points()[6], Point3::new(3.0, 2.0, 4.0));
+    /// # }
+    /// ```
     pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
         self.points
             .iter_mut()

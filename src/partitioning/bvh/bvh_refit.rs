@@ -4,15 +4,169 @@ use crate::utils::VecMap;
 use alloc::vec::Vec;
 
 impl Bvh {
-    /// Performs a tree refitting with internal storage cache optimizations.
+    /// Updates the BVH's internal node AABBs after leaf changes.
     ///
-    /// Refitting is the action of ensuring that every node’s AABB encloses the AABBs of its
-    /// children. In addition, this method will:
-    /// - Ensure that nodes are stored internally in depth-first order for better cache locality
-    ///   on depth-first searches.
-    /// - Ensure that the leaf count on each node is correct.
-    /// - Propagate the [`BvhNode::is_changed`] flag changes detected by [`Self::insert_or_update_partially`]
-    ///   (if `change_detection_margin` was nonzero) from leaves to its ascendants.
+    /// Refitting ensures that every internal node's AABB tightly encloses the AABBs of its
+    /// children. This operation is essential after updating leaf positions with
+    /// [`insert_or_update_partially`] and is much faster than rebuilding the entire tree.
+    ///
+    /// In addition to updating AABBs, this method:
+    /// - Reorders nodes in depth-first order for better cache locality during queries
+    /// - Ensures leaf counts on each node are correct
+    /// - Propagates change flags from leaves to ancestors (for change detection)
+    ///
+    /// # When to Use
+    ///
+    /// Call `refit` after:
+    /// - Bulk updates with [`insert_or_update_partially`]
+    /// - Any operation that modifies leaf AABBs without updating ancestor nodes
+    /// - When you want to optimize tree layout for better query performance
+    ///
+    /// **Don't call `refit` after**:
+    /// - Regular [`insert`] calls (they already update ancestors)
+    /// - [`remove`] calls (they already maintain tree validity)
+    ///
+    /// # Arguments
+    ///
+    /// * `workspace` - A reusable workspace to avoid allocations. Can be shared across
+    ///   multiple BVH operations for better performance.
+    ///
+    /// # Performance
+    ///
+    /// - **Time**: O(n) where n is the number of nodes
+    /// - **Space**: O(n) temporary storage in workspace
+    /// - Much faster than rebuilding the tree from scratch
+    /// - Essential for maintaining good query performance in dynamic scenes
+    ///
+    /// # Examples
+    ///
+    /// ## After bulk updates
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Insert initial objects
+    /// for i in 0..100 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert(aabb, i);
+    /// }
+    ///
+    /// // Update all objects without tree propagation (faster)
+    /// for i in 0..100 {
+    ///     let offset = 0.1;
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32 + offset, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0 + offset, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert_or_update_partially(aabb, i, 0.0);
+    /// }
+    ///
+    /// // Now update the tree in one efficient pass
+    /// bvh.refit(&mut workspace);
+    /// # }
+    /// ```
+    ///
+    /// ## In a game loop
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Game initialization - add objects
+    /// for i in 0..1000 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert(aabb, i);
+    /// }
+    ///
+    /// // Game loop - update objects each frame
+    /// for frame in 0..100 {
+    ///     // Update physics, AI, etc.
+    ///     for i in 0..1000 {
+    ///         let time = frame as f32 * 0.016; // ~60 FPS
+    ///         let pos = time.sin() * 10.0;
+    ///         let aabb = Aabb::new(
+    ///             Point3::new(i as f32 + pos, 0.0, 0.0),
+    ///             Point3::new(i as f32 + pos + 1.0, 1.0, 1.0)
+    ///         );
+    ///         bvh.insert_or_update_partially(aabb, i, 0.0);
+    ///     }
+    ///
+    ///     // Refit once per frame for all updates
+    ///     bvh.refit(&mut workspace);
+    ///
+    ///     // Now perform collision detection queries...
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// ## With change detection margin
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Add an object
+    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// bvh.insert(aabb, 0);
+    ///
+    /// // Update with a margin - tree won't update if movement is small
+    /// let margin = 0.5;
+    /// let new_aabb = Aabb::new(Point3::new(0.1, 0.0, 0.0), Point3::new(1.1, 1.0, 1.0));
+    /// bvh.insert_or_update_partially(new_aabb, 0, margin);
+    ///
+    /// // Refit propagates the change detection flags
+    /// bvh.refit(&mut workspace);
+    /// # }
+    /// ```
+    ///
+    /// # Comparison with `refit_without_opt`
+    ///
+    /// This method reorganizes the tree in memory for better cache performance.
+    /// If you only need to update AABBs without reordering, use [`refit_without_opt`]
+    /// which is faster but doesn't improve memory layout.
+    ///
+    /// # Notes
+    ///
+    /// - Reuses the provided `workspace` to avoid allocations
+    /// - Safe to call even if no leaves were modified (just reorganizes tree)
+    /// - Does not change the tree's topology, only AABBs and layout
+    /// - Call this before [`optimize_incremental`] for best results
+    ///
+    /// # See Also
+    ///
+    /// - [`insert_or_update_partially`](Bvh::insert_or_update_partially) - Update leaves
+    ///   without propagation
+    /// - [`refit_without_opt`](Self::refit_without_opt) - Faster refit without memory
+    ///   reorganization
+    /// - [`optimize_incremental`](Bvh::optimize_incremental) - Improve tree quality
+    /// - [`BvhWorkspace`] - Reusable workspace for operations
+    ///
+    /// [`insert_or_update_partially`]: Bvh::insert_or_update_partially
+    /// [`insert`]: Bvh::insert
+    /// [`remove`]: Bvh::remove
+    /// [`optimize_incremental`]: Bvh::optimize_incremental
     pub fn refit(&mut self, workspace: &mut BvhWorkspace) {
         Self::refit_buffers(
             &mut self.nodes,

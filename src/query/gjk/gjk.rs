@@ -1,4 +1,54 @@
-//! The Gilbert–Johnson–Keerthi distance algorithm.
+//! The Gilbert-Johnson-Keerthi distance algorithm.
+//!
+//! # What is GJK?
+//!
+//! The **Gilbert-Johnson-Keerthi (GJK)** algorithm is a fundamental geometric algorithm used
+//! to compute the distance between two convex shapes. It's one of the most important algorithms
+//! in collision detection and is used extensively in physics engines, robotics, and computer graphics.
+//!
+//! ## How GJK Works (Simplified)
+//!
+//! GJK works by operating on the **Minkowski difference** (also called Configuration Space Obstacle or CSO)
+//! of two shapes. Instead of directly comparing the shapes, GJK:
+//!
+//! 1. Constructs a simplex (triangle in 2D, tetrahedron in 3D) within the Minkowski difference
+//! 2. Iteratively refines this simplex to find the point closest to the origin
+//! 3. The distance from the origin to this closest point equals the distance between the shapes
+//!
+//! If the origin is **inside** the Minkowski difference, the shapes are intersecting.
+//! If the origin is **outside**, the distance to the closest point gives the separation distance.
+//!
+//! ## When is GJK Used?
+//!
+//! GJK is used whenever you need to:
+//! - **Check if two convex shapes intersect** (collision detection)
+//! - **Find the minimum distance** between two convex shapes
+//! - **Compute closest points** on two shapes
+//! - **Cast a shape along a direction** to find the time of impact (continuous collision detection)
+//!
+//! ## Key Advantages of GJK
+//!
+//! - Works with **any convex shape** that can provide a support function
+//! - Does **not require the full geometry** of the shapes (only support points)
+//! - Very **fast convergence** in most practical cases
+//! - Forms the basis for many collision detection systems
+//!
+//! ## Limitations
+//!
+//! - Only works with **convex shapes** (use convex decomposition for concave shapes)
+//! - When shapes are penetrating, GJK can only detect intersection but not penetration depth
+//!   (use EPA - Expanding Polytope Algorithm - for penetration depth)
+//!
+//! # Main Functions in This Module
+//!
+//! - [`closest_points`] - The core GJK algorithm for finding distance and closest points
+//! - [`project_origin`] - Projects the origin onto a shape's boundary
+//! - [`cast_local_ray`] - Casts a ray against a shape (used for raycasting)
+//! - [`directional_distance`] - Computes how far a shape can move before touching another
+//!
+//! # Example
+//!
+//! See individual function documentation for usage examples.
 
 use na::{self, ComplexField, Unit};
 
@@ -11,41 +61,138 @@ use crate::query::{self, Ray};
 use num::{Bounded, Zero};
 
 /// Results of the GJK algorithm.
+///
+/// This enum represents the different outcomes when running the GJK algorithm to find
+/// the distance between two shapes. The result depends on whether the shapes are intersecting,
+/// how far apart they are, and what information was requested.
+///
+/// # Understanding the Results
+///
+/// - **Intersection**: The shapes are overlapping. The origin lies inside the Minkowski difference.
+/// - **ClosestPoints**: The exact closest points on both shapes were computed, along with the
+///   separation direction.
+/// - **Proximity**: The shapes are close but not intersecting. Only an approximate separation
+///   direction is provided (used when exact distance computation is not needed).
+/// - **NoIntersection**: The shapes are too far apart (beyond the specified `max_dist` threshold).
+///
+/// # Coordinate Spaces
+///
+/// All points and vectors in this result are expressed in the **local-space of the first shape**
+/// (the shape passed as `g1` to the GJK functions). This is important when working with
+/// transformed shapes.
 #[derive(Clone, Debug, PartialEq)]
 pub enum GJKResult {
-    /// Result of the GJK algorithm when the origin is inside of the polytope.
+    /// The shapes are intersecting (overlapping).
+    ///
+    /// This means the origin is inside the Minkowski difference of the two shapes.
+    /// GJK cannot compute penetration depth; use the EPA (Expanding Polytope Algorithm)
+    /// for that purpose.
     Intersection,
-    /// Result of the GJK algorithm when a projection of the origin on the polytope is found.
+
+    /// The closest points on both shapes were found.
     ///
-    /// Both points and vector are expressed in the local-space of the first geometry involved
-    /// in the GJK execution.
+    /// # Fields
+    ///
+    /// - First `Point`: The closest point on the first shape (in local-space of shape 1)
+    /// - Second `Point`: The closest point on the second shape (in local-space of shape 1)
+    /// - `Unit<Vector>`: The unit direction vector from shape 1 to shape 2 (separation axis)
+    ///
+    /// This variant is returned when `exact_dist` is `true` in the GJK algorithm and the
+    /// shapes are not intersecting.
     ClosestPoints(Point<Real>, Point<Real>, Unit<Vector<Real>>),
-    /// Result of the GJK algorithm when the origin is too close to the polytope but not inside of it.
+
+    /// The shapes are in proximity (close but not intersecting).
     ///
-    /// The returned vector is expressed in the local-space of the first geometry involved in the
-    /// GJK execution.
+    /// # Fields
+    ///
+    /// - `Unit<Vector>`: An approximate separation axis (unit direction from shape 1 to shape 2)
+    ///
+    /// This variant is returned when `exact_dist` is `false` and the algorithm determines
+    /// the shapes are close but not intersecting. It's faster than computing exact closest
+    /// points when you only need to know if shapes are nearby.
     Proximity(Unit<Vector<Real>>),
-    /// Result of the GJK algorithm when the origin is too far away from the polytope.
+
+    /// The shapes are too far apart.
     ///
-    /// The returned vector is expressed in the local-space of the first geometry involved in the
-    /// GJK execution.
+    /// # Fields
+    ///
+    /// - `Unit<Vector>`: A separation axis (unit direction from shape 1 to shape 2)
+    ///
+    /// This variant is returned when the minimum distance between the shapes exceeds
+    /// the `max_dist` parameter passed to the GJK algorithm.
     NoIntersection(Unit<Vector<Real>>),
 }
 
 /// The absolute tolerance used by the GJK algorithm.
+///
+/// This function returns the epsilon (tolerance) value that GJK uses to determine when
+/// it has converged to a solution. The tolerance affects:
+///
+/// - When two points are considered "close enough" to be the same
+/// - When the algorithm decides it has found the minimum distance
+/// - Numerical stability in edge cases
+///
+/// The returned value is 10 times the default machine epsilon for the current floating-point
+/// precision (f32 or f64). This provides a balance between accuracy and robustness.
+///
+/// # Returns
+///
+/// The absolute tolerance value (10 * DEFAULT_EPSILON)
 pub fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
     _eps * 10.0
 }
 
-/// Projects the origin on the boundary of the given shape.
+/// Projects the origin onto the boundary of the given shape.
 ///
-/// The origin is assumed to be outside of the shape. If it is inside,
-/// use the EPA algorithm instead.
-/// Return `None` if the origin is not inside of the shape or if
-/// the EPA algorithm failed to compute the projection.
+/// This function finds the point on the shape's surface that is closest to the origin (0, 0)
+/// in 2D or (0, 0, 0) in 3D. This is useful for distance queries and collision detection
+/// when you need to know the closest point on a shape.
 ///
-/// Return the projected point in the local-space of `g`.
+/// # Important: Origin Must Be Outside
+///
+/// **The origin is assumed to be outside of the shape.** If the origin is inside the shape,
+/// this function returns `None`. For penetrating cases, use the EPA (Expanding Polytope Algorithm)
+/// instead.
+///
+/// # Parameters
+///
+/// - `m`: The position and orientation (isometry) of the shape in world space
+/// - `g`: The shape to project onto (must implement `SupportMap`)
+/// - `simplex`: A reusable simplex structure for the GJK algorithm. Initialize with
+///   `VoronoiSimplex::new()` before first use.
+///
+/// # Returns
+///
+/// - `Some(Point)`: The closest point on the shape's boundary, in the shape's **local space**
+/// - `None`: If the origin is inside the shape
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Ball;
+/// use parry3d::query::gjk::{project_origin, VoronoiSimplex};
+/// use parry3d::math::Isometry;
+///
+/// // Create a ball at position (5, 0, 0)
+/// let ball = Ball::new(1.0);
+/// let position = Isometry::translation(5.0, 0.0, 0.0);
+///
+/// // Project the origin onto the ball
+/// let mut simplex = VoronoiSimplex::new();
+/// if let Some(closest_point) = project_origin(&position, &ball, &mut simplex) {
+///     println!("Closest point on ball: {:?}", closest_point);
+///     // The point will be approximately (-1, 0, 0) in local space
+///     // which is the left side of the ball facing the origin
+/// }
+/// # }
+/// ```
+///
+/// # Performance Note
+///
+/// The `simplex` parameter can be reused across multiple calls to avoid allocations.
+/// This is particularly beneficial when performing many projection queries.
 pub fn project_origin<G: ?Sized + SupportMap>(
     m: &Isometry<Real>,
     g: &G,
@@ -68,18 +215,141 @@ pub fn project_origin<G: ?Sized + SupportMap>(
 /*
  * Separating Axis GJK
  */
-/// Projects the origin on a shape using the Separating Axis GJK algorithm.
-/// The algorithm will stop as soon as the polytope can be proven to be at least `max_dist` away
-/// from the origin.
+/// Computes the closest points between two shapes using the GJK algorithm.
 ///
-/// # Arguments:
-/// * `simplex` - the simplex to be used by the GJK algorithm. It must be already initialized
-///   with at least one point on the shape boundary.
-/// * `exact_dist` - if `false`, the gjk will stop as soon as it can prove that the origin is at
-///   a distance smaller than `max_dist` but not inside of `shape`. In that case, it returns a
-///   `GJKResult::Proximity(sep_axis)` where `sep_axis` is a separating axis. If `false` the gjk will
-///   compute the exact distance and return `GJKResult::Projection(point)` if the origin is closer
-///   than `max_dist` but not inside `shape`.
+/// This is the **core function** of the GJK implementation in Parry. It can compute:
+/// - Whether two shapes are intersecting
+/// - The distance between two separated shapes
+/// - The closest points on both shapes
+/// - An approximate separation axis when exact distance isn't needed
+///
+/// # How It Works
+///
+/// The algorithm operates on the Minkowski difference (CSO) of the two shapes and iteratively
+/// builds a simplex that approximates the point closest to the origin. The algorithm terminates
+/// when:
+/// - The shapes are proven to intersect (origin is inside the CSO)
+/// - The minimum distance is found within the tolerance
+/// - The shapes are proven to be farther than `max_dist` apart
+///
+/// # Parameters
+///
+/// - `pos12`: The relative position of shape 2 with respect to shape 1. This is the isometry
+///   that transforms from shape 1's space to shape 2's space.
+/// - `g1`: The first shape (must implement `SupportMap`)
+/// - `g2`: The second shape (must implement `SupportMap`)
+/// - `max_dist`: Maximum distance to check. If shapes are farther than this, the algorithm
+///   returns `GJKResult::NoIntersection` early. Use `Real::max_value()` to disable this check.
+/// - `exact_dist`: Whether to compute exact closest points:
+///   - `true`: Computes exact distance and returns `GJKResult::ClosestPoints`
+///   - `false`: May return `GJKResult::Proximity` with only an approximate separation axis,
+///     which is faster when you only need to know if shapes are nearby
+/// - `simplex`: A reusable simplex structure. Initialize with `VoronoiSimplex::new()` before
+///   first use. Can be reused across calls for better performance.
+///
+/// # Returns
+///
+/// Returns a [`GJKResult`] which can be:
+/// - `Intersection`: The shapes are overlapping
+/// - `ClosestPoints(p1, p2, normal)`: The closest points on each shape (when `exact_dist` is true)
+/// - `Proximity(axis)`: An approximate separation axis (when `exact_dist` is false)
+/// - `NoIntersection(axis)`: The shapes are farther than `max_dist` apart
+///
+/// # Example: Basic Distance Query
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::shape::{Ball, Cuboid};
+/// use parry3d::query::gjk::{closest_points, VoronoiSimplex};
+/// use parry3d::math::{Isometry, Vector};
+///
+/// // Create two shapes
+/// let ball = Ball::new(1.0);
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+///
+/// // Position them in space
+/// let pos1 = Isometry::translation(0.0, 0.0, 0.0);
+/// let pos2 = Isometry::translation(5.0, 0.0, 0.0);
+///
+/// // Compute relative position
+/// let pos12 = pos1.inv_mul(&pos2);
+///
+/// // Run GJK
+/// let mut simplex = VoronoiSimplex::new();
+/// let result = closest_points(
+///     &pos12,
+///     &ball,
+///     &cuboid,
+///     f32::MAX,  // No distance limit
+///     true,      // Compute exact distance
+///     &mut simplex,
+/// );
+///
+/// match result {
+///     parry3d::query::gjk::GJKResult::ClosestPoints(p1, p2, normal) => {
+///         println!("Closest point on ball: {:?}", p1);
+///         println!("Closest point on cuboid: {:?}", p2);
+///         println!("Separation direction: {:?}", normal);
+///         let distance = (p2 - p1).norm();
+///         println!("Distance: {}", distance);
+///     }
+///     parry3d::query::gjk::GJKResult::Intersection => {
+///         println!("Shapes are intersecting!");
+///     }
+///     _ => {}
+/// }
+/// # }
+/// ```
+///
+/// # Example: Fast Proximity Check
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Ball;
+/// use parry3d::query::gjk::{closest_points, VoronoiSimplex};
+/// use parry3d::math::Isometry;
+///
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+/// let pos12 = Isometry::translation(3.0, 0.0, 0.0);
+///
+/// let mut simplex = VoronoiSimplex::new();
+/// let result = closest_points(
+///     &pos12,
+///     &ball1,
+///     &ball2,
+///     5.0,       // Only check up to distance 5.0
+///     false,     // Don't compute exact distance
+///     &mut simplex,
+/// );
+///
+/// match result {
+///     parry3d::query::gjk::GJKResult::Proximity(_axis) => {
+///         println!("Shapes are close but not intersecting");
+///     }
+///     parry3d::query::gjk::GJKResult::Intersection => {
+///         println!("Shapes are intersecting");
+///     }
+///     parry3d::query::gjk::GJKResult::NoIntersection(_) => {
+///         println!("Shapes are too far apart (> 5.0 units)");
+///     }
+///     _ => {}
+/// }
+/// # }
+/// ```
+///
+/// # Performance Tips
+///
+/// 1. Reuse the `simplex` across multiple queries to avoid allocations
+/// 2. Set `exact_dist` to `false` when you only need proximity information
+/// 3. Use a reasonable `max_dist` to allow early termination
+/// 4. GJK converges fastest when shapes are well-separated
+///
+/// # Notes
+///
+/// - All returned points and vectors are in the local-space of shape 1
+/// - The algorithm typically converges in 5-10 iterations for well-separated shapes
+/// - Maximum iteration count is 100 to prevent infinite loops
 pub fn closest_points<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
@@ -182,7 +452,70 @@ where
     }
 }
 
-/// Casts a ray on a support map using the GJK algorithm.
+/// Casts a ray against a shape using the GJK algorithm.
+///
+/// This function performs raycasting by testing a ray against a shape to find if and where
+/// the ray intersects the shape. It uses a specialized version of GJK that works with rays.
+///
+/// # What is Raycasting?
+///
+/// Raycasting shoots a ray (infinite line starting from a point in a direction) and finds
+/// where it first hits a shape. This is essential for:
+/// - Mouse picking in 3D scenes
+/// - Line-of-sight checks
+/// - Projectile collision detection
+/// - Laser/scanner simulations
+///
+/// # Parameters
+///
+/// - `shape`: The shape to cast the ray against (must implement `SupportMap`)
+/// - `simplex`: A reusable simplex structure. Initialize with `VoronoiSimplex::new()`.
+/// - `ray`: The ray to cast, containing an origin point and direction vector
+/// - `max_time_of_impact`: Maximum distance along the ray to check. The ray will be treated
+///   as a line segment of length `max_time_of_impact * ray.dir.norm()`.
+///
+/// # Returns
+///
+/// - `Some((toi, normal))`: If the ray hits the shape
+///   - `toi`: Time of impact - multiply by `ray.dir.norm()` to get the actual distance
+///   - `normal`: Surface normal at the hit point
+/// - `None`: If the ray doesn't hit the shape within the maximum distance
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Ball;
+/// use parry3d::query::{Ray, gjk::{cast_local_ray, VoronoiSimplex}};
+/// use parry3d::math::{Point, Vector};
+///
+/// // Create a ball at the origin
+/// let ball = Ball::new(1.0);
+///
+/// // Create a ray starting at (0, 0, -5) pointing toward +Z
+/// let ray = Ray::new(
+///     Point::new(0.0, 0.0, -5.0),
+///     Vector::new(0.0, 0.0, 1.0)
+/// );
+///
+/// let mut simplex = VoronoiSimplex::new();
+/// if let Some((toi, normal)) = cast_local_ray(&ball, &mut simplex, &ray, f32::MAX) {
+///     let hit_point = ray.point_at(toi);
+///     println!("Ray hit at: {:?}", hit_point);
+///     println!("Surface normal: {:?}", normal);
+///     println!("Distance: {}", toi);
+/// } else {
+///     println!("Ray missed the shape");
+/// }
+/// # }
+/// ```
+///
+/// # Notes
+///
+/// - The ray is specified in the local-space of the shape
+/// - The returned normal points outward from the shape
+/// - For normalized ray directions, `toi` equals the distance to the hit point
+/// - This function is typically called by higher-level raycasting APIs
 pub fn cast_local_ray<G: ?Sized + SupportMap>(
     shape: &G,
     simplex: &mut VoronoiSimplex,
@@ -200,10 +533,102 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
     )
 }
 
-/// Compute the normal and the distance that can travel `g1` along the direction
-/// `dir` so that `g1` and `g2` just touch.
+/// Computes how far a shape can move in a direction before touching another shape.
 ///
-/// The `dir` vector must be expressed in the local-space of the first shape.
+/// This function answers the question: "If I move shape 1 along this direction, how far
+/// can it travel before it touches shape 2?" This is useful for:
+/// - Continuous collision detection (CCD)
+/// - Movement planning and obstacle avoidance
+/// - Computing time-of-impact for moving objects
+/// - Safe navigation distances
+///
+/// # How It Works
+///
+/// The function casts shape 1 along the given direction vector and finds the first point
+/// where it would contact shape 2. It returns:
+/// - The distance that can be traveled
+/// - The contact normal at the point of first contact
+/// - The witness points (closest points) on both shapes at contact
+///
+/// # Parameters
+///
+/// - `pos12`: The relative position of shape 2 with respect to shape 1 (isometry from
+///   shape 1's space to shape 2's space)
+/// - `g1`: The first shape being moved (must implement `SupportMap`)
+/// - `g2`: The second shape (static target, must implement `SupportMap`)
+/// - `dir`: The direction vector to move shape 1 in (in local-space of shape 1)
+/// - `simplex`: A reusable simplex structure. Initialize with `VoronoiSimplex::new()`.
+///
+/// # Returns
+///
+/// - `Some((distance, normal, witness1, witness2))`: If contact would occur
+///   - `distance`: How far shape 1 can travel before touching shape 2
+///   - `normal`: The contact normal at the point of first contact
+///   - `witness1`: The contact point on shape 1 (in local-space of shape 1)
+///   - `witness2`: The contact point on shape 2 (in local-space of shape 1)
+/// - `None`: If no contact would occur (shapes don't intersect along this direction)
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Ball;
+/// use parry3d::query::gjk::{directional_distance, VoronoiSimplex};
+/// use parry3d::math::{Isometry, Vector};
+///
+/// // Two balls: one at origin, one at (10, 0, 0)
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+/// let pos12 = Isometry::translation(10.0, 0.0, 0.0);
+///
+/// // Move ball1 toward ball2 along the +X axis
+/// let direction = Vector::new(1.0, 0.0, 0.0);
+///
+/// let mut simplex = VoronoiSimplex::new();
+/// if let Some((distance, normal, w1, w2)) = directional_distance(
+///     &pos12,
+///     &ball1,
+///     &ball2,
+///     &direction,
+///     &mut simplex
+/// ) {
+///     println!("Ball1 can move {} units before contact", distance);
+///     println!("Contact normal: {:?}", normal);
+///     println!("Contact point on ball1: {:?}", w1);
+///     println!("Contact point on ball2: {:?}", w2);
+///     // Expected: distance ≈ 8.0 (10.0 - 1.0 - 1.0)
+/// }
+/// # }
+/// ```
+///
+/// # Use Cases
+///
+/// **1. Continuous Collision Detection:**
+/// ```ignore
+/// let movement_dir = velocity * time_step;
+/// if let Some((toi, normal, _, _)) = directional_distance(...) {
+///     if toi < 1.0 {
+///         // Collision will occur during this timestep
+///         let collision_time = toi * time_step;
+///     }
+/// }
+/// ```
+///
+/// **2. Safe Movement Distance:**
+/// ```ignore
+/// let desired_movement = Vector::new(5.0, 0.0, 0.0);
+/// if let Some((max_safe_dist, _, _, _)) = directional_distance(...) {
+///     let actual_movement = desired_movement.normalize() * max_safe_dist.min(5.0);
+/// }
+/// ```
+///
+/// # Notes
+///
+/// - All inputs and outputs are in the local-space of shape 1
+/// - If the shapes are already intersecting, the returned distance is 0.0 and witness
+///   points are undefined (set to origin)
+/// - The direction vector does not need to be normalized
+/// - This function internally uses GJK raycasting on the Minkowski difference
 pub fn directional_distance<G1, G2>(
     pos12: &Isometry<Real>,
     g1: &G1,
