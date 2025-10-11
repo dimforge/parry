@@ -25,8 +25,95 @@ use alloc::vec::Vec;
 #[cfg(not(feature = "std"))]
 use na::ComplexField;
 
-/// Controls how the voxelization determines which voxel needs
-/// to be considered empty, and which ones will be considered full.
+/// Controls how voxelization determines which voxels are filled vs empty.
+///
+/// The fill mode is a critical parameter that determines the structure of the resulting voxel set.
+/// Choose the appropriate mode based on whether you need just the surface boundary or a solid volume.
+///
+/// # Variants
+///
+/// ## `SurfaceOnly`
+///
+/// Only voxels that intersect the input surface boundary (triangle mesh in 3D, polyline in 2D)
+/// are marked as filled. This creates a hollow shell representation.
+///
+/// **Use this when:**
+/// - You only need the surface boundary
+/// - Memory is limited (fewer voxels to store)
+/// - You're approximating a thin shell or surface
+///
+/// **Example:**
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+/// use parry3d::shape::Ball;
+/// ///
+/// let ball = Ball::new(1.0);
+/// let (vertices, indices) = ball.to_trimesh(20, 20);
+///
+/// let surface_voxels = VoxelSet::voxelize(
+///     &vertices,
+///     &indices,
+///     10,
+///     FillMode::SurfaceOnly,  // Only the shell
+///     false,
+/// );
+///
+/// // All voxels are on the surface
+/// assert!(surface_voxels.voxels().iter().all(|v| v.is_on_surface));
+/// # }
+/// ```
+///
+/// ## `FloodFill`
+///
+/// Marks surface voxels AND all interior voxels as filled, creating a solid volume. Uses a
+/// flood-fill algorithm starting from outside the shape to determine inside vs outside.
+///
+/// **Fields:**
+/// - `detect_cavities`: If `true`, properly detects and preserves internal cavities/holes.
+///   If `false`, all enclosed spaces are filled (faster but may fill unintended regions).
+///
+/// - `detect_self_intersections` (2D only): If `true`, attempts to handle self-intersecting
+///   polylines correctly. More expensive but more robust.
+///
+/// **Use this when:**
+/// - You need volume information (mass properties, volume computation)
+/// - You want a solid representation for collision detection
+/// - You need to distinguish between interior and surface voxels
+///
+/// **Example:**
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+/// use parry3d::shape::Ball;
+/// ///
+/// let ball = Ball::new(1.0);
+/// let (vertices, indices) = ball.to_trimesh(20, 20);
+///
+/// let solid_voxels = VoxelSet::voxelize(
+///     &vertices,
+///     &indices,
+///     15,
+///     FillMode::FloodFill {
+///         detect_cavities: false,  // No cavities in a sphere
+///     },
+///     false,
+/// );
+///
+/// // Mix of surface and interior voxels
+/// let surface_count = solid_voxels.voxels().iter().filter(|v| v.is_on_surface).count();
+/// let interior_count = solid_voxels.voxels().iter().filter(|v| !v.is_on_surface).count();
+/// assert!(surface_count > 0 && interior_count > 0);
+/// # }
+/// ```
+///
+/// # Performance Notes
+///
+/// - `SurfaceOnly` is faster and uses less memory than `FloodFill`
+/// - `detect_cavities = true` adds computational overhead but gives more accurate results
+/// - For simple convex shapes, `detect_cavities = false` is usually sufficient
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FillMode {
     /// Only consider full the voxels intersecting the surface of the
@@ -83,12 +170,81 @@ impl FillMode {
     }
 }
 
-/// The values of a voxel.
+/// The state of a voxel during and after voxelization.
 ///
-/// Most values are only intermediate value set during the
-/// voxelization process. The only values output after the
-/// voxelization is complete are `PrimitiveOutsideSurface`,
-/// `PrimitiveInsideSurface`, and `PrimitiveOnSurface`.
+/// This enum represents the classification of each voxel in the grid. After voxelization completes,
+/// only three values are meaningful for end-user code: `PrimitiveOutsideSurface`,
+/// `PrimitiveInsideSurface`, and `PrimitiveOnSurface`. The other variants are intermediate
+/// states used during the flood-fill algorithm.
+///
+/// # Usage
+///
+/// Most users will work with [`VoxelSet`] which filters out outside voxels and only stores
+/// filled ones. However, if you're working directly with [`VoxelizedVolume`], you'll encounter
+/// all these values.
+///
+/// # Final States (After Voxelization)
+///
+/// - **`PrimitiveOutsideSurface`**: Voxel is completely outside the shape
+/// - **`PrimitiveInsideSurface`**: Voxel is fully inside the shape (only with [`FillMode::FloodFill`])
+/// - **`PrimitiveOnSurface`**: Voxel intersects the boundary surface
+///
+/// # Intermediate States (During Voxelization)
+///
+/// The following are temporary states used during the flood-fill algorithm and should be
+/// ignored by user code:
+/// - `PrimitiveUndefined`
+/// - `PrimitiveOutsideSurfaceToWalk`
+/// - `PrimitiveInsideSurfaceToWalk`
+/// - `PrimitiveOnSurfaceNoWalk`
+/// - `PrimitiveOnSurfaceToWalk1`
+/// - `PrimitiveOnSurfaceToWalk2`
+///
+/// # Example
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelValue, VoxelizedVolume};
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::Vector3;
+///
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let (vertices, indices) = cuboid.to_trimesh();
+///
+/// // Create a dense voxelized volume
+/// let volume = VoxelizedVolume::voxelize(
+///     &vertices,
+///     &indices,
+///     8,
+///     FillMode::FloodFill { detect_cavities: false },
+///     false,
+/// );
+///
+/// // Query individual voxel values
+/// let resolution = volume.resolution();
+/// for i in 0..resolution[0] {
+///     for j in 0..resolution[1] {
+///         for k in 0..resolution[2] {
+///             match volume.voxel(i, j, k) {
+///                 VoxelValue::PrimitiveOnSurface => {
+///                     // This voxel is on the boundary
+///                 }
+///                 VoxelValue::PrimitiveInsideSurface => {
+///                     // This voxel is inside the shape
+///                 }
+///                 VoxelValue::PrimitiveOutsideSurface => {
+///                     // This voxel is outside the shape
+///                 }
+///                 _ => {
+///                     // Should not happen after voxelization completes
+///                 }
+///             }
+///         }
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VoxelValue {
     /// Intermediate value, should be ignored by end-user code.
@@ -118,7 +274,99 @@ struct VoxelData {
     num_primitive_intersections: u32,
 }
 
-/// A cubic volume filled with voxels.
+/// A dense voxel grid storing the state of every voxel in a cubic volume.
+///
+/// `VoxelizedVolume` is the intermediate representation used during the voxelization process.
+/// Unlike [`VoxelSet`] which only stores filled voxels, `VoxelizedVolume` stores a complete
+/// dense 3D array where every grid cell has an associated [`VoxelValue`].
+///
+/// # When to Use
+///
+/// Most users should use [`VoxelSet`] instead, which is converted from `VoxelizedVolume`
+/// automatically and is much more memory-efficient. You might want to use `VoxelizedVolume`
+/// directly if you need to:
+///
+/// - Query the state of ALL voxels, including empty ones
+/// - Implement custom voxel processing algorithms
+/// - Generate visualizations showing both filled and empty voxels
+///
+/// # Memory Usage
+///
+/// `VoxelizedVolume` stores **all** voxels in a dense 3D array:
+/// - Memory usage: `O(resolution^3)` in 3D or `O(resolution^2)` in 2D
+/// - A 100×100×100 grid requires 1 million voxel entries
+///
+/// For this reason, [`VoxelSet`] is usually preferred for storage.
+///
+/// # Conversion
+///
+/// `VoxelizedVolume` automatically converts to `VoxelSet`:
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet, VoxelizedVolume};
+/// use parry3d::shape::Ball;
+/// ///
+/// let ball = Ball::new(1.0);
+/// let (vertices, indices) = ball.to_trimesh(10, 10);
+///
+/// // Create dense volume
+/// let volume = VoxelizedVolume::voxelize(
+///     &vertices,
+///     &indices,
+///     10,
+///     FillMode::SurfaceOnly,
+///     false,
+/// );
+///
+/// // Convert to sparse set (automatic via Into trait)
+/// let voxel_set: VoxelSet = volume.into();
+/// # }
+/// ```
+///
+/// # Example: Querying All Voxels
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelValue, VoxelizedVolume};
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::Vector3;
+///
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let (vertices, indices) = cuboid.to_trimesh();
+///
+/// let volume = VoxelizedVolume::voxelize(
+///     &vertices,
+///     &indices,
+///     8,
+///     FillMode::FloodFill { detect_cavities: false },
+///     false,
+/// );
+///
+/// // Count voxels by state
+/// let resolution = volume.resolution();
+/// let mut inside = 0;
+/// let mut surface = 0;
+/// let mut outside = 0;
+///
+/// for i in 0..resolution[0] {
+///     for j in 0..resolution[1] {
+///         for k in 0..resolution[2] {
+///             match volume.voxel(i, j, k) {
+///                 VoxelValue::PrimitiveInsideSurface => inside += 1,
+///                 VoxelValue::PrimitiveOnSurface => surface += 1,
+///                 VoxelValue::PrimitiveOutsideSurface => outside += 1,
+///                 _ => {}
+///             }
+///         }
+///     }
+/// }
+///
+/// println!("Inside: {}, Surface: {}, Outside: {}", inside, surface, outside);
+/// # }
+/// ```
 pub struct VoxelizedVolume {
     origin: Point<Real>,
     scale: Real,

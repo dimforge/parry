@@ -8,7 +8,62 @@ use crate::partitioning::BvhLeafCost;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// A Ray.
+/// A ray for ray-casting queries.
+///
+/// A ray is a half-infinite line starting at an origin point and extending
+/// infinitely in a direction. Rays are fundamental for visibility queries,
+/// shooting mechanics, and collision prediction.
+///
+/// # Structure
+///
+/// - **origin**: The starting point of the ray
+/// - **dir**: The direction vector (does NOT need to be normalized)
+///
+/// # Direction Vector
+///
+/// The direction can be any non-zero vector:
+/// - **Normalized**: `dir` with length 1.0 gives time-of-impact in world units
+/// - **Not normalized**: Time-of-impact is scaled by `dir.norm()`
+///
+/// Most applications use normalized directions for intuitive results.
+///
+/// # Use Cases
+///
+/// - **Shooting/bullets**: Check what a projectile hits
+/// - **Line of sight**: Check if one object can "see" another
+/// - **Mouse picking**: Select objects by clicking
+/// - **Laser beams**: Simulate light or laser paths
+/// - **Proximity sensing**: Detect obstacles in a direction
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::query::{Ray, RayCast};
+/// use parry3d::shape::Ball;
+/// use nalgebra::{Point3, Vector3, Isometry3};
+///
+/// // Create a ray from origin pointing along +X axis
+/// let ray = Ray::new(
+///     Point3::new(0.0, 0.0, 0.0),
+///     Vector3::new(1.0, 0.0, 0.0)  // Normalized direction
+/// );
+///
+/// // Create a ball at position (5, 0, 0) with radius 1
+/// let ball = Ball::new(1.0);
+/// let ball_pos = Isometry3::translation(5.0, 0.0, 0.0);
+///
+/// // Cast the ray against the ball
+/// if let Some(toi) = ball.cast_ray(&ball_pos, &ray, 100.0, true) {
+///     // Ray hits at t=4.0 (center at 5.0 minus radius 1.0)
+///     assert_eq!(toi, 4.0);
+///
+///     // Compute the actual hit point
+///     let hit_point = ray.point_at(toi);
+///     assert_eq!(hit_point, Point3::new(4.0, 0.0, 0.0));
+/// }
+/// # }
+/// ```
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -19,24 +74,95 @@ use rkyv::{bytecheck, CheckBytes};
 #[repr(C)]
 pub struct Ray {
     /// Starting point of the ray.
+    ///
+    /// This is where the ray begins. Points along the ray are computed as
+    /// `origin + dir * t` for `t ≥ 0`.
     pub origin: Point<Real>,
-    /// Direction of the ray.
+
+    /// Direction vector of the ray.
+    ///
+    /// This vector points in the direction the ray travels. It does NOT need
+    /// to be normalized, but using a normalized direction makes time-of-impact
+    /// values represent actual distances.
     pub dir: Vector<Real>,
 }
 
 impl Ray {
-    /// Creates a new ray starting from `origin` and with the direction `dir`.
+    /// Creates a new ray from an origin point and direction vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - The starting point of the ray
+    /// * `dir` - The direction vector (typically normalized but not required)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Ray;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Horizontal ray pointing along +X axis
+    /// let ray = Ray::new(
+    ///     Point3::new(0.0, 5.0, 0.0),
+    ///     Vector3::new(1.0, 0.0, 0.0)
+    /// );
+    ///
+    /// // Ray starts at (0, 5, 0) and points along +X
+    /// assert_eq!(ray.origin, Point3::new(0.0, 5.0, 0.0));
+    /// assert_eq!(ray.dir, Vector3::new(1.0, 0.0, 0.0));
+/// # }
+    /// ```
     pub fn new(origin: Point<Real>, dir: Vector<Real>) -> Ray {
         Ray { origin, dir }
     }
 
-    /// Transforms this ray by the given isometry.
+    /// Transforms this ray by the given isometry (translation + rotation).
+    ///
+    /// Both the origin and direction are transformed.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Ray;
+    /// use nalgebra::{Isometry3, Point3, Vector3};
+    ///
+    /// let ray = Ray::new(Point3::origin(), Vector3::x());
+    ///
+    /// // Translate by (5, 0, 0)
+    /// let transform = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let transformed = ray.transform_by(&transform);
+    ///
+    /// assert_eq!(transformed.origin, Point3::new(5.0, 0.0, 0.0));
+    /// assert_eq!(transformed.dir, Vector3::x());
+    /// # }
+    /// ```
     #[inline]
     pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
         Self::new(m * self.origin, m * self.dir)
     }
 
     /// Transforms this ray by the inverse of the given isometry.
+    ///
+    /// This is equivalent to transforming the ray to the local space of an object.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Ray;
+    /// use nalgebra::{Isometry3, Point3, Vector3};
+    ///
+    /// let ray = Ray::new(Point3::new(10.0, 0.0, 0.0), Vector3::x());
+    ///
+    /// let transform = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let local_ray = ray.inverse_transform_by(&transform);
+    ///
+    /// // Origin moved back by the translation
+    /// assert_eq!(local_ray.origin, Point3::new(5.0, 0.0, 0.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn inverse_transform_by(&self, m: &Isometry<Real>) -> Self {
         Self::new(
@@ -45,22 +171,118 @@ impl Ray {
         )
     }
 
-    /// Translates this ray by the given vector. Its direction is left unchanged.
+    /// Translates this ray by the given vector.
+    ///
+    /// Only the origin is moved; the direction remains unchanged.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Ray;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let ray = Ray::new(Point3::origin(), Vector3::x());
+    /// let translated = ray.translate_by(Vector3::new(10.0, 5.0, 0.0));
+    ///
+    /// assert_eq!(translated.origin, Point3::new(10.0, 5.0, 0.0));
+    /// assert_eq!(translated.dir, Vector3::x()); // Direction unchanged
+    /// # }
+    /// ```
     #[inline]
     pub fn translate_by(&self, v: Vector<Real>) -> Self {
         Self::new(self.origin + v, self.dir)
     }
 
-    /// Computes the point at the given parameter on this line.
+    /// Computes a point along the ray at parameter `t`.
     ///
-    /// This computes `self.origin + self.dir * t`.
+    /// Returns `origin + dir * t`. For `t ≥ 0`, this gives points along the ray.
+    ///
+    /// # Arguments
+    ///
+    /// * `t` - The parameter (typically the time-of-impact from ray casting)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Ray;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let ray = Ray::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Vector3::new(1.0, 0.0, 0.0)
+    /// );
+    ///
+    /// // Point at t=5.0
+    /// assert_eq!(ray.point_at(5.0), Point3::new(5.0, 0.0, 0.0));
+    ///
+    /// // Point at t=0.0 is the origin
+    /// assert_eq!(ray.point_at(0.0), ray.origin);
+    /// # }
+    /// ```
     #[inline]
     pub fn point_at(&self, t: Real) -> Point<Real> {
         self.origin + self.dir * t
     }
 }
 
-/// Structure containing the result of a successful ray cast.
+/// Result of a successful ray cast against a shape.
+///
+/// This structure contains all information about where and how a ray intersects
+/// a shape, including the time of impact, surface normal, and geometric feature hit.
+///
+/// # Fields
+///
+/// - **time_of_impact**: The `t` parameter where the ray hits (use with `ray.point_at(t)`)
+/// - **normal**: The surface normal at the hit point
+/// - **feature**: Which geometric feature was hit (vertex, edge, or face)
+///
+/// # Time of Impact
+///
+/// The time of impact is the parameter `t` in the ray equation `origin + dir * t`:
+/// - If `dir` is normalized: `t` represents the distance traveled
+/// - If `dir` is not normalized: `t` represents time (distance / speed)
+///
+/// # Normal Direction
+///
+/// The normal behavior depends on the ray origin and `solid` parameter:
+/// - **Outside solid shape**: Normal points outward from the surface
+/// - **Inside non-solid shape**: Normal points inward (toward the interior)
+/// - **At t=0.0**: Normal may be unreliable due to numerical precision
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::query::{Ray, RayCast};
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::{Point3, Vector3, Isometry3};
+///
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let ray = Ray::new(
+///     Point3::new(-5.0, 0.0, 0.0),
+///     Vector3::new(1.0, 0.0, 0.0)
+/// );
+///
+/// if let Some(intersection) = cuboid.cast_ray_and_get_normal(
+///     &Isometry3::identity(),
+///     &ray,
+///     100.0,
+///     true
+/// ) {
+///     // Ray hits the -X face of the cuboid at x=-1.0
+///     assert_eq!(intersection.time_of_impact, 4.0); // Distance from -5 to -1
+///
+///     // Hit point is at (-1, 0, 0) - the surface of the cuboid
+///     let hit_point = ray.point_at(intersection.time_of_impact);
+///     assert_eq!(hit_point.x, -1.0);
+///
+///     // Normal points outward (in -X direction for the -X face)
+///     assert_eq!(intersection.normal, Vector3::new(-1.0, 0.0, 0.0));
+/// }
+    /// # }
+/// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -69,22 +291,26 @@ impl Ray {
     archive(as = "Self")
 )]
 pub struct RayIntersection {
-    /// The time of impact of the ray with the object. The exact contact point can be computed
-    /// with: `ray.point_at(time_of_impact)` or equivalently `origin + dir * time_of_impact` where `origin` is the origin of the ray;
-    /// `dir` is its direction and `time_of_impact` is the value of this field.
+    /// The time of impact (parameter `t`) where the ray hits the shape.
+    ///
+    /// The exact hit point can be computed with `ray.point_at(time_of_impact)`.
+    /// If the ray direction is normalized, this represents the distance traveled.
     pub time_of_impact: Real,
 
-    /// The normal at the intersection point.
+    /// The surface normal at the intersection point.
     ///
-    /// If the origin of the ray is inside the shape and the shape is not solid,
-    /// the normal will point towards the interior of the shape.
-    /// Otherwise, the normal points outward.
+    /// - Typically points outward from the shape
+    /// - May point inward if ray origin is inside a non-solid shape
+    /// - May be unreliable if `time_of_impact` is exactly zero
     ///
-    /// If the `time_of_impact` is exactly zero, the normal might not be reliable.
+    /// Note: This should be a unit vector but is not enforced by the type system yet.
     // TODO: use a Unit<Vector> instead.
     pub normal: Vector<Real>,
 
-    /// Feature at the intersection point.
+    /// The geometric feature (vertex, edge, or face) that was hit.
+    ///
+    /// This can be used for more detailed collision response or to identify
+    /// exactly which part of the shape was struck.
     pub feature: FeatureId,
 }
 

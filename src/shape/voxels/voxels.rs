@@ -13,6 +13,48 @@ use alloc::{vec, vec::Vec};
 use na::ComplexField;
 
 /// Categorization of a voxel based on its neighbors.
+///
+/// This enum describes the local topology of a filled voxel by examining which of its
+/// immediate neighbors (along coordinate axes) are also filled. This information is crucial
+/// for collision detection to avoid the "internal edges problem" where objects can get
+/// caught on edges between adjacent voxels.
+///
+/// # Type Classification
+///
+/// - **Empty**: The voxel is not filled.
+/// - **Interior**: All axis-aligned neighbors are filled (safest for collision).
+/// - **Face**: Missing neighbors in one coordinate direction (e.g., top face exposed).
+/// - **Edge** (3D only): Missing neighbors in two coordinate directions (e.g., corner edge exposed).
+/// - **Vertex**: Missing neighbors in all coordinate directions (isolated corner).
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::shape::{Voxels, VoxelType};
+/// use nalgebra::{Point3, Vector3};
+///
+/// // Create a small 2x2x2 cube of voxels
+/// let voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[
+///         Point3::new(0, 0, 0),
+///         Point3::new(1, 0, 0),
+///         Point3::new(0, 1, 0),
+///         Point3::new(1, 1, 0),
+///         Point3::new(0, 0, 1),
+///         Point3::new(1, 0, 1),
+///         Point3::new(0, 1, 1),
+///         Point3::new(1, 1, 1),
+///     ],
+/// );
+///
+/// // Check voxel type - interior voxels are fully surrounded
+/// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+/// let voxel_type = state.voxel_type();
+/// println!("Voxel type: {:?}", voxel_type);
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum VoxelType {
     /// The voxel is empty.
@@ -130,6 +172,48 @@ impl OctantPattern {
 // And the value `0b00111111` (`0b00001111` in 2D) indicates that the voxel is an interior voxel (its whole neighborhood
 // is filled).
 /// A description of the local neighborhood of a voxel.
+///
+/// This compact representation stores which immediate neighbors (along coordinate axes) of a
+/// voxel are filled. This information is essential for proper collision detection between voxels
+/// and other shapes, as it helps avoid the "internal edges problem."
+///
+/// The state is encoded as a single byte where each pair of bits represents one coordinate axis,
+/// indicating whether neighbors in the positive and negative directions are filled.
+///
+/// # Special States
+///
+/// - [`VoxelState::EMPTY`]: The voxel itself is empty (not part of the shape).
+/// - [`VoxelState::INTERIOR`]: All neighbors are filled (completely surrounded voxel).
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::shape::{Voxels, VoxelState, AxisMask};
+/// use nalgebra::{Point3, Vector3};
+///
+/// // Create a simple voxel shape
+/// let voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+/// );
+///
+/// // Query the state of a voxel
+/// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+///
+/// // Check if empty
+/// assert!(!state.is_empty());
+///
+/// // Get which faces are exposed (not adjacent to other voxels)
+/// let free_faces = state.free_faces();
+/// if free_faces.contains(AxisMask::X_NEG) {
+///     println!("The -X face is exposed");
+/// }
+///
+/// // Get the voxel type based on neighborhood
+/// println!("Voxel type: {:?}", state.voxel_type());
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct VoxelState(pub(super) u8);
@@ -175,30 +259,241 @@ impl VoxelState {
 }
 
 /// Information associated to a voxel.
+///
+/// This structure provides complete information about a single voxel including its position
+/// in both grid coordinates and world space, as well as its state (empty/filled and neighborhood).
+///
+/// # Note
+///
+/// The `linear_id` field is an internal implementation detail that can become invalidated when
+/// the voxel structure is modified (e.g., via [`Voxels::set_voxel`] or [`Voxels::crop`]).
+/// For stable references to voxels, always use `grid_coords`.
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let voxels = Voxels::new(
+///     Vector3::new(0.5, 0.5, 0.5),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+/// );
+///
+/// // Iterate through all voxels
+/// for voxel in voxels.voxels() {
+///     if !voxel.state.is_empty() {
+///         println!("Voxel at grid position {:?}", voxel.grid_coords);
+///         println!("  World center: {:?}", voxel.center);
+///         println!("  Type: {:?}", voxel.state.voxel_type());
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct VoxelData {
-    /// The temporary index in the internal voxels’ storage.
+    /// The temporary index in the internal voxels' storage.
     ///
     /// This index can be invalidated after a call to [`Voxels::set_voxel`], or
     /// [`Voxels::crop`].
     pub linear_id: VoxelIndex,
-    /// The voxel’s integer grid coordinates.
+    /// The voxel's integer grid coordinates.
     pub grid_coords: Point<i32>,
-    /// The voxel’s center position in the local-space of the [`Voxels`] shape it is part of.
+    /// The voxel's center position in the local-space of the [`Voxels`] shape it is part of.
     pub center: Point<Real>,
-    /// The voxel’s state, indicating if it’s empty or full.
+    /// The voxel's state, indicating if it's empty or full.
     pub state: VoxelState,
 }
 
-/// A shape made of axis-aligned, uniformly sized, cubes (aka. voxels).
+/// A shape made of axis-aligned, uniformly sized cubes (aka. voxels).
 ///
-/// This shape is specialized to handle voxel worlds and voxelized obojects efficiently why ensuring
-/// that collision-detection isn’t affected by the so-called "internal edges problem" that can create
-/// artifacts when another object rolls or slides against a flat voxelized surface.
+/// # What are Voxels?
 ///
-/// The internal storage is compact (but not sparse at the moment), storing only one byte per voxel
-/// in the allowed domain. This has a generally smaller memory footprint than a mesh representation
-/// of the voxels.
+/// Voxels (volumetric pixels) are 3D cubes (or 2D squares) arranged on a regular grid. Think of
+/// them as 3D building blocks, like LEGO bricks or Minecraft blocks. Each voxel has:
+/// - A position on an integer grid (e.g., `(0, 0, 0)`, `(1, 2, 3)`)
+/// - A uniform size (e.g., 1.0 × 1.0 × 1.0 meters)
+/// - A state: filled (solid) or empty (air)
+///
+/// # When to Use Voxels?
+///
+/// Voxels are ideal for:
+/// - **Minecraft-style worlds**: Block-based terrain and structures
+/// - **Destructible environments**: Easy to add/remove individual blocks
+/// - **Procedural generation**: Grid-based algorithms for caves, terrain, dungeons
+/// - **Volumetric data**: Medical imaging, scientific simulations
+/// - **Retro aesthetics**: Pixel art style in 3D
+///
+/// Voxels may NOT be ideal for:
+/// - Smooth organic shapes (use meshes instead)
+/// - Very large sparse worlds (consider octrees or chunk-based systems)
+/// - Scenes requiring fine geometric detail at all scales
+///
+/// # The Internal Edges Problem
+///
+/// When an object slides across a flat surface made of voxels, it can snag on the edges between
+/// adjacent voxels, causing jerky motion. Parry's `Voxels` shape solves this by tracking neighbor
+/// relationships: it knows which voxel faces are internal (adjacent to another voxel) vs external
+/// (exposed to air), allowing smooth collision response.
+///
+/// # Memory Efficiency
+///
+/// The internal storage uses sparse chunks, storing only one byte per voxel for neighborhood
+/// information. Empty regions consume minimal memory. This is much more efficient than storing
+/// a triangle mesh representation of all voxel surfaces.
+///
+/// # Examples
+///
+/// ## Basic Usage: Creating a Voxel Shape
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// // Create a simple 3×3×3 cube of voxels
+/// let voxel_size = Vector3::new(1.0, 1.0, 1.0);
+/// let mut coords = Vec::new();
+/// for x in 0..3 {
+///     for y in 0..3 {
+///         for z in 0..3 {
+///             coords.push(Point3::new(x, y, z));
+///         }
+///     }
+/// }
+///
+/// let voxels = Voxels::new(voxel_size, &coords);
+/// println!("Created voxel shape with {} voxels", coords.len());
+/// # }
+/// ```
+///
+/// ## Creating Voxels from World-Space Points
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// // Sample points in world space (e.g., from a point cloud)
+/// let points = vec![
+///     Point3::new(0.1, 0.2, 0.3),
+///     Point3::new(1.5, 2.1, 3.7),
+///     Point3::new(0.8, 0.9, 1.2),
+/// ];
+///
+/// // Create voxels with 0.5 unit size - nearby points merge into same voxel
+/// let voxels = Voxels::from_points(Vector3::new(0.5, 0.5, 0.5), &points);
+/// println!("Created voxel shape from {} points", points.len());
+/// # }
+/// ```
+///
+/// ## Querying Voxel State
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+/// );
+///
+/// // Check if a specific grid position is filled
+/// if let Some(state) = voxels.voxel_state(Point3::new(0, 0, 0)) {
+///     println!("Voxel is filled!");
+///     println!("Type: {:?}", state.voxel_type());
+///     println!("Free faces: {:?}", state.free_faces());
+/// } else {
+///     println!("Voxel is empty or outside the domain");
+/// }
+///
+/// // Convert world-space point to grid coordinates
+/// let world_point = Point3::new(1.3, 0.7, 0.2);
+/// let grid_coord = voxels.voxel_at_point(world_point);
+/// println!("Point at {:?} is in voxel {:?}", world_point, grid_coord);
+/// # }
+/// ```
+///
+/// ## Iterating Through Voxels
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let voxels = Voxels::new(
+///     Vector3::new(0.5, 0.5, 0.5),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0), Point3::new(0, 1, 0)],
+/// );
+///
+/// // Iterate through all non-empty voxels
+/// for voxel in voxels.voxels() {
+///     if !voxel.state.is_empty() {
+///         println!("Voxel at grid {:?}, world center {:?}",
+///                  voxel.grid_coords, voxel.center);
+///     }
+/// }
+/// # }
+/// ```
+///
+/// ## Modifying Voxels Dynamically
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let mut voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[Point3::new(0, 0, 0)],
+/// );
+///
+/// // Add a new voxel
+/// voxels.set_voxel(Point3::new(1, 0, 0), true);
+///
+/// // Remove a voxel
+/// voxels.set_voxel(Point3::new(0, 0, 0), false);
+///
+/// // Check the result
+/// assert!(voxels.voxel_state(Point3::new(0, 0, 0)).unwrap().is_empty());
+/// assert!(!voxels.voxel_state(Point3::new(1, 0, 0)).unwrap().is_empty());
+/// # }
+/// ```
+///
+/// ## Spatial Queries
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Voxels;
+/// use parry3d::bounding_volume::Aabb;
+/// use nalgebra::{Point3, Vector3};
+///
+/// let voxels = Voxels::new(
+///     Vector3::new(1.0, 1.0, 1.0),
+///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0), Point3::new(2, 0, 0)],
+/// );
+///
+/// // Find voxels intersecting an AABB
+/// let query_aabb = Aabb::new(Point3::new(-0.5, -0.5, -0.5), Point3::new(1.5, 1.5, 1.5));
+/// let count = voxels.voxels_intersecting_local_aabb(&query_aabb)
+///     .filter(|v| !v.state.is_empty())
+///     .count();
+/// println!("Found {} voxels in AABB", count);
+///
+/// // Get the overall domain bounds
+/// let [mins, maxs] = voxels.domain();
+/// println!("Voxel grid spans from {:?} to {:?}", mins, maxs);
+/// # }
+/// ```
+///
+/// # See Also
+///
+/// - [`VoxelState`]: Information about a voxel's neighbors
+/// - [`VoxelType`]: Classification of voxels by their topology
+/// - [`VoxelData`]: Complete information about a single voxel
+/// - [`crate::transformation::voxelization`]: Convert meshes to voxels
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Voxels {
@@ -215,10 +510,67 @@ pub struct Voxels {
 }
 
 impl Voxels {
-    /// Initializes a voxel shapes from the voxels grid coordinates.
+    /// Initializes a voxel shape from grid coordinates.
     ///
-    /// Each voxel will have its bottom-left-back corner located at
-    /// `grid_coordinates * voxel_size`; and its center at `(grid_coordinates + 0.5) * voxel_size`.
+    /// This is the primary constructor for creating a `Voxels` shape. You provide:
+    /// - `voxel_size`: The physical dimensions of each voxel (e.g., `1.0 × 1.0 × 1.0` meters)
+    /// - `grid_coordinates`: Integer grid positions for each filled voxel
+    ///
+    /// # Coordinate System
+    ///
+    /// Each voxel with grid coordinates `(x, y, z)` will be positioned such that:
+    /// - Its minimum corner (bottom-left-back) is at `(x, y, z) * voxel_size`
+    /// - Its center is at `((x, y, z) + 0.5) * voxel_size`
+    /// - Its maximum corner is at `((x, y, z) + 1) * voxel_size`
+    ///
+    /// For example, with `voxel_size = 2.0` and grid coord `(1, 0, 0)`:
+    /// - Minimum corner: `(2.0, 0.0, 0.0)`
+    /// - Center: `(3.0, 1.0, 1.0)`
+    /// - Maximum corner: `(4.0, 2.0, 2.0)`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Create a 2×2×2 cube of voxels with 1.0 unit size
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[
+    ///         Point3::new(0, 0, 0), Point3::new(1, 0, 0),
+    ///         Point3::new(0, 1, 0), Point3::new(1, 1, 0),
+    ///         Point3::new(0, 0, 1), Point3::new(1, 0, 1),
+    ///         Point3::new(0, 1, 1), Point3::new(1, 1, 1),
+    ///     ],
+    /// );
+    ///
+    /// // Verify the first voxel's center position
+    /// let center = voxels.voxel_center(Point3::new(0, 0, 0));
+    /// assert_eq!(center, Point3::new(0.5, 0.5, 0.5));
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Create a line of voxels along the X axis
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(0.5, 0.5, 0.5),
+    ///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0), Point3::new(2, 0, 0)],
+    /// );
+    ///
+    /// // Query the domain (bounding grid coordinates)
+    /// // Note: domain is aligned to internal chunk boundaries for efficiency
+    /// let [mins, maxs] = voxels.domain();
+    /// assert_eq!(mins, Point3::new(0, 0, 0));
+    /// // maxs will be chunk-aligned (chunks are 8x8x8), so it includes more space
+    /// assert!(maxs.x >= 3 && maxs.y >= 1 && maxs.z >= 1);
+    /// # }
+    /// ```
     pub fn new(voxel_size: Vector<Real>, grid_coordinates: &[Point<i32>]) -> Self {
         let mut result = Self {
             chunk_bvh: Bvh::new(),
@@ -255,11 +607,74 @@ impl Voxels {
         result
     }
 
-    /// Computes a voxels shape from the set of `points`.
+    /// Computes a voxel shape from a set of world-space points.
     ///
-    /// The points are mapped to a regular grid centered at the provided point with smallest
-    /// coordinates, and with grid cell size equal to `scale`. It is OK if multiple points
-    /// fall into the same grid cell.
+    /// This constructor converts continuous world-space coordinates into discrete grid coordinates
+    /// by snapping each point to the voxel grid. Multiple points can map to the same voxel.
+    ///
+    /// # How it Works
+    ///
+    /// Each point is converted to grid coordinates by:
+    /// 1. Dividing the point's coordinates by `voxel_size`
+    /// 2. Taking the floor to get integer grid coordinates
+    /// 3. Removing duplicates (multiple points in the same voxel become one voxel)
+    ///
+    /// For example, with `voxel_size = 1.0`:
+    /// - Point `(0.3, 0.7, 0.9)` → Grid `(0, 0, 0)`
+    /// - Point `(1.1, 0.2, 0.5)` → Grid `(1, 0, 0)`
+    /// - Point `(0.9, 0.1, 0.8)` → Grid `(0, 0, 0)` (merges with first)
+    ///
+    /// # Use Cases
+    ///
+    /// - Converting point clouds into voxel representations
+    /// - Creating voxel shapes from scattered data
+    /// - Simplifying complex point sets into uniform grids
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Sample points in world space
+    /// let points = vec![
+    ///     Point3::new(0.1, 0.2, 0.3),   // → Grid (0, 0, 0)
+    ///     Point3::new(0.7, 0.8, 0.9),   // → Grid (0, 0, 0) - same voxel!
+    ///     Point3::new(1.2, 0.3, 0.1),   // → Grid (1, 0, 0)
+    ///     Point3::new(0.5, 1.5, 0.2),   // → Grid (0, 1, 0)
+    /// ];
+    ///
+    /// // Create voxels with 1.0 unit size
+    /// let voxels = Voxels::from_points(Vector3::new(1.0, 1.0, 1.0), &points);
+    ///
+    /// // Only 3 unique voxels created (first two points merged)
+    /// let filled_count = voxels.voxels()
+    ///     .filter(|v| !v.state.is_empty())
+    ///     .count();
+    /// assert_eq!(filled_count, 3);
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Higher resolution voxelization
+    /// let points = vec![
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 1.0),
+    /// ];
+    ///
+    /// // Smaller voxels = finer detail
+    /// let voxels = Voxels::from_points(Vector3::new(0.5, 0.5, 0.5), &points);
+    ///
+    /// // First point at grid (0,0,0), second at grid (2,2,2) due to smaller voxel size
+    /// assert!(voxels.voxel_state(Point3::new(0, 0, 0)).is_some());
+    /// assert!(voxels.voxel_state(Point3::new(2, 2, 2)).is_some());
+    /// # }
+    /// ```
     pub fn from_points(voxel_size: Vector<Real>, points: &[Point<Real>]) -> Self {
         let voxels: Vec<_> = points
             .iter()
@@ -278,9 +693,42 @@ impl Voxels {
         &self.chunk_bvh
     }
 
-    /// The semi-open range of voxels in shape.
+    /// The semi-open range of grid coordinates covered by this voxel shape.
     ///
-    /// This provides conservative bounds on the range of voxel indices that might be set to filled.
+    /// Returns `[mins, maxs]` where the domain is the semi-open interval `[mins, maxs)`,
+    /// meaning `mins` is included but `maxs` is excluded. This provides conservative bounds
+    /// on the range of voxel grid coordinates that might be filled.
+    ///
+    /// This is useful for:
+    /// - Determining the spatial extent of the voxel shape
+    /// - Pre-allocating storage for processing voxels
+    /// - Clipping operations to valid regions
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0), Point3::new(2, 3, 1)],
+    /// );
+    ///
+    /// let [mins, maxs] = voxels.domain();
+    /// assert_eq!(mins, Point3::new(0, 0, 0));
+    /// // Domain is conservative and chunk-aligned
+    /// assert!(maxs.x > 2 && maxs.y > 3 && maxs.z > 1);
+    ///
+    /// // Iterate through filled voxels (more efficient than iterating domain)
+    /// for voxel in voxels.voxels() {
+    ///     if !voxel.state.is_empty() {
+    ///         println!("Filled voxel at {:?}", voxel.grid_coords);
+    ///     }
+    /// }
+    /// # }
+    /// ```
     pub fn domain(&self) -> [Point<i32>; 2] {
         let aabb = self.chunk_bvh.root_aabb();
 
@@ -328,14 +776,82 @@ impl Voxels {
         Aabb::from_half_extents(center, hext)
     }
 
-    /// Returns the state of a given voxel.
+    /// Returns the state of the voxel at the given grid coordinates.
+    ///
+    /// Returns `None` if the voxel doesn't exist in this shape's internal storage,
+    /// or `Some(VoxelState)` containing information about whether the voxel is filled
+    /// and which of its neighbors are also filled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+    /// );
+    ///
+    /// // Query an existing voxel
+    /// if let Some(state) = voxels.voxel_state(Point3::new(0, 0, 0)) {
+    ///     assert!(!state.is_empty());
+    ///     println!("Voxel type: {:?}", state.voxel_type());
+    /// }
+    ///
+    /// // Query a non-existent voxel
+    /// assert!(voxels.voxel_state(Point3::new(10, 10, 10)).is_none());
+    /// # }
+    /// ```
     pub fn voxel_state(&self, key: Point<i32>) -> Option<VoxelState> {
         let vid = self.linear_index(key)?;
         Some(self.chunks[vid.chunk_id].states[vid.id_in_chunk])
     }
 
-    /// Calculates the grid coordinates of the voxel containing the given `point`, regardless
-    /// of whether this voxel is filled oor empty.
+    /// Calculates the grid coordinates of the voxel containing the given world-space point.
+    ///
+    /// This conversion is independent of whether the voxel is actually filled or empty - it
+    /// simply determines which grid cell the point falls into based on the voxel size.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0)],
+    /// );
+    ///
+    /// // Point in first voxel (center at 0.5, 0.5, 0.5)
+    /// assert_eq!(voxels.voxel_at_point(Point3::new(0.3, 0.7, 0.2)), Point3::new(0, 0, 0));
+    ///
+    /// // Point just inside second voxel boundary
+    /// assert_eq!(voxels.voxel_at_point(Point3::new(1.0, 0.0, 0.0)), Point3::new(1, 0, 0));
+    ///
+    /// // Negative coordinates work too
+    /// assert_eq!(voxels.voxel_at_point(Point3::new(-0.5, -0.5, -0.5)), Point3::new(-1, -1, -1));
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // With non-uniform voxel size
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(2.0, 0.5, 1.0),
+    ///     &[],
+    /// );
+    ///
+    /// // X coordinate divided by 2.0, Y by 0.5, Z by 1.0
+    /// assert_eq!(voxels.voxel_at_point(Point3::new(3.0, 1.2, 0.8)), Point3::new(1, 2, 0));
+    /// # }
+    /// ```
     pub fn voxel_at_point(&self, point: Point<Real>) -> Point<i32> {
         point
             .coords
@@ -504,7 +1020,29 @@ impl Voxels {
         })
     }
 
-    /// The center of the voxel with the given key.
+    /// The world-space center position of the voxel with the given grid coordinates.
+    ///
+    /// Returns the center point regardless of whether the voxel is actually filled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Voxels;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let voxels = Voxels::new(
+    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     &[Point3::new(0, 0, 0)],
+    /// );
+    ///
+    /// // Center of voxel at origin
+    /// assert_eq!(voxels.voxel_center(Point3::new(0, 0, 0)), Point3::new(0.5, 0.5, 0.5));
+    ///
+    /// // Center of voxel at (1, 2, 3)
+    /// assert_eq!(voxels.voxel_center(Point3::new(1, 2, 3)), Point3::new(1.5, 2.5, 3.5));
+    /// # }
+    /// ```
     pub fn voxel_center(&self, key: Point<i32>) -> Point<Real> {
         (key.cast::<Real>() + Vector::repeat(0.5))
             .coords

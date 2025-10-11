@@ -9,7 +9,55 @@ use na::{self, Unit};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// A segment shape.
+/// A line segment shape.
+///
+/// A segment is the simplest 1D shape, defined by two endpoints. It represents
+/// a straight line between two points with no thickness or volume.
+///
+/// # Structure
+///
+/// - **a**: The first endpoint
+/// - **b**: The second endpoint
+/// - **Direction**: Points from `a` toward `b`
+///
+/// # Properties
+///
+/// - **1-dimensional**: Has length but no width or volume
+/// - **Convex**: Always convex
+/// - **No volume**: Mass properties are zero
+/// - **Simple**: Very fast collision detection
+///
+/// # Use Cases
+///
+/// Segments are commonly used for:
+/// - **Thin objects**: Ropes, wires, laser beams
+/// - **Skeletal animation**: Bone connections
+/// - **Path representation**: Straight-line paths
+/// - **Geometry building block**: Part of polylines and meshes
+/// - **Testing**: Simple shape for debugging
+///
+/// # Note
+///
+/// For shapes with thickness, consider using [`Capsule`](super::Capsule) instead,
+/// which is a segment with a radius (rounded cylinder).
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Segment;
+/// use nalgebra::Point3;
+///
+/// // Create a horizontal segment of length 5
+/// let a = Point3::new(0.0, 0.0, 0.0);
+/// let b = Point3::new(5.0, 0.0, 0.0);
+/// let segment = Segment::new(a, b);
+///
+/// assert_eq!(segment.length(), 5.0);
+/// assert_eq!(segment.a, a);
+/// assert_eq!(segment.b, b);
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
@@ -20,23 +68,92 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Segment {
-    /// The segment first point.
+    /// The first endpoint of the segment.
     pub a: Point<Real>,
-    /// The segment second point.
+    /// The second endpoint of the segment.
     pub b: Point<Real>,
 }
 
-/// Logical description of the location of a point on a triangle.
+/// Describes where a point is located on a segment.
+///
+/// This enum is used by point projection queries to indicate whether the
+/// projected point is at one of the endpoints or somewhere along the segment.
+///
+/// # Variants
+///
+/// - **OnVertex(id)**: Point projects to an endpoint (0 = `a`, 1 = `b`)
+/// - **OnEdge(bary)**: Point projects to the interior with barycentric coordinates
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::SegmentPointLocation;
+///
+/// // Point at first vertex
+/// let loc = SegmentPointLocation::OnVertex(0);
+/// assert_eq!(loc.barycentric_coordinates(), [1.0, 0.0]);
+///
+/// // Point at second vertex
+/// let loc = SegmentPointLocation::OnVertex(1);
+/// assert_eq!(loc.barycentric_coordinates(), [0.0, 1.0]);
+///
+/// // Point halfway along the segment
+/// let loc = SegmentPointLocation::OnEdge([0.5, 0.5]);
+/// assert_eq!(loc.barycentric_coordinates(), [0.5, 0.5]);
+/// # }
+/// ```
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SegmentPointLocation {
-    /// The point lies on a vertex.
+    /// The point lies on a vertex (endpoint).
+    ///
+    /// - `0` = Point is at `segment.a`
+    /// - `1` = Point is at `segment.b`
     OnVertex(u32),
+
     /// The point lies on the segment interior.
+    ///
+    /// Contains barycentric coordinates `[u, v]` where:
+    /// - `u + v = 1.0`
+    /// - Point = `a * u + b * v`
+    /// - `0.0 < u, v < 1.0` (strictly between endpoints)
     OnEdge([Real; 2]),
 }
 
 impl SegmentPointLocation {
-    /// The barycentric coordinates corresponding to this point location.
+    /// Returns the barycentric coordinates corresponding to this location.
+    ///
+    /// Barycentric coordinates `[u, v]` satisfy:
+    /// - `u + v = 1.0`
+    /// - Point = `a * u + b * v`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::shape::{Segment, SegmentPointLocation};
+    /// use nalgebra::Point3;
+    ///
+    /// let segment = Segment::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(10.0, 0.0, 0.0)
+    /// );
+    ///
+    /// // Point at endpoint a
+    /// let loc_a = SegmentPointLocation::OnVertex(0);
+    /// assert_eq!(loc_a.barycentric_coordinates(), [1.0, 0.0]);
+    ///
+    /// // Point at endpoint b
+    /// let loc_b = SegmentPointLocation::OnVertex(1);
+    /// assert_eq!(loc_b.barycentric_coordinates(), [0.0, 1.0]);
+    ///
+    /// // Point at 30% from a to b
+    /// let loc_mid = SegmentPointLocation::OnEdge([0.7, 0.3]);
+    /// let coords = loc_mid.barycentric_coordinates();
+    /// assert_eq!(coords[0], 0.7);
+    /// assert_eq!(coords[1], 0.3);
+/// # }
+    /// ```
     pub fn barycentric_coordinates(&self) -> [Real; 2] {
         let mut bcoords = [0.0; 2];
 
@@ -53,18 +170,78 @@ impl SegmentPointLocation {
 }
 
 impl Segment {
-    /// Creates a new segment from two points.
+    /// Creates a new segment from two endpoints.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The first endpoint
+    /// * `b` - The second endpoint
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::Point3;
+    ///
+    /// let segment = Segment::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(5.0, 0.0, 0.0)
+    /// );
+    /// assert_eq!(segment.length(), 5.0);
+    /// # }
+    /// ```
     #[inline]
     pub fn new(a: Point<Real>, b: Point<Real>) -> Segment {
         Segment { a, b }
     }
 
-    /// Creates the reference to a segment from the reference to an array of two points.
+    /// Creates a segment reference from an array of two points.
+    ///
+    /// This is a zero-cost conversion using memory transmutation.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::Point3;
+    ///
+    /// let points = [Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0)];
+    /// let segment = Segment::from_array(&points);
+    /// assert_eq!(segment.a, points[0]);
+    /// assert_eq!(segment.b, points[1]);
+    /// # }
+    /// ```
     pub fn from_array(arr: &[Point<Real>; 2]) -> &Segment {
         unsafe { mem::transmute(arr) }
     }
 
     /// Computes a scaled version of this segment.
+    ///
+    /// Each endpoint is scaled component-wise by the scale vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The scaling factors for each axis
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let segment = Segment::new(
+    ///     Point3::new(1.0, 2.0, 3.0),
+    ///     Point3::new(4.0, 5.0, 6.0)
+    /// );
+    ///
+    /// let scaled = segment.scaled(&Vector3::new(2.0, 2.0, 2.0));
+    /// assert_eq!(scaled.a, Point3::new(2.0, 4.0, 6.0));
+    /// assert_eq!(scaled.b, Point3::new(8.0, 10.0, 12.0));
+    /// # }
+    /// ```
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         Self::new(
             na::Scale::from(*scale) * self.a,
@@ -72,27 +249,111 @@ impl Segment {
         )
     }
 
-    /// The direction of this segment scaled by its length.
+    /// Returns the direction vector of this segment scaled by its length.
     ///
-    /// Points from `self.a` toward `self.b`.
+    /// This is equivalent to `b - a` and points from `a` toward `b`.
+    /// The magnitude equals the segment length.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let segment = Segment::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(3.0, 4.0, 0.0)
+    /// );
+    ///
+    /// let dir = segment.scaled_direction();
+    /// assert_eq!(dir, Vector3::new(3.0, 4.0, 0.0));
+    /// assert_eq!(dir.norm(), 5.0); // Length of the segment
+    /// # }
+    /// ```
     pub fn scaled_direction(&self) -> Vector<Real> {
         self.b - self.a
     }
 
-    /// The length of this segment.
+    /// Returns the length of this segment.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::Point3;
+    ///
+    /// // 3-4-5 right triangle
+    /// let segment = Segment::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(3.0, 4.0, 0.0)
+    /// );
+    /// assert_eq!(segment.length(), 5.0);
+    /// # }
+    /// ```
     pub fn length(&self) -> Real {
         self.scaled_direction().norm()
     }
 
-    /// Swaps the two vertices of this segment.
+    /// Swaps the two endpoints of this segment.
+    ///
+    /// After swapping, `a` becomes `b` and `b` becomes `a`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut segment = Segment::new(
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(5.0, 0.0, 0.0)
+    /// );
+    ///
+    /// segment.swap();
+    /// assert_eq!(segment.a, Point3::new(5.0, 0.0, 0.0));
+    /// assert_eq!(segment.b, Point3::new(1.0, 0.0, 0.0));
+    /// # }
+    /// ```
     pub fn swap(&mut self) {
         mem::swap(&mut self.a, &mut self.b)
     }
 
-    /// The unit direction of this segment.
+    /// Returns the unit direction vector of this segment.
     ///
-    /// Points from `self.a()` toward `self.b()`.
-    /// Returns `None` is both points are equal.
+    /// Points from `a` toward `b` with length 1.0.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(direction)` - The normalized direction if the segment has non-zero length
+    /// * `None` - If both endpoints are equal (degenerate segment)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Segment;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let segment = Segment::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(3.0, 4.0, 0.0)
+    /// );
+    ///
+    /// if let Some(dir) = segment.direction() {
+    ///     // Direction is normalized
+    ///     assert!((dir.norm() - 1.0).abs() < 1e-6);
+    ///     // Points from a to b
+    ///     assert_eq!(*dir, Vector3::new(0.6, 0.8, 0.0));
+    /// }
+    ///
+    /// // Degenerate segment (zero length)
+    /// let degenerate = Segment::new(Point3::origin(), Point3::origin());
+    /// assert!(degenerate.direction().is_none());
+    /// # }
+    /// ```
     pub fn direction(&self) -> Option<Unit<Vector<Real>>> {
         Unit::try_new(self.scaled_direction(), crate::math::DEFAULT_EPSILON)
     }

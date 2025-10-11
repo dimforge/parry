@@ -5,6 +5,62 @@ use alloc::vec::Vec;
 use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.
+///
+/// A convex polygon is a closed 2D shape where all interior angles are less than 180 degrees,
+/// and any line segment drawn between two points inside the polygon stays entirely within the polygon.
+/// Common examples include triangles, rectangles, and regular polygons like hexagons.
+///
+/// # What is a convex polygon?
+///
+/// In 2D space, a polygon is **convex** if:
+/// - Every interior angle is less than or equal to 180 degrees
+/// - The line segment between any two points inside the polygon lies entirely inside the polygon
+/// - All vertices "bulge outward" - there are no indentations or concave areas
+///
+/// Examples of **convex** polygons: triangle, square, regular pentagon, regular hexagon
+/// Examples of **non-convex** (concave) polygons: star shapes, L-shapes, crescents
+///
+/// # Use cases
+///
+/// Convex polygons are widely used in:
+/// - **Game development**: Character hitboxes, platform boundaries, simple building shapes
+/// - **Physics simulations**: Rigid body collision detection (more efficient than arbitrary polygons)
+/// - **Robotics**: Simplified environment representations, obstacle boundaries
+/// - **Computer graphics**: Fast rendering primitives, clipping regions
+/// - **Computational geometry**: As building blocks for more complex operations
+///
+/// # Representation
+///
+/// This structure stores:
+/// - **Points**: The vertices of the polygon in counter-clockwise order
+/// - **Normals**: Unit vectors perpendicular to each edge, pointing outward
+///
+/// The normals are pre-computed for efficient collision detection algorithms.
+///
+/// # Example: Creating a simple triangle
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # {
+/// use parry2d::shape::ConvexPolygon;
+/// use nalgebra::Point2;
+///
+/// // Create a triangle from three vertices (counter-clockwise order)
+/// let vertices = vec![
+///     Point2::new(0.0, 0.0),    // bottom-left
+///     Point2::new(2.0, 0.0),    // bottom-right
+///     Point2::new(1.0, 2.0),    // top
+/// ];
+///
+/// let triangle = ConvexPolygon::from_convex_polyline(vertices)
+///     .expect("Failed to create triangle");
+///
+/// // The polygon has 3 vertices
+/// assert_eq!(triangle.points().len(), 3);
+/// // and 3 edge normals (one per edge)
+/// assert_eq!(triangle.normals().len(), 3);
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -18,27 +74,146 @@ pub struct ConvexPolygon {
 }
 
 impl ConvexPolygon {
-    /// Creates a new 2D convex polygon from an arbitrary set of points.
+    /// Creates a new 2D convex polygon from an arbitrary set of points by computing their convex hull.
     ///
-    /// This explicitly computes the convex hull of the given set of points.
-    /// Returns `None` if the convex hull computation failed.
+    /// This is the most flexible constructor - it automatically computes the **convex hull** of the
+    /// given points, which is the smallest convex polygon that contains all the input points.
+    /// Think of it as wrapping a rubber band around the points.
+    ///
+    /// Use this when:
+    /// - You have an arbitrary collection of points and want the convex boundary
+    /// - You're not sure if your points form a convex shape
+    /// - You want to simplify a point cloud to its convex outline
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolygon)` if successful
+    /// - `None` if the convex hull computation failed (e.g., all points are collinear or coincident)
+    ///
+    /// # Example: Creating a convex polygon from arbitrary points
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// // Some arbitrary points (including one inside the convex hull)
+    /// let points = vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(4.0, 0.0),
+    ///     Point2::new(2.0, 3.0),
+    ///     Point2::new(2.0, 1.0),  // This point is inside the triangle
+    /// ];
+    ///
+    /// let polygon = ConvexPolygon::from_convex_hull(&points)
+    ///     .expect("Failed to create convex hull");
+    ///
+    /// // The convex hull only has 3 vertices (the interior point was excluded)
+    /// assert_eq!(polygon.points().len(), 3);
+    /// # }
+    /// ```
+    ///
+    /// # Example: Simplifying a point cloud
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// // A cloud of points that roughly forms a circle
+    /// let mut points = Vec::new();
+    /// for i in 0..20 {
+    ///     let angle = (i as f32) * std::f32::consts::TAU / 20.0;
+    ///     points.push(Point2::new(angle.cos(), angle.sin()));
+    /// }
+    /// // Add some interior points
+    /// points.push(Point2::new(0.0, 0.0));
+    /// points.push(Point2::new(0.5, 0.5));
+    ///
+    /// let polygon = ConvexPolygon::from_convex_hull(&points)
+    ///     .expect("Failed to create convex hull");
+    ///
+    /// // The convex hull has 20 vertices (the boundary points)
+    /// assert_eq!(polygon.points().len(), 20);
+    /// # }
+    /// ```
     pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
         let vertices = crate::transformation::convex_hull(points);
         Self::from_convex_polyline(vertices)
     }
 
-    /// Creates a new 2D convex polygon from a set of points assumed to
-    /// describe a counter-clockwise convex polyline.
+    /// Creates a new 2D convex polygon from vertices that already form a convex shape.
     ///
-    /// This does **not** compute the convex-hull of the input points: convexity of the input is
-    /// assumed and not checked. For a version that calculates the convex hull of the given points,
-    /// use [`ConvexPolygon::from_convex_hull`] instead.
+    /// This constructor is more efficient than [`from_convex_hull`] because it **assumes** the input
+    /// points already form a convex polygon in counter-clockwise order, and it doesn't compute the
+    /// convex hull. The convexity is **not verified** - if you pass non-convex points, the resulting
+    /// shape may behave incorrectly in collision detection.
     ///
-    /// The generated [`ConvexPolygon`] will contain the given `points` with any point
-    /// collinear to the previous and next ones removed. For a version that leaves the input
-    /// `points` unmodified, use [`ConvexPolygon::from_convex_polyline_unmodified`].
+    /// **Important**: Points must be ordered **counter-clockwise** (CCW). If you're unsure about the
+    /// ordering or convexity, use [`from_convex_hull`] instead.
     ///
-    /// Returns `None` if all points form an almost flat line.
+    /// This method automatically removes collinear vertices (points that lie on the line between
+    /// their neighbors) to simplify the polygon. If you want to preserve all vertices exactly as given,
+    /// use [`from_convex_polyline_unmodified`].
+    ///
+    /// # When to use this
+    ///
+    /// Use this constructor when:
+    /// - You already know your points form a convex polygon
+    /// - The points are ordered counter-clockwise around the shape
+    /// - You want better performance by skipping convex hull computation
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolygon)` if successful
+    /// - `None` if all points are nearly collinear (form an almost flat line) or there are fewer than 3 vertices after removing collinear points
+    ///
+    /// # Example: Creating a square
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// // A square with vertices in counter-clockwise order
+    /// let square = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),  // bottom-left
+    ///     Point2::new(1.0, 0.0),  // bottom-right
+    ///     Point2::new(1.0, 1.0),  // top-right
+    ///     Point2::new(0.0, 1.0),  // top-left
+    /// ]).expect("Failed to create square");
+    ///
+    /// assert_eq!(square.points().len(), 4);
+    /// # }
+    /// ```
+    ///
+    /// # Example: Collinear points are automatically removed
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// // A quadrilateral with one vertex on an edge (making it collinear)
+    /// let polygon = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(2.0, 0.0),
+    ///     Point2::new(2.0, 1.0),   // This point is on the line from (2,0) to (2,2)
+    ///     Point2::new(2.0, 2.0),
+    ///     Point2::new(0.0, 2.0),
+    /// ]).expect("Failed to create polygon");
+    ///
+    /// // The collinear point at (2.0, 1.0) was removed, leaving a rectangle
+    /// assert_eq!(polygon.points().len(), 4);
+    /// # }
+    /// ```
+    ///
+    /// [`from_convex_hull`]: ConvexPolygon::from_convex_hull
+    /// [`from_convex_polyline_unmodified`]: ConvexPolygon::from_convex_polyline_unmodified
     pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
         if points.is_empty() {
             return None;
@@ -102,13 +277,68 @@ impl ConvexPolygon {
         Some(ConvexPolygon { points, normals })
     }
 
-    /// The vertices of this convex polygon.
+    /// Returns the vertices of this convex polygon.
+    ///
+    /// The vertices are stored in counter-clockwise order around the polygon.
+    /// This is a slice reference to the internal vertex storage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// let triangle = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(1.0, 0.0),
+    ///     Point2::new(0.5, 1.0),
+    /// ]).unwrap();
+    ///
+    /// let vertices = triangle.points();
+    /// assert_eq!(vertices.len(), 3);
+    /// assert_eq!(vertices[0], Point2::new(0.0, 0.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn points(&self) -> &[Point<Real>] {
         &self.points
     }
 
-    /// The normals of the edges of this convex polygon.
+    /// Returns the outward-pointing normals of the edges of this convex polygon.
+    ///
+    /// Each normal is a unit vector perpendicular to an edge, pointing outward from the polygon.
+    /// The normals are stored in the same order as the edges, so `normals()[i]` is the normal
+    /// for the edge from `points()[i]` to `points()[(i+1) % len]`.
+    ///
+    /// These pre-computed normals are used internally for efficient collision detection.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::{Point2, Vector2};
+    ///
+    /// // Create a square aligned with the axes
+    /// let square = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),  // bottom-left
+    ///     Point2::new(1.0, 0.0),  // bottom-right
+    ///     Point2::new(1.0, 1.0),  // top-right
+    ///     Point2::new(0.0, 1.0),  // top-left
+    /// ]).unwrap();
+    ///
+    /// let normals = square.normals();
+    /// assert_eq!(normals.len(), 4);
+    ///
+    /// // The first normal points downward (perpendicular to bottom edge)
+    /// let bottom_normal = normals[0];
+    /// assert!((bottom_normal.y - (-1.0)).abs() < 1e-5);
+    /// assert!(bottom_normal.x.abs() < 1e-5);
+    /// # }
+    /// ```
     #[inline]
     pub fn normals(&self) -> &[Unit<Vector<Real>>] {
         &self.normals
@@ -116,8 +346,64 @@ impl ConvexPolygon {
 
     /// Computes a scaled version of this convex polygon.
     ///
-    /// Returns `None` if the result had degenerate normals (for example if
-    /// the scaling factor along one axis is zero).
+    /// This method scales the polygon by multiplying each vertex coordinate by the corresponding
+    /// component of the `scale` vector. This allows for non-uniform scaling (different scale factors
+    /// for x and y axes).
+    ///
+    /// The normals are also updated to reflect the scaling transformation.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ConvexPolygon)` with the scaled shape
+    /// - `None` if the scaling results in degenerate normals (e.g., if the scale factor along
+    ///   one axis is zero or nearly zero)
+    ///
+    /// # Example: Uniform scaling
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::{Point2, Vector2};
+    ///
+    /// let triangle = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(1.0, 0.0),
+    ///     Point2::new(0.5, 1.0),
+    /// ]).unwrap();
+    ///
+    /// // Scale uniformly by 2x
+    /// let scaled = triangle.scaled(&Vector2::new(2.0, 2.0))
+    ///     .expect("Failed to scale");
+    ///
+    /// // All coordinates are doubled
+    /// assert_eq!(scaled.points()[1], Point2::new(2.0, 0.0));
+    /// assert_eq!(scaled.points()[2], Point2::new(1.0, 2.0));
+    /// # }
+    /// ```
+    ///
+    /// # Example: Non-uniform scaling
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::{Point2, Vector2};
+    ///
+    /// let square = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(1.0, 0.0),
+    ///     Point2::new(1.0, 1.0),
+    ///     Point2::new(0.0, 1.0),
+    /// ]).unwrap();
+    ///
+    /// // Scale to make it wider (2x) and taller (3x)
+    /// let rectangle = square.scaled(&Vector2::new(2.0, 3.0))
+    ///     .expect("Failed to scale");
+    ///
+    /// assert_eq!(rectangle.points()[2], Point2::new(2.0, 3.0));
+    /// # }
+    /// ```
     pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
         self.points
             .iter_mut()
@@ -130,16 +416,74 @@ impl ConvexPolygon {
         Some(self)
     }
 
-    /// Returns a mitered offset of the polygon.
+    /// Returns a mitered offset (expanded or contracted) version of the polygon.
+    ///
+    /// This method creates a new polygon by moving each edge outward (or inward for negative values)
+    /// by the specified `amount`. The vertices are adjusted to maintain sharp corners (mitered joints).
+    /// This is also known as "polygon dilation" or "Minkowski sum with a circle".
+    ///
+    /// # Use cases
+    ///
+    /// - Creating "safe zones" or margins around objects
+    /// - Implementing "thick" polygon collision detection
+    /// - Creating rounded rectangular shapes (when combined with rounding)
+    /// - Growing or shrinking shapes for morphological operations
     ///
     /// # Arguments
     ///
-    /// * `amount` - size of the inflation. Each edge is moved outwards by this
-    ///   amount.
+    /// * `amount` - The distance to move each edge. Positive values expand the polygon outward,
+    ///              making it larger. Must be a non-negative finite number.
     ///
     /// # Panics
     ///
-    /// Panics if `amount` is not a non-negative finite number.
+    /// Panics if `amount` is not a non-negative finite number (NaN, infinity, or negative).
+    ///
+    /// # Example: Expanding a triangle
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// let triangle = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(2.0, 0.0),
+    ///     Point2::new(1.0, 2.0),
+    /// ]).unwrap();
+    ///
+    /// // Expand the triangle by 0.5 units
+    /// let expanded = triangle.offsetted(0.5);
+    ///
+    /// // The expanded triangle has the same number of vertices
+    /// assert_eq!(expanded.points().len(), 3);
+    /// // But the vertices have moved outward
+    /// // (exact positions depend on the miter calculation)
+    /// # }
+    /// ```
+    ///
+    /// # Example: Creating a margin around a square
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # {
+    /// use parry2d::shape::ConvexPolygon;
+    /// use nalgebra::Point2;
+    ///
+    /// let square = ConvexPolygon::from_convex_polyline(vec![
+    ///     Point2::new(0.0, 0.0),
+    ///     Point2::new(1.0, 0.0),
+    ///     Point2::new(1.0, 1.0),
+    ///     Point2::new(0.0, 1.0),
+    /// ]).unwrap();
+    ///
+    /// // Create a 0.2 unit margin around the square
+    /// let margin = square.offsetted(0.2);
+    ///
+    /// // The shape is still a square (4 vertices)
+    /// assert_eq!(margin.points().len(), 4);
+    /// # }
+    /// ```
     pub fn offsetted(&self, amount: Real) -> Self {
         if !amount.is_finite() || amount < 0. {
             panic!(

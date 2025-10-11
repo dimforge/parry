@@ -5,7 +5,56 @@ use na;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// Description of the projection of a point on a shape.
+/// The result of projecting a point onto a shape.
+///
+/// Point projection finds the closest point on a shape's surface to a given query point.
+/// This is fundamental for many geometric queries including distance calculation,
+/// collision detection, and surface sampling.
+///
+/// # Fields
+///
+/// - **is_inside**: Whether the query point is inside the shape
+/// - **point**: The closest point on the shape's surface
+///
+/// # Inside vs Outside
+///
+/// The `is_inside` flag indicates the query point's location relative to the shape:
+/// - `true`: Query point is inside the shape (projection is on boundary)
+/// - `false`: Query point is outside the shape (projection is nearest surface point)
+///
+/// # Solid Parameter
+///
+/// Most projection functions take a `solid` parameter:
+/// - `solid = true`: Shape is treated as solid (filled interior)
+/// - `solid = false`: Shape is treated as hollow (surface only)
+///
+/// This affects `is_inside` calculation for points in the interior.
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::query::PointQuery;
+/// use parry3d::shape::Ball;
+/// use nalgebra::{Point3, Isometry3};
+///
+/// let ball = Ball::new(5.0);
+/// let ball_pos = Isometry3::translation(10.0, 0.0, 0.0);
+///
+/// // Project a point outside the ball
+/// let outside_point = Point3::new(0.0, 0.0, 0.0);
+/// let proj = ball.project_point(&ball_pos, &outside_point, true);
+///
+/// // Closest point on ball surface
+/// assert_eq!(proj.point, Point3::new(5.0, 0.0, 0.0));
+/// assert!(!proj.is_inside);
+///
+/// // Project a point inside the ball
+/// let inside_point = Point3::new(10.0, 0.0, 0.0); // At center
+/// let proj2 = ball.project_point(&ball_pos, &inside_point, true);
+/// assert!(proj2.is_inside);
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -14,9 +63,16 @@ use rkyv::{bytecheck, CheckBytes};
     archive(as = "Self")
 )]
 pub struct PointProjection {
-    /// Whether or not the point to project was inside of the shape.
+    /// Whether the query point was inside the shape.
+    ///
+    /// - `true`: Point is in the interior (for solid shapes)
+    /// - `false`: Point is outside the shape
     pub is_inside: bool,
-    /// The projection result.
+
+    /// The closest point on the shape's surface to the query point.
+    ///
+    /// If `is_inside = true`, this is the nearest point on the boundary.
+    /// If `is_inside = false`, this is the nearest surface point.
     pub point: Point<Real>,
 }
 
@@ -40,11 +96,97 @@ impl PointProjection {
     }
 }
 
-/// Trait of objects that can be tested for point inclusion and projection.
+/// Trait for shapes that support point projection and containment queries.
+///
+/// This trait provides methods to:
+/// - Project points onto the shape's surface
+/// - Calculate distance from a point to the shape
+/// - Test if a point is inside the shape
+///
+/// All major shapes implement this trait, making it easy to perform point queries
+/// on any collision shape.
+///
+/// # Methods Overview
+///
+/// - **Projection**: `project_point()`, `project_local_point()`
+/// - **Distance**: `distance_to_point()`, `distance_to_local_point()`
+/// - **Containment**: `contains_point()`, `contains_local_point()`
+///
+/// # Local vs World Space
+///
+/// Methods with `local_` prefix work in the shape's local coordinate system:
+/// - **Local methods**: Point must be in shape's coordinate frame
+/// - **World methods**: Point in world space, shape transformation applied
+///
+/// # Solid Parameter
+///
+/// The `solid` parameter affects how interior points are handled:
+/// - `solid = true`: Shape is filled (has interior volume/area)
+/// - `solid = false`: Shape is hollow (surface only, no interior)
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::query::PointQuery;
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::{Point3, Vector3, Isometry3};
+///
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cuboid_pos = Isometry3::translation(5.0, 0.0, 0.0);
+///
+/// let query_point = Point3::new(0.0, 0.0, 0.0);
+///
+/// // Project point onto cuboid surface
+/// let projection = cuboid.project_point(&cuboid_pos, &query_point, true);
+/// println!("Closest point on cuboid: {:?}", projection.point);
+/// println!("Is inside: {}", projection.is_inside);
+///
+/// // Calculate distance to cuboid
+/// let distance = cuboid.distance_to_point(&cuboid_pos, &query_point, true);
+/// println!("Distance: {}", distance);
+///
+/// // Test if point is inside cuboid
+/// let is_inside = cuboid.contains_point(&cuboid_pos, &query_point);
+/// println!("Contains: {}", is_inside);
+/// # }
+/// ```
 pub trait PointQuery {
-    /// Projects a point on `self`, unless the projection lies further than the given max distance.
+    /// Projects a point onto the shape, with a maximum distance limit.
     ///
-    /// The point is assumed to be expressed in the local-space of `self`.
+    /// Returns `None` if the projection would be further than `max_dist` from the query point.
+    /// This is useful for optimization when you only care about nearby projections.
+    ///
+    /// The point is in the shape's local coordinate system.
+    ///
+    /// # Arguments
+    ///
+    /// * `pt` - The point to project (in local space)
+    /// * `solid` - Whether to treat the shape as solid (filled)
+    /// * `max_dist` - Maximum distance to consider
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::PointQuery;
+    /// use parry3d::shape::Ball;
+    /// use nalgebra::Point3;
+    ///
+    /// let ball = Ball::new(1.0);
+    /// let far_point = Point3::new(100.0, 0.0, 0.0);
+    ///
+    /// // Projection exists but is far away
+    /// assert!(ball.project_local_point(&far_point, true).point.x > 0.0);
+    ///
+    /// // With max distance limit of 10, projection is rejected
+    /// assert!(ball.project_local_point_with_max_dist(&far_point, true, 10.0).is_none());
+    ///
+    /// // Nearby point is accepted
+    /// let near_point = Point3::new(2.0, 0.0, 0.0);
+    /// assert!(ball.project_local_point_with_max_dist(&near_point, true, 10.0).is_some());
+/// # }
+    /// ```
     fn project_local_point_with_max_dist(
         &self,
         pt: &Point<Real>,

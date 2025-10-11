@@ -18,7 +18,60 @@ use crate::shape::PackedFeatureId;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// A triangle shape.
+/// A triangle shape defined by three vertices.
+///
+/// A triangle is one of the most fundamental shapes in computational geometry.
+/// It's the simplest 2D polygon and the building block for triangle meshes.
+///
+/// # Structure
+///
+/// - **a, b, c**: The three vertices of the triangle
+/// - **Edges**: AB (from a to b), BC (from b to c), CA (from c to a)
+/// - **Orientation**: Counter-clockwise (CCW) is the standard convention
+///
+/// # Properties
+///
+/// - **Convex**: Always convex
+/// - **2D/3D**: Can be used in both dimensions
+/// - **In 2D**: A filled triangular region with area
+/// - **In 3D**: A flat surface embedded in 3D space (zero volume)
+///
+/// # Orientation Convention
+///
+/// Triangles are typically defined with counter-clockwise vertex order:
+/// - Looking at the triangle from the "front", vertices go a → b → c in CCW order
+/// - The normal vector (3D) points toward the observer
+/// - Right-hand rule: Curl fingers from a→b→c, thumb points along normal
+///
+/// # Use Cases
+///
+/// - **Mesh building block**: Fundamental unit of triangle meshes
+/// - **Simple collision shapes**: Fast collision detection
+/// - **Terrain representation**: Ground planes and surfaces
+/// - **Testing and debugging**: Simple shape for verification
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Triangle;
+/// use nalgebra::Point3;
+///
+/// // Create a right triangle in the XY plane
+/// let triangle = Triangle::new(
+///     Point3::new(0.0, 0.0, 0.0),  // a: origin
+///     Point3::new(3.0, 0.0, 0.0),  // b: along +X
+///     Point3::new(0.0, 4.0, 0.0)   // c: along +Y
+/// );
+///
+/// // Area of 3-4-5 right triangle is 6.0
+/// assert_eq!(triangle.area(), 6.0);
+///
+/// // Check if a point is inside
+/// let inside = Point3::new(1.0, 1.0, 0.0);
+/// assert!(triangle.contains_point(&inside));
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
@@ -29,11 +82,11 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(PartialEq, Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Triangle {
-    /// The triangle first point.
+    /// The first vertex of the triangle.
     pub a: Point<Real>,
-    /// The triangle second point.
+    /// The second vertex of the triangle.
     pub b: Point<Real>,
-    /// The triangle third point.
+    /// The third vertex of the triangle.
     pub c: Point<Real>,
 }
 
@@ -117,7 +170,36 @@ impl From<[Point<Real>; 3]> for Triangle {
 }
 
 impl Triangle {
-    /// Creates a triangle from three points.
+    /// Creates a triangle from three vertices.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - The first vertex
+    /// * `b` - The second vertex
+    /// * `c` - The third vertex
+    ///
+    /// # Convention
+    ///
+    /// For proper normal calculation and consistent collision detection, vertices
+    /// should be ordered counter-clockwise when viewed from the "front" side.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Triangle;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a triangle in the XY plane
+    /// let tri = Triangle::new(
+    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0)
+    /// );
+    ///
+    /// assert_eq!(tri.area(), 0.5);
+/// # }
+    /// ```
     #[inline]
     pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Triangle {
         Triangle { a, b, c }

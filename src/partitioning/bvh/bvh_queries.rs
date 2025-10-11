@@ -33,7 +33,173 @@ impl From<Ray> for SimdInvRay {
 }
 
 impl Bvh {
-    /// Iterates through all the leaves with an AABB intersecting the given `aabb`.
+    /// Returns an iterator over all leaves whose AABBs intersect the given AABB.
+    ///
+    /// This efficiently finds all objects in the scene that potentially overlap with a
+    /// query region. It's commonly used for:
+    /// - Finding objects in a specific area
+    /// - Broad-phase collision detection (find candidate pairs)
+    /// - Spatial queries (what's near this position?)
+    /// - Frustum culling (what's in the camera's view?)
+    ///
+    /// The iterator returns leaf indices corresponding to objects that were added to the BVH.
+    ///
+    /// # Arguments
+    ///
+    /// * `aabb` - The axis-aligned bounding box to test for intersections
+    ///
+    /// # Returns
+    ///
+    /// An iterator yielding `u32` leaf indices for all leaves whose AABBs intersect the
+    /// query AABB. The iteration order is depth-first through the tree.
+    ///
+    /// # Performance
+    ///
+    /// - **Time**: O(log n) average case with good spatial locality
+    /// - **Worst case**: O(n) if the query AABB is very large
+    /// - Efficiently prunes entire subtrees that don't intersect
+    /// - Zero allocations
+    ///
+    /// # Examples
+    ///
+    /// ## Find objects in a region
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a scene with objects
+    /// let objects = vec![
+    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
+    ///
+    /// // Query: which objects are near the origin?
+    /// let query_region = Aabb::new(
+    ///     Point3::new(-1.0, -1.0, -1.0),
+    ///     Point3::new(2.0, 2.0, 2.0)
+    /// );
+    ///
+    /// for leaf_id in bvh.intersect_aabb(&query_region) {
+    ///     println!("Object {} is in the query region", leaf_id);
+    ///     // You can now test the actual geometry of objects[leaf_id]
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// ## Broad-phase collision detection
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let objects = vec![
+    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(0.5, 0.0, 0.0), Point3::new(1.5, 1.0, 1.0)),  // Overlaps first
+    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), // Far away
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
+    ///
+    /// // Find potential collision pairs
+    /// let mut collision_pairs = Vec::new();
+    ///
+    /// for (i, aabb) in objects.iter().enumerate() {
+    ///     for leaf_id in bvh.intersect_aabb(aabb) {
+    ///         if leaf_id as usize > i {  // Avoid duplicate pairs
+    ///             collision_pairs.push((i as u32, leaf_id));
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// // collision_pairs now contains potential collision pairs
+    /// // Next step: narrow-phase test actual geometry
+    /// # }
+    /// ```
+    ///
+    /// ## Frustum culling for rendering
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let scene_objects = vec![
+    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)), // Far away
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &scene_objects);
+    ///
+    /// // Camera frustum as an AABB (simplified - real frustums are more complex)
+    /// let camera_frustum = Aabb::new(
+    ///     Point3::new(-10.0, -10.0, -10.0),
+    ///     Point3::new(10.0, 10.0, 10.0)
+    /// );
+    ///
+    /// let mut visible_objects = Vec::new();
+    /// for leaf_id in bvh.intersect_aabb(&camera_frustum) {
+    ///     visible_objects.push(leaf_id);
+    /// }
+    ///
+    /// // Only render visible_objects - massive performance win!
+    /// assert_eq!(visible_objects.len(), 2); // Far object culled
+    /// # }
+    /// ```
+    ///
+    /// ## Finding neighbors for an object
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let objects = vec![
+    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(1.5, 0.0, 0.0), Point3::new(2.5, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)),
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
+    ///
+    /// // Expand an object's AABB to find nearby objects
+    /// let search_radius = 2.0;
+    /// let expanded = objects[0].loosened(search_radius);
+    ///
+    /// let mut neighbors = Vec::new();
+    /// for leaf_id in bvh.intersect_aabb(&expanded) {
+    ///     if leaf_id != 0 {  // Don't include the object itself
+    ///         neighbors.push(leaf_id);
+    ///     }
+    /// }
+    ///
+    /// // neighbors contains objects within search_radius of object 0
+    /// # }
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// - This only tests AABB-AABB intersection, which is conservative (may have false positives)
+    /// - For exact collision detection, test actual geometry after getting candidates
+    /// - The iterator is lazy - work is only done as you consume items
+    /// - Empty queries (no intersections) are very fast due to early pruning
+    ///
+    /// # See Also
+    ///
+    /// - [`cast_ray`](Self::cast_ray) - Ray casting queries
+    /// - [`project_point`](Self::project_point) - Find closest point
+    /// - [`traverse`](Self::traverse) - Custom traversal logic
+    /// - [`leaves`](Self::leaves) - General leaf iteration with predicate
     pub fn intersect_aabb<'a>(&'a self, aabb: &'a Aabb) -> impl Iterator<Item = u32> + 'a {
         self.leaves(|node: &BvhNode| node.aabb().intersects(aabb))
     }

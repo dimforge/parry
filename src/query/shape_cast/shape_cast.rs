@@ -144,11 +144,133 @@ impl Default for ShapeCastOptions {
     }
 }
 
-/// Computes the smallest time when two shapes under translational movement are separated by a
-/// distance smaller or equal to `distance`.
+/// Computes when two moving shapes will collide (shape casting / swept collision detection).
 ///
-/// Returns `0.0` if the objects are touching or closer than `options.target_distance`,
-/// or penetrating.
+/// This function determines the **time of impact** when two shapes moving with constant
+/// linear velocities will first touch. This is essential for **continuous collision detection**
+/// (CCD) to prevent fast-moving objects from tunneling through each other.
+///
+/// # What is Shape Casting?
+///
+/// Shape casting extends ray casting to arbitrary shapes:
+/// - **Ray casting**: Point moving in a direction (infinitely thin)
+/// - **Shape casting**: Full shape moving in a direction (has volume)
+///
+/// The shapes move linearly (no rotation) from their initial positions along their
+/// velocities until they touch or the time limit is reached.
+///
+/// # Behavior
+///
+/// - **Will collide**: Returns `Some(hit)` with time of first impact
+/// - **Already touching**: Returns `Some(hit)` with `time_of_impact = 0.0`
+/// - **Won't collide**: Returns `None` (no impact within time range)
+/// - **Moving apart**: May return `None` depending on `stop_at_penetration` option
+///
+/// # Arguments
+///
+/// * `pos1` - Initial position and orientation of the first shape
+/// * `vel1` - Linear velocity of the first shape (units per time)
+/// * `g1` - The first shape
+/// * `pos2` - Initial position and orientation of the second shape
+/// * `vel2` - Linear velocity of the second shape
+/// * `g2` - The second shape
+/// * `options` - Configuration options (max time, target distance, etc.)
+///
+/// # Options
+///
+/// Configure behavior with [`ShapeCastOptions`]:
+/// - `max_time_of_impact`: Maximum time to check (ignore later impacts)
+/// - `target_distance`: Consider "close enough" when within this distance
+/// - `stop_at_penetration`: Stop if initially penetrating and moving apart
+/// - `compute_impact_geometry_on_penetration`: Compute reliable witnesses at t=0
+///
+/// # Returns
+///
+/// * `Ok(Some(hit))` - Impact found, see [`ShapeCastHit`] for details
+/// * `Ok(None)` - No impact within time range
+/// * `Err(Unsupported)` - This shape pair is not supported
+///
+/// # Example: Basic Shape Casting
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::query::{cast_shapes, ShapeCastOptions};
+/// use parry3d::shape::Ball;
+/// use nalgebra::{Isometry3, Vector3};
+///
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+///
+/// // Ball 1 at origin, moving right at speed 2.0
+/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
+/// let vel1 = Vector3::new(2.0, 0.0, 0.0);
+///
+/// // Ball 2 at x=10, stationary
+/// let pos2 = Isometry3::translation(10.0, 0.0, 0.0);
+/// let vel2 = Vector3::zeros();
+///
+/// let options = ShapeCastOptions::default();
+///
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+///     // Time when surfaces touch
+///     // Distance to cover: 10.0 - 1.0 (radius) - 1.0 (radius) = 8.0
+///     // Speed: 2.0, so time = 8.0 / 2.0 = 4.0
+///     assert_eq!(hit.time_of_impact, 4.0);
+///
+///     // Position at impact
+///     let impact_pos1 = pos1.translation.vector + vel1 * hit.time_of_impact;
+///     // Ball 1 moved 8 units to x=8.0, touching ball 2 at x=10.0
+/// }
+/// # }
+/// ```
+///
+/// # Example: Already Penetrating
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// use parry3d::query::{cast_shapes, ShapeCastOptions, ShapeCastStatus};
+/// use parry3d::shape::Ball;
+/// use nalgebra::{Isometry3, Vector3};
+///
+/// let ball1 = Ball::new(2.0);
+/// let ball2 = Ball::new(2.0);
+///
+/// // Overlapping balls (centers 3 units apart, radii sum to 4)
+/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
+/// let pos2 = Isometry3::translation(3.0, 0.0, 0.0);
+/// let vel1 = Vector3::x();
+/// let vel2 = Vector3::zeros();
+///
+/// let options = ShapeCastOptions::default();
+///
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+///     // Already penetrating
+///     assert_eq!(hit.time_of_impact, 0.0);
+///     assert_eq!(hit.status, ShapeCastStatus::PenetratingOrWithinTargetDist);
+/// }
+/// # }
+/// ```
+///
+/// # Use Cases
+///
+/// - **Continuous collision detection**: Prevent tunneling at high speeds
+/// - **Predictive collision**: Know when collision will occur
+/// - **Sweep tests**: Moving platforms, sliding objects
+/// - **Bullet physics**: Fast projectiles that need CCD
+///
+/// # Performance
+///
+/// Shape casting is more expensive than static queries:
+/// - Uses iterative root-finding algorithms
+/// - Multiple distance/contact queries per iteration
+/// - Complexity depends on shape types and relative velocities
+///
+/// # See Also
+///
+/// - [`cast_shapes_nonlinear`](super::cast_shapes_nonlinear) - For rotating shapes
+/// - [`Ray::cast_ray`](crate::query::RayCast::cast_ray) - For point-like casts
+/// - [`ShapeCastOptions`] - Configuration options
+/// - [`ShapeCastHit`] - Result structure
 pub fn cast_shapes(
     pos1: &Isometry<Real>,
     vel1: &Vector<Real>,
