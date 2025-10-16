@@ -8,10 +8,15 @@ impl PointQuery for Voxels {
         self.chunk_bvh()
             .project_point(pt, Real::MAX, |chunk_id, _| {
                 let chunk = self.chunk_ref(chunk_id);
-                chunk.project_local_point_and_get_vox_id(pt, solid).map(|(proj, _)| proj)
+                chunk
+                    .project_local_point_and_get_vox_id(pt, solid)
+                    .map(|(proj, _)| proj)
             })
-            .map(|res| res.1.1)
-            .unwrap_or(PointProjection::new(false, Vector::repeat(Real::MAX).into()))
+            .map(|res| res.1 .1)
+            .unwrap_or(PointProjection::new(
+                false,
+                Vector::repeat(Real::MAX).into(),
+            ))
     }
 
     #[inline]
@@ -23,13 +28,15 @@ impl PointQuery for Voxels {
             .project_point_and_get_feature(pt, Real::MAX, |chunk_id, _| {
                 let chunk = self.chunk_ref(chunk_id);
                 // TODO: we need a way to return both the voxel id, and the feature on the voxel.
-                chunk.project_local_point_and_get_vox_id(pt, false)
-                    .map(|(proj, vox)| {
-                        (proj, FeatureId::Face(vox))
-                    })
+                chunk
+                    .project_local_point_and_get_vox_id(pt, false)
+                    .map(|(proj, vox)| (proj, FeatureId::Face(vox)))
             })
-            .map(|res| res.1.1)
-            .unwrap_or((PointProjection::new(false, Vector::repeat(Real::MAX).into()), FeatureId::Unknown))
+            .map(|res| res.1 .1)
+            .unwrap_or((
+                PointProjection::new(false, Vector::repeat(Real::MAX).into()),
+                FeatureId::Unknown,
+            ))
     }
 }
 
