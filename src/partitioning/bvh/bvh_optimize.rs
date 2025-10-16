@@ -13,9 +13,9 @@ impl Bvh {
         let num_optimized_leaves = (num_leaves * TARGET_REBUILD_NODE_PERCENTAGE).div_ceil(100);
 
         let num_leaves_sqrt = (num_leaves as Real).sqrt();
-        let root_mode = if frame_index % 2 == 0 {
+        let root_mode = if frame_index.is_multiple_of(2) {
             RootOptimizationMode::Skip
-        } else if (frame_index / 2) % 16 == 0 {
+        } else if (frame_index / 2).is_multiple_of(16) {
             RootOptimizationMode::BreadthFirst
         } else {
             RootOptimizationMode::PriorityQueue
