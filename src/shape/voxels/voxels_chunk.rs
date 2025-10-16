@@ -180,7 +180,7 @@ impl<'a> VoxelsChunkRef<'a> {
 
     /// Iterates through all the voxels in this chunk.
     ///
-    /// Note that this yields both empty and non-empty voxels within the range. This does not
+    /// Note that this only yields non-empty voxels within the range. This does not
     /// include any voxel that falls outside [`Self::domain`].
     pub fn voxels(&self) -> impl Iterator<Item = VoxelData> + '_ {
         let range = self.domain();
@@ -189,7 +189,7 @@ impl<'a> VoxelsChunkRef<'a> {
 
     /// Iterate through the data of all the voxels within the given (semi-open) voxel grid indices.
     ///
-    /// Note that this yields both empty and non-empty voxels within the range. This does not
+    /// Note that this only yields non-empty voxels within the range. This does not
     /// include any voxel that falls outside [`Self::domain`].
     #[cfg(feature = "dim2")]
     pub fn voxels_in_range(

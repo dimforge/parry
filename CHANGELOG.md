@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix point-projection of a ball on a voxels shape containing empty chunks (e.g. after voxels removal).
+
 ## 0.25.0
 
 - The `Voxels` shape now uses a sparse storage internally.
