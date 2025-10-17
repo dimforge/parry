@@ -43,8 +43,7 @@ use na::Unit;
 /// ## Creating a Rounded Cuboid
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # #[cfg(feature = "f32")]
 /// use parry3d::shape::{RoundShape, Cuboid};
 /// # #[cfg(feature = "f64")]
@@ -70,8 +69,7 @@ use na::Unit;
 /// ## Creating a Rounded Triangle (2D)
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # #[cfg(feature = "f32")]
 /// use parry2d::shape::{RoundShape, Triangle};
 /// # #[cfg(feature = "f64")]
@@ -101,8 +99,7 @@ use na::Unit;
 /// This example shows how the border radius affects the support point calculation:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # #[cfg(feature = "f32")]
 /// use parry3d::shape::{RoundShape, Cuboid, SupportMap};
 /// # #[cfg(feature = "f64")]
@@ -135,8 +132,7 @@ use na::Unit;
 /// `RoundShape` can wrap any shape that implements the `SupportMap` trait:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # #[cfg(feature = "f32")]
 /// use parry3d::shape::{RoundShape, Ball, Segment, SupportMap};
 /// # #[cfg(feature = "f64")]
@@ -215,8 +211,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # #[cfg(feature = "f32")]
     /// use parry3d::shape::{RoundShape, Cuboid, SupportMap};
     /// # #[cfg(feature = "f64")]
@@ -260,8 +255,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # #[cfg(feature = "f32")]
     /// use parry2d::shape::{RoundShape, Ball, SupportMap};
     /// # #[cfg(feature = "f64")]

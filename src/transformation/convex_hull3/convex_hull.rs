@@ -32,8 +32,7 @@ use na::{self, Point3};
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull;
 /// use nalgebra::Point3;
 ///
@@ -80,8 +79,7 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::try_convex_hull;
 /// use nalgebra::Point3;
 ///

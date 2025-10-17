@@ -193,7 +193,7 @@ impl Default for ShapeCastOptions {
 /// # Example: Basic Shape Casting
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions};
 /// use parry3d::shape::Ball;
 /// use nalgebra::{Isometry3, Vector3};
@@ -227,7 +227,7 @@ impl Default for ShapeCastOptions {
 /// # Example: Already Penetrating
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions, ShapeCastStatus};
 /// use parry3d::shape::Ball;
 /// use nalgebra::{Isometry3, Vector3};

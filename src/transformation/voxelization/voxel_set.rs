@@ -45,8 +45,7 @@ type ConvexHull = (Vec<Point<Real>>, Vec<[u32; DIM]>);
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 /// use parry3d::shape::Ball;
 /// ///
@@ -134,8 +133,7 @@ impl Default for Voxel {
 /// # Example: Basic Usage
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::Vector3;
@@ -168,8 +166,7 @@ impl Default for Voxel {
 /// # Example: Volume Computation
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 /// use parry3d::shape::Ball;
 /// ///
@@ -272,8 +269,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Ball;
     ///
@@ -351,8 +347,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;
@@ -429,8 +424,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Ball;
     ///
@@ -471,8 +465,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;
@@ -569,8 +562,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;
@@ -642,8 +634,7 @@ impl VoxelSet {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;

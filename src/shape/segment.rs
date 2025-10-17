@@ -130,7 +130,7 @@ impl SegmentPointLocation {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Segment, SegmentPointLocation};
     /// use nalgebra::Point3;
     ///

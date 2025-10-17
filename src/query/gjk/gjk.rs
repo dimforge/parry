@@ -258,7 +258,7 @@ pub fn project_origin<G: ?Sized + SupportMap>(
 /// # Example: Basic Distance Query
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid};
 /// use parry3d::query::gjk::{closest_points, VoronoiSimplex};
 /// use parry3d::math::{Isometry, Vector};

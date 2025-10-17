@@ -72,7 +72,7 @@ use crate::shape::Shape;
 /// # Example: Basic Spinning Collision
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
 /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -112,7 +112,7 @@ use crate::shape::Shape;
 /// # Example: Tumbling Box vs Stationary Wall
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -155,7 +155,7 @@ use crate::shape::Shape;
 /// # Example: Handling Initial Penetration
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
 /// use nalgebra::{Isometry3, Point3, Vector3};

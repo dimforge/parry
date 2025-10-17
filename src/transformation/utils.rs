@@ -173,8 +173,7 @@ use {crate::math::DIM, num::Zero};
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::transform;
 /// use parry3d::math::{Point, Isometry, Vector};
 /// use na::Translation3;
@@ -219,8 +218,7 @@ pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::transformed;
 /// use parry2d::math::{Point, Isometry};
 /// use na::{Translation2, UnitComplex};
@@ -263,8 +261,7 @@ pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::scaled;
 /// use parry3d::math::{Point, Vector};
 ///
@@ -304,8 +301,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::push_circle;
 /// use parry3d::math::Point;
 /// use std::f32::consts::PI;
@@ -356,8 +352,7 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::push_xy_arc;
 /// use parry2d::math::Point;
 /// use std::f32::consts::PI;
@@ -406,8 +401,7 @@ pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::{push_circle, push_ring_indices};
 /// use parry3d::math::Point;
 /// use std::f32::consts::PI;
@@ -467,8 +461,7 @@ pub fn push_ring_indices(
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::{push_circle, push_open_ring_indices};
 /// use parry3d::math::Point;
 /// use std::f32::consts::PI;
@@ -564,8 +557,7 @@ pub fn push_filled_circle_indices(base_circle: u32, nsubdiv: u32, out: &mut Vec<
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::push_rectangle_indices;
 ///
 /// let mut indices = Vec::new();
@@ -600,8 +592,7 @@ pub fn push_rectangle_indices(ul: u32, ur: u32, dl: u32, dr: u32, out: &mut Vec<
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::reverse_clockwising;
 ///
 /// let mut triangles = vec![
@@ -686,8 +677,7 @@ pub fn push_arc_and_idx(
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::push_arc;
 /// use parry2d::math::Point;
 ///

@@ -27,7 +27,7 @@ use core::mem;
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
 /// use nalgebra::Isometry3;
@@ -80,7 +80,7 @@ pub enum ClosestPoints {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
     /// use nalgebra::Isometry3;
@@ -109,7 +109,7 @@ pub enum ClosestPoints {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
     /// use nalgebra::Isometry3;
@@ -147,7 +147,7 @@ pub enum ClosestPoints {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
     /// use nalgebra::Isometry3;
@@ -181,7 +181,7 @@ impl ClosestPoints {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
     /// use nalgebra::Isometry3;
@@ -218,7 +218,7 @@ impl ClosestPoints {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
     /// use nalgebra::Isometry3;

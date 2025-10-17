@@ -50,9 +50,9 @@ use na::Unit;
 /// Creating and sharing a ball shape:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::SharedShape;
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::shape::SharedShape;
 ///
 /// // Create a ball with radius 1.0
@@ -97,9 +97,9 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{SharedShape, Ball};
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{SharedShape, Ball};
     ///
     /// let ball = Ball::new(1.0);
@@ -117,9 +117,9 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
     ///
     /// let mut shape1 = SharedShape::ball(1.0);
@@ -148,13 +148,13 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::math::Isometry;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::math::Isometry;
     ///
     /// let ball1 = SharedShape::ball(0.5);
@@ -185,9 +185,9 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
     ///
     /// let ball = SharedShape::ball(1.0);
@@ -261,9 +261,9 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
     ///
     /// #[cfg(feature = "dim3")]
@@ -303,9 +303,9 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
     ///
     /// // Create a character capsule: 1.8 units tall with 0.3 radius
@@ -364,13 +364,13 @@ impl SharedShape {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::math::Point;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::SharedShape;
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::math::Point;
     ///
     /// #[cfg(feature = "dim3")]

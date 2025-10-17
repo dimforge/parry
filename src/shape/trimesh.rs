@@ -49,7 +49,7 @@ pub enum TopologyError {
     /// # How to Fix
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
@@ -82,7 +82,7 @@ pub enum TopologyError {
     /// remove degenerate triangles:
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// # let vertices = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
@@ -124,7 +124,7 @@ pub enum TopologyError {
     /// You need to reverse the winding order of one of the triangles:
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
@@ -186,7 +186,7 @@ pub enum TopologyError {
 /// # Common Usage
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::{TriMesh, TriMeshBuilderError, TopologyError};
 /// # use nalgebra::Point3;
 /// let vertices = vec![Point3::origin()];
@@ -254,7 +254,7 @@ pub enum TriMeshBuilderError {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags, TriMeshBuilderError};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
@@ -563,7 +563,7 @@ impl TriMesh {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::TriMesh;
     /// use nalgebra::Point3;
     ///
@@ -581,7 +581,7 @@ impl TriMesh {
     /// ```
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::TriMesh;
     /// use nalgebra::Point2;
     ///
@@ -649,7 +649,7 @@ impl TriMesh {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{TriMesh, TriMeshFlags};
     /// use nalgebra::Point3;
     ///
@@ -2021,7 +2021,7 @@ impl TriMesh {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # #[cfg(feature = "std")] {
     /// use parry3d::shape::{TriMesh, TriMeshFlags};
     /// use nalgebra::Point3;

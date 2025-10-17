@@ -106,7 +106,7 @@ use core::fmt;
 /// # Example: Catching and Handling the Error
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, Unsupported};
 /// # use parry3d::shape::{Ball, Cuboid};
 /// # use nalgebra::{Isometry3, Vector3};

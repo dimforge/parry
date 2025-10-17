@@ -35,8 +35,7 @@ use crate::shape::{Cuboid, Segment};
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Segment};
 /// use parry3d::query::sat::cuboid_segment_find_local_separating_edge_twoway;
 /// use nalgebra::{Point3, Vector3, Isometry3};
@@ -111,7 +110,7 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{Segment, Cuboid};
 /// use parry2d::query::sat::segment_cuboid_find_local_separating_normal_oneway;
 /// use nalgebra::{Point2, Vector2, Isometry2};

@@ -40,8 +40,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ## Creating a Ground Plane (3D)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
 /// use parry3d::na::{Vector3, Unit};
 ///
@@ -56,8 +55,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ## Vertical Wall (2D)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::HalfSpace;
 /// use parry2d::na::{Vector2, Unit};
 ///
@@ -72,8 +70,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ## Collision Detection with a Ball (3D)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{HalfSpace, Ball};
 /// use parry3d::query;
 /// use parry3d::na::{Isometry3, Vector3, Unit};
@@ -103,8 +100,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ## Positioned Ground Plane (3D)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
 /// use parry3d::query::{PointQuery};
 /// use parry3d::na::{Isometry3, Vector3, Point3, Unit};
@@ -129,8 +125,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ## Tilted Plane (3D)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
 /// use parry3d::na::{Vector3, Unit};
 ///
@@ -160,8 +155,7 @@ pub struct HalfSpace {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -192,8 +186,7 @@ impl HalfSpace {
     /// ## Creating a Horizontal Ground Plane (3D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -205,8 +198,7 @@ impl HalfSpace {
     /// ## Creating a Vertical Wall (2D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::HalfSpace;
     /// use parry2d::na::{Vector2, Unit};
     ///
@@ -218,8 +210,7 @@ impl HalfSpace {
     /// ## Custom Normal Direction (3D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -265,8 +256,7 @@ impl HalfSpace {
     /// ## Uniform Scaling (3D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -281,8 +271,7 @@ impl HalfSpace {
     /// ## Non-Uniform Scaling (3D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -303,8 +292,7 @@ impl HalfSpace {
     /// ## Degenerate Case (3D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::na::{Vector3, Unit};
     ///
@@ -320,8 +308,7 @@ impl HalfSpace {
     /// ## Practical Use Case (2D)
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::HalfSpace;
     /// use parry2d::na::{Vector2, Unit};
     ///

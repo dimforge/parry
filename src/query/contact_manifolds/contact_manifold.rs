@@ -42,7 +42,7 @@ use alloc::vec::Vec;
 /// # Example: Basic Contact Query
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{ContactManifold, TrackedContact};
 /// use parry3d::query::details::contact_manifold_ball_ball;
 /// use parry3d::shape::Ball;
@@ -67,7 +67,7 @@ use alloc::vec::Vec;
 /// # Example: Converting to World Space
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{ContactManifold, TrackedContact};
 /// use parry3d::query::details::contact_manifold_ball_ball;
 /// use parry3d::shape::Ball;
@@ -266,7 +266,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
 /// ## Basic Usage: Two Balls Colliding
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{ContactManifold, TrackedContact};
 /// use parry3d::query::details::contact_manifold_ball_ball;
 /// use parry3d::shape::Ball;

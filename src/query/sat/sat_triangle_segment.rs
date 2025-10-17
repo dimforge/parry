@@ -36,7 +36,7 @@ use na::Unit;
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Triangle, Segment};
 /// use parry3d::query::sat::triangle_segment_find_local_separating_normal_oneway;
 /// use nalgebra::{Point3, Isometry3};
@@ -127,7 +127,7 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Segment, Triangle};
 /// use parry3d::query::sat::segment_triangle_find_local_separating_edge_twoway;
 /// use nalgebra::{Point3, Isometry3};

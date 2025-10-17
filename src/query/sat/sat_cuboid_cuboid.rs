@@ -32,8 +32,7 @@ use crate::shape::{Cuboid, SupportMap};
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Cuboid;
 /// use parry3d::query::sat::cuboid_cuboid_compute_separation_wrt_local_line;
 /// use nalgebra::{Isometry3, Vector3};
@@ -107,8 +106,7 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Cuboid;
 /// use parry3d::query::sat::cuboid_cuboid_find_local_separating_edge_twoway;
 /// use nalgebra::{Isometry3, Vector3};

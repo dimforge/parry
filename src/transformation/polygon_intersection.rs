@@ -234,7 +234,7 @@ pub fn convex_polygons_intersection_points(
 /// # Examples
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::{convex_polygons_intersection_points_with_tolerances, PolygonIntersectionTolerances};
 /// # use parry2d::na::Point2;
 /// let triangle1 = vec![
@@ -372,7 +372,7 @@ pub fn convex_polygons_intersection(
 /// # Examples
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::{convex_polygons_intersection_with_tolerances, PolygonIntersectionTolerances};
 /// # use parry2d::na::Point2;
 /// let hexagon = vec![

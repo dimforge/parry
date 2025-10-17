@@ -38,7 +38,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{Ray, RayCast};
 /// use parry3d::shape::Ball;
 /// use nalgebra::{Point3, Vector3, Isometry3};
@@ -254,7 +254,7 @@ impl Ray {
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{Ray, RayCast};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::{Point3, Vector3, Isometry3};

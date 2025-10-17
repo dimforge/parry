@@ -143,8 +143,7 @@ where
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::indexed_support_point_nth;
 /// use na::{Point3, Vector3};
 ///
@@ -210,8 +209,7 @@ where
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::normalize;
 /// use parry3d::math::Point;
 ///

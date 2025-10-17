@@ -36,8 +36,7 @@ use na::Unit;
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Ball};
 /// use parry3d::query::sat::cuboid_support_map_compute_separation_wrt_local_line;
 /// use nalgebra::{Isometry3, Vector3, Unit};
@@ -130,8 +129,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Capsule};
 /// use parry3d::query::sat::cuboid_support_map_find_local_separating_edge_twoway;
 /// use nalgebra::{Isometry3, Vector3, Point3};
@@ -224,7 +222,7 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{Cuboid, Ball};
 /// use parry2d::query::sat::cuboid_support_map_find_local_separating_normal_oneway;
 /// use nalgebra::{Isometry2, Vector2};

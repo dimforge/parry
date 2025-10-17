@@ -44,8 +44,7 @@ use na::ComplexField;
 ///
 /// **Example:**
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 /// use parry3d::shape::Ball;
 /// ///
@@ -84,8 +83,7 @@ use na::ComplexField;
 ///
 /// **Example:**
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 /// use parry3d::shape::Ball;
 /// ///
@@ -203,8 +201,7 @@ impl FillMode {
 /// # Example
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelValue, VoxelizedVolume};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::Vector3;
@@ -303,8 +300,7 @@ struct VoxelData {
 /// `VoxelizedVolume` automatically converts to `VoxelSet`:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelSet, VoxelizedVolume};
 /// use parry3d::shape::Ball;
 /// ///
@@ -328,8 +324,7 @@ struct VoxelData {
 /// # Example: Querying All Voxels
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::voxelization::{FillMode, VoxelValue, VoxelizedVolume};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::Vector3;

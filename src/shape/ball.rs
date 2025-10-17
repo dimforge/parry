@@ -101,8 +101,7 @@ impl Ball {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim2", feature = "alloc"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "alloc"))] {
     /// use parry2d::shape::Ball;
     /// use nalgebra::Vector2;
     /// use either::Either;
@@ -164,8 +163,7 @@ impl Ball {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "alloc"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "alloc"))] {
     /// use parry3d::shape::Ball;
     /// use nalgebra::Vector3;
     /// use either::Either;

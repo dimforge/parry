@@ -87,7 +87,7 @@ pub enum MeshIntersectionError {
     /// # How to Fix
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// # let vertices = vec![Point3::origin()];
@@ -110,7 +110,7 @@ pub enum MeshIntersectionError {
     /// You can also add topology to an existing mesh:
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// # let vertices = vec![Point3::origin()];

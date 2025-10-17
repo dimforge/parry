@@ -30,7 +30,7 @@ use na::ComplexField;
 /// # Examples
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Voxels, VoxelType};
 /// use nalgebra::{Point3, Vector3};
 ///
@@ -188,7 +188,7 @@ impl OctantPattern {
 /// # Examples
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Voxels, VoxelState, AxisMask};
 /// use nalgebra::{Point3, Vector3};
 ///

@@ -137,7 +137,7 @@ pub struct Tetrahedron {
 /// # Examples
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Tetrahedron, TetrahedronPointLocation};
 /// use parry3d::math::Point;
 ///

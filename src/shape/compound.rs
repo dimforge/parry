@@ -55,8 +55,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::Vector3;
@@ -88,8 +87,7 @@ impl Compound {
     /// ```
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, Ball, Cuboid, SharedShape};
     /// # use parry2d::math::Isometry;
     /// # use nalgebra::Vector2;
@@ -174,8 +172,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, TriMesh};
     /// # use nalgebra::Point2;
     ///
@@ -205,8 +202,7 @@ impl Compound {
     /// # Example: Complex Shape
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, TriMesh};
     /// # use nalgebra::Point2;
     ///
@@ -275,8 +271,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::Vector3;
@@ -307,8 +302,7 @@ impl Compound {
     /// # Example: Modifying Sub-Shape Positions
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     ///
@@ -359,8 +353,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::Point3;
@@ -388,8 +381,7 @@ impl Compound {
     /// # Example: Computing Compound Dimensions
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Cuboid, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::Vector3;
@@ -439,8 +431,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     ///
@@ -467,8 +458,7 @@ impl Compound {
     /// # Example: Using Bounding Sphere for Quick Rejection
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Cuboid, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::{Vector3, Point3};
@@ -522,8 +512,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
     /// use parry3d::math::Isometry;
     /// use nalgebra::Vector3;
@@ -557,8 +546,7 @@ impl Compound {
     /// # Example: Finding Sub-Shapes in a Region
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     /// use parry3d::bounding_volume::Aabb;
@@ -621,8 +609,7 @@ impl Compound {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     /// use parry3d::bounding_volume::Aabb;
@@ -646,8 +633,7 @@ impl Compound {
     /// # Example: Accessing BVH for Custom Queries
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
     /// use parry3d::math::Isometry;
     ///

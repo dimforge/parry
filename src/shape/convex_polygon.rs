@@ -40,8 +40,7 @@ use na::{self, ComplexField, RealField, Unit};
 /// # Example: Creating a simple triangle
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::ConvexPolygon;
 /// use nalgebra::Point2;
 ///
@@ -93,8 +92,7 @@ impl ConvexPolygon {
     /// # Example: Creating a convex polygon from arbitrary points
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -117,8 +115,7 @@ impl ConvexPolygon {
     /// # Example: Simplifying a point cloud
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -173,8 +170,7 @@ impl ConvexPolygon {
     /// # Example: Creating a square
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -193,8 +189,7 @@ impl ConvexPolygon {
     /// # Example: Collinear points are automatically removed
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -285,8 +280,7 @@ impl ConvexPolygon {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -317,8 +311,7 @@ impl ConvexPolygon {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::{Point2, Vector2};
     ///
@@ -361,8 +354,7 @@ impl ConvexPolygon {
     /// # Example: Uniform scaling
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::{Point2, Vector2};
     ///
@@ -385,8 +377,7 @@ impl ConvexPolygon {
     /// # Example: Non-uniform scaling
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::{Point2, Vector2};
     ///
@@ -441,8 +432,7 @@ impl ConvexPolygon {
     /// # Example: Expanding a triangle
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///
@@ -465,8 +455,7 @@ impl ConvexPolygon {
     /// # Example: Creating a margin around a square
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
     /// use nalgebra::Point2;
     ///

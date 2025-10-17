@@ -73,7 +73,7 @@ impl Bvh {
     /// ## Bulk updates with better performance
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;

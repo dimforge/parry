@@ -141,8 +141,7 @@ impl Triangle {
 /// # Example: Creating a simple tetrahedron (pyramid)
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::ConvexPolyhedron;
 /// use nalgebra::Point3;
 ///
@@ -207,8 +206,7 @@ impl ConvexPolyhedron {
     /// # Example: Creating a convex hull from point cloud
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -238,8 +236,7 @@ impl ConvexPolyhedron {
     /// # Example: Simplifying a complex mesh
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -310,8 +307,7 @@ impl ConvexPolyhedron {
     /// # Example: Creating a cube from vertices and faces
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -356,8 +352,7 @@ impl ConvexPolyhedron {
     /// # Example: Creating a triangular prism
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -663,8 +658,7 @@ impl ConvexPolyhedron {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -713,8 +707,7 @@ impl ConvexPolyhedron {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -754,8 +747,7 @@ impl ConvexPolyhedron {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::Point3;
     ///
@@ -821,8 +813,7 @@ impl ConvexPolyhedron {
     /// # Example: Uniform scaling
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::{Point3, Vector3};
     ///
@@ -849,8 +840,7 @@ impl ConvexPolyhedron {
     /// # Example: Non-uniform scaling to create a rectangular prism
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
     /// use nalgebra::{Point3, Vector3};
     ///

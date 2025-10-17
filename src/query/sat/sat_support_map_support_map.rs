@@ -38,7 +38,7 @@ use na::Unit;
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid};
 /// use parry3d::query::sat::support_map_support_map_compute_separation;
 /// use nalgebra::{Isometry3, Vector3, Unit};

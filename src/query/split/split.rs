@@ -122,8 +122,7 @@ pub enum SplitResult<T> {
 /// ## Computing a Mesh Cross-Section
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "spade"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "spade"))] {
 /// use parry3d::shape::TriMesh;
 /// use parry3d::math::Point;
 /// use parry3d::query::IntersectResult;
@@ -165,8 +164,7 @@ pub enum SplitResult<T> {
 /// ## Handling Multiple Connected Components
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "spade"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "spade"))] {
 /// use parry3d::shape::TriMesh;
 /// use parry3d::query::IntersectResult;
 ///

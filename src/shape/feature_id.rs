@@ -34,8 +34,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// Basic usage of feature IDs in 2D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::FeatureId;
 ///
 /// // Create a vertex feature identifier
@@ -55,8 +54,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// Basic usage of feature IDs in 3D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::FeatureId;
 ///
 /// // Create a vertex feature identifier
@@ -80,8 +78,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// Pattern matching on feature types in 3D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::FeatureId;
 ///
 /// fn describe_feature(feature: FeatureId) -> String {
@@ -155,8 +152,7 @@ impl FeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::FeatureId;
     ///
     /// let vertex = FeatureId::Vertex(42);
@@ -167,15 +163,13 @@ impl FeatureId {
     /// This will panic:
     ///
     /// ```should_panic
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::FeatureId;
     ///
     /// let face = FeatureId::Face(5);
     /// face.unwrap_vertex(); // Panics!
     /// # }
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::FeatureId;
     ///
     /// let face = FeatureId::Face(5);
@@ -234,8 +228,7 @@ impl FeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::FeatureId;
     ///
     /// let face = FeatureId::Face(12);
@@ -246,15 +239,13 @@ impl FeatureId {
     /// This will panic:
     ///
     /// ```should_panic
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::FeatureId;
     ///
     /// let vertex = FeatureId::Vertex(0);
     /// vertex.unwrap_face(); // Panics!
     /// # }
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::FeatureId;
     ///
     /// let vertex = FeatureId::Vertex(0);
@@ -313,8 +304,7 @@ impl FeatureId {
 /// Creating and unpacking feature IDs in 2D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{FeatureId, PackedFeatureId};
 ///
 /// // Create a packed vertex ID
@@ -335,8 +325,7 @@ impl FeatureId {
 /// Creating and unpacking feature IDs in 3D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{FeatureId, PackedFeatureId};
 ///
 /// // Create a packed vertex ID
@@ -361,8 +350,7 @@ impl FeatureId {
 /// Converting between packed and unpacked forms:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{FeatureId, PackedFeatureId};
 ///
 /// // From FeatureId to PackedFeatureId
@@ -379,8 +367,7 @@ impl FeatureId {
 /// Working with the unknown feature:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::PackedFeatureId;
 ///
 /// let unknown = PackedFeatureId::UNKNOWN;
@@ -393,8 +380,7 @@ impl FeatureId {
 /// Checking feature types efficiently in 3D:
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::PackedFeatureId;
 ///
 /// let vertex = PackedFeatureId::vertex(100);
@@ -442,8 +428,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{PackedFeatureId, FeatureId};
     ///
     /// let unknown = PackedFeatureId::UNKNOWN;
@@ -470,8 +455,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{PackedFeatureId, FeatureId};
     ///
     /// let packed = PackedFeatureId::vertex(5);
@@ -496,7 +480,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{PackedFeatureId, FeatureId};
     ///
     /// let packed = PackedFeatureId::edge(10);
@@ -520,8 +504,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{PackedFeatureId, FeatureId};
     ///
     /// let packed = PackedFeatureId::face(15);
@@ -570,8 +553,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{FeatureId, PackedFeatureId};
     ///
     /// let packed = PackedFeatureId::vertex(42);
@@ -587,8 +569,7 @@ impl PackedFeatureId {
     /// Round-trip conversion:
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{FeatureId, PackedFeatureId};
     ///
     /// let original = FeatureId::Face(100);
@@ -617,8 +598,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::PackedFeatureId;
     ///
     /// let face = PackedFeatureId::face(5);
@@ -639,8 +619,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::PackedFeatureId;
     ///
     /// let vertex = PackedFeatureId::vertex(10);
@@ -683,8 +662,7 @@ impl PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::PackedFeatureId;
     ///
     /// let unknown = PackedFeatureId::UNKNOWN;
@@ -708,8 +686,7 @@ impl From<FeatureId> for PackedFeatureId {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::{FeatureId, PackedFeatureId};
     ///
     /// // Explicit conversion

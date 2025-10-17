@@ -28,7 +28,7 @@ use core::ops::{Deref, DerefMut, Index, IndexMut};
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -105,7 +105,7 @@ pub enum BvhBuildStrategy {
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, BvhWorkspace};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -226,7 +226,7 @@ impl BvhNodeData {
 /// # Example
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -280,8 +280,7 @@ impl BvhNodeWide {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::bvh::BvhNodeWide;
     ///
     /// let node_wide = BvhNodeWide::zeros();
@@ -304,7 +303,7 @@ impl BvhNodeWide {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -337,8 +336,7 @@ impl BvhNodeWide {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::bvh::BvhNodeWide;
     /// use nalgebra::Vector3;
     ///
@@ -377,8 +375,7 @@ impl BvhNodeWide {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::bvh::{BvhNode, BvhNodeWide};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -418,8 +415,7 @@ impl BvhNodeWide {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::bvh::{BvhNode, BvhNodeWide};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -1563,7 +1559,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// For scenes where objects don't move, build the BVH once and query repeatedly:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -1596,7 +1592,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// The BVH supports dynamic scenes where objects move or are added/removed:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhWorkspace};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -1624,7 +1620,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// Find the closest object hit by a ray:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use parry3d::query::Ray;
@@ -1660,7 +1656,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// Different build strategies offer trade-offs between build time and query performance:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -1688,7 +1684,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// After objects move, update the tree's AABBs efficiently:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhWorkspace};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -1721,7 +1717,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// For scenes with continuous movement, incrementally improve tree quality:
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhWorkspace};
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
@@ -1866,7 +1862,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -1921,7 +1917,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2022,7 +2018,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2073,7 +2069,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::{Point3, Vector3};
@@ -2146,7 +2142,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2185,7 +2181,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2222,7 +2218,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2270,7 +2266,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2329,7 +2325,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -2381,7 +2377,7 @@ impl Bvh {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;

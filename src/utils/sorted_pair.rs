@@ -16,9 +16,9 @@ use core::ops::Deref;
 /// ## Creating a Sorted Pair
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::utils::SortedPair;
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::utils::SortedPair;
 ///
 /// // Create a pair - the elements will be sorted automatically
@@ -36,9 +36,9 @@ use core::ops::Deref;
 /// ## Using as HashMap Keys
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::utils::SortedPair;
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::utils::SortedPair;
 /// use std::collections::HashMap;
 ///
@@ -55,9 +55,9 @@ use core::ops::Deref;
 /// ## Representing Graph Edges
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::utils::SortedPair;
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::utils::SortedPair;
 ///
 /// // Represent undirected edges in a graph
@@ -75,9 +75,9 @@ use core::ops::Deref;
 /// ## Ordering
 ///
 /// ```
-/// # #[cfg(all(feature = "dim2", feature = "f32"))]
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::utils::SortedPair;
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::utils::SortedPair;
 ///
 /// let pair1 = SortedPair::new(1, 5);
@@ -112,9 +112,9 @@ impl<T: PartialOrd> SortedPair<T> {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::utils::SortedPair;
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::utils::SortedPair;
     ///
     /// let pair = SortedPair::new(10, 5);

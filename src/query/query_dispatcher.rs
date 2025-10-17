@@ -367,7 +367,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// # Example: Using the Default Dispatcher
 ///
 /// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
 /// use na::{Isometry3, Vector3};

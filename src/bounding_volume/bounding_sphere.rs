@@ -93,7 +93,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
 /// use nalgebra::Point3;
 ///
@@ -271,7 +271,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -298,7 +298,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -332,7 +332,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -365,7 +365,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -421,7 +421,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -462,7 +462,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -495,7 +495,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -529,7 +529,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
@@ -563,7 +563,7 @@ impl BoundingVolume for BoundingSphere {
     /// # Example
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///

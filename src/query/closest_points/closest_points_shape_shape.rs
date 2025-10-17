@@ -58,7 +58,7 @@ use crate::shape::Shape;
 /// # Example: Basic Usage
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
 /// use nalgebra::Isometry3;
@@ -85,7 +85,7 @@ use crate::shape::Shape;
 /// # Example: Limited Search Distance
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
 /// use nalgebra::Isometry3;
@@ -111,7 +111,7 @@ use crate::shape::Shape;
 /// # Example: Intersecting Shapes
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Cuboid;
 /// use nalgebra::{Isometry3, Vector3};
@@ -133,7 +133,7 @@ use crate::shape::Shape;
 /// # Example: AI Proximity Detection
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
 /// use nalgebra::Isometry3;
@@ -174,7 +174,7 @@ use crate::shape::Shape;
 /// # Example: Different Shape Types
 ///
 /// ```rust
-/// # #[cfg(all(feature = "dim3", feature = "f32"))]
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::{Ball, Cuboid};
 /// use nalgebra::{Isometry3, Vector3};

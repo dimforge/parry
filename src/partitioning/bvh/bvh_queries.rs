@@ -65,7 +65,7 @@ impl Bvh {
     /// ## Find objects in a region
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -95,7 +95,7 @@ impl Bvh {
     /// ## Broad-phase collision detection
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -127,7 +127,7 @@ impl Bvh {
     /// ## Frustum culling for rendering
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -159,7 +159,7 @@ impl Bvh {
     /// ## Finding neighbors for an object
     ///
     /// ```rust
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))]
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
