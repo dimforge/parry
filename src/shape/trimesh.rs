@@ -53,7 +53,7 @@ pub enum TopologyError {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -85,7 +85,7 @@ pub enum TopologyError {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))]
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
-    /// # let vertices = vec![Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
+    /// # let vertices = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
     /// # let indices = vec![[0, 0, 1], [0, 1, 2]];
     /// let flags = TriMeshFlags::HALF_EDGE_TOPOLOGY
     ///     | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES;
@@ -128,7 +128,7 @@ pub enum TopologyError {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),  // vertex 0
+    ///     Point3::origin(),  // vertex 0
     ///     Point3::new(1.0, 0.0, 0.0),  // vertex 1
     ///     Point3::new(0.5, 1.0, 0.0),  // vertex 2
     ///     Point3::new(0.5, -1.0, 0.0), // vertex 3
@@ -225,7 +225,7 @@ pub enum TriMeshBuilderError {
     /// # use parry3d::shape::TriMesh;
     /// # use nalgebra::Point3;
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -258,7 +258,7 @@ pub enum TriMeshBuilderError {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags, TriMeshBuilderError};
     /// # use nalgebra::Point3;
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -569,7 +569,7 @@ impl TriMesh {
     ///
     /// // Create a simple triangle mesh (a single triangle)
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -587,7 +587,7 @@ impl TriMesh {
     ///
     /// // Create a quad (two triangles) in 2D
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),  // bottom-left
+    ///     Point2::origin(),  // bottom-left
     ///     Point2::new(1.0, 0.0),  // bottom-right
     ///     Point2::new(1.0, 1.0),  // top-right
     ///     Point2::new(0.0, 1.0),  // top-left
@@ -655,7 +655,7 @@ impl TriMesh {
     ///
     /// // Create vertices for a simple mesh
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
@@ -677,7 +677,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// # let vertices = vec![
-    /// #     Point3::new(0.0, 0.0, 0.0),
+    /// #     Point3::origin(),
     /// #     Point3::new(1.0, 0.0, 0.0),
     /// #     Point3::new(0.0, 1.0, 0.0),
     /// # ];
@@ -697,7 +697,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// # let vertices = vec![
-    /// #     Point3::new(0.0, 0.0, 0.0),
+    /// #     Point3::origin(),
     /// #     Point3::new(1.0, 0.0, 0.0),
     /// #     Point3::new(0.0, 1.0, 0.0),
     /// # ];
@@ -878,7 +878,7 @@ impl TriMesh {
     /// use nalgebra::{Point3, Vector3, Isometry3};
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -940,7 +940,7 @@ impl TriMesh {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1022,7 +1022,7 @@ impl TriMesh {
     ///
     /// // Create first mesh (a triangle)
     /// let vertices1 = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1094,7 +1094,7 @@ impl TriMesh {
     ///
     /// // Create a simple concave polygon (L-shape)
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(2.0, 1.0),
     ///     Point2::new(1.0, 1.0),
@@ -1128,7 +1128,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
@@ -1186,7 +1186,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1649,7 +1649,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
@@ -1703,7 +1703,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1735,7 +1735,7 @@ impl TriMesh {
     /// use nalgebra::{Point3, Isometry3};
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1795,7 +1795,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1820,7 +1820,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
@@ -1865,7 +1865,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1873,7 +1873,7 @@ impl TriMesh {
     /// let mesh = TriMesh::new(vertices, indices).unwrap();
     ///
     /// let triangle = mesh.triangle(0);
-    /// assert_eq!(triangle.a, Point3::new(0.0, 0.0, 0.0));
+    /// assert_eq!(triangle.a, Point3::origin());
     /// assert_eq!(triangle.b, Point3::new(1.0, 0.0, 0.0));
     /// assert_eq!(triangle.c, Point3::new(0.0, 1.0, 0.0));
     /// ```
@@ -1932,7 +1932,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -1940,7 +1940,7 @@ impl TriMesh {
     /// let mesh = TriMesh::new(vertices, indices).unwrap();
     ///
     /// assert_eq!(mesh.vertices().len(), 3);
-    /// assert_eq!(mesh.vertices()[0], Point3::new(0.0, 0.0, 0.0));
+    /// assert_eq!(mesh.vertices()[0], Point3::origin());
     /// ```
     pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices
@@ -1960,7 +1960,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
@@ -1990,7 +1990,7 @@ impl TriMesh {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     /// ];
@@ -2029,7 +2029,7 @@ impl TriMesh {
     /// // Create two separate triangles (not connected)
     /// let vertices = vec![
     ///     // First triangle
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     // Second triangle (separate)

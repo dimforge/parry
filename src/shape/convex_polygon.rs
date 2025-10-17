@@ -47,7 +47,7 @@ use na::{self, ComplexField, RealField, Unit};
 ///
 /// // Create a triangle from three vertices (counter-clockwise order)
 /// let vertices = vec![
-///     Point2::new(0.0, 0.0),    // bottom-left
+///     Point2::origin(),    // bottom-left
 ///     Point2::new(2.0, 0.0),    // bottom-right
 ///     Point2::new(1.0, 2.0),    // top
 /// ];
@@ -100,7 +100,7 @@ impl ConvexPolygon {
     ///
     /// // Some arbitrary points (including one inside the convex hull)
     /// let points = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(4.0, 0.0),
     ///     Point2::new(2.0, 3.0),
     ///     Point2::new(2.0, 1.0),  // This point is inside the triangle
@@ -129,7 +129,7 @@ impl ConvexPolygon {
     ///     points.push(Point2::new(angle.cos(), angle.sin()));
     /// }
     /// // Add some interior points
-    /// points.push(Point2::new(0.0, 0.0));
+    /// points.push(Point2::origin());
     /// points.push(Point2::new(0.5, 0.5));
     ///
     /// let polygon = ConvexPolygon::from_convex_hull(&points)
@@ -180,7 +180,7 @@ impl ConvexPolygon {
     ///
     /// // A square with vertices in counter-clockwise order
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),  // bottom-left
+    ///     Point2::origin(),  // bottom-left
     ///     Point2::new(1.0, 0.0),  // bottom-right
     ///     Point2::new(1.0, 1.0),  // top-right
     ///     Point2::new(0.0, 1.0),  // top-left
@@ -200,7 +200,7 @@ impl ConvexPolygon {
     ///
     /// // A quadrilateral with one vertex on an edge (making it collinear)
     /// let polygon = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(2.0, 1.0),   // This point is on the line from (2,0) to (2,2)
     ///     Point2::new(2.0, 2.0),
@@ -291,14 +291,14 @@ impl ConvexPolygon {
     /// use nalgebra::Point2;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(0.5, 1.0),
     /// ]).unwrap();
     ///
     /// let vertices = triangle.points();
     /// assert_eq!(vertices.len(), 3);
-    /// assert_eq!(vertices[0], Point2::new(0.0, 0.0));
+    /// assert_eq!(vertices[0], Point2::origin());
     /// # }
     /// ```
     #[inline]
@@ -324,7 +324,7 @@ impl ConvexPolygon {
     ///
     /// // Create a square aligned with the axes
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),  // bottom-left
+    ///     Point2::origin(),  // bottom-left
     ///     Point2::new(1.0, 0.0),  // bottom-right
     ///     Point2::new(1.0, 1.0),  // top-right
     ///     Point2::new(0.0, 1.0),  // top-left
@@ -367,7 +367,7 @@ impl ConvexPolygon {
     /// use nalgebra::{Point2, Vector2};
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(0.5, 1.0),
     /// ]).unwrap();
@@ -391,7 +391,7 @@ impl ConvexPolygon {
     /// use nalgebra::{Point2, Vector2};
     ///
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(1.0, 1.0),
     ///     Point2::new(0.0, 1.0),
@@ -447,7 +447,7 @@ impl ConvexPolygon {
     /// use nalgebra::Point2;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(1.0, 2.0),
     /// ]).unwrap();
@@ -471,7 +471,7 @@ impl ConvexPolygon {
     /// use nalgebra::Point2;
     ///
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(1.0, 1.0),
     ///     Point2::new(0.0, 1.0),

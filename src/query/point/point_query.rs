@@ -42,7 +42,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// let ball_pos = Isometry3::translation(10.0, 0.0, 0.0);
 ///
 /// // Project a point outside the ball
-/// let outside_point = Point3::new(0.0, 0.0, 0.0);
+/// let outside_point = Point3::origin();
 /// let proj = ball.project_point(&ball_pos, &outside_point, true);
 ///
 /// // Closest point on ball surface
@@ -135,7 +135,7 @@ impl PointProjection {
 /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 /// let cuboid_pos = Isometry3::translation(5.0, 0.0, 0.0);
 ///
-/// let query_point = Point3::new(0.0, 0.0, 0.0);
+/// let query_point = Point3::origin();
 ///
 /// // Project point onto cuboid surface
 /// let projection = cuboid.project_point(&cuboid_pos, &query_point, true);

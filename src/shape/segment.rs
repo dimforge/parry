@@ -49,7 +49,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// use nalgebra::Point3;
 ///
 /// // Create a horizontal segment of length 5
-/// let a = Point3::new(0.0, 0.0, 0.0);
+/// let a = Point3::origin();
 /// let b = Point3::new(5.0, 0.0, 0.0);
 /// let segment = Segment::new(a, b);
 ///
@@ -135,7 +135,7 @@ impl SegmentPointLocation {
     /// use nalgebra::Point3;
     ///
     /// let segment = Segment::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(10.0, 0.0, 0.0)
     /// );
     ///
@@ -185,7 +185,7 @@ impl Segment {
     /// use nalgebra::Point3;
     ///
     /// let segment = Segment::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(5.0, 0.0, 0.0)
     /// );
     /// assert_eq!(segment.length(), 5.0);
@@ -207,7 +207,7 @@ impl Segment {
     /// use parry3d::shape::Segment;
     /// use nalgebra::Point3;
     ///
-    /// let points = [Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0)];
+    /// let points = [Point3::origin(), Point3::new(1.0, 0.0, 0.0)];
     /// let segment = Segment::from_array(&points);
     /// assert_eq!(segment.a, points[0]);
     /// assert_eq!(segment.b, points[1]);
@@ -262,7 +262,7 @@ impl Segment {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let segment = Segment::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(3.0, 4.0, 0.0)
     /// );
     ///
@@ -286,7 +286,7 @@ impl Segment {
     ///
     /// // 3-4-5 right triangle
     /// let segment = Segment::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(3.0, 4.0, 0.0)
     /// );
     /// assert_eq!(segment.length(), 5.0);
@@ -338,7 +338,7 @@ impl Segment {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let segment = Segment::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(3.0, 4.0, 0.0)
     /// );
     ///

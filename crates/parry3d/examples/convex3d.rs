@@ -11,7 +11,7 @@ fn main() {
         Point3::new(0.0, -1.0, 0.0),
         Point3::new(1.0, 0.0, 0.0),
         Point3::new(-1.0, 0.0, 0.0),
-        Point3::new(0.0, 0.0, 0.0),
+        Point3::origin(),
     ];
 
     let convex = ConvexPolyhedron::from_convex_hull(&points).expect("Invalid convex shape.");

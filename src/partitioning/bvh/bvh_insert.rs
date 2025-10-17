@@ -41,7 +41,7 @@ impl Bvh {
     /// let mut bvh = Bvh::new();
     ///
     /// // Insert objects with custom IDs
-    /// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 100);
+    /// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 100);
     /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 200);
     /// bvh.insert(Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), 300);
     ///
@@ -60,7 +60,7 @@ impl Bvh {
     /// let mut bvh = Bvh::new();
     ///
     /// // Insert an object
-    /// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 42);
+    /// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 42);
     ///
     /// // Simulate the object moving - just insert with the same ID
     /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 42);

@@ -26,7 +26,7 @@ use {crate::bounding_volume, crate::math::Point};
 /// use na::{Point3, Vector3};
 ///
 /// let points = vec![
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(1.0, 0.0, 0.0),
 ///     Point3::new(0.0, 1.0, 0.0),
 ///     Point3::new(0.0, 0.0, 1.0),
@@ -86,7 +86,7 @@ pub fn support_point_id<const D: usize>(
 /// use na::{Point3, Vector3};
 ///
 /// let points = vec![
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(1.0, 0.0, 0.0),
 ///     Point3::new(2.0, 0.0, 0.0),
 ///     Point3::new(0.0, 1.0, 0.0),
@@ -149,7 +149,7 @@ where
 /// use na::{Point3, Vector3};
 ///
 /// let points = vec![
-///     Point3::new(0.0, 0.0, 0.0),  // index 0
+///     Point3::origin(),  // index 0
 ///     Point3::new(1.0, 0.0, 0.0),  // index 1
 ///     Point3::new(5.0, 0.0, 0.0),  // index 2
 ///     Point3::new(0.0, 1.0, 0.0),  // index 3

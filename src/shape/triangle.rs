@@ -59,7 +59,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// // Create a right triangle in the XY plane
 /// let triangle = Triangle::new(
-///     Point3::new(0.0, 0.0, 0.0),  // a: origin
+///     Point3::origin(),  // a: origin
 ///     Point3::new(3.0, 0.0, 0.0),  // b: along +X
 ///     Point3::new(0.0, 4.0, 0.0)   // c: along +Y
 /// );
@@ -192,7 +192,7 @@ impl Triangle {
     ///
     /// // Create a triangle in the XY plane
     /// let tri = Triangle::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0)
     /// );
@@ -829,7 +829,7 @@ mod test {
     #[test]
     fn test_triangle_area() {
         let pa = Point2::new(5.0, 0.0);
-        let pb = Point2::new(0.0, 0.0);
+        let pb = Point2::origin();
         let pc = Point2::new(0.0, 4.0);
 
         assert!(relative_eq!(Triangle::new(pa, pb, pc).area(), 10.0));
@@ -839,7 +839,7 @@ mod test {
     fn test_triangle_contains_point() {
         let tri = Triangle::new(
             Point2::new(5.0, 0.0),
-            Point2::new(0.0, 0.0),
+            Point2::origin(),
             Point2::new(0.0, 4.0),
         );
 
@@ -851,7 +851,7 @@ mod test {
     fn test_obtuse_triangle_contains_point() {
         let tri = Triangle::new(
             Point2::new(-10.0, 10.0),
-            Point2::new(0.0, 0.0),
+            Point2::origin(),
             Point2::new(20.0, 0.0),
         );
 
@@ -871,7 +871,7 @@ mod test {
     #[test]
     fn test_triangle_area() {
         let pa = Point3::new(0.0, 5.0, 0.0);
-        let pb = Point3::new(0.0, 0.0, 0.0);
+        let pb = Point3::origin();
         let pc = Point3::new(0.0, 0.0, 4.0);
 
         assert!(relative_eq!(Triangle::new(pa, pb, pc).area(), 10.0));
@@ -881,7 +881,7 @@ mod test {
     fn test_triangle_contains_point() {
         let tri = Triangle::new(
             Point3::new(0.0, 5.0, 0.0),
-            Point3::new(0.0, 0.0, 0.0),
+            Point3::origin(),
             Point3::new(0.0, 0.0, 4.0),
         );
 
@@ -893,7 +893,7 @@ mod test {
     fn test_obtuse_triangle_contains_point() {
         let tri = Triangle::new(
             Point3::new(-10.0, 10.0, 0.0),
-            Point3::new(0.0, 0.0, 0.0),
+            Point3::origin(),
             Point3::new(20.0, 0.0, 0.0),
         );
 
@@ -904,7 +904,7 @@ mod test {
 
     #[test]
     fn test_3dtriangle_contains_point() {
-        let o = Point3::new(0.0, 0.0, 0.0);
+        let o = Point3::origin();
         let pa = Point3::new(1.2, 1.4, 5.6);
         let pb = Point3::new(1.5, 6.7, 1.9);
         let pc = Point3::new(5.0, 2.1, 1.3);

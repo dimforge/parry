@@ -45,7 +45,7 @@ impl MassProperties {
     ///
     /// // Create an L-shaped mesh from two rectangles (4 triangles)
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(2.0, 1.0),
     ///     Point2::new(1.0, 1.0),

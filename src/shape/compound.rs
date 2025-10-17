@@ -181,7 +181,7 @@ impl Compound {
     ///
     /// // Create a simple square mesh (2 triangles)
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(1.0, 1.0),
     ///     Point2::new(0.0, 1.0),
@@ -212,7 +212,7 @@ impl Compound {
     ///
     /// // Create an L-shaped mesh
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(2.0, 1.0),
     ///     Point2::new(1.0, 1.0),
@@ -380,7 +380,7 @@ impl Compound {
     /// assert!(aabb.maxs.x >= 2.5);
     ///
     /// // Check if a point is inside the AABB
-    /// assert!(aabb.contains_local_point(&Point3::new(0.0, 0.0, 0.0)));
+    /// assert!(aabb.contains_local_point(&Point3::origin()));
     /// assert!(!aabb.contains_local_point(&Point3::new(10.0, 0.0, 0.0)));
     /// # }
     /// ```
@@ -573,7 +573,7 @@ impl Compound {
     /// let compound = Compound::new(shapes);
     ///
     /// // Define a query point
-    /// let query_point = Point3::new(0.0, 0.0, 0.0);
+    /// let query_point = Point3::origin();
     ///
     /// // Find which sub-shapes might contain this point
     /// let potentially_containing: Vec<usize> = compound.aabbs()

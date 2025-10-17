@@ -98,7 +98,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// use nalgebra::Point3;
 ///
 /// // Merge two bounding spheres
-/// let sphere1 = BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 1.0);
+/// let sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
 /// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
 ///
 /// let merged = sphere1.merged(&sphere2);
@@ -250,7 +250,7 @@ impl BoundingSphere {
     /// use parry3d::bounding_volume::BoundingSphere;
     /// use nalgebra::{Point3, Vector3};
     ///
-    /// let sphere = BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 1.0);
+    /// let sphere = BoundingSphere::new(Point3::origin(), 1.0);
     /// let translation = Vector3::new(10.0, 5.0, -3.0);
     ///
     /// let moved = sphere.translated(&translation);
@@ -302,7 +302,7 @@ impl BoundingVolume for BoundingSphere {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
-    /// let sphere1 = BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 2.0);
+    /// let sphere1 = BoundingSphere::new(Point3::origin(), 2.0);
     /// let sphere2 = BoundingSphere::new(Point3::new(3.0, 0.0, 0.0), 2.0);
     /// let sphere3 = BoundingSphere::new(Point3::new(10.0, 0.0, 0.0), 1.0);
     ///
@@ -369,13 +369,13 @@ impl BoundingVolume for BoundingSphere {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
-    /// let mut sphere1 = BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 1.0);
+    /// let mut sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
     /// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
     ///
     /// sphere1.merge(&sphere2);
     ///
     /// // The merged sphere now contains both original spheres
-    /// assert!(sphere1.contains(&BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 1.0)));
+    /// assert!(sphere1.contains(&BoundingSphere::new(Point3::origin(), 1.0)));
     /// assert!(sphere1.contains(&sphere2));
     /// # }
     /// ```
@@ -425,7 +425,7 @@ impl BoundingVolume for BoundingSphere {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
     /// use nalgebra::Point3;
     ///
-    /// let sphere1 = BoundingSphere::new(Point3::new(0.0, 0.0, 0.0), 1.0);
+    /// let sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
     /// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
     ///
     /// let merged = sphere1.merged(&sphere2);

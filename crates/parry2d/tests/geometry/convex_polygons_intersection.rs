@@ -5,7 +5,7 @@ use parry2d::transformation;
 pub fn disjoint_no_intersection() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -27,7 +27,7 @@ pub fn disjoint_no_intersection() {
 pub fn full_inclusion() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -53,7 +53,7 @@ pub fn full_inclusion() {
 pub fn two_edges_overlap() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -78,7 +78,7 @@ pub fn two_edges_overlap() {
 pub fn quadrilateral_intersection() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.3, 0.0),
         Point2::new(0.3, 0.3),
         Point2::new(0.0, 0.3),
@@ -117,7 +117,7 @@ pub fn quadrilateral_intersection() {
 pub fn single_segment_intersection() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -141,7 +141,7 @@ pub fn single_segment_intersection() {
 pub fn single_edge_intersection() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -165,7 +165,7 @@ pub fn single_edge_intersection() {
 pub fn intersect_vertices_only() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -191,14 +191,14 @@ pub fn intersect_vertices_only() {
 pub fn partial_overlap() {
     let mut res = Vec::new();
     let poly1 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
     ];
 
     let poly2 = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.05, 0.0),
         Point2::new(0.05, 0.1),
         Point2::new(0.0, 0.1),
@@ -206,7 +206,7 @@ pub fn partial_overlap() {
 
     transformation::convex_polygons_intersection_points(&poly1, &poly2, &mut res);
 
-    assert!(res.contains(&Point2::new(0.0, 0.0)));
+    assert!(res.contains(&Point2::origin()));
     assert!(res.contains(&Point2::new(0.05, 0.0)));
     assert!(res.contains(&Point2::new(0.05, 0.1)));
     assert!(res.contains(&Point2::new(0.0, 0.1)));
@@ -217,7 +217,7 @@ pub fn partial_overlap() {
 pub fn full_overlap() {
     let mut res = Vec::new();
     let poly = [
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(0.1, 0.0),
         Point2::new(0.1, 0.1),
         Point2::new(0.0, 0.1),
@@ -225,7 +225,7 @@ pub fn full_overlap() {
 
     transformation::convex_polygons_intersection_points(&poly, &poly, &mut res);
 
-    assert!(res.contains(&Point2::new(0.0, 0.0)));
+    assert!(res.contains(&Point2::origin()));
     assert!(res.contains(&Point2::new(0.1, 0.0)));
     assert!(res.contains(&Point2::new(0.1, 0.1)));
     assert!(res.contains(&Point2::new(0.0, 0.1)));

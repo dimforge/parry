@@ -29,7 +29,7 @@ use num::Zero;
 /// use parry2d::na::Point2;
 ///
 /// let square = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 2.0),
 ///     Point2::new(0.0, 2.0),
@@ -51,7 +51,7 @@ use num::Zero;
 /// use parry2d::na::Point2;
 ///
 /// let triangle = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(1.0, 2.0),
 /// ];
@@ -128,7 +128,7 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 /// use parry2d::na::Point2;
 ///
 /// let square = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 2.0),
 ///     Point2::new(0.0, 2.0),
@@ -151,7 +151,7 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 ///
 /// // L-shaped polygon (concave)
 /// let l_shape = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 1.0),
 ///     Point2::new(1.0, 1.0),
@@ -181,7 +181,7 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 ///     Point2::new(1.0, 1.0),
 ///     Point2::new(0.7, 0.3),
 ///     Point2::new(1.0, -0.5),
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(-1.0, -0.5),
 ///     Point2::new(-0.7, 0.3),
 ///     Point2::new(-1.0, 1.0),

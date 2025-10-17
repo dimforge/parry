@@ -142,7 +142,7 @@
 //!
 //! // Define a simple square as a polyline (boundary)
 //! let vertices = vec![
-//!     Point2::new(0.0, 0.0),
+//!     Point2::origin(),
 //!     Point2::new(2.0, 0.0),
 //!     Point2::new(2.0, 2.0),
 //!     Point2::new(0.0, 2.0),

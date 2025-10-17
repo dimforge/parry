@@ -67,7 +67,7 @@ impl MassProperties {
     ///
     /// // Create a trapezoid (4 vertices)
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),  // Bottom left
+    ///     Point2::origin(),  // Bottom left
     ///     Point2::new(4.0, 0.0),  // Bottom right
     ///     Point2::new(3.0, 2.0),  // Top right
     ///     Point2::new(1.0, 2.0),  // Top left
@@ -92,7 +92,7 @@ impl MassProperties {
     ///
     /// // Arbitrary convex polygon
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(2.0, 0.0),
     ///     Point2::new(3.0, 1.0),
     ///     Point2::new(2.0, 2.5),

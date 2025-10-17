@@ -41,7 +41,7 @@ use na::Unit;
 /// use parry2d::query::sat::point_cuboid_find_local_separating_normal_oneway;
 /// use nalgebra::{Point2, Vector2, Isometry2, Unit};
 ///
-/// let point = Point2::new(0.0, 0.0);
+/// let point = Point2::origin();
 /// let normal = Some(Unit::new_normalize(Vector2::x()));
 /// let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));
 ///

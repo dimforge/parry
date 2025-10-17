@@ -164,7 +164,7 @@ impl Bvh {
     /// }
     ///
     /// # fn get_body_aabb(id: u32) -> Aabb {
-    /// #     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))
+    /// #     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0))
     /// # }
     /// ```
     ///

@@ -47,7 +47,7 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 ///
 /// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 /// let triangle = Triangle::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(1.0, 0.0, 0.0),
 ///     Point3::new(0.0, 1.0, 0.0)
 /// );
@@ -186,7 +186,7 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 /// use nalgebra::{Point2, Isometry2};
 ///
 /// let triangle = Triangle::new(
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(1.0, 2.0)
 /// );
@@ -292,7 +292,7 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 ///
 /// // Horizontal triangle in the XY plane
 /// let triangle = Triangle::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(2.0, 0.0, 0.0),
 ///     Point3::new(1.0, 2.0, 0.0)
 /// );

@@ -71,7 +71,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// let aabb = Aabb::new(mins, maxs);
 ///
 /// // Check if a point is inside
-/// let point = Point3::new(0.0, 0.0, 0.0);
+/// let point = Point3::origin();
 /// assert!(aabb.contains_local_point(&point));
 ///
 /// // Get center and extents
@@ -437,7 +437,7 @@ impl Aabb {
     ///
     /// // A 2x3x4 box
     /// let aabb = Aabb::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(2.0, 3.0, 4.0)
     /// );
     ///

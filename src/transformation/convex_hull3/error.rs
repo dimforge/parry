@@ -27,7 +27,7 @@
 /// use nalgebra::Point3;
 ///
 /// let points = vec![
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(1.0, 0.0, 0.0),
 ///     Point3::new(0.0, 1.0, 0.0),
 ///     Point3::new(0.0, 0.0, 1.0),
@@ -103,7 +103,7 @@ pub enum ConvexHullError {
     /// use nalgebra::Point3;
     ///
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(2.0, 0.0, 0.0),  // Collinear!
     /// ];
@@ -140,7 +140,7 @@ pub enum ConvexHullError {
     ///
     /// // Only 2 points - not enough for 3D hull
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     /// ];
     ///
@@ -217,11 +217,11 @@ pub enum ConvexHullError {
     /// use std::collections::HashSet;
     ///
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(0.0, 0.0, 1.0),
-    ///     Point3::new(0.0, 0.0, 0.0),  // Duplicate!
+    ///     Point3::origin(),  // Duplicate!
     /// ];
     ///
     /// // Remove duplicates (note: this is a simple example, not production code)

@@ -70,7 +70,7 @@ enum InFlag {
 /// # use parry2d::transformation::PolylinePointLocation;
 /// # use parry2d::na::Point2;
 /// let polygon = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 2.0),
 ///     Point2::new(0.0, 2.0),
@@ -79,7 +79,7 @@ enum InFlag {
 /// // A point on vertex 0
 /// let loc1 = PolylinePointLocation::OnVertex(0);
 /// let pt1 = loc1.to_point(&polygon);
-/// assert_eq!(pt1, Point2::new(0.0, 0.0));
+/// assert_eq!(pt1, Point2::origin());
 ///
 /// // A point halfway along the edge from vertex 0 to vertex 1
 /// let loc2 = PolylinePointLocation::OnEdge(0, 1, [0.5, 0.5]);
@@ -130,7 +130,7 @@ impl PolylinePointLocation {
     /// # use parry2d::transformation::PolylinePointLocation;
     /// # use parry2d::na::Point2;
     /// let polygon = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(4.0, 0.0),
     ///     Point2::new(4.0, 4.0),
     /// ];
@@ -186,7 +186,7 @@ impl PolylinePointLocation {
 /// # use parry2d::na::Point2;
 /// // Define two overlapping squares
 /// let square1 = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 2.0),
 ///     Point2::new(0.0, 2.0),
@@ -238,7 +238,7 @@ pub fn convex_polygons_intersection_points(
 /// # use parry2d::transformation::{convex_polygons_intersection_points_with_tolerances, PolygonIntersectionTolerances};
 /// # use parry2d::na::Point2;
 /// let triangle1 = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(4.0, 0.0),
 ///     Point2::new(2.0, 3.0),
 /// ];
@@ -309,7 +309,7 @@ pub fn convex_polygons_intersection_points_with_tolerances(
 /// # use parry2d::transformation::convex_polygons_intersection;
 /// # use parry2d::na::Point2;
 /// let square = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0),
 ///     Point2::new(2.0, 2.0),
 ///     Point2::new(0.0, 2.0),
@@ -727,7 +727,7 @@ pub enum PolygonsIntersectionError {
 /// # use parry2d::na::Point2;
 /// // L-shaped polygon
 /// let l_shape = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(3.0, 0.0),
 ///     Point2::new(3.0, 1.0),
 ///     Point2::new(1.0, 1.0),
@@ -757,7 +757,7 @@ pub enum PolygonsIntersectionError {
 /// # use parry2d::transformation::polygons_intersection_points;
 /// # use parry2d::na::Point2;
 /// let triangle = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(4.0, 0.0),
 ///     Point2::new(2.0, 3.0),
 /// ];
@@ -1177,7 +1177,7 @@ mod test {
                     Point2::new(1.1848406021956144, -0.8155712451545468),
                 ),
                 Triangle::new(
-                    Point2::new(0.0, 0.0),
+                    Point2::origin(),
                     Point2::new(0.00011061077714557787, -2.000024893134292),
                     Point2::new(2.0004914907008944, -0.00011061077714557787),
                 ),

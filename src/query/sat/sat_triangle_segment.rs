@@ -43,7 +43,7 @@ use na::Unit;
 ///
 /// // Triangle in the XY plane
 /// let triangle = Triangle::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(2.0, 0.0, 0.0),
 ///     Point3::new(1.0, 2.0, 0.0)
 /// );
@@ -133,7 +133,7 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 /// use nalgebra::{Point3, Isometry3};
 ///
 /// let segment = Segment::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(0.0, 0.0, 2.0)
 /// );
 ///

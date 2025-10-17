@@ -72,7 +72,7 @@ impl Bvh {
     ///
     /// // Create a scene with objects
     /// let objects = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
     /// ];
@@ -101,7 +101,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let objects = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(0.5, 0.0, 0.0), Point3::new(1.5, 1.0, 1.0)),  // Overlaps first
     ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), // Far away
     /// ];
@@ -133,7 +133,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let scene_objects = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)), // Far away
     /// ];
@@ -165,7 +165,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let objects = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(1.5, 0.0, 0.0), Point3::new(2.5, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)),
     /// ];

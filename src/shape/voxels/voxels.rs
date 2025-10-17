@@ -663,7 +663,7 @@ impl Voxels {
     ///
     /// // Higher resolution voxelization
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 1.0, 1.0),
     /// ];
     ///

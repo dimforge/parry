@@ -80,7 +80,7 @@ use na::Unit;
 ///
 /// // Create a triangle
 /// let triangle = Triangle::new(
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(1.0, 0.0),
 ///     Point2::new(0.0, 1.0),
 /// );
@@ -153,7 +153,7 @@ use na::Unit;
 ///
 /// // Rounded segment (creates a capsule)
 /// let segment = Segment::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(0.0, 2.0, 0.0),
 /// );
 /// let rounded_segment = RoundShape {

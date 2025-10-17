@@ -101,12 +101,12 @@ impl MassProperties {
     /// // Simple robot arm with multiple segments
     /// let base = SharedShape::new(Cuboid::new(Vector3::new(0.3, 0.2, 0.3)));
     /// let upper_arm = SharedShape::new(Capsule::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(0.0, 1.0, 0.0),
     ///     0.1
     /// ));
     /// let forearm = SharedShape::new(Capsule::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(0.0, 0.8, 0.0),
     ///     0.08
     /// ));

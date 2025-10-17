@@ -35,7 +35,7 @@ use core::ops::{Deref, DerefMut, Index, IndexMut};
 ///
 /// // Create some AABBs for objects in the scene
 /// let aabbs = vec![
-///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(0.0, 2.0, 0.0), Point3::new(1.0, 3.0, 1.0)),
 /// ];
@@ -111,7 +111,7 @@ pub enum BvhBuildStrategy {
 /// use nalgebra::Point3;
 ///
 /// let aabbs = vec![
-///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
 /// ];
 ///
@@ -232,7 +232,7 @@ impl BvhNodeData {
 /// use nalgebra::Point3;
 ///
 /// let aabbs = vec![
-///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
 /// ];
@@ -310,7 +310,7 @@ impl BvhNodeWide {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
     /// ];
     ///
@@ -383,7 +383,7 @@ impl BvhNodeWide {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb1 = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let aabb2 = Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0));
     ///
     /// let node_wide = BvhNodeWide {
@@ -424,7 +424,7 @@ impl BvhNodeWide {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb1 = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let aabb2 = Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0));
     ///
     /// let node_wide = BvhNodeWide {
@@ -487,7 +487,7 @@ static_assertions::assert_eq_size!(BvhNode, BvhNodeSimd);
 /// use nalgebra::Point3;
 ///
 /// // Create a leaf node
-/// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+/// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
 /// let leaf = BvhNode::leaf(aabb, 42);
 ///
 /// assert!(leaf.is_leaf());
@@ -557,7 +557,7 @@ impl BvhNode {
     /// use nalgebra::Point3;
     ///
     /// // Create an AABB for a unit cube
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     ///
     /// // Create a leaf node with index 0
     /// let leaf = BvhNode::leaf(aabb, 0);
@@ -601,7 +601,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let leaf = BvhNode::leaf(aabb, 42);
     ///
     /// assert_eq!(leaf.leaf_data(), Some(42));
@@ -634,7 +634,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let leaf = BvhNode::leaf(aabb, 0);
     ///
     /// assert!(leaf.is_leaf());
@@ -756,7 +756,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let original_aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let original_aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let node = BvhNode::leaf(original_aabb, 0);
     ///
     /// assert_eq!(node.aabb(), original_aabb);
@@ -792,7 +792,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(2.0, 4.0, 6.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(2.0, 4.0, 6.0));
     /// let node = BvhNode::leaf(aabb, 0);
     ///
     /// assert_eq!(node.center(), Point3::new(1.0, 2.0, 3.0));
@@ -821,7 +821,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let node = BvhNode::leaf(aabb, 0);
     ///
     /// // New leaf nodes are marked as changed (pending change)
@@ -893,7 +893,7 @@ impl BvhNode {
     /// use nalgebra::Point3;
     ///
     /// // Create a 2×3×4 box
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(2.0, 3.0, 4.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(2.0, 3.0, 4.0));
     /// let node = BvhNode::leaf(aabb, 0);
     ///
     /// assert_eq!(node.volume(), 24.0); // 2 * 3 * 4 = 24
@@ -939,7 +939,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb1 = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// let aabb2 = Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0));
     ///
     /// let node1 = BvhNode::leaf(aabb1, 0);
@@ -991,7 +991,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb1 = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(2.0, 2.0, 2.0));
+    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(2.0, 2.0, 2.0));
     /// let aabb2 = Aabb::new(Point3::new(1.0, 1.0, 1.0), Point3::new(3.0, 3.0, 3.0));
     /// let aabb3 = Aabb::new(Point3::new(5.0, 5.0, 5.0), Point3::new(6.0, 6.0, 6.0));
     ///
@@ -1037,7 +1037,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let aabb1 = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(2.0, 2.0, 2.0));
+    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(2.0, 2.0, 2.0));
     /// let aabb2 = Aabb::new(Point3::new(1.0, 1.0, 1.0), Point3::new(3.0, 3.0, 3.0));
     /// let aabb3 = Aabb::new(Point3::new(5.0, 5.0, 5.0), Point3::new(6.0, 6.0, 6.0));
     ///
@@ -1086,7 +1086,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let large = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(10.0, 10.0, 10.0));
+    /// let large = Aabb::new(Point3::origin(), Point3::new(10.0, 10.0, 10.0));
     /// let small = Aabb::new(Point3::new(2.0, 2.0, 2.0), Point3::new(5.0, 5.0, 5.0));
     ///
     /// let node_large = BvhNode::leaf(large, 0);
@@ -1131,7 +1131,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let large = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(10.0, 10.0, 10.0));
+    /// let large = Aabb::new(Point3::origin(), Point3::new(10.0, 10.0, 10.0));
     /// let small = Aabb::new(Point3::new(2.0, 2.0, 2.0), Point3::new(5.0, 5.0, 5.0));
     ///
     /// let node_large = BvhNode::leaf(large, 0);
@@ -1174,7 +1174,7 @@ impl BvhNode {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
-    /// let large = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(10.0, 10.0, 10.0));
+    /// let large = Aabb::new(Point3::origin(), Point3::new(10.0, 10.0, 10.0));
     /// let small = Aabb::new(Point3::new(2.0, 2.0, 2.0), Point3::new(5.0, 5.0, 5.0));
     ///
     /// let node = BvhNode::leaf(large, 0);
@@ -1219,7 +1219,7 @@ impl BvhNode {
     /// let node = BvhNode::leaf(aabb, 0);
     ///
     /// // Ray from origin along X axis
-    /// let ray = Ray::new(Point3::new(0.0, 0.0, 0.0), Vector3::new(1.0, 0.0, 0.0));
+    /// let ray = Ray::new(Point3::origin(), Vector3::new(1.0, 0.0, 0.0));
     ///
     /// let toi = node.cast_ray(&ray, f32::MAX);
     /// assert_eq!(toi, 5.0); // Ray hits at x=5.0
@@ -1570,7 +1570,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 ///
 /// // Create AABBs for your objects
 /// let objects = vec![
-///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
 /// ];
@@ -1605,7 +1605,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// let mut workspace = BvhWorkspace::default();
 ///
 /// // Add objects dynamically with custom IDs
-/// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 100);
+/// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 100);
 /// bvh.insert(Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)), 200);
 ///
 /// // Update an object's position (by re-inserting with same ID)
@@ -1666,7 +1666,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// use nalgebra::Point3;
 ///
 /// let aabbs = vec![
-///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
 ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
 /// ];
 ///
@@ -1697,7 +1697,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// let mut workspace = BvhWorkspace::default();
 ///
 /// // Insert initial objects
-/// bvh.insert(Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)), 0);
+/// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 0);
 /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 1);
 ///
 /// // Simulate object movement every frame
@@ -1872,7 +1872,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
     /// ];
@@ -1928,7 +1928,7 @@ impl Bvh {
     ///
     /// // Create a BVH with custom indices
     /// let leaves = vec![
-    ///     (10, Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0))),
+    ///     (10, Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0))),
     ///     (20, Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0))),
     ///     (30, Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0))),
     /// ];
@@ -2028,7 +2028,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
     /// ];
     ///
@@ -2079,7 +2079,7 @@ impl Bvh {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     /// ];
     ///
     /// let mut bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
@@ -2152,7 +2152,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
@@ -2335,7 +2335,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
     /// ];
@@ -2387,7 +2387,7 @@ impl Bvh {
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
     ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
     /// ];

@@ -43,7 +43,7 @@ use crate::shape::{Cuboid, Segment};
 ///
 /// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 /// let segment = Segment::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(0.0, 2.0, 0.0)
 /// );
 ///
@@ -118,7 +118,7 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 ///
 /// // Horizontal segment
 /// let segment = Segment::new(
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(2.0, 0.0)
 /// );
 /// let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));

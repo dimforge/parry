@@ -55,7 +55,7 @@ use crate::query::details::NormalConstraints;
 ///
 /// // Create a simple L-shaped polyline
 /// let vertices = vec![
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Point3::new(1.0, 0.0, 0.0),
 ///     Point3::new(1.0, 1.0, 0.0),
 /// ];
@@ -81,7 +81,7 @@ use crate::query::details::NormalConstraints;
 ///
 /// // Create a triangle polyline (closed loop)
 /// let vertices = vec![
-///     Point2::new(0.0, 0.0),
+///     Point2::origin(),
 ///     Point2::new(1.0, 0.0),
 ///     Point2::new(0.5, 1.0),
 /// ];
@@ -129,7 +129,7 @@ impl Polyline {
     ///
     /// // Create a zigzag path with automatic sequential connections
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 1.0, 0.0),
     ///     Point3::new(2.0, 0.0, 0.0),
     ///     Point3::new(3.0, 1.0, 0.0),
@@ -149,7 +149,7 @@ impl Polyline {
     ///
     /// // Create a square with custom indices
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(1.0, 1.0),
     ///     Point2::new(0.0, 1.0),
@@ -165,7 +165,7 @@ impl Polyline {
     ///
     /// // Each segment connects the correct vertices
     /// let first_segment = square.segment(0);
-    /// assert_eq!(first_segment.a, Point2::new(0.0, 0.0));
+    /// assert_eq!(first_segment.a, Point2::origin());
     /// assert_eq!(first_segment.b, Point2::new(1.0, 0.0));
     /// # }
     /// ```
@@ -212,7 +212,7 @@ impl Polyline {
     ///
     /// // Create a polyline along the X axis
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(2.0, 0.0, 0.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
@@ -341,7 +341,7 @@ impl Polyline {
     ///
     /// // Create a triangle
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(0.5, 1.0),
     /// ];
@@ -397,7 +397,7 @@ impl Polyline {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(2.0, 1.0, 0.0),
     /// ];
@@ -405,7 +405,7 @@ impl Polyline {
     ///
     /// // Get the first segment (connects vertex 0 to vertex 1)
     /// let seg0 = polyline.segment(0);
-    /// assert_eq!(seg0.a, Point3::new(0.0, 0.0, 0.0));
+    /// assert_eq!(seg0.a, Point3::origin());
     /// assert_eq!(seg0.b, Point3::new(1.0, 0.0, 0.0));
     /// assert_eq!(seg0.length(), 1.0);
     ///
@@ -454,7 +454,7 @@ impl Polyline {
     /// use nalgebra::Point2;
     ///
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(1.0, 1.0),
     /// ];
@@ -463,7 +463,7 @@ impl Polyline {
     /// // Access all vertices
     /// let verts = polyline.vertices();
     /// assert_eq!(verts.len(), 3);
-    /// assert_eq!(verts[0], Point2::new(0.0, 0.0));
+    /// assert_eq!(verts[0], Point2::origin());
     /// assert_eq!(verts[1], Point2::new(1.0, 0.0));
     /// assert_eq!(verts[2], Point2::new(1.0, 1.0));
     ///
@@ -496,7 +496,7 @@ impl Polyline {
     /// use nalgebra::Point3;
     ///
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(2.0, 0.0, 0.0),
     /// ];
@@ -619,7 +619,7 @@ impl Polyline {
     /// use nalgebra::Point2;
     ///
     /// let vertices = vec![
-    ///     Point2::new(0.0, 0.0),
+    ///     Point2::origin(),
     ///     Point2::new(1.0, 0.0),
     ///     Point2::new(2.0, 0.0),
     /// ];

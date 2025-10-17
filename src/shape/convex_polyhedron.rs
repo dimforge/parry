@@ -148,7 +148,7 @@ impl Triangle {
 ///
 /// // Define the 4 vertices of a tetrahedron
 /// let points = vec![
-///     Point3::new(0.0, 0.0, 0.0),      // base vertex 1
+///     Point3::origin(),      // base vertex 1
 ///     Point3::new(1.0, 0.0, 0.0),      // base vertex 2
 ///     Point3::new(0.5, 1.0, 0.0),      // base vertex 3
 ///     Point3::new(0.5, 0.5, 1.0),      // apex
@@ -214,7 +214,7 @@ impl ConvexPolyhedron {
     ///
     /// // Points defining a cube, plus some interior points
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0),
     ///     Point3::new(0.0, 1.0, 0.0),
@@ -317,7 +317,7 @@ impl ConvexPolyhedron {
     ///
     /// // Define the 8 vertices of a unit cube
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),  // 0: bottom-left-front
+    ///     Point3::origin(),  // 0: bottom-left-front
     ///     Point3::new(1.0, 0.0, 0.0),  // 1: bottom-right-front
     ///     Point3::new(1.0, 1.0, 0.0),  // 2: bottom-right-back
     ///     Point3::new(0.0, 1.0, 0.0),  // 3: bottom-left-back
@@ -363,7 +363,7 @@ impl ConvexPolyhedron {
     ///
     /// // 6 vertices: 3 on bottom, 3 on top
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.5, 1.0, 0.0),
     ///     Point3::new(0.0, 0.0, 2.0),
@@ -669,7 +669,7 @@ impl ConvexPolyhedron {
     /// use nalgebra::Point3;
     ///
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.5, 1.0, 0.0),
     ///     Point3::new(0.5, 0.5, 1.0),
@@ -679,7 +679,7 @@ impl ConvexPolyhedron {
     /// let tetrahedron = ConvexPolyhedron::from_convex_mesh(points, &indices).unwrap();
     ///
     /// assert_eq!(tetrahedron.points().len(), 4);
-    /// assert_eq!(tetrahedron.points()[0], Point3::new(0.0, 0.0, 0.0));
+    /// assert_eq!(tetrahedron.points()[0], Point3::origin());
     /// # }
     /// ```
     #[inline]
@@ -719,7 +719,7 @@ impl ConvexPolyhedron {
     /// use nalgebra::Point3;
     ///
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.5, 1.0, 0.0),
     ///     Point3::new(0.5, 0.5, 1.0),
@@ -761,7 +761,7 @@ impl ConvexPolyhedron {
     ///
     /// // Create a cube (8 vertices, 12 triangular input faces)
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::origin(), Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0), Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(0.0, 0.0, 1.0), Point3::new(1.0, 0.0, 1.0),
     ///     Point3::new(1.0, 1.0, 1.0), Point3::new(0.0, 1.0, 1.0),
@@ -827,7 +827,7 @@ impl ConvexPolyhedron {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let points = vec![
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(0.5, 1.0, 0.0),
     ///     Point3::new(0.5, 0.5, 1.0),
@@ -856,7 +856,7 @@ impl ConvexPolyhedron {
     ///
     /// // Start with a unit cube
     /// let vertices = vec![
-    ///     Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::origin(), Point3::new(1.0, 0.0, 0.0),
     ///     Point3::new(1.0, 1.0, 0.0), Point3::new(0.0, 1.0, 0.0),
     ///     Point3::new(0.0, 0.0, 1.0), Point3::new(1.0, 0.0, 1.0),
     ///     Point3::new(1.0, 1.0, 1.0), Point3::new(0.0, 1.0, 1.0),

@@ -45,7 +45,7 @@ impl MassProperties {
     ///
     /// // Create a capsule for a standing character (height ~2m, radius 0.3m)
     /// // Endpoints at (0, 0, 0) and (0, 2, 0) form vertical capsule
-    /// let a = Point3::new(0.0, 0.0, 0.0);
+    /// let a = Point3::origin();
     /// let b = Point3::new(0.0, 2.0, 0.0);
     /// let radius = 0.3;
     /// let density = 985.0; // Similar to human body density

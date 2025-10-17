@@ -66,7 +66,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// assert_eq!(capsule.height(), 4.0);
 ///
 /// // Create a custom capsule between two points
-/// let a = Point3::new(0.0, 0.0, 0.0);
+/// let a = Point3::origin();
 /// let b = Point3::new(3.0, 4.0, 0.0);
 /// let custom = Capsule::new(a, b, 1.0);
 /// assert_eq!(custom.height(), 5.0); // Distance from a to b
@@ -193,7 +193,7 @@ impl Capsule {
     /// use nalgebra::Point3;
     ///
     /// // Create a diagonal capsule
-    /// let a = Point3::new(0.0, 0.0, 0.0);
+    /// let a = Point3::origin();
     /// let b = Point3::new(3.0, 4.0, 0.0);
     /// let capsule = Capsule::new(a, b, 0.5);
     ///

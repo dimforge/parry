@@ -40,7 +40,7 @@ impl MassProperties {
     /// use nalgebra::Point2;
     ///
     /// // Create a right triangle with legs of 3m and 4m
-    /// let a = Point2::new(0.0, 0.0);
+    /// let a = Point2::origin();
     /// let b = Point2::new(3.0, 0.0);
     /// let c = Point2::new(0.0, 4.0);
     /// let density = 100.0; // kg/m²
@@ -73,7 +73,7 @@ impl MassProperties {
     /// let side = 2.0;
     /// let height = side * (3.0_f32.sqrt() / 2.0);
     ///
-    /// let a = Point2::new(0.0, 0.0);
+    /// let a = Point2::origin();
     /// let b = Point2::new(side, 0.0);
     /// let c = Point2::new(side / 2.0, height);
     /// let density = 50.0;
@@ -97,7 +97,7 @@ impl MassProperties {
     /// use nalgebra::Point3;
     ///
     /// // Triangle in 3D space (e.g., a metal plate or sail)
-    /// let a = Point3::new(0.0, 0.0, 0.0);
+    /// let a = Point3::origin();
     /// let b = Point3::new(2.0, 0.0, 0.0);
     /// let c = Point3::new(1.0, 2.0, 0.0);
     /// let density = 200.0; // kg/m² (sheet metal)
@@ -121,7 +121,7 @@ impl MassProperties {
     /// use nalgebra::Point2;
     ///
     /// // Three points on a line (no area)
-    /// let a = Point2::new(0.0, 0.0);
+    /// let a = Point2::origin();
     /// let b = Point2::new(1.0, 1.0);
     /// let c = Point2::new(2.0, 2.0);
     /// let density = 100.0;

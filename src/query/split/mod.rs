@@ -113,7 +113,7 @@
 //! use parry3d::query::IntersectResult;
 //!
 //! # let vertices = vec![
-//! #     nalgebra::Point3::new(0.0, 0.0, 0.0),
+//! #     nalgebra::Point3::origin(),
 //! #     nalgebra::Point3::new(1.0, 0.0, 0.0),
 //! #     nalgebra::Point3::new(0.5, 1.0, 0.5),
 //! #     nalgebra::Point3::new(0.5, 0.0, 1.0),

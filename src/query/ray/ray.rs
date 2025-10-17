@@ -45,7 +45,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// // Create a ray from origin pointing along +X axis
 /// let ray = Ray::new(
-///     Point3::new(0.0, 0.0, 0.0),
+///     Point3::origin(),
 ///     Vector3::new(1.0, 0.0, 0.0)  // Normalized direction
 /// );
 ///
@@ -210,7 +210,7 @@ impl Ray {
     /// use nalgebra::{Point3, Vector3};
     ///
     /// let ray = Ray::new(
-    ///     Point3::new(0.0, 0.0, 0.0),
+    ///     Point3::origin(),
     ///     Vector3::new(1.0, 0.0, 0.0)
     /// );
     ///

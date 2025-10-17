@@ -128,7 +128,7 @@ impl Bvh {
     /// let mut workspace = BvhWorkspace::default();
     ///
     /// // Add an object
-    /// let aabb = Aabb::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
     /// bvh.insert(aabb, 0);
     ///
     /// // Update with a margin - tree won't update if movement is small
