@@ -198,7 +198,7 @@ impl Triangle {
     /// );
     ///
     /// assert_eq!(tri.area(), 0.5);
-/// # }
+    /// # }
     /// ```
     #[inline]
     pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>) -> Triangle {

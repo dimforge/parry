@@ -130,7 +130,7 @@ impl Contact {
     ///
     /// let contact = Contact::new(point1, point2, normal1, normal2, 0.0);
     /// assert_eq!(contact.dist, 0.0); // Touching, not penetrating
-/// # }
+    /// # }
     /// ```
     #[inline]
     pub fn new(

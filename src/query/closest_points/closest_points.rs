@@ -94,7 +94,7 @@ pub enum ClosestPoints {
     ///
     /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
     /// assert_eq!(result, ClosestPoints::Intersecting);
-/// # }
+    /// # }
     /// ```
     Intersecting,
 

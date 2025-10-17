@@ -116,7 +116,7 @@ impl Cone {
     /// // - Base center at (0, -3, 0)
     /// // - Base radius 2.0 in the XZ plane
     /// // - Total height from apex to base = 6.0
-/// # }
+    /// # }
     /// ```
     pub fn new(half_height: Real, radius: Real) -> Cone {
         Cone {

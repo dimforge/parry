@@ -565,7 +565,7 @@ impl BvhNode {
     /// assert!(leaf.is_leaf());
     /// assert_eq!(leaf.leaf_data(), Some(0));
     /// assert_eq!(leaf.aabb(), aabb);
-/// # }
+    /// # }
     /// ```
     ///
     /// # See Also
@@ -1330,7 +1330,7 @@ impl BvhNodeIndex {
     ///
     /// assert_eq!(pair_idx, 10);
     /// assert_eq!(is_right, false);
-/// # }
+    /// # }
     /// ```
     ///
     /// # See Also
@@ -1588,7 +1588,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 ///     println!("Object {} intersects the query region", leaf_id);
 ///     // leaf_id corresponds to the index in the original 'objects' vec
 /// }
-    /// # }
+/// # }
 /// ```
 ///
 /// # Dynamic Scenes - Adding and Updating Objects
@@ -1832,7 +1832,7 @@ impl Bvh {
     /// let bvh = Bvh::new();
     /// assert!(bvh.is_empty());
     /// assert_eq!(bvh.leaf_count(), 0);
-/// # }
+    /// # }
     /// ```
     ///
     /// # See Also

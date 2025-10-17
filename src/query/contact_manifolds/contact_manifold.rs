@@ -180,7 +180,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     /// );
     ///
     /// assert_eq!(contact.dist, -0.1);
-/// # }
+    /// # }
     /// ```
     pub fn new(
         local_p1: Point<Real>,
@@ -293,7 +293,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
 /// if let Some(contact) = manifold.points.first() {
 ///     println!("Penetration depth: {}", -contact.dist);
 /// }
-    /// # }
+/// # }
 /// ```
 ///
 /// ## Contact Prediction

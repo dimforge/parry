@@ -111,7 +111,7 @@ impl Ray {
     /// // Ray starts at (0, 5, 0) and points along +X
     /// assert_eq!(ray.origin, Point3::new(0.0, 5.0, 0.0));
     /// assert_eq!(ray.dir, Vector3::new(1.0, 0.0, 0.0));
-/// # }
+    /// # }
     /// ```
     pub fn new(origin: Point<Real>, dir: Vector<Real>) -> Ray {
         Ray { origin, dir }
@@ -281,7 +281,7 @@ impl Ray {
 ///     // Normal points outward (in -X direction for the -X face)
 ///     assert_eq!(intersection.normal, Vector3::new(-1.0, 0.0, 0.0));
 /// }
-    /// # }
+/// # }
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

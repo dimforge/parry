@@ -114,7 +114,7 @@ impl Cylinder {
     /// // The cylinder:
     /// // - Extends from y = -4.0 to y = 4.0 (total height 8.0)
     /// // - Has circular cross-section with radius 3.0 in the XZ plane
-/// # }
+    /// # }
     /// ```
     pub fn new(half_height: Real, radius: Real) -> Cylinder {
         assert!(half_height.is_sign_positive() && radius.is_sign_positive());

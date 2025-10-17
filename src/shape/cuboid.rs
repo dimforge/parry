@@ -101,7 +101,7 @@ impl Cuboid {
     /// assert_eq!(cuboid.half_extents.x, 5.0);
     /// assert_eq!(cuboid.half_extents.y, 3.0);
     /// assert_eq!(cuboid.half_extents.z, 2.0);
-/// # }
+    /// # }
     /// ```
     ///
     /// ```rust

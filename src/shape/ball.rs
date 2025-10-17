@@ -74,7 +74,7 @@ impl Ball {
     /// // You can also create very small balls
     /// let tiny_ball = Ball::new(0.001);
     /// assert_eq!(tiny_ball.radius, 0.001);
-/// # }
+    /// # }
     /// ```
     #[inline]
     pub fn new(radius: Real) -> Ball {

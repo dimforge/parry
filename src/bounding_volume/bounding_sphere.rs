@@ -150,7 +150,7 @@ impl BoundingSphere {
     ///
     /// assert_eq!(*sphere.center(), Point3::new(1.0, 2.0, 3.0));
     /// assert_eq!(sphere.radius(), 5.0);
-/// # }
+    /// # }
     /// ```
     pub fn new(center: Point<Real>, radius: Real) -> BoundingSphere {
         BoundingSphere { center, radius }

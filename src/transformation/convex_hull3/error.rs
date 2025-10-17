@@ -77,7 +77,7 @@ pub enum ConvexHullError {
     ///     }
     ///     _ => {}
     /// }
-/// # }
+    /// # }
     /// ```
     #[error("Internal error: {0}")]
     InternalError(&'static str),

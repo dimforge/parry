@@ -152,7 +152,7 @@ impl SegmentPointLocation {
     /// let coords = loc_mid.barycentric_coordinates();
     /// assert_eq!(coords[0], 0.7);
     /// assert_eq!(coords[1], 0.3);
-/// # }
+    /// # }
     /// ```
     pub fn barycentric_coordinates(&self) -> [Real; 2] {
         let mut bcoords = [0.0; 2];

@@ -185,7 +185,7 @@ pub trait PointQuery {
     /// // Nearby point is accepted
     /// let near_point = Point3::new(2.0, 0.0, 0.0);
     /// assert!(ball.project_local_point_with_max_dist(&near_point, true, 10.0).is_some());
-/// # }
+    /// # }
     /// ```
     fn project_local_point_with_max_dist(
         &self,

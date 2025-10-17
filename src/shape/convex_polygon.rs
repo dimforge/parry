@@ -432,7 +432,7 @@ impl ConvexPolygon {
     /// # Arguments
     ///
     /// * `amount` - The distance to move each edge. Positive values expand the polygon outward,
-    ///              making it larger. Must be a non-negative finite number.
+    ///   making it larger. Must be a non-negative finite number.
     ///
     /// # Panics
     ///

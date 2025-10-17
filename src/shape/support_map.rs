@@ -114,8 +114,8 @@ use na::Unit;
 ///
 /// ## Using Support Maps for Distance Queries
 ///
-#[cfg_attr(feature = "dim3", doc = "```")]
-#[cfg_attr(feature = "dim2", doc = "```ignore")]
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid, SupportMap};
 /// use parry3d::math::{Point, Vector, Real};
 /// extern crate nalgebra as na;
@@ -140,12 +140,13 @@ use na::Unit;
 /// // The point should be on the surface of the ball (distance = radius)
 /// let distance = (support_point2.coords.norm() - 1.0).abs();
 /// assert!(distance < 1e-6);
+/// # }
 /// ```
 ///
 /// ## Support Points on a Cuboid
 ///
-#[cfg_attr(feature = "dim3", doc = "```")]
-#[cfg_attr(feature = "dim2", doc = "```ignore")]
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, SupportMap};
 /// extern crate nalgebra as na;
 /// use na::Vector3;
@@ -176,8 +177,8 @@ use na::Unit;
 ///
 /// Here's how you might implement `SupportMap` for a simple custom shape:
 ///
-#[cfg_attr(feature = "dim3", doc = "```")]
-#[cfg_attr(feature = "dim2", doc = "```ignore")]
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # // Note: This example shows the concept but won't actually compile in doc tests
 /// # // since we can't implement traits for external types in doc tests.
 /// # // It's here for educational purposes.
@@ -207,6 +208,7 @@ use na::Unit;
 ///         )
 ///     }
 /// }
+/// # }
 /// ```
 pub trait SupportMap {
     /// Evaluates the support function of this shape in local space.
@@ -234,8 +236,8 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
     /// use na::Vector3;
@@ -257,7 +259,7 @@ pub trait SupportMap {
     ///
     /// // Should be at the left side of the ball
     /// assert!((support_left.x + 2.5).abs() < 1e-6);
-/// # }
+    /// # }
     /// ```
     ///
     /// ## Why "local" support point?
@@ -279,8 +281,8 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
     /// use na::{Vector3, Unit};
@@ -295,6 +297,7 @@ pub trait SupportMap {
     /// // The support point should be on the sphere's surface
     /// let distance_from_origin = support.coords.norm();
     /// assert!((distance_from_origin - 1.5).abs() < 1e-6);
+    /// # }
     /// ```
     fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
         self.local_support_point(dir.as_ref())
@@ -326,8 +329,8 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
@@ -351,8 +354,8 @@ pub trait SupportMap {
     ///
     /// ## Example with Rotation
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Cuboid, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
@@ -372,6 +375,7 @@ pub trait SupportMap {
     /// // After 90° rotation, the long axis (originally X) now points in Y direction
     /// // So the support in X direction comes from the short axis
     /// assert!(support.x.abs() <= 1.0 + 1e-5); // Should be around 1.0 (the short axis)
+    /// }
     /// ```
     fn support_point(&self, transform: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
         let local_dir = transform.inverse_transform_vector(dir);
@@ -391,8 +395,8 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
@@ -425,8 +429,8 @@ pub trait SupportMap {
     /// This method is commonly used in the GJK algorithm, which needs to compute support points
     /// for transformed shapes with normalized directions for better numerical stability:
     ///
-    #[cfg_attr(feature = "dim3", doc = "```")]
-    #[cfg_attr(feature = "dim2", doc = "```ignore")]
+    /// ```rust
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, Cuboid, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
@@ -450,6 +454,7 @@ pub trait SupportMap {
     /// let minkowski_support = support_ball - support_cuboid;
     ///
     /// println!("Support point for Minkowski difference: {:?}", minkowski_support);
+    /// }
     /// ```
     fn support_point_toward(
         &self,
