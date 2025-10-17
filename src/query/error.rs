@@ -31,9 +31,10 @@ use core::fmt;
 /// Try a more basic query that's more widely supported:
 ///
 /// ```no_run
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, distance};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use nalgebra::{Isometry3, Vector3};
+/// # use parry3d::na::{Isometry3, Vector3};
 /// # let shape1 = Ball::new(1.0);
 /// # let shape2 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 /// # let pos1 = Isometry3::identity();
@@ -45,6 +46,7 @@ use core::fmt;
 ///
 /// // Or try distance computation:
 /// let dist = distance(&pos1, &shape1, &pos2, &shape2);
+/// # }
 /// ```
 ///
 /// ## 2. Decompose Complex Shapes
@@ -52,10 +54,10 @@ use core::fmt;
 /// Break down complex shapes into simpler components:
 ///
 /// ```no_run
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::{TriMesh, Ball, Compound, SharedShape};
 /// # use parry3d::query::distance;
-/// # use nalgebra::{Isometry3, Vector3};
+/// # use parry3d::na::{Isometry3, Vector3};
 /// # let mesh = TriMesh::new(vec![], vec![]).unwrap();
 /// # let ball = Ball::new(1.0);
 /// # let pos1 = Isometry3::identity();
@@ -74,10 +76,10 @@ use core::fmt;
 /// For shapes with BVH acceleration structures (like [`TriMesh`]), use specialized traversal methods:
 ///
 /// ```no_run
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::TriMesh;
 /// # use parry3d::bounding_volume::Aabb;
-/// # use nalgebra::Point3;
+/// # use parry3d::na::Point3;
 /// # let mesh = TriMesh::new(vec![Point3::origin()], vec![[0, 0, 0]]).unwrap();
 /// # let query_aabb = Aabb::new(Point3::origin(), Point3::origin());
 /// // Use BVH queries instead of direct shape queries:
@@ -94,7 +96,7 @@ use core::fmt;
 /// shape combinations:
 ///
 /// ```no_run
-/// # {
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// # use parry3d::shape::Shape;
 /// # use parry3d::math::{Isometry, Real};
@@ -112,7 +114,7 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, Unsupported};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use nalgebra::{Isometry3, Vector3};
+/// # use parry3d::na::{Isometry3, Vector3};
 /// let ball = Ball::new(1.0);
 /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 /// let pos1 = Isometry3::identity();

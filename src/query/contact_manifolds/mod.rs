@@ -32,6 +32,7 @@
 //! # Basic Usage
 //!
 //! ```rust
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{ContactManifold, TrackedContact};
 //! use parry3d::query::details::contact_manifold_ball_ball;
 //! use parry3d::shape::Ball;
@@ -58,6 +59,7 @@
 //!     println!("Contact point on ball1: {:?}", contact.local_p1);
 //!     println!("Contact point on ball2: {:?}", contact.local_p2);
 //! }
+//! # }
 //! ```
 //!
 //! # Updating Contact Manifolds
@@ -66,6 +68,7 @@
 //! using spatial coherence:
 //!
 //! ```rust
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{ContactManifold, TrackedContact};
 //! use parry3d::query::details::contact_manifold_ball_ball;
 //! use parry3d::shape::Ball;
@@ -88,6 +91,7 @@
 //!     // Fall back to full recomputation
 //!     contact_manifold_ball_ball(&pos12_frame2, &ball1, &ball2, 0.1, &mut manifold);
 //! }
+//! # }
 //! ```
 //!
 //! # Contact Prediction

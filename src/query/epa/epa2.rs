@@ -143,7 +143,7 @@ impl Face {
 /// use parry2d::query::epa::EPA;
 /// use parry2d::query::gjk::VoronoiSimplex;
 /// use parry2d::shape::Ball;
-/// use na::Isometry2;
+/// use parry2d::na::Isometry2;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -241,10 +241,10 @@ impl EPA {
     /// use parry2d::query::epa::EPA;
     /// use parry2d::query::gjk::VoronoiSimplex;
     /// use parry2d::shape::Ball;
-    /// use na::Isometry2;
+    /// use parry2d::na::Isometry2;
     ///
     /// let ball = Ball::new(2.0);
-    /// let pos = Isometry2::identity();
+    /// let pos: Isometry2<f32> = Isometry2::identity();
     ///
     /// // Assume GJK determined the origin is inside and filled simplex
     /// let simplex = VoronoiSimplex::new();
@@ -309,7 +309,7 @@ impl EPA {
     /// use parry2d::query::epa::EPA;
     /// use parry2d::query::gjk::{GJKResult, VoronoiSimplex};
     /// use parry2d::shape::Ball;
-    /// use na::Isometry2;
+    /// use parry2d::na::Isometry2;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);

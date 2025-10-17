@@ -59,9 +59,10 @@
 //! # Example: Rotating vs Non-Rotating Collision
 //!
 //! ```rust
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{cast_shapes, cast_shapes_nonlinear, ShapeCastOptions, NonlinearRigidMotion};
 //! use parry3d::shape::Cuboid;
-//! use nalgebra::{Isometry3, Vector3};
+//! use parry3d::na::{Isometry3, Vector3};
 //!
 //! let cube1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
 //! let cube2 = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
@@ -78,7 +79,7 @@
 //! // Nonlinear motion: cube moves right AND spins around Y axis
 //! let motion1 = NonlinearRigidMotion::new(
 //!     pos1,
-//!     nalgebra::Point3::origin(), // rotation center
+//!     parry3d::na::Point3::origin(), // rotation center
 //!     vel1,                        // linear velocity
 //!     Vector3::new(0.0, 5.0, 0.0), // angular velocity (spinning fast)
 //! );
@@ -96,6 +97,7 @@
 //!
 //! // The spinning cube may collide at a different time due to rotation!
 //! // Its corners sweep out a larger effective volume as it spins.
+//! # }
 //! ```
 //!
 //! # Performance Considerations

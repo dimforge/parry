@@ -44,9 +44,10 @@
 //! # Example: Cuboid-Cuboid Collision
 //!
 //! ```rust
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::shape::Cuboid;
 //! use parry3d::query::sat::*;
-//! use nalgebra::{Isometry3, Vector3};
+//! use parry3d::na::{Isometry3, Vector3};
 //!
 //! // Create two boxes
 //! let box1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
@@ -65,6 +66,7 @@
 //! } else {
 //!     println!("Boxes are overlapping by {}", -separation);
 //! }
+//! # }
 //! ```
 //!
 //! # Module Organization

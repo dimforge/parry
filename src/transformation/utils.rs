@@ -114,7 +114,7 @@
 //! # {
 //! use parry3d::transformation::utils::{transform, scaled};
 //! use parry3d::math::{Point, Vector, Isometry};
-//! use na::{Translation3, UnitQuaternion};
+//! use parry3d::na::{Translation3, UnitQuaternion};
 //! use std::f32::consts::PI;
 //!
 //! let mut points = vec![
@@ -179,7 +179,7 @@ use {crate::math::DIM, num::Zero};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::transform;
 /// use parry3d::math::{Point, Isometry, Vector};
-/// use na::Translation3;
+/// use parry3d::na::Translation3;
 ///
 /// // Create some points
 /// let mut points = vec![
@@ -189,13 +189,13 @@ use {crate::math::DIM, num::Zero};
 /// ];
 ///
 /// // Create a translation
-/// let transform = Isometry::from_parts(
+/// let transform_iso = Isometry::from_parts(
 ///     Translation3::new(10.0, 20.0, 30.0).into(),
-///     na::UnitQuaternion::identity()
+///     parry3d::na::UnitQuaternion::identity()
 /// );
 ///
 /// // Apply the transformation in-place
-/// transform(&mut points, transform);
+/// transform(&mut points, transform_iso);
 ///
 /// assert_eq!(points[0], Point::new(11.0, 20.0, 30.0));
 /// assert_eq!(points[1], Point::new(10.0, 21.0, 30.0));
@@ -224,7 +224,7 @@ pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::transformed;
 /// use parry2d::math::{Point, Isometry};
-/// use na::{Translation2, UnitComplex};
+/// use parry2d::na::{Translation2, UnitComplex};
 /// use std::f32::consts::PI;
 ///
 /// let points = vec![

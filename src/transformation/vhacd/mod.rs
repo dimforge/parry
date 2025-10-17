@@ -51,6 +51,7 @@
 //! The simplest way to decompose a mesh is using default parameters:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::VHACD;
 //! use parry3d::transformation::vhacd::VHACDParameters;
@@ -93,6 +94,7 @@
 //! for (i, (vertices, indices)) in convex_hulls.iter().enumerate() {
 //!     println!("Part {}: {} vertices, {} triangles", i, vertices.len(), indices.len());
 //! }
+//! # }
 //! ```
 //!
 //! ## Customizing Parameters
@@ -100,6 +102,7 @@
 //! For more control over the decomposition quality and performance:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 //! use parry3d::transformation::voxelization::FillMode;
@@ -127,6 +130,7 @@
 //! };
 //!
 //! let decomposition = VHACD::decompose(&params, &vertices, &indices, false);
+//! # }
 //! ```
 //!
 //! ## Working with Original Mesh Geometry
@@ -135,6 +139,7 @@
 //! accurate hulls based on the original mesh:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 //!
@@ -155,6 +160,7 @@
 //! // Compute exact convex hulls using original mesh geometry
 //! let exact_hulls = decomposition.compute_exact_convex_hulls(&vertices, &indices);
 //! println!("Generated {} exact convex hulls", exact_hulls.len());
+//! # }
 //! ```
 //!
 //! ## 2D Convex Decomposition
@@ -196,10 +202,11 @@
 //! The decomposed convex parts can be used directly with physics engines:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::shape::{SharedShape, Compound};
 //! use parry3d::transformation::vhacd::VHACDParameters;
-//! use na::Isometry3;
+//! use parry3d::na::Isometry3;
 //!
 //! # let vertices = vec![
 //! #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
@@ -224,6 +231,7 @@
 //!
 //! // The resulting compound can be used as a collider shape
 //! println!("Created compound shape with convex parts");
+//! # }
 //! ```
 //!
 //! # Performance Tips

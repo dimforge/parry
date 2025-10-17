@@ -58,9 +58,10 @@
 //! dispatcher internally:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query;
 //! use parry3d::shape::Ball;
-//! use na::Isometry3;
+//! use parry3d::na::Isometry3;
 //!
 //! let ball1 = Ball::new(0.5);
 //! let ball2 = Ball::new(1.0);
@@ -69,6 +70,7 @@
 //!
 //! // Uses DefaultQueryDispatcher automatically
 //! let distance = query::distance(&pos1, &ball1, &pos2, &ball2);
+//! # }
 //! ```
 //!
 //! ## Using a Dispatcher Directly
@@ -76,9 +78,10 @@
 //! If you need explicit control, you can create and use a dispatcher:
 //!
 //! ```
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 //! use parry3d::shape::Ball;
-//! use na::Isometry3;
+//! use parry3d::na::Isometry3;
 //!
 //! let dispatcher = DefaultQueryDispatcher;
 //! let ball1 = Ball::new(0.5);
@@ -91,6 +94,7 @@
 //! let pos12 = pos1.inv_mul(&pos2);
 //!
 //! let distance = dispatcher.distance(&pos12, &ball1, &ball2).unwrap();
+//! # }
 //! ```
 //!
 //! ## Chaining Dispatchers
@@ -236,7 +240,7 @@ use alloc::vec::Vec;
 /// use parry3d::query::contact_manifolds::contact_manifolds;
 /// use parry3d::query::ContactManifold;
 /// use parry3d::shape::Cuboid;
-/// use na::{Isometry3, Vector3};
+/// use parry3d::na::{Isometry3, Vector3};
 /// use alloc::vec::Vec;
 ///
 /// let cube1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
@@ -370,7 +374,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use na::{Isometry3, Vector3};
+/// use parry3d::na::{Isometry3, Vector3};
 ///
 /// let dispatcher = DefaultQueryDispatcher;
 ///

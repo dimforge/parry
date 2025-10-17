@@ -43,6 +43,7 @@
 //! partition.
 //!
 //! ```rust
+//! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::bounding_volume::Aabb;
 //! use parry3d::math::Point;
 //! use parry3d::query::SplitResult;
@@ -62,6 +63,7 @@
 //!         // Entire AABB is on the positive side (x > 5.0)
 //!     }
 //! }
+//! # }
 //! ```
 //!
 //! ## 2. Mesh Slicing
@@ -70,12 +72,12 @@
 //! architectural cross-sections.
 //!
 //! ```rust
-//! # #[cfg(all(feature = "dim3", feature = "spade"))]
+//! # #[cfg(all(feature = "dim3", feature = "spade", feature = "f32"))]
 //! # {
 //! use parry3d::shape::TriMesh;
 //! use parry3d::math::{Point, Vector};
 //! use parry3d::query::SplitResult;
-//! use nalgebra::Unit;
+//! use parry3d::na::Unit;
 //!
 //! # let vertices = vec![
 //! #     Point::new(0.0, 0.0, 0.0),
@@ -107,16 +109,16 @@
 //! for visualization, analysis, or generating contours.
 //!
 //! ```rust
-//! # #[cfg(all(feature = "dim3", feature = "spade"))]
+//! # #[cfg(all(feature = "dim3", feature = "spade", feature = "f32"))]
 //! # {
 //! use parry3d::shape::TriMesh;
 //! use parry3d::query::IntersectResult;
 //!
 //! # let vertices = vec![
-//! #     nalgebra::Point3::origin(),
-//! #     nalgebra::Point3::new(1.0, 0.0, 0.0),
-//! #     nalgebra::Point3::new(0.5, 1.0, 0.5),
-//! #     nalgebra::Point3::new(0.5, 0.0, 1.0),
+//! #     parry3d::na::Point3::origin(),
+//! #     parry3d::na::Point3::new(1.0, 0.0, 0.0),
+//! #     parry3d::na::Point3::new(0.5, 1.0, 0.5),
+//! #     parry3d::na::Point3::new(0.5, 0.0, 1.0),
 //! # ];
 //! # let indices = vec![[0u32, 1, 2], [0, 1, 3]];
 //! # let mesh = TriMesh::new(vertices, indices).unwrap();
