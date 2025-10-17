@@ -177,8 +177,8 @@ impl FillMode {
 ///
 /// # Usage
 ///
-/// Most users will work with [`VoxelSet`](crate::transformation::voxelization::VoxelSet) which filters out outside voxels and only stores
-/// filled ones. However, if you're working directly with [`VoxelizedVolume`](crate::transformation::voxelization::VoxelizedVolume), you'll encounter
+/// Most users will work with [`VoxelSet`] which filters out outside voxels and only stores
+/// filled ones. However, if you're working directly with [`VoxelizedVolume`], you'll encounter
 /// all these values.
 ///
 /// # Final States (After Voxelization)
@@ -274,12 +274,12 @@ struct VoxelData {
 /// A dense voxel grid storing the state of every voxel in a cubic volume.
 ///
 /// `VoxelizedVolume` is the intermediate representation used during the voxelization process.
-/// Unlike [`VoxelSet`](crate::transformation::voxelization::VoxelSet) which only stores filled voxels, `VoxelizedVolume` stores a complete
-/// dense 3D array where every grid cell has an associated [`VoxelValue`](crate::transformation::voxelization::VoxelValue).
+/// Unlike [`VoxelSet`] which only stores filled voxels, `VoxelizedVolume` stores a complete
+/// dense 3D array where every grid cell has an associated [`VoxelValue`].
 ///
 /// # When to Use
 ///
-/// Most users should use [`VoxelSet`](crate::transformation::voxelization::VoxelSet) instead, which is converted from `VoxelizedVolume`
+/// Most users should use [`VoxelSet`] instead, which is converted from `VoxelizedVolume`
 /// automatically and is much more memory-efficient. You might want to use `VoxelizedVolume`
 /// directly if you need to:
 ///
@@ -293,7 +293,7 @@ struct VoxelData {
 /// - Memory usage: `O(resolution^3)` in 3D or `O(resolution^2)` in 2D
 /// - A 100×100×100 grid requires 1 million voxel entries
 ///
-/// For this reason, [`VoxelSet`](crate::transformation::voxelization::VoxelSet) is usually preferred for storage.
+/// For this reason, [`VoxelSet`] is usually preferred for storage.
 ///
 /// # Conversion
 ///

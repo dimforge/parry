@@ -12,7 +12,7 @@ use na::Unit;
 /// # Parameters
 ///
 /// - `cube1`: The cuboid
-/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap) (sphere, capsule, convex mesh, etc.)
+/// - `shape2`: Any convex shape implementing [`SupportMap`] (sphere, capsule, convex mesh, etc.)
 /// - `pos12`: The position of `shape2` relative to `cube1`
 /// - `axis1`: The unit direction vector (in `cube1`'s local space) to test
 ///
@@ -105,7 +105,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// # Parameters
 ///
 /// - `cube1`: The cuboid
-/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap)
+/// - `shape2`: Any convex shape implementing [`SupportMap`]
 /// - `axes`: A slice of axis directions to test (not necessarily unit length)
 /// - `pos12`: The position of `shape2` relative to `cube1`
 ///
@@ -199,7 +199,7 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 /// # Parameters
 ///
 /// - `cube1`: The cuboid whose face normals will be tested
-/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap)
+/// - `shape2`: Any convex shape implementing [`SupportMap`]
 /// - `pos12`: The position of `shape2` relative to `cube1`
 ///
 /// # Returns

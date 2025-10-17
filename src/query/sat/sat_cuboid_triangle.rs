@@ -160,7 +160,7 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 /// # Parameters
 ///
 /// - `triangle1`: The triangle whose edge normals will be tested
-/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap)
+/// - `shape2`: Any convex shape implementing [`SupportMap`]
 /// - `pos12`: The position of `shape2` relative to `triangle1`
 ///
 /// # Returns

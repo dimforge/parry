@@ -376,7 +376,7 @@ pub struct VHACDParameters {
     ///
     /// # See Also
     ///
-    /// [`FillMode`](crate::transformation::voxelization::FillMode) for detailed documentation on voxelization modes.
+    /// [`FillMode`] for detailed documentation on voxelization modes.
     pub fill_mode: FillMode,
 
     /// Whether to use approximate convex hulls during decomposition.

@@ -5,7 +5,7 @@ use na::Unit;
 /// Computes the separation distance between two convex shapes along a given direction.
 ///
 /// This is the most general SAT separation computation function in Parry. It works with any
-/// two convex shapes that implement the [`SupportMap`](crate::shape::SupportMap) trait, which includes spheres, capsules,
+/// two convex shapes that implement the [`SupportMap`] trait, which includes spheres, capsules,
 /// cones, convex polyhedra, and more.
 ///
 /// # What is a Support Map?

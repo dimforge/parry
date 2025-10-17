@@ -293,7 +293,7 @@ impl EPA {
     /// # Parameters
     ///
     /// - `m`: The position and orientation of the shape in world space
-    /// - `g`: The shape to project onto (must implement [`SupportMap`](crate::shape::SupportMap))
+    /// - `g`: The shape to project onto (must implement [`SupportMap`])
     /// - `simplex`: A Voronoi simplex from GJK that encloses the origin (indicating the origin
     ///   is inside the shape)
     ///
@@ -351,8 +351,8 @@ impl EPA {
     ///
     /// - `pos12`: The relative position/orientation from `g2`'s frame to `g1`'s frame
     ///   (typically computed as `pos1.inverse() * pos2`)
-    /// - `g1`: The first shape (must implement [`SupportMap`](crate::shape::SupportMap))
-    /// - `g2`: The second shape (must implement [`SupportMap`](crate::shape::SupportMap))
+    /// - `g1`: The first shape (must implement [`SupportMap`])
+    /// - `g2`: The second shape (must implement [`SupportMap`])
     /// - `simplex`: A Voronoi simplex from GJK that encloses the origin, indicating penetration
     ///
     /// # Returns
