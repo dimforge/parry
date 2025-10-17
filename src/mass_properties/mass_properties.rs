@@ -58,7 +58,7 @@ const EPSILON: Real = f32::EPSILON as Real;
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::mass_properties::MassProperties;
-/// use parry3d::shape::Ball;
+/// use parry3d::shape::{Ball, Shape};
 /// use nalgebra::Point3;
 ///
 /// // Compute mass properties for a unit ball with density 1.0
@@ -90,7 +90,7 @@ const EPSILON: Real = f32::EPSILON as Real;
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::mass_properties::MassProperties;
-/// use parry3d::shape::{Ball, Cuboid};
+/// use parry3d::shape::{Ball, Cuboid, Shape};
 /// use nalgebra::Vector3;
 ///
 /// let ball = Ball::new(1.0);

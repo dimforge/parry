@@ -72,7 +72,7 @@ use crate::shape::Shape;
 ///
 /// // Position them so they're touching
 /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(2.0, 0.0, 0.0); // Edge to edge
+/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0); // Edge to edge
 ///
 /// let dist = distance(&pos1, &box1, &pos2, &box2).unwrap();
 ///

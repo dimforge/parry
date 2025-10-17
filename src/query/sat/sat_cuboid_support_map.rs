@@ -56,7 +56,7 @@ use na::Unit;
 ///     &axis
 /// );
 ///
-/// println!("Separation: {} along axis: {}", separation, chosen_axis);
+/// println!("Separation: {} along axis: {:?}", separation, chosen_axis);
 /// # }
 /// ```
 ///

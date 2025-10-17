@@ -49,7 +49,6 @@ use crate::transformation::voxelization::FillMode;
 ///     convex_hull_approximation: false, // Exact hulls
 ///     fill_mode: FillMode::FloodFill {
 ///         detect_cavities: false,
-///         detect_self_intersections: false,
 ///     },
 /// };
 /// // Best for: Critical collision accuracy, offline processing
@@ -74,7 +73,6 @@ use crate::transformation::voxelization::FillMode;
 ///     convex_hull_approximation: true, // Fast approximation
 ///     fill_mode: FillMode::FloodFill {
 ///         detect_cavities: false,
-///         detect_self_intersections: false,
 ///     },
 /// };
 /// // Best for: Rapid prototyping, testing during development
@@ -99,7 +97,6 @@ use crate::transformation::voxelization::FillMode;
 ///     convex_hull_approximation: true,
 ///     fill_mode: FillMode::FloodFill {
 ///         detect_cavities: false,
-///         detect_self_intersections: false,
 ///     },
 /// };
 /// // Best for: Game colliders, physics simulations
@@ -367,7 +364,6 @@ pub struct VHACDParameters {
     /// let with_cavities = VHACDParameters {
     ///     fill_mode: FillMode::FloodFill {
     ///         detect_cavities: true,
-    ///         detect_self_intersections: false,
     ///     },
     ///     ..Default::default()
     /// };

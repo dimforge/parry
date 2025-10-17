@@ -40,7 +40,7 @@ use core::fmt;
 /// # let pos1 = Isometry3::identity();
 /// # let pos2 = Isometry3::identity();
 /// // If contact manifolds are unsupported, try basic contact:
-/// if let Some(contact) = contact(&pos1, &shape1, &pos2, &shape2, 0.0) {
+/// if let Ok(contact) = contact(&pos1, &shape1, &pos2, &shape2, 0.0) {
 ///     // Process the contact point
 /// }
 ///
@@ -83,7 +83,7 @@ use core::fmt;
 /// # let mesh = TriMesh::new(vec![Point3::origin()], vec![[0, 0, 0]]).unwrap();
 /// # let query_aabb = Aabb::new(Point3::origin(), Point3::origin());
 /// // Use BVH queries instead of direct shape queries:
-/// for leaf_id in mesh.bvh().leaves_intersecting_aabb(&query_aabb) {
+/// for leaf_id in mesh.bvh().intersect_aabb(&query_aabb) {
 ///     let triangle = mesh.triangle(leaf_id);
 ///     // Process the triangle
 /// }

@@ -171,8 +171,8 @@ impl Bvh {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
-    /// use parry3d::bounding_volume::Aabb;
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
@@ -210,7 +210,7 @@ impl Bvh {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -246,7 +246,7 @@ impl Bvh {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///

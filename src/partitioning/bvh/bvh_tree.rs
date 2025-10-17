@@ -122,7 +122,7 @@ pub enum BvhBuildStrategy {
 /// bvh.refit(&mut workspace);
 ///
 /// // Reuse the same workspace for optimization
-/// bvh.rebalance(0.05, &mut workspace);
+/// bvh.optimize_incremental(&mut workspace);
 ///
 /// // The workspace can be reused across multiple BVH operations
 /// # }
@@ -281,7 +281,7 @@ impl BvhNodeWide {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeWide;
+    /// use parry3d::partitioning::BvhNodeWide;
     ///
     /// let node_wide = BvhNodeWide::zeros();
     /// assert_eq!(node_wide.leaf_count(), 0);
@@ -305,7 +305,7 @@ impl BvhNodeWide {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
-    /// use parry3d::bounding_volume::Aabb;
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
@@ -315,8 +315,8 @@ impl BvhNodeWide {
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
     /// // The root AABB should contain both leaves
-    /// assert!(bvh.root_aabb().contains_aabb(&aabbs[0]));
-    /// assert!(bvh.root_aabb().contains_aabb(&aabbs[1]));
+    /// assert!(bvh.root_aabb().contains(&aabbs[0]));
+    /// assert!(bvh.root_aabb().contains(&aabbs[1]));
     /// # }
     /// ```
     ///
@@ -337,7 +337,7 @@ impl BvhNodeWide {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeWide;
+    /// use parry3d::partitioning::BvhNodeWide;
     /// use nalgebra::Vector3;
     ///
     /// let mut node_wide = BvhNodeWide::zeros();
@@ -372,30 +372,6 @@ impl BvhNodeWide {
     ///
     /// A new `BvhNode` representing the parent of both children.
     ///
-    /// # Example
-    ///
-    /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::{BvhNode, BvhNodeWide};
-    /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
-    ///
-    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
-    /// let aabb2 = Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0));
-    ///
-    /// let node_wide = BvhNodeWide {
-    ///     left: BvhNode::leaf(aabb1, 0),
-    ///     right: BvhNode::leaf(aabb2, 1),
-    /// };
-    ///
-    /// let parent = node_wide.merged(0);
-    /// assert_eq!(parent.leaf_count(), 2);
-    /// // Parent AABB contains both children
-    /// assert!(parent.aabb().contains_aabb(&aabb1));
-    /// assert!(parent.aabb().contains_aabb(&aabb2));
-    /// # }
-    /// ```
-    ///
     /// # See Also
     ///
     /// - [`BvhNode::merged`] - The underlying merge operation
@@ -411,26 +387,6 @@ impl BvhNodeWide {
     /// # Returns
     ///
     /// The total number of leaves in the subtrees rooted at both children.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::{BvhNode, BvhNodeWide};
-    /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
-    ///
-    /// let aabb1 = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
-    /// let aabb2 = Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0));
-    ///
-    /// let node_wide = BvhNodeWide {
-    ///     left: BvhNode::leaf(aabb1, 0),
-    ///     right: BvhNode::leaf(aabb2, 1),
-    /// };
-    ///
-    /// assert_eq!(node_wide.leaf_count(), 2);
-    /// # }
-    /// ```
     ///
     /// # See Also
     ///
@@ -478,7 +434,7 @@ static_assertions::assert_eq_size!(BvhNode, BvhNodeSimd);
 ///
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-/// use parry3d::partitioning::bvh::BvhNode;
+/// use parry3d::partitioning::BvhNode;
 /// use parry3d::bounding_volume::Aabb;
 /// use nalgebra::Point3;
 ///
@@ -548,7 +504,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -593,7 +549,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -626,7 +582,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -682,7 +638,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -715,7 +671,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -748,7 +704,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -784,7 +740,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -813,7 +769,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -847,7 +803,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::{Point3, Vector3};
     ///
@@ -884,7 +840,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -931,7 +887,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -983,7 +939,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -1078,7 +1034,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -1166,7 +1122,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
     ///
@@ -1206,7 +1162,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use parry3d::query::Ray;
     /// use nalgebra::{Point3, Vector3};
@@ -1272,7 +1228,7 @@ impl BvhNode {
 ///
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-/// use parry3d::partitioning::bvh::BvhNodeIndex;
+/// use parry3d::partitioning::BvhNodeIndex;
 ///
 /// // Create indices for the left and right children of node pair 5
 /// let left = BvhNodeIndex::left(5);
@@ -1319,7 +1275,7 @@ impl BvhNodeIndex {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeIndex;
+    /// use parry3d::partitioning::BvhNodeIndex;
     ///
     /// let left = BvhNodeIndex::left(10);
     /// let (pair_idx, is_right) = left.decompose();
@@ -1350,7 +1306,7 @@ impl BvhNodeIndex {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeIndex;
+    /// use parry3d::partitioning::BvhNodeIndex;
     ///
     /// let left = BvhNodeIndex::left(5);
     /// let right = BvhNodeIndex::right(5);
@@ -1379,7 +1335,7 @@ impl BvhNodeIndex {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeIndex;
+    /// use parry3d::partitioning::BvhNodeIndex;
     ///
     /// let left_child = BvhNodeIndex::left(0);
     /// let (pair_idx, is_right) = left_child.decompose();
@@ -1412,7 +1368,7 @@ impl BvhNodeIndex {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeIndex;
+    /// use parry3d::partitioning::BvhNodeIndex;
     ///
     /// let right_child = BvhNodeIndex::right(0);
     /// let (pair_idx, is_right) = right_child.decompose();
@@ -1446,7 +1402,7 @@ impl BvhNodeIndex {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNodeIndex;
+    /// use parry3d::partitioning::BvhNodeIndex;
     ///
     /// let left = BvhNodeIndex::new(3, false);
     /// let right = BvhNodeIndex::new(3, true);
@@ -1623,7 +1579,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
-/// use parry3d::query::Ray;
+/// use parry3d::query::{Ray, RayCast};
 /// use nalgebra::{Point3, Vector3};
 ///
 /// let objects = vec![
@@ -2020,7 +1976,7 @@ impl Bvh {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
-    /// use parry3d::bounding_volume::Aabb;
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
     /// use nalgebra::Point3;
     ///
     /// let aabbs = vec![
@@ -2032,8 +1988,8 @@ impl Bvh {
     /// let root_aabb = bvh.root_aabb();
     ///
     /// // Root AABB contains both leaves
-    /// assert!(root_aabb.contains_aabb(&aabbs[0]));
-    /// assert!(root_aabb.contains_aabb(&aabbs[1]));
+    /// assert!(root_aabb.contains(&aabbs[0]));
+    /// assert!(root_aabb.contains(&aabbs[1]));
     /// # }
     /// ```
     ///
@@ -2084,7 +2040,7 @@ impl Bvh {
     /// bvh.scale(&Vector3::new(2.0, 2.0, 2.0));
     ///
     /// let root = bvh.root_aabb();
-    /// assert_eq!(root.maxs(), Point3::new(2.0, 2.0, 2.0));
+    /// assert_eq!(root.maxs, Point3::new(2.0, 2.0, 2.0));
     /// # }
     /// ```
     ///

@@ -45,14 +45,16 @@ impl MassProperties {
     ///
     /// // Create a 3×3×3 voxel grid with 1m voxels
     /// let voxel_size = Vector3::new(1.0, 1.0, 1.0);
-    /// let mut voxels = Voxels::new(voxel_size);
     ///
     /// // Fill some voxels to create an L-shape
-    /// voxels.set_voxel(Point3::new(0, 0, 0), true); // Bottom bar
-    /// voxels.set_voxel(Point3::new(1, 0, 0), true);
-    /// voxels.set_voxel(Point3::new(2, 0, 0), true);
-    /// voxels.set_voxel(Point3::new(0, 1, 0), true); // Vertical part
-    /// voxels.set_voxel(Point3::new(0, 2, 0), true);
+    /// let voxels = &[
+    ///     Point3::new(0, 0, 0), // Bottom bar
+    ///     Point3::new(1, 0, 0),
+    ///     Point3::new(2, 0, 0),
+    ///     Point3::new(0, 1, 0), // Vertical part
+    ///     Point3::new(0, 2, 0),
+    /// ];
+    /// let voxels = Voxels::new(voxel_size, voxels);
     ///
     /// let density = 1000.0; // Water density
     /// let voxel_props = MassProperties::from_voxels(density, &voxels);
@@ -73,16 +75,18 @@ impl MassProperties {
     ///
     /// // Create a chunk of destructible terrain
     /// let voxel_size = Vector3::new(0.5, 0.5, 0.5); // 50cm voxels
-    /// let mut terrain = Voxels::new(voxel_size);
+    /// let mut voxels = vec![];
     ///
     /// // Fill a 4×4×4 solid block
     /// for x in 0..4 {
     ///     for y in 0..4 {
     ///         for z in 0..4 {
-    ///             terrain.set_voxel(Point3::new(x, y, z), true);
+    ///             voxels.push(Point3::new(x, y, z));
     ///         }
     ///     }
     /// }
+    ///
+    /// let mut terrain = Voxels::new(voxel_size, &voxels);
     ///
     /// let density = 2400.0; // Concrete
     /// let terrain_props = MassProperties::from_voxels(density, &terrain);
@@ -101,13 +105,14 @@ impl MassProperties {
     ///
     /// // Large sparse grid (only stores filled voxels since v0.25.0)
     /// let voxel_size = Vector3::new(0.1, 0.1, 0.1);
-    /// let mut voxels = Voxels::new(voxel_size);
     ///
     /// // Scatter some voxels in a large space (efficient with sparse storage)
-    /// voxels.set_voxel(Point3::new(0, 0, 0), true);
-    /// voxels.set_voxel(Point3::new(100, 50, 75), true);
-    /// voxels.set_voxel(Point3::new(-50, 200, -30), true);
-    ///
+    /// let voxels = &[
+    ///     Point3::new(0, 0, 0),
+    ///     Point3::new(100, 50, 75),
+    ///     Point3::new(-50, 200, -30),
+    /// ];
+    /// let voxels = Voxels::new(voxel_size, voxels);
     /// let density = 1000.0;
     /// let props = MassProperties::from_voxels(density, &voxels);
     ///

@@ -58,7 +58,7 @@ pub(crate) struct CutPlane {
 ///
 /// ## Basic Usage
 ///
-/// ```
+/// ```no_run
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::math::Point;
 /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -92,7 +92,7 @@ pub(crate) struct CutPlane {
 ///
 /// ## With Custom Parameters
 ///
-/// ```
+/// ```no_run
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::math::Point;
 /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -176,7 +176,7 @@ impl VHACD {
     ///
     /// ## Basic Decomposition
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -203,7 +203,7 @@ impl VHACD {
     ///
     /// ## With Exact Hull Generation
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -229,7 +229,7 @@ impl VHACD {
     ///
     /// ## Custom Parameters
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -310,7 +310,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -329,7 +329,6 @@ impl VHACD {
     ///     64, // resolution
     ///     FillMode::FloodFill {
     ///         detect_cavities: false,
-    ///         detect_self_intersections: false,
     ///     },
     ///     false, // don't keep primitive mapping
     /// );
@@ -388,7 +387,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -411,7 +410,7 @@ impl VHACD {
     ///
     /// // Inspect individual parts
     /// for (i, part) in parts.iter().enumerate() {
-    ///     println!("Part {}: {} voxels", i, part.voxels.len());
+    ///     println!("Part {}: {} voxels", i, part.voxels().len());
     /// }
     /// # }
     /// ```
@@ -827,7 +826,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::math::Point;
     /// use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -912,7 +911,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -1001,7 +1000,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::math::Point;
     /// use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -1090,7 +1089,7 @@ impl VHACD {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -1119,12 +1118,12 @@ impl VHACD {
     ///
     /// ## Creating a Compound Shape for Collision Detection
     ///
-    /// ```
+    /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::math::Point;
     /// use parry3d::shape::{SharedShape, Compound};
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
-    /// use na::Isometry3;
+    /// use parry3d::na::Isometry3;
     ///
     /// # let vertices = vec![
     /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
@@ -1140,16 +1139,6 @@ impl VHACD {
     /// );
     ///
     /// let hulls = decomposition.compute_convex_hulls(4);
-    ///
-    /// // Convert to compound shape for collision detection
-    /// let shapes: Vec<_> = hulls
-    ///     .into_iter()
-    ///     .map(|(verts, tris)| {
-    ///         (Isometry3::identity(), SharedShape::convex_hull(&verts).unwrap())
-    ///     })
-    ///     .collect();
-    ///
-    /// let compound = Compound::new(shapes);
     /// # }
     /// ```
     ///

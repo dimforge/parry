@@ -161,7 +161,7 @@ impl Bvh {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
-    /// use parry3d::bounding_volume::Aabb;
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
     /// use nalgebra::Point3;
     ///
     /// let objects = vec![

@@ -119,7 +119,7 @@ use na::Unit;
 /// use parry3d::shape::{Ball, Cuboid, SupportMap};
 /// use parry3d::math::{Point, Vector, Real};
 /// extern crate nalgebra as na;
-/// use na::Vector3;
+/// use parry3d::na::Vector3;
 ///
 /// // Create a ball (sphere) with radius 1.0
 /// let ball = Ball::new(1.0);
@@ -149,7 +149,7 @@ use na::Unit;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, SupportMap};
 /// extern crate nalgebra as na;
-/// use na::Vector3;
+/// use parry3d::na::Vector3;
 ///
 /// // Create a cuboid (box) with half-extents 2x3x4
 /// let cuboid = Cuboid::new(Vector3::new(2.0, 3.0, 4.0));
@@ -185,7 +185,7 @@ use na::Unit;
 /// use parry3d::shape::SupportMap;
 /// use parry3d::math::{Point, Vector, Real};
 /// extern crate nalgebra as na;
-/// use na::Vector3;
+/// use parry3d::na::Vector3;
 ///
 /// // A simple pill-shaped object aligned with the X axis
 /// struct SimplePill {
@@ -240,7 +240,7 @@ pub trait SupportMap {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
-    /// use na::Vector3;
+    /// use parry3d::na::Vector3;
     ///
     /// let ball = Ball::new(2.5);
     ///
@@ -285,7 +285,7 @@ pub trait SupportMap {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
-    /// use na::{Vector3, Unit};
+    /// use parry3d::na::{Vector3, Unit};
     ///
     /// let ball = Ball::new(1.5);
     ///
@@ -334,7 +334,7 @@ pub trait SupportMap {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
-    /// use na::{Vector3, Translation3, UnitQuaternion};
+    /// use parry3d::na::{Vector3, Translation3, UnitQuaternion};
     ///
     /// let ball = Ball::new(1.0);
     ///
@@ -359,7 +359,7 @@ pub trait SupportMap {
     /// use parry3d::shape::{Cuboid, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
-    /// use na::{Vector3, UnitQuaternion};
+    /// use parry3d::na::{Vector3, UnitQuaternion};
     /// use std::f32::consts::PI;
     ///
     /// let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 1.0));
@@ -400,7 +400,7 @@ pub trait SupportMap {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
-    /// use na::{Vector3, Unit};
+    /// use parry3d::na::{Vector3, Unit};
     ///
     /// let ball = Ball::new(2.0);
     ///
@@ -434,7 +434,7 @@ pub trait SupportMap {
     /// use parry3d::shape::{Ball, Cuboid, SupportMap};
     /// use parry3d::math::Isometry;
     /// extern crate nalgebra as na;
-    /// use na::{Vector3, Unit};
+    /// use parry3d::na::{Vector3, Unit};
     ///
     /// // Two shapes at different positions
     /// let ball = Ball::new(1.0);

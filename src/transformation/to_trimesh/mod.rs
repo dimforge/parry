@@ -89,7 +89,7 @@
 //! # {
 //! use parry3d::shape::HeightField;
 //! use parry3d::math::Vector;
-//! use na::DMatrix;
+//! use parry3d::na::DMatrix;
 //!
 //! // Create a simple 3×3 height field
 //! let heights = DMatrix::from_row_slice(3, 3, &[

@@ -20,10 +20,10 @@ use {crate::bounding_volume, crate::math::Point};
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::support_point_id;
-/// use na::{Point3, Vector3};
+/// use parry3d::na::{Point3, Vector3};
 ///
 /// let points = vec![
 ///     Point3::origin(),
@@ -80,10 +80,10 @@ pub fn support_point_id<const D: usize>(
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::indexed_support_point_id;
-/// use na::{Point3, Vector3};
+/// use parry3d::na::{Point3, Vector3};
 ///
 /// let points = vec![
 ///     Point3::origin(),
@@ -142,10 +142,10 @@ where
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::indexed_support_point_nth;
-/// use na::{Point3, Vector3};
+/// use parry3d::na::{Point3, Vector3};
 ///
 /// let points = vec![
 ///     Point3::origin(),  // index 0
@@ -208,7 +208,7 @@ where
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::normalize;
 /// use parry3d::math::Point;

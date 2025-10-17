@@ -230,37 +230,6 @@ use alloc::vec::Vec;
 /// - Building a custom physics engine on top of Parry
 /// - Optimizing repeated collision queries between the same shape pairs
 ///
-/// Most users can use the free functions in `crate::query::contact_manifolds` instead of
-/// implementing this trait directly.
-///
-/// # Example: Using Contact Manifolds
-///
-/// ```
-/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-/// use parry3d::query::contact_manifolds::contact_manifolds;
-/// use parry3d::query::ContactManifold;
-/// use parry3d::shape::Cuboid;
-/// use parry3d::na::{Isometry3, Vector3};
-/// use alloc::vec::Vec;
-///
-/// let cube1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// let cube2 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-///
-/// let pos1 = Isometry3::identity();
-/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0);
-///
-/// let mut manifolds = Vec::new();
-/// let prediction = 0.1; // Contact prediction distance
-///
-/// contact_manifolds(&pos1, &cube1, &pos2, &cube2, prediction, &mut manifolds);
-///
-/// // manifolds now contains contact points between the cubes
-/// for manifold in &manifolds {
-///     println!("Manifold has {} contacts", manifold.points.len());
-/// }
-/// # }
-/// ```
-///
 /// # Generic Parameters
 ///
 /// - `ManifoldData`: Custom data attached to each contact manifold (default: `()`)

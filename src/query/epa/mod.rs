@@ -52,7 +52,7 @@
 //! use parry3d::query::epa::EPA;
 //! use parry3d::query::gjk::VoronoiSimplex;
 //! use parry3d::shape::Ball;
-//! use na::Isometry3;
+//! use parry3d::na::Isometry3;
 //!
 //! let ball1 = Ball::new(1.0);
 //! let ball2 = Ball::new(1.0);

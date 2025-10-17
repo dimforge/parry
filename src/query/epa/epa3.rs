@@ -209,7 +209,7 @@ impl SilhouetteEdge {
 /// use parry3d::query::epa::EPA;
 /// use parry3d::query::gjk::VoronoiSimplex;
 /// use parry3d::shape::Ball;
-/// use na::Isometry3;
+/// use parry3d::na::Isometry3;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -317,10 +317,10 @@ impl EPA {
     /// use parry3d::query::epa::EPA;
     /// use parry3d::query::gjk::VoronoiSimplex;
     /// use parry3d::shape::Ball;
-    /// use na::Isometry3;
+    /// use parry3d::na::Isometry3;
     ///
     /// let ball = Ball::new(2.0);
-    /// let pos = Isometry3::identity();
+    /// let pos = Isometry3::<f32>::identity();
     ///
     /// // Assume GJK determined the origin is inside and filled simplex
     /// let simplex = VoronoiSimplex::new();
@@ -386,7 +386,7 @@ impl EPA {
     /// use parry3d::query::epa::EPA;
     /// use parry3d::query::gjk::{GJKResult, VoronoiSimplex};
     /// use parry3d::shape::Ball;
-    /// use na::Isometry3;
+    /// use parry3d::na::Isometry3;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);

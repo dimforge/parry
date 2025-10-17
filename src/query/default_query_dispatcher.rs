@@ -64,7 +64,7 @@ use alloc::vec::Vec;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query;
 /// use parry3d::shape::Ball;
-/// use na::Isometry3;
+/// use parry3d::na::Isometry3;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -88,7 +88,7 @@ use alloc::vec::Vec;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use na::{Isometry3, Vector3};
+/// use parry3d::na::{Isometry3, Vector3};
 ///
 /// let dispatcher = DefaultQueryDispatcher;
 ///

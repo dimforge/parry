@@ -182,9 +182,8 @@ pub enum SplitResult<T> {
 ///         // The polyline contains all intersection curves
 ///         // You can identify separate components by analyzing connectivity
 ///         // through the polyline's segment indices
-///         if let Some(indices) = polyline.indices() {
-///             println!("Number of edges in cross-section: {}", indices.len());
-///         }
+///         let indices = polyline.indices();
+///         println!("Number of edges in cross-section: {}", indices.len());
 ///     }
 ///     _ => println!("No intersection"),
 /// }

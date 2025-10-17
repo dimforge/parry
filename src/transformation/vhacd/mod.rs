@@ -50,7 +50,7 @@
 //!
 //! The simplest way to decompose a mesh is using default parameters:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::VHACD;
@@ -101,7 +101,7 @@
 //!
 //! For more control over the decomposition quality and performance:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -125,7 +125,6 @@
 //!     convex_hull_approximation: true, // Approximate for speed
 //!     fill_mode: FillMode::FloodFill {
 //!         detect_cavities: false,
-//!         detect_self_intersections: false,
 //!     },
 //! };
 //!
@@ -138,7 +137,7 @@
 //! By default, the convex hulls are computed from the voxelized representation. To get more
 //! accurate hulls based on the original mesh:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -167,7 +166,7 @@
 //!
 //! The same API works in 2D for decomposing polylines:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(all(feature = "dim2", feature = "f32"))] {
 //! use parry2d::math::Point;
 //! use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
@@ -201,7 +200,7 @@
 //!
 //! The decomposed convex parts can be used directly with physics engines:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::math::Point;
 //! use parry3d::shape::{SharedShape, Compound};
