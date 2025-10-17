@@ -371,10 +371,6 @@ impl BvhNodeWide {
     /// # Returns
     ///
     /// A new `BvhNode` representing the parent of both children.
-    ///
-    /// # See Also
-    ///
-    /// - [`BvhNode::merged`] - The underlying merge operation
     pub fn merged(&self, my_id: u32) -> BvhNode {
         self.left.merged(&self.right, my_id)
     }
@@ -387,10 +383,6 @@ impl BvhNodeWide {
     /// # Returns
     ///
     /// The total number of leaves in the subtrees rooted at both children.
-    ///
-    /// # See Also
-    ///
-    /// - [`BvhNode::leaf_count`] - Leaf count for a single node
     pub fn leaf_count(&self) -> u32 {
         self.left.leaf_count() + self.right.leaf_count()
     }
