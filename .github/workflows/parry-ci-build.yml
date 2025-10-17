@@ -43,9 +43,16 @@ jobs:
         run: cargo check --features bytemuck-serialize,serde-serialize,rkyv-serialize;
       - name: Check enhanced-determinism
         run: cargo check --features enhanced-determinism
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y cmake libxcb-composite0-dev
       - name: Run tests
         run: cargo test --features wavefront
-      - name: Run tests
+      - name: Run tests (parallel)
         run: cargo test --features parallel
   build-wasm:
     runs-on: ubuntu-latest

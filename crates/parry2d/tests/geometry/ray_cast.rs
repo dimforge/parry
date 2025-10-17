@@ -6,7 +6,7 @@ use parry2d::shape::{ConvexPolygon, Segment, Triangle};
 #[test]
 fn issue_178_parallel_raycast() {
     let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::new(0.0, 0.0), Vector2::new(0.0, 1.0));
+    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
     let seg = Segment::new(Point2::new(2.0, 1.0), Point2::new(2.0, 0.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
@@ -16,7 +16,7 @@ fn issue_178_parallel_raycast() {
 #[test]
 fn parallel_raycast() {
     let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::new(0.0, 0.0), Vector2::new(0.0, 1.0));
+    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
     let seg = Segment::new(Point2::new(2.0, 1.0), Point2::new(2.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
@@ -26,7 +26,7 @@ fn parallel_raycast() {
 #[test]
 fn collinear_raycast_starting_on_segment() {
     let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::new(0.0, 0.0), Vector2::new(0.0, 1.0));
+    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
     let seg = Segment::new(Point2::new(0.0, 1.0), Point2::new(0.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
@@ -127,7 +127,7 @@ fn raycast_starting_on_edge_of_triangle() {
         Point2::new(0.0, 10.0),
         Point2::new(10.0, 0.0),
     );
-    let ray = Ray::new(Point2::new(0.0, 0.0), Vector2::new(1.0, 0.0));
+    let ray = Ray::new(Point2::origin(), Vector2::new(1.0, 0.0));
     let intersect = triangle
         .cast_local_ray_and_get_normal(&ray, f32::MAX, true)
         .expect("No intersection");

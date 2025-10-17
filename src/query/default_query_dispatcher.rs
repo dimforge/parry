@@ -14,7 +14,159 @@ use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-/// A dispatcher that exposes built-in queries
+/// The default query dispatcher implementation provided by Parry.
+///
+/// This dispatcher handles all the built-in shape types and automatically selects the most
+/// appropriate algorithm for each shape pair combination. It is used internally by all the
+/// free functions in the [`crate::query`] module.
+///
+/// # What It Does
+///
+/// `DefaultQueryDispatcher` implements efficient query dispatch logic that:
+///
+/// 1. **Examines shape types** using runtime type checking (`as_ball()`, `as_cuboid()`, etc.)
+/// 2. **Selects specialized algorithms** for specific shape pairs (e.g., ball-ball, cuboid-cuboid)
+/// 3. **Falls back to general algorithms** when specialized versions aren't available (e.g., GJK/EPA for support map shapes)
+/// 4. **Handles composite shapes** by decomposing them and performing multiple sub-queries
+///
+/// # Supported Shape Combinations
+///
+/// The dispatcher provides optimized implementations for many shape pairs, including:
+///
+/// ## Basic Shapes
+/// - **Ball-Ball**: Analytical formulas (fastest)
+/// - **Ball-Convex**: Specialized algorithms
+/// - **Cuboid-Cuboid**: SAT-based algorithms
+/// - **Segment-Segment**: Direct geometric calculations
+///
+/// ## Support Map Shapes
+/// For shapes implementing the `SupportMap` trait (most convex shapes):
+/// - Uses **GJK algorithm** for distance and intersection queries
+/// - Uses **EPA algorithm** for penetration depth when shapes overlap
+///
+/// ## Composite Shapes
+/// Handles complex shapes by decomposing them:
+/// - **TriMesh**: Queries individual triangles using BVH acceleration
+/// - **Compound**: Queries component shapes
+/// - **HeightField**: Efficiently queries relevant cells
+/// - **Voxels**: Queries occupied voxels
+///
+/// ## Special Cases
+/// - **HalfSpace**: Infinite planes with specialized handling
+/// - **Rounded shapes**: Automatically accounts for border radius
+///
+/// # When to Use
+///
+/// You typically don't need to create `DefaultQueryDispatcher` explicitly. The free functions
+/// in [`crate::query`] use it automatically:
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::query;
+/// use parry3d::shape::Ball;
+/// use parry3d::na::Isometry3;
+///
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+/// let pos1 = Isometry3::identity();
+/// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+///
+/// // This uses DefaultQueryDispatcher internally
+/// let distance = query::distance(&pos1, &ball1, &pos2, &ball2);
+/// # }
+/// ```
+///
+/// However, you might use it explicitly when:
+///
+/// - Creating a dispatcher chain with custom dispatchers
+/// - Implementing custom query logic that needs to delegate to default behavior
+/// - Building a custom collision detection pipeline
+///
+/// # Example: Direct Usage
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
+/// use parry3d::shape::{Ball, Cuboid};
+/// use parry3d::na::{Isometry3, Vector3};
+///
+/// let dispatcher = DefaultQueryDispatcher;
+///
+/// let ball = Ball::new(1.0);
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+///
+/// let pos1 = Isometry3::identity();
+/// let pos2 = Isometry3::translation(3.0, 0.0, 0.0);
+/// let pos12 = pos1.inv_mul(&pos2);
+///
+/// // Query intersection
+/// let intersects = dispatcher.intersection_test(&pos12, &ball, &cuboid)
+///     .expect("This shape pair is supported");
+///
+/// // Query distance
+/// let dist = dispatcher.distance(&pos12, &ball, &cuboid)
+///     .expect("This shape pair is supported");
+///
+/// println!("Distance: {}, Intersecting: {}", dist, intersects);
+/// # }
+/// ```
+///
+/// # Example: Chaining with Custom Dispatcher
+///
+/// ```ignore
+/// # {
+/// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
+///
+/// struct MyCustomDispatcher;
+/// // ... implement QueryDispatcher for MyCustomDispatcher ...
+///
+/// // Try custom dispatcher first, fall back to default
+/// let dispatcher = MyCustomDispatcher.chain(DefaultQueryDispatcher);
+///
+/// // Now queries will use your custom logic when applicable,
+/// // and Parry's default logic otherwise
+/// let dist = dispatcher.distance(&pos12, shape1, shape2)?;
+/// # }
+/// ```
+///
+/// # Algorithm Selection Strategy
+///
+/// The dispatcher follows this priority order when selecting algorithms:
+///
+/// 1. **Exact shape type matching**: Ball-Ball, Cuboid-Cuboid, etc.
+/// 2. **Specialized asymmetric pairs**: Ball-ConvexShape, HalfSpace-SupportMap, etc.
+/// 3. **Support map fallback**: Any SupportMap-SupportMap pair uses GJK/EPA
+/// 4. **Composite shape decomposition**: TriMesh, Compound, HeightField, Voxels
+/// 5. **Unsupported**: Returns `Err(Unsupported)` if no algorithm exists
+///
+/// # Performance Characteristics
+///
+/// - **Type checking overhead**: Minimal - uses efficient trait object downcasting
+/// - **Specialized algorithms**: O(1) for ball-ball, O(log n) to O(n) for composite shapes
+/// - **GJK/EPA**: Iterative algorithms that typically converge in 5-20 iterations
+/// - **Composite shapes**: Use BVH for O(log n) acceleration of sub-queries
+///
+/// # Thread Safety
+///
+/// `DefaultQueryDispatcher` is `Send + Sync` and has no internal state, making it safe to
+/// share across threads. You can use a single instance for all queries in a parallel
+/// collision detection system.
+///
+/// # Limitations
+///
+/// Some shape pairs are not supported and will return `Err(Unsupported)`:
+///
+/// - Custom shapes not implementing required traits (e.g., not convex, no support map)
+/// - Some asymmetric pairs that lack specialized implementations
+/// - Certain combinations involving custom user shapes
+///
+/// When encountering `Unsupported`, you can implement a custom dispatcher to handle these cases.
+///
+/// # See Also
+///
+/// - [`QueryDispatcher`]: The trait this struct implements
+/// - [`crate::query`]: High-level query functions that use this dispatcher
+/// - [`PersistentQueryDispatcher`]: Extended trait for contact manifold queries
 #[derive(Debug, Clone)]
 pub struct DefaultQueryDispatcher;
 

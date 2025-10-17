@@ -10,7 +10,52 @@ use na::Unit;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// Shape of a box.
+/// A cuboid shape, also known as a box or rectangle.
+///
+/// A cuboid is defined by its **half-extents**, which are half the width, height
+/// (and depth in 3D) along each axis. The cuboid is always axis-aligned in its
+/// local coordinate system and centered at the origin.
+///
+/// # Properties
+///
+/// - **In 2D**: Represents a rectangle with dimensions `2 * half_extents.x` by `2 * half_extents.y`
+/// - **In 3D**: Represents a box with dimensions `2 * half_extents.x/y/z`
+/// - **Convex**: Yes, cuboids are always convex shapes
+/// - **Axis-aligned**: In local space, yes (but can be rotated via transformation)
+///
+/// # Why Half-Extents?
+///
+/// Using half-extents instead of full dimensions makes many calculations simpler
+/// and more efficient. For example, checking if a point is inside a cuboid becomes:
+/// `abs(point.x) <= half_extents.x && abs(point.y) <= half_extents.y`
+///
+/// # Use Cases
+///
+/// Cuboids are ideal for:
+/// - Boxes, crates, and containers
+/// - Walls, floors, and platforms
+/// - Simple collision bounds for complex objects
+/// - AABB (Axis-Aligned Bounding Box) representations
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::Vector3;
+///
+/// // Create a box that is 4 units wide, 2 units tall, and 6 units deep
+/// // (half-extents are half of each dimension)
+/// let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 3.0));
+///
+/// assert_eq!(cuboid.half_extents.x, 2.0);
+/// assert_eq!(cuboid.half_extents.y, 1.0);
+/// assert_eq!(cuboid.half_extents.z, 3.0);
+///
+/// // Full dimensions would be:
+/// // width = 4.0, height = 2.0, depth = 6.0
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
@@ -21,19 +66,93 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Cuboid {
-    /// The half-extents of the cuboid.
+    /// The half-extents of the cuboid along each axis.
+    ///
+    /// Each component represents half the dimension along that axis:
+    /// - `half_extents.x`: Half the width
+    /// - `half_extents.y`: Half the height
+    /// - `half_extents.z`: Half the depth (3D only)
+    ///
+    /// All components should be positive.
     pub half_extents: Vector<Real>,
 }
 
 impl Cuboid {
-    /// Creates a new box from its half-extents. Half-extents are the box half-width along each
-    /// axis. Each half-extent must be positive.
+    /// Creates a new cuboid from its half-extents.
+    ///
+    /// Half-extents represent half the width along each axis. To create a cuboid
+    /// with full dimensions (width, height, depth), divide each by 2.
+    ///
+    /// # Arguments
+    ///
+    /// * `half_extents` - Half the dimensions along each axis. All components should be positive.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// // Create a 10x6x4 box (full dimensions)
+    /// let cuboid = Cuboid::new(Vector3::new(5.0, 3.0, 2.0));
+    ///
+    /// // Verify the half-extents
+    /// assert_eq!(cuboid.half_extents.x, 5.0);
+    /// assert_eq!(cuboid.half_extents.y, 3.0);
+    /// assert_eq!(cuboid.half_extents.z, 2.0);
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// // In 2D:
+    /// use parry2d::shape::Cuboid;
+    /// use nalgebra::Vector2;
+    ///
+    /// // Create a 20x10 rectangle
+    /// let rect = Cuboid::new(Vector2::new(10.0, 5.0));
+    /// assert_eq!(rect.half_extents.x, 10.0);
+    /// assert_eq!(rect.half_extents.y, 5.0);
+    /// # }
+    /// ```
     #[inline]
     pub fn new(half_extents: Vector<Real>) -> Cuboid {
         Cuboid { half_extents }
     }
 
     /// Computes a scaled version of this cuboid.
+    ///
+    /// Each dimension is multiplied by the corresponding component of the `scale` vector.
+    /// Unlike balls, cuboids can be scaled non-uniformly (different scale factors per axis)
+    /// and still remain valid cuboids.
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The scaling factors for each axis
+    ///
+    /// # Returns
+    ///
+    /// A new cuboid with scaled dimensions
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// let cuboid = Cuboid::new(Vector3::new(1.0, 2.0, 3.0));
+    ///
+    /// // Uniform scaling: double all dimensions
+    /// let scaled_uniform = cuboid.scaled(&Vector3::new(2.0, 2.0, 2.0));
+    /// assert_eq!(scaled_uniform.half_extents, Vector3::new(2.0, 4.0, 6.0));
+    ///
+    /// // Non-uniform scaling: different scale per axis
+    /// let scaled_non_uniform = cuboid.scaled(&Vector3::new(2.0, 1.0, 0.5));
+    /// assert_eq!(scaled_non_uniform.half_extents, Vector3::new(2.0, 2.0, 1.5));
+    /// # }
+    /// ```
     pub fn scaled(self, scale: &Vector<Real>) -> Self {
         let new_hext = self.half_extents.component_mul(scale);
         Self {

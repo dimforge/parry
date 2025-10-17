@@ -3,9 +3,77 @@ use crate::query::sat;
 use crate::shape::{Segment, SupportMap, Triangle};
 use na::Unit;
 
-/// Finds the best separating normal a triangle and a segment.
+/// Finds the best separating axis by testing a triangle's face normal against a segment (3D only).
 ///
-/// Only the normals of `triangle1` are tested.
+/// In 3D, a triangle has a face normal (perpendicular to its plane). This function tests both
+/// directions of this normal (+normal and -normal) to find the maximum separation from the segment.
+///
+/// # How It Works
+///
+/// The function computes support points on the segment in both the positive and negative normal
+/// directions, then measures which direction gives greater separation from the triangle's surface.
+///
+/// # Parameters
+///
+/// - `triangle1`: The triangle whose face normal will be tested
+/// - `segment2`: The line segment
+/// - `pos12`: The position of the segment relative to the triangle
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `Real`: The separation distance along the triangle's face normal
+///   - **Positive**: Shapes are separated
+///   - **Negative**: Shapes are overlapping
+///   - **Very negative** if the triangle has no normal (degenerate triangle)
+/// - `Vector<Real>`: The face normal direction (or its negation) that gives this separation
+///
+/// # Degenerate Triangles
+///
+/// If the triangle is degenerate (all three points are collinear), it has no valid normal.
+/// In this case, the function returns `-Real::MAX` for separation and a zero vector for the normal.
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::{Triangle, Segment};
+/// use parry3d::query::sat::triangle_segment_find_local_separating_normal_oneway;
+/// use nalgebra::{Point3, Isometry3};
+///
+/// // Triangle in the XY plane
+/// let triangle = Triangle::new(
+///     Point3::origin(),
+///     Point3::new(2.0, 0.0, 0.0),
+///     Point3::new(1.0, 2.0, 0.0)
+/// );
+///
+/// // Vertical segment above the triangle
+/// let segment = Segment::new(
+///     Point3::new(1.0, 1.0, 1.0),
+///     Point3::new(1.0, 1.0, 3.0)
+/// );
+///
+/// let pos12 = Isometry3::identity();
+///
+/// let (separation, normal) = triangle_segment_find_local_separating_normal_oneway(
+///     &triangle,
+///     &segment,
+///     &pos12
+/// );
+///
+/// if separation > 0.0 {
+///     println!("Separated by {} along triangle normal", separation);
+/// }
+/// # }
+/// ```
+///
+/// # Usage in Complete SAT
+///
+/// For a complete triangle-segment collision test, you must also test:
+/// 1. Triangle face normal (this function)
+/// 2. Segment normal (in 2D) or edge-edge axes (in 3D)
+/// 3. Edge-edge cross products (see [`segment_triangle_find_local_separating_edge_twoway`])
 pub fn triangle_segment_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     segment2: &Segment,
@@ -27,10 +95,81 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
     }
 }
 
-/// Finds the best separating edge between a segment and a triangle.
+/// Finds the best separating axis by testing edge-edge combinations between a segment and a triangle (3D only).
 ///
-/// All combinations of edges from the segment and the triangle are taken into
-/// account.
+/// In 3D, when a line segment and triangle collide, the contact might occur along an axis
+/// perpendicular to both the segment and one of the triangle's edges. This function tests all
+/// such axes (cross products) to find the one with maximum separation.
+///
+/// # Parameters
+///
+/// - `segment1`: The line segment
+/// - `triangle2`: The triangle
+/// - `pos12`: The position of the triangle relative to the segment
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `Real`: The maximum separation found across all edge-edge axes
+///   - **Positive**: Shapes are separated
+///   - **Negative**: Shapes are overlapping
+/// - `Vector<Real>`: The axis direction that gives this separation
+///
+/// # The Axes Tested
+///
+/// The function computes cross products between:
+/// - The segment's direction (B - A)
+/// - Each of the 3 triangle edges (AB, BC, CA)
+///
+/// This gives 3 base axes. The function tests both each axis and its negation (6 total),
+/// finding which gives the maximum separation.
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::{Segment, Triangle};
+/// use parry3d::query::sat::segment_triangle_find_local_separating_edge_twoway;
+/// use nalgebra::{Point3, Isometry3};
+///
+/// let segment = Segment::new(
+///     Point3::origin(),
+///     Point3::new(0.0, 0.0, 2.0)
+/// );
+///
+/// let triangle = Triangle::new(
+///     Point3::new(1.0, 0.0, 1.0),
+///     Point3::new(3.0, 0.0, 1.0),
+///     Point3::new(2.0, 2.0, 1.0)
+/// );
+///
+/// let pos12 = Isometry3::identity();
+///
+/// let (separation, axis) = segment_triangle_find_local_separating_edge_twoway(
+///     &segment,
+///     &triangle,
+///     &pos12
+/// );
+///
+/// if separation > 0.0 {
+///     println!("Separated by {} along edge-edge axis", separation);
+/// }
+/// # }
+/// ```
+///
+/// # Implementation Details
+///
+/// - Axes with near-zero length (parallel edges) are skipped
+/// - The function uses [`support_map_support_map_compute_separation`](super::support_map_support_map_compute_separation)
+///   to compute the actual separation along each axis
+/// - Both positive and negative directions are tested for each cross product
+///
+/// # Usage in Complete SAT
+///
+/// For a complete segment-triangle collision test, you must also test:
+/// 1. Triangle face normal ([`triangle_segment_find_local_separating_normal_oneway`])
+/// 2. Segment-specific axes (depends on whether the segment has associated normals)
+/// 3. Edge-edge cross products (this function)
 pub fn segment_triangle_find_local_separating_edge_twoway(
     segment1: &Segment,
     triangle2: &Triangle,

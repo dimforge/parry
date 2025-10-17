@@ -8,6 +8,25 @@ use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 use crate::utils::hashmap::HashMap;
 use crate::utils::{self, SegmentsIntersection};
 
+/// Tolerances for polygon intersection algorithms.
+///
+/// These tolerances control how the intersection algorithm handles numerical precision
+/// issues when determining geometric relationships between points, lines, and polygons.
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::PolygonIntersectionTolerances;
+/// // Use default tolerances (recommended for most cases)
+/// let default_tol = PolygonIntersectionTolerances::default();
+///
+/// // Or create custom tolerances for special cases
+/// let custom_tol = PolygonIntersectionTolerances {
+///     collinearity_epsilon: 1.0e-5,
+/// };
+/// # }
+/// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct PolygonIntersectionTolerances {
     /// The epsilon given to [`Triangle::orientation2d`] for detecting if three points are collinear.
@@ -34,6 +53,40 @@ enum InFlag {
 }
 
 /// Location of a point on a polyline.
+///
+/// This enum represents where a point lies on a polygon's boundary. It's used by
+/// the intersection algorithms to precisely describe intersection points.
+///
+/// # Variants
+///
+/// * `OnVertex(i)` - The point is exactly on vertex `i` of the polygon
+/// * `OnEdge(i, j, bcoords)` - The point lies on the edge between vertices `i` and `j`,
+///   with barycentric coordinates `bcoords` where `bcoords[0] + bcoords[1] = 1.0`
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::PolylinePointLocation;
+/// # use parry2d::na::Point2;
+/// let polygon = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// // A point on vertex 0
+/// let loc1 = PolylinePointLocation::OnVertex(0);
+/// let pt1 = loc1.to_point(&polygon);
+/// assert_eq!(pt1, Point2::origin());
+///
+/// // A point halfway along the edge from vertex 0 to vertex 1
+/// let loc2 = PolylinePointLocation::OnEdge(0, 1, [0.5, 0.5]);
+/// let pt2 = loc2.to_point(&polygon);
+/// assert_eq!(pt2, Point2::new(1.0, 0.0));
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PolylinePointLocation {
     /// Point on a vertex.
@@ -62,6 +115,31 @@ impl PolylinePointLocation {
     }
 
     /// Computes the point corresponding to this location.
+    ///
+    /// Given a polygon (as a slice of points), this method converts the location
+    /// into an actual 2D point coordinate.
+    ///
+    /// # Arguments
+    ///
+    /// * `pts` - The vertices of the polygon
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// # use parry2d::transformation::PolylinePointLocation;
+    /// # use parry2d::na::Point2;
+    /// let polygon = vec![
+    ///     Point2::origin(),
+    ///     Point2::new(4.0, 0.0),
+    ///     Point2::new(4.0, 4.0),
+    /// ];
+    ///
+    /// let loc = PolylinePointLocation::OnEdge(0, 1, [0.75, 0.25]);
+    /// let point = loc.to_point(&polygon);
+    /// assert_eq!(point, Point2::new(1.0, 0.0)); // 75% of vertex 0 + 25% of vertex 1
+    /// # }
+    /// ```
     pub fn to_point(self, pts: &[Point2<Real>]) -> Point2<Real> {
         match self {
             PolylinePointLocation::OnVertex(i) => pts[i],
@@ -83,9 +161,56 @@ impl PolylinePointLocation {
 
 /// Computes the intersection points of two convex polygons.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` vector.
-/// This is the same as [`convex_polygons_intersection_points_with_tolerances`] with the tolerances
-/// set to their default values.
+/// This function takes two convex polygons and computes their intersection, returning
+/// the vertices of the resulting intersection polygon. The result is added to the `out` vector.
+///
+/// # Important Notes
+///
+/// - **Convex polygons only**: Both input polygons must be convex. For non-convex polygons,
+///   use [`polygons_intersection_points`] instead.
+/// - **Counter-clockwise winding**: Input polygons should be oriented counter-clockwise.
+/// - **Default tolerances**: Uses default numerical tolerances. For custom tolerances,
+///   use [`convex_polygons_intersection_points_with_tolerances`].
+///
+/// # Arguments
+///
+/// * `poly1` - First convex polygon as a slice of vertices
+/// * `poly2` - Second convex polygon as a slice of vertices
+/// * `out` - Output vector where intersection vertices will be appended
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::convex_polygons_intersection_points;
+/// # use parry2d::na::Point2;
+/// // Define two overlapping squares
+/// let square1 = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// let square2 = vec![
+///     Point2::new(1.0, 1.0),
+///     Point2::new(3.0, 1.0),
+///     Point2::new(3.0, 3.0),
+///     Point2::new(1.0, 3.0),
+/// ];
+///
+/// let mut intersection = Vec::new();
+/// convex_polygons_intersection_points(&square1, &square2, &mut intersection);
+///
+/// // The intersection should be a square from (1,1) to (2,2)
+/// assert_eq!(intersection.len(), 4);
+/// # }
+/// ```
+///
+/// # See Also
+///
+/// * [`convex_polygons_intersection`] - For closure-based output
+/// * [`polygons_intersection_points`] - For non-convex polygons
 pub fn convex_polygons_intersection_points(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -94,9 +219,52 @@ pub fn convex_polygons_intersection_points(
     convex_polygons_intersection_points_with_tolerances(poly1, poly2, Default::default(), out);
 }
 
-/// Computes the intersection points of two convex polygons.
+/// Computes the intersection points of two convex polygons with custom tolerances.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` vector.
+/// This is the same as [`convex_polygons_intersection_points`] but allows you to specify
+/// custom numerical tolerances for the intersection computation.
+///
+/// # Arguments
+///
+/// * `poly1` - First convex polygon as a slice of vertices
+/// * `poly2` - Second convex polygon as a slice of vertices
+/// * `tolerances` - Custom tolerances for numerical precision
+/// * `out` - Output vector where intersection vertices will be appended
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::{convex_polygons_intersection_points_with_tolerances, PolygonIntersectionTolerances};
+/// # use parry2d::na::Point2;
+/// let triangle1 = vec![
+///     Point2::origin(),
+///     Point2::new(4.0, 0.0),
+///     Point2::new(2.0, 3.0),
+/// ];
+///
+/// let triangle2 = vec![
+///     Point2::new(1.0, 0.5),
+///     Point2::new(3.0, 0.5),
+///     Point2::new(2.0, 2.5),
+/// ];
+///
+/// let mut intersection = Vec::new();
+/// let tolerances = PolygonIntersectionTolerances {
+///     collinearity_epsilon: 1.0e-6,
+/// };
+///
+/// convex_polygons_intersection_points_with_tolerances(
+///     &triangle1,
+///     &triangle2,
+///     tolerances,
+///     &mut intersection
+/// );
+///
+/// // The triangles overlap, so we should get intersection points
+/// assert!(intersection.len() >= 3);
+/// # }
+/// ```
 pub fn convex_polygons_intersection_points_with_tolerances(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -112,11 +280,66 @@ pub fn convex_polygons_intersection_points_with_tolerances(
     })
 }
 
-/// Computes the intersection of two convex polygons.
+/// Computes the intersection of two convex polygons with closure-based output.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` closure.
-/// This is the same as [`convex_polygons_intersection_with_tolerances`] with the tolerances
-/// set to their default values.
+/// This function is similar to [`convex_polygons_intersection_points`] but provides more
+/// flexibility by calling a closure for each intersection vertex. The closure receives
+/// the location of the vertex on each polygon (if applicable).
+///
+/// This is useful when you need to track which polygon each intersection vertex comes from,
+/// or when you want to process vertices as they're computed rather than collecting them all.
+///
+/// # Arguments
+///
+/// * `poly1` - First convex polygon as a slice of vertices
+/// * `poly2` - Second convex polygon as a slice of vertices
+/// * `out` - Closure called for each intersection vertex with its location on both polygons
+///
+/// # Closure Arguments
+///
+/// The closure receives `(Option<PolylinePointLocation>, Option<PolylinePointLocation>)`:
+/// - If the point comes from `poly1`, the first option contains its location on `poly1`
+/// - If the point comes from `poly2`, the second option contains its location on `poly2`
+/// - At least one of the options will always be `Some`
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::convex_polygons_intersection;
+/// # use parry2d::na::Point2;
+/// let square = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// let diamond = vec![
+///     Point2::new(1.0, -0.5),
+///     Point2::new(2.5, 1.0),
+///     Point2::new(1.0, 2.5),
+///     Point2::new(-0.5, 1.0),
+/// ];
+///
+/// let mut intersection_points = Vec::new();
+/// convex_polygons_intersection(&square, &diamond, |loc1, loc2| {
+///     if let Some(loc) = loc1 {
+///         intersection_points.push(loc.to_point(&square));
+///     } else if let Some(loc) = loc2 {
+///         intersection_points.push(loc.to_point(&diamond));
+///     }
+/// });
+///
+/// // The intersection should have multiple vertices
+/// assert!(intersection_points.len() >= 3);
+/// # }
+/// ```
+///
+/// # See Also
+///
+/// * [`convex_polygons_intersection_points`] - Simpler vector-based output
+/// * [`convex_polygons_intersection_with_tolerances`] - With custom tolerances
 pub fn convex_polygons_intersection(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -125,9 +348,69 @@ pub fn convex_polygons_intersection(
     convex_polygons_intersection_with_tolerances(poly1, poly2, Default::default(), out)
 }
 
-/// Computes the intersection of two convex polygons.
+/// Computes the intersection of two convex polygons with custom tolerances and closure-based output.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` closure.
+/// This is the most flexible version of the convex polygon intersection function, combining
+/// custom tolerances with closure-based output for maximum control.
+///
+/// # Arguments
+///
+/// * `poly1` - First convex polygon as a slice of vertices
+/// * `poly2` - Second convex polygon as a slice of vertices
+/// * `tolerances` - Custom tolerances for numerical precision
+/// * `out` - Closure called for each intersection vertex
+///
+/// # Algorithm
+///
+/// This function implements the Sutherland-Hodgman-like algorithm for convex polygon
+/// intersection. It works by:
+/// 1. Traversing the edges of both polygons simultaneously
+/// 2. Detecting edge-edge intersections
+/// 3. Determining which vertices are inside the other polygon
+/// 4. Outputting the vertices of the intersection polygon in order
+///
+/// # Examples
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::{convex_polygons_intersection_with_tolerances, PolygonIntersectionTolerances};
+/// # use parry2d::na::Point2;
+/// let hexagon = vec![
+///     Point2::new(2.0, 0.0),
+///     Point2::new(1.0, 1.732),
+///     Point2::new(-1.0, 1.732),
+///     Point2::new(-2.0, 0.0),
+///     Point2::new(-1.0, -1.732),
+///     Point2::new(1.0, -1.732),
+/// ];
+///
+/// let square = vec![
+///     Point2::new(-1.0, -1.0),
+///     Point2::new(1.0, -1.0),
+///     Point2::new(1.0, 1.0),
+///     Point2::new(-1.0, 1.0),
+/// ];
+///
+/// let tolerances = PolygonIntersectionTolerances::default();
+/// let mut intersection_points = Vec::new();
+///
+/// convex_polygons_intersection_with_tolerances(
+///     &hexagon,
+///     &square,
+///     tolerances,
+///     |loc1, loc2| {
+///         if let Some(loc) = loc1 {
+///             intersection_points.push(loc.to_point(&hexagon));
+///         } else if let Some(loc) = loc2 {
+///             intersection_points.push(loc.to_point(&square));
+///         }
+///     }
+/// );
+///
+/// // The intersection should form a polygon
+/// assert!(intersection_points.len() >= 3);
+/// # }
+/// ```
 pub fn convex_polygons_intersection_with_tolerances(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -388,22 +671,120 @@ fn advance(a: usize, aa: &mut usize, n: usize) -> usize {
     (a + 1) % n
 }
 
+/// Error type for polygon intersection operations.
+///
+/// This error can occur when computing intersections of non-convex polygons.
 #[derive(thiserror::Error, Debug)]
 pub enum PolygonsIntersectionError {
+    /// An infinite loop was detected during intersection computation.
+    ///
+    /// This typically indicates that the input polygons are ill-formed, such as:
+    /// - Self-intersecting polygons
+    /// - Polygons with duplicate or degenerate edges
+    /// - Polygons with inconsistent winding order
     #[error("Infinite loop detected; input polygons are ill-formed.")]
     InfiniteLoop,
 }
 
-/// Compute intersections between two polygons that may be non-convex but that must not self-intersect.
+/// Computes the intersection points of two possibly non-convex polygons.
 ///
-/// The input polygons are assumed to not self-intersect, and to be oriented counter-clockwise.
+/// This function handles both convex and **non-convex (concave)** polygons, making it more
+/// general than [`convex_polygons_intersection_points`]. However, it requires that:
+/// - Neither polygon self-intersects
+/// - Both polygons are oriented counter-clockwise
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` closure.
-/// If two `None` are given to the `out` closure, then one connected component of the intersection
-/// polygon is complete.
+/// The result is a vector of polygons, where each polygon represents one connected component
+/// of the intersection. In most cases there will be only one component, but complex intersections
+/// can produce multiple separate regions.
 ///
-/// If the polygons are known to be convex, use [`convex_polygons_intersection_points`] instead for better
-/// performances.
+/// # Important Notes
+///
+/// - **Non-convex support**: This function works with concave polygons
+/// - **Multiple components**: Returns a `Vec<Vec<Point2<Real>>>` because the intersection
+///   of two concave polygons can produce multiple separate regions
+/// - **No self-intersection**: Input polygons must not self-intersect
+/// - **Counter-clockwise winding**: Both polygons must be oriented counter-clockwise
+/// - **Performance**: Slower than [`convex_polygons_intersection_points`]. If both polygons
+///   are convex, use that function instead.
+///
+/// # Arguments
+///
+/// * `poly1` - First polygon as a slice of vertices
+/// * `poly2` - Second polygon as a slice of vertices
+///
+/// # Returns
+///
+/// * `Ok(Vec<Vec<Point2<Real>>>)` - A vector of intersection polygons (usually just one)
+/// * `Err(PolygonsIntersectionError::InfiniteLoop)` - If the polygons are ill-formed
+///
+/// # Examples
+///
+/// ## Example 1: Two non-convex polygons
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::polygons_intersection_points;
+/// # use parry2d::na::Point2;
+/// // L-shaped polygon
+/// let l_shape = vec![
+///     Point2::origin(),
+///     Point2::new(3.0, 0.0),
+///     Point2::new(3.0, 1.0),
+///     Point2::new(1.0, 1.0),
+///     Point2::new(1.0, 3.0),
+///     Point2::new(0.0, 3.0),
+/// ];
+///
+/// // Square overlapping the L-shape
+/// let square = vec![
+///     Point2::new(0.5, 0.5),
+///     Point2::new(2.5, 0.5),
+///     Point2::new(2.5, 2.5),
+///     Point2::new(0.5, 2.5),
+/// ];
+///
+/// let result = polygons_intersection_points(&l_shape, &square).unwrap();
+///
+/// // Should have intersection regions
+/// assert!(!result.is_empty());
+/// # }
+/// ```
+///
+/// ## Example 2: Convex polygons (also works)
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::polygons_intersection_points;
+/// # use parry2d::na::Point2;
+/// let triangle = vec![
+///     Point2::origin(),
+///     Point2::new(4.0, 0.0),
+///     Point2::new(2.0, 3.0),
+/// ];
+///
+/// let square = vec![
+///     Point2::new(1.0, 0.5),
+///     Point2::new(3.0, 0.5),
+///     Point2::new(3.0, 2.0),
+///     Point2::new(1.0, 2.0),
+/// ];
+///
+/// let result = polygons_intersection_points(&triangle, &square).unwrap();
+/// assert_eq!(result.len(), 1); // One intersection region
+/// # }
+/// ```
+///
+/// # Errors
+///
+/// Returns `PolygonsIntersectionError::InfiniteLoop` if:
+/// - Either polygon self-intersects
+/// - The polygons have degenerate or duplicate edges
+/// - The winding order is inconsistent
+///
+/// # See Also
+///
+/// * [`convex_polygons_intersection_points`] - Faster version for convex polygons only
+/// * [`polygons_intersection`] - Closure-based version with more control
 pub fn polygons_intersection_points(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -423,16 +804,122 @@ pub fn polygons_intersection_points(
     Ok(result)
 }
 
-/// Compute intersections between two polygons that may be non-convex but that must not self-intersect.
+/// Computes the intersection of two possibly non-convex polygons with closure-based output.
 ///
-/// The input polygons are assumed to not self-intersect, and to be oriented counter-clockwise.
+/// This is the closure-based version of [`polygons_intersection_points`], providing more
+/// control over how intersection vertices are processed. It handles non-convex (concave)
+/// polygons but requires they do not self-intersect.
 ///
-/// The resulting polygon is output vertex-by-vertex to the `out` closure.
-/// If two `None` are given to the `out` closure, then one connected component of the intersection
-/// polygon is complete.
+/// # Arguments
 ///
-/// If the polygons are known to be convex, use [`convex_polygons_intersection`] instead for better
-/// performances.
+/// * `poly1` - First polygon as a slice of vertices
+/// * `poly2` - Second polygon as a slice of vertices
+/// * `out` - Closure called for each intersection vertex or component separator
+///
+/// # Closure Arguments
+///
+/// The closure receives `(Option<PolylinePointLocation>, Option<PolylinePointLocation>)`:
+/// - When **both are `Some`**: An edge-edge intersection point
+/// - When **one is `Some`**: A vertex from one polygon inside the other
+/// - When **both are `None`**: Marks the end of a connected component
+///
+/// # Algorithm
+///
+/// This function uses a graph-based traversal algorithm:
+/// 1. Finds all edge-edge intersection points between the two polygons
+/// 2. Builds a graph where vertices are intersection points
+/// 3. Traverses the graph, alternating between polygons at intersection points
+/// 4. Outputs vertices that form the intersection boundary
+///
+/// # Examples
+///
+/// ## Example 1: Collecting intersection points
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::polygons_intersection;
+/// # use parry2d::na::Point2;
+/// let pentagon = vec![
+///     Point2::new(1.0, 0.0),
+///     Point2::new(0.309, 0.951),
+///     Point2::new(-0.809, 0.588),
+///     Point2::new(-0.809, -0.588),
+///     Point2::new(0.309, -0.951),
+/// ];
+///
+/// let square = vec![
+///     Point2::new(-0.5, -0.5),
+///     Point2::new(0.5, -0.5),
+///     Point2::new(0.5, 0.5),
+///     Point2::new(-0.5, 0.5),
+/// ];
+///
+/// let mut components = Vec::new();
+/// let mut current_component = Vec::new();
+///
+/// polygons_intersection(&pentagon, &square, |loc1, loc2| {
+///     if loc1.is_none() && loc2.is_none() {
+///         // End of a component
+///         if !current_component.is_empty() {
+///             components.push(std::mem::take(&mut current_component));
+///         }
+///     } else if let Some(loc) = loc1 {
+///         current_component.push(loc.to_point(&pentagon));
+///     } else if let Some(loc) = loc2 {
+///         current_component.push(loc.to_point(&square));
+///     }
+/// }).unwrap();
+///
+/// // Should have at least one intersection component
+/// assert!(!components.is_empty());
+/// # }
+/// ```
+///
+/// ## Example 2: Counting intersection vertices
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// # use parry2d::transformation::polygons_intersection;
+/// # use parry2d::na::Point2;
+/// let hexagon = vec![
+///     Point2::new(2.0, 0.0),
+///     Point2::new(1.0, 1.732),
+///     Point2::new(-1.0, 1.732),
+///     Point2::new(-2.0, 0.0),
+///     Point2::new(-1.0, -1.732),
+///     Point2::new(1.0, -1.732),
+/// ];
+///
+/// let circle_approx = vec![
+///     Point2::new(1.0, 0.0),
+///     Point2::new(0.707, 0.707),
+///     Point2::new(0.0, 1.0),
+///     Point2::new(-0.707, 0.707),
+///     Point2::new(-1.0, 0.0),
+///     Point2::new(-0.707, -0.707),
+///     Point2::new(0.0, -1.0),
+///     Point2::new(0.707, -0.707),
+/// ];
+///
+/// let mut vertex_count = 0;
+/// polygons_intersection(&hexagon, &circle_approx, |loc1, loc2| {
+///     if loc1.is_some() || loc2.is_some() {
+///         vertex_count += 1;
+///     }
+/// }).unwrap();
+///
+/// assert!(vertex_count > 0);
+/// # }
+/// ```
+///
+/// # Errors
+///
+/// Returns `PolygonsIntersectionError::InfiniteLoop` if the polygons are ill-formed.
+///
+/// # See Also
+///
+/// * [`polygons_intersection_points`] - Simpler vector-based output
+/// * [`convex_polygons_intersection`] - Faster version for convex polygons
 pub fn polygons_intersection(
     poly1: &[Point2<Real>],
     poly2: &[Point2<Real>],
@@ -690,7 +1177,7 @@ mod test {
                     Point2::new(1.1848406021956144, -0.8155712451545468),
                 ),
                 Triangle::new(
-                    Point2::new(0.0, 0.0),
+                    Point2::origin(),
                     Point2::new(0.00011061077714557787, -2.000024893134292),
                     Point2::new(2.0004914907008944, -0.00011061077714557787),
                 ),

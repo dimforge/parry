@@ -16,7 +16,89 @@ use crate::query::{Ray, RayCast};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// An Axis Aligned Bounding Box.
+/// An Axis-Aligned Bounding Box (AABB).
+///
+/// An AABB is the simplest bounding volume, defined by its minimum and maximum corners.
+/// It's called "axis-aligned" because its edges are always parallel to the coordinate axes
+/// (X, Y, and Z in 3D), making it very fast to test and compute.
+///
+/// # Structure
+///
+/// - **mins**: The point with the smallest coordinates on each axis (bottom-left-back corner)
+/// - **maxs**: The point with the largest coordinates on each axis (top-right-front corner)
+/// - **Invariant**: `mins.x ≤ maxs.x`, `mins.y ≤ maxs.y` (and `mins.z ≤ maxs.z` in 3D)
+///
+/// # Properties
+///
+/// - **Axis-aligned**: Edges always parallel to coordinate axes
+/// - **Conservative**: May be larger than the actual shape for rotated objects
+/// - **Fast**: Intersection tests are very cheap (just coordinate comparisons)
+/// - **Hierarchical**: Perfect for spatial data structures (BVH, quadtree, octree)
+///
+/// # Use Cases
+///
+/// AABBs are fundamental to collision detection and are used for:
+///
+/// - **Broad-phase collision detection**: Quickly eliminate distant object pairs
+/// - **Spatial partitioning**: Building BVHs, quadtrees, and octrees
+/// - **View frustum culling**: Determining what's visible
+/// - **Ray tracing acceleration**: Quickly rejecting non-intersecting rays
+/// - **Bounding volume for any shape**: Every shape can compute its AABB
+///
+/// # Performance
+///
+/// AABBs are the fastest bounding volume for:
+/// - Intersection tests: O(1) with just 6 comparisons (3D)
+/// - Merging: O(1) with component-wise min/max
+/// - Contains test: O(1) with coordinate comparisons
+///
+/// # Limitations
+///
+/// - **Rotation invariance**: Must be recomputed when objects rotate
+/// - **Tightness**: May waste space for rotated or complex shapes
+/// - **No orientation**: Cannot represent oriented bounding boxes (OBB)
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::bounding_volume::Aabb;
+/// use nalgebra::Point3;
+///
+/// // Create an AABB for a unit cube centered at origin
+/// let mins = Point3::new(-0.5, -0.5, -0.5);
+/// let maxs = Point3::new(0.5, 0.5, 0.5);
+/// let aabb = Aabb::new(mins, maxs);
+///
+/// // Check if a point is inside
+/// let point = Point3::origin();
+/// assert!(aabb.contains_local_point(&point));
+///
+/// // Get center and extents
+/// assert_eq!(aabb.center(), Point3::origin());
+/// assert_eq!(aabb.extents().x, 1.0); // Full width
+/// assert_eq!(aabb.half_extents().x, 0.5); // Half width
+/// # }
+/// ```
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::bounding_volume::Aabb;
+/// use nalgebra::Point3;
+///
+/// // Create from a set of points
+/// let points = vec![
+///     Point3::new(1.0, 2.0, 3.0),
+///     Point3::new(-1.0, 4.0, 2.0),
+///     Point3::new(0.0, 0.0, 5.0),
+/// ];
+/// let aabb = Aabb::from_points(points);
+///
+/// // The AABB encloses all points
+/// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
+/// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+/// # }
+/// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
@@ -27,7 +109,16 @@ use rkyv::{bytecheck, CheckBytes};
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct Aabb {
+    /// The point with minimum coordinates (bottom-left-back corner).
+    ///
+    /// Each component (`x`, `y`, `z`) should be less than or equal to the
+    /// corresponding component in `maxs`.
     pub mins: Point<Real>,
+
+    /// The point with maximum coordinates (top-right-front corner).
+    ///
+    /// Each component (`x`, `y`, `z`) should be greater than or equal to the
+    /// corresponding component in `mins`.
     pub maxs: Point<Real>,
 }
 
@@ -116,20 +207,63 @@ impl Aabb {
         (0, 1),
     ];
 
-    /// Creates a new Aabb.
+    /// Creates a new AABB from its minimum and maximum corners.
     ///
-    /// # Arguments:
-    ///   * `mins` - position of the point with the smallest coordinates.
-    ///   * `maxs` - position of the point with the highest coordinates. Each component of `mins`
-    ///     must be smaller than the related components of `maxs`.
+    /// # Arguments
+    ///
+    /// * `mins` - The point with the smallest coordinates on each axis
+    /// * `maxs` - The point with the largest coordinates on each axis
+    ///
+    /// # Invariant
+    ///
+    /// Each component of `mins` should be ≤ the corresponding component of `maxs`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a 2x2x2 cube centered at origin
+    /// let aabb = Aabb::new(
+    ///     Point3::new(-1.0, -1.0, -1.0),
+    ///     Point3::new(1.0, 1.0, 1.0)
+    /// );
+    ///
+    /// assert_eq!(aabb.center(), Point3::origin());
+    /// assert_eq!(aabb.extents(), nalgebra::Vector3::new(2.0, 2.0, 2.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn new(mins: Point<Real>, maxs: Point<Real>) -> Aabb {
         Aabb { mins, maxs }
     }
 
-    /// Creates an invalid `Aabb` with `mins` components set to `Real::max_values` and `maxs`components set to `-Real::max_values`.
+    /// Creates an invalid AABB with inverted bounds.
     ///
-    /// This is often used as the initial values of some `Aabb` merging algorithms.
+    /// The resulting AABB has `mins` set to maximum values and `maxs` set to
+    /// minimum values. This is useful as an initial value for AABB merging
+    /// algorithms (similar to starting a min operation with infinity).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
+    /// use nalgebra::Point3;
+    ///
+    /// let mut aabb = Aabb::new_invalid();
+    ///
+    /// // Merge with actual points to build proper AABB
+    /// aabb.merge(&Aabb::new(Point3::new(1.0, 2.0, 3.0), Point3::new(1.0, 2.0, 3.0)));
+    /// aabb.merge(&Aabb::new(Point3::new(-1.0, 0.0, 2.0), Point3::new(-1.0, 0.0, 2.0)));
+    ///
+    /// // Now contains the merged bounds
+    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Point3::new(1.0, 2.0, 3.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn new_invalid() -> Self {
         Self::new(
@@ -138,13 +272,64 @@ impl Aabb {
         )
     }
 
-    /// Creates a new `Aabb` from its center and its half-extents.
+    /// Creates a new AABB from its center and half-extents.
+    ///
+    /// This is often more intuitive than specifying min and max corners.
+    ///
+    /// # Arguments
+    ///
+    /// * `center` - The center point of the AABB
+    /// * `half_extents` - Half the dimensions along each axis
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// // Create a 10x6x8 box centered at (5, 0, 0)
+    /// let aabb = Aabb::from_half_extents(
+    ///     Point3::new(5.0, 0.0, 0.0),
+    ///     Vector3::new(5.0, 3.0, 4.0)
+    /// );
+    ///
+    /// assert_eq!(aabb.mins, Point3::new(0.0, -3.0, -4.0));
+    /// assert_eq!(aabb.maxs, Point3::new(10.0, 3.0, 4.0));
+    /// assert_eq!(aabb.center(), Point3::new(5.0, 0.0, 0.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn from_half_extents(center: Point<Real>, half_extents: Vector<Real>) -> Self {
         Self::new(center - half_extents, center + half_extents)
     }
 
-    /// Creates a new `Aabb` from a set of point references.
+    /// Creates a new AABB that tightly encloses a set of points (references).
+    ///
+    /// Computes the minimum and maximum coordinates across all points.
+    ///
+    /// # Arguments
+    ///
+    /// * `pts` - An iterator over point references
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let points = vec![
+    ///     Point3::new(1.0, 2.0, 3.0),
+    ///     Point3::new(-1.0, 4.0, 2.0),
+    ///     Point3::new(0.0, 0.0, 5.0),
+    /// ];
+    ///
+    /// let aabb = Aabb::from_points_ref(&points);
+    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+    /// # }
+    /// ```
     pub fn from_points_ref<'a, I>(pts: I) -> Self
     where
         I: IntoIterator<Item = &'a Point<Real>>,
@@ -152,7 +337,31 @@ impl Aabb {
         super::aabb_utils::local_point_cloud_aabb(pts.into_iter().copied())
     }
 
-    /// Creates a new `Aabb` from a set of points.
+    /// Creates a new AABB that tightly encloses a set of points (values).
+    ///
+    /// Computes the minimum and maximum coordinates across all points.
+    ///
+    /// # Arguments
+    ///
+    /// * `pts` - An iterator over point values
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let aabb = Aabb::from_points(vec![
+    ///     Point3::new(1.0, 2.0, 3.0),
+    ///     Point3::new(-1.0, 4.0, 2.0),
+    ///     Point3::new(0.0, 0.0, 5.0),
+    /// ]);
+    ///
+    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+    /// # }
+    /// ```
     pub fn from_points<I>(pts: I) -> Self
     where
         I: IntoIterator<Item = Point<Real>>,
@@ -160,20 +369,81 @@ impl Aabb {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
 
-    /// The center of this `Aabb`.
+    /// Returns the center point of this AABB.
+    ///
+    /// The center is the midpoint between `mins` and `maxs`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let aabb = Aabb::new(
+    ///     Point3::new(-2.0, -3.0, -4.0),
+    ///     Point3::new(2.0, 3.0, 4.0)
+    /// );
+    ///
+    /// assert_eq!(aabb.center(), Point3::origin());
+    /// # }
+    /// ```
     #[inline]
     pub fn center(&self) -> Point<Real> {
         na::center(&self.mins, &self.maxs)
     }
 
-    /// The half extents of this `Aabb`.
+    /// Returns the half-extents of this AABB.
+    ///
+    /// Half-extents are half the dimensions along each axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let aabb = Aabb::new(
+    ///     Point3::new(-5.0, -3.0, -2.0),
+    ///     Point3::new(5.0, 3.0, 2.0)
+    /// );
+    ///
+    /// let half = aabb.half_extents();
+    /// assert_eq!(half, Vector3::new(5.0, 3.0, 2.0));
+    ///
+    /// // Full dimensions are 2 * half_extents
+    /// let full = aabb.extents();
+    /// assert_eq!(full, Vector3::new(10.0, 6.0, 4.0));
+    /// # }
+    /// ```
     #[inline]
     pub fn half_extents(&self) -> Vector<Real> {
         let half: Real = na::convert::<f64, Real>(0.5);
         (self.maxs - self.mins) * half
     }
 
-    /// The volume of this `Aabb`.
+    /// Returns the volume of this AABB.
+    ///
+    /// - **2D**: Returns the area (width × height)
+    /// - **3D**: Returns the volume (width × height × depth)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// // A 2x3x4 box
+    /// let aabb = Aabb::new(
+    ///     Point3::origin(),
+    ///     Point3::new(2.0, 3.0, 4.0)
+    /// );
+    ///
+    /// assert_eq!(aabb.volume(), 24.0); // 2 * 3 * 4
+    /// # }
+    /// ```
     #[inline]
     pub fn volume(&self) -> Real {
         let extents = self.extents();

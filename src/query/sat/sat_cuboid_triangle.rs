@@ -7,10 +7,69 @@ use crate::query::sat;
 use crate::query::sat::support_map_support_map_compute_separation;
 use crate::shape::{Cuboid, SupportMap, Triangle};
 
-/// Finds the best separating edge between a cuboid and a triangle.
+/// Finds the best separating axis by testing all edge-edge combinations between a cuboid and a triangle (3D only).
 ///
-/// All combinations of edges from the cuboid and the triangle are taken into
-/// account.
+/// In 3D collision detection, when a box and triangle intersect, the contact may occur along an
+/// axis perpendicular to an edge from each shape. This function tests all 3×3 = 9 such axes
+/// (cross products of cuboid edges with triangle edges) to find the one with maximum separation.
+///
+/// # Parameters
+///
+/// - `cube1`: The cuboid (in its local coordinate frame)
+/// - `triangle2`: The triangle
+/// - `pos12`: The position of the triangle relative to the cuboid
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `Real`: The maximum separation found across all edge-edge axes
+///   - **Positive**: Shapes are separated
+///   - **Negative**: Shapes are overlapping (penetration depth)
+/// - `Vector<Real>`: The axis direction that gives this separation
+///
+/// # The 9 Axes Tested
+///
+/// The function tests cross products between:
+/// - 3 cuboid edge directions: X, Y, Z (aligned with cuboid axes)
+/// - 3 triangle edge vectors: AB, BC, CA
+///
+/// This gives 3×3 = 9 potential separating axes. Each axis is normalized before testing,
+/// and degenerate axes (near-zero length, indicating parallel edges) are skipped.
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::{Cuboid, Triangle};
+/// use parry3d::query::sat::cuboid_triangle_find_local_separating_edge_twoway;
+/// use nalgebra::{Point3, Vector3, Isometry3};
+///
+/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let triangle = Triangle::new(
+///     Point3::origin(),
+///     Point3::new(1.0, 0.0, 0.0),
+///     Point3::new(0.0, 1.0, 0.0)
+/// );
+///
+/// // Position triangle near the cube
+/// let pos12 = Isometry3::translation(2.0, 0.0, 0.0);
+///
+/// let (separation, axis) = cuboid_triangle_find_local_separating_edge_twoway(
+///     &cube,
+///     &triangle,
+///     &pos12
+/// );
+///
+/// println!("Edge-edge separation: {} along {}", separation, axis);
+/// # }
+/// ```
+///
+/// # Usage in Complete SAT
+///
+/// For a complete cuboid-triangle SAT test, you must also test:
+/// 1. Cuboid face normals (X, Y, Z axes)
+/// 2. Triangle face normal (perpendicular to the triangle plane)
+/// 3. Edge-edge axes (this function)
 #[cfg(feature = "dim3")]
 #[inline(always)]
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
@@ -92,9 +151,59 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
     (best_sep, best_axis)
 }
 
-/// Finds the best separating normal between a triangle and a convex shape implementing the `SupportMap` trait.
+/// Finds the best separating axis by testing the edge normals of a triangle against a support map shape (2D only).
 ///
-/// Only the normals of `triangle1` are tested.
+/// In 2D, a triangle has three edges, each with an associated outward-pointing normal.
+/// This function tests all three edge normals to find which gives the maximum separation
+/// from the support map shape.
+///
+/// # Parameters
+///
+/// - `triangle1`: The triangle whose edge normals will be tested
+/// - `shape2`: Any convex shape implementing [`SupportMap`]
+/// - `pos12`: The position of `shape2` relative to `triangle1`
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `Real`: The maximum separation found among the triangle's edge normals
+///   - **Positive**: Shapes are separated
+///   - **Negative**: Shapes are overlapping
+/// - `Vector<Real>`: The edge normal direction that gives this separation
+///
+/// # 2D vs 3D
+///
+/// In 2D, triangles are true polygons with edges that have normals. In 3D, triangles are
+/// planar surfaces with a face normal (see the 3D version of this function).
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::shape::{Triangle, Ball};
+/// use parry2d::query::sat::triangle_support_map_find_local_separating_normal_oneway;
+/// use nalgebra::{Point2, Isometry2};
+///
+/// let triangle = Triangle::new(
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(1.0, 2.0)
+/// );
+/// let sphere = Ball::new(0.5);
+///
+/// let pos12 = Isometry2::translation(3.0, 1.0);
+///
+/// let (separation, normal) = triangle_support_map_find_local_separating_normal_oneway(
+///     &triangle,
+///     &sphere,
+///     &pos12
+/// );
+///
+/// if separation > 0.0 {
+///     println!("Separated by {} along edge normal {}", separation, normal);
+/// }
+/// # }
+/// ```
 #[cfg(feature = "dim2")]
 pub fn triangle_support_map_find_local_separating_normal_oneway(
     triangle1: &Triangle,
@@ -118,9 +227,23 @@ pub fn triangle_support_map_find_local_separating_normal_oneway(
     (best_sep, best_normal)
 }
 
-/// Finds the best separating normal between a triangle and a cuboid.
+/// Finds the best separating axis by testing a triangle's normals against a cuboid (2D only).
 ///
-/// Only the normals of `triangle1` are tested.
+/// This is a specialized version of [`triangle_support_map_find_local_separating_normal_oneway`]
+/// for the specific case of a triangle and cuboid. In 2D, it tests the three edge normals of
+/// the triangle.
+///
+/// # Parameters
+///
+/// - `triangle1`: The triangle whose edge normals will be tested
+/// - `shape2`: The cuboid
+/// - `pos12`: The position of the cuboid relative to the triangle
+///
+/// # Returns
+///
+/// A tuple containing the maximum separation and the corresponding edge normal direction.
+///
+/// See [`triangle_support_map_find_local_separating_normal_oneway`] for more details and examples.
 #[cfg(feature = "dim2")]
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
@@ -130,9 +253,66 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle_support_map_find_local_separating_normal_oneway(triangle1, shape2, pos12)
 }
 
-/// Finds the best separating normal a triangle and a cuboid.
+/// Finds the best separating axis by testing a triangle's face normal against a cuboid (3D only).
 ///
-/// Only the normals of `triangle1` are tested.
+/// In 3D, a triangle is a planar surface with a single face normal (perpendicular to the plane).
+/// This function tests both directions of this normal (+normal and -normal) to find the maximum
+/// separation from the cuboid.
+///
+/// # How It Works
+///
+/// The function uses the triangle's face normal and one of its vertices (point A) to represent
+/// the triangle as a point-with-normal. It then delegates to
+/// [`point_cuboid_find_local_separating_normal_oneway`](super::point_cuboid_find_local_separating_normal_oneway)
+/// which efficiently handles this case.
+///
+/// # Parameters
+///
+/// - `triangle1`: The triangle whose face normal will be tested
+/// - `shape2`: The cuboid
+/// - `pos12`: The position of the cuboid relative to the triangle
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - `Real`: The separation distance along the triangle's face normal
+///   - **Positive**: Shapes are separated
+///   - **Negative**: Shapes are overlapping
+/// - `Vector<Real>`: The face normal direction (or its negation) that gives this separation
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::shape::{Triangle, Cuboid};
+/// use parry3d::query::sat::triangle_cuboid_find_local_separating_normal_oneway;
+/// use nalgebra::{Point3, Vector3, Isometry3};
+///
+/// // Horizontal triangle in the XY plane
+/// let triangle = Triangle::new(
+///     Point3::origin(),
+///     Point3::new(2.0, 0.0, 0.0),
+///     Point3::new(1.0, 2.0, 0.0)
+/// );
+/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+///
+/// // Position cube above the triangle
+/// let pos12 = Isometry3::translation(1.0, 1.0, 2.0);
+///
+/// let (separation, normal) = triangle_cuboid_find_local_separating_normal_oneway(
+///     &triangle,
+///     &cube,
+///     &pos12
+/// );
+///
+/// println!("Separation along triangle normal: {}", separation);
+/// # }
+/// ```
+///
+/// # 2D vs 3D
+///
+/// - **2D version**: Tests three edge normals (one per triangle edge)
+/// - **3D version** (this function): Tests one face normal (perpendicular to triangle plane)
 #[cfg(feature = "dim3")]
 #[inline(always)]
 pub fn triangle_cuboid_find_local_separating_normal_oneway(

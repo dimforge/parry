@@ -4,8 +4,77 @@ use num::Zero;
 
 /// Tests if the given point is inside a convex polygon with arbitrary orientation.
 ///
+/// This function uses a faster algorithm than [`point_in_poly2d`] but only works for
+/// convex polygons. It checks if the point is on the same side of all edges of the polygon.
+///
 /// The polygon is assumed to be closed, i.e., first and last point of the polygon are implicitly
 /// assumed to be connected by an edge.
+///
+/// # Arguments
+///
+/// * `pt` - The point to test
+/// * `poly` - A slice of points defining the convex polygon vertices in any order (clockwise or counter-clockwise)
+///
+/// # Returns
+///
+/// `true` if the point is inside or on the boundary of the polygon, `false` otherwise.
+///
+/// # Examples
+///
+/// ## Point Inside a Square
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_convex_poly2d;
+/// use parry2d::na::Point2;
+///
+/// let square = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// let inside = Point2::new(1.0, 1.0);
+/// let outside = Point2::new(3.0, 1.0);
+///
+/// assert!(point_in_convex_poly2d(&inside, &square));
+/// assert!(!point_in_convex_poly2d(&outside, &square));
+/// # }
+/// ```
+///
+/// ## Point on the Boundary
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_convex_poly2d;
+/// use parry2d::na::Point2;
+///
+/// let triangle = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(1.0, 2.0),
+/// ];
+///
+/// let on_edge = Point2::new(1.0, 0.0);
+/// assert!(point_in_convex_poly2d(&on_edge, &triangle));
+/// # }
+/// ```
+///
+/// ## Empty Polygon
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_convex_poly2d;
+/// use parry2d::na::Point2;
+///
+/// let empty: Vec<Point2<f32>> = vec![];
+/// let point = Point2::new(1.0, 1.0);
+///
+/// // An empty polygon contains no points
+/// assert!(!point_in_convex_poly2d(&point, &empty));
+/// # }
+/// ```
 pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     if poly.is_empty() {
         false
@@ -30,12 +99,114 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 }
 
 /// Tests if the given point is inside an arbitrary closed polygon with arbitrary orientation,
-/// using a counting winding strategy.
+/// using a winding number algorithm.
+///
+/// This function works with both convex and concave polygons, and even self-intersecting
+/// polygons. It uses a winding number algorithm to determine if a point is inside.
 ///
 /// The polygon is assumed to be closed, i.e., first and last point of the polygon are implicitly
 /// assumed to be connected by an edge.
 ///
-/// This handles concave polygons. For a function dedicated to convex polygons, see [`point_in_convex_poly2d`].
+/// This handles concave polygons. For a faster function dedicated to convex polygons, see [`point_in_convex_poly2d`].
+///
+/// # Arguments
+///
+/// * `pt` - The point to test
+/// * `poly` - A slice of points defining the polygon vertices in order (clockwise or counter-clockwise)
+///
+/// # Returns
+///
+/// `true` if the point is inside the polygon, `false` otherwise.
+///
+/// # Examples
+///
+/// ## Convex Polygon (Square)
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_poly2d;
+/// use parry2d::na::Point2;
+///
+/// let square = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// let inside = Point2::new(1.0, 1.0);
+/// let outside = Point2::new(3.0, 1.0);
+///
+/// assert!(point_in_poly2d(&inside, &square));
+/// assert!(!point_in_poly2d(&outside, &square));
+/// # }
+/// ```
+///
+/// ## Concave Polygon (L-Shape)
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_poly2d;
+/// use parry2d::na::Point2;
+///
+/// // L-shaped polygon (concave)
+/// let l_shape = vec![
+///     Point2::origin(),
+///     Point2::new(2.0, 0.0),
+///     Point2::new(2.0, 1.0),
+///     Point2::new(1.0, 1.0),
+///     Point2::new(1.0, 2.0),
+///     Point2::new(0.0, 2.0),
+/// ];
+///
+/// let inside_corner = Point2::new(0.5, 0.5);
+/// let outside_corner = Point2::new(1.5, 1.5);
+///
+/// assert!(point_in_poly2d(&inside_corner, &l_shape));
+/// assert!(!point_in_poly2d(&outside_corner, &l_shape));
+/// # }
+/// ```
+///
+/// ## Complex Polygon with Holes
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_poly2d;
+/// use parry2d::na::Point2;
+///
+/// // A star shape (self-intersecting creates a complex winding pattern)
+/// let star = vec![
+///     Point2::new(0.0, 1.0),
+///     Point2::new(0.5, 0.5),
+///     Point2::new(1.0, 1.0),
+///     Point2::new(0.7, 0.3),
+///     Point2::new(1.0, -0.5),
+///     Point2::origin(),
+///     Point2::new(-1.0, -0.5),
+///     Point2::new(-0.7, 0.3),
+///     Point2::new(-1.0, 1.0),
+///     Point2::new(-0.5, 0.5),
+/// ];
+///
+/// let center = Point2::new(0.0, 0.5);
+/// assert!(point_in_poly2d(&center, &star));
+/// # }
+/// ```
+///
+/// ## Empty Polygon
+///
+/// ```
+/// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+/// use parry2d::utils::point_in_poly2d;
+/// use parry2d::na::Point2;
+///
+/// let empty: Vec<Point2<f32>> = vec![];
+/// let point = Point2::new(1.0, 1.0);
+///
+/// // An empty polygon contains no points
+/// assert!(!point_in_poly2d(&point, &empty));
+/// # }
+/// ```
 pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
     if poly.is_empty() {
         return false;

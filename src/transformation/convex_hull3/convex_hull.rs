@@ -7,12 +7,104 @@ use crate::utils;
 use alloc::{vec, vec::Vec};
 use na::{self, Point3};
 
-/// Computes the convex hull of a set of 3d points.
+/// Computes the convex hull of a set of 3D points.
+///
+/// The convex hull is the smallest convex shape that contains all input points.
+/// Imagine wrapping a rubber band (2D) or shrink-wrap (3D) tightly around the points.
+///
+/// # Algorithm
+///
+/// Uses the **quickhull algorithm**, which is efficient for most inputs:
+/// - Average case: O(n log n)
+/// - Worst case: O(n²) for specially constructed inputs
+///
+/// # Returns
+///
+/// A tuple `(vertices, indices)`:
+/// - **vertices**: The hull vertices (subset of input points, duplicates removed)
+/// - **indices**: Triangle faces as triplets of vertex indices (CCW winding)
+///
+/// # Panics
+///
+/// Panics if the input is degenerate or the algorithm fails. For error handling,
+/// use [`try_convex_hull`] instead.
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::transformation::convex_hull;
+/// use nalgebra::Point3;
+///
+/// // Points forming a tetrahedron
+/// let points = vec![
+///     Point3::origin(),
+///     Point3::new(1.0, 0.0, 0.0),
+///     Point3::new(0.0, 1.0, 0.0),
+///     Point3::new(0.0, 0.0, 1.0),
+/// ];
+///
+/// let (vertices, indices) = convex_hull(&points);
+///
+/// // Hull has 4 vertices (all input points are on the hull)
+/// assert_eq!(vertices.len(), 4);
+///
+/// // Hull has 4 triangular faces
+/// assert_eq!(indices.len(), 4);
+/// # }
+/// ```
+///
+/// # See Also
+///
+/// - [`try_convex_hull`] - Returns `Result` instead of panicking
 pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
     try_convex_hull(points).unwrap()
 }
 
-/// Computes the convex hull of a set of 3d points.
+/// Computes the convex hull of a set of 3D points, with error handling.
+///
+/// This is the safe version of [`convex_hull`] that returns a `Result` instead
+/// of panicking on degenerate inputs.
+///
+/// # Arguments
+///
+/// * `points` - The input points (must have at least 3 points)
+///
+/// # Returns
+///
+/// * `Ok((vertices, indices))` - Successfully computed convex hull
+/// * `Err(ConvexHullError::IncompleteInput)` - Less than 3 input points
+/// * `Err(ConvexHullError::...)` - Other errors (degenerate geometry, numerical issues)
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::transformation::try_convex_hull;
+/// use nalgebra::Point3;
+///
+/// // Valid input
+/// let points = vec![
+///     Point3::origin(),
+///     Point3::new(1.0, 0.0, 0.0),
+///     Point3::new(0.0, 1.0, 0.0),
+///     Point3::new(0.0, 0.0, 1.0),
+/// ];
+///
+/// match try_convex_hull(&points) {
+///     Ok((vertices, indices)) => {
+///         println!("Hull: {} vertices, {} faces", vertices.len(), indices.len());
+///     }
+///     Err(e) => {
+///         println!("Failed: {:?}", e);
+///     }
+/// }
+///
+/// // Degenerate input (too few points)
+/// let bad_points = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0)];
+/// assert!(try_convex_hull(&bad_points).is_err());
+/// # }
+/// ```
 pub fn try_convex_hull(
     points: &[Point3<Real>],
 ) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {

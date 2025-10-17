@@ -21,13 +21,154 @@ use crate::query::details::NormalConstraints;
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// Indicated an inconsistency in the topology of a triangle mesh.
+/// Errors that occur when computing or validating triangle mesh topology.
+///
+/// Triangle mesh topology describes the connectivity and adjacency relationships between
+/// vertices, edges, and triangles. When constructing a mesh with [`TriMeshFlags::HALF_EDGE_TOPOLOGY`],
+/// Parry validates these relationships and returns this error if inconsistencies are found.
+///
+/// # When This Occurs
+///
+/// Topology errors typically occur when:
+/// - The mesh is non-manifold (edges with more than 2 adjacent faces)
+/// - Adjacent triangles have inconsistent winding order
+/// - Triangles have degenerate geometry (duplicate vertices)
+///
+/// [`TriMeshFlags::HALF_EDGE_TOPOLOGY`]: crate::shape::TriMeshFlags::HALF_EDGE_TOPOLOGY
 #[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TopologyError {
-    /// Found a triangle with two or three identical vertices.
+    /// A triangle has two or three identical vertices (degenerate triangle).
+    ///
+    /// This error indicates that a triangle in the mesh references the same vertex
+    /// multiple times, creating a degenerate triangle (zero area). For example,
+    /// a triangle with indices `[5, 5, 7]` or `[1, 2, 1]`.
+    ///
+    /// Degenerate triangles cannot be part of a valid mesh topology because they
+    /// don't have proper edges or face normals.
+    ///
+    //    /// TODO: figure out why this doc-test fails.
+    //    /// # How to Fix
+    //    ///
+    //    /// ```
+    //    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    //    /// # use parry3d::shape::{TriMesh, TriMeshFlags};
+    //    /// # use nalgebra::Point3;
+    //    /// let vertices = vec![
+    //    ///     Point3::origin(),
+    //    ///     Point3::new(1.0, 0.0, 0.0),
+    //    ///     Point3::new(0.0, 1.0, 0.0),
+    //    /// ];
+    //    ///
+    //    /// // BAD: Triangle with duplicate vertices
+    //    /// let bad_indices = vec![[0, 0, 1]];  // vertex 0 appears twice!
+    //    ///
+    //    /// let result = TriMesh::with_flags(
+    //    ///     vertices.clone(),
+    //    ///     bad_indices,
+    //    ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
+    //    /// );
+    //    /// assert!(result.is_err());
+    //    ///
+    //    /// // GOOD: All three vertices are distinct
+    //    /// let good_indices = vec![[0, 1, 2]];
+    //    /// let mesh = TriMesh::with_flags(
+    //    ///     vertices,
+    //    ///     good_indices,
+    //    ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
+    //    /// ).expect("Valid mesh");
+    //    /// # }
+    //    /// ```
+    ///
+    /// Alternatively, use [`TriMeshFlags::DELETE_DEGENERATE_TRIANGLES`] to automatically
+    /// remove degenerate triangles:
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// # use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// # use nalgebra::Point3;
+    /// # let vertices = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0), Point3::new(0.0, 1.0, 0.0)];
+    /// # let indices = vec![[0, 0, 1], [0, 1, 2]];
+    /// let flags = TriMeshFlags::HALF_EDGE_TOPOLOGY
+    ///     | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES;
+    ///
+    /// let mesh = TriMesh::with_flags(vertices, indices, flags)
+    ///     .expect("Bad triangles removed");
+    /// # }
+    /// ```
     #[error("the triangle {0} has at least two identical vertices.")]
     BadTriangle(u32),
-    /// At least two adjacent triangles have opposite orientations.
+
+    /// Two adjacent triangles have opposite orientations (inconsistent winding).
+    ///
+    /// For a manifold mesh with consistent normals, adjacent triangles must have
+    /// compatible orientations. If two triangles share an edge, they must traverse
+    /// that edge in opposite directions.
+    ///
+    /// This error reports:
+    /// - `triangle1`, `triangle2`: The indices of the two conflicting triangles
+    /// - `edge`: The shared edge as a pair of vertex indices `(v1, v2)`
+    ///
+    /// # Example of the Problem
+    ///
+    /// ```text
+    /// CORRECT (opposite winding on shared edge):
+    ///   Triangle 1: [a, b, c]  ->  edge (a,b)
+    ///   Triangle 2: [b, a, d]  ->  edge (b,a)  ✓ opposite direction
+    ///
+    /// INCORRECT (same winding on shared edge):
+    ///   Triangle 1: [a, b, c]  ->  edge (a,b)
+    ///   Triangle 2: [a, b, d]  ->  edge (a,b)  ✗ same direction!
+    /// ```
+    ///
+    //    /// TODO: figure out why this doc test fails?
+    //    /// # How to Fix
+    //    ///
+    //    /// You need to reverse the winding order of one of the triangles:
+    //    ///
+    //    /// ```
+    //    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    //    /// # use parry3d::shape::{TriMesh, TriMeshFlags};
+    //    /// # use nalgebra::Point3;
+    //    /// let vertices = vec![
+    //    ///     Point3::origin(),  // vertex 0
+    //    ///     Point3::new(1.0, 0.0, 0.0),  // vertex 1
+    //    ///     Point3::new(0.5, 1.0, 0.0),  // vertex 2
+    //    ///     Point3::new(0.5, -1.0, 0.0), // vertex 3
+    //    /// ];
+    //    ///
+    //    /// // BAD: Both triangles traverse edge (0,1) in the same direction
+    //    /// let bad_indices = vec![
+    //    ///     [0, 1, 2],  // edge (0,1)
+    //    ///     [0, 1, 3],  // edge (0,1) - same direction!
+    //    /// ];
+    //    ///
+    //    /// let result = TriMesh::with_flags(
+    //    ///     vertices.clone(),
+    //    ///     bad_indices,
+    //    ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
+    //    /// );
+    //    /// assert!(result.is_err());
+    //    ///
+    //    /// // GOOD: Second triangle reversed to [1, 0, 3]
+    //    /// let good_indices = vec![
+    //    ///     [0, 1, 2],  // edge (0,1)
+    //    ///     [1, 0, 3],  // edge (1,0) - opposite direction!
+    //    /// ];
+    //    ///
+    //    /// let mesh = TriMesh::with_flags(
+    //    ///     vertices,
+    //    ///     good_indices,
+    //    ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
+    //    /// ).expect("Valid mesh");
+    //    /// # }
+    //    /// ```
+    ///
+    /// # Common Causes
+    ///
+    /// - Mixing clockwise and counter-clockwise triangle definitions
+    /// - Incorrectly constructed mesh from modeling software
+    /// - Manual mesh construction with inconsistent winding
+    /// - Merging separate meshes with different conventions
     #[error("the triangles {triangle1} and {triangle2} sharing the edge {edge:?} have opposite orientations.")]
     BadAdjacentTrianglesOrientation {
         /// The first triangle, with an orientation opposite to the second triangle.
@@ -39,13 +180,105 @@ pub enum TopologyError {
     },
 }
 
-/// Indicated an inconsistency while building a triangle mesh.
+/// Errors that occur when creating a triangle mesh.
+///
+/// When constructing a [`TriMesh`] using [`TriMesh::new`] or [`TriMesh::with_flags`],
+/// various validation checks are performed. This error type describes what went wrong.
+///
+/// # Common Usage
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// # use parry3d::shape::{TriMesh, TriMeshBuilderError, TopologyError};
+/// # use nalgebra::Point3;
+/// let vertices = vec![Point3::origin()];
+/// let indices = vec![];  // Empty!
+///
+/// match TriMesh::new(vertices, indices) {
+///     Err(TriMeshBuilderError::EmptyIndices) => {
+///         println!("Cannot create a mesh with no triangles");
+///     }
+///     Err(TriMeshBuilderError::TopologyError(topo_err)) => {
+///         println!("Mesh topology is invalid: {}", topo_err);
+///     }
+///     Ok(mesh) => {
+///         println!("Mesh created successfully");
+///     }
+/// }
+/// # }
+/// ```
+///
+/// [`TriMesh`]: crate::shape::TriMesh
+/// [`TriMesh::new`]: crate::shape::TriMesh::new
+/// [`TriMesh::with_flags`]: crate::shape::TriMesh::with_flags
 #[derive(thiserror::Error, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TriMeshBuilderError {
-    /// A triangle mesh must contain at least one triangle.
+    /// The index buffer is empty (no triangles provided).
+    ///
+    /// A triangle mesh must contain at least one triangle. An empty index buffer
+    /// is not valid because there's nothing to render or use for collision detection.
+    ///
+    /// # How to Fix
+    ///
+    /// Ensure your index buffer has at least one triangle:
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// # use parry3d::shape::TriMesh;
+    /// # use nalgebra::Point3;
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    ///
+    /// // BAD: No triangles
+    /// let empty_indices = vec![];
+    /// assert!(TriMesh::new(vertices.clone(), empty_indices).is_err());
+    ///
+    /// // GOOD: At least one triangle
+    /// let indices = vec![[0, 1, 2]];
+    /// assert!(TriMesh::new(vertices, indices).is_ok());
+    /// # }
+    /// ```
     #[error("A triangle mesh must contain at least one triangle.")]
     EmptyIndices,
-    /// Indicated an inconsistency in the topology of a triangle mesh.
+
+    /// The mesh topology is invalid.
+    ///
+    /// This wraps a [`TopologyError`] that provides details about the specific
+    /// topology problem. This only occurs when creating a mesh with topology
+    /// validation enabled (e.g., [`TriMeshFlags::HALF_EDGE_TOPOLOGY`]).
+    ///
+    /// See [`TopologyError`] for details on specific topology problems and how
+    /// to fix them.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// # use parry3d::shape::{TriMesh, TriMeshFlags, TriMeshBuilderError};
+    /// # use nalgebra::Point3;
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    ///
+    /// // Triangle with duplicate vertices
+    /// let bad_indices = vec![[0, 0, 1]];
+    ///
+    /// match TriMesh::with_flags(vertices, bad_indices, TriMeshFlags::HALF_EDGE_TOPOLOGY) {
+    ///     Err(TriMeshBuilderError::TopologyError(topo_err)) => {
+    ///         println!("Topology error: {}", topo_err);
+    ///         // Handle the specific topology issue
+    ///     }
+    ///     _ => {}
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// [`TriMeshFlags::HALF_EDGE_TOPOLOGY`]: crate::shape::TriMeshFlags::HALF_EDGE_TOPOLOGY
     #[error("Topology Error: {0}")]
     TopologyError(TopologyError),
 }
@@ -302,6 +535,75 @@ impl fmt::Debug for TriMesh {
 
 impl TriMesh {
     /// Creates a new triangle mesh from a vertex buffer and an index buffer.
+    ///
+    /// This is the most common way to construct a `TriMesh`. The mesh is created with
+    /// default settings (no topology computation, no pseudo-normals, etc.). For more
+    /// control over these optional features, use [`TriMesh::with_flags`] instead.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertices` - A vector of 3D points representing the mesh vertices
+    /// * `indices` - A vector of triangles, where each triangle is represented by
+    ///   three indices into the vertex buffer. Indices should be in counter-clockwise
+    ///   order for outward-facing normals.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(TriMesh)` - If the mesh was successfully created
+    /// * `Err(TriMeshBuilderError)` - If the mesh is invalid (e.g., empty index buffer)
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if:
+    /// - The index buffer is empty (at least one triangle is required)
+    ///
+    /// # Performance
+    ///
+    /// This function builds a BVH (Bounding Volume Hierarchy) acceleration structure
+    /// for the mesh, which takes O(n log n) time where n is the number of triangles.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create a simple triangle mesh (a single triangle)
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    ///
+    /// let trimesh = TriMesh::new(vertices, indices).expect("Invalid mesh");
+    /// assert_eq!(trimesh.num_triangles(), 1);
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::shape::TriMesh;
+    /// use nalgebra::Point2;
+    ///
+    /// // Create a quad (two triangles) in 2D
+    /// let vertices = vec![
+    ///     Point2::origin(),  // bottom-left
+    ///     Point2::new(1.0, 0.0),  // bottom-right
+    ///     Point2::new(1.0, 1.0),  // top-right
+    ///     Point2::new(0.0, 1.0),  // top-left
+    /// ];
+    /// let indices = vec![
+    ///     [0, 1, 2],  // first triangle
+    ///     [0, 2, 3],  // second triangle
+    /// ];
+    ///
+    /// let quad = TriMesh::new(vertices, indices).unwrap();
+    /// assert_eq!(quad.num_triangles(), 2);
+    /// assert_eq!(quad.vertices().len(), 4);
+    /// # }
+    /// ```
     pub fn new(
         vertices: Vec<Point<Real>>,
         indices: Vec<[u32; 3]>,
@@ -310,6 +612,109 @@ impl TriMesh {
     }
 
     /// Creates a new triangle mesh from a vertex buffer and an index buffer, and flags controlling optional properties.
+    ///
+    /// This is the most flexible way to create a `TriMesh`, allowing you to specify exactly
+    /// which optional features should be computed. Use this when you need:
+    /// - Half-edge topology for adjacency information
+    /// - Connected components analysis
+    /// - Pseudo-normals for robust inside/outside tests
+    /// - Automatic merging of duplicate vertices
+    /// - Removal of degenerate or duplicate triangles
+    ///
+    /// # Arguments
+    ///
+    /// * `vertices` - A vector of 3D points representing the mesh vertices
+    /// * `indices` - A vector of triangles, where each triangle is represented by
+    ///   three indices into the vertex buffer
+    /// * `flags` - A combination of [`TriMeshFlags`] controlling which optional features to compute
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(TriMesh)` - If the mesh was successfully created
+    /// * `Err(TriMeshBuilderError)` - If the mesh is invalid or topology computation failed
+    ///
+    /// # Errors
+    ///
+    /// This function returns an error if:
+    /// - The index buffer is empty
+    /// - [`TriMeshFlags::HALF_EDGE_TOPOLOGY`] is set but the topology is invalid
+    ///   (e.g., non-manifold edges or inconsistent orientations)
+    ///
+    /// # Performance
+    ///
+    /// - Base construction: O(n log n) for BVH building
+    /// - `HALF_EDGE_TOPOLOGY`: O(n) where n is the number of triangles
+    /// - `CONNECTED_COMPONENTS`: O(n) with union-find
+    /// - `ORIENTED` or `FIX_INTERNAL_EDGES`: O(n) for pseudo-normal computation
+    /// - `MERGE_DUPLICATE_VERTICES`: O(n) with hash map lookups
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// // Create vertices for a simple mesh
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [1, 3, 2]];
+    ///
+    /// // Create a mesh with half-edge topology
+    /// let flags = TriMeshFlags::HALF_EDGE_TOPOLOGY;
+    /// let mesh = TriMesh::with_flags(vertices.clone(), indices.clone(), flags)
+    ///     .expect("Failed to create mesh");
+    ///
+    /// // The topology information is now available
+    /// assert!(mesh.topology().is_some());
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// # let vertices = vec![
+    /// #     Point3::origin(),
+    /// #     Point3::new(1.0, 0.0, 0.0),
+    /// #     Point3::new(0.0, 1.0, 0.0),
+    /// # ];
+    /// # let indices = vec![[0, 1, 2]];
+    /// // Combine multiple flags for advanced features
+    /// let flags = TriMeshFlags::HALF_EDGE_TOPOLOGY
+    ///     | TriMeshFlags::MERGE_DUPLICATE_VERTICES
+    ///     | TriMeshFlags::DELETE_DEGENERATE_TRIANGLES;
+    ///
+    /// let mesh = TriMesh::with_flags(vertices, indices, flags)
+    ///     .expect("Failed to create mesh");
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// # let vertices = vec![
+    /// #     Point3::origin(),
+    /// #     Point3::new(1.0, 0.0, 0.0),
+    /// #     Point3::new(0.0, 1.0, 0.0),
+    /// # ];
+    /// # let indices = vec![[0, 1, 2]];
+    /// // For robust point containment tests in 3D
+    /// let flags = TriMeshFlags::ORIENTED;
+    /// let mesh = TriMesh::with_flags(vertices, indices, flags)
+    ///     .expect("Failed to create mesh");
+    ///
+    /// // Pseudo-normals are now computed for accurate inside/outside tests
+    /// assert!(mesh.pseudo_normals().is_some());
+    /// # }
+    /// ```
     pub fn with_flags(
         vertices: Vec<Point<Real>>,
         indices: Vec<[u32; 3]>,
@@ -455,6 +860,45 @@ impl TriMesh {
     }
 
     /// Transforms in-place the vertices of this triangle mesh.
+    ///
+    /// Applies a rigid transformation (rotation and translation) to all vertices
+    /// of the mesh. This is useful for positioning or orienting a mesh in world space.
+    /// The transformation also updates the BVH and pseudo-normals (if present).
+    ///
+    /// # Arguments
+    ///
+    /// * `transform` - The isometry (rigid transformation) to apply to all vertices
+    ///
+    /// # Performance
+    ///
+    /// This operation is O(n) for transforming vertices, plus O(n log n) for
+    /// rebuilding the BVH, where n is the number of triangles.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::{Point3, Vector3, Isometry3};
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mut mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// // Translate the mesh by (10, 0, 0)
+    /// let transform = Isometry3::translation(10.0, 0.0, 0.0);
+    /// mesh.transform_vertices(&transform);
+    ///
+    /// // All vertices are now shifted
+    /// assert_eq!(mesh.vertices()[0], Point3::new(10.0, 0.0, 0.0));
+    /// assert_eq!(mesh.vertices()[1], Point3::new(11.0, 0.0, 0.0));
+    /// assert_eq!(mesh.vertices()[2], Point3::new(10.0, 1.0, 0.0));
+    /// # }
+    /// ```
     pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
         self.vertices
             .iter_mut()
@@ -477,6 +921,47 @@ impl TriMesh {
     }
 
     /// Returns a scaled version of this triangle mesh.
+    ///
+    /// Creates a new mesh with all vertices scaled by the given per-axis scale factors.
+    /// Unlike rigid transformations, scaling can change the shape of the mesh (when
+    /// scale factors differ between axes).
+    ///
+    /// The scaling also updates pseudo-normals (if present) to remain valid after
+    /// the transformation, and efficiently scales the BVH structure.
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The scale factors for each axis (x, y, z in 3D)
+    ///
+    /// # Returns
+    ///
+    /// A new `TriMesh` with scaled vertices
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::{Point3, Vector3};
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// // Uniform scaling: double all dimensions
+    /// let scaled = mesh.clone().scaled(&Vector3::new(2.0, 2.0, 2.0));
+    /// assert_eq!(scaled.vertices()[1], Point3::new(2.0, 0.0, 0.0));
+    ///
+    /// // Non-uniform scaling: stretch along X axis
+    /// let stretched = mesh.scaled(&Vector3::new(3.0, 1.0, 1.0));
+    /// assert_eq!(stretched.vertices()[1], Point3::new(3.0, 0.0, 0.0));
+    /// assert_eq!(stretched.vertices()[2], Point3::new(0.0, 1.0, 0.0));
+    /// # }
+    /// ```
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.vertices
             .iter_mut()
@@ -515,6 +1000,57 @@ impl TriMesh {
     }
 
     /// Appends a second triangle mesh to this triangle mesh.
+    ///
+    /// This combines two meshes into one by adding all vertices and triangles from
+    /// the `rhs` mesh to this mesh. The vertex indices in the appended triangles
+    /// are automatically adjusted to reference the correct vertices in the combined
+    /// vertex buffer.
+    ///
+    /// After appending, all optional features (topology, pseudo-normals, etc.) are
+    /// recomputed according to this mesh's current flags.
+    ///
+    /// # Arguments
+    ///
+    /// * `rhs` - The mesh to append to this mesh
+    ///
+    /// # Performance
+    ///
+    /// This operation rebuilds the entire mesh with all its features, which can be
+    /// expensive for large meshes. Time complexity is O(n log n) where n is the
+    /// total number of triangles after appending.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// // Create first mesh (a triangle)
+    /// let vertices1 = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices1 = vec![[0, 1, 2]];
+    /// let mut mesh1 = TriMesh::new(vertices1, indices1).unwrap();
+    ///
+    /// // Create second mesh (another triangle, offset in space)
+    /// let vertices2 = vec![
+    ///     Point3::new(2.0, 0.0, 0.0),
+    ///     Point3::new(3.0, 0.0, 0.0),
+    ///     Point3::new(2.0, 1.0, 0.0),
+    /// ];
+    /// let indices2 = vec![[0, 1, 2]];
+    /// let mesh2 = TriMesh::new(vertices2, indices2).unwrap();
+    ///
+    /// // Append second mesh to first
+    /// mesh1.append(&mesh2);
+    ///
+    /// assert_eq!(mesh1.num_triangles(), 2);
+    /// assert_eq!(mesh1.vertices().len(), 6);
+    /// # }
+    /// ```
     pub fn append(&mut self, rhs: &TriMesh) {
         let base_id = self.vertices.len() as u32;
         self.vertices.extend_from_slice(rhs.vertices());
@@ -531,13 +1067,87 @@ impl TriMesh {
 
     /// Create a `TriMesh` from a set of points assumed to describe a counter-clockwise non-convex polygon.
     ///
-    /// This operation may fail if the input polygon is invalid, e.g. it is non-simple or has zero surface area.
+    /// This function triangulates a 2D polygon using ear clipping algorithm. The polygon
+    /// can be convex or concave, but must be simple (no self-intersections) and have
+    /// counter-clockwise winding order.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertices` - The vertices of the polygon in counter-clockwise order
+    ///
+    /// # Returns
+    ///
+    /// * `Some(TriMesh)` - If triangulation succeeded
+    /// * `None` - If the polygon is invalid (self-intersecting, degenerate, etc.)
+    ///
+    /// # Requirements
+    ///
+    /// - Polygon must be simple (no self-intersections)
+    /// - Vertices must be in counter-clockwise order
+    /// - Polygon must have non-zero area
+    /// - Only available in 2D (`dim2` feature)
+    ///
+    /// # Performance
+    ///
+    /// Ear clipping has O(n²) time complexity in the worst case, where n is the
+    /// number of vertices.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::shape::TriMesh;
+    /// use nalgebra::Point2;
+    ///
+    /// // Create a simple concave polygon (L-shape)
+    /// let vertices = vec![
+    ///     Point2::origin(),
+    ///     Point2::new(2.0, 0.0),
+    ///     Point2::new(2.0, 1.0),
+    ///     Point2::new(1.0, 1.0),
+    ///     Point2::new(1.0, 2.0),
+    ///     Point2::new(0.0, 2.0),
+    /// ];
+    ///
+    /// let mesh = TriMesh::from_polygon(vertices)
+    ///     .expect("Failed to triangulate polygon");
+    ///
+    /// // The polygon has been triangulated
+    /// assert!(mesh.num_triangles() > 0);
+    /// # }
+    /// ```
     #[cfg(feature = "dim2")]
     pub fn from_polygon(vertices: Vec<Point<Real>>) -> Option<Self> {
         triangulate_ear_clipping(&vertices).map(|indices| Self::new(vertices, indices).unwrap())
     }
 
     /// A flat view of the index buffer of this mesh.
+    ///
+    /// Returns the triangle indices as a flat array of `u32` values, where every
+    /// three consecutive values form a triangle. This is useful for interfacing
+    /// with graphics APIs that expect flat index buffers.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [1, 3, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// let flat = mesh.flat_indices();
+    /// assert_eq!(flat, &[0, 1, 2, 1, 3, 2]);
+    /// assert_eq!(flat.len(), mesh.num_triangles() * 3);
+    /// # }
+    /// ```
     pub fn flat_indices(&self) -> &[u32] {
         unsafe {
             let len = self.indices.len() * 3;
@@ -561,6 +1171,49 @@ impl TriMesh {
     }
 
     /// Reverse the orientation of the triangle mesh.
+    ///
+    /// This flips the winding order of all triangles, effectively turning the mesh
+    /// "inside-out". If triangles had counter-clockwise winding (outward normals),
+    /// they will have clockwise winding (inward normals) after this operation.
+    ///
+    /// This is useful when:
+    /// - A mesh was imported with incorrect orientation
+    /// - You need to flip normals for rendering or physics
+    /// - Creating the "back side" of a mesh
+    ///
+    /// # Performance
+    ///
+    /// This operation modifies triangles in-place (O(n)), but recomputes topology
+    /// and pseudo-normals if they were present, which can be expensive for large meshes.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    ///
+    /// let mut mesh = TriMesh::new(vertices, indices).unwrap();
+    /// let original_triangle = mesh.triangle(0);
+    ///
+    /// // Reverse the mesh orientation
+    /// mesh.reverse();
+    ///
+    /// let reversed_triangle = mesh.triangle(0);
+    ///
+    /// // The first two vertices are swapped
+    /// assert_eq!(original_triangle.a, reversed_triangle.b);
+    /// assert_eq!(original_triangle.b, reversed_triangle.a);
+    /// assert_eq!(original_triangle.c, reversed_triangle.c);
+    /// # }
+    /// ```
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
 
@@ -987,6 +1640,43 @@ impl TriMesh {
     }
 
     /// An iterator through all the triangles of this mesh.
+    ///
+    /// Returns an iterator that yields [`Triangle`] shapes representing each
+    /// triangle in the mesh. Each triangle contains the actual 3D coordinates
+    /// of its three vertices (not indices).
+    ///
+    /// # Performance
+    ///
+    /// The iterator performs vertex lookups on-the-fly, so iterating through
+    /// all triangles is O(n) where n is the number of triangles.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [1, 3, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// // Iterate through all triangles
+    /// for triangle in mesh.triangles() {
+    ///     println!("Triangle: {:?}, {:?}, {:?}", triangle.a, triangle.b, triangle.c);
+    /// }
+    ///
+    /// // Count triangles with specific properties
+    /// let count = mesh.triangles()
+    ///     .filter(|tri| tri.area() > 0.1)
+    ///     .count();
+    /// # }
+    /// ```
     pub fn triangles(&self) -> impl ExactSizeIterator<Item = Triangle> + '_ {
         self.indices.iter().map(move |ids| {
             Triangle::new(
@@ -1011,26 +1701,150 @@ impl TriMesh {
 
 impl TriMesh {
     /// The flags of this triangle mesh.
+    ///
+    /// Returns the [`TriMeshFlags`] that were used to construct this mesh,
+    /// indicating which optional features are enabled.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    ///
+    /// let flags = TriMeshFlags::HALF_EDGE_TOPOLOGY;
+    /// let mesh = TriMesh::with_flags(vertices, indices, flags).unwrap();
+    ///
+    /// assert!(mesh.flags().contains(TriMeshFlags::HALF_EDGE_TOPOLOGY));
+    /// # }
+    /// ```
     pub fn flags(&self) -> TriMeshFlags {
         self.flags
     }
 
     /// Compute the axis-aligned bounding box of this triangle mesh.
+    ///
+    /// Returns the AABB that tightly bounds all triangles of the mesh after
+    /// applying the given isometry transformation.
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - The position/orientation of the mesh in world space
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::{Point3, Isometry3};
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// let identity = Isometry3::identity();
+    /// let aabb = mesh.aabb(&identity);
+    ///
+    /// // The AABB contains all vertices
+    /// assert!(aabb.contains_local_point(&Point3::new(0.5, 0.5, 0.0)));
+    /// # }
+    /// ```
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         self.bvh.root_aabb().transform_by(pos)
     }
 
     /// Gets the local axis-aligned bounding box of this triangle mesh.
+    ///
+    /// Returns the AABB in the mesh's local coordinate system (without any
+    /// transformation applied). This is faster than [`TriMesh::aabb`] when
+    /// no transformation is needed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::new(-1.0, -1.0, 0.0),
+    ///     Point3::new(1.0, -1.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// let aabb = mesh.local_aabb();
+    /// assert_eq!(aabb.mins.x, -1.0);
+    /// assert_eq!(aabb.maxs.x, 1.0);
+    /// # }
+    /// ```
     pub fn local_aabb(&self) -> Aabb {
         self.bvh.root_aabb()
     }
 
     /// The acceleration structure used by this triangle-mesh.
+    ///
+    /// Returns a reference to the BVH (Bounding Volume Hierarchy) that
+    /// accelerates spatial queries on this mesh. The BVH is used internally
+    /// for ray casting, collision detection, and other geometric queries.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// let bvh = mesh.bvh();
+    /// // The BVH can be used for advanced spatial queries
+    /// assert!(!bvh.is_empty());
+    /// # }
+    /// ```
     pub fn bvh(&self) -> &Bvh {
         &self.bvh
     }
 
     /// The number of triangles forming this mesh.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [1, 3, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// assert_eq!(mesh.num_triangles(), 2);
+    /// # }
+    /// ```
     pub fn num_triangles(&self) -> usize {
         self.indices.len()
     }
@@ -1045,6 +1859,40 @@ impl TriMesh {
     }
 
     /// Get the `i`-th triangle of this mesh.
+    ///
+    /// Returns a [`Triangle`] shape with the actual vertex coordinates (not indices)
+    /// of the requested triangle. The triangle index must be less than the number
+    /// of triangles in the mesh.
+    ///
+    /// # Arguments
+    ///
+    /// * `i` - The index of the triangle to retrieve (0-based)
+    ///
+    /// # Panics
+    ///
+    /// Panics if `i >= self.num_triangles()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// let triangle = mesh.triangle(0);
+    /// assert_eq!(triangle.a, Point3::origin());
+    /// assert_eq!(triangle.b, Point3::new(1.0, 0.0, 0.0));
+    /// assert_eq!(triangle.c, Point3::new(0.0, 1.0, 0.0));
+    /// # }
+    /// ```
     pub fn triangle(&self, i: u32) -> Triangle {
         let idx = self.indices[i as usize];
         Triangle::new(
@@ -1088,21 +1936,140 @@ impl TriMesh {
     }
 
     /// The vertex buffer of this mesh.
+    ///
+    /// Returns a slice containing all vertex positions as 3D points.
+    /// The vertices are stored in the order they were provided during construction.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// assert_eq!(mesh.vertices().len(), 3);
+    /// assert_eq!(mesh.vertices()[0], Point3::origin());
+    /// # }
+    /// ```
     pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices
     }
 
     /// The index buffer of this mesh.
+    ///
+    /// Returns a slice of triangles, where each triangle is represented as an
+    /// array of three vertex indices. The indices reference positions in the
+    /// vertex buffer returned by [`TriMesh::vertices`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::TriMesh;
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Point3::new(1.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [1, 3, 2]];
+    /// let mesh = TriMesh::new(vertices, indices).unwrap();
+    ///
+    /// assert_eq!(mesh.indices().len(), 2);
+    /// assert_eq!(mesh.indices()[0], [0, 1, 2]);
+    /// assert_eq!(mesh.indices()[1], [1, 3, 2]);
+    /// # }
+    /// ```
     pub fn indices(&self) -> &[[u32; 3]] {
         &self.indices
     }
 
     /// Returns the topology information of this trimesh, if it has been computed.
+    ///
+    /// Topology information includes half-edge data structures that describe
+    /// adjacency relationships between vertices, edges, and faces. This is
+    /// computed when the [`TriMeshFlags::HALF_EDGE_TOPOLOGY`] flag is set.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// let vertices = vec![
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    ///
+    /// // Without topology flag
+    /// let mesh = TriMesh::new(vertices.clone(), indices.clone()).unwrap();
+    /// assert!(mesh.topology().is_none());
+    ///
+    /// // With topology flag
+    /// let mesh = TriMesh::with_flags(
+    ///     vertices,
+    ///     indices,
+    ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
+    /// ).unwrap();
+    /// assert!(mesh.topology().is_some());
+    /// # }
+    /// ```
     pub fn topology(&self) -> Option<&TriMeshTopology> {
         self.topology.as_ref()
     }
 
     /// Returns the connected-component information of this trimesh, if it has been computed.
+    ///
+    /// Connected components represent separate, non-connected parts of the mesh.
+    /// This is computed when the [`TriMeshFlags::CONNECTED_COMPONENTS`] flag is set
+    /// (requires the `std` feature).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// # #[cfg(feature = "std")] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use nalgebra::Point3;
+    ///
+    /// // Create two separate triangles (not connected)
+    /// let vertices = vec![
+    ///     // First triangle
+    ///     Point3::origin(),
+    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     // Second triangle (separate)
+    ///     Point3::new(5.0, 0.0, 0.0),
+    ///     Point3::new(6.0, 0.0, 0.0),
+    ///     Point3::new(5.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2], [3, 4, 5]];
+    ///
+    /// let mesh = TriMesh::with_flags(
+    ///     vertices,
+    ///     indices,
+    ///     TriMeshFlags::CONNECTED_COMPONENTS
+    /// ).unwrap();
+    ///
+    /// if let Some(cc) = mesh.connected_components() {
+    ///     assert_eq!(cc.num_connected_components(), 2);
+    /// }
+    /// # }
+    /// # }
+    /// ```
     pub fn connected_components(&self) -> Option<&TriMeshConnectedComponents> {
         self.connected_components.as_ref()
     }

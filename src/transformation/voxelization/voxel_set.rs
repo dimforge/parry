@@ -28,7 +28,56 @@ type ConvexHull = Vec<Point<Real>>;
 #[cfg(feature = "dim3")]
 type ConvexHull = (Vec<Point<Real>>, Vec<[u32; DIM]>);
 
-/// A voxel.
+/// A single voxel in a voxel grid.
+///
+/// A voxel represents a cubic (or square in 2D) cell in a discrete grid. Each voxel is identified
+/// by its integer grid coordinates and contains metadata about its position relative to the
+/// voxelized shape.
+///
+/// # Fields
+///
+/// - `coords`: The grid position `(i, j)` in 2D or `(i, j, k)` in 3D. These are **integer**
+///   coordinates in the voxel grid, not world-space coordinates.
+///
+/// - `is_on_surface`: Whether this voxel intersects the surface boundary of the shape. If `false`,
+///   the voxel is completely inside the shape (only possible when using [`FillMode::FloodFill`]).
+///
+/// # Example
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+/// use parry3d::shape::Ball;
+/// ///
+/// let ball = Ball::new(1.0);
+/// let (vertices, indices) = ball.to_trimesh(10, 10);
+///
+/// let voxels = VoxelSet::voxelize(
+///     &vertices,
+///     &indices,
+///     8,
+///     FillMode::FloodFill { detect_cavities: false },
+///     false,
+/// );
+///
+/// // Examine individual voxels
+/// for voxel in voxels.voxels() {
+///     // Grid coordinates (integer position in the voxel grid)
+///     println!("Grid position: {:?}", voxel.coords);
+///
+///     // World-space position (actual 3D coordinates)
+///     let world_pos = voxels.get_voxel_point(voxel);
+///     println!("World position: {:?}", world_pos);
+///
+///     // Surface vs interior
+///     if voxel.is_on_surface {
+///         println!("This voxel is on the surface boundary");
+///     } else {
+///         println!("This voxel is inside the shape");
+///     }
+/// }
+/// # }
+/// ```
 #[derive(Copy, Clone, Debug)]
 pub struct Voxel {
     /// The integer coordinates of the voxel as part of the voxel grid.
@@ -50,9 +99,95 @@ impl Default for Voxel {
     }
 }
 
-/// A sparse set of voxels.
+/// A sparse set of filled voxels resulting from voxelization.
 ///
-/// It only contains voxels that are considered as "full" after a voxelization.
+/// `VoxelSet` is a memory-efficient storage format that only contains voxels marked as "filled"
+/// during the voxelization process. This is much more efficient than storing a dense 3D array
+/// for shapes that are mostly empty or have a hollow interior.
+///
+/// # Structure
+///
+/// Each `VoxelSet` contains:
+/// - A list of filled voxels with their grid coordinates
+/// - The origin point and scale factor for converting grid coordinates to world space
+/// - Optional metadata tracking which primitives (triangles/segments) intersect each voxel
+///
+/// # Grid Coordinates vs World Coordinates
+///
+/// Voxels are stored with integer grid coordinates `(i, j, k)`. To convert to world-space
+/// coordinates, use:
+///
+/// ```text
+/// world_position = origin + (i, j, k) * scale
+/// ```
+///
+/// The [`get_voxel_point()`](VoxelSet::get_voxel_point) method does this conversion for you.
+///
+/// # Memory Layout
+///
+/// Unlike [`VoxelizedVolume`] which stores a dense 3D array, `VoxelSet` uses sparse storage:
+/// - Only filled voxels are stored (typically much fewer than total grid cells)
+/// - Memory usage is `O(filled_voxels)` instead of `O(resolution^3)`
+/// - Ideal for shapes with low surface-to-volume ratio
+///
+/// # Example: Basic Usage
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+/// use parry3d::shape::Cuboid;
+/// use nalgebra::Vector3;
+///
+/// // Create and voxelize a shape
+/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let (vertices, indices) = cuboid.to_trimesh();
+///
+/// let voxels = VoxelSet::voxelize(
+///     &vertices,
+///     &indices,
+///     10,                      // resolution
+///     FillMode::SurfaceOnly,   // hollow surface only
+///     false,                   // no primitive mapping
+/// );
+///
+/// // Query the voxel set
+/// println!("Number of voxels: {}", voxels.len());
+/// println!("Voxel size: {}", voxels.scale);
+/// println!("Total volume: {}", voxels.compute_volume());
+///
+/// // Access voxels
+/// for voxel in voxels.voxels() {
+///     let world_pos = voxels.get_voxel_point(voxel);
+///     println!("Voxel at {:?}", world_pos);
+/// }
+/// # }
+/// ```
+///
+/// # Example: Volume Computation
+///
+/// ```
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+/// use parry3d::shape::Ball;
+/// ///
+/// let ball = Ball::new(1.0);
+/// let (vertices, indices) = ball.to_trimesh(20, 20);
+///
+/// // Voxelize with interior filling
+/// let voxels = VoxelSet::voxelize(
+///     &vertices,
+///     &indices,
+///     20,
+///     FillMode::FloodFill { detect_cavities: false },
+///     false,
+/// );
+///
+/// // Compute approximate volume
+/// let voxel_volume = voxels.compute_volume();
+/// let expected_volume = 4.0 / 3.0 * std::f32::consts::PI;
+/// println!("Voxel volume: {:.3}, Expected: {:.3}", voxel_volume, expected_volume);
+/// # }
+/// ```
 pub struct VoxelSet {
     /// The 3D origin of this voxel-set.
     pub origin: Point<Real>,
@@ -98,16 +233,65 @@ impl VoxelSet {
         self.scale * self.scale * self.scale
     }
 
-    /// Voxelizes the given shape described by its boundary:
-    /// a triangle mesh (in 3D) or polyline (in 2D).
+    /// Voxelizes a shape by specifying the physical size of each voxel.
+    ///
+    /// This creates a voxelized representation of a shape defined by its boundary:
+    /// - In 3D: A triangle mesh (vertices and triangle indices)
+    /// - In 2D: A polyline (vertices and segment indices)
+    ///
+    /// The resolution is automatically determined based on the shape's bounding box
+    /// and the requested voxel size.
     ///
     /// # Parameters
-    /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
-    /// * `indices` - The index buffer of the boundary of the shape to voxelize.
-    /// * `voxel_size` - The size of each voxel.
-    /// * `fill_mode` - Controls what is being voxelized.
-    /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
-    ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
+    ///
+    /// * `points` - Vertex buffer defining the boundary of the shape. These are the
+    ///   vertices of the triangle mesh (3D) or polyline (2D).
+    ///
+    /// * `indices` - Index buffer defining the boundary primitives:
+    ///   - 3D: Each element is `[v0, v1, v2]` defining a triangle
+    ///   - 2D: Each element is `[v0, v1]` defining a line segment
+    ///
+    /// * `voxel_size` - The physical size (edge length) of each cubic voxel. Smaller
+    ///   values give higher resolution but use more memory.
+    ///
+    /// * `fill_mode` - Controls which voxels are marked as filled:
+    ///   - [`FillMode::SurfaceOnly`]: Only voxels intersecting the boundary
+    ///   - [`FillMode::FloodFill`]: Surface voxels plus interior voxels
+    ///
+    /// * `keep_voxel_to_primitives_map` - If `true`, stores which primitives (triangles
+    ///   or segments) intersect each voxel. Required for [`compute_exact_convex_hull()`]
+    ///   and [`compute_primitive_intersections()`], but uses additional memory.
+    ///
+    /// # Returns
+    ///
+    /// A sparse `VoxelSet` containing only the filled voxels.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Ball;
+    ///
+    /// let ball = Ball::new(2.0);  // radius = 2.0
+    /// let (vertices, indices) = ball.to_trimesh(20, 20);
+    ///
+    /// // Create voxels with 0.1 unit size
+    /// let voxels = VoxelSet::with_voxel_size(
+    ///     &vertices,
+    ///     &indices,
+    ///     0.1,                    // each voxel is 0.1 x 0.1 x 0.1
+    ///     FillMode::SurfaceOnly,
+    ///     false,
+    /// );
+    ///
+    /// println!("Created {} voxels", voxels.len());
+    /// println!("Each voxel has volume {}", voxels.voxel_volume());
+    /// # }
+    /// ```
+    ///
+    /// [`compute_exact_convex_hull()`]: VoxelSet::compute_exact_convex_hull
+    /// [`compute_primitive_intersections()`]: VoxelSet::compute_primitive_intersections
     pub fn with_voxel_size(
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
@@ -125,19 +309,79 @@ impl VoxelSet {
         .into()
     }
 
-    /// Voxelizes the given shape described by its boundary:
-    /// a triangle mesh (in 3D) or polyline (in 2D).
+    /// Voxelizes a shape by specifying the grid resolution along the longest axis.
+    ///
+    /// This creates a voxelized representation of a shape defined by its boundary:
+    /// - In 3D: A triangle mesh (vertices and triangle indices)
+    /// - In 2D: A polyline (vertices and segment indices)
+    ///
+    /// The voxel size is automatically computed to fit the specified number of subdivisions
+    /// along the shape's longest axis, while maintaining cubic (or square in 2D) voxels.
+    /// Other axes will have proportionally determined resolutions.
     ///
     /// # Parameters
-    /// * `points` - The vertex buffer of the boundary of the shape to voxelize.
-    /// * `indices` - The index buffer of the boundary of the shape to voxelize.
-    /// * `resolution` - Controls the number of subdivision done along each axis. This number
-    ///   is the number of subdivisions along the axis where the input shape has the largest extent.
-    ///   The other dimensions will have a different automatically-determined resolution (in order to
-    ///   keep the voxels cubic).
-    /// * `fill_mode` - Controls what is being voxelized.
-    /// * `keep_voxel_to_primitives_map` - If set to `true` a map between the voxels
-    ///   and the primitives (3D triangles or 2D segments) it intersects will be computed.
+    ///
+    /// * `points` - Vertex buffer defining the boundary of the shape. These are the
+    ///   vertices of the triangle mesh (3D) or polyline (2D).
+    ///
+    /// * `indices` - Index buffer defining the boundary primitives:
+    ///   - 3D: Each element is `[v0, v1, v2]` defining a triangle
+    ///   - 2D: Each element is `[v0, v1]` defining a line segment
+    ///
+    /// * `resolution` - Number of voxel subdivisions along the longest axis of the shape's
+    ///   bounding box. Higher values give more detail but use more memory.
+    ///   For example, `resolution = 10` creates approximately 10 voxels along the longest dimension.
+    ///
+    /// * `fill_mode` - Controls which voxels are marked as filled:
+    ///   - [`FillMode::SurfaceOnly`]: Only voxels intersecting the boundary
+    ///   - [`FillMode::FloodFill`]: Surface voxels plus interior voxels
+    ///
+    /// * `keep_voxel_to_primitives_map` - If `true`, stores which primitives (triangles
+    ///   or segments) intersect each voxel. Required for [`compute_exact_convex_hull()`]
+    ///   and [`compute_primitive_intersections()`], but uses additional memory.
+    ///
+    /// # Returns
+    ///
+    /// A sparse `VoxelSet` containing only the filled voxels.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// // Create a cuboid: 2 units wide (x), 1 unit tall (y), 0.5 units deep (z)
+    /// let cuboid = Cuboid::new(Vector3::new(1.0, 0.5, 0.25));
+    /// let (vertices, indices) = cuboid.to_trimesh();
+    ///
+    /// // Voxelize with 20 subdivisions along the longest axis (x = 2.0)
+    /// // Other axes will be proportionally subdivided to maintain cubic voxels
+    /// let voxels = VoxelSet::voxelize(
+    ///     &vertices,
+    ///     &indices,
+    ///     20,                           // 20 voxels along x-axis
+    ///     FillMode::FloodFill {
+    ///         detect_cavities: false,
+    ///     },
+    ///     false,
+    /// );
+    ///
+    /// println!("Created {} voxels", voxels.len());
+    /// println!("Voxel scale: {}", voxels.scale);  // automatically computed
+    /// println!("Total volume: {}", voxels.compute_volume());
+    /// # }
+    /// ```
+    ///
+    /// # Choosing Resolution
+    ///
+    /// - **Low (5-10)**: Fast, coarse approximation, good for rough collision proxies
+    /// - **Medium (10-30)**: Balanced detail and performance, suitable for most use cases
+    /// - **High (50+)**: Fine detail, high memory usage, used for precise volume computation
+    ///
+    /// [`compute_exact_convex_hull()`]: VoxelSet::compute_exact_convex_hull
+    /// [`compute_primitive_intersections()`]: VoxelSet::compute_primitive_intersections
     pub fn voxelize(
         points: &[Point<Real>],
         indices: &[[u32; DIM]],
@@ -165,12 +409,87 @@ impl VoxelSet {
         self.max_bb_voxels
     }
 
-    /// Computes the total volume of the voxels contained by this set.
+    /// Computes the total volume occupied by all voxels in this set.
+    ///
+    /// This calculates the approximate volume by multiplying the number of filled voxels
+    /// by the volume of each individual voxel. The result is an approximation of the
+    /// volume of the original shape.
+    ///
+    /// # Accuracy
+    ///
+    /// The accuracy depends on the voxelization resolution:
+    /// - Higher resolution (smaller voxels) → more accurate volume
+    /// - Lower resolution (larger voxels) → faster but less accurate
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Ball;
+    ///
+    /// let ball = Ball::new(1.0);
+    /// let (vertices, indices) = ball.to_trimesh(20, 20);
+    ///
+    /// let voxels = VoxelSet::voxelize(
+    ///     &vertices,
+    ///     &indices,
+    ///     30,  // Higher resolution for better accuracy
+    ///     FillMode::FloodFill { detect_cavities: false },
+    ///     false,
+    /// );
+    ///
+    /// let voxel_volume = voxels.compute_volume();
+    /// let expected_volume = 4.0 / 3.0 * std::f32::consts::PI * 1.0_f32.powi(3);
+    ///
+    /// println!("Voxel volume: {:.3}", voxel_volume);
+    /// println!("Expected volume: {:.3}", expected_volume);
+    /// println!("Error: {:.1}%", ((voxel_volume - expected_volume).abs() / expected_volume * 100.0));
+    /// # }
+    /// ```
     pub fn compute_volume(&self) -> Real {
         self.voxel_volume() * self.voxels.len() as Real
     }
 
-    /// Gets the coordinates of the center of the given voxel.
+    /// Converts voxel grid coordinates to world-space coordinates.
+    ///
+    /// Given a voxel, this computes the world-space position of the voxel's center.
+    /// The conversion formula is:
+    ///
+    /// ```text
+    /// world_position = origin + (voxel.coords + 0.5) * scale
+    /// ```
+    ///
+    /// Note that we add 0.5 to get the center of the voxel rather than its corner.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+    /// let (vertices, indices) = cuboid.to_trimesh();
+    ///
+    /// let voxels = VoxelSet::voxelize(
+    ///     &vertices,
+    ///     &indices,
+    ///     10,
+    ///     FillMode::SurfaceOnly,
+    ///     false,
+    /// );
+    ///
+    /// // Convert grid coordinates to world coordinates
+    /// for voxel in voxels.voxels() {
+    ///     let grid_coords = voxel.coords;
+    ///     let world_coords = voxels.get_voxel_point(voxel);
+    ///
+    ///     println!("Grid: {:?} -> World: {:?}", grid_coords, world_coords);
+    /// }
+    /// # }
+    /// ```
     pub fn get_voxel_point(&self, voxel: &Voxel) -> Point<Real> {
         self.get_point(na::convert(voxel.coords))
     }
@@ -211,15 +530,69 @@ impl VoxelSet {
         }
     }
 
-    // We have these cfg because we need to
-    // use the correct return type. We could just
-    // return ConvexHull but that would expose though
-    // the API a type alias that isn't really worth
-    // existing.
-    /// Compute the convex-hull of this voxel set after cutting each voxel
-    /// by the primitives (3D triangle or 2D segments) it intersects.
+    /// Computes a precise convex hull by clipping primitives against voxel boundaries.
     ///
-    /// This will panic if this `VoxelSet` was created with `keep_voxel_to_primitives_map = false`.
+    /// This method produces a more accurate convex hull than [`compute_convex_hull()`] by:
+    /// 1. Finding which primitives (triangles/segments) intersect each voxel
+    /// 2. Clipping those primitives to the voxel boundaries
+    /// 3. Computing the convex hull from the clipped geometry
+    ///
+    /// This approach gives much tighter convex hulls, especially at lower resolutions, because
+    /// it uses the actual intersection geometry rather than just voxel centers.
+    ///
+    /// # Requirements
+    ///
+    /// This method requires that the voxel set was created with `keep_voxel_to_primitives_map = true`.
+    /// Otherwise, this method will panic.
+    ///
+    /// # Parameters
+    ///
+    /// * `points` - The same vertex buffer used during voxelization
+    /// * `indices` - The same index buffer used during voxelization
+    ///
+    /// # Returns
+    ///
+    /// In 2D: A vector of points forming the convex hull polygon
+    /// In 3D: A tuple of `(vertices, triangle_indices)` forming the convex hull mesh
+    ///
+    /// # Panics
+    ///
+    /// Panics if this `VoxelSet` was created with `keep_voxel_to_primitives_map = false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+    /// let (vertices, indices) = cuboid.to_trimesh();
+    ///
+    /// // IMPORTANT: Set keep_voxel_to_primitives_map = true
+    /// let voxels = VoxelSet::voxelize(
+    ///     &vertices,
+    ///     &indices,
+    ///     10,
+    ///     FillMode::SurfaceOnly,
+    ///     true,  // Enable primitive mapping
+    /// );
+    ///
+    /// // Compute exact convex hull using triangle clipping
+    /// let (hull_vertices, hull_indices) = voxels.compute_exact_convex_hull(&vertices, &indices);
+    ///
+    /// println!("Exact convex hull: {} vertices, {} triangles",
+    ///          hull_vertices.len(), hull_indices.len());
+    /// # }
+    /// ```
+    ///
+    /// # Comparison with `compute_convex_hull()`
+    ///
+    /// - `compute_exact_convex_hull()`: More accurate, requires primitive mapping, slower
+    /// - `compute_convex_hull()`: Approximate, uses voxel centers, faster
+    ///
+    /// [`compute_convex_hull()`]: VoxelSet::compute_convex_hull
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hull(
         &self,
@@ -229,10 +602,69 @@ impl VoxelSet {
         self.do_compute_exact_convex_hull(points, indices)
     }
 
-    /// Compute the convex-hull of this voxel set after cutting each voxel
-    /// by the primitives (3D triangle or 2D segments) it intersects.
+    /// Computes a precise convex hull by clipping primitives against voxel boundaries.
     ///
-    /// This will panic if this `VoxelSet` was created with `keep_voxel_to_primitives_map = false`.
+    /// This method produces a more accurate convex hull than [`compute_convex_hull()`] by:
+    /// 1. Finding which primitives (triangles/segments) intersect each voxel
+    /// 2. Clipping those primitives to the voxel boundaries
+    /// 3. Computing the convex hull from the clipped geometry
+    ///
+    /// This approach gives much tighter convex hulls, especially at lower resolutions, because
+    /// it uses the actual intersection geometry rather than just voxel centers.
+    ///
+    /// # Requirements
+    ///
+    /// This method requires that the voxel set was created with `keep_voxel_to_primitives_map = true`.
+    /// Otherwise, this method will panic.
+    ///
+    /// # Parameters
+    ///
+    /// * `points` - The same vertex buffer used during voxelization
+    /// * `indices` - The same index buffer used during voxelization
+    ///
+    /// # Returns
+    ///
+    /// In 2D: A vector of points forming the convex hull polygon
+    /// In 3D: A tuple of `(vertices, triangle_indices)` forming the convex hull mesh
+    ///
+    /// # Panics
+    ///
+    /// Panics if this `VoxelSet` was created with `keep_voxel_to_primitives_map = false`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::transformation::voxelization::{FillMode, VoxelSet};
+    /// use parry3d::shape::Cuboid;
+    /// use nalgebra::Vector3;
+    ///
+    /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+    /// let (vertices, indices) = cuboid.to_trimesh();
+    ///
+    /// // IMPORTANT: Set keep_voxel_to_primitives_map = true
+    /// let voxels = VoxelSet::voxelize(
+    ///     &vertices,
+    ///     &indices,
+    ///     10,
+    ///     FillMode::SurfaceOnly,
+    ///     true,  // Enable primitive mapping
+    /// );
+    ///
+    /// // Compute exact convex hull using triangle clipping
+    /// let (hull_vertices, hull_indices) = voxels.compute_exact_convex_hull(&vertices, &indices);
+    ///
+    /// println!("Exact convex hull: {} vertices, {} triangles",
+    ///          hull_vertices.len(), hull_indices.len());
+    /// # }
+    /// ```
+    ///
+    /// # Comparison with `compute_convex_hull()`
+    ///
+    /// - `compute_exact_convex_hull()`: More accurate, requires primitive mapping, slower
+    /// - `compute_convex_hull()`: Approximate, uses voxel centers, faster
+    ///
+    /// [`compute_convex_hull()`]: VoxelSet::compute_convex_hull
     #[cfg(feature = "dim3")]
     pub fn compute_exact_convex_hull(
         &self,

@@ -5,7 +5,7 @@ use parry2d::{query::PointQuery, shape::TriMesh};
 fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {
     let vertices = vec![
         Point2::new(0.0, 1.0),
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(1.0, 0.0),
         Point2::new(1.0, 1.0),
     ];
@@ -29,7 +29,7 @@ fn project_local_point_and_get_feature_gets_the_enclosing_triangle() {
 fn project_local_point_and_get_feature_projects_correctly_from_outside() {
     let vertices = vec![
         Point2::new(0.0, 1.0),
-        Point2::new(0.0, 0.0),
+        Point2::origin(),
         Point2::new(1.0, 0.0),
         Point2::new(1.0, 1.0),
     ];

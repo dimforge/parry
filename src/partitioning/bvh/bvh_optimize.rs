@@ -42,18 +42,198 @@ impl Bvh {
         }
     }
 
-    /// Performs one step of incremental optimization of the tree.
+    /// Incrementally improves tree quality after dynamic updates.
     ///
-    /// Incremental optimization of the tree ensures that after modification of the tree’s geometry
-    /// (after changes of its leaves AABBs) doesn’t lead to a poorly shaped tree, or tree with poor
-    /// spatial culling capabilities.
+    /// This method performs one step of tree optimization by rebuilding small portions of
+    /// the BVH to maintain good query performance. As objects move around, the tree's structure
+    /// can become suboptimal even after refitting. This method gradually fixes these issues
+    /// without the cost of rebuilding the entire tree.
     ///
-    /// This optimization is incremental because it only optimizes a subset of the tree in order
-    /// to reduce its computational cost. It is indented to be called multiple times across
-    /// multiple frames.
+    /// # What It Does
     ///
-    /// For example, if the BVH is used for a physics engine’s broad-phase, this method would
-    /// typically be called once by simulation step.
+    /// Each call optimizes:
+    /// - A small percentage of the tree (typically ~5% of leaves)
+    /// - The root region (periodically)
+    /// - Subtrees that have degraded the most
+    ///
+    /// The optimization is **incremental** - it's designed to be called repeatedly (e.g.,
+    /// every few frames) to continuously maintain tree quality without large frame-time spikes.
+    ///
+    /// # When to Use
+    ///
+    /// Call `optimize_incremental`:
+    /// - Every 5-10 frames for highly dynamic scenes
+    /// - After many [`insert`] and [`remove`] operations
+    /// - When query performance degrades over time
+    /// - In physics engines, once per simulation step
+    ///
+    /// **Don't call this**:
+    /// - Every frame (too frequent - diminishing returns)
+    /// - For static scenes (not needed)
+    /// - Immediately after [`from_leaves`] (tree is already optimal)
+    ///
+    /// # Arguments
+    ///
+    /// * `workspace` - A reusable workspace to avoid allocations. The same workspace
+    ///   can be shared across multiple BVH operations.
+    ///
+    /// # Performance
+    ///
+    /// - **Time**: O(k log k) where k is the number of leaves optimized (~5% of total)
+    /// - **Target**: <1ms for trees with 10,000 leaves (on modern hardware)
+    /// - Spreads optimization cost over many frames
+    /// - Much cheaper than full rebuild (O(n log n))
+    ///
+    /// # Examples
+    ///
+    /// ## In a game loop
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Add initial objects
+    /// for i in 0..1000 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert(aabb, i);
+    /// }
+    ///
+    /// // Game loop
+    /// for frame in 0..1000 {
+    ///     // Update object positions every frame
+    ///     for i in 0..1000 {
+    ///         let time = frame as f32 * 0.016;
+    ///         let offset = (time * (i as f32 + 1.0)).sin() * 5.0;
+    ///         let aabb = Aabb::new(
+    ///             Point3::new(i as f32 + offset, 0.0, 0.0),
+    ///             Point3::new(i as f32 + offset + 1.0, 1.0, 1.0)
+    ///         );
+    ///         bvh.insert_or_update_partially(aabb, i, 0.0);
+    ///     }
+    ///
+    ///     // Update AABBs every frame (fast)
+    ///     bvh.refit(&mut workspace);
+    ///
+    ///     // Optimize tree quality every 5 frames (slower but important)
+    ///     if frame % 5 == 0 {
+    ///         bvh.optimize_incremental(&mut workspace);
+    ///     }
+    ///
+    ///     // Perform queries (ray casts, collision detection, etc.)
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// ## Physics engine broad-phase
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Simulation loop
+    /// for step in 0..100 {
+    ///     // Physics update: integrate velocities, forces, etc.
+    ///     // Update BVH with new rigid body positions
+    ///     for body_id in 0..100 {
+    ///         let aabb = get_body_aabb(body_id);
+    ///         bvh.insert_or_update_partially(aabb, body_id, 0.0);
+    ///     }
+    ///
+    ///     // Refit tree for new positions
+    ///     bvh.refit(&mut workspace);
+    ///
+    ///     // Optimize tree quality once per step
+    ///     bvh.optimize_incremental(&mut workspace);
+    ///
+    ///     // Broad-phase collision detection
+    ///     // let pairs = find_overlapping_pairs(&bvh);
+    ///     // ...
+    /// }
+    ///
+    /// # fn get_body_aabb(id: u32) -> Aabb {
+    /// #     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0))
+    /// # }
+    /// # }
+    /// ```
+    ///
+    /// ## After many insertions/removals
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhWorkspace};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let mut bvh = Bvh::new();
+    /// let mut workspace = BvhWorkspace::default();
+    ///
+    /// // Dynamically add many objects over time
+    /// for i in 0..1000 {
+    ///     let aabb = Aabb::new(
+    ///         Point3::new(i as f32, 0.0, 0.0),
+    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///     );
+    ///     bvh.insert(aabb, i);
+    ///
+    ///     // Periodically optimize while building
+    ///     if i % 100 == 0 && i > 0 {
+    ///         bvh.optimize_incremental(&mut workspace);
+    ///     }
+    /// }
+    ///
+    /// // Tree is now well-optimized despite incremental construction
+    /// # }
+    /// ```
+    ///
+    /// # How It Works
+    ///
+    /// The method uses a sophisticated strategy:
+    ///
+    /// 1. **Subtree Selection**: Identifies small subtrees that would benefit most from rebuilding
+    /// 2. **Local Rebuild**: Rebuilds selected subtrees using the binned construction algorithm
+    /// 3. **Root Optimization**: Periodically optimizes the top levels of the tree
+    /// 4. **Rotation**: Tracks changes and rotates subtrees incrementally
+    ///
+    /// The optimization rotates through different parts of the tree on successive calls,
+    /// ensuring the entire tree is eventually optimized.
+    ///
+    /// # Comparison with Full Rebuild
+    ///
+    /// | Operation | Time | When to Use |
+    /// |-----------|------|-------------|
+    /// | `optimize_incremental` | O(k log k), k ≈ 5% of n | Every few frames in dynamic scenes |
+    /// | `from_leaves` (rebuild) | O(n log n) | When tree is very poor or scene is static |
+    ///
+    /// # Notes
+    ///
+    /// - State persists across calls - each call continues from where the last left off
+    /// - Call frequency can be adjusted based on performance budget
+    /// - Complementary to [`refit`] - use both for best results
+    /// - The workspace stores optimization state between calls
+    ///
+    /// # See Also
+    ///
+    /// - [`refit`](Bvh::refit) - Update AABBs after leaf movements (call more frequently)
+    /// - [`from_leaves`](Bvh::from_leaves) - Full rebuild (for major scene changes)
+    /// - [`BvhWorkspace`] - Reusable workspace for operations
+    ///
+    /// [`insert`]: Bvh::insert
+    /// [`remove`]: Bvh::remove
+    /// [`from_leaves`]: Bvh::from_leaves
+    /// [`refit`]: Bvh::refit
     pub fn optimize_incremental(&mut self, workspace: &mut BvhWorkspace) {
         if self.nodes.is_empty() {
             return;

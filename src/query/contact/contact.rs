@@ -5,7 +5,62 @@ use na::{self, Unit};
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 
-/// Geometric description of a contact.
+/// Geometric description of a contact between two shapes.
+///
+/// A contact represents the point(s) where two shapes touch or penetrate. This structure
+/// contains all the information needed to resolve collisions: contact points, surface normals,
+/// and penetration depth.
+///
+/// # Contact States
+///
+/// A `Contact` can represent different collision states:
+///
+/// - **Touching** (`dist ≈ 0.0`): Shapes are just barely in contact
+/// - **Penetrating** (`dist < 0.0`): Shapes are overlapping (negative distance = penetration depth)
+/// - **Separated** (`dist > 0.0`): Shapes are close but not touching (rarely used; see `closest_points` instead)
+///
+/// # Coordinate Systems
+///
+/// Contact data can be expressed in different coordinate systems:
+///
+/// - **World space**: Both shapes' transformations applied; `normal2 = -normal1`
+/// - **Local space**: Relative to one shape's coordinate system
+///
+/// # Use Cases
+///
+/// - **Physics simulation**: Compute collision response forces
+/// - **Collision resolution**: Push objects apart when penetrating
+/// - **Trigger detection**: Detect when objects touch without resolving
+///
+/// # Example
+///
+/// ```rust
+/// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+/// use parry3d::query::contact;
+/// use parry3d::shape::Ball;
+/// use nalgebra::{Isometry3, Vector3};
+///
+/// let ball1 = Ball::new(1.0);
+/// let ball2 = Ball::new(1.0);
+///
+/// // Overlapping balls (centers 1.5 units apart, combined radii = 2.0)
+/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
+/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0);
+///
+/// if let Ok(Some(contact)) = contact(&pos1, &ball1, &pos2, &ball2, 0.0) {
+///     // Penetration depth (negative distance)
+///     assert!(contact.dist < 0.0);
+///     println!("Penetration: {}", -contact.dist); // 0.5 units
+///
+///     // Normal points from shape 1 toward shape 2
+///     println!("Normal: {:?}", contact.normal1);
+///
+///     // Contact points are on each shape's surface
+///     println!("Point on ball1: {:?}", contact.point1);
+///     println!("Point on ball2: {:?}", contact.point2);
+/// }
+/// # }
+/// ```
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -14,28 +69,69 @@ use rkyv::{bytecheck, CheckBytes};
     archive(as = "Self")
 )]
 pub struct Contact {
-    /// Position of the contact on the first object.
+    /// Position of the contact point on the first shape's surface.
+    ///
+    /// This is the point on shape 1 that is closest to (or penetrating into) shape 2.
+    /// Expressed in the same coordinate system as the contact (world or local space).
     pub point1: Point<Real>,
 
-    /// Position of the contact on the second object.
+    /// Position of the contact point on the second shape's surface.
+    ///
+    /// This is the point on shape 2 that is closest to (or penetrating into) shape 1.
+    /// When shapes are penetrating, this point may be inside shape 1.
     pub point2: Point<Real>,
 
-    /// Contact normal, pointing towards the exterior of the first shape.
+    /// Contact normal pointing outward from the first shape.
+    ///
+    /// This unit vector points from shape 1 toward shape 2, perpendicular to the
+    /// contact surface. Used to compute separation direction and collision response
+    /// forces for shape 1.
     pub normal1: Unit<Vector<Real>>,
 
-    /// Contact normal, pointing towards the exterior of the second shape.
+    /// Contact normal pointing outward from the second shape.
     ///
-    /// If these contact data are expressed in world-space, this normal is equal to `-normal1`.
+    /// In world space, this is always equal to `-normal1`. In local space coordinates,
+    /// it may differ due to different shape orientations.
     pub normal2: Unit<Vector<Real>>,
 
-    /// Distance between the two contact points.
+    /// Signed distance between the two contact points.
     ///
-    /// If this is negative, this contact represents a penetration.
+    /// - **Positive**: Shapes are separated (distance between surfaces)
+    /// - **Zero**: Shapes are exactly touching
+    /// - **Negative**: Shapes are penetrating (absolute value = penetration depth)
+    ///
+    /// For collision resolution, use `-dist` as the penetration depth when `dist < 0.0`.
     pub dist: Real,
 }
 
 impl Contact {
-    /// Creates a new contact.
+    /// Creates a new contact with the given parameters.
+    ///
+    /// # Arguments
+    ///
+    /// * `point1` - Contact point on the first shape's surface
+    /// * `point2` - Contact point on the second shape's surface
+    /// * `normal1` - Unit normal pointing outward from shape 1
+    /// * `normal2` - Unit normal pointing outward from shape 2
+    /// * `dist` - Signed distance (negative = penetration depth)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::query::Contact;
+    /// use nalgebra::{Point3, Unit, Vector3};
+    ///
+    /// // Create a contact representing two spheres touching
+    /// let point1 = Point3::new(1.0, 0.0, 0.0);
+    /// let point2 = Point3::new(2.0, 0.0, 0.0);
+    /// let normal1 = Unit::new_normalize(Vector3::new(1.0, 0.0, 0.0));
+    /// let normal2 = Unit::new_normalize(Vector3::new(-1.0, 0.0, 0.0));
+    ///
+    /// let contact = Contact::new(point1, point2, normal1, normal2, 0.0);
+    /// assert_eq!(contact.dist, 0.0); // Touching, not penetrating
+    /// # }
+    /// ```
     #[inline]
     pub fn new(
         point1: Point<Real>,

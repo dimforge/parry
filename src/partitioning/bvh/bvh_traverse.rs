@@ -121,17 +121,172 @@ impl Bvh {
         Default::default()
     }
 
-    /// Traverse the tree in depth-first order.
+    /// Traverses the BVH in depth-first order with full control over traversal.
     ///
-    /// The `check_node` closure is called on every traversed node. The returned [`TraversalAction`]
-    /// controls whether a given node (and all its subtree) needs to be traversed, skipped, or if
-    /// the traversal needs to exit immediately (for example if you were looking for only one
-    /// particular node).
+    /// This method provides low-level control over tree traversal. For each node visited,
+    /// it calls your closure which can decide whether to continue traversing, prune that
+    /// subtree, or exit early.
     ///
-    /// See also the [`Bvh::leaves`] iterator which is a more convenient way of traversing the tree,
-    /// but is slightly limited in terms of node checking. In particular the closure
-    /// given to [`Bvh::traverse`] is mutable can hold any state so its check can depend on previous
-    /// execution of itself during the traversal.
+    /// # Arguments
+    ///
+    /// * `check_node` - A mutable closure called for each node. It receives a [`BvhNode`]
+    ///   and returns a [`TraversalAction`] to control the traversal:
+    ///   - `Continue`: Visit this node's children (if not a leaf)
+    ///   - `Prune`: Skip this node's subtree entirely
+    ///   - `EarlyExit`: Stop traversal immediately
+    ///
+    /// # Traversal Order
+    ///
+    /// The tree is traversed in **depth-first** order:
+    /// 1. Check current node with `check_node`
+    /// 2. If `Continue`, descend into left child first
+    /// 3. Then descend into right child
+    /// 4. Backtrack when both subtrees are processed
+    ///
+    /// This order is cache-friendly and matches the tree's memory layout.
+    ///
+    /// # When to Use
+    ///
+    /// Use `traverse` when you need:
+    /// - **Mutable state** during traversal
+    /// - **Early exit** conditions
+    /// - **Full control** over pruning decisions
+    /// - **Custom query logic** that doesn't fit standard patterns
+    ///
+    /// For simpler cases, consider:
+    /// - [`leaves`](Self::leaves) - Iterator over leaves matching a predicate
+    /// - [`intersect_aabb`](Self::intersect_aabb) - Find leaves intersecting an AABB
+    /// - [`cast_ray`](Self::cast_ray) - Ray casting queries
+    ///
+    /// # Performance
+    ///
+    /// - **Best case**: O(log n) when pruning effectively
+    /// - **Worst case**: O(n) when visiting all nodes
+    /// - Cache-friendly due to depth-first order
+    /// - No allocations beyond a small stack (~32 entries)
+    ///
+    /// # Examples
+    ///
+    /// ## Count leaves in a region
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
+    /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
+    /// use nalgebra::Point3;
+    ///
+    /// let aabbs = vec![
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
+    ///
+    /// let query_region = Aabb::new(
+    ///     Point3::new(-1.0, -1.0, -1.0),
+    ///     Point3::new(7.0, 2.0, 2.0)
+    /// );
+    ///
+    /// let mut count = 0;
+    /// bvh.traverse(|node| {
+    ///     if !node.aabb().intersects(&query_region) {
+    ///         // Prune: this entire subtree is outside the region
+    ///         return TraversalAction::Prune;
+    ///     }
+    ///
+    ///     if node.is_leaf() {
+    ///         count += 1;
+    ///     }
+    ///
+    ///     TraversalAction::Continue
+    /// });
+    ///
+    /// assert_eq!(count, 2); // First two objects intersect the region
+    /// # }
+    /// ```
+    ///
+    /// ## Find first leaf matching a condition
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let aabbs = vec![
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
+    ///
+    /// let target_point = Point3::new(5.5, 0.5, 0.5);
+    /// let mut found_leaf = None;
+    ///
+    /// bvh.traverse(|node| {
+    ///     if !node.aabb().contains_local_point(&target_point) {
+    ///         return TraversalAction::Prune;
+    ///     }
+    ///
+    ///     if let Some(leaf_id) = node.leaf_data() {
+    ///         found_leaf = Some(leaf_id);
+    ///         return TraversalAction::EarlyExit; // Found it, stop searching
+    ///     }
+    ///
+    ///     TraversalAction::Continue
+    /// });
+    ///
+    /// assert_eq!(found_leaf, Some(1));
+    /// # }
+    /// ```
+    ///
+    /// ## Collect statistics with mutable state
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
+    /// use parry3d::bounding_volume::Aabb;
+    /// use nalgebra::Point3;
+    ///
+    /// let aabbs = vec![
+    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
+    ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
+    /// ];
+    ///
+    /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
+    ///
+    /// let mut stats = (0, 0); // (num_internal_nodes, num_leaves)
+    ///
+    /// bvh.traverse(|node| {
+    ///     if node.is_leaf() {
+    ///         stats.1 += 1;
+    ///     } else {
+    ///         stats.0 += 1;
+    ///     }
+    ///     TraversalAction::Continue
+    /// });
+    ///
+    /// assert_eq!(stats.1, 3); // 3 leaves
+    /// # }
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// - The closure is called for **every** visited node (internal and leaf)
+    /// - Pruning a node skips all its descendants
+    /// - Use `node.is_leaf()` to distinguish leaves from internal nodes
+    /// - Use `node.leaf_data()` to get the leaf's index (returns `None` for internal nodes)
+    /// - The traversal uses a small fixed-size stack internally
+    ///
+    /// # See Also
+    ///
+    /// - [`leaves`](Self::leaves) - Simpler iterator interface for leaf traversal
+    /// - [`intersect_aabb`](Self::intersect_aabb) - Specialized AABB intersection query
+    /// - [`cast_ray`](Self::cast_ray) - Ray casting with best-first traversal
+    /// - [`TraversalAction`] - Controls traversal flow
     pub fn traverse(&self, mut check_node: impl FnMut(&BvhNode) -> TraversalAction) {
         let mut stack = Self::traversal_stack();
         let mut curr_id = 0;
