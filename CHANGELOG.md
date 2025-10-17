@@ -1,6 +1,7 @@
-## Unreleased
+## 0.25.1
 
 - Fix point-projection of a ball on a voxels shape containing empty chunks (e.g. after voxels removal).
+- General documentation improvements.
 
 ## 0.25.0
 
