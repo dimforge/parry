@@ -101,7 +101,7 @@ impl Cylinder {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Cylinder;
     ///
@@ -146,7 +146,7 @@ impl Cylinder {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "alloc"))] {
     /// use parry3d::shape::Cylinder;
     /// use nalgebra::Vector3;

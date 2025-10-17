@@ -139,7 +139,7 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 ///
 /// This function is only available in 2D. In 3D, segments don't have a unique normal direction
 /// (there are infinitely many perpendicular directions), so edge-edge cross products are used
-/// instead (see [`cuboid_segment_find_local_separating_edge_twoway`]).
+/// instead (see `cuboid_segment_find_local_separating_edge_twoway`).
 #[cfg(feature = "dim2")]
 pub fn segment_cuboid_find_local_separating_normal_oneway(
     segment1: &Segment,

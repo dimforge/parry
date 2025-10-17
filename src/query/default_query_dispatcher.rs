@@ -114,6 +114,7 @@ use alloc::vec::Vec;
 /// # Example: Chaining with Custom Dispatcher
 ///
 /// ```ignore
+/// # {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 ///
 /// struct MyCustomDispatcher;

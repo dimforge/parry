@@ -253,8 +253,8 @@
 //!
 //! # See Also
 //!
-//! - [`VHACDParameters`]: Configuration parameters for the algorithm
-//! - [`VHACD`]: The main decomposition structure
+//! - [`VHACDParameters`](crate::transformation::vhacd::VHACDParameters): Configuration parameters for the algorithm
+//! - [`VHACD`](crate::transformation::vhacd::VHACD): The main decomposition structure
 //! - [`SharedShape::convex_decomposition`](crate::shape::SharedShape::convex_decomposition): High-level API
 //! - [`convex_hull`](crate::transformation::convex_hull): For computing convex hulls directly
 //! - [`Compound`](crate::shape::Compound): For manually combining convex shapes

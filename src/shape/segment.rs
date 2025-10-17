@@ -129,7 +129,7 @@ impl SegmentPointLocation {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Segment, SegmentPointLocation};
     /// use nalgebra::Point3;
@@ -179,7 +179,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::Point3;
@@ -202,7 +202,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::Point3;
@@ -227,7 +227,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::{Point3, Vector3};
@@ -256,7 +256,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::{Point3, Vector3};
@@ -279,7 +279,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::Point3;
@@ -302,7 +302,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::Point3;
@@ -332,7 +332,7 @@ impl Segment {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
     /// use nalgebra::{Point3, Vector3};

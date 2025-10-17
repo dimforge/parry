@@ -41,7 +41,7 @@
 //! # When to Use Query Dispatchers
 //!
 //! Most users will never need to directly use or implement query dispatchers. The high-level
-//! query functions in [`crate::query`] use the [`DefaultQueryDispatcher`] automatically.
+//! query functions in [`crate::query`] use the [`DefaultQueryDispatcher`](crate::query::DefaultQueryDispatcher) automatically.
 //!
 //! You should implement a custom query dispatcher when:
 //!
@@ -226,7 +226,7 @@ use alloc::vec::Vec;
 /// - Building a custom physics engine on top of Parry
 /// - Optimizing repeated collision queries between the same shape pairs
 ///
-/// Most users can use the free functions in [`crate::query::contact_manifolds`] instead of
+/// Most users can use the free functions in `crate::query::contact_manifolds` instead of
 /// implementing this trait directly.
 ///
 /// # Example: Using Contact Manifolds
@@ -394,6 +394,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// # Example: Chaining Dispatchers
 ///
 /// ```ignore
+/// # {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 ///
 /// struct MyCustomDispatcher;
@@ -428,7 +429,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 ///
 /// # See Also
 ///
-/// - [`DefaultQueryDispatcher`]: The built-in implementation used by Parry
+/// - [`DefaultQueryDispatcher`](crate::query::DefaultQueryDispatcher): The built-in implementation used by Parry
 /// - [`PersistentQueryDispatcher`]: Extended trait for contact manifold queries
 /// - [`crate::query`]: High-level query functions that use dispatchers internally
 pub trait QueryDispatcher: Send + Sync {
@@ -557,6 +558,7 @@ pub trait QueryDispatcher: Send + Sync {
 /// # Example
 ///
 /// ```ignore
+/// # {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 ///
 /// // A dispatcher that handles only custom shapes

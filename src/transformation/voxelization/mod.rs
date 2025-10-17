@@ -42,7 +42,7 @@
 //!
 //! ## Fill Modes
 //!
-//! The [`FillMode`] enum controls which voxels are considered "filled":
+//! The [`FillMode`](crate::transformation::voxelization::FillMode) enum controls which voxels are considered "filled":
 //!
 //! - **`SurfaceOnly`**: Only voxels that intersect the surface boundary are marked as filled.
 //!   This gives you a hollow shell representation.
@@ -54,11 +54,11 @@
 //!
 //! # Main Types
 //!
-//! - [`VoxelSet`]: A sparse set containing only filled voxels (memory-efficient output format)
-//! - [`VoxelizedVolume`]: A dense 3D grid of all voxels (intermediate format used during voxelization)
-//! - [`Voxel`]: A single voxel with its grid coordinates and metadata
-//! - [`FillMode`]: Configuration for how to determine filled vs empty voxels
-//! - [`VoxelValue`]: The state of a voxel (inside, outside, or on surface)
+//! - [`VoxelSet`](crate::transformation::voxelization::VoxelSet): A sparse set containing only filled voxels (memory-efficient output format)
+//! - [`VoxelizedVolume`](crate::transformation::voxelization::VoxelizedVolume): A dense 3D grid of all voxels (intermediate format used during voxelization)
+//! - [`Voxel`](crate::transformation::voxelization::Voxel): A single voxel with its grid coordinates and metadata
+//! - [`FillMode`](crate::transformation::voxelization::FillMode): Configuration for how to determine filled vs empty voxels
+//! - [`VoxelValue`](crate::transformation::voxelization::VoxelValue): The state of a voxel (inside, outside, or on surface)
 //!
 //! # Examples
 //!

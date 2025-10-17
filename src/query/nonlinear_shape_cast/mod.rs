@@ -123,7 +123,7 @@
 //!
 //! - [`cast_shapes`](crate::query::cast_shapes) - Linear shape casting (translation only)
 //! - [`ShapeCastHit`](crate::query::ShapeCastHit) - Result structure with impact information
-//! - [`contact`](crate::query::contact) - Static contact detection (no motion)
+//! - [`contact`](crate::query::contact::contact()) - Static contact detection (no motion)
 
 #[cfg(feature = "alloc")]
 pub use self::nonlinear_shape_cast_composite_shape_shape::{

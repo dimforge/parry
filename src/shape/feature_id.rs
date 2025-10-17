@@ -205,6 +205,7 @@ impl FeatureId {
     /// This will panic:
     ///
     /// ```should_panic
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::FeatureId;
     ///
     /// let vertex = FeatureId::Vertex(3);

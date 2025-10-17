@@ -52,6 +52,7 @@ use core::fmt;
 /// Break down complex shapes into simpler components:
 ///
 /// ```no_run
+/// # {
 /// # use parry3d::shape::{TriMesh, Ball, Compound, SharedShape};
 /// # use parry3d::query::distance;
 /// # use nalgebra::{Isometry3, Vector3};
@@ -73,6 +74,7 @@ use core::fmt;
 /// For shapes with BVH acceleration structures (like [`TriMesh`]), use specialized traversal methods:
 ///
 /// ```no_run
+/// # {
 /// # use parry3d::shape::TriMesh;
 /// # use parry3d::bounding_volume::Aabb;
 /// # use nalgebra::Point3;
@@ -92,6 +94,7 @@ use core::fmt;
 /// shape combinations:
 ///
 /// ```no_run
+/// # {
 /// # use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// # use parry3d::shape::Shape;
 /// # use parry3d::math::{Isometry, Real};

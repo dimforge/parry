@@ -32,7 +32,7 @@ impl Bvh {
     ///
     /// ## Adding new objects
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::Bvh;
     /// use parry3d::bounding_volume::Aabb;
@@ -51,7 +51,7 @@ impl Bvh {
     ///
     /// ## Updating object positions
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::Bvh;
     /// use parry3d::bounding_volume::Aabb;
@@ -72,7 +72,7 @@ impl Bvh {
     ///
     /// ## Bulk updates with better performance
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;

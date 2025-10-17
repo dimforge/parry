@@ -89,7 +89,7 @@ impl Cuboid {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;
@@ -104,7 +104,7 @@ impl Cuboid {
     /// # }
     /// ```
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// // In 2D:
     /// use parry2d::shape::Cuboid;
@@ -137,7 +137,7 @@ impl Cuboid {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Cuboid;
     /// use nalgebra::Vector3;

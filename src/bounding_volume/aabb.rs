@@ -220,7 +220,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -248,7 +248,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
     /// use nalgebra::Point3;
@@ -283,7 +283,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::{Point3, Vector3};
@@ -314,7 +314,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -347,7 +347,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -375,7 +375,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;
@@ -399,7 +399,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::{Point3, Vector3};
@@ -430,7 +430,7 @@ impl Aabb {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
     /// use nalgebra::Point3;

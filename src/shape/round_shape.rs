@@ -210,7 +210,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # #[cfg(feature = "f32")]
     /// use parry3d::shape::{RoundShape, Cuboid, SupportMap};
@@ -254,7 +254,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # #[cfg(feature = "f32")]
     /// use parry2d::shape::{RoundShape, Ball, SupportMap};

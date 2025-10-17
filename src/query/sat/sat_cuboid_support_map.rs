@@ -12,7 +12,7 @@ use na::Unit;
 /// # Parameters
 ///
 /// - `cube1`: The cuboid
-/// - `shape2`: Any convex shape implementing [`SupportMap`] (sphere, capsule, convex mesh, etc.)
+/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap) (sphere, capsule, convex mesh, etc.)
 /// - `pos12`: The position of `shape2` relative to `cube1`
 /// - `axis1`: The unit direction vector (in `cube1`'s local space) to test
 ///
@@ -105,7 +105,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// # Parameters
 ///
 /// - `cube1`: The cuboid
-/// - `shape2`: Any convex shape implementing [`SupportMap`]
+/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap)
 /// - `axes`: A slice of axis directions to test (not necessarily unit length)
 /// - `pos12`: The position of `shape2` relative to `cube1`
 ///
@@ -164,7 +164,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// - Axes with near-zero length are skipped (they represent parallel or degenerate edges)
 /// - Each axis is normalized before computing separation
 /// - The function tests both positive and negative directions of each axis using
-///   [`cuboid_support_map_compute_separation_wrt_local_line`]
+///   `cuboid_support_map_compute_separation_wrt_local_line`
 #[cfg(feature = "dim3")]
 pub fn cuboid_support_map_find_local_separating_edge_twoway(
     cube1: &Cuboid,
@@ -199,7 +199,7 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 /// # Parameters
 ///
 /// - `cube1`: The cuboid whose face normals will be tested
-/// - `shape2`: Any convex shape implementing [`SupportMap`]
+/// - `shape2`: Any convex shape implementing [`SupportMap`](crate::shape::SupportMap)
 /// - `pos12`: The position of `shape2` relative to `cube1`
 ///
 /// # Returns
@@ -249,7 +249,7 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 ///
 /// # Performance
 ///
-/// This function is more efficient than [`cuboid_support_map_compute_separation_wrt_local_line`]
+/// This function is more efficient than `cuboid_support_map_compute_separation_wrt_local_line`
 /// for face normals because it can directly compute the separation without testing both directions.
 /// It tests 2×DIM axes (where DIM is 2 or 3).
 pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(

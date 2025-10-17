@@ -683,7 +683,7 @@ impl ConvexPolyhedron {
 
     /// Returns the topology information for all vertices.
     ///
-    /// Each [`Vertex`] contains indices into the adjacency arrays, telling you which
+    /// Each `Vertex` contains indices into the adjacency arrays, telling you which
     /// faces and edges are connected to that vertex. This is useful for advanced
     /// topological queries and mesh processing algorithms.
     ///
@@ -697,7 +697,7 @@ impl ConvexPolyhedron {
 
     /// Returns the topology information for all edges.
     ///
-    /// Each [`Edge`] contains:
+    /// Each `Edge` contains:
     /// - The two vertex indices it connects
     /// - The two face indices it borders
     /// - The edge direction as a unit vector
@@ -736,7 +736,7 @@ impl ConvexPolyhedron {
 
     /// Returns the topology information for all faces.
     ///
-    /// Each [`Face`] contains:
+    /// Each `Face` contains:
     /// - Indices into the vertex and edge adjacency arrays
     /// - The number of vertices/edges in the face (faces can be triangles, quads, or larger polygons)
     /// - The outward-pointing unit normal vector

@@ -169,7 +169,7 @@ impl Bvh {
     ///
     /// ## Count leaves in a region
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
@@ -208,7 +208,7 @@ impl Bvh {
     ///
     /// ## Find first leaf matching a condition
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
@@ -244,7 +244,7 @@ impl Bvh {
     ///
     /// ## Collect statistics with mutable state
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, bvh::TraversalAction};
     /// use parry3d::bounding_volume::Aabb;

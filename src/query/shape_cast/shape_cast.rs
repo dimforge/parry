@@ -186,7 +186,7 @@ impl Default for ShapeCastOptions {
 ///
 /// # Returns
 ///
-/// * `Ok(Some(hit))` - Impact found, see [`ShapeCastHit`] for details
+/// * `Ok(Some(hit))` - Impact found, see [`ShapeCastHit`](crate::query::ShapeCastHit) for details
 /// * `Ok(None)` - No impact within time range
 /// * `Err(Unsupported)` - This shape pair is not supported
 ///
@@ -267,10 +267,10 @@ impl Default for ShapeCastOptions {
 ///
 /// # See Also
 ///
-/// - [`cast_shapes_nonlinear`](super::cast_shapes_nonlinear) - For rotating shapes
+/// - [`cast_shapes_nonlinear`](crate::query::cast_shapes_nonlinear()) - For rotating shapes
 /// - [`Ray::cast_ray`](crate::query::RayCast::cast_ray) - For point-like casts
 /// - [`ShapeCastOptions`] - Configuration options
-/// - [`ShapeCastHit`] - Result structure
+/// - [`ShapeCastHit`](crate::query::ShapeCastHit) - Result structure
 pub fn cast_shapes(
     pos1: &Isometry<Real>,
     vel1: &Vector<Real>,

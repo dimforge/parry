@@ -117,9 +117,9 @@ use crate::shape::Shape;
 ///
 /// # See Also
 ///
-/// - [`distance`](crate::query::distance) - For just the distance value
-/// - [`closest_points`](crate::query::closest_points) - For closest point locations
-/// - [`intersection_test`](crate::query::intersection_test) - For boolean overlap test
+/// - [`distance`](crate::query::distance::distance()) - For just the distance value
+/// - [`closest_points`](crate::query::closest_points::closest_points()) - For closest point locations
+/// - [`intersection_test`](crate::query::intersection_test::intersection_test()) - For boolean overlap test
 pub fn contact(
     pos1: &Isometry<Real>,
     g1: &dyn Shape,

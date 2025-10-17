@@ -42,7 +42,7 @@ impl Bvh {
     ///
     /// ## After bulk updates
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
@@ -77,7 +77,7 @@ impl Bvh {
     ///
     /// ## In a game loop
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
@@ -118,7 +118,7 @@ impl Bvh {
     ///
     /// ## With change detection margin
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
@@ -144,7 +144,7 @@ impl Bvh {
     /// # Comparison with `refit_without_opt`
     ///
     /// This method reorganizes the tree in memory for better cache performance.
-    /// If you only need to update AABBs without reordering, use [`refit_without_opt`]
+    /// If you only need to update AABBs without reordering, use [`refit_without_opt`](Self::refit_without_opt)
     /// which is faster but doesn't improve memory layout.
     ///
     /// # Notes

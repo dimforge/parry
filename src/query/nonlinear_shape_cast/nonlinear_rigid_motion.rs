@@ -124,57 +124,61 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// # Common Use Cases
 ///
 /// 1. **Spinning Projectiles**: Bullets, thrown objects with spin
-///    ```rust
+///
+/// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-///    # use parry3d::query::NonlinearRigidMotion;
-///    # use nalgebra::{Isometry3, Point3, Vector3};
-///    let bullet = NonlinearRigidMotion::new(
-///        Isometry3::translation(0.0, 1.5, 0.0),
-///        Point3::origin(),
-///        Vector3::new(100.0, -2.0, 0.0),  // fast forward, slight drop
-///        Vector3::new(50.0, 0.0, 0.0),    // high spin rate
-///    );
+/// # use parry3d::query::NonlinearRigidMotion;
+/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// let bullet = NonlinearRigidMotion::new(
+///     Isometry3::translation(0.0, 1.5, 0.0),
+///     Point3::origin(),
+///     Vector3::new(100.0, -2.0, 0.0),  // fast forward, slight drop
+///     Vector3::new(50.0, 0.0, 0.0),    // high spin rate
+/// );
 /// # }
-///    ```
+/// ```
 ///
 /// 2. **Tumbling Debris**: Objects affected by explosion or impact
-///    ```rust
+///
+/// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-///    # use parry3d::query::NonlinearRigidMotion;
-///    # use nalgebra::{Isometry3, Point3, Vector3};
-///    let debris = NonlinearRigidMotion::new(
-///        Isometry3::translation(0.0, 2.0, 0.0),
-///        Point3::origin(),
-///        Vector3::new(3.0, 5.0, -2.0),    // chaotic velocity
-///        Vector3::new(2.0, -3.0, 1.5),    // chaotic rotation
-///    );
+/// # use parry3d::query::NonlinearRigidMotion;
+/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// let debris = NonlinearRigidMotion::new(
+///     Isometry3::translation(0.0, 2.0, 0.0),
+///     Point3::origin(),
+///     Vector3::new(3.0, 5.0, -2.0),    // chaotic velocity
+///     Vector3::new(2.0, -3.0, 1.5),    // chaotic rotation
+/// );
 /// # }
-///    ```
+/// ```
 ///
 /// 3. **Rotating Machinery**: Blades, gears, rotating parts
-///    ```rust
+///
+/// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-///    # use parry3d::query::NonlinearRigidMotion;
-///    # use nalgebra::{Isometry3, Point3, Vector3};
-///    let blade = NonlinearRigidMotion::new(
-///        Isometry3::translation(0.0, 1.0, 0.0),
-///        Point3::origin(),           // spin around center
-///        Vector3::zeros(),           // blade doesn't translate
-///        Vector3::new(0.0, 10.0, 0.0), // fast rotation
-///    );
+/// # use parry3d::query::NonlinearRigidMotion;
+/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// let blade = NonlinearRigidMotion::new(
+///     Isometry3::translation(0.0, 1.0, 0.0),
+///     Point3::origin(),           // spin around center
+///     Vector3::zeros(),           // blade doesn't translate
+///     Vector3::new(0.0, 10.0, 0.0), // fast rotation
+/// );
 /// # }
-///    ```
+/// ```
 ///
 /// 4. **Stationary Objects**: Use `constant_position()` for non-moving obstacles
-///    ```rust
+///
+/// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-///    # use parry3d::query::NonlinearRigidMotion;
-///    # use nalgebra::Isometry3;
-///    let wall = NonlinearRigidMotion::constant_position(
-///        Isometry3::translation(10.0, 0.0, 0.0)
-///    );
+/// # use parry3d::query::NonlinearRigidMotion;
+/// # use nalgebra::Isometry3;
+/// let wall = NonlinearRigidMotion::constant_position(
+///     Isometry3::translation(10.0, 0.0, 0.0)
+/// );
 /// # }
-///    ```
+/// ```
 ///
 /// # 2D vs 3D Angular Velocity
 ///
@@ -270,7 +274,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example (2D)
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry2, Point2, Vector2};
@@ -288,7 +292,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example (3D)
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -328,7 +332,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -363,7 +367,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     ///
@@ -386,7 +390,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::Isometry3;
@@ -433,7 +437,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -511,7 +515,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example: Tracking a Moving Object
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry3, Point3, Vector3};
@@ -537,7 +541,7 @@ impl NonlinearRigidMotion {
     ///
     /// # Example: Animation Frame
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
     /// use nalgebra::{Isometry3, Point3, Vector3};

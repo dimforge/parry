@@ -63,7 +63,7 @@ impl Ball {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Ball;
     ///
@@ -100,7 +100,7 @@ impl Ball {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "alloc"))] {
     /// use parry2d::shape::Ball;
     /// use nalgebra::Vector2;
@@ -162,7 +162,7 @@ impl Ball {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "alloc"))] {
     /// use parry3d::shape::Ball;
     /// use nalgebra::Vector3;

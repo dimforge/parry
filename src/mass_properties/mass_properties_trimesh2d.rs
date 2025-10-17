@@ -104,6 +104,7 @@ impl MassProperties {
     /// # Example (3D) - Loading from File
     ///
     /// ```ignore
+/// # {
     /// use parry3d::mass_properties::MassProperties;
     ///
     /// // Assume you've loaded a mesh from an OBJ file

@@ -236,7 +236,7 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
@@ -281,7 +281,7 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// extern crate nalgebra as na;
@@ -329,7 +329,7 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
@@ -354,7 +354,7 @@ pub trait SupportMap {
     ///
     /// ## Example with Rotation
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Cuboid, SupportMap};
     /// use parry3d::math::Isometry;
@@ -395,7 +395,7 @@ pub trait SupportMap {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
     /// use parry3d::math::Isometry;
@@ -429,7 +429,7 @@ pub trait SupportMap {
     /// This method is commonly used in the GJK algorithm, which needs to compute support points
     /// for transformed shapes with normalized directions for better numerical stability:
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, Cuboid, SupportMap};
     /// use parry3d::math::Isometry;

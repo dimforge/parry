@@ -117,7 +117,7 @@ pub(crate) struct CutPlane {
 ///
 /// # See Also
 ///
-/// - [`VHACDParameters`]: Configuration for the decomposition algorithm
+/// - [`VHACDParameters`](crate::transformation::vhacd::VHACDParameters): Configuration for the decomposition algorithm
 /// - [`compute_convex_hulls`](VHACD::compute_convex_hulls): Generate convex hulls from voxels
 /// - [`compute_exact_convex_hulls`](VHACD::compute_exact_convex_hulls): Generate hulls from original mesh
 /// - Module documentation: [`crate::transformation::vhacd`]
@@ -138,7 +138,7 @@ impl VHACD {
     /// # Parameters
     ///
     /// * `params` - Configuration parameters controlling the decomposition process.
-    ///   See [`VHACDParameters`] for details on each parameter.
+    ///   See [`VHACDParameters`](crate::transformation::vhacd::VHACDParameters) for details on each parameter.
     ///
     /// * `points` - The vertex positions of your mesh (3D) or polyline (2D).
     ///   Each point represents a vertex in world space.
@@ -254,7 +254,7 @@ impl VHACD {
     ///
     /// # See Also
     ///
-    /// - [`VHACDParameters`]: Detailed parameter documentation
+    /// - [`VHACDParameters`](crate::transformation::vhacd::VHACDParameters): Detailed parameter documentation
     /// - [`from_voxels`](VHACD::from_voxels): Decompose pre-voxelized data
     /// - [`compute_convex_hulls`](VHACD::compute_convex_hulls): Generate voxel-based hulls
     /// - [`compute_exact_convex_hulls`](VHACD::compute_exact_convex_hulls): Generate mesh-based hulls
@@ -299,9 +299,9 @@ impl VHACD {
     /// # Parameters
     ///
     /// * `params` - Configuration parameters for the decomposition algorithm.
-    ///   See [`VHACDParameters`] for details.
+    ///   See [`VHACDParameters`](crate::transformation::vhacd::VHACDParameters) for details.
     ///
-    /// * `voxels` - A pre-voxelized volume represented as a [`VoxelSet`].
+    /// * `voxels` - A pre-voxelized volume represented as a [`VoxelSet`](crate::transformation::voxelization::VoxelSet).
     ///   You can create this using [`VoxelizedVolume::voxelize`] or other voxelization methods.
     ///
     /// # Returns
@@ -345,12 +345,12 @@ impl VHACD {
     /// # See Also
     ///
     /// - [`decompose`](VHACD::decompose): Decompose directly from mesh (includes voxelization)
-    /// - [`VoxelizedVolume`]: For manual voxelization
-    /// - [`VoxelSet`]: The voxel data structure
+    /// - [`VoxelizedVolume`](crate::transformation::voxelization::VoxelizedVolume): For manual voxelization
+    /// - [`VoxelSet`](crate::transformation::voxelization::VoxelSet): The voxel data structure
     ///
     /// [`VoxelizedVolume::voxelize`]: crate::transformation::voxelization::VoxelizedVolume::voxelize
-    /// [`VoxelSet`]: crate::transformation::voxelization::VoxelSet
-    /// [`VoxelizedVolume`]: crate::transformation::voxelization::VoxelizedVolume
+    /// [`VoxelSet`](crate::transformation::voxelization::VoxelSet): crate::transformation::voxelization::VoxelSet
+    /// [`VoxelizedVolume`](crate::transformation::voxelization::VoxelizedVolume): crate::transformation::voxelization::VoxelizedVolume
     pub fn from_voxels(params: &VHACDParameters, voxels: VoxelSet) -> Self {
         let mut result = Self {
             // raycast_mesh: None,
@@ -371,7 +371,7 @@ impl VHACD {
     ///
     /// # Returns
     ///
-    /// A slice of [`VoxelSet`] structures, where each set represents one convex part.
+    /// A slice of [`VoxelSet`](crate::transformation::voxelization::VoxelSet) structures, where each set represents one convex part.
     /// The number of parts depends on the shape's complexity and the parameters used
     /// (especially `concavity` and `max_convex_hulls`).
     ///
@@ -418,10 +418,10 @@ impl VHACD {
     ///
     /// # See Also
     ///
-    /// - [`VoxelSet`]: The voxel data structure
+    /// - [`VoxelSet`](crate::transformation::voxelization::VoxelSet): The voxel data structure
     /// - [`compute_convex_hulls`](VHACD::compute_convex_hulls): Convert to collision-ready convex hulls
     ///
-    /// [`VoxelSet`]: crate::transformation::voxelization::VoxelSet
+    /// [`VoxelSet`](crate::transformation::voxelization::VoxelSet): crate::transformation::voxelization::VoxelSet
     pub fn voxel_parts(&self) -> &[VoxelSet] {
         &self.voxel_parts
     }

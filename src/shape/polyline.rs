@@ -119,7 +119,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::Point3;
@@ -138,7 +138,7 @@ impl Polyline {
     ///
     /// # Custom Connectivity Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::Point2;
@@ -200,7 +200,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::{Point3, Isometry3, Translation3};
@@ -244,7 +244,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::Point2;
@@ -289,7 +289,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::Point3;
@@ -326,7 +326,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::Point2;
@@ -382,7 +382,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::Point3;
@@ -438,7 +438,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::Point2;
@@ -479,7 +479,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::Point3;
@@ -533,7 +533,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::{Point2, Vector2};
@@ -558,7 +558,7 @@ impl Polyline {
     /// This method consumes `self`. If you need to keep the original polyline,
     /// clone it first:
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
     /// use nalgebra::{Point3, Vector3};
@@ -599,7 +599,7 @@ impl Polyline {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
     /// use nalgebra::Point2;

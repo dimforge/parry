@@ -64,6 +64,8 @@ use na::Unit;
 /// // Both shapes reference the same underlying ball
 /// assert_eq!(shape.as_ball().unwrap().radius, 1.0);
 /// assert_eq!(shape_clone.as_ball().unwrap().radius, 1.0);
+/// # }
+/// # }
 /// ```
 #[derive(Clone)]
 pub struct SharedShape(pub Arc<dyn Shape>);
@@ -104,6 +106,8 @@ impl SharedShape {
     ///
     /// let ball = Ball::new(1.0);
     /// let shared = SharedShape::new(ball);
+    /// # }
+/// # }
     /// ```
     pub fn new(shape: impl Shape) -> Self {
         Self(Arc::new(shape))
@@ -132,6 +136,8 @@ impl SharedShape {
     /// // shape1 has been modified, shape2 still has the original value
     /// assert_eq!(shape1.as_ball().unwrap().radius, 2.0);
     /// assert_eq!(shape2.as_ball().unwrap().radius, 1.0);
+    /// # }
+/// # }
     /// ```
     pub fn make_mut(&mut self) -> &mut dyn Shape {
         if Arc::get_mut(&mut self.0).is_none() {
@@ -171,6 +177,10 @@ impl SharedShape {
     ///     (Isometry::translation(1.0, 0.0), ball1),
     ///     (Isometry::translation(-1.0, 0.0), ball2),
     /// ]);
+    /// # }
+/// # }
+/// # }
+/// # }
     /// ```
     pub fn compound(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Self {
         let raw_shapes = shapes.into_iter().map(|s| (s.0, s.1)).collect();
@@ -192,6 +202,8 @@ impl SharedShape {
     ///
     /// let ball = SharedShape::ball(1.0);
     /// assert_eq!(ball.as_ball().unwrap().radius, 1.0);
+    /// # }
+/// # }
     /// ```
     pub fn ball(radius: Real) -> Self {
         SharedShape(Arc::new(Ball::new(radius)))
@@ -270,6 +282,8 @@ impl SharedShape {
     /// let cuboid = SharedShape::cuboid(1.0, 2.0, 3.0); // Box with dimensions 2x4x6
     /// #[cfg(feature = "dim2")]
     /// let cuboid = SharedShape::cuboid(1.0, 2.0); // Rectangle with dimensions 2x4
+    /// # }
+/// # }
     /// ```
     #[cfg(feature = "dim3")]
     pub fn cuboid(hx: Real, hy: Real, hz: Real) -> Self {
@@ -310,6 +324,8 @@ impl SharedShape {
     ///
     /// // Create a character capsule: 1.8 units tall with 0.3 radius
     /// let character = SharedShape::capsule_y(0.9, 0.3);
+    /// # }
+/// # }
     /// ```
     pub fn capsule_y(half_height: Real, radius: Real) -> Self {
         let p = Point::from(Vector::y() * half_height);
@@ -383,6 +399,10 @@ impl SharedShape {
     /// let indices = vec![[0, 1, 2]];
     /// #[cfg(feature = "dim3")]
     /// let mesh = SharedShape::trimesh(vertices, indices).unwrap();
+    /// # }
+/// # }
+/// # }
+/// # }
     /// ```
     pub fn trimesh(
         vertices: Vec<Point<Real>>,

@@ -207,16 +207,16 @@ use crate::shape::Shape;
 /// | Query | Returns | Use When |
 /// |-------|---------|----------|
 /// | `closest_points` | Point locations | You need exact surface points |
-/// | [`distance`](crate::query::distance) | Distance value | You only need the distance |
-/// | [`contact`](crate::query::contact) | Contact info | Shapes are touching/penetrating |
-/// | [`intersection_test`](crate::query::intersection_test) | Boolean | You only need yes/no overlap |
+/// | [`distance`](crate::query::distance::distance()) | Distance value | You only need the distance |
+/// | [`contact`](crate::query::contact::contact()) | Contact info | Shapes are touching/penetrating |
+/// | [`intersection_test`](crate::query::intersection_test::intersection_test()) | Boolean | You only need yes/no overlap |
 ///
 /// # See Also
 ///
 /// - [`ClosestPoints`] - The return type with detailed documentation
-/// - [`distance`](crate::query::distance) - For just the distance value
-/// - [`contact`](crate::query::contact) - For penetration depth and contact normals
-/// - [`intersection_test`](crate::query::intersection_test) - For boolean overlap test
+/// - [`distance`](crate::query::distance::distance()) - For just the distance value
+/// - [`contact`](crate::query::contact::contact()) - For penetration depth and contact normals
+/// - [`intersection_test`](crate::query::intersection_test::intersection_test()) - For boolean overlap test
 pub fn closest_points(
     pos1: &Isometry<Real>,
     g1: &dyn Shape,

@@ -88,7 +88,7 @@ impl Bvh {
     ///
     /// ## In a game loop
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
@@ -134,7 +134,7 @@ impl Bvh {
     ///
     /// ## Physics engine broad-phase
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
@@ -166,11 +166,12 @@ impl Bvh {
     /// # fn get_body_aabb(id: u32) -> Aabb {
     /// #     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0))
     /// # }
+    /// # }
     /// ```
     ///
     /// ## After many insertions/removals
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;

@@ -117,7 +117,7 @@ impl Contact {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Contact;
     /// use nalgebra::{Point3, Unit, Vector3};

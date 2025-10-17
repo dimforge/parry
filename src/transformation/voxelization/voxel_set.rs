@@ -125,7 +125,7 @@ impl Default for Voxel {
 ///
 /// # Memory Layout
 ///
-/// Unlike [`VoxelizedVolume`] which stores a dense 3D array, `VoxelSet` uses sparse storage:
+/// Unlike [`VoxelizedVolume`](crate::transformation::voxelization::VoxelizedVolume) which stores a dense 3D array, `VoxelSet` uses sparse storage:
 /// - Only filled voxels are stored (typically much fewer than total grid cells)
 /// - Memory usage is `O(filled_voxels)` instead of `O(resolution^3)`
 /// - Ideal for shapes with low surface-to-volume ratio

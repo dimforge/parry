@@ -167,7 +167,7 @@ pub trait PointQuery {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::PointQuery;
     /// use parry3d::shape::Ball;

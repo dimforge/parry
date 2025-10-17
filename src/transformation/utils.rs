@@ -14,25 +14,25 @@
 //! - [`scaled`] - Apply non-uniform scaling
 //!
 //! ## Vertex Generation
-//! - [`push_circle`] - Generate circle points in 3D (XZ plane)
-//! - [`push_xy_arc`] - Generate arc points in 2D (XY plane)
+//! - `push_circle` - Generate circle points in 3D (XZ plane)
+#![cfg_attr(feature = "dim2", doc = "- [`push_xy_arc`](crate::transformation::utils::push_xy_arc) - Generate arc points in 2D (XY plane)")]
 //! - [`push_arc`] - Generate arc points between two endpoints
 //!
 //! ## Index Buffer Generation
-//! - [`push_ring_indices`] / [`push_open_ring_indices`] - Connect two circles into a tube
-//! - [`push_rectangle_indices`] - Generate two triangles forming a quad
-//! - [`push_degenerate_top_ring_indices`] - Connect circle to a single apex point
-//! - [`push_filled_circle_indices`] - Fill a circle with triangles (fan triangulation)
+//! - `push_ring_indices` / `push_open_ring_indices` - Connect two circles into a tube
+//! - `push_rectangle_indices` - Generate two triangles forming a quad
+//! - `push_degenerate_top_ring_indices` - Connect circle to a single apex point
+//! - `push_filled_circle_indices` - Fill a circle with triangles (fan triangulation)
 //!
 //! ## Edge/Outline Generation
-//! - [`push_circle_outline_indices`] - Edge loop for a closed circle
-//! - [`push_open_circle_outline_indices`] - Edge chain (not closed)
-//! - [`push_arc_idx`] - Edge indices for an arc
+//! - `push_circle_outline_indices` - Edge loop for a closed circle
+//! - `push_open_circle_outline_indices` - Edge chain (not closed)
+//! - `push_arc_idx` - Edge indices for an arc
 //!
 //! ## Advanced Operations
-//! - [`reverse_clockwising`] - Flip triangle winding order (reverse normals)
-//! - [`apply_revolution`] - Create surface of revolution from a profile curve
-//! - [`push_arc_and_idx`] - Generate arc geometry and indices together
+//! - `reverse_clockwising` - Flip triangle winding order (reverse normals)
+//! - `apply_revolution` - Create surface of revolution from a profile curve
+//! - `push_arc_and_idx` - Generate arc geometry and indices together
 //!
 //! # Usage Patterns
 //!
@@ -151,7 +151,7 @@
 //!
 //! # See Also
 //!
-//! - [`to_trimesh`](crate::transformation::to_trimesh) - High-level shape to mesh conversion
+//! - `to_trimesh` module - High-level shape to mesh conversion (see individual shape `to_trimesh()` methods)
 //! - [`convex_hull`](crate::transformation::convex_hull) - Convex hull computation
 //! - [`TriMesh`](crate::shape::TriMesh) - Triangle mesh shape
 
@@ -445,7 +445,7 @@ pub fn push_ring_indices(
 
 /// Creates the triangle faces connecting two circles, leaving the ring open.
 ///
-/// This is similar to [`push_ring_indices`], but doesn't close the ring. The connection
+/// This is similar to `push_ring_indices`, but doesn't close the ring. The connection
 /// between the last point and the first point is not made, leaving a gap. This is useful
 /// for creating open cylinders or partial tubes.
 ///

@@ -61,7 +61,7 @@ use crate::shape::Shape;
 ///
 /// # Returns
 ///
-/// * `Ok(Some(hit))` - Collision detected, see [`ShapeCastHit`] for impact details
+/// * `Ok(Some(hit))` - Collision detected, see [`ShapeCastHit`](crate::query::ShapeCastHit) for impact details
 ///   - `time_of_impact`: When collision occurs (in `[start_time, end_time]`)
 ///   - `witness1`, `witness2`: Contact points on each shape (local space)
 ///   - `normal1`, `normal2`: Contact normals on each shape (local space)
@@ -245,7 +245,7 @@ use crate::shape::Shape;
 /// - [`NonlinearRigidMotion`] - Describes an object's complete motion
 /// - [`cast_shapes`](crate::query::cast_shapes) - Linear shape casting (no rotation)
 /// - [`ShapeCastHit`](crate::query::ShapeCastHit) - Result structure
-/// - [`contact`](crate::query::contact) - Static contact queries (no motion)
+/// - [`contact`](crate::query::contact::contact()) - Static contact queries (no motion)
 pub fn cast_shapes_nonlinear(
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,

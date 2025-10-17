@@ -194,7 +194,7 @@ pub fn cuboid_cuboid_find_local_separating_edge_twoway(
 /// For a complete SAT test between two cuboids, you need to test:
 /// 1. Face normals from cuboid1 (this function)
 /// 2. Face normals from cuboid2 (call this function again with swapped arguments)
-/// 3. Edge-edge cross products in 3D ([`cuboid_cuboid_find_local_separating_edge_twoway`])
+/// 3. Edge-edge cross products in 3D (`cuboid_cuboid_find_local_separating_edge_twoway`)
 ///
 /// By testing only one shape's normals at a time, the implementation can be more efficient
 /// and reusable.

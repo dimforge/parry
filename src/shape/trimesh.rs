@@ -669,6 +669,7 @@ impl TriMesh {
     ///
     /// // The topology information is now available
     /// assert!(mesh.topology().is_some());
+    /// # }
     /// ```
     ///
     /// ```
@@ -689,6 +690,7 @@ impl TriMesh {
     ///
     /// let mesh = TriMesh::with_flags(vertices, indices, flags)
     ///     .expect("Failed to create mesh");
+    /// # }
     /// ```
     ///
     /// ```
@@ -893,6 +895,7 @@ impl TriMesh {
     /// assert_eq!(mesh.vertices()[0], Point3::new(10.0, 0.0, 0.0));
     /// assert_eq!(mesh.vertices()[1], Point3::new(11.0, 0.0, 0.0));
     /// assert_eq!(mesh.vertices()[2], Point3::new(10.0, 1.0, 0.0));
+    /// # }
     /// ```
     pub fn transform_vertices(&mut self, transform: &Isometry<Real>) {
         self.vertices
@@ -955,6 +958,7 @@ impl TriMesh {
     /// let stretched = mesh.scaled(&Vector3::new(3.0, 1.0, 1.0));
     /// assert_eq!(stretched.vertices()[1], Point3::new(3.0, 0.0, 0.0));
     /// assert_eq!(stretched.vertices()[2], Point3::new(0.0, 1.0, 0.0));
+    /// # }
     /// ```
     pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
         self.vertices
@@ -1043,6 +1047,7 @@ impl TriMesh {
     ///
     /// assert_eq!(mesh1.num_triangles(), 2);
     /// assert_eq!(mesh1.vertices().len(), 6);
+    /// # }
     /// ```
     pub fn append(&mut self, rhs: &TriMesh) {
         let base_id = self.vertices.len() as u32;
@@ -1139,6 +1144,7 @@ impl TriMesh {
     /// let flat = mesh.flat_indices();
     /// assert_eq!(flat, &[0, 1, 2, 1, 3, 2]);
     /// assert_eq!(flat.len(), mesh.num_triangles() * 3);
+    /// # }
     /// ```
     pub fn flat_indices(&self) -> &[u32] {
         unsafe {
@@ -1204,6 +1210,7 @@ impl TriMesh {
     /// assert_eq!(original_triangle.a, reversed_triangle.b);
     /// assert_eq!(original_triangle.b, reversed_triangle.a);
     /// assert_eq!(original_triangle.c, reversed_triangle.c);
+    /// # }
     /// ```
     pub fn reverse(&mut self) {
         self.indices.iter_mut().for_each(|idx| idx.swap(0, 1));
@@ -1666,6 +1673,7 @@ impl TriMesh {
     /// let count = mesh.triangles()
     ///     .filter(|tri| tri.area() > 0.1)
     ///     .count();
+    /// # }
     /// ```
     pub fn triangles(&self) -> impl ExactSizeIterator<Item = Triangle> + '_ {
         self.indices.iter().map(move |ids| {
@@ -1713,6 +1721,7 @@ impl TriMesh {
     /// let mesh = TriMesh::with_flags(vertices, indices, flags).unwrap();
     ///
     /// assert!(mesh.flags().contains(TriMeshFlags::HALF_EDGE_TOPOLOGY));
+    /// # }
     /// ```
     pub fn flags(&self) -> TriMeshFlags {
         self.flags
@@ -1747,6 +1756,7 @@ impl TriMesh {
     ///
     /// // The AABB contains all vertices
     /// assert!(aabb.contains_local_point(&Point3::new(0.5, 0.5, 0.0)));
+    /// # }
     /// ```
     pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
         self.bvh.root_aabb().transform_by(pos)
@@ -1776,6 +1786,7 @@ impl TriMesh {
     /// let aabb = mesh.local_aabb();
     /// assert_eq!(aabb.mins.x, -1.0);
     /// assert_eq!(aabb.maxs.x, 1.0);
+    /// # }
     /// ```
     pub fn local_aabb(&self) -> Aabb {
         self.bvh.root_aabb()
@@ -1805,6 +1816,7 @@ impl TriMesh {
     /// let bvh = mesh.bvh();
     /// // The BVH can be used for advanced spatial queries
     /// assert!(!bvh.is_empty());
+    /// # }
     /// ```
     pub fn bvh(&self) -> &Bvh {
         &self.bvh
@@ -1829,6 +1841,7 @@ impl TriMesh {
     /// let mesh = TriMesh::new(vertices, indices).unwrap();
     ///
     /// assert_eq!(mesh.num_triangles(), 2);
+    /// # }
     /// ```
     pub fn num_triangles(&self) -> usize {
         self.indices.len()
@@ -1876,6 +1889,7 @@ impl TriMesh {
     /// assert_eq!(triangle.a, Point3::origin());
     /// assert_eq!(triangle.b, Point3::new(1.0, 0.0, 0.0));
     /// assert_eq!(triangle.c, Point3::new(0.0, 1.0, 0.0));
+    /// # }
     /// ```
     pub fn triangle(&self, i: u32) -> Triangle {
         let idx = self.indices[i as usize];
@@ -1941,6 +1955,7 @@ impl TriMesh {
     ///
     /// assert_eq!(mesh.vertices().len(), 3);
     /// assert_eq!(mesh.vertices()[0], Point3::origin());
+    /// # }
     /// ```
     pub fn vertices(&self) -> &[Point<Real>] {
         &self.vertices
@@ -1971,6 +1986,7 @@ impl TriMesh {
     /// assert_eq!(mesh.indices().len(), 2);
     /// assert_eq!(mesh.indices()[0], [0, 1, 2]);
     /// assert_eq!(mesh.indices()[1], [1, 3, 2]);
+    /// # }
     /// ```
     pub fn indices(&self) -> &[[u32; 3]] {
         &self.indices
@@ -2007,6 +2023,7 @@ impl TriMesh {
     ///     TriMeshFlags::HALF_EDGE_TOPOLOGY
     /// ).unwrap();
     /// assert!(mesh.topology().is_some());
+    /// # }
     /// ```
     pub fn topology(&self) -> Option<&TriMeshTopology> {
         self.topology.as_ref()
@@ -2048,6 +2065,7 @@ impl TriMesh {
     /// if let Some(cc) = mesh.connected_components() {
     ///     assert_eq!(cc.num_connected_components(), 2);
     /// }
+    /// # }
     /// # }
     /// ```
     pub fn connected_components(&self) -> Option<&TriMeshConnectedComponents> {

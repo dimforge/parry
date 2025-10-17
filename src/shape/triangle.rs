@@ -185,7 +185,7 @@ impl Triangle {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Triangle;
     /// use nalgebra::Point3;

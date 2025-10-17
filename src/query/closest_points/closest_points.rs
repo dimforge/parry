@@ -60,9 +60,9 @@ use core::mem;
 ///
 /// # See Also
 ///
-/// - [`closest_points`](crate::query::closest_points::closest_points) - Main function to compute this result
-/// - [`distance`](crate::query::distance) - For just the distance value
-/// - [`contact`](crate::query::contact) - For detailed contact information when intersecting
+/// - [`closest_points`](crate::query::closest_points::closest_points()) - Main function to compute this result
+/// - [`distance`](crate::query::distance::distance()) - For just the distance value
+/// - [`contact`](crate::query::contact::contact()) - For detailed contact information when intersecting
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -74,12 +74,12 @@ pub enum ClosestPoints {
     /// The two shapes are intersecting (overlapping or touching).
     ///
     /// When shapes intersect, their closest points are not well-defined, as there
-    /// are infinitely many contact points. Use [`contact`](crate::query::contact)
+    /// are infinitely many contact points. Use [`contact`](crate::query::contact::contact())
     /// instead to get penetration depth and contact normals.
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
@@ -108,7 +108,7 @@ pub enum ClosestPoints {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
@@ -146,7 +146,7 @@ pub enum ClosestPoints {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
@@ -180,7 +180,7 @@ impl ClosestPoints {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
@@ -217,7 +217,7 @@ impl ClosestPoints {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
@@ -267,7 +267,7 @@ impl ClosestPoints {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ClosestPoints;
     /// use nalgebra::{Isometry3, Point3};

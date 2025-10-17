@@ -75,16 +75,16 @@ use crate::shape::Shape;
 ///
 /// # When to Use Other Queries
 ///
-/// - Need contact points/normal? → Use [`contact`](super::contact)
-/// - Need penetration depth? → Use [`contact`](super::contact)
-/// - Need separation distance? → Use [`distance`](super::distance)
-/// - Need closest points? → Use [`closest_points`](super::closest_points)
+/// - Need contact points/normal? → Use [`contact`](crate::query::contact())
+/// - Need penetration depth? → Use [`contact`](crate::query::contact())
+/// - Need separation distance? → Use [`distance`](crate::query::distance())
+/// - Need closest points? → Use [`closest_points`](crate::query::closest_points())
 ///
 /// # See Also
 ///
-/// - [`contact`](super::contact) - Get contact information if intersecting
-/// - [`distance`](super::distance) - Get separation distance
-/// - [`closest_points`](super::closest_points) - Get closest point locations
+/// - [`contact`](crate::query::contact()) - Get contact information if intersecting
+/// - [`distance`](crate::query::distance()) - Get separation distance
+/// - [`closest_points`](crate::query::closest_points()) - Get closest point locations
 pub fn intersection_test(
     pos1: &Isometry<Real>,
     g1: &dyn Shape,

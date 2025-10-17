@@ -98,7 +98,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     ///
@@ -130,7 +130,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     ///
@@ -158,7 +158,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     ///
@@ -187,7 +187,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     /// use nalgebra::Point3;
@@ -218,7 +218,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     ///
@@ -242,7 +242,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     ///
@@ -261,7 +261,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     /// use nalgebra::Point3;
@@ -288,7 +288,7 @@ impl Capsule {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
     /// use nalgebra::{Isometry3, Vector3};

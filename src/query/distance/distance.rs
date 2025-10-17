@@ -83,9 +83,9 @@ use crate::shape::Shape;
 ///
 /// # See Also
 ///
-/// - [`closest_points`](super::closest_points) - For finding the actual closest points
-/// - [`contact`](super::contact) - For penetration depth when overlapping
-/// - [`intersection_test`](super::intersection_test) - For boolean overlap test
+/// - [`closest_points`](crate::query::closest_points()) - For finding the actual closest points
+/// - [`contact`](crate::query::contact()) - For penetration depth when overlapping
+/// - [`intersection_test`](crate::query::intersection_test()) - For boolean overlap test
 pub fn distance(
     pos1: &Isometry<Real>,
     g1: &dyn Shape,

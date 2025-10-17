@@ -74,7 +74,7 @@
 //!
 //! # Implementation notes
 //!
-//! - **Dimension-specific**: EPA has separate implementations for 2D ([`epa2`]) and 3D ([`epa3`])
+//! - **Dimension-specific**: EPA has separate implementations for 2D (`epa2`) and 3D (`epa3`)
 //!   because the polytope expansion differs:
 //!   - 2D: Expands polygons (edges)
 //!   - 3D: Expands polyhedra (faces)

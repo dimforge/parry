@@ -128,8 +128,8 @@
 //!
 //! # See Also
 //!
-//! - [`to_polyline`](crate::transformation::to_polyline) - 2D shape to polyline conversion
-//! - [`to_outline`](crate::transformation::to_outline) - 3D shape outline generation
+//! - \`to_polyline\` - 2D shape to polyline conversion (internal, not public API)
+#![cfg_attr(feature = "dim3", doc = "//! - `to_outline` - 3D shape outline generation (edge wireframes)")]
 //! - [`TriMesh`](crate::shape::TriMesh) - Triangle mesh shape type
 
 #[cfg(feature = "dim3")]

@@ -165,7 +165,7 @@ impl<Data: Default + Copy> TrackedContact<Data> {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::TrackedContact;
     /// use parry3d::shape::PackedFeatureId;
@@ -573,7 +573,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ContactManifold;
     /// use parry3d::query::details::contact_manifold_ball_ball;
@@ -622,7 +622,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ContactManifold;
     /// use parry3d::query::details::contact_manifold_ball_ball;
@@ -717,7 +717,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ContactManifold;
     /// use parry3d::query::details::contact_manifold_ball_ball;
@@ -809,7 +809,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ContactManifold;
     /// use parry3d::query::details::contact_manifold_cuboid_cuboid;

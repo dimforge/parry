@@ -151,7 +151,7 @@ impl MassProperties {
     ///
     /// # Example (2D)
     ///
-    /// ```rust
+    /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
     /// use nalgebra::Point2;

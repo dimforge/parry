@@ -31,6 +31,8 @@ use core::ops::Deref;
 /// // Access elements via dereferencing
 /// assert_eq!(pair1.0, 2);
 /// assert_eq!(pair1.1, 5);
+/// # }
+/// # }
 /// ```
 ///
 /// ## Using as HashMap Keys
@@ -50,6 +52,8 @@ use core::ops::Deref;
 ///
 /// assert_eq!(edge_weights.len(), 1);
 /// assert_eq!(edge_weights.get(&SortedPair::new(1, 3)), Some(&20.0));
+/// # }
+/// # }
 /// ```
 ///
 /// ## Representing Graph Edges
@@ -70,6 +74,8 @@ use core::ops::Deref;
 /// // Check if a specific edge exists (order doesn't matter)
 /// let query_edge = SortedPair::new(2, 1);
 /// assert!(edges.contains(&query_edge));
+/// # }
+/// # }
 /// ```
 ///
 /// ## Ordering
@@ -87,6 +93,8 @@ use core::ops::Deref;
 /// // Pairs are compared lexicographically (first element, then second)
 /// assert!(pair1 < pair2);  // (1, 5) < (2, 3)
 /// assert!(pair1 < pair3);  // (1, 5) < (1, 6)
+/// # }
+/// # }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -122,6 +130,8 @@ impl<T: PartialOrd> SortedPair<T> {
     /// // Elements are automatically sorted
     /// assert_eq!(pair.0, 5);
     /// assert_eq!(pair.1, 10);
+/// # }
+/// # }
     /// ```
     pub fn new(element1: T, element2: T) -> Self {
         if element1 > element2 {
