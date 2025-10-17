@@ -101,9 +101,29 @@ impl Ball {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim2", feature = "alloc"))] {
+    /// # #[cfg(all(feature = "dim2", feature = "alloc", feature = "f32"))] {
     /// use parry2d::shape::Ball;
-    /// use nalgebra::Vector2;
+    /// use parry2d::na::Vector2;
+    /// use either::Either;
+    ///
+    /// let ball = Ball::new(2.0);
+    ///
+    /// // Uniform scaling: produces another ball
+    /// let uniform_scale = Vector2::new(3.0, 3.0);
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 32) {
+    ///     assert_eq!(scaled_ball.radius, 6.0); // 2.0 * 3.0
+    /// }
+    ///
+    /// // Non-uniform scaling: produces a polygon (ellipse approximation)
+    /// let non_uniform_scale = Vector2::new(2.0, 1.0);
+    /// if let Some(Either::Right(polygon)) = ball.scaled(&non_uniform_scale, 32) {
+    ///     // The polygon approximates an ellipse with radii 4.0 and 2.0
+    ///     assert!(polygon.points().len() >= 32);
+    /// }
+    /// # }
+    /// # #[cfg(all(feature = "dim2", feature = "alloc", feature = "f64"))] {
+    /// use parry2d_f64::shape::Ball;
+    /// use parry2d_f64::na::Vector2;
     /// use either::Either;
     ///
     /// let ball = Ball::new(2.0);

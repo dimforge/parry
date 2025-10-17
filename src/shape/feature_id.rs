@@ -169,8 +169,20 @@ impl FeatureId {
     /// let face = FeatureId::Face(5);
     /// face.unwrap_vertex(); // Panics!
     /// # }
+    /// # #[cfg(all(feature = "dim2", feature = "f64"))] {
+    /// use parry2d_f64::shape::FeatureId;
+    ///
+    /// let face = FeatureId::Face(5);
+    /// face.unwrap_vertex(); // Panics!
+    /// # }
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::FeatureId;
+    ///
+    /// let face = FeatureId::Face(5);
+    /// face.unwrap_vertex(); // Panics!
+    /// # }
+    /// # #[cfg(all(feature = "dim3", feature = "f64"))] {
+    /// use parry3d_f64::shape::FeatureId;
     ///
     /// let face = FeatureId::Face(5);
     /// face.unwrap_vertex(); // Panics!
@@ -246,8 +258,20 @@ impl FeatureId {
     /// let vertex = FeatureId::Vertex(0);
     /// vertex.unwrap_face(); // Panics!
     /// # }
+    /// # #[cfg(all(feature = "dim2", feature = "f64"))] {
+    /// use parry2d_f64::shape::FeatureId;
+    ///
+    /// let vertex = FeatureId::Vertex(0);
+    /// vertex.unwrap_face(); // Panics!
+    /// # }
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::FeatureId;
+    ///
+    /// let vertex = FeatureId::Vertex(0);
+    /// vertex.unwrap_face(); // Panics!
+    /// # }
+    /// # #[cfg(all(feature = "dim3", feature = "f64"))] {
+    /// use parry3d_f64::shape::FeatureId;
     ///
     /// let vertex = FeatureId::Vertex(0);
     /// vertex.unwrap_face(); // Panics!
