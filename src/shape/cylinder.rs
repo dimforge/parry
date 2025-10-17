@@ -147,7 +147,7 @@ impl Cylinder {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(all(feature = "dim3", feature = "alloc"))] {
+    /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// use parry3d::shape::Cylinder;
     /// use nalgebra::Vector3;
     /// use either::Either;

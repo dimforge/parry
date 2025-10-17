@@ -67,7 +67,7 @@ pub enum ConvexHullError {
     /// # Example
     ///
     /// ```no_run
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
     /// # use nalgebra::Point3;
     /// # let points = vec![Point3::origin()];
@@ -186,7 +186,7 @@ pub enum ConvexHullError {
     /// # Example
     ///
     /// ```no_run
-    /// # {
+    /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
     /// # use nalgebra::Point3;
     /// # let points = vec![Point3::origin()];

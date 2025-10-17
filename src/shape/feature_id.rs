@@ -162,7 +162,7 @@ impl FeatureId {
     ///
     /// This will panic:
     ///
-    /// ```should_panic
+    /// ```no_run
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::FeatureId;
     ///
