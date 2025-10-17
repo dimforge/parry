@@ -130,8 +130,8 @@ impl<T: PartialOrd> SortedPair<T> {
     /// // Elements are automatically sorted
     /// assert_eq!(pair.0, 5);
     /// assert_eq!(pair.1, 10);
-/// # }
-/// # }
+    /// # }
+    /// # }
     /// ```
     pub fn new(element1: T, element2: T) -> Self {
         if element1 > element2 {

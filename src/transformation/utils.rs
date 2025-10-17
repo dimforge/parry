@@ -15,7 +15,10 @@
 //!
 //! ## Vertex Generation
 //! - `push_circle` - Generate circle points in 3D (XZ plane)
-#![cfg_attr(feature = "dim2", doc = "- [`push_xy_arc`] - Generate arc points in 2D (XY plane)")]
+#![cfg_attr(
+    feature = "dim2",
+    doc = "- [`push_xy_arc`] - Generate arc points in 2D (XY plane)"
+)]
 //! - [`push_arc`] - Generate arc points between two endpoints
 //!
 //! ## Index Buffer Generation
