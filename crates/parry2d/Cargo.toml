@@ -16,8 +16,8 @@ edition = "2021"
 [badges]
 maintenance = { status = "actively-developed" }
 
-[lints]
-workspace = true
+#[lints]
+#workspace = true
 
 [features]
 default = ["required-features", "std", "spade"]
@@ -56,6 +56,7 @@ parallel = ["rayon"]
 alloc = ["nalgebra/alloc", "hashbrown"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
+encase = [ "dep:encase", "nalgebra/encase" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -93,6 +94,7 @@ thiserror = { version = "2", default-features = false }
 ena = { version = "0.14.3", optional = true, default-features = false }
 smallvec = "1"
 foldhash = { version = "0.2", default-features = false }
+encase = { version = "0.12", optional = true }
 
 [dev-dependencies]
 simba = { version = "0.9", default-features = false }
