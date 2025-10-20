@@ -816,3 +816,71 @@ fn result(simplex: &VoronoiSimplex, prev: bool) -> (Point<Real>, Point<Real>) {
         res
     }
 }
+
+#[cfg(test)]
+#[cfg(feature = "dim3")]
+#[cfg(feature = "wavefront")]
+mod test {
+    use crate::math::{Isometry, Real};
+    use crate::shape::{TriMesh, TriMeshFlags};
+    use crate::transformation::intersect_meshes_with_tolerances;
+    use alloc::vec::Vec;
+    use nalgebra::Point3;
+    use obj::Obj;
+    use obj::ObjData;
+    use std::path::PathBuf;
+
+    fn load_trimesh_from_obj(objfile: &str) -> TriMesh {
+        let Obj {
+            data: ObjData {
+                position, objects, ..
+            },
+            ..
+        } = Obj::load(objfile).unwrap();
+
+        let mesh = TriMesh::with_flags(
+            position
+                .iter()
+                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .collect::<Vec<_>>(),
+            objects[0].groups[0]
+                .polys
+                .iter()
+                .map(|p| [p.0[0].0 as u32, p.0[1].0 as u32, p.0[2].0 as u32])
+                .collect::<Vec<_>>(),
+            TriMeshFlags::all(),
+        );
+
+        mesh.unwrap()
+    }
+
+    #[test]
+    fn test_mesh_intersection_2() {
+        let colliders = vec!["../../assets/tests/1.obj", "../../assets/tests/2.obj"];
+
+        let mesh_a = load_trimesh_from_obj(&colliders[0]);
+        let mesh_b = load_trimesh_from_obj(&colliders[1]);
+
+        //mesh_a.to_obj_file(&PathBuf::from(format!("../../assets/tests/1.obj")));
+        //mesh_b.to_obj_file(&PathBuf::from(format!("../../assets/tests/2.obj")));
+
+        let mut tolerance = crate::transformation::MeshIntersectionTolerances::default();
+        tolerance.global_insertion_epsilon = 0.001;
+        tolerance.angle_epsilon = (0.1 as Real).to_radians();
+
+        let mut result = intersect_meshes_with_tolerances(
+            &Isometry::identity(),
+            &mesh_a,
+            false,
+            &Isometry::translation(0.0, 0.0, 0.0),
+            &mesh_b,
+            false,
+            tolerance,
+        )
+        .unwrap();
+
+        if let Some(result) = result {
+            let _ = result.to_obj_file(&PathBuf::from("intersection_test_result.obj"));
+        }
+    }
+}
