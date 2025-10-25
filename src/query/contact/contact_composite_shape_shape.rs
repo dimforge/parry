@@ -55,7 +55,7 @@ where
     G1: ?Sized + CompositeShape,
 {
     CompositeShapeRef(g1)
-        .contact_with_shape(dispatcher, &pose12, g2, prediction)
+        .contact_with_shape(dispatcher, &pose12.inverse(), g2, prediction)
         .map(|c| c.1)
 }
 
