@@ -57,6 +57,7 @@ wavefront = ["obj"]
 alloc = ["nalgebra/alloc", "hashbrown"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
+encase = [ "dep:encase", "nalgebra/encase" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -97,6 +98,7 @@ ena = { version = "0.14.3", optional = true, default-features = false }
 smallvec = "1"
 static_assertions = "1"
 foldhash = { version = "0.2", default-features = false }
+encase = { version = "0.12", optional = true }
 
 # NOTE: needed only for element_min for SIMD BVH ray-casting.
 #       can be removed once `wide` supports it (and allows filtering-out the
