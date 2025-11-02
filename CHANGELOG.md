@@ -1,3 +1,8 @@
+## 0.25.2
+
+- Add the `encase` feature to enable implementation of `encase::ShaderType` for primitive shapes.
+- Fix regression in shape-vs-composite-shape contact calculation.
+
 ## 0.25.1
 
 - Fix point-projection of a ball on a voxels shape containing empty chunks (e.g. after voxels removal).
