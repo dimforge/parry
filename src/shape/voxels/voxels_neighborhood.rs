@@ -1,5 +1,5 @@
 use super::VoxelsChunk;
-use crate::math::{Point, Vector, DIM};
+use crate::math::{Point, Real, Vector, DIM};
 use crate::shape::{VoxelState, Voxels};
 
 impl Voxels {
@@ -139,55 +139,64 @@ impl Voxels {
     /// will have coordinates `key + origin_shift` on `self`.
     pub fn combine_voxel_states(&mut self, other: &mut Self, origin_shift: Vector<i32>) {
         let one = Vector::repeat(1);
+        let origin_shift_worldspace = origin_shift.cast::<Real>().component_mul(&self.voxel_size);
 
-        // Intersect the domains + 1 cell.
-        let [my_domain_mins, my_domain_maxs] = self.domain();
-        let [other_domain_mins, other_domain_maxs] = other.domain();
-        let d0 = [my_domain_mins - one, my_domain_maxs + one * 2];
-        let d1 = [
-            other_domain_mins - one + origin_shift,
-            other_domain_maxs + one * 2 + origin_shift,
-        ];
+        for chunk_key in &self.chunk_keys {
+            let mut aabb = VoxelsChunk::aabb(chunk_key, &self.voxel_size);
+            // Enlarge by one-half voxel so we detect cases where we also detect neighbor chunks from `other`.
+            aabb.mins -= self.voxel_size / 2.0;
+            aabb.maxs += self.voxel_size / 2.0;
+            // Shift to the local coordinate system of `other`.
+            let shifted_aabb = aabb.translated(&-origin_shift_worldspace);
 
-        let d01 = [d0[0].sup(&d1[0]), d0[1].inf(&d1[1])];
-        // Iterate on the domain intersection. If the voxel exists (and is non-empty) on both shapes, we
-        // simply need to combine their bitmasks. If it doesn’t exist on both shapes, we need to
-        // actually check the neighbors.
-        //
-        // The `domain` is expressed in the grid coordinate space of `self`.
-        for i in d01[0].x..d01[1].x {
-            for j in d01[0].y..d01[1].y {
-                #[cfg(feature = "dim2")]
-                let k_range = 0..1;
-                #[cfg(feature = "dim3")]
-                let k_range = d01[0].z..d01[1].z;
-                for _k in k_range {
-                    #[cfg(feature = "dim2")]
-                    let key0 = Point::new(i, j);
-                    #[cfg(feature = "dim3")]
-                    let key0 = Point::new(i, j, _k);
-                    let key1 = key0 - origin_shift;
-                    let vox0 = self
-                        .linear_index(key0)
-                        .map(|id| &mut self.chunks[id.chunk_id].states[id.id_in_chunk])
-                        .filter(|state| !state.is_empty());
-                    let vox1 = other
-                        .linear_index(key1)
-                        .map(|id| &mut other.chunks[id.chunk_id].states[id.id_in_chunk])
-                        .filter(|state| !state.is_empty());
+            if other.chunk_bvh.intersect_aabb(&shifted_aabb).any(|_| true) {
+                // Check the voxels from this chunk against the other voxels shape.
 
-                    match (vox0, vox1) {
-                        (Some(vox0), Some(vox1)) => {
-                            vox0.0 |= vox1.0;
-                            vox1.0 |= vox0.0;
+                // Iterate on the domain intersection. If the voxel exists (and is non-empty) on both shapes, we
+                // simply need to combine their bitmasks. If it doesn’t exist on both shapes, we need to
+                // actually check the neighbors.
+                //
+                // The `domain` is expressed in the grid coordinate space of `self`.
+                let mut domain = VoxelsChunk::keys_bounds(chunk_key);
+                // Enlarge the domain by one voxel so that voxels from `other` but not existing in `self` are updated too.
+                domain[0] -= one;
+                domain[1] += one;
+
+                for i in domain[0].x..domain[1].x {
+                    for j in domain[0].y..domain[1].y {
+                        #[cfg(feature = "dim2")]
+                        let k_range = 0..1;
+                        #[cfg(feature = "dim3")]
+                        let k_range = domain[0].z..domain[1].z;
+                        for _k in k_range {
+                            #[cfg(feature = "dim2")]
+                            let key0 = Point::new(i, j);
+                            #[cfg(feature = "dim3")]
+                            let key0 = Point::new(i, j, _k);
+                            let key1 = key0 - origin_shift;
+                            let vox0 = self
+                                .linear_index(key0)
+                                .map(|id| &mut self.chunks[id.chunk_id].states[id.id_in_chunk])
+                                .filter(|state| !state.is_empty());
+                            let vox1 = other
+                                .linear_index(key1)
+                                .map(|id| &mut other.chunks[id.chunk_id].states[id.id_in_chunk])
+                                .filter(|state| !state.is_empty());
+
+                            match (vox0, vox1) {
+                                (Some(vox0), Some(vox1)) => {
+                                    vox0.0 |= vox1.0;
+                                    vox1.0 |= vox0.0;
+                                }
+                                (Some(vox0), None) => {
+                                    vox0.0 |= other.compute_voxel_neighborhood_bits(key1).0;
+                                }
+                                (None, Some(vox1)) => {
+                                    vox1.0 |= self.compute_voxel_neighborhood_bits(key0).0;
+                                }
+                                (None, None) => { /* Nothing to adjust. */ }
+                            }
                         }
-                        (Some(vox0), None) => {
-                            vox0.0 |= other.compute_voxel_neighborhood_bits(key1).0;
-                        }
-                        (None, Some(vox1)) => {
-                            vox1.0 |= self.compute_voxel_neighborhood_bits(key0).0;
-                        }
-                        (None, None) => { /* Nothing to adjust. */ }
                     }
                 }
             }
