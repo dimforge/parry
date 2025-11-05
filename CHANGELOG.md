@@ -1,3 +1,7 @@
+## 0.25.3
+
+- Significantly improve performances of `Voxels::combine_voxel_states`.
+
 ## 0.25.2
 
 - Add the `encase` feature to enable implementation of `encase::ShaderType` for primitive shapes.
