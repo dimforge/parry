@@ -25,6 +25,40 @@ fn build_diamond(position: &Isometry<Real>) -> TriMesh {
     TriMesh::new(points, indices).unwrap()
 }
 
+fn build_square(position: &Isometry<Real>) -> TriMesh {
+    // Square from two triangles
+    let points = vec![
+        position * Point3::new(-2.0, 0.0, -2.0),
+        position * Point3::new(0.0, -1.0, -2.0),
+        position * Point3::new(0.0, 0.0, -2.0),
+        position * Point3::new(0.0, 0.0, 0.0),
+    ];
+
+    let indices = vec![
+        [0u32, 1, 2],
+        [1, 3, 2],
+    ];
+
+    TriMesh::new(points, indices).unwrap()
+}
+
+#[test]
+fn trimesh_plane_square_intersection() {
+    let mesh = build_square(&Isometry::identity());
+
+    let result = mesh.intersection_with_local_plane(&Vector3::ith_axis(2), -1.0, std::f32::EPSILON);
+
+    assert!(matches!(result, IntersectResult::Intersect(_)));
+
+    if let IntersectResult::Intersect(line) = result {
+        // Need to check points individually since order is not guaranteed
+        let vertices = line.vertices();
+        assert_eq!(vertices.len(), 2);
+        assert!(vertices.contains(&Point3::new(0.0, -0.5, -1.0)));
+        assert!(vertices.contains(&Point3::new(0.0, 0.0, -1.0)));
+    }
+}
+
 #[test]
 fn trimesh_plane_edge_intersection() {
     let mesh = build_diamond(&Isometry::identity());
