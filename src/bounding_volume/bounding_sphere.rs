@@ -475,7 +475,7 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     #[inline]
     fn loosen(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= 0.0, "The loosening margin must be non-negative.");
         self.radius += amount
     }
 
@@ -509,7 +509,7 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     #[inline]
     fn loosened(&self, amount: Real) -> BoundingSphere {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= 0.0, "The loosening margin must be non-negative.");
         BoundingSphere::new(self.center, self.radius + amount)
     }
 
@@ -542,7 +542,7 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     #[inline]
     fn tighten(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= 0.0, "The tightening margin must be non-negative.");
         assert!(amount <= self.radius, "The tightening margin is to large.");
         self.radius -= amount
     }
@@ -577,7 +577,7 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     #[inline]
     fn tightened(&self, amount: Real) -> BoundingSphere {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= 0.0, "The tightening margin must be non-negative.");
         assert!(amount <= self.radius, "The tightening margin is to large.");
         BoundingSphere::new(self.center, self.radius - amount)
     }
