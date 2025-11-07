@@ -973,7 +973,7 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn loosen(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The loosening margin must be non-negativee.");
+        assert!(amount >= 0.0, "The loosening margin must be non-negative.");
         self.mins += Vector::repeat(-amount);
         self.maxs += Vector::repeat(amount);
     }
