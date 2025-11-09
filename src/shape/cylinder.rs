@@ -1,8 +1,8 @@
 //! Support mapping based Cylinder shape.
 
 use crate::math::{Point, Real, Vector};
-use crate::shape::SupportMap;
-use na;
+use crate::shape::{FeatureId, SupportMap};
+use na::{self, Unit};
 use num::Zero;
 
 #[cfg(feature = "alloc")]
@@ -197,6 +197,31 @@ impl Cylinder {
                 self.half_height * scale.y,
                 self.radius * scale.x,
             )))
+        }
+    }
+
+    /// Computes the normal for given [FeatureId] at a given point.
+    ///
+    /// Supports only `FeatureId::Face(0)` (bottom), `FeatureId::Face(1)` (top) and `FeatureId::Face(2)` (side).
+    pub fn feature_normal_at_point(
+        &self,
+        feature_id: FeatureId,
+        point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        match feature_id {
+            FeatureId::Vertex(_) => None,
+            // Bottom
+            FeatureId::Face(0) => Some(-Vector::y_axis()),
+            // Top
+            FeatureId::Face(1) => Some(Vector::y_axis()),
+            // Side
+            FeatureId::Face(2) => Some(Unit::try_new(
+                Vector::new(point.x, 0.0, point.z),
+                Real::EPSILON,
+            )?),
+            FeatureId::Face(_) => None,
+            FeatureId::Unknown => None,
+            FeatureId::Edge(_) => None,
         }
     }
 }

@@ -13,7 +13,7 @@ use num::Zero;
 use {crate::shape::FeatureId, core::f64};
 
 #[cfg(feature = "dim2")]
-use crate::shape::PackedFeatureId;
+use crate::shape::{feature_id, PackedFeatureId};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
@@ -625,6 +625,19 @@ impl Triangle {
     #[cfg(feature = "dim3")]
     pub fn feature_normal(&self, _: FeatureId) -> Option<Unit<Vector<Real>>> {
         self.normal()
+    }
+
+    /// The normal of the given feature of this shape.
+    #[cfg(feature = "dim2")]
+    pub fn feature_normal(&self, feature_id: super::FeatureId) -> Option<Unit<Vector<Real>>> {
+        match feature_id {
+            super::FeatureId::Vertex(vertex) => {
+                let local_point = self.vertices().get(vertex as usize)? - self.center();
+                Unit::try_new(local_point, Real::EPSILON)
+            }
+            super::FeatureId::Face(_) => None,
+            super::FeatureId::Unknown => None,
+        }
     }
 
     /// The orientation of the triangle, based on its signed area.

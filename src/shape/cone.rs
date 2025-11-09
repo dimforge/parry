@@ -1,8 +1,8 @@
 //! Support mapping based Cone shape.
 
 use crate::math::{Point, Real, Vector};
-use crate::shape::SupportMap;
-use na;
+use crate::shape::{FeatureId, SupportMap};
+use na::{self, Unit};
 use num::Zero;
 
 #[cfg(feature = "alloc")]
@@ -155,6 +155,59 @@ impl Cone {
             )))
         }
     }
+
+    /// Computes the normal for given [FeatureId] at a given point.
+    ///
+    /// Supports only `FeatureId::Face(0)` (base) and `FeatureId::Face(1)` (side).
+    ///
+    /// Exposed through [Shape::feature_normal_at_point][crate::shape::Shape::feature_normal_at_point]
+    pub fn feature_normal_at(
+        &self,
+        feature_id: FeatureId,
+        point: &Point<Real>,
+    ) -> Option<Unit<Vector<Real>>> {
+        match feature_id {
+            FeatureId::Vertex(_) => {
+                // TODO: if top of the cone, return (0,0,1) ?
+                None
+            }
+            // Base
+            FeatureId::Face(0) => Some(Unit::new_unchecked(Vector::new(0.0, 0.0, -1.0))),
+            // Side
+            FeatureId::Face(1) => {
+                // TODO: check nan...
+                if self.half_height == 0.0 || self.radius == 0.0 {
+                    return None;
+                }
+                fn height_from_right_angle(a: Real, b: Real) -> Real {
+                    let hypotenuse = (a.powi(2) + b.powi(2)).sqrt();
+                    (a * b) / hypotenuse
+                }
+                fn opposite_from_adjacent_and_hypotenuse(adjacent: Real, hypotenuse: Real) -> Real {
+                    let opp_squared = hypotenuse.powi(2) - adjacent.powi(2);
+                    opp_squared.sqrt()
+                }
+                let height = self.half_height * 2.0;
+                let triangle_height = height_from_right_angle(height, self.radius);
+                let normal_triangle_opposite_length =
+                    opposite_from_adjacent_and_hypotenuse(triangle_height, self.radius);
+                let normal_triangle_height =
+                    (triangle_height * normal_triangle_opposite_length) / self.radius;
+                let normal_triangle_ground_length =
+                    opposite_from_adjacent_and_hypotenuse(normal_triangle_height, triangle_height);
+                let ground_direction =
+                    Vector::new(point.x, 0.0, point.z).try_normalize(Real::EPSILON)?;
+                let mut normal = ground_direction * normal_triangle_ground_length;
+                normal.y = normal_triangle_height;
+
+                // Normalize
+                Some(Unit::try_new(normal, Real::EPSILON)?)
+            }
+            FeatureId::Face(_) => None,
+            FeatureId::Unknown => None,
+            FeatureId::Edge(_) => None,
+        }
+    }
 }
 
 impl SupportMap for Cone {
@@ -178,5 +231,52 @@ impl SupportMap for Cone {
         }
 
         Point::from(vres)
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "dim3")]
+mod test {
+    use approx::RelativeEq;
+
+    use crate::shape::Shape;
+
+    use super::*;
+
+    #[test]
+    fn cone_normal() {
+        let espilon = 0.00001
+        let cone = Cone::new(0.5, 1.0);
+
+        let point = Point::new(1.0, 1.0, 1.0);
+        let normal = cone
+            .feature_normal_at_point(FeatureId::Face(1), &point)
+            .unwrap();
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.5, 0.70710677, 0.5),
+            espilon,
+            espilon
+        ),);
+        // Higher point, not aligned with normal
+        let point = Point::new(1.0, 2.0, 1.0);
+        let normal = cone
+            .feature_normal_at_point(FeatureId::Face(1), &point)
+            .unwrap();
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.5, 0.70710677, 0.5),
+            espilon,
+            espilon
+        ),);
+        // longer cone
+        let cone = Cone::new(1.0, 1.0);
+        let point = Point::new(0.5, 2.0, 1.0);
+        let normal = cone
+            .feature_normal_at_point(FeatureId::Face(1), &point)
+            .unwrap();
+        assert!(Vector::new(normal.x, normal.y, normal.z).relative_eq(
+            &Vector::new(0.39999998, 0.44721365, 0.79999995),
+            espilon,
+            espilon
+        ),);
     }
 }
