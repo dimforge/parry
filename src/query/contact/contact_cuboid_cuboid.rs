@@ -136,3 +136,25 @@ pub fn contact_cuboid_cuboid(
 
     unreachable!()
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        math::{Isometry, Vector},
+        query,
+        shape::{Cuboid, Shape},
+    };
+
+    #[test]
+    pub fn compare_with_support() {
+        let shape1 = Cuboid::new(Vector::repeat(1.0));
+        let shape2 = Cuboid::new(Vector::repeat(1.0));
+        let pos12 = Isometry::new(Vector::repeat(0.5), na::zero());
+        let s1 = shape1.as_support_map().unwrap();
+        let s2 = shape2.as_support_map().unwrap();
+        let result_support = query::details::contact_support_map_support_map(&pos12, s1, s2, 1.0);
+        let result_cuboid = query::details::contact_cuboid_cuboid(&pos12, &shape1, &shape2, 1.0);
+        dbg!(result_support);
+        dbg!(result_cuboid);
+    }
+}
