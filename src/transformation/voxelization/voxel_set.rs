@@ -513,6 +513,11 @@ impl VoxelSet {
         &self.voxels
     }
 
+    /// A mutable reference to the set of voxels.
+    pub fn voxels_mut(&mut self) -> &mut Vec<Voxel> {
+        &mut self.voxels
+    }
+
     /// Update the bounding box of this voxel set.
     pub fn compute_bb(&mut self) {
         let num_voxels = self.voxels.len();
