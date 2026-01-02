@@ -2,7 +2,7 @@
 //!
 //! This module provides functionality to convert various geometric shapes into triangle meshes
 //! (also called "trimesh" in Parry's nomenclature). A triangle mesh is represented as a pair
-//! of vectors: `(Vec<Point<Real>>, Vec<[u32; 3]>)` containing vertices and triangle indices.
+//! of vectors: `(Vec<Vector>, Vec<[u32; 3]>)` containing vertices and triangle indices.
 //!
 //! # Overview
 //!
@@ -109,9 +109,9 @@
 //!
 //! # Return Format
 //!
-//! All `to_trimesh()` methods return a tuple `(Vec<Point<Real>>, Vec<[u32; 3]>)`:
+//! All `to_trimesh()` methods return a tuple `(Vec<Vector>, Vec<[u32; 3]>)`:
 //!
-//! - **Vertices** (`Vec<Point<Real>>`): Array of 3D points (or 2D for `dim2` feature)
+//! - **Vertices** (`Vec<Vector>`): Array of 3D points (or 2D for `dim2` feature)
 //! - **Indices** (`Vec<[u32; 3]>`): Array of triangle indices, where each `[u32; 3]` contains
 //!   three indices into the vertices array
 //!

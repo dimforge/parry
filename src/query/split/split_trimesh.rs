@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, UnitVector, Vector};
+use crate::math::{Pose, Real, Vector, VectorExt};
 use crate::query::{IntersectResult, PointQuery, SplitResult};
 use crate::shape::{Cuboid, FeatureId, Polyline, Segment, Shape, TriMesh, TriMeshFlags, Triangle};
 use crate::transformation::{intersect_meshes, MeshIntersectionError};
@@ -10,14 +10,14 @@ use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Triang
 
 struct Triangulation {
     delaunay: ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-    basis: [Vector<Real>; 2],
-    basis_origin: Point<Real>,
+    basis: [Vector; 2],
+    basis_origin: Vector,
     spade2index: HashMap<FixedVertexHandle, u32>,
     index2spade: HashMap<u32, FixedVertexHandle>,
 }
 
 impl Triangulation {
-    fn new(axis: UnitVector<Real>, basis_origin: Point<Real>) -> Self {
+    fn new(axis: Vector, basis_origin: Vector) -> Self {
         Triangulation {
             delaunay: ConstrainedDelaunayTriangulation::new(),
             basis: axis.orthonormal_basis(),
@@ -27,12 +27,12 @@ impl Triangulation {
         }
     }
 
-    fn project(&self, pt: Point<Real>) -> spade::Point2<Real> {
+    fn project(&self, pt: Vector) -> spade::Point2<Real> {
         let dpt = pt - self.basis_origin;
-        spade::Point2::new(dpt.dot(&self.basis[0]), dpt.dot(&self.basis[1]))
+        spade::Point2::new(dpt.dot(self.basis[0]), dpt.dot(self.basis[1]))
     }
 
-    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Point<Real>]) {
+    fn add_edge(&mut self, id1: u32, id2: u32, points: &[Vector]) {
         let proj1 = self.project(points[id1 as usize]);
         let proj2 = self.project(points[id2 as usize]);
 
@@ -68,33 +68,28 @@ impl TriMesh {
     /// positive half-space delimited by the splitting plane.
     pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
         // TODO: optimize this.
-        self.local_split(&Vector::ith_axis(axis), bias, epsilon)
+        self.local_split(Vector::ith(axis, 1.0), bias, epsilon)
     }
 
     /// Splits this mesh, transformed by `position` by a plane identified by its normal `local_axis`
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn split(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Pose,
+        axis: Vector,
         bias: Real,
         epsilon: Real,
     ) -> SplitResult<Self> {
-        let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(axis);
-        self.local_split(&local_axis, bias + added_bias, epsilon)
+        let local_axis = position.rotation.inverse() * axis;
+        let added_bias = -position.translation.dot(axis);
+        self.local_split(local_axis, bias + added_bias, epsilon)
     }
 
     /// Splits this mesh by a plane identified by its normal `local_axis`
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
-    pub fn local_split(
-        &self,
-        local_axis: &UnitVector<Real>,
-        bias: Real,
-        epsilon: Real,
-    ) -> SplitResult<Self> {
+    pub fn local_split(&self, local_axis: Vector, bias: Real, epsilon: Real) -> SplitResult<Self> {
         let mut triangulation = if self.pseudo_normals_if_oriented().is_some() {
-            Some(Triangulation::new(*local_axis, self.vertices()[0]))
+            Some(Triangulation::new(local_axis, self.vertices()[0]))
         } else {
             None
         };
@@ -110,7 +105,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(local_axis) - bias;
+            let dist_to_plane = pt.dot(local_axis) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;
@@ -322,7 +317,7 @@ impl TriMesh {
                     vertices_lhs[idx1[2] as usize],
                 );
 
-                if self.contains_local_point(&tri.center()) {
+                if self.contains_local_point(tri.center()) {
                     indices_lhs.push(idx1);
 
                     idx2.swap(1, 2); // Flip orientation for the second half of the split.
@@ -359,7 +354,7 @@ impl TriMesh {
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
-        self.intersection_with_local_plane(&Vector::ith_axis(axis), bias, epsilon)
+        self.intersection_with_local_plane(Vector::ith(axis, 1.0), bias, epsilon)
     }
 
     /// Computes the intersection [`Polyline`]s between this mesh, transformed by `position`,
@@ -367,14 +362,14 @@ impl TriMesh {
     /// (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_plane(
         &self,
-        position: &Isometry<Real>,
-        axis: &UnitVector<Real>,
+        position: &Pose,
+        axis: Vector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
-        let local_axis = position.inverse_transform_unit_vector(axis);
-        let added_bias = -position.translation.vector.dot(axis);
-        self.intersection_with_local_plane(&local_axis, bias + added_bias, epsilon)
+        let local_axis = position.rotation.inverse() * axis;
+        let added_bias = -position.translation.dot(axis);
+        self.intersection_with_local_plane(local_axis, bias + added_bias, epsilon)
     }
 
     /// Computes the intersection [`Polyline`]s between this mesh
@@ -382,7 +377,7 @@ impl TriMesh {
     /// and the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
     pub fn intersection_with_local_plane(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: Vector,
         bias: Real,
         epsilon: Real,
     ) -> IntersectResult<Polyline> {
@@ -397,7 +392,7 @@ impl TriMesh {
         let mut found_negative = false;
         let mut found_positive = false;
         for (i, pt) in vertices.iter().enumerate() {
-            let dist_to_plane = pt.coords.dot(local_axis) - bias;
+            let dist_to_plane = pt.dot(local_axis) - bias;
             if dist_to_plane < -epsilon {
                 found_negative = true;
                 colors[i] = 1;
@@ -607,14 +602,14 @@ impl TriMesh {
     /// Computes the intersection mesh between an Aabb and this mesh.
     pub fn intersection_with_aabb(
         &self,
-        position: &Isometry<Real>,
+        position: &Pose,
         flip_mesh: bool,
         aabb: &Aabb,
         flip_cuboid: bool,
         epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
         let cuboid = Cuboid::new(aabb.half_extents());
-        let cuboid_pos = Isometry::from(aabb.center());
+        let cuboid_pos = Pose::from_translation(aabb.center());
         self.intersection_with_cuboid(
             position,
             flip_mesh,
@@ -628,10 +623,10 @@ impl TriMesh {
     /// Computes the intersection mesh between a cuboid and this mesh transformed by `position`.
     pub fn intersection_with_cuboid(
         &self,
-        position: &Isometry<Real>,
+        position: &Pose,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Pose,
         flip_cuboid: bool,
         epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
@@ -649,7 +644,7 @@ impl TriMesh {
         &self,
         flip_mesh: bool,
         cuboid: &Cuboid,
-        cuboid_position: &Isometry<Real>,
+        cuboid_position: &Pose,
         flip_cuboid: bool,
         _epsilon: Real,
     ) -> Result<Option<Self>, MeshIntersectionError> {
@@ -664,7 +659,7 @@ impl TriMesh {
             .unwrap();
 
             let intersect_meshes = intersect_meshes(
-                &Isometry::identity(),
+                &Pose::IDENTITY,
                 self,
                 flip_mesh,
                 cuboid_position,
@@ -704,9 +699,9 @@ impl TriMesh {
             // There is no need to clip if the triangle is fully inside of the Aabb.
             // Note that we can’t take a shortcut for the case where all the vertices are
             // outside of the Aabb, because the Aabb can still instersect the edges or face.
-            if !(aabb.contains_local_point(&to_clip[0])
-                && aabb.contains_local_point(&to_clip[1])
-                && aabb.contains_local_point(&to_clip[2]))
+            if !(aabb.contains_local_point(to_clip[0])
+                && aabb.contains_local_point(to_clip[1])
+                && aabb.contains_local_point(to_clip[2]))
             {
                 aabb.clip_polygon_with_workspace(&mut to_clip, &mut clip_workspace);
             }

@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -37,12 +37,12 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a right triangle with legs of 3m and 4m
-    /// let a = Point2::origin();
-    /// let b = Point2::new(3.0, 0.0);
-    /// let c = Point2::new(0.0, 4.0);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(3.0, 0.0);
+    /// let c = Vector::new(0.0, 4.0);
     /// let density = 100.0; // kg/m²
     ///
     /// let triangle_props = MassProperties::from_triangle(density, &a, &b, &c);
@@ -67,15 +67,15 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Equilateral triangle with side length 2m
     /// let side = 2.0;
     /// let height = side * (3.0_f32.sqrt() / 2.0);
     ///
-    /// let a = Point2::origin();
-    /// let b = Point2::new(side, 0.0);
-    /// let c = Point2::new(side / 2.0, height);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(side, 0.0);
+    /// let c = Vector::new(side / 2.0, height);
     /// let density = 50.0;
     ///
     /// let tri_props = MassProperties::from_triangle(density, &a, &b, &c);
@@ -94,12 +94,12 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Triangle in 3D space (e.g., a metal plate or sail)
-    /// let a = Point3::origin();
-    /// let b = Point3::new(2.0, 0.0, 0.0);
-    /// let c = Point3::new(1.0, 2.0, 0.0);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(2.0, 0.0, 0.0);
+    /// let c = Vector::new(1.0, 2.0, 0.0);
     /// let density = 200.0; // kg/m² (sheet metal)
     ///
     /// let plate_props = MassProperties::from_triangle(density, &a, &b, &c);
@@ -113,17 +113,17 @@ impl MassProperties {
     /// # }
     /// ```
     ///
-    /// # Example - Degenerate Triangle (Collinear Points)
+    /// # Example - Degenerate Triangle (Collinear Vectors)
     ///
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Three points on a line (no area)
-    /// let a = Point2::origin();
-    /// let b = Point2::new(1.0, 1.0);
-    /// let c = Point2::new(2.0, 2.0);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(1.0, 1.0);
+    /// let c = Vector::new(2.0, 2.0);
     /// let density = 100.0;
     ///
     /// let degenerate = MassProperties::from_triangle(density, &a, &b, &c);
@@ -167,13 +167,8 @@ impl MassProperties {
     ///
     /// Computing triangle mass properties is very fast (constant time) and involves
     /// only basic geometric calculations (area, centroid, and moment of inertia).
-    pub fn from_triangle(
-        density: Real,
-        a: &Point<Real>,
-        b: &Point<Real>,
-        c: &Point<Real>,
-    ) -> MassProperties {
-        let triangle = Triangle::new(*a, *b, *c);
+    pub fn from_triangle(density: Real, a: Vector, b: Vector, c: Vector) -> MassProperties {
+        let triangle = Triangle::new(a, b, c);
         let area = triangle.area();
         let com = triangle.center();
 

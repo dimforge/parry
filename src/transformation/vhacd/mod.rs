@@ -52,19 +52,19 @@
 //!
 //! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use parry3d::transformation::vhacd::VHACD;
 //! use parry3d::transformation::vhacd::VHACDParameters;
 //!
 //! // Define a simple concave mesh (an 'L' shape made of triangles)
 //! let vertices = vec![
-//!     Point::new(0.0, 0.0, 0.0), Point::new(2.0, 0.0, 0.0),
-//!     Point::new(2.0, 1.0, 0.0), Point::new(1.0, 1.0, 0.0),
-//!     Point::new(1.0, 2.0, 0.0), Point::new(0.0, 2.0, 0.0),
+//!     Vector::new(0.0, 0.0, 0.0), Vector::new(2.0, 0.0, 0.0),
+//!     Vector::new(2.0, 1.0, 0.0), Vector::new(1.0, 1.0, 0.0),
+//!     Vector::new(1.0, 2.0, 0.0), Vector::new(0.0, 2.0, 0.0),
 //!     // Add corresponding back face vertices
-//!     Point::new(0.0, 0.0, 1.0), Point::new(2.0, 0.0, 1.0),
-//!     Point::new(2.0, 1.0, 1.0), Point::new(1.0, 1.0, 1.0),
-//!     Point::new(1.0, 2.0, 1.0), Point::new(0.0, 2.0, 1.0),
+//!     Vector::new(0.0, 0.0, 1.0), Vector::new(2.0, 0.0, 1.0),
+//!     Vector::new(2.0, 1.0, 1.0), Vector::new(1.0, 1.0, 1.0),
+//!     Vector::new(1.0, 2.0, 1.0), Vector::new(0.0, 2.0, 1.0),
 //! ];
 //! let indices = vec![
 //!     // Front face triangles
@@ -103,13 +103,13 @@
 //!
 //! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 //! use parry3d::transformation::voxelization::FillMode;
 //!
 //! # let vertices = vec![
-//! #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-//! #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.0, 1.0),
+//! #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+//! #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.0, 1.0),
 //! # ];
 //! # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
 //! #
@@ -139,12 +139,12 @@
 //!
 //! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 //!
 //! # let vertices = vec![
-//! #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-//! #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.0, 1.0),
+//! #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+//! #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.0, 1.0),
 //! # ];
 //! # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
 //! #
@@ -168,14 +168,14 @@
 //!
 //! ```no_run
 //! # #[cfg(all(feature = "dim2", feature = "f32"))] {
-//! use parry2d::math::Point;
+//! use parry2d::math::Vector;
 //! use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
 //!
 //! // Define a concave polyline (e.g., an 'L' shape)
 //! let vertices = vec![
-//!     Point::new(0.0, 0.0), Point::new(2.0, 0.0),
-//!     Point::new(2.0, 1.0), Point::new(1.0, 1.0),
-//!     Point::new(1.0, 2.0), Point::new(0.0, 2.0),
+//!     Vector::new(0.0, 0.0), Vector::new(2.0, 0.0),
+//!     Vector::new(2.0, 1.0), Vector::new(1.0, 1.0),
+//!     Vector::new(1.0, 2.0), Vector::new(0.0, 2.0),
 //! ];
 //! let indices = vec![
 //!     [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
@@ -202,14 +202,14 @@
 //!
 //! ```no_run
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use parry3d::shape::{SharedShape, Compound};
 //! use parry3d::transformation::vhacd::VHACDParameters;
-//! use parry3d::na::Isometry3;
+//! use parry3d::math::Pose;
 //!
 //! # let vertices = vec![
-//! #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-//! #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.0, 1.0),
+//! #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+//! #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.0, 1.0),
 //! # ];
 //! # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
 //! #

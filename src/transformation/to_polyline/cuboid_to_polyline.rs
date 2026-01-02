@@ -1,22 +1,21 @@
-use crate::math::Real;
+use crate::math::Vector2;
 use crate::shape::Cuboid;
 use crate::transformation::utils;
 use alloc::{vec, vec::Vec};
-use na::{self, Point2};
 
 impl Cuboid {
     /// Discretize the boundary of this cuboid as a polygonal line.
-    pub fn to_polyline(&self) -> Vec<Point2<Real>> {
+    pub fn to_polyline(&self) -> Vec<Vector2> {
         utils::scaled(unit_rectangle(), self.half_extents * 2.0)
     }
 }
 
 /// The contour of a unit cuboid lying on the x-y plane.
-fn unit_rectangle() -> Vec<Point2<Real>> {
+fn unit_rectangle() -> Vec<Vector2> {
     vec![
-        Point2::new(-0.5, -0.5),
-        Point2::new(0.5, -0.5),
-        Point2::new(0.5, 0.5),
-        Point2::new(-0.5, 0.5),
+        Vector2::new(-0.5, -0.5),
+        Vector2::new(0.5, -0.5),
+        Vector2::new(0.5, 0.5),
+        Vector2::new(-0.5, 0.5),
     ]
 }

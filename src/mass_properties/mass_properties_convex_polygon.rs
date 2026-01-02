@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -37,14 +37,14 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     /// use std::f32::consts::PI;
     ///
     /// // Create a regular pentagon with radius 1.0
     /// let mut vertices = Vec::new();
     /// for i in 0..5 {
     ///     let angle = (i as f32) * 2.0 * PI / 5.0;
-    ///     vertices.push(Point2::new(angle.cos(), angle.sin()));
+    ///     vertices.push(Vector::new(angle.cos(), angle.sin()));
     /// }
     ///
     /// let density = 100.0;
@@ -54,7 +54,7 @@ impl MassProperties {
     /// println!("Center of mass: {:?}", pentagon_props.local_com);
     ///
     /// // For a regular polygon centered at origin, COM should be near origin
-    /// assert!(pentagon_props.local_com.coords.norm() < 0.01);
+    /// assert!(pentagon_props.local_com.length() < 0.01);
     /// # }
     /// ```
     ///
@@ -63,14 +63,14 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a trapezoid (4 vertices)
     /// let vertices = vec![
-    ///     Point2::origin(),  // Bottom left
-    ///     Point2::new(4.0, 0.0),  // Bottom right
-    ///     Point2::new(3.0, 2.0),  // Top right
-    ///     Point2::new(1.0, 2.0),  // Top left
+    ///     Vector::ZERO,  // Bottom left
+    ///     Vector::new(4.0, 0.0),  // Bottom right
+    ///     Vector::new(3.0, 2.0),  // Top right
+    ///     Vector::new(1.0, 2.0),  // Top left
     /// ];
     ///
     /// let density = 50.0;
@@ -88,15 +88,15 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Arbitrary convex polygon
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(2.0, 0.0),
-    ///     Point2::new(3.0, 1.0),
-    ///     Point2::new(2.0, 2.5),
-    ///     Point2::new(0.0, 2.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0),
+    ///     Vector::new(3.0, 1.0),
+    ///     Vector::new(2.0, 2.5),
+    ///     Vector::new(0.0, 2.0),
     /// ];
     ///
     /// let density = 200.0;
@@ -135,7 +135,7 @@ impl MassProperties {
     ///
     /// Computation time is O(n) where n is the number of vertices. The polygon is
     /// decomposed into n triangles, each processed independently.
-    pub fn from_convex_polygon(density: Real, vertices: &[Point<Real>]) -> MassProperties {
+    pub fn from_convex_polygon(density: Real, vertices: &[Vector]) -> MassProperties {
         let (area, com) = convex_polygon_area_and_center_of_mass(vertices);
 
         if area == 0.0 {
@@ -158,14 +158,10 @@ impl MassProperties {
 }
 
 /// Computes the area and center-of-mass of a convex polygon.
-pub fn convex_polygon_area_and_center_of_mass(
-    convex_polygon: &[Point<Real>],
-) -> (Real, Point<Real>) {
-    let geometric_center = convex_polygon
-        .iter()
-        .fold(Point::origin(), |e1, e2| e1 + e2.coords)
-        / convex_polygon.len() as Real;
-    let mut res = Point::origin();
+pub fn convex_polygon_area_and_center_of_mass(convex_polygon: &[Vector]) -> (Real, Vector) {
+    let mut geometric_center = convex_polygon.iter().fold(Vector::ZERO, |e1, e2| e1 + e2);
+    geometric_center /= convex_polygon.len() as Real;
+    let mut res = Vector::ZERO;
     let mut areasum = 0.0;
 
     let mut iterpeek = convex_polygon.iter().peekable();
@@ -177,7 +173,7 @@ pub fn convex_polygon_area_and_center_of_mass(
             &geometric_center,
         );
         let area = Triangle::new(*a, **b, *c).area();
-        let center = (a.coords + b.coords + c.coords) / 3.0;
+        let center = (*a + **b + *c) / 3.0;
 
         res += center * area;
         areasum += area;
@@ -186,6 +182,7 @@ pub fn convex_polygon_area_and_center_of_mass(
     if areasum == 0.0 {
         (areasum, geometric_center)
     } else {
-        (areasum, res / areasum)
+        res /= areasum;
+        (areasum, res)
     }
 }

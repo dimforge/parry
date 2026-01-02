@@ -47,7 +47,7 @@ impl Bvh {
         assert!(leaves.len() > 1);
 
         let centroid_aabb = Aabb::from_points(leaves.iter().map(|node| node.center()));
-        let bins_axis = centroid_aabb.extents().imax();
+        let bins_axis = centroid_aabb.extents().max_position();
         let bins_range = [centroid_aabb.mins[bins_axis], centroid_aabb.maxs[bins_axis]];
 
         // Compute bins characteristics.

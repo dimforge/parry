@@ -2,9 +2,7 @@
 use super::ConvexHullError;
 use super::TriangleFacet;
 #[cfg(feature = "std")]
-use crate::math::Real;
-#[cfg(feature = "std")]
-use na::Point3;
+use crate::math::Vector3;
 
 pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
     let facet = &facets[ifacet];
@@ -32,7 +30,7 @@ pub fn check_facet_links(ifacet: usize, facets: &[TriangleFacet]) {
 /// Checks if a convex-hull is properly formed.
 #[cfg(feature = "std")]
 pub fn check_convex_hull(
-    points: &[Point3<Real>],
+    points: &[Vector3],
     triangles: &[[u32; 3]],
 ) -> Result<(), ConvexHullError> {
     use crate::utils::hashmap::{Entry, HashMap};
@@ -98,10 +96,10 @@ pub fn check_convex_hull(
     Ok(())
 }
 
-// fn print_buildable_vec<T: core::fmt::Display + na::Scalar>(desc: &str, elts: &[Point3<T>]) {
+// fn print_buildable_vec<T: core::fmt::Display + na::Scalar>(desc: &str, elts: &[Vector3<T>]) {
 //     print!("let {} = vec![", desc);
 //     for elt in elts {
-//         print!("Point3::new({},{},{}),", elt.x, elt.y, elt.z);
+//         print!("Vector::new({},{},{}),", elt.x, elt.y, elt.z);
 //     }
 //     println!("];")
 // }

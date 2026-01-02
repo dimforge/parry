@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use nalgebra::{UnitVector3, Vector3};
+use parry3d::math::Vector;
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
 
@@ -8,7 +8,7 @@ use common_macroquad3d::*;
 
 #[macroquad::main("plane_intersection")]
 async fn main() {
-    let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
+    let trimesh = Cuboid::new(Vector::splat(1.0)).to_trimesh();
 
     let light_pos = Vec3::new(-1f32, 3.5f32, -3f32);
     let camera_pos = Vec3::new(-1.5f32, 2.5f32, -3f32);
@@ -28,11 +28,7 @@ async fn main() {
 
         // Get the intersection polyline.
         let intersection_result = trimesh.intersection_with_local_plane(
-            &UnitVector3::new_normalize(Vector3::new(
-                up_plane_vector.x,
-                up_plane_vector.y,
-                up_plane_vector.z,
-            )),
+            Vector::new(up_plane_vector.x, up_plane_vector.y, up_plane_vector.z).normalize(),
             bias,
             0.0005,
         );

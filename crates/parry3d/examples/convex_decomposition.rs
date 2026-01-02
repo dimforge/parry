@@ -1,13 +1,10 @@
 mod common_macroquad3d;
 
-extern crate nalgebra as na;
-
 use common_macroquad3d::{easy_draw_text, hue_to_rgb, mquad_mesh_from_points};
 use macroquad::prelude::*;
-use na::Point3;
 use obj::{Obj, ObjData};
 use parry3d::{
-    math::Real,
+    math::{Real, Vector},
     shape::{SharedShape, TriMesh, TriMeshFlags},
 };
 
@@ -26,7 +23,7 @@ async fn main() {
     let bunny_mesh = TriMesh::with_flags(
         position
             .iter()
-            .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+            .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
             .collect::<Vec<_>>(),
         objects[0].groups[0]
             .polys

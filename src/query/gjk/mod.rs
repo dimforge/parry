@@ -1,6 +1,6 @@
 //! The GJK algorithm for distance computation.
 
-pub use self::cso_point::CSOPoint;
+pub use self::cso_point::CsoPoint;
 #[cfg(feature = "dim2")]
 pub use self::voronoi_simplex2::VoronoiSimplex;
 #[cfg(feature = "dim3")]

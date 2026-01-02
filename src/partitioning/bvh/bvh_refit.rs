@@ -46,7 +46,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -54,8 +54,8 @@ impl Bvh {
     /// // Insert initial objects
     /// for i in 0..100 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///         Vector::new(i as f32, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0, 1.0, 1.0)
     ///     );
     ///     bvh.insert(aabb, i);
     /// }
@@ -64,8 +64,8 @@ impl Bvh {
     /// for i in 0..100 {
     ///     let offset = 0.1;
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32 + offset, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0 + offset, 1.0, 1.0)
+    ///         Vector::new(i as f32 + offset, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0 + offset, 1.0, 1.0)
     ///     );
     ///     bvh.insert_or_update_partially(aabb, i, 0.0);
     /// }
@@ -81,7 +81,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -89,8 +89,8 @@ impl Bvh {
     /// // Game initialization - add objects
     /// for i in 0..1000 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///         Vector::new(i as f32, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0, 1.0, 1.0)
     ///     );
     ///     bvh.insert(aabb, i);
     /// }
@@ -102,8 +102,8 @@ impl Bvh {
     ///         let time = frame as f32 * 0.016; // ~60 FPS
     ///         let pos = time.sin() * 10.0;
     ///         let aabb = Aabb::new(
-    ///             Point3::new(i as f32 + pos, 0.0, 0.0),
-    ///             Point3::new(i as f32 + pos + 1.0, 1.0, 1.0)
+    ///             Vector::new(i as f32 + pos, 0.0, 0.0),
+    ///             Vector::new(i as f32 + pos + 1.0, 1.0, 1.0)
     ///         );
     ///         bvh.insert_or_update_partially(aabb, i, 0.0);
     ///     }
@@ -122,18 +122,18 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
     ///
     /// // Add an object
-    /// let aabb = Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0));
+    /// let aabb = Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0));
     /// bvh.insert(aabb, 0);
     ///
     /// // Update with a margin - tree won't update if movement is small
     /// let margin = 0.5;
-    /// let new_aabb = Aabb::new(Point3::new(0.1, 0.0, 0.0), Point3::new(1.1, 1.0, 1.0));
+    /// let new_aabb = Aabb::new(Vector::new(0.1, 0.0, 0.0), Vector::new(1.1, 1.0, 1.0));
     /// bvh.insert_or_update_partially(new_aabb, 0, margin);
     ///
     /// // Refit propagates the change detection flags

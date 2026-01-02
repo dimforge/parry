@@ -9,3 +9,4 @@ Cargo.lock
 Makefile
 .vscode
 .idea
+.DS_store

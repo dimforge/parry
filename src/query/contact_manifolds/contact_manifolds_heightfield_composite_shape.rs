@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
 
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
@@ -12,7 +12,7 @@ use crate::query::ContactManifold;
 use crate::shape::Capsule;
 use crate::shape::{CompositeShape, HeightField, Shape};
 use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::IsometryOpt;
+use crate::utils::PoseOpt;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -58,8 +58,8 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 /// Computes the contact manifold between an heightfield and a composite shape.
 pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Pose,
+    pos21: &Pose,
     heightfield1: &HeightField,
     composite2: &dyn CompositeShape,
     prediction: Real,

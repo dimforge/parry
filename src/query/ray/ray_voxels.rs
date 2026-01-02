@@ -105,7 +105,7 @@ impl<'a> RayCast for VoxelsChunkRef<'a> {
                 break;
             }
 
-            let imin = Vector::from(toi.map(|t| t.0)).imin();
+            let imin = Vector::from(toi.map(|t| t.0)).min_position();
 
             if toi[imin].1 {
                 if voxel_key[imin] < domain_maxs[imin] - 1 {

@@ -6,8 +6,7 @@ use macroquad::{
     models::{draw_line_3d, Mesh},
     ui::Vertex,
 };
-use nalgebra::Point3;
-use parry3d::math::Real;
+use parry3d::math::Vector;
 
 #[allow(dead_code)]
 fn main() {
@@ -17,16 +16,16 @@ fn main() {
     );
 }
 
-/// Converts a [`nalgebra::Point3`] to a [`Vec3`], which is used by [`macroquad`]
+/// Converts a [`parry3d::math::Vector`] to a [`Vec3`], which is used by [`macroquad`]
 #[allow(dead_code)]
-pub fn mquad_from_na(a: Point3<Real>) -> Vec3 {
+pub fn mquad_from_na(a: Vector) -> Vec3 {
     Vec3::new(a.x, a.y, a.z)
 }
 
-/// Converts a [`Vec3`] to a [`nalgebra::Point3`], which is used by [`parry3d`]
+/// Converts a [`Vec3`] to a [`parry3d::math::Vector`], which is used by [`parry3d`]
 #[allow(dead_code)]
-pub fn na_from_mquad(a: Vec3) -> Point3<Real> {
-    Point3::new(a.x, a.y, a.z)
+pub fn na_from_mquad(a: Vec3) -> Vector {
+    Vector::new(a.x, a.y, a.z)
 }
 
 /// Converts a hue (from 0..=1) to rgb
@@ -93,7 +92,7 @@ pub fn easy_draw_text(text: &str) {
 /// and bakes light into its vertices colors using [`mquad_compute_normals_and_bake_light`].
 #[allow(dead_code)]
 pub fn mquad_mesh_from_points(
-    trimesh: &(Vec<Point3<Real>>, Vec<[u32; 3]>),
+    trimesh: &(Vec<Vector>, Vec<[u32; 3]>),
     light_pos: Vec3,
     color: Color,
 ) -> Mesh {

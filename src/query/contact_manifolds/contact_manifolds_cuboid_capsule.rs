@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::{sat, ContactManifold};
 #[cfg(feature = "dim3")]
 use crate::shape::PolygonalFeature;
@@ -8,7 +8,7 @@ use crate::shape::{CuboidFeature, CuboidFeatureFace};
 
 /// Computes the contact manifold between a cuboid and a capsule, both represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_capsule_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -41,8 +41,8 @@ pub fn contact_manifold_cuboid_capsule_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a cuboid and a capsule.
 pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Pose,
+    pos21: &Pose,
     cube1: &'a Cuboid,
     capsule2: &'a Capsule,
     prediction: Real,
@@ -61,7 +61,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
 
     /*
      *
-     * Point-Face cases.
+     * Vector-Face cases.
      *
      */
     let sep1 =
@@ -72,7 +72,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     }
 
     #[cfg(feature = "dim3")]
-    let sep2 = (-Real::MAX, Vector::x());
+    let sep2 = (-Real::MAX, Vector::X);
     #[cfg(feature = "dim2")]
     let sep2 = sat::segment_cuboid_find_local_separating_normal_oneway(&segment2, cube1, &pos21);
     if sep2.0 > prediction + capsule2.radius {
@@ -86,7 +86,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
      *
      */
     #[cfg(feature = "dim2")]
-    let sep3 = (-Real::MAX, Vector::x()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, Vector::X); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_segment_find_local_separating_edge_twoway(cube1, &segment2, &pos12);
     if sep3.0 > prediction + capsule2.radius {
@@ -103,7 +103,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     let mut best_sep = sep1;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
-        best_sep = (sep2.0, pos12 * -sep2.1);
+        best_sep = (sep2.0, pos12.rotation * -sep2.1);
     } else if sep3.0 > sep1.0 {
         best_sep = sep3;
     }
@@ -150,7 +150,7 @@ pub fn contact_manifold_cuboid_capsule<'a, ManifoldData, ContactData>(
     );
 
     // Adjust points to take the radius into account.
-    let normal2 = pos21 * -best_sep.1;
+    let normal2 = pos21.rotation * -best_sep.1;
 
     if flipped {
         manifold.local_n1 = normal2;

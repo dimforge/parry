@@ -5,12 +5,10 @@
 
 use alloc::{collections::BinaryHeap, vec::Vec};
 use core::cmp::Ordering;
-
-use na::{self, Unit};
 use num::Bounded;
 
-use crate::math::{Isometry, Point, Real, Vector};
-use crate::query::gjk::{self, CSOPoint, ConstantOrigin, VoronoiSimplex};
+use crate::math::{Pose, Real, Vector};
+use crate::query::gjk::{self, ConstantOrigin, CsoPoint, VoronoiSimplex};
 use crate::shape::SupportMap;
 use crate::utils;
 
@@ -55,41 +53,40 @@ impl Ord for FaceId {
 #[derive(Clone, Debug)]
 struct Face {
     pts: [usize; 2],
-    normal: Unit<Vector<Real>>,
-    proj: Point<Real>,
+    normal: Vector,
+    proj: Vector,
     bcoords: [Real; 2],
     deleted: bool,
 }
 
 impl Face {
-    pub fn new(vertices: &[CSOPoint], pts: [usize; 2]) -> (Self, bool) {
+    pub fn new(vertices: &[CsoPoint], pts: [usize; 2]) -> (Self, bool) {
         if let Some((proj, bcoords)) =
-            project_origin(&vertices[pts[0]].point, &vertices[pts[1]].point)
+            project_origin(vertices[pts[0]].point, vertices[pts[1]].point)
         {
             (Self::new_with_proj(vertices, proj, bcoords, pts), true)
         } else {
             (
-                Self::new_with_proj(vertices, Point::origin(), [0.0; 2], pts),
+                Self::new_with_proj(vertices, Vector::ZERO, [0.0; 2], pts),
                 false,
             )
         }
     }
 
     pub fn new_with_proj(
-        vertices: &[CSOPoint],
-        proj: Point<Real>,
+        vertices: &[CsoPoint],
+        proj: Vector,
         bcoords: [Real; 2],
         pts: [usize; 2],
     ) -> Self {
         let normal;
         let deleted;
 
-        if let Some(n) = utils::ccw_face_normal([&vertices[pts[0]].point, &vertices[pts[1]].point])
-        {
+        if let Some(n) = utils::ccw_face_normal([vertices[pts[0]].point, vertices[pts[1]].point]) {
             normal = n;
             deleted = false;
         } else {
-            normal = Unit::new_unchecked(na::zero());
+            normal = Vector::ZERO;
             deleted = true;
         }
 
@@ -102,12 +99,12 @@ impl Face {
         }
     }
 
-    pub fn closest_points(&self, vertices: &[CSOPoint]) -> (Point<Real>, Point<Real>) {
+    pub fn closest_points(&self, vertices: &[CsoPoint]) -> (Vector, Vector) {
         (
             vertices[self.pts[0]].orig1 * self.bcoords[0]
-                + vertices[self.pts[1]].orig1.coords * self.bcoords[1],
+                + vertices[self.pts[1]].orig1 * self.bcoords[1],
             vertices[self.pts[0]].orig2 * self.bcoords[0]
-                + vertices[self.pts[1]].orig2.coords * self.bcoords[1],
+                + vertices[self.pts[1]].orig2 * self.bcoords[1],
         )
     }
 }
@@ -143,11 +140,11 @@ impl Face {
 /// use parry2d::query::epa::EPA;
 /// use parry2d::query::gjk::VoronoiSimplex;
 /// use parry2d::shape::Ball;
-/// use parry2d::na::Isometry2;
+/// use parry2d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
-/// let pos12 = Isometry2::translation(1.5, 0.0); // Overlapping circles
+/// let pos12 = Pose::translation(1.5, 0.0); // Overlapping circles
 ///
 /// // After GJK determines penetration and fills a simplex:
 /// let mut epa = EPA::new();
@@ -155,7 +152,7 @@ impl Face {
 ///
 /// // EPA computes the contact details
 /// // if let Some((pt1, pt2, normal)) = epa.closest_points(&pos12, &ball1, &ball2, &simplex) {
-/// //     println!("Penetration depth: {}", (pt2 - pt1).norm());
+/// //     println!("Penetration depth: {}", (pt2 - pt1).length());
 /// //     println!("Contact normal: {}", normal);
 /// // }
 /// # }
@@ -178,7 +175,7 @@ impl Face {
 /// may be numerical precision issues with the input geometry.
 #[derive(Default)]
 pub struct EPA {
-    vertices: Vec<CSOPoint>,
+    vertices: Vec<CsoPoint>,
     faces: Vec<Face>,
     heap: BinaryHeap<FaceId>,
 }
@@ -241,10 +238,10 @@ impl EPA {
     /// use parry2d::query::epa::EPA;
     /// use parry2d::query::gjk::VoronoiSimplex;
     /// use parry2d::shape::Ball;
-    /// use parry2d::na::Isometry2;
+    /// use parry2d::math::Pose;
     ///
     /// let ball = Ball::new(2.0);
-    /// let pos: Isometry2<f32> = Isometry2::identity();
+    /// let pos = Pose::identity();
     ///
     /// // Assume GJK determined the origin is inside and filled simplex
     /// let simplex = VoronoiSimplex::new();
@@ -258,10 +255,10 @@ impl EPA {
     /// ```
     pub fn project_origin<G: ?Sized + SupportMap>(
         &mut self,
-        m: &Isometry<Real>,
+        m: &Pose,
         g: &G,
         simplex: &VoronoiSimplex,
-    ) -> Option<Point<Real>> {
+    ) -> Option<Vector> {
         self.closest_points(&m.inverse(), g, &ConstantOrigin, simplex)
             .map(|(p, _, _)| p)
     }
@@ -286,7 +283,7 @@ impl EPA {
     /// - `point2`: Contact point on shape `g2` in `g2`'s local frame
     /// - `normal`: Contact normal pointing from `g2` toward `g1`, normalized
     ///
-    /// The **penetration depth** can be computed as `(point1 - point2).norm()` after transforming
+    /// The **penetration depth** can be computed as `(point1 - point2).length()` after transforming
     /// both points to the same coordinate frame.
     ///
     /// Returns `None` if:
@@ -309,13 +306,13 @@ impl EPA {
     /// use parry2d::query::epa::EPA;
     /// use parry2d::query::gjk::{GJKResult, VoronoiSimplex};
     /// use parry2d::shape::Ball;
-    /// use parry2d::na::Isometry2;
+    /// use parry2d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);
     ///
-    /// let pos1 = Isometry2::identity();
-    /// let pos2 = Isometry2::translation(1.5, 0.0); // Overlapping
+    /// let pos1 = Pose::identity();
+    /// let pos2 = Pose::translation(1.5, 0.0); // Overlapping
     /// let pos12 = pos1.inverse() * pos2;
     ///
     /// // After GJK detects penetration:
@@ -343,11 +340,11 @@ impl EPA {
     /// depth and contact normal.
     pub fn closest_points<G1, G2>(
         &mut self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         g1: &G1,
         g2: &G2,
         simplex: &VoronoiSimplex,
-    ) -> Option<(Point<Real>, Point<Real>, Unit<Vector<Real>>)>
+    ) -> Option<(Vector, Vector, Vector)>
     where
         G1: ?Sized + SupportMap,
         G2: ?Sized + SupportMap,
@@ -370,18 +367,18 @@ impl EPA {
             // The contact is vertex-vertex.
             // We need to determine a valid normal that lies
             // on both vertices' normal cone.
-            let mut n = Vector::y_axis();
+            let mut n = Vector::Y;
 
             // First, find a vector on the first vertex tangent cone.
             let orig1 = self.vertices[0].orig1;
             for _ in 0..MAX_ITERS {
-                let supp1 = g1.local_support_point(&n);
-                if let Some(tangent) = Unit::try_new(supp1 - orig1, _eps_tol) {
-                    if n.dot(&tangent) < _eps_tol {
+                let supp1 = g1.local_support_point(n);
+                if let Some(tangent) = (supp1 - orig1).try_normalize() {
+                    if n.dot(tangent) < _eps_tol {
                         break;
                     }
 
-                    n = Unit::new_unchecked(Vector::new(-tangent.y, tangent.x));
+                    n = Vector::new(-tangent.y, tangent.x);
                 } else {
                     break;
                 }
@@ -390,24 +387,24 @@ impl EPA {
             // Second, ensure the direction lies on the second vertex's tangent cone.
             let orig2 = self.vertices[0].orig2;
             for _ in 0..MAX_ITERS {
-                let supp2 = g2.support_point(pos12, &-n);
-                if let Some(tangent) = Unit::try_new(supp2 - orig2, _eps_tol) {
-                    if (-n).dot(&tangent) < _eps_tol {
+                let supp2 = g2.support_point(pos12, -n);
+                if let Some(tangent) = (supp2 - orig2).try_normalize() {
+                    if (-n).dot(tangent) < _eps_tol {
                         break;
                     }
 
-                    n = Unit::new_unchecked(Vector::new(-tangent.y, tangent.x));
+                    n = Vector::new(-tangent.y, tangent.x);
                 } else {
                     break;
                 }
             }
 
-            return Some((Point::origin(), Point::origin(), n));
+            return Some((Vector::ZERO, Vector::ZERO, n));
         } else if simplex.dimension() == 2 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
 
-            if dp1.perp(&dp2) < 0.0 {
+            if dp1.perp_dot(dp2) < 0.0 {
                 self.vertices.swap(1, 2)
             }
 
@@ -424,17 +421,17 @@ impl EPA {
             self.faces.push(face3);
 
             if proj_inside1 {
-                let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
+                let dist1 = self.faces[0].normal.dot(self.vertices[0].point);
                 self.heap.push(FaceId::new(0, -dist1)?);
             }
 
             if proj_inside2 {
-                let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
+                let dist2 = self.faces[1].normal.dot(self.vertices[1].point);
                 self.heap.push(FaceId::new(1, -dist2)?);
             }
 
             if proj_inside3 {
-                let dist3 = self.faces[2].normal.dot(&self.vertices[2].point.coords);
+                let dist3 = self.faces[2].normal.dot(self.vertices[2].point);
                 self.heap.push(FaceId::new(2, -dist3)?);
             }
 
@@ -451,19 +448,19 @@ impl EPA {
 
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
-                Point::origin(),
+                Vector::ZERO,
                 [1.0, 0.0],
                 pts1,
             ));
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
-                Point::origin(),
+                Vector::ZERO,
                 [1.0, 0.0],
                 pts2,
             ));
 
-            let dist1 = self.faces[0].normal.dot(&self.vertices[0].point.coords);
-            let dist2 = self.faces[1].normal.dot(&self.vertices[1].point.coords);
+            let dist1 = self.faces[0].normal.dot(self.vertices[0].point);
+            let dist2 = self.faces[1].normal.dot(self.vertices[1].point);
 
             self.heap.push(FaceId::new(0, dist1)?);
             self.heap.push(FaceId::new(1, dist2)?);
@@ -485,11 +482,11 @@ impl EPA {
                 continue;
             }
 
-            let cso_point = CSOPoint::from_shapes(pos12, g1, g2, &face.normal);
+            let cso_point = CsoPoint::from_shapes(pos12, g1, g2, face.normal);
             let support_point_id = self.vertices.len();
             self.vertices.push(cso_point);
 
-            let candidate_max_dist = cso_point.point.coords.dot(&face.normal);
+            let candidate_max_dist = cso_point.point.dot(face.normal);
 
             if candidate_max_dist < max_dist {
                 best_face_id = face_id;
@@ -520,7 +517,7 @@ impl EPA {
 
             for f in new_faces.iter() {
                 if f.1 {
-                    let dist = f.0.normal.dot(&f.0.proj.coords);
+                    let dist = f.0.normal.dot(f.0.proj);
                     if dist < curr_dist {
                         // TODO: if we reach this point, there were issues due to
                         // numerical errors.
@@ -550,11 +547,11 @@ impl EPA {
     }
 }
 
-fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Real; 2])> {
-    let ab = *b - *a;
-    let ap = -a.coords;
-    let ab_ap = ab.dot(&ap);
-    let sqnab = ab.norm_squared();
+fn project_origin(a: Vector, b: Vector) -> Option<(Vector, [Real; 2])> {
+    let ab = b - a;
+    let ap = -a;
+    let ab_ap = ab.dot(ap);
+    let sqnab = ab.length_squared();
 
     if sqnab == 0.0 {
         return None;
@@ -571,7 +568,7 @@ fn project_origin(a: &Point<Real>, b: &Point<Real>) -> Option<(Point<Real>, [Rea
         // Voronoï region of the segment interior.
         position_on_segment = ab_ap / sqnab;
 
-        let res = *a + ab * position_on_segment;
+        let res = a + ab * position_on_segment;
 
         Some((res, [1.0 - position_on_segment, position_on_segment]))
     }

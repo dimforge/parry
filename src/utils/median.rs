@@ -1,5 +1,4 @@
 use crate::math::Real;
-use na;
 
 /// Computes the median of a set of values.
 ///
@@ -93,7 +92,7 @@ pub fn median(vals: &mut [Real]) -> Real {
     let n = vals.len();
 
     if n.is_multiple_of(2) {
-        (vals[n / 2 - 1] + vals[n / 2]) / na::convert::<f64, Real>(2.0)
+        (vals[n / 2 - 1] + vals[n / 2]) / 2.0
     } else {
         vals[n / 2]
     }

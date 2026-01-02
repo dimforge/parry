@@ -1,9 +1,9 @@
 use na::{
-    self, Isometry2, Isometry3, Matrix2, Matrix3, Matrix4, Point2, Point3, Point4, Vector2,
-    Vector3, Vector4,
+    self, Matrix2, Matrix3, Matrix4, Pose2, Pose3, Vector2, Vector2, Vector3, Vector3, Vector4,
+    Vector4,
 };
 use parry3d::bounding_volume::{Aabb, BoundingSphere};
-use parry3d::math::{Point, Real, Vector};
+use parry3d::math::{Real, Vector, Vector};
 use parry3d::query::Ray;
 use parry3d::shape::ConvexPolyhedron;
 use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
@@ -31,25 +31,25 @@ macro_rules! impl_rand_default_gen (
 impl_rand_default_gen!(Vector2<f32>);
 impl_rand_default_gen!(Vector3<f32>);
 impl_rand_default_gen!(Vector4<f32>);
-impl_rand_default_gen!(Point2<f32>);
-impl_rand_default_gen!(Point3<f32>);
-impl_rand_default_gen!(Point4<f32>);
+impl_rand_default_gen!(Vector2<f32>);
+impl_rand_default_gen!(Vector3<f32>);
+impl_rand_default_gen!(Vector4<f32>);
 impl_rand_default_gen!(Matrix2<f32>);
 impl_rand_default_gen!(Matrix3<f32>);
 impl_rand_default_gen!(Matrix4<f32>);
-impl_rand_default_gen!(Isometry2<f32>);
-impl_rand_default_gen!(Isometry3<f32>);
+impl_rand_default_gen!(Pose2<f32>);
+impl_rand_default_gen!(Pose3<f32>);
 impl_rand_default_gen!(Vector2<f64>);
 impl_rand_default_gen!(Vector3<f64>);
 impl_rand_default_gen!(Vector4<f64>);
-impl_rand_default_gen!(Point2<f64>);
-impl_rand_default_gen!(Point3<f64>);
-impl_rand_default_gen!(Point4<f64>);
+impl_rand_default_gen!(Vector2<f64>);
+impl_rand_default_gen!(Vector3<f64>);
+impl_rand_default_gen!(Vector4<f64>);
 impl_rand_default_gen!(Matrix2<f64>);
 impl_rand_default_gen!(Matrix3<f64>);
 impl_rand_default_gen!(Matrix4<f64>);
-impl_rand_default_gen!(Isometry2<f64>);
-impl_rand_default_gen!(Isometry3<f64>);
+impl_rand_default_gen!(Pose2<f64>);
+impl_rand_default_gen!(Pose3<f64>);
 impl_rand_default_gen!(f32);
 impl_rand_default_gen!(f64);
 impl_rand_default_gen!(bool);
@@ -78,8 +78,8 @@ where
 {
     fn generate<R: Rng>(rng: &mut R) -> Capsule {
         Capsule::new(
-            rng.random::<Point<Real>>(),
-            rng.random::<Point<Real>>(),
+            rng.random::<Vector<Real>>(),
+            rng.random::<Vector<Real>>(),
             rng.random::<Real>().abs(),
         )
     }
@@ -105,7 +105,7 @@ where
 
 impl DefaultGen for Segment
 where
-    StandardUniform: Distribution<Point<Real>>,
+    StandardUniform: Distribution<Vector<Real>>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Segment {
         Segment::new(rng.random(), rng.random())
@@ -114,7 +114,7 @@ where
 
 impl DefaultGen for Triangle
 where
-    StandardUniform: Distribution<Point<Real>>,
+    StandardUniform: Distribution<Vector<Real>>,
 {
     fn generate<R: Rng>(rng: &mut R) -> Triangle {
         Triangle::new(rng.random(), rng.random(), rng.random())
@@ -140,7 +140,7 @@ where
     fn generate<R: Rng>(rng: &mut R) -> Ray {
         // The generate ray will always point to the origin.
         let shift = rng.random::<Vector<Real>>() * na::convert::<_, Real>(10.0f64);
-        Ray::new(Point::origin() + shift, -shift)
+        Ray::new(Vector::ZERO + shift, -shift)
     }
 }
 
@@ -151,10 +151,7 @@ where
     fn generate<R: Rng>(rng: &mut R) -> Aabb {
         // an Aabb centered at the origin.
         let half_extents = rng.random::<Vector<Real>>().abs();
-        Aabb::new(
-            Point::origin() + (-half_extents),
-            Point::origin() + half_extents,
-        )
+        Aabb::new(Vector::ZERO + (-half_extents), Vector::ZERO + half_extents)
     }
 }
 
@@ -164,6 +161,6 @@ where
 {
     fn generate<R: Rng>(rng: &mut R) -> BoundingSphere {
         // a bounding sphere centered at the origin.
-        BoundingSphere::new(Point::origin(), rng.random::<Real>().abs())
+        BoundingSphere::new(Vector::ZERO, rng.random::<Real>().abs())
     }
 }

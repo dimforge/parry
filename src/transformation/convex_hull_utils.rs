@@ -1,8 +1,5 @@
-use crate::math::Real;
-use crate::num::Bounded;
-use na;
 #[cfg(feature = "dim3")]
-use {crate::bounding_volume, crate::math::Point};
+use crate::math::{Real, Vector};
 
 /// Returns the index of the support point of a list of points.
 ///
@@ -21,39 +18,36 @@ use {crate::bounding_volume, crate::math::Point};
 /// # Example
 ///
 /// ```ignore
-/// # // This is a pub(crate) function. Can’t really run it.
+/// # // This is a pub(crate) function. Can't really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::support_point_id;
-/// use parry3d::na::{Point3, Vector3};
+/// use parry3d::na::{Vector3, Vector3};
 ///
 /// let points = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0),
-///     Point3::new(0.0, 0.0, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// ];
 ///
 /// // Find point furthest in the positive X direction
-/// let dir = Vector3::new(1.0, 0.0, 0.0);
+/// let dir = Vector::new(1.0, 0.0, 0.0);
 /// let support_id = support_point_id(&dir, &points);
-/// assert_eq!(support_id, Some(1)); // Point at (1, 0, 0)
+/// assert_eq!(support_id, Some(1)); // Vector at (1, 0, 0)
 ///
 /// // Find point furthest in the positive Y direction
-/// let dir = Vector3::new(0.0, 1.0, 0.0);
+/// let dir = Vector::new(0.0, 1.0, 0.0);
 /// let support_id = support_point_id(&dir, &points);
-/// assert_eq!(support_id, Some(2)); // Point at (0, 1, 0)
+/// assert_eq!(support_id, Some(2)); // Vector at (0, 1, 0)
 /// # }
 /// ```
-pub fn support_point_id<const D: usize>(
-    direction: &na::SVector<Real, D>,
-    points: &[na::Point<Real, D>],
-) -> Option<usize> {
+#[cfg(feature = "dim3")]
+pub fn support_point_id(direction: Vector, points: &[Vector]) -> Option<usize> {
     let mut argmax = None;
-    let _max: Real = Bounded::max_value();
-    let mut max = -_max;
+    let mut max = -Real::MAX;
 
     for (id, pt) in points.iter().enumerate() {
-        let dot = direction.dot(&pt.coords);
+        let dot = direction.dot(*pt);
 
         if dot > max {
             argmax = Some(id);
@@ -82,32 +76,29 @@ pub fn support_point_id<const D: usize>(
 /// # Example
 ///
 /// ```ignore
-/// # // This is a pub(crate) function. Can’t really run it.
+/// # // This is a pub(crate) function. Can't really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::indexed_support_point_id;
-/// use parry3d::na::{Point3, Vector3};
+/// use parry3d::na::{Vector3, Vector3};
 ///
 /// let points = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(2.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(2.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
 /// ];
 ///
 /// // Only consider points at indices 0, 1, and 3 (skip index 2)
 /// let subset = vec![0, 1, 3];
-/// let dir = Vector3::new(1.0, 0.0, 0.0);
+/// let dir = Vector::new(1.0, 0.0, 0.0);
 ///
 /// let support_id = indexed_support_point_id(&dir, &points, subset.into_iter());
 /// // Returns 1 (not 2, since we skipped that index)
 /// assert_eq!(support_id, Some(1));
 /// # }
 /// ```
-pub fn indexed_support_point_id<I, const D: usize>(
-    direction: &na::SVector<Real, D>,
-    points: &[na::Point<Real, D>],
-    idx: I,
-) -> Option<usize>
+#[cfg(feature = "dim3")]
+pub fn indexed_support_point_id<I>(direction: Vector, points: &[Vector], idx: I) -> Option<usize>
 where
     I: Iterator<Item = usize>,
 {
@@ -115,7 +106,7 @@ where
     let mut max = -Real::MAX;
 
     for i in idx.into_iter() {
-        let dot = direction.dot(&points[i].coords);
+        let dot = direction.dot(points[i]);
 
         if dot > max {
             argmax = Some(i);
@@ -148,18 +139,18 @@ where
 /// # // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::indexed_support_point_nth;
-/// use parry3d::na::{Point3, Vector3};
+/// use parry3d::na::{Vector3, Vector3};
 ///
 /// let points = vec![
-///     Point3::origin(),  // index 0
-///     Point3::new(1.0, 0.0, 0.0),  // index 1
-///     Point3::new(5.0, 0.0, 0.0),  // index 2
-///     Point3::new(0.0, 1.0, 0.0),  // index 3
+///     Vector::ZERO,  // index 0
+///     Vector::new(1.0, 0.0, 0.0),  // index 1
+///     Vector::new(5.0, 0.0, 0.0),  // index 2
+///     Vector::new(0.0, 1.0, 0.0),  // index 3
 /// ];
 ///
 /// // Consider points at indices [3, 0, 2, 1]
 /// let indices = vec![3, 0, 2, 1];
-/// let dir = Vector3::new(1.0, 0.0, 0.0);
+/// let dir = Vector::new(1.0, 0.0, 0.0);
 ///
 /// let nth = indexed_support_point_nth(&dir, &points, indices.into_iter());
 /// // The support point is at original index 2, which is position 2 in our iterator
@@ -167,11 +158,7 @@ where
 /// # }
 /// ```
 #[cfg(feature = "dim3")] // We only use this in 3D right now.
-pub fn indexed_support_point_nth<I, const D: usize>(
-    direction: &na::SVector<Real, D>,
-    points: &[na::Point<Real, D>],
-    idx: I,
-) -> Option<usize>
+pub fn indexed_support_point_nth<I>(direction: Vector, points: &[Vector], idx: I) -> Option<usize>
 where
     I: Iterator<Item = usize>,
 {
@@ -179,7 +166,7 @@ where
     let mut max = -Real::MAX;
 
     for (k, i) in idx.into_iter().enumerate() {
-        let dot = direction.dot(&points[i].coords);
+        let dot = direction.dot(points[i]);
 
         if dot > max {
             argmax = Some(k);
@@ -215,35 +202,35 @@ where
 /// # // This is a pub(crate) function. Can’t really run it.
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull_utils::normalize;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// let mut points = vec![
-///     Point::new(10.0, 10.0, 10.0),
-///     Point::new(20.0, 20.0, 20.0),
-///     Point::new(15.0, 15.0, 15.0),
+///     Vector::new(10.0, 10.0, 10.0),
+///     Vector::new(20.0, 20.0, 20.0),
+///     Vector::new(15.0, 15.0, 15.0),
 /// ];
 ///
 /// let (center, scale) = normalize(&mut points);
 ///
-/// // Points are now centered around origin and scaled
+/// // Vectors are now centered around origin and scaled
 /// // The AABB diagonal is now approximately 1.0
 /// println!("Original center: {:?}", center);
 /// println!("Original scale: {}", scale);
 ///
 /// // To recover original points:
 /// for p in &mut points {
-///     *p = *p * scale + center.coords;
+///     *p = *p * scale + center;
 /// }
 /// # }
 /// ```
 #[cfg(feature = "dim3")]
-pub fn normalize(coords: &mut [Point<Real>]) -> (Point<Real>, Real) {
-    let aabb = bounding_volume::details::local_point_cloud_aabb_ref(&*coords);
-    let diag = na::distance(&aabb.mins, &aabb.maxs);
+pub fn normalize(coords: &mut [Vector]) -> (Vector, Real) {
+    let aabb = crate::bounding_volume::details::local_point_cloud_aabb_ref(&*coords);
+    let diag = aabb.mins.distance(aabb.maxs);
     let center = aabb.center();
 
     for c in coords.iter_mut() {
-        *c = (*c + (-center.coords)) / diag;
+        *c = (*c - center) / diag;
     }
 
     (center, diag)

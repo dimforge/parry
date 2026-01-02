@@ -1,10 +1,10 @@
-use core::ops::Range;
 #[cfg(not(feature = "std"))]
-use na::ComplexField;
+use crate::math::ComplexField;
 #[cfg(feature = "alloc")]
-use na::DVector;
+use alloc::{vec, vec::Vec};
+use core::ops::Range;
 
-use na::Point2;
+use crate::math::Vector2;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
@@ -26,34 +26,34 @@ pub type HeightFieldCellStatus = bool;
 #[repr(C)]
 /// A 2D heightfield with a generic storage buffer for its heights.
 pub struct HeightField {
-    heights: DVector<Real>,
-    status: DVector<HeightFieldCellStatus>,
+    heights: Vec<Real>,
+    status: Vec<HeightFieldCellStatus>,
 
-    scale: Vector<Real>,
+    scale: Vector,
     aabb: Aabb,
 }
 
 #[cfg(feature = "alloc")]
 impl HeightField {
     /// Creates a new 2D heightfield with the given heights and scale factor.
-    pub fn new(heights: DVector<Real>, scale: Vector<Real>) -> Self {
+    pub fn new(heights: Vec<Real>, scale: Vector) -> Self {
         assert!(
             heights.len() > 1,
             "A heightfield heights must have at least 2 elements."
         );
 
-        let max = heights.max();
-        let min = heights.min();
+        let max = heights.iter().fold(Real::MIN, |a, b| a.max(*b));
+        let min = heights.iter().fold(Real::MAX, |a, b| a.min(*b));
         let hscale = scale * 0.5;
         let aabb = Aabb::new(
-            Point2::new(-hscale.x, min * scale.y),
-            Point2::new(hscale.x, max * scale.y),
+            Vector2::new(-hscale.x, min * scale.y),
+            Vector2::new(hscale.x, max * scale.y),
         );
         let num_segments = heights.len() - 1;
 
         HeightField {
             heights,
-            status: DVector::repeat(num_segments, true),
+            status: vec![true; num_segments],
             scale,
             aabb,
         }
@@ -67,26 +67,26 @@ impl HeightField {
     }
 
     /// The height at each cell endpoint.
-    pub fn heights(&self) -> &DVector<Real> {
+    pub fn heights(&self) -> &Vec<Real> {
         &self.heights
     }
 
     /// The scale factor applied to this heightfield.
-    pub fn scale(&self) -> &Vector<Real> {
-        &self.scale
+    pub fn scale(&self) -> Vector {
+        self.scale
     }
 
     /// Sets the scale factor applied to this heightfield.
-    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
-        let ratio = new_scale.component_div(&self.scale);
-        self.aabb.mins.coords.component_mul_assign(&ratio);
-        self.aabb.maxs.coords.component_mul_assign(&ratio);
+    pub fn set_scale(&mut self, new_scale: Vector) {
+        let ratio = new_scale / self.scale;
+        self.aabb.mins *= ratio;
+        self.aabb.maxs *= ratio;
         self.scale = new_scale;
     }
 
     /// Returns a scaled version of this heightfield.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.set_scale(self.scale.component_mul(scale));
+    pub fn scaled(mut self, scale: Vector) -> Self {
+        self.set_scale(self.scale * scale);
         self
     }
 
@@ -119,24 +119,20 @@ impl HeightField {
     }
 
     fn quantize_floor(&self, val: Real, seg_length: Real) -> usize {
-        na::clamp(
-            ((val + 0.5) / seg_length).floor(),
-            0.0,
-            (self.num_cells() - 1) as Real,
-        ) as usize
+        ((val + 0.5) / seg_length)
+            .floor()
+            .clamp(0.0, (self.num_cells() - 1) as Real) as usize
     }
 
     fn quantize_ceil(&self, val: Real, seg_length: Real) -> usize {
-        na::clamp(
-            ((val + 0.5) / seg_length).ceil(),
-            0.0,
-            self.num_cells() as Real,
-        ) as usize
+        ((val + 0.5) / seg_length)
+            .ceil()
+            .clamp(0.0, self.num_cells() as Real) as usize
     }
 
     /// Index of the cell a point is on after vertical projection.
-    pub fn cell_at_point(&self, pt: &Point2<Real>) -> Option<usize> {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn cell_at_point(&self, pt: Vector2) -> Option<usize> {
+        let scaled_pt = pt / self.scale;
         let seg_length = self.unit_cell_width();
 
         if scaled_pt.x < -0.5 || scaled_pt.x > 0.5 {
@@ -148,14 +144,14 @@ impl HeightField {
     }
 
     /// Height of the heightfield at the given point after vertical projection on the heightfield surface.
-    pub fn height_at_point(&self, pt: &Point2<Real>) -> Option<Real> {
+    pub fn height_at_point(&self, pt: Vector2) -> Option<Real> {
         let cell = self.cell_at_point(pt)?;
         let seg = self.segment_at(cell)?;
         let inter = crate::query::details::closest_points_line_line_parameters(
-            &seg.a,
-            &seg.scaled_direction(),
+            seg.a,
+            seg.scaled_direction(),
             pt,
-            &Vector::y(),
+            Vector::Y,
         );
         Some(seg.a.y + inter.1)
     }
@@ -181,12 +177,12 @@ impl HeightField {
         let y0 = self.heights[i];
         let y1 = self.heights[i + 1];
 
-        let mut p0 = Point2::new(x0, y0);
-        let mut p1 = Point2::new(x1, y1);
+        let mut p0 = Vector2::new(x0, y0);
+        let mut p1 = Vector2::new(x1, y1);
 
         // Apply scales:
-        p0.coords.component_mul_assign(&self.scale);
-        p1.coords.component_mul_assign(&self.scale);
+        p0 *= self.scale;
+        p1 *= self.scale;
 
         Some(Segment::new(p0, p1))
     }
@@ -203,8 +199,8 @@ impl HeightField {
 
     /// The range of segment ids that may intersect the given local Aabb.
     pub fn unclamped_elements_range_in_local_aabb(&self, aabb: &Aabb) -> Range<isize> {
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins / self.scale;
+        let ref_maxs = aabb.maxs / self.scale;
         let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
 
         let min_x = self.quantize_floor_unclamped(ref_mins.x, seg_length);
@@ -214,8 +210,8 @@ impl HeightField {
 
     /// Applies `f` to each segment of this heightfield that intersects the given `aabb`.
     pub fn map_elements_in_local_aabb(&self, aabb: &Aabb, f: &mut impl FnMut(u32, &Segment)) {
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins / self.scale;
+        let ref_maxs = aabb.maxs / self.scale;
         let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
 
         if ref_maxs.x < -0.5 || ref_mins.x > 0.5 {
@@ -243,12 +239,12 @@ impl HeightField {
                 continue;
             }
 
-            let mut p0 = Point2::new(x0, y0);
-            let mut p1 = Point2::new(x1, y1);
+            let mut p0 = Vector2::new(x0, y0);
+            let mut p1 = Vector2::new(x1, y1);
 
             // Apply scales:
-            p0.coords.component_mul_assign(&self.scale);
-            p1.coords.component_mul_assign(&self.scale);
+            p0 *= self.scale;
+            p1 *= self.scale;
 
             // Build the segment.
             let seg = Segment::new(p0, p1);

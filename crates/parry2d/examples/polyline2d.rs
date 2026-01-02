@@ -1,14 +1,12 @@
-extern crate nalgebra as na;
-
-use na::Point2;
+use parry2d::math::Vector;
 use parry2d::shape::Polyline;
 
 fn main() {
     let points = vec![
-        Point2::new(0.0, 1.0),
-        Point2::new(-1.0, -1.0),
-        Point2::new(0.0, -0.5),
-        Point2::new(1.0, -1.0),
+        Vector::new(0.0, 1.0),
+        Vector::new(-1.0, -1.0),
+        Vector::new(0.0, -0.5),
+        Vector::new(1.0, -1.0),
     ];
 
     let indices = vec![

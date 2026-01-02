@@ -23,7 +23,7 @@ workspace = true
 default = ["required-features", "std", "spade"]
 required-features = ["dim3", "f64"]
 std = [
-    "nalgebra/std",
+    "glamx/std",
     "slab",
     "simba/std",
     "arrayvec/std",
@@ -36,24 +36,23 @@ f64 = []
 serde-serialize = [
     "serde",
     "serde_arrays",
-    "nalgebra/serde-serialize",
+    "glamx/serde",
     "bitflags/serde",
     "hashbrown?/serde",
     "spade?/serde",
 ]
 rkyv-serialize = [
     "rkyv/validation",
-    "nalgebra/rkyv-serialize",
     "simba/rkyv-serialize",
 ]
-bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
+bytemuck-serialize = ["bytemuck", "glamx/bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
-enhanced-determinism = ["simba/libm_force", "indexmap"]
+enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm"]
 parallel = ["rayon"]
 # Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
-alloc = ["nalgebra/alloc", "hashbrown"]
+alloc = ["hashbrown"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
 
@@ -74,7 +73,7 @@ num-traits = { version = "0.2", default-features = false }
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
-nalgebra = { version = "0.34", default-features = false, features = ["libm", "macros"] }
+glamx = { version = "0.1", default-features = false, features = ["approx"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 serde_arrays = { version = "0.2", optional = true }

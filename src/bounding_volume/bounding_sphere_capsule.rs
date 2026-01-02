@@ -1,11 +1,11 @@
 use crate::bounding_volume::BoundingSphere;
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::shape::Capsule;
 
 impl Capsule {
     /// Computes the world-space bounding sphere of this capsule, transformed by `pos`.
     #[inline]
-    pub fn bounding_sphere(&self, pos: &Isometry<Real>) -> BoundingSphere {
+    pub fn bounding_sphere(&self, pos: &Pose) -> BoundingSphere {
         self.local_bounding_sphere().transform_by(pos)
     }
 

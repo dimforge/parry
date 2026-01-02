@@ -1,13 +1,11 @@
 mod common_macroquad3d;
 
-extern crate nalgebra as na;
-
 use core::ops::Rem;
 
 use common_macroquad3d::{lissajous_3d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use na::{Isometry3, Vector3};
 use parry3d::bounding_volume::BoundingVolume;
+use parry3d::math::{Pose, Vector};
 use parry3d::shape::Cuboid;
 
 #[macroquad::main("bounding_sphere3d")]
@@ -28,12 +26,12 @@ async fn main() {
         /*
          * Initialize the shapes.
          */
-        let cube1 = Cuboid::new(Vector3::repeat(0.5));
-        let cube2 = Cuboid::new(Vector3::new(0.5, 1.0, 0.5));
+        let cube1 = Cuboid::new(Vector::splat(0.5));
+        let cube2 = Cuboid::new(Vector::new(0.5, 1.0, 0.5));
 
-        let cube1_pos = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
-        let cube1_pos = Isometry3::from(cube1_pos);
-        let cube2_pos = Isometry3::identity(); // Identity matrix.
+        let cube1_translation = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
+        let cube1_pos = Pose::from_translation(cube1_translation.into());
+        let cube2_pos = Pose::identity(); // Identity matrix.
 
         /*
          * Compute their bounding spheres.
@@ -64,13 +62,13 @@ async fn main() {
         //assert!(bounding_bounding_sphere.contains(&bounding_sphere_cube2));
         assert!(loose_bounding_sphere_cube2.contains(&bounding_sphere_cube2));
 
-        let cube1_translation = mquad_from_na(cube1_pos.translation.vector.into());
+        let cube1_translation = mquad_from_na(cube1_pos.translation.into());
         draw_cube_wires(
             cube1_translation,
             mquad_from_na(cube1.half_extents.into()) * 2f32,
             WHITE,
         );
-        let cube2_translation = mquad_from_na(cube2_pos.translation.vector.into());
+        let cube2_translation = mquad_from_na(cube2_pos.translation.into());
         draw_cube_wires(
             cube2_translation,
             mquad_from_na(cube2.half_extents.into()) * 2f32,

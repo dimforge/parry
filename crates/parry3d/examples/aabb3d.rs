@@ -1,11 +1,9 @@
 mod common_macroquad3d;
 
-extern crate nalgebra as na;
-
 use common_macroquad3d::{lissajous_3d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use na::Isometry3;
 use parry3d::bounding_volume::{Aabb, BoundingVolume};
+use parry3d::math::Pose;
 use parry3d::shape::Ball;
 
 #[macroquad::main("aabb3d")]
@@ -29,13 +27,14 @@ async fn main() {
         let ball1 = Ball::new(0.5);
         let ball2 = Ball::new(1.0);
 
-        let ball1_pos = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
-        let ball2_pos = Isometry3::identity();
+        let ball1_translation = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
+        let ball1_pos = Pose::from_translation(ball1_translation.into());
+        let ball2_pos = Pose::identity();
 
         /*
          * Compute their axis-aligned bounding boxes.
          */
-        let aabb_ball1 = ball1.aabb(&ball1_pos.into());
+        let aabb_ball1 = ball1.aabb(&ball1_pos);
         let aabb_ball2 = ball2.aabb(&ball2_pos);
 
         // Merge the two boxes.
@@ -55,10 +54,18 @@ async fn main() {
         assert!(bounding_aabb.contains(&aabb_ball2));
         assert!(loose_aabb_ball2.contains(&aabb_ball2));
 
-        let ball1_translation = mquad_from_na(ball1_pos.coords.into());
-        draw_sphere(ball1_translation, ball1.radius, None, color);
-        let ball2_translation = mquad_from_na(ball2_pos.translation.vector.into());
-        draw_sphere(ball2_translation, ball2.radius, None, color);
+        draw_sphere(
+            mquad_from_na(ball1_pos.translation.into()),
+            ball1.radius,
+            None,
+            color,
+        );
+        draw_sphere(
+            mquad_from_na(ball2_pos.translation.into()),
+            ball2.radius,
+            None,
+            color,
+        );
 
         draw_aabb(aabb_ball1, color);
         draw_aabb(aabb_ball2, color);

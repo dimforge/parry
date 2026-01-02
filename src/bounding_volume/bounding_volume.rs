@@ -1,4 +1,4 @@
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 
 /// Trait of bounding volumes.
 ///
@@ -9,7 +9,7 @@ pub trait BoundingVolume {
     // TODO: keep that ? What about non-spacial bounding volumes (e.g. bounding cones, curvature
     // bounds, etc.) ?
     /// Returns a point inside of this bounding volume. This is ideally its center.
-    fn center(&self) -> Point<Real>;
+    fn center(&self) -> Vector;
 
     /// Checks if this bounding volume intersect with another one.
     fn intersects(&self, _: &Self) -> bool;

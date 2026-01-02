@@ -1,6 +1,6 @@
 #[cfg(feature = "dim2")]
 use crate::math::Vector;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::contact_manifolds::{NormalConstraints, NormalConstraintsPair};
 use crate::query::{sat, ContactManifold};
 use crate::shape::PolygonalFeature;
@@ -8,7 +8,7 @@ use crate::shape::{Cuboid, Shape, Triangle};
 
 /// Computes the contact manifold between a cuboid and a triangle represented as `Shape` trait-objects.
 pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     normal_constraints1: Option<&dyn NormalConstraints>,
@@ -47,8 +47,8 @@ pub fn contact_manifold_cuboid_triangle_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a cuboid and a triangle.
 pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
-    pos21: &Isometry<Real>,
+    pos12: &Pose,
+    pos21: &Pose,
     cuboid1: &'a Cuboid,
     triangle2: &'a Triangle,
     normal_constraints1: Option<&dyn NormalConstraints>,
@@ -67,7 +67,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
 
     /*
      *
-     * Point-Face cases.
+     * Vector-Face cases.
      *
      */
     let sep1 =
@@ -89,7 +89,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
      *
      */
     #[cfg(feature = "dim2")]
-    let sep3 = (-Real::MAX, Vector::x()); // This case does not exist in 2D.
+    let sep3 = (-Real::MAX, Vector::X); // This case does not exist in 2D.
     #[cfg(feature = "dim3")]
     let sep3 = sat::cuboid_triangle_find_local_separating_edge_twoway(cuboid1, triangle2, pos12);
     if sep3.0 > prediction {
@@ -107,7 +107,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     let mut dist = sep1.0;
 
     if sep2.0 > sep1.0 && sep2.0 > sep3.0 {
-        normal1 = pos12 * -sep2.1;
+        normal1 = pos12.rotation * -sep2.1;
         dist = sep2.0;
     } else if sep3.0 > sep1.0 {
         normal1 = sep3.1;
@@ -115,7 +115,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     }
 
     // Apply any normal constraint to the separating axis.
-    let mut normal2 = pos21 * -normal1;
+    let mut normal2 = pos21.rotation * -normal1;
 
     if !(normal_constraints1, normal_constraints2).project_local_normals(
         pos12,
@@ -146,7 +146,7 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
     manifold.clear();
 
     PolygonalFeature::contacts(
-        pos12, pos21, &normal1, &normal2, &feature1, &feature2, manifold, flipped,
+        pos12, pos21, normal1, normal2, &feature1, &feature2, manifold, flipped,
     );
 
     if normal_constraints1.is_some() || normal_constraints2.is_some() {

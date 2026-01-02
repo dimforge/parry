@@ -52,11 +52,11 @@
 //! use parry3d::query::epa::EPA;
 //! use parry3d::query::gjk::VoronoiSimplex;
 //! use parry3d::shape::Ball;
-//! use parry3d::na::Isometry3;
+//! use parry3d::math::Pose;
 //!
 //! let ball1 = Ball::new(1.0);
 //! let ball2 = Ball::new(1.0);
-//! let pos12 = Isometry3::translation(1.5, 0.0, 0.0); // Overlapping balls
+//! let pos12 = Pose::translation(1.5, 0.0, 0.0); // Overlapping balls
 //!
 //! // GJK detects penetration, EPA computes contact details
 //! let simplex = VoronoiSimplex::new(); // Would be filled by GJK

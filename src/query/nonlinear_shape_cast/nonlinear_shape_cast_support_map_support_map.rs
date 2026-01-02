@@ -1,6 +1,4 @@
-use na::{RealField, Unit};
-
-use crate::math::{Point, Real, Vector};
+use crate::math::{Real, RealField, Vector};
 use crate::query::{
     self, ClosestPoints, NonlinearRigidMotion, QueryDispatcher, ShapeCastHit, ShapeCastStatus,
 };
@@ -112,10 +110,10 @@ where
 
     let mut result = ShapeCastHit {
         time_of_impact: start_time,
-        normal1: Vector::<Real>::x_axis(),
-        normal2: Vector::<Real>::x_axis(),
-        witness1: Point::<Real>::origin(),
-        witness2: Point::<Real>::origin(),
+        normal1: Vector::X,
+        normal2: Vector::X,
+        witness1: Vector::ZERO,
+        witness2: Vector::ZERO,
         status: ShapeCastStatus::PenetratingOrWithinTargetDist,
     };
 
@@ -143,12 +141,11 @@ where
                 result.witness1 = p1;
                 result.witness2 = p2;
 
-                if let Some((normal1, dist)) =
-                    Unit::try_new_and_get(pos12 * p2 - p1, crate::math::DEFAULT_EPSILON)
-                {
+                let (normal1, dist) = (pos12 * p2 - p1).normalize_and_length();
+                if dist >= crate::math::DEFAULT_EPSILON {
                     // TODO: do the "inverse transform unit vector" only when we are about to return.
                     result.normal1 = normal1;
-                    result.normal2 = pos12.inverse_transform_unit_vector(&-normal1);
+                    result.normal2 = pos12.rotation.inverse() * -normal1;
 
                     let curr_range = BisectionRange {
                         min_t: result.time_of_impact,
@@ -157,7 +154,7 @@ where
                     };
 
                     let (new_range, niter) =
-                        bisect(dist, motion1, sm1, motion2, sm2, &normal1, curr_range);
+                        bisect(dist, motion1, sm1, motion2, sm2, normal1, curr_range);
                     // println!(
                     //     "Bisection result: {:?}, normal1: {:?}, normal2: {:?}",
                     //     new_range, result.normal1, result.normal2
@@ -174,10 +171,10 @@ where
                             let pos2 = motion2.position_at_time(new_range.max_t);
                             let pos12 = pos1.inv_mul(&pos2);
 
-                            let pt1 = sm1.local_support_point_toward(&normal1);
-                            let pt2 = sm2.support_point_toward(&pos12, &-normal1);
+                            let pt1 = sm1.local_support_point_toward(normal1);
+                            let pt2 = sm2.support_point_toward(&pos12, -normal1);
 
-                            if (pt2 - pt1).dot(&normal1) > 0.0 {
+                            if (pt2 - pt1).dot(normal1) > 0.0 {
                                 // We found an axis that separate both objects at the end configuration.
                                 return None;
                             }
@@ -284,13 +281,13 @@ where
     #[cfg(feature = "dim2")]
     let dangvel = (motion2.angvel - motion1.angvel).abs();
     #[cfg(feature = "dim3")]
-    let dangvel = (motion2.angvel - motion1.angvel).norm();
+    let dangvel = (motion2.angvel - motion1.angvel).length();
     let inv_dangvel = crate::utils::inv(dangvel);
     let linear_increment = sum_linear_thickness;
     let angular_increment = Real::pi() - max_angular_thickness;
 
     let linear_time_increment =
-        linear_increment * crate::utils::inv((motion2.linvel - motion1.linvel).norm());
+        linear_increment * crate::utils::inv((motion2.linvel - motion1.linvel).length());
     let angular_time_increment = angular_increment * inv_dangvel;
     let mut time_increment = angular_time_increment
         .min(linear_time_increment)
@@ -328,10 +325,10 @@ where
             //    of contact points potentially causing tunneling hit for the first time.
             let r1 = contact.point1 - motion1.local_center;
             let r2 = contact.point2 - motion2.local_center;
-            let vel1 = motion1.linvel + motion1.angvel.gcross(pos1_at_next_time * r1);
-            let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time * r2);
+            let vel1 = motion1.linvel + motion1.angvel.gcross(pos1_at_next_time.rotation * r1);
+            let vel2 = motion2.linvel + motion2.angvel.gcross(pos2_at_next_time.rotation * r2);
             let vel12 = vel2 - vel1;
-            let normal_vel = -vel12.dot(&(pos1_at_next_time * contact.normal1));
+            let normal_vel = -vel12.dot(pos1_at_next_time.rotation * contact.normal1);
             let ccd_threshold = if contact.dist <= 0.0 {
                 sum_linear_thickness
             } else {
@@ -382,7 +379,7 @@ where
                         sm1,
                         motion2,
                         sm2,
-                        &contact.normal1,
+                        contact.normal1,
                         curr_range,
                     );
 
@@ -406,7 +403,7 @@ where
                         &ConstantPoint(contact.point1),
                         motion2,
                         &ConstantPoint(contact.point2),
-                        &contact.normal1,
+                        contact.normal1,
                         curr_range,
                     );
 
@@ -450,7 +447,7 @@ fn bisect<SM1, SM2>(
     sm1: &SM1,
     motion2: &NonlinearRigidMotion,
     sm2: &SM2,
-    normal1: &Unit<Vector<Real>>,
+    normal1: Vector,
     mut range: BisectionRange,
 ) -> (BisectionRange, usize)
 where
@@ -465,7 +462,7 @@ where
     // This is necessary to reduce the risk of extracting a root that
     // is not the root happening at the smallest time.
     let pos1 = motion1.position_at_time(range.curr_t);
-    let world_normal1 = pos1 * normal1;
+    let world_normal1 = pos1.rotation * normal1;
 
     loop {
         // println!("Bisection dist: {}, range: {:?}", dist, range);
@@ -494,10 +491,10 @@ where
         let pos2 = motion2.position_at_time(range.curr_t);
         let pos12 = pos1.inv_mul(&pos2);
 
-        let normal1 = pos1.inverse_transform_unit_vector(&world_normal1);
-        let pt1 = sm1.local_support_point_toward(&normal1);
-        let pt2 = sm2.support_point_toward(&pos12, &-normal1);
-        dist = pt2.coords.dot(&normal1) - pt1.coords.dot(&normal1);
+        let normal1 = pos1.rotation.inverse() * world_normal1;
+        let pt1 = sm1.local_support_point_toward(normal1);
+        let pt2 = sm2.support_point_toward(&pos12, -normal1);
+        dist = pt2.dot(normal1) - pt1.dot(normal1);
 
         niter += 1;
     }

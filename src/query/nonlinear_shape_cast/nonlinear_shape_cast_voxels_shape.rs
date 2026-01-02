@@ -1,5 +1,5 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Point, Real, Vector};
+use crate::math::{IVector, Real, Vector};
 use crate::query::{NonlinearRigidMotion, QueryDispatcher, ShapeCastHit};
 use crate::shape::{Cuboid, Shape, Voxels};
 
@@ -56,13 +56,13 @@ where
         .compute_aabb(&start_pos2_1)
         .merged(&g2.compute_aabb(&end_pos2_1));
 
-    let mut check_voxels_in_range = |search_domain: [Point<i32>; 2]| {
+    let mut check_voxels_in_range = |search_domain: [IVector; 2]| {
         for vox in g1.voxels_in_range(search_domain[0], search_domain[1]) {
             if !vox.state.is_empty() {
                 // PERF: could we check the canonical shape instead, and deduplicate accordingly?
                 let center = g1.voxel_center(vox.grid_coords);
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
-                let vox_motion1 = motion1.prepend_translation(center.coords);
+                let vox_motion1 = motion1.prepend_translation(center);
                 if let Some(new_hit) = dispatcher
                     .cast_shapes_nonlinear(
                         &vox_motion1,
@@ -130,7 +130,7 @@ where
             break;
         }
 
-        let imin = Vector::from(toi.map(|t| t.0)).imin();
+        let imin = Vector::from(toi.map(|t| t.0)).min_position();
 
         if toi[imin].1 {
             search_domain[0][imin] += 1;

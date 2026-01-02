@@ -1,11 +1,9 @@
 mod common_macroquad2d;
 
-extern crate nalgebra as na;
-
 use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use na::Isometry2;
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
+use parry2d::math::{Pose, Vector};
 use parry2d::shape::Ball;
 
 const RENDER_SCALE: f32 = 30.0;
@@ -25,12 +23,13 @@ async fn main() {
         let ball2 = Ball::new(1.0);
 
         let ball1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
-        let ball2_pos = Isometry2::identity();
+        let ball1_iso = Pose::from_translation(ball1_pos);
+        let ball2_pos = Pose::identity();
 
         /*
          * Compute their axis-aligned bounding boxes.
          */
-        let aabb_ball1 = ball1.aabb(&ball1_pos.into());
+        let aabb_ball1 = ball1.aabb(&ball1_iso);
         let aabb_ball2 = ball2.aabb(&ball2_pos);
 
         // Merge the two boxes.
@@ -50,15 +49,14 @@ async fn main() {
         assert!(bounding_aabb.contains(&aabb_ball2));
         assert!(loose_aabb_ball2.contains(&aabb_ball2));
 
-        let ball1_translation = mquad_from_na(ball1_pos.coords.into()) * RENDER_SCALE + render_pos;
+        let ball1_translation = mquad_from_na(ball1_pos) * RENDER_SCALE + render_pos;
         draw_circle(
             ball1_translation.x,
             ball1_translation.y,
             ball1.radius * RENDER_SCALE,
             color,
         );
-        let ball2_translation =
-            mquad_from_na(ball2_pos.translation.vector.into()) * RENDER_SCALE + render_pos;
+        let ball2_translation = mquad_from_na(ball2_pos.translation) * RENDER_SCALE + render_pos;
         draw_circle(
             ball2_translation.x,
             ball2_translation.y,

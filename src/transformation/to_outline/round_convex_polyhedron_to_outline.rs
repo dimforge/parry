@@ -1,12 +1,11 @@
-use crate::math::Real;
+use crate::math::Vector;
 use crate::shape::RoundConvexPolyhedron;
 use crate::transformation::utils;
 use alloc::{vec, vec::Vec};
-use na::Point3;
 
 impl RoundConvexPolyhedron {
     /// Outlines this round convex polyhedron’s shape using polylines.
-    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Point3<Real>>, Vec<[u32; 2]>) {
+    pub fn to_outline(&self, nsubdivs: u32) -> (Vec<Vector>, Vec<[u32; 2]>) {
         let mut out_vtx = vec![];
         let mut out_idx = vec![];
         let poly = &self.inner_shape;
@@ -20,7 +19,7 @@ impl RoundConvexPolyhedron {
 
             for fid in adj_faces {
                 let face = poly.faces()[*fid as usize];
-                out_vtx.push(ref_pt + *face.normal * self.border_radius);
+                out_vtx.push(ref_pt + face.normal * self.border_radius);
             }
         }
 
@@ -33,7 +32,7 @@ impl RoundConvexPolyhedron {
             let base = out_vtx.len() as u32;
 
             for idx in &poly.vertices_adj_to_face()[i1 as usize..i2 as usize] {
-                out_vtx.push(poly.points()[*idx as usize] + *face.normal * self.border_radius);
+                out_vtx.push(poly.points()[*idx as usize] + face.normal * self.border_radius);
             }
 
             for i in 0..face.num_vertices_or_edges - 1 {

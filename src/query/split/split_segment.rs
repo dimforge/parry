@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, UnitVector, Vector};
+use crate::math::{Real, Vector, VectorExt};
 use crate::query::SplitResult;
 use crate::shape::Segment;
 
@@ -15,17 +15,12 @@ impl Segment {
     /// positive half-space delimited by the splitting plane.
     pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
         // TODO: optimize this.
-        self.local_split(&Vector::ith_axis(axis), bias, epsilon)
+        self.local_split(Vector::ith(axis, 1.0), bias, epsilon)
     }
 
     /// Splits this segment by a plane identified by its normal `local_axis` and
     /// the `bias` (i.e. the plane passes through the point equal to `normal * bias`).
-    pub fn local_split(
-        &self,
-        local_axis: &UnitVector<Real>,
-        bias: Real,
-        epsilon: Real,
-    ) -> SplitResult<Self> {
+    pub fn local_split(&self, local_axis: Vector, bias: Real, epsilon: Real) -> SplitResult<Self> {
         self.local_split_and_get_intersection(local_axis, bias, epsilon)
             .0
     }
@@ -38,15 +33,15 @@ impl Segment {
     /// parallel or near-parallel to the segment.
     pub fn local_split_and_get_intersection(
         &self,
-        local_axis: &UnitVector<Real>,
+        local_axis: Vector,
         bias: Real,
         epsilon: Real,
-    ) -> (SplitResult<Self>, Option<(Point<Real>, Real)>) {
+    ) -> (SplitResult<Self>, Option<(Vector, Real)>) {
         let dir = self.b - self.a;
-        let a = bias - local_axis.dot(&self.a.coords);
-        let b = local_axis.dot(&dir);
+        let a = bias - local_axis.dot(self.a);
+        let b = local_axis.dot(dir);
         let bcoord = a / b;
-        let dir_norm = dir.norm();
+        let dir_norm = dir.length();
 
         if relative_eq!(b, 0.0)
             || bcoord * dir_norm <= epsilon

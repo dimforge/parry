@@ -6,13 +6,13 @@ use common_macroquad3d::{
     lissajous_3d_with_params, mquad_from_na, mquad_mesh_from_points, na_from_mquad,
 };
 use macroquad::prelude::*;
-use nalgebra::Point3;
+use parry3d::math::Vector;
 use parry3d::transformation;
 
 #[macroquad::main("convex_hull3d")]
 async fn main() {
     let count = 9;
-    let mut pts = vec![Point3::default(); count];
+    let mut pts = vec![Vector::ZERO; count];
 
     let camera_pos = Vec3::new(8.0, 8.0, 8.0);
     loop {

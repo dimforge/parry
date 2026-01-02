@@ -2,8 +2,9 @@
 // Ulrich W. Kulisch
 use alloc::{vec, vec::Vec};
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
-use na::{RealField, SimdPartialOrd};
 use num::{One, Zero};
+use num_traits::AsPrimitive;
+use simba::scalar::RealField;
 
 /// A derivable valued function which can be bounded on intervals.
 pub trait IntervalFunction<T> {
@@ -19,7 +20,7 @@ pub trait IntervalFunction<T> {
 ///
 /// The results are stored in `results`. The `candidate` buffer is just a workspace buffer used
 /// to avoid allocations.
-pub fn find_root_intervals_to<T: RealField + Copy>(
+pub fn find_root_intervals_to<T: Copy + PartialOrd + RealField>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
     min_interval_width: T,
@@ -27,7 +28,9 @@ pub fn find_root_intervals_to<T: RealField + Copy>(
     max_recursions: usize,
     results: &mut Vec<Interval<T>>,
     candidates: &mut Vec<(Interval<T>, usize)>,
-) {
+) where
+    f64: AsPrimitive<T>,
+{
     candidates.clear();
 
     let push_candidate = |candidate,
@@ -79,7 +82,7 @@ pub fn find_root_intervals_to<T: RealField + Copy>(
         let prev_width = candidate.width();
 
         for new_candidate in new_candidates.iter().flatten() {
-            if new_candidate.width() > prev_width * na::convert(0.75) {
+            if new_candidate.width() > prev_width * 0.75.as_() {
                 // If the new candidate range is still quite big compared to
                 // new candidate, split it to accelerate the search.
                 let [a, b] = new_candidate.split();
@@ -93,13 +96,16 @@ pub fn find_root_intervals_to<T: RealField + Copy>(
 }
 
 /// Execute the Interval Newton Method to isolate all the roots of the given nonlinear function.
-pub fn find_root_intervals<T: RealField + Copy>(
+pub fn find_root_intervals<T: Copy + PartialOrd + RealField>(
     function: &impl IntervalFunction<T>,
     init: Interval<T>,
     min_interval_width: T,
     min_image_width: T,
     max_recursions: usize,
-) -> Vec<Interval<T>> {
+) -> Vec<Interval<T>>
+where
+    f64: AsPrimitive<T>,
+{
     let mut results = vec![];
     let mut candidates = vec![];
     find_root_intervals_to(
@@ -163,9 +169,9 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn midpoint(self) -> T
     where
-        T: RealField + Copy,
+        T: Copy + Add<T, Output = T> + Div<T, Output = T> + One,
     {
-        let two: T = na::convert(2.0);
+        let two = T::one() + T::one();
         (self.0 + self.1) / two
     }
 
@@ -173,7 +179,7 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn split(self) -> [Self; 2]
     where
-        T: RealField + Copy,
+        T: Copy + Add<T, Output = T> + Div<T, Output = T> + One,
     {
         let mid = self.midpoint();
         [Interval(self.0, mid), Interval(mid, self.1)]
@@ -200,9 +206,9 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn intersect(self, rhs: Self) -> Option<Self>
     where
-        T: PartialOrd + SimdPartialOrd, // TODO: it is weird to have both.
+        T: PartialOrd + RealField,
     {
-        let result = Interval(self.0.simd_max(rhs.0), self.1.simd_min(rhs.1));
+        let result = Interval(self.0.max(rhs.0), self.1.min(rhs.1));
 
         if result.0 > result.1 {
             // The range is invalid if there is no intersection.
@@ -216,7 +222,8 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn sin_cos(self) -> (Self, Self)
     where
-        T: RealField + Copy,
+        T: Copy + RealField,
+        f64: AsPrimitive<T>,
     {
         (self.sin(), self.cos())
     }
@@ -225,21 +232,27 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn sin(self) -> Self
     where
-        T: RealField + Copy,
+        T: Copy + RealField,
+        f64: AsPrimitive<T>,
     {
-        if self.width() >= T::two_pi() {
-            Interval(-T::one(), T::one())
+        let two_pi = T::two_pi();
+        let one = T::one();
+        let pi = T::pi();
+        let frac_pi_2 = T::frac_pi_2();
+
+        if self.width() >= two_pi {
+            Interval(one * (-1.0).as_(), one)
         } else {
             let sin0 = self.0.sin();
             let sin1 = self.1.sin();
             let mut result = Interval::sort(sin0, sin1);
 
-            let orig = (self.0 / T::two_pi()).floor() * T::two_pi();
-            let crit = [orig + T::frac_pi_2(), orig + T::pi() + T::frac_pi_2()];
-            let crit_vals = [T::one(), -T::one()];
+            let orig = (self.0 / two_pi).floor() * two_pi;
+            let crit = [orig + frac_pi_2, orig + pi + frac_pi_2];
+            let crit_vals = [one, one * (-1.0).as_()];
 
             for i in 0..2 {
-                if self.contains(crit[i]) || self.contains(crit[i] + T::two_pi()) {
+                if self.contains(crit[i]) || self.contains(crit[i] + two_pi) {
                     result = result.enclose(crit_vals[i])
                 }
             }
@@ -252,21 +265,26 @@ impl<T> Interval<T> {
     #[must_use]
     pub fn cos(self) -> Self
     where
-        T: RealField + Copy,
+        T: Copy + RealField,
+        f64: AsPrimitive<T>,
     {
-        if self.width() >= T::two_pi() {
-            Interval(-T::one(), T::one())
+        let two_pi = T::two_pi();
+        let one = T::one();
+        let pi = T::pi();
+
+        if self.width() >= two_pi {
+            Interval(one * (-1.0).as_(), one)
         } else {
             let cos0 = self.0.cos();
             let cos1 = self.1.cos();
             let mut result = Interval::sort(cos0, cos1);
 
-            let orig = (self.0 / T::two_pi()).floor() * T::two_pi();
-            let crit = [orig, orig + T::pi()];
-            let crit_vals = [T::one(), -T::one()];
+            let orig = (self.0 / two_pi).floor() * two_pi;
+            let crit = [orig, orig + pi];
+            let crit_vals = [one, one * (-1.0).as_()];
 
             for i in 0..2 {
-                if self.contains(crit[i]) || self.contains(crit[i] + T::two_pi()) {
+                if self.contains(crit[i]) || self.contains(crit[i] + two_pi) {
                     result = result.enclose(crit_vals[i])
                 }
             }
@@ -333,8 +351,8 @@ where
 
 impl<T: Mul<T>> Mul<Interval<T>> for Interval<T>
 where
-    T: Copy + PartialOrd + Zero,
-    <T as Mul<T>>::Output: SimdPartialOrd,
+    T: Copy + PartialOrd + Zero + RealField,
+    <T as Mul<T>>::Output: PartialOrd + RealField,
 {
     type Output = Interval<<T as Mul<T>>::Output>;
 
@@ -354,7 +372,7 @@ where
             if b2 <= T::zero() {
                 Interval(a2 * b1, a1 * b1)
             } else if b1 < T::zero() {
-                Interval((a1 * b2).simd_min(b2 * b1), (a1 * b1).simd_max(a2 * b2))
+                Interval((a1 * b2).min(b2 * b1), (a1 * b1).max(a2 * b2))
             } else {
                 Interval(a1 * b2, a2 * b2)
             }
@@ -370,8 +388,9 @@ where
 
 impl<T: Div<T>> Div<Interval<T>> for Interval<T>
 where
-    T: RealField + Copy,
-    <T as Div<T>>::Output: SimdPartialOrd,
+    T: Copy + One + Zero + PartialOrd + 'static,
+    <T as Div<T>>::Output: PartialOrd + RealField,
+    f64: AsPrimitive<T>,
 {
     type Output = (
         Interval<<T as Div<T>>::Output>,
@@ -380,6 +399,8 @@ where
 
     fn div(self, rhs: Self) -> Self::Output {
         let infinity = T::one() / T::zero();
+        let neg_one: T = (-1.0).as_();
+        let neg_infinity = neg_one / T::zero();
 
         let Interval(a1, a2) = self;
         let Interval(b1, b2) = rhs;
@@ -392,19 +413,19 @@ where
                     (Interval(a2 / b1, infinity), None)
                 } else if b1 != T::zero() {
                     (
-                        Interval(-infinity, a2 / b2),
+                        Interval(neg_infinity, a2 / b2),
                         Some(Interval(a2 / b1, infinity)),
                     )
                 } else {
-                    (Interval(-infinity, a2 / b2), None)
+                    (Interval(neg_infinity, a2 / b2), None)
                 }
             } else if a1 <= T::zero() {
-                (Interval(-infinity, infinity), None)
+                (Interval(neg_infinity, infinity), None)
             } else if b2 == T::zero() {
-                (Interval(-infinity, a1 / b1), None)
+                (Interval(neg_infinity, a1 / b1), None)
             } else if b1 != T::zero() {
                 (
-                    Interval(-infinity, a1 / b1),
+                    Interval(neg_infinity, a1 / b1),
                     Some(Interval(a1 / b2, infinity)),
                 )
             } else {
@@ -444,8 +465,8 @@ impl<T: Copy + Sub<T, Output = T>> SubAssign<Interval<T>> for Interval<T> {
 
 impl<T: Mul<T, Output = T>> MulAssign<Interval<T>> for Interval<T>
 where
-    T: Copy + PartialOrd + Zero,
-    <T as Mul<T>>::Output: SimdPartialOrd,
+    T: Copy + PartialOrd + Zero + RealField,
+    <T as Mul<T>>::Output: PartialOrd + RealField,
 {
     fn mul_assign(&mut self, rhs: Interval<T>) {
         *self = *self * rhs;
@@ -474,7 +495,6 @@ where
 #[cfg(test)]
 mod test {
     use super::{Interval, IntervalFunction};
-    use na::RealField;
 
     #[test]
     fn roots_sin() {
@@ -495,23 +515,20 @@ mod test {
         }
 
         let function = Sin;
-        let roots = super::find_root_intervals(
-            &function,
-            Interval(0.0, f32::two_pi()),
-            1.0e-5,
-            1.0e-5,
-            100,
-        );
+        let two_pi = core::f32::consts::TAU;
+        let roots =
+            super::find_root_intervals(&function, Interval(0.0, two_pi), 1.0e-5, 1.0e-5, 100);
         assert_eq!(roots.len(), 3);
     }
 
     #[test]
     fn interval_sin_cos() {
-        let a = f32::pi() / 6.0;
-        let b = f32::pi() / 2.0 + f32::pi() / 6.0;
-        let c = f32::pi() + f32::pi() / 6.0;
-        let d = f32::pi() + f32::pi() / 2.0 + f32::pi() / 6.0;
-        let shifts = [0.0, f32::two_pi() * 100.0, -f32::two_pi() * 100.0];
+        let a = core::f32::consts::PI / 6.0;
+        let b = core::f32::consts::FRAC_PI_2 + core::f32::consts::PI / 6.0;
+        let c = core::f32::consts::PI + core::f32::consts::PI / 6.0;
+        let d = core::f32::consts::PI + core::f32::consts::FRAC_PI_2 + core::f32::consts::PI / 6.0;
+        let two_pi = core::f32::consts::TAU;
+        let shifts = [0.0, two_pi * 100.0, -two_pi * 100.0];
 
         for shift in shifts.iter() {
             // Test sinus.

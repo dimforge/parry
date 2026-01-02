@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use nalgebra::Vector3;
+use parry3d::math::Vector;
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
@@ -8,7 +8,7 @@ use common_macroquad3d::*;
 
 #[macroquad::main("project_point3d")]
 async fn main() {
-    let trimesh = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
+    let trimesh = Cuboid::new(Vector::new(0.2, 0.5, 1.0)).to_trimesh();
 
     let mesh = mquad_mesh_from_points(
         &trimesh,

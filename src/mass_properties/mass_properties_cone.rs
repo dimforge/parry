@@ -1,12 +1,11 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, PrincipalAngularInertia, Real, Rotation, Vector};
-use na::RealField;
+use crate::math::{PrincipalAngularInertia, Real, RealField, Rotation, Vector};
 
 impl MassProperties {
     pub(crate) fn cone_y_volume_unit_inertia(
         half_height: Real,
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         let volume = radius * radius * Real::pi() * half_height * 2.0 / 3.0;
         let sq_radius = radius * radius;
         let sq_height = half_height * half_height * 4.0;
@@ -51,7 +50,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Standard traffic cone: 70cm tall, 30cm base diameter
     /// // Made of flexible plastic, density ~950 kg/m³
@@ -173,10 +172,10 @@ impl MassProperties {
         let cyl_mass = cyl_vol * density;
 
         Self::with_principal_inertia_frame(
-            Point::new(0.0, -half_height / 2.0, 0.0),
+            Vector::new(0.0, -half_height / 2.0, 0.0),
             cyl_mass,
             cyl_unit_i * cyl_mass,
-            Rotation::identity(),
+            Rotation::IDENTITY,
         )
     }
 }

@@ -1,10 +1,10 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::{ContactManifold, TrackedContact};
 use crate::shape::{HalfSpace, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, Shape};
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -41,7 +41,7 @@ pub fn contact_manifold_halfspace_pfm_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a convex shape and a ball.
 pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     halfspace1: &'a HalfSpace,
     pfm2: &'a S2,
     border_radius2: Real,
@@ -52,9 +52,9 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
     S2: ?Sized + PolygonalFeatureMap,
     ContactData: Default + Copy,
 {
-    let normal1_2 = pos12.inverse_transform_unit_vector(&halfspace1.normal);
+    let normal1_2 = pos12.rotation.inverse() * halfspace1.normal;
     let mut feature2 = PolygonalFeature::default();
-    pfm2.local_support_feature(&-normal1_2, &mut feature2);
+    pfm2.local_support_feature(-normal1_2, &mut feature2);
 
     // We do this clone to perform contact tracking and transfer impulses.
     // TODO: find a more efficient way of doing this.
@@ -63,13 +63,13 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
     for i in 0..feature2.num_vertices {
         let vtx2 = feature2.vertices[i];
         let vtx2_1 = pos12 * vtx2;
-        let dist_to_plane = vtx2_1.coords.dot(&halfspace1.normal);
+        let dist_to_plane = vtx2_1.dot(halfspace1.normal);
 
         if dist_to_plane - border_radius2 <= prediction {
             // Keep this contact point.
             manifold.points.push(TrackedContact::flipped(
-                vtx2_1 - *halfspace1.normal * dist_to_plane,
-                vtx2 - *normal1_2 * border_radius2,
+                vtx2_1 - halfspace1.normal * dist_to_plane,
+                vtx2 - normal1_2 * border_radius2,
                 PackedFeatureId::face(0),
                 feature2.vids[i],
                 dist_to_plane - border_radius2,
@@ -79,11 +79,11 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
     }
 
     if flipped {
-        manifold.local_n1 = -*normal1_2;
-        manifold.local_n2 = *halfspace1.normal;
+        manifold.local_n1 = -normal1_2;
+        manifold.local_n2 = halfspace1.normal;
     } else {
-        manifold.local_n1 = *halfspace1.normal;
-        manifold.local_n2 = -*normal1_2;
+        manifold.local_n1 = halfspace1.normal;
+        manifold.local_n2 = -normal1_2;
     }
 
     // println!("Found contacts: {}", manifold.points.len());

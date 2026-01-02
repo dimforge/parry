@@ -1,11 +1,11 @@
-use crate::math::{Isometry, Real, Translation};
+use crate::math::Pose;
 use crate::query::PersistentQueryDispatcher;
 use crate::shape::{Cuboid, Shape, VoxelType, Voxels};
 
 /// Checks for any intersection between voxels and an arbitrary shape, both represented as a `Shape` trait-object.
 pub fn intersection_test_voxels_shape_shapes(
     dispatcher: &dyn PersistentQueryDispatcher,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
 ) -> bool {
@@ -21,7 +21,7 @@ pub fn intersection_test_voxels_shape_shapes(
 /// Checks for any intersection between voxels and an arbitrary shape.
 pub fn intersection_test_voxels_shape(
     dispatcher: &dyn PersistentQueryDispatcher,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     voxels1: &Voxels,
     shape2: &dyn Shape,
 ) -> bool {
@@ -39,7 +39,7 @@ pub fn intersection_test_voxels_shape(
 
             let center1 = vox1.center;
             let cuboid1 = Cuboid::new(radius1);
-            let cuboid_pose12 = Translation::from(-center1) * pos12;
+            let cuboid_pose12 = Pose::from_translation(-center1) * pos12;
 
             if dispatcher
                 .intersection_test(&cuboid_pose12, &cuboid1, shape2)
@@ -56,7 +56,7 @@ pub fn intersection_test_voxels_shape(
 /// Checks for any intersection between voxels and an arbitrary shape.
 pub fn intersection_test_shape_voxels(
     dispatcher: &dyn PersistentQueryDispatcher,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     voxels2: &Voxels,
 ) -> bool {

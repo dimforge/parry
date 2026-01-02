@@ -2,25 +2,14 @@ mod common_macroquad2d;
 
 use common_macroquad2d::{draw_line_2d, draw_trimesh2, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use nalgebra::{Point3, UnitComplex, Vector2};
-use parry2d::math::{Isometry, Translation};
+use parry2d::math::{Pose, Rotation, Vector, Vector};
 use parry2d::query::PointQuery;
 use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
 
 #[macroquad::main("project_point2d")]
 async fn main() {
-    //
-    // This is useful to test for https://github.com/dimforge/parry/pull/248
-    let _points = vec![
-        Point3::from([0.0, 0.0, 0.0]),
-        Point3::from([0.0, 0.0, 1.0]),
-        Point3::from([1.0, 0.0, 0.0]),
-        Point3::from([1.0, 0.0, 1.0]),
-    ];
-    let _indices: Vec<[u32; 3]> = vec![[0, 1, 2], [1, 3, 2]];
-
     let scale = 200f32;
-    let (points, indices) = Cuboid::new(Vector2::new(0.2 * scale, 0.5 * scale)).to_trimesh();
+    let (points, indices) = Cuboid::new(Vector::new(0.2 * scale, 0.5 * scale)).to_trimesh();
 
     let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
     for _i in 1.. {
@@ -32,10 +21,10 @@ async fn main() {
         let offset = Vec2::new(screen_width() / 2f32, screen_height() / 2f32);
 
         let point_to_project = lissajous_2d(slow_elapsed_time) * scale + offset;
-        let translation = Translation::new(offset.x, offset.y);
-        let rot = UnitComplex::identity();
+        let translation = Vector::new(offset.x, offset.y);
+        let rot = Rotation::identity();
         let projected_point = trimesh.project_point(
-            &Isometry::from_parts(translation, rot),
+            &Pose::from_parts(translation, rot),
             &na_from_mquad(point_to_project),
             true,
         );

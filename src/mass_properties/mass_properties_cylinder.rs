@@ -1,16 +1,13 @@
 use crate::mass_properties::MassProperties;
 use crate::math::{PrincipalAngularInertia, Real, Vector};
 #[cfg(feature = "dim3")]
-use {
-    crate::math::{Point, Rotation},
-    na::RealField,
-};
+use crate::math::{RealField, Rotation};
 
 impl MassProperties {
     pub(crate) fn cylinder_y_volume_unit_inertia(
         half_height: Real,
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         #[cfg(feature = "dim2")]
         {
             Self::cuboid_volume_unit_inertia(Vector::new(radius, half_height))
@@ -65,7 +62,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Standard soda can: 12.3cm tall, 6.6cm diameter
     /// // Aluminum density: ~2700 kg/m³
@@ -79,7 +76,7 @@ impl MassProperties {
     /// println!("Can mass: {:.2} kg", mass); // Approximately 0.15 kg (150 grams)
     ///
     /// // Center of mass at origin
-    /// assert_eq!(can_props.local_com, Point3::origin());
+    /// assert_eq!(can_props.local_com, Vector::ZERO);
     ///
     /// // Check inertia differences
     /// let inertia = can_props.principal_inertia();
@@ -117,7 +114,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let half_height = 1.0;
     /// let radius = 0.5;
@@ -127,8 +124,8 @@ impl MassProperties {
     /// let cylinder = MassProperties::from_cylinder(density, half_height, radius);
     ///
     /// // Capsule has rounded ends (smooth)
-    /// let a = Point3::new(0.0, -half_height, 0.0);
-    /// let b = Point3::new(0.0, half_height, 0.0);
+    /// let a = Vector::new(0.0, -half_height, 0.0);
+    /// let b = Vector::new(0.0, half_height, 0.0);
     /// let capsule = MassProperties::from_capsule(density, a, b, radius);
     ///
     /// // Capsule has more mass due to hemispherical caps
@@ -174,10 +171,10 @@ impl MassProperties {
         let cyl_mass = cyl_vol * density;
 
         Self::with_principal_inertia_frame(
-            Point::origin(),
+            Vector::ZERO,
             cyl_mass,
             cyl_unit_i * cyl_mass,
-            Rotation::identity(),
+            Rotation::IDENTITY,
         )
     }
 }

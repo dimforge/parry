@@ -1,6 +1,4 @@
-use na::Unit;
-
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::details;
 use crate::query::details::ShapeCastOptions;
 use crate::query::gjk::{self, VoronoiSimplex};
@@ -10,8 +8,8 @@ use num::Zero;
 
 /// Time of impacts between two support-mapped shapes under translational movement.
 pub fn cast_shapes_support_map_support_map<G1, G2>(
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Pose,
+    vel12: Vector,
     g1: &G1,
     g2: &G2,
     options: ShapeCastOptions,
@@ -54,10 +52,10 @@ where
         } else {
             Some(ShapeCastHit {
                 time_of_impact,
-                normal1: Unit::new_unchecked(normal1),
-                normal2: Unit::new_unchecked(pos12.inverse_transform_vector(&-normal1)),
+                normal1,
+                normal2: pos12.rotation.inverse() * -normal1,
                 witness1: witness1 - normal1 * options.target_distance,
-                witness2: pos12.inverse_transform_point(&witness2),
+                witness2: pos12.inverse_transform_point(witness2),
                 status: if time_of_impact.is_zero() {
                     ShapeCastStatus::PenetratingOrWithinTargetDist
                 } else {

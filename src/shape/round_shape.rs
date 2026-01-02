@@ -3,9 +3,8 @@
 //! This module provides the `RoundShape` wrapper that adds a border radius to any shape,
 //! effectively creating a "padded" or "rounded" version of the original shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Real, Vector};
 use crate::shape::SupportMap;
-use na::Unit;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -48,10 +47,10 @@ use na::Unit;
 /// use parry3d::shape::{RoundShape, Cuboid};
 /// # #[cfg(feature = "f64")]
 /// use parry3d_f64::shape::{RoundShape, Cuboid};
-/// use nalgebra::Vector3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a cuboid with half-extents of 1.0 in each direction
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 ///
 /// // Add a border radius of 0.2 to create a rounded cuboid
 /// let rounded_cuboid = RoundShape {
@@ -74,13 +73,13 @@ use na::Unit;
 /// use parry2d::shape::{RoundShape, Triangle};
 /// # #[cfg(feature = "f64")]
 /// use parry2d_f64::shape::{RoundShape, Triangle};
-/// use nalgebra::Point2;
+/// use parry2d::math::Vector;
 ///
 /// // Create a triangle
 /// let triangle = Triangle::new(
-///     Point2::origin(),
-///     Point2::new(1.0, 0.0),
-///     Point2::new(0.0, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0),
+///     Vector::new(0.0, 1.0),
 /// );
 ///
 /// // Add rounding with a 0.1 border radius
@@ -94,7 +93,7 @@ use na::Unit;
 /// # }
 /// ```
 ///
-/// ## Comparing Support Points
+/// ## Comparing Support Vectors
 ///
 /// This example shows how the border radius affects the support point calculation:
 ///
@@ -104,16 +103,16 @@ use na::Unit;
 /// use parry3d::shape::{RoundShape, Cuboid, SupportMap};
 /// # #[cfg(feature = "f64")]
 /// use parry3d_f64::shape::{RoundShape, Cuboid, SupportMap};
-/// use nalgebra::Vector3;
+/// use parry3d::math::Vector;
 ///
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 /// let rounded_cuboid = RoundShape {
 ///     inner_shape: cuboid,
 ///     border_radius: 0.5,
 /// };
 ///
 /// // Query the support point in the direction (1, 1, 1)
-/// let direction = Vector3::new(1.0, 1.0, 1.0);
+/// let direction = Vector::new(1.0, 1.0, 1.0);
 /// let support_point = rounded_cuboid.local_support_point(&direction);
 ///
 /// // The support point will be further out than the original cuboid's support point
@@ -137,7 +136,7 @@ use na::Unit;
 /// use parry3d::shape::{RoundShape, Ball, Segment, SupportMap};
 /// # #[cfg(feature = "f64")]
 /// use parry3d_f64::shape::{RoundShape, Ball, Segment, SupportMap};
-/// use nalgebra::{Point3, Vector3};
+/// use parry3d::math::{Vector, Vector};
 ///
 /// // Rounded ball (creates a slightly larger sphere)
 /// let ball = Ball::new(1.0);
@@ -149,8 +148,8 @@ use na::Unit;
 ///
 /// // Rounded segment (creates a capsule)
 /// let segment = Segment::new(
-///     Point3::origin(),
-///     Point3::new(0.0, 2.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(0.0, 2.0, 0.0),
 /// );
 /// let rounded_segment = RoundShape {
 ///     inner_shape: segment,
@@ -216,24 +215,24 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// use parry3d::shape::{RoundShape, Cuboid, SupportMap};
     /// # #[cfg(feature = "f64")]
     /// use parry3d_f64::shape::{RoundShape, Cuboid, SupportMap};
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Vector;
     ///
-    /// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+    /// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
     /// let rounded = RoundShape {
     ///     inner_shape: cuboid,
     ///     border_radius: 0.5,
     /// };
     ///
     /// // Support point in the positive X direction
-    /// let dir = Vector3::new(1.0, 0.0, 0.0);
+    /// let dir = Vector::new(1.0, 0.0, 0.0);
     /// let support = rounded.local_support_point(&dir);
     ///
     /// // The X coordinate is the cuboid's half-extent plus the border radius
     /// assert!((support.x - 1.5).abs() < 1e-6);
     /// # }
     /// ```
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        self.local_support_point_toward(&Unit::new_normalize(*dir))
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        self.local_support_point_toward(dir.normalize())
     }
 
     /// Computes the support point of the rounded shape toward the given unit direction.
@@ -256,11 +255,8 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
-    /// # #[cfg(feature = "f32")]
     /// use parry2d::shape::{RoundShape, Ball, SupportMap};
-    /// # #[cfg(feature = "f64")]
-    /// use parry2d_f64::shape::{RoundShape, Ball, SupportMap};
-    /// use nalgebra::{Vector2, Unit};
+    /// use parry2d::math::Vector;
     ///
     /// let ball = Ball::new(1.0);
     /// let rounded = RoundShape {
@@ -269,7 +265,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// };
     ///
     /// // Create a unit direction
-    /// let dir = Unit::new_normalize(Vector2::new(1.0, 1.0));
+    /// let dir = Vector::new(1.0, 1.0).normalize();
     /// let support = rounded.local_support_point_toward(&dir);
     ///
     /// // The distance from origin should be ball radius + border radius
@@ -277,8 +273,8 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// assert!((distance - 1.3).abs() < 1e-6);
     /// # }
     /// ```
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        self.inner_shape.local_support_point_toward(dir) + **dir * self.border_radius
+    fn local_support_point_toward(&self, dir: Vector) -> Vector {
+        self.inner_shape.local_support_point_toward(dir) + dir * self.border_radius
     }
 }
 
@@ -327,8 +323,8 @@ impl<S: ?Sized + SupportMap> SupportMap for RoundShapeRef<'_, S> {
     /// # Returns
     ///
     /// The point on the rounded shape's surface that is furthest in the given direction.
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        self.local_support_point_toward(&Unit::new_normalize(*dir))
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        self.local_support_point_toward(dir.normalize())
     }
 
     /// Computes the support point of the rounded shape reference toward the given unit direction.
@@ -344,7 +340,7 @@ impl<S: ?Sized + SupportMap> SupportMap for RoundShapeRef<'_, S> {
     /// # Returns
     ///
     /// The point on the rounded shape's surface that is furthest in the given direction.
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        self.inner_shape.local_support_point_toward(dir) + **dir * self.border_radius
+    fn local_support_point_toward(&self, dir: Vector) -> Vector {
+        self.inner_shape.local_support_point_toward(dir) + dir * self.border_radius
     }
 }

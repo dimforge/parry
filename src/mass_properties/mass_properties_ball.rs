@@ -1,13 +1,10 @@
 use crate::mass_properties::MassProperties;
-#[cfg(feature = "dim3")]
-use crate::math::Vector;
-use crate::math::{Point, PrincipalAngularInertia, Real};
-use na::RealField;
+use crate::math::{PrincipalAngularInertia, Real, RealField, Vector};
 
 impl MassProperties {
     pub(crate) fn ball_volume_unit_angular_inertia(
         radius: Real,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+    ) -> (Real, PrincipalAngularInertia) {
         #[cfg(feature = "dim2")]
         {
             let volume = Real::pi() * radius * radius;
@@ -19,7 +16,7 @@ impl MassProperties {
             let volume = Real::pi() * radius * radius * radius * 4.0 / 3.0;
             let i = radius * radius * 2.0 / 5.0;
 
-            (volume, Vector::repeat(i))
+            (volume, Vector::splat(i))
         }
     }
 
@@ -56,7 +53,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create mass properties for a 0.5m radius ball with density 1000 kg/m³ (water density)
     /// let radius = 0.5;
@@ -69,7 +66,7 @@ impl MassProperties {
     /// assert!((mass - 523.6).abs() < 1.0); // Approximately 524 kg
     ///
     /// // Center of mass is at the origin for symmetric shapes
-    /// assert_eq!(ball_props.local_com, Point3::origin());
+    /// assert_eq!(ball_props.local_com, Vector::ZERO);
     ///
     /// // Check if object can be moved (finite mass)
     /// assert!(ball_props.inv_mass > 0.0, "Ball has finite mass and can move");
@@ -81,7 +78,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a circular disc with 1.0m radius and density 100 kg/m²
     /// let radius = 1.0;
@@ -102,7 +99,7 @@ impl MassProperties {
     ///
     /// - **Sports balls**: Soccer balls, basketballs, bowling balls
     /// - **Planets and celestial bodies**: Spherical approximations
-    /// - **Particles**: Point-like objects with rotational inertia
+    /// - **Particles**: Vector-like objects with rotational inertia
     /// - **Wheels and gears**: Cylindrical objects in 2D simulations
     ///
     /// # Performance Note
@@ -113,6 +110,6 @@ impl MassProperties {
     pub fn from_ball(density: Real, radius: Real) -> Self {
         let (vol, unit_i) = Self::ball_volume_unit_angular_inertia(radius);
         let mass = vol * density;
-        Self::new(Point::origin(), mass, unit_i * mass)
+        Self::new(Vector::ZERO, mass, unit_i * mass)
     }
 }

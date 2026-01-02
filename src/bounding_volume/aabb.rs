@@ -1,16 +1,13 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Point, Real, UnitVector, Vector, DIM, TWO_DIM};
+#[cfg(feature = "dim3")]
+use crate::math::ComplexField;
+use crate::math::{Pose, Real, Vector, DIM, TWO_DIM};
 use crate::shape::{Cuboid, SupportMap};
-use crate::utils::IsometryOps;
+use crate::utils::PoseOps;
 use arrayvec::ArrayVec;
-use na;
 use num::Bounded;
-
-#[cfg(all(feature = "dim3", not(feature = "std")))]
-use na::ComplexField;
-// for .sin_cos()
 
 use crate::query::{Ray, RayCast};
 #[cfg(feature = "rkyv")]
@@ -63,19 +60,19 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::Aabb;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create an AABB for a unit cube centered at origin
-/// let mins = Point3::new(-0.5, -0.5, -0.5);
-/// let maxs = Point3::new(0.5, 0.5, 0.5);
+/// let mins = Vector::new(-0.5, -0.5, -0.5);
+/// let maxs = Vector::new(0.5, 0.5, 0.5);
 /// let aabb = Aabb::new(mins, maxs);
 ///
 /// // Check if a point is inside
-/// let point = Point3::origin();
+/// let point = Vector::ZERO;
 /// assert!(aabb.contains_local_point(&point));
 ///
 /// // Get center and extents
-/// assert_eq!(aabb.center(), Point3::origin());
+/// assert_eq!(aabb.center(), Vector::ZERO);
 /// assert_eq!(aabb.extents().x, 1.0); // Full width
 /// assert_eq!(aabb.half_extents().x, 0.5); // Half width
 /// # }
@@ -84,19 +81,19 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::Aabb;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create from a set of points
 /// let points = vec![
-///     Point3::new(1.0, 2.0, 3.0),
-///     Point3::new(-1.0, 4.0, 2.0),
-///     Point3::new(0.0, 0.0, 5.0),
+///     Vector::new(1.0, 2.0, 3.0),
+///     Vector::new(-1.0, 4.0, 2.0),
+///     Vector::new(0.0, 0.0, 5.0),
 /// ];
 /// let aabb = Aabb::from_points(points);
 ///
 /// // The AABB encloses all points
-/// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
-/// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+/// assert_eq!(aabb.mins, Vector::new(-1.0, 0.0, 2.0));
+/// assert_eq!(aabb.maxs, Vector::new(1.0, 4.0, 5.0));
 /// # }
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -113,13 +110,13 @@ pub struct Aabb {
     ///
     /// Each component (`x`, `y`, `z`) should be less than or equal to the
     /// corresponding component in `maxs`.
-    pub mins: Point<Real>,
+    pub mins: Vector,
 
     /// The point with maximum coordinates (top-right-front corner).
     ///
     /// Each component (`x`, `y`, `z`) should be greater than or equal to the
     /// corresponding component in `mins`.
-    pub maxs: Point<Real>,
+    pub maxs: Vector,
 }
 
 impl Aabb {
@@ -223,20 +220,20 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a 2x2x2 cube centered at origin
     /// let aabb = Aabb::new(
-    ///     Point3::new(-1.0, -1.0, -1.0),
-    ///     Point3::new(1.0, 1.0, 1.0)
+    ///     Vector::new(-1.0, -1.0, -1.0),
+    ///     Vector::new(1.0, 1.0, 1.0)
     /// );
     ///
-    /// assert_eq!(aabb.center(), Point3::origin());
-    /// assert_eq!(aabb.extents(), nalgebra::Vector3::new(2.0, 2.0, 2.0));
+    /// assert_eq!(aabb.center(), Vector::ZERO);
+    /// assert_eq!(aabb.extents(), nalgebra::Vector::new(2.0, 2.0, 2.0));
     /// # }
     /// ```
     #[inline]
-    pub fn new(mins: Point<Real>, maxs: Point<Real>) -> Aabb {
+    pub fn new(mins: Vector, maxs: Vector) -> Aabb {
         Aabb { mins, maxs }
     }
 
@@ -251,24 +248,24 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut aabb = Aabb::new_invalid();
     ///
     /// // Merge with actual points to build proper AABB
-    /// aabb.merge(&Aabb::new(Point3::new(1.0, 2.0, 3.0), Point3::new(1.0, 2.0, 3.0)));
-    /// aabb.merge(&Aabb::new(Point3::new(-1.0, 0.0, 2.0), Point3::new(-1.0, 0.0, 2.0)));
+    /// aabb.merge(&Aabb::new(Vector::new(1.0, 2.0, 3.0), Vector::new(1.0, 2.0, 3.0)));
+    /// aabb.merge(&Aabb::new(Vector::new(-1.0, 0.0, 2.0), Vector::new(-1.0, 0.0, 2.0)));
     ///
     /// // Now contains the merged bounds
-    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
-    /// assert_eq!(aabb.maxs, Point3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(aabb.mins, Vector::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Vector::new(1.0, 2.0, 3.0));
     /// # }
     /// ```
     #[inline]
     pub fn new_invalid() -> Self {
         Self::new(
-            Vector::repeat(Real::max_value()).into(),
-            Vector::repeat(-Real::max_value()).into(),
+            Vector::splat(Real::max_value()),
+            Vector::splat(-Real::max_value()),
         )
     }
 
@@ -286,21 +283,21 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, Vector};
     ///
     /// // Create a 10x6x8 box centered at (5, 0, 0)
     /// let aabb = Aabb::from_half_extents(
-    ///     Point3::new(5.0, 0.0, 0.0),
-    ///     Vector3::new(5.0, 3.0, 4.0)
+    ///     Vector::new(5.0, 0.0, 0.0),
+    ///     Vector::new(5.0, 3.0, 4.0)
     /// );
     ///
-    /// assert_eq!(aabb.mins, Point3::new(0.0, -3.0, -4.0));
-    /// assert_eq!(aabb.maxs, Point3::new(10.0, 3.0, 4.0));
-    /// assert_eq!(aabb.center(), Point3::new(5.0, 0.0, 0.0));
+    /// assert_eq!(aabb.mins, Vector::new(0.0, -3.0, -4.0));
+    /// assert_eq!(aabb.maxs, Vector::new(10.0, 3.0, 4.0));
+    /// assert_eq!(aabb.center(), Vector::new(5.0, 0.0, 0.0));
     /// # }
     /// ```
     #[inline]
-    pub fn from_half_extents(center: Point<Real>, half_extents: Vector<Real>) -> Self {
+    pub fn from_half_extents(center: Vector, half_extents: Vector) -> Self {
         Self::new(center - half_extents, center + half_extents)
     }
 
@@ -317,22 +314,22 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let points = vec![
-    ///     Point3::new(1.0, 2.0, 3.0),
-    ///     Point3::new(-1.0, 4.0, 2.0),
-    ///     Point3::new(0.0, 0.0, 5.0),
+    ///     Vector::new(1.0, 2.0, 3.0),
+    ///     Vector::new(-1.0, 4.0, 2.0),
+    ///     Vector::new(0.0, 0.0, 5.0),
     /// ];
     ///
     /// let aabb = Aabb::from_points_ref(&points);
-    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
-    /// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+    /// assert_eq!(aabb.mins, Vector::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Vector::new(1.0, 4.0, 5.0));
     /// # }
     /// ```
     pub fn from_points_ref<'a, I>(pts: I) -> Self
     where
-        I: IntoIterator<Item = &'a Point<Real>>,
+        I: IntoIterator<Item = &'a Vector>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts.into_iter().copied())
     }
@@ -350,21 +347,21 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let aabb = Aabb::from_points(vec![
-    ///     Point3::new(1.0, 2.0, 3.0),
-    ///     Point3::new(-1.0, 4.0, 2.0),
-    ///     Point3::new(0.0, 0.0, 5.0),
+    ///     Vector::new(1.0, 2.0, 3.0),
+    ///     Vector::new(-1.0, 4.0, 2.0),
+    ///     Vector::new(0.0, 0.0, 5.0),
     /// ]);
     ///
-    /// assert_eq!(aabb.mins, Point3::new(-1.0, 0.0, 2.0));
-    /// assert_eq!(aabb.maxs, Point3::new(1.0, 4.0, 5.0));
+    /// assert_eq!(aabb.mins, Vector::new(-1.0, 0.0, 2.0));
+    /// assert_eq!(aabb.maxs, Vector::new(1.0, 4.0, 5.0));
     /// # }
     /// ```
     pub fn from_points<I>(pts: I) -> Self
     where
-        I: IntoIterator<Item = Point<Real>>,
+        I: IntoIterator<Item = Vector>,
     {
         super::aabb_utils::local_point_cloud_aabb(pts)
     }
@@ -378,19 +375,19 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let aabb = Aabb::new(
-    ///     Point3::new(-2.0, -3.0, -4.0),
-    ///     Point3::new(2.0, 3.0, 4.0)
+    ///     Vector::new(-2.0, -3.0, -4.0),
+    ///     Vector::new(2.0, 3.0, 4.0)
     /// );
     ///
-    /// assert_eq!(aabb.center(), Point3::origin());
+    /// assert_eq!(aabb.center(), Vector::ZERO);
     /// # }
     /// ```
     #[inline]
-    pub fn center(&self) -> Point<Real> {
-        na::center(&self.mins, &self.maxs)
+    pub fn center(&self) -> Vector {
+        self.mins.midpoint(self.maxs)
     }
 
     /// Returns the half-extents of this AABB.
@@ -402,24 +399,24 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, Vector};
     ///
     /// let aabb = Aabb::new(
-    ///     Point3::new(-5.0, -3.0, -2.0),
-    ///     Point3::new(5.0, 3.0, 2.0)
+    ///     Vector::new(-5.0, -3.0, -2.0),
+    ///     Vector::new(5.0, 3.0, 2.0)
     /// );
     ///
     /// let half = aabb.half_extents();
-    /// assert_eq!(half, Vector3::new(5.0, 3.0, 2.0));
+    /// assert_eq!(half, Vector::new(5.0, 3.0, 2.0));
     ///
     /// // Full dimensions are 2 * half_extents
     /// let full = aabb.extents();
-    /// assert_eq!(full, Vector3::new(10.0, 6.0, 4.0));
+    /// assert_eq!(full, Vector::new(10.0, 6.0, 4.0));
     /// # }
     /// ```
     #[inline]
-    pub fn half_extents(&self) -> Vector<Real> {
-        let half: Real = na::convert::<f64, Real>(0.5);
+    pub fn half_extents(&self) -> Vector {
+        let half: Real = 0.5;
         (self.maxs - self.mins) * half
     }
 
@@ -433,12 +430,12 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // A 2x3x4 box
     /// let aabb = Aabb::new(
-    ///     Point3::origin(),
-    ///     Point3::new(2.0, 3.0, 4.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 3.0, 4.0)
     /// );
     ///
     /// assert_eq!(aabb.volume(), 24.0); // 2 * 3 * 4
@@ -477,41 +474,41 @@ impl Aabb {
 
     /// The extents of this `Aabb`.
     #[inline]
-    pub fn extents(&self) -> Vector<Real> {
+    pub fn extents(&self) -> Vector {
         self.maxs - self.mins
     }
 
     /// Enlarges this `Aabb` so it also contains the point `pt`.
-    pub fn take_point(&mut self, pt: Point<Real>) {
-        self.mins = self.mins.coords.inf(&pt.coords).into();
-        self.maxs = self.maxs.coords.sup(&pt.coords).into();
+    pub fn take_point(&mut self, pt: Vector) {
+        self.mins = self.mins.min(pt);
+        self.maxs = self.maxs.max(pt);
     }
 
     /// Computes the `Aabb` bounding `self` transformed by `m`.
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, m: &Pose) -> Self {
         let ls_center = self.center();
         let center = m * ls_center;
-        let ws_half_extents = m.absolute_transform_vector(&self.half_extents());
+        let ws_half_extents = m.absolute_transform_vector(self.half_extents());
 
         Aabb::new(center + (-ws_half_extents), center + ws_half_extents)
     }
 
     /// Computes the Aabb bounding `self` translated by `translation`.
     #[inline]
-    pub fn translated(mut self, translation: &Vector<Real>) -> Self {
+    pub fn translated(mut self, translation: Vector) -> Self {
         self.mins += translation;
         self.maxs += translation;
         self
     }
 
     #[inline]
-    pub fn scaled(self, scale: &Vector<Real>) -> Self {
-        let a = self.mins.coords.component_mul(scale);
-        let b = self.maxs.coords.component_mul(scale);
+    pub fn scaled(self, scale: Vector) -> Self {
+        let a = self.mins * scale;
+        let b = self.maxs * scale;
         Self {
-            mins: a.inf(&b).into(),
-            maxs: a.sup(&b).into(),
+            mins: a.min(b),
+            maxs: a.max(b),
         }
     }
 
@@ -523,12 +520,12 @@ impl Aabb {
     ///   by its absolute value.
     #[inline]
     #[must_use]
-    pub fn scaled_wrt_center(self, scale: &Vector<Real>) -> Self {
+    pub fn scaled_wrt_center(self, scale: Vector) -> Self {
         let center = self.center();
         // Multiply the extents by the scale. Negative scaling might modify the half-extent
         // sign, so we take the absolute value. The AABB being symmetric that absolute value
         // is  valid.
-        let half_extents = self.half_extents().component_mul(scale).abs();
+        let half_extents = self.half_extents() * scale.abs();
         Self::from_half_extents(center, half_extents)
     }
 
@@ -536,13 +533,13 @@ impl Aabb {
     #[inline]
     pub fn bounding_sphere(&self) -> BoundingSphere {
         let center = self.center();
-        let radius = na::distance(&self.mins, &self.maxs) * 0.5;
+        let radius = self.mins.distance(self.maxs) * 0.5;
         BoundingSphere::new(center, radius)
     }
 
     /// Does this AABB contains a point expressed in the same coordinate frame as `self`?
     #[inline]
-    pub fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    pub fn contains_local_point(&self, point: Vector) -> bool {
         for i in 0..DIM {
             if point[i] < self.mins[i] || point[i] > self.maxs[i] {
                 return false;
@@ -554,22 +551,18 @@ impl Aabb {
 
     /// Computes the distance between the origin and this AABB.
     pub fn distance_to_origin(&self) -> Real {
-        self.mins
-            .coords
-            .sup(&-self.maxs.coords)
-            .sup(&Vector::zeros())
-            .norm()
+        self.mins.max(-self.maxs).max(Vector::ZERO).length()
     }
 
     /// Does this AABB intersects an AABB `aabb2` moving at velocity `vel12` relative to `self`?
     #[inline]
-    pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector<Real>) -> bool {
+    pub fn intersects_moving_aabb(&self, aabb2: &Self, vel12: Vector) -> bool {
         // Minkowski sum.
         let msum = Aabb {
-            mins: self.mins - aabb2.maxs.coords,
-            maxs: self.maxs - aabb2.mins.coords,
+            mins: self.mins - aabb2.maxs,
+            maxs: self.maxs - aabb2.mins,
         };
-        let ray = Ray::new(Point::origin(), vel12);
+        let ray = Ray::new(Vector::ZERO, vel12);
 
         msum.intersects_local_ray(&ray, 1.0)
     }
@@ -577,8 +570,8 @@ impl Aabb {
     /// Computes the intersection of this `Aabb` and another one.
     pub fn intersection(&self, other: &Aabb) -> Option<Aabb> {
         let result = Aabb {
-            mins: Point::from(self.mins.coords.sup(&other.mins.coords)),
-            maxs: Point::from(self.maxs.coords.inf(&other.maxs.coords)),
+            mins: self.mins.max(other.mins),
+            maxs: self.maxs.min(other.maxs),
         };
 
         for i in 0..DIM {
@@ -594,11 +587,7 @@ impl Aabb {
     ///
     /// This method returns two AABBs: the first is expressed in the local-space of `self`,
     /// and the second is expressed in the local-space of `aabb2`.
-    pub fn aligned_intersections(
-        &self,
-        pos12: &Isometry<Real>,
-        aabb2: &Self,
-    ) -> Option<(Aabb, Aabb)> {
+    pub fn aligned_intersections(&self, pos12: &Pose, aabb2: &Self) -> Option<(Aabb, Aabb)> {
         let pos21 = pos12.inverse();
 
         let aabb2_1 = aabb2.transform_by(pos12);
@@ -691,12 +680,12 @@ impl Aabb {
     /// ```
     #[inline]
     #[cfg(feature = "dim2")]
-    pub fn vertices(&self) -> [Point<Real>; 4] {
+    pub fn vertices(&self) -> [Vector; 4] {
         [
-            Point::new(self.mins.x, self.mins.y),
-            Point::new(self.maxs.x, self.mins.y),
-            Point::new(self.maxs.x, self.maxs.y),
-            Point::new(self.mins.x, self.maxs.y),
+            Vector::new(self.mins.x, self.mins.y),
+            Vector::new(self.maxs.x, self.mins.y),
+            Vector::new(self.maxs.x, self.maxs.y),
+            Vector::new(self.mins.x, self.maxs.y),
         ]
     }
 
@@ -712,16 +701,16 @@ impl Aabb {
     /// ```
     #[inline]
     #[cfg(feature = "dim3")]
-    pub fn vertices(&self) -> [Point<Real>; 8] {
+    pub fn vertices(&self) -> [Vector; 8] {
         [
-            Point::new(self.mins.x, self.mins.y, self.mins.z),
-            Point::new(self.maxs.x, self.mins.y, self.mins.z),
-            Point::new(self.maxs.x, self.maxs.y, self.mins.z),
-            Point::new(self.mins.x, self.maxs.y, self.mins.z),
-            Point::new(self.mins.x, self.mins.y, self.maxs.z),
-            Point::new(self.maxs.x, self.mins.y, self.maxs.z),
-            Point::new(self.maxs.x, self.maxs.y, self.maxs.z),
-            Point::new(self.mins.x, self.maxs.y, self.maxs.z),
+            Vector::new(self.mins.x, self.mins.y, self.mins.z),
+            Vector::new(self.maxs.x, self.mins.y, self.mins.z),
+            Vector::new(self.maxs.x, self.maxs.y, self.mins.z),
+            Vector::new(self.mins.x, self.maxs.y, self.mins.z),
+            Vector::new(self.mins.x, self.mins.y, self.maxs.z),
+            Vector::new(self.maxs.x, self.mins.y, self.maxs.z),
+            Vector::new(self.maxs.x, self.maxs.y, self.maxs.z),
+            Vector::new(self.mins.x, self.maxs.y, self.maxs.z),
         ]
     }
 
@@ -734,13 +723,13 @@ impl Aabb {
         [
             Aabb::new(self.mins, center),
             Aabb::new(
-                Point::new(center.x, self.mins.y),
-                Point::new(self.maxs.x, center.y),
+                Vector::new(center.x, self.mins.y),
+                Vector::new(self.maxs.x, center.y),
             ),
             Aabb::new(center, self.maxs),
             Aabb::new(
-                Point::new(self.mins.x, center.y),
-                Point::new(center.x, self.maxs.y),
+                Vector::new(self.mins.x, center.y),
+                Vector::new(center.x, self.maxs.y),
             ),
         ]
     }
@@ -753,43 +742,43 @@ impl Aabb {
 
         [
             Aabb::new(
-                Point::new(self.mins.x, self.mins.y, self.mins.z),
-                Point::new(center.x, center.y, center.z),
+                Vector::new(self.mins.x, self.mins.y, self.mins.z),
+                Vector::new(center.x, center.y, center.z),
             ),
             Aabb::new(
-                Point::new(center.x, self.mins.y, self.mins.z),
-                Point::new(self.maxs.x, center.y, center.z),
+                Vector::new(center.x, self.mins.y, self.mins.z),
+                Vector::new(self.maxs.x, center.y, center.z),
             ),
             Aabb::new(
-                Point::new(center.x, center.y, self.mins.z),
-                Point::new(self.maxs.x, self.maxs.y, center.z),
+                Vector::new(center.x, center.y, self.mins.z),
+                Vector::new(self.maxs.x, self.maxs.y, center.z),
             ),
             Aabb::new(
-                Point::new(self.mins.x, center.y, self.mins.z),
-                Point::new(center.x, self.maxs.y, center.z),
+                Vector::new(self.mins.x, center.y, self.mins.z),
+                Vector::new(center.x, self.maxs.y, center.z),
             ),
             Aabb::new(
-                Point::new(self.mins.x, self.mins.y, center.z),
-                Point::new(center.x, center.y, self.maxs.z),
+                Vector::new(self.mins.x, self.mins.y, center.z),
+                Vector::new(center.x, center.y, self.maxs.z),
             ),
             Aabb::new(
-                Point::new(center.x, self.mins.y, center.z),
-                Point::new(self.maxs.x, center.y, self.maxs.z),
+                Vector::new(center.x, self.mins.y, center.z),
+                Vector::new(self.maxs.x, center.y, self.maxs.z),
             ),
             Aabb::new(
-                Point::new(center.x, center.y, center.z),
-                Point::new(self.maxs.x, self.maxs.y, self.maxs.z),
+                Vector::new(center.x, center.y, center.z),
+                Vector::new(self.maxs.x, self.maxs.y, self.maxs.z),
             ),
             Aabb::new(
-                Point::new(self.mins.x, center.y, center.z),
-                Point::new(center.x, self.maxs.y, self.maxs.z),
+                Vector::new(self.mins.x, center.y, center.z),
+                Vector::new(center.x, self.maxs.y, self.maxs.z),
             ),
         ]
     }
 
     /// Enlarges this AABB on each side by the given `half_extents`.
     #[must_use]
-    pub fn add_half_extents(&self, half_extents: &Vector<Real>) -> Self {
+    pub fn add_half_extents(&self, half_extents: Vector) -> Self {
         Self {
             mins: self.mins - half_extents,
             maxs: self.maxs + half_extents,
@@ -797,14 +786,10 @@ impl Aabb {
     }
 
     /// Projects every point of `Aabb` on an arbitrary axis.
-    pub fn project_on_axis(&self, axis: &UnitVector<Real>) -> (Real, Real) {
+    pub fn project_on_axis(&self, axis: Vector) -> (Real, Real) {
         let cuboid = Cuboid::new(self.half_extents());
-        let shift = cuboid
-            .local_support_point_toward(axis)
-            .coords
-            .dot(axis)
-            .abs();
-        let center = self.center().coords.dot(axis);
+        let shift = cuboid.local_support_point_toward(axis).dot(axis).abs();
+        let center = self.center().dot(axis);
         (center - shift, center + shift)
     }
 
@@ -812,84 +797,125 @@ impl Aabb {
     #[cfg(feature = "alloc")]
     pub fn intersects_spiral(
         &self,
-        point: &Point<Real>,
-        center: &Point<Real>,
-        axis: &UnitVector<Real>,
-        linvel: &Vector<Real>,
+        point: Vector,
+        spiral_center: Vector,
+        axis: Vector,
+        linvel: Vector,
         angvel: Real,
     ) -> bool {
+        use crate::math::{Matrix2, Vector2};
         use crate::utils::WBasis;
         use crate::utils::{Interval, IntervalFunction};
         use alloc::vec;
 
         struct SpiralPlaneDistance {
-            center: Point<Real>,
-            tangents: [Vector<Real>; 2],
-            linvel: Vector<Real>,
+            spiral_center: Vector,
+            tangents: [Vector; 2],
+            linvel: Vector,
             angvel: Real,
-            point: na::Vector2<Real>,
-            plane: Vector<Real>,
+            point: Vector2,
+            plane: Vector,
             bias: Real,
         }
 
         impl SpiralPlaneDistance {
-            fn spiral_pt_at(&self, t: Real) -> Point<Real> {
+            fn spiral_pt_at(&self, t: Real) -> Vector {
                 let angle = t * self.angvel;
 
                 // NOTE: we construct the rotation matrix explicitly here instead
                 //       of using `Rotation2::new()` because we will use similar
                 //       formulas on the interval methods.
-                let (sin, cos) = angle.sin_cos();
-                let rotmat = na::Matrix2::new(cos, -sin, sin, cos);
+                let (sin, cos) = <Real as ComplexField>::sin_cos(angle);
+                // Mat2 in column-major: first column is [cos, sin], second is [-sin, cos]
+                let rotmat = Matrix2::from_cols(Vector2::new(cos, sin), Vector2::new(-sin, cos));
 
                 let rotated_pt = rotmat * self.point;
                 let shift = self.tangents[0] * rotated_pt.x + self.tangents[1] * rotated_pt.y;
-                self.center + self.linvel * t + shift
+                self.spiral_center + self.linvel * t + shift
             }
         }
 
         impl IntervalFunction<Real> for SpiralPlaneDistance {
             fn eval(&self, t: Real) -> Real {
                 let point_pos = self.spiral_pt_at(t);
-                point_pos.coords.dot(&self.plane) - self.bias
+                point_pos.dot(self.plane) - self.bias
             }
 
             fn eval_interval(&self, t: Interval<Real>) -> Interval<Real> {
                 // This is the same as `self.eval` except that `t` is an interval.
                 let angle = t * self.angvel;
                 let (sin, cos) = angle.sin_cos();
-                let rotmat = na::Matrix2::new(cos, -sin, sin, cos);
 
-                let rotated_pt = rotmat * self.point.map(Interval::splat);
-                let shift = self.tangents[0].map(Interval::splat) * rotated_pt.x
-                    + self.tangents[1].map(Interval::splat) * rotated_pt.y;
-                let point_pos =
-                    self.center.map(Interval::splat) + self.linvel.map(Interval::splat) * t + shift;
-                point_pos.coords.dot(&self.plane.map(Interval::splat)) - Interval::splat(self.bias)
+                // Compute rotated point manually with interval arithmetic
+                let rotated_pt_x =
+                    cos * Interval::splat(self.point.x) - sin * Interval::splat(self.point.y);
+                let rotated_pt_y =
+                    sin * Interval::splat(self.point.x) + cos * Interval::splat(self.point.y);
+
+                let shift_x = Interval::splat(self.tangents[0].x) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].x) * rotated_pt_y;
+                let shift_y = Interval::splat(self.tangents[0].y) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].y) * rotated_pt_y;
+                let shift_z = Interval::splat(self.tangents[0].z) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].z) * rotated_pt_y;
+
+                let point_pos_x = Interval::splat(self.spiral_center.x)
+                    + Interval::splat(self.linvel.x) * t
+                    + shift_x;
+                let point_pos_y = Interval::splat(self.spiral_center.y)
+                    + Interval::splat(self.linvel.y) * t
+                    + shift_y;
+                let point_pos_z = Interval::splat(self.spiral_center.z)
+                    + Interval::splat(self.linvel.z) * t
+                    + shift_z;
+
+                point_pos_x * Interval::splat(self.plane.x)
+                    + point_pos_y * Interval::splat(self.plane.y)
+                    + point_pos_z * Interval::splat(self.plane.z)
+                    - Interval::splat(self.bias)
             }
 
             fn eval_interval_gradient(&self, t: Interval<Real>) -> Interval<Real> {
                 let angle = t * self.angvel;
                 let (sin, cos) = angle.sin_cos();
-                let rotmat = na::Matrix2::new(-sin, -cos, cos, -sin) * Interval::splat(self.angvel);
+                let angvel_interval = Interval::splat(self.angvel);
 
-                let rotated_pt = rotmat * self.point.map(Interval::splat);
-                let shift = self.tangents[0].map(Interval::splat) * rotated_pt.x
-                    + self.tangents[1].map(Interval::splat) * rotated_pt.y;
-                let point_vel = shift + self.linvel.map(Interval::splat);
-                point_vel.dot(&self.plane.map(Interval::splat))
+                // Derivative of rotation matrix applied to point
+                let rotated_pt_x = (-sin * angvel_interval) * Interval::splat(self.point.x)
+                    - (cos * angvel_interval) * Interval::splat(self.point.y);
+                let rotated_pt_y = (cos * angvel_interval) * Interval::splat(self.point.x)
+                    + (-sin * angvel_interval) * Interval::splat(self.point.y);
+
+                let shift_x = Interval::splat(self.tangents[0].x) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].x) * rotated_pt_y;
+                let shift_y = Interval::splat(self.tangents[0].y) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].y) * rotated_pt_y;
+                let shift_z = Interval::splat(self.tangents[0].z) * rotated_pt_x
+                    + Interval::splat(self.tangents[1].z) * rotated_pt_y;
+
+                let point_vel_x = shift_x + Interval::splat(self.linvel.x);
+                let point_vel_y = shift_y + Interval::splat(self.linvel.y);
+                let point_vel_z = shift_z + Interval::splat(self.linvel.z);
+
+                point_vel_x * Interval::splat(self.plane.x)
+                    + point_vel_y * Interval::splat(self.plane.y)
+                    + point_vel_z * Interval::splat(self.plane.z)
             }
         }
 
         let tangents = axis.orthonormal_basis();
-        let dpos = point - center;
+        let dpos = point - spiral_center;
+        #[cfg(feature = "f32")]
+        let spiral_point = glamx::Vec2::new(dpos.dot(tangents[0]), dpos.dot(tangents[1]));
+        #[cfg(feature = "f64")]
+        let spiral_point = glamx::DVec2::new(dpos.dot(tangents[0]), dpos.dot(tangents[1]));
         let mut distance_fn = SpiralPlaneDistance {
-            center: *center,
+            spiral_center,
             tangents,
-            linvel: *linvel,
+            linvel,
             angvel,
-            point: na::Vector2::new(dpos.dot(&tangents[0]), dpos.dot(&tangents[1])),
-            plane: Vector::x(),
+            point: spiral_point,
+            plane: Vector::X,
             bias: 0.0,
         };
 
@@ -898,16 +924,16 @@ impl Aabb {
         let mut candidates = vec![];
 
         let planes = [
-            (-self.mins[0], -Vector::x(), 0),
-            (self.maxs[0], Vector::x(), 0),
-            (-self.mins[1], -Vector::y(), 1),
-            (self.maxs[1], Vector::y(), 1),
-            (-self.mins[2], -Vector::z(), 2),
-            (self.maxs[2], Vector::z(), 2),
+            (-self.mins[0], -Vector::X, 0),
+            (self.maxs[0], Vector::X, 0),
+            (-self.mins[1], -Vector::Y, 1),
+            (self.maxs[1], Vector::Y, 1),
+            (-self.mins[2], -Vector::Z, 2),
+            (self.maxs[2], Vector::Z, 2),
         ];
 
         let range = self.project_on_axis(axis);
-        let range_bias = center.coords.dot(axis);
+        let range_bias = spiral_center.dot(axis);
         let interval = Interval::sort(range.0, range.1) - range_bias;
 
         for (bias, axis, i) in &planes {
@@ -943,57 +969,57 @@ impl Aabb {
 
 impl BoundingVolume for Aabb {
     #[inline]
-    fn center(&self) -> Point<Real> {
+    fn center(&self) -> Vector {
         self.center()
     }
 
     #[inline]
     fn intersects(&self, other: &Aabb) -> bool {
-        na::partial_le(&self.mins, &other.maxs) && na::partial_ge(&self.maxs, &other.mins)
+        (self.mins.cmple(other.maxs) & self.maxs.cmpge(other.mins)).all()
     }
 
     #[inline]
     fn contains(&self, other: &Aabb) -> bool {
-        na::partial_le(&self.mins, &other.mins) && na::partial_ge(&self.maxs, &other.maxs)
+        (self.mins.cmple(other.mins) & self.maxs.cmpge(other.maxs)).all()
     }
 
     #[inline]
     fn merge(&mut self, other: &Aabb) {
-        self.mins = self.mins.inf(&other.mins);
-        self.maxs = self.maxs.sup(&other.maxs);
+        self.mins = self.mins.min(other.mins);
+        self.maxs = self.maxs.max(other.maxs);
     }
 
     #[inline]
     fn merged(&self, other: &Aabb) -> Aabb {
         Aabb {
-            mins: self.mins.inf(&other.mins),
-            maxs: self.maxs.sup(&other.maxs),
+            mins: self.mins.min(other.mins),
+            maxs: self.maxs.max(other.maxs),
         }
     }
 
     #[inline]
     fn loosen(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The loosening margin must be positive.");
-        self.mins += Vector::repeat(-amount);
-        self.maxs += Vector::repeat(amount);
+        self.mins += Vector::splat(-amount);
+        self.maxs += Vector::splat(amount);
     }
 
     #[inline]
     fn loosened(&self, amount: Real) -> Aabb {
         assert!(amount >= 0.0, "The loosening margin must be positive.");
         Aabb {
-            mins: self.mins + Vector::repeat(-amount),
-            maxs: self.maxs + Vector::repeat(amount),
+            mins: self.mins + Vector::splat(-amount),
+            maxs: self.maxs + Vector::splat(amount),
         }
     }
 
     #[inline]
     fn tighten(&mut self, amount: Real) {
         assert!(amount >= 0.0, "The tightening margin must be positive.");
-        self.mins += Vector::repeat(amount);
-        self.maxs += Vector::repeat(-amount);
+        self.mins += Vector::splat(amount);
+        self.maxs += Vector::splat(-amount);
         assert!(
-            na::partial_le(&self.mins, &self.maxs),
+            self.mins.cmple(self.maxs).all(),
             "The tightening margin is to large."
         );
     }
@@ -1003,8 +1029,8 @@ impl BoundingVolume for Aabb {
         assert!(amount >= 0.0, "The tightening margin must be positive.");
 
         Aabb::new(
-            self.mins + Vector::repeat(amount),
-            self.maxs + Vector::repeat(-amount),
+            self.mins + Vector::splat(amount),
+            self.maxs + Vector::splat(-amount),
         )
     }
 }

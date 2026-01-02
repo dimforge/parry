@@ -1,10 +1,9 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::partitioning::BvhNode;
 use crate::query::{ClosestPoints, QueryDispatcher};
 use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
-use crate::utils::IsometryOpt;
-use na;
+use crate::utils::PoseOpt;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the closest points between `self` and the given `shape2` positioned at
@@ -21,12 +20,12 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn closest_points_to_shape<D: ?Sized + QueryDispatcher>(
         &self,
         dispatcher: &D,
-        pose12: &Isometry<Real>,
+        pose12: &Pose,
         shape2: &dyn Shape,
         margin: Real,
     ) -> Option<(u32, ClosestPoints)> {
         let ls_aabb2 = shape2.compute_aabb(pose12);
-        let msum_shift = -ls_aabb2.center().coords;
+        let msum_shift = -ls_aabb2.center();
         let msum_margin = ls_aabb2.half_extents();
 
         self.0
@@ -52,9 +51,9 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
                             ) {
                                 let cost = match &mut pts {
                                     ClosestPoints::WithinMargin(p1, p2) => {
-                                        *p1 = part_pos1.transform_point(&*p1);
+                                        *p1 = part_pos1.transform_point(*p1);
                                         let p2_1 = pose12 * *p2;
-                                        na::distance(&*p1, &p2_1)
+                                        (*p1 - p2_1).length()
                                     }
                                     ClosestPoints::Intersecting => -Real::MAX,
                                     ClosestPoints::Disjoint => Real::MAX,
@@ -73,7 +72,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
 /// Closest points between a composite shape and any other shape.
 pub fn closest_points_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     g1: &G1,
     g2: &dyn Shape,
     margin: Real,
@@ -91,7 +90,7 @@ where
 /// Closest points between a shape and a composite shape.
 pub fn closest_points_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     g1: &dyn Shape,
     g2: &G2,
     margin: Real,

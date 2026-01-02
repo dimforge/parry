@@ -6,8 +6,7 @@ use macroquad::{
     math::Vec2,
     shapes::draw_line,
 };
-use nalgebra::Point2;
-use parry2d::math::Real;
+use parry2d::math::{Real, Vector};
 use parry2d::shape::TriMesh;
 
 /// As this file is used as a module from other examples,
@@ -22,16 +21,16 @@ fn main() {
     );
 }
 
-/// Converts a [`nalgebra::Point2`] to a [`Vec2`], which is used by [`macroquad`]
+/// Converts a [`parry2d::math::Vector`] to a [`Vec2`], which is used by [`macroquad`]
 #[allow(dead_code)]
-pub fn mquad_from_na(a: Point2<Real>) -> Vec2 {
+pub fn mquad_from_na(a: Vector) -> Vec2 {
     Vec2::new(a.x, a.y)
 }
 
-/// Converts a [`Vec2`] to a [`nalgebra::Point2`], which is used by [`parry3d`]
+/// Converts a [`Vec2`] to a [`parry2d::math::Vector`], which is used by [`parry2d`]
 #[allow(dead_code)]
-pub fn na_from_mquad(a: Vec2) -> Point2<Real> {
-    Point2::new(a.x, a.y)
+pub fn na_from_mquad(a: Vec2) -> Vector {
+    Vector::new(a.x, a.y)
 }
 
 /// Uses [`macroquad`] to display the line passed as parameter.
@@ -94,7 +93,7 @@ pub fn draw_trimesh2(trimesh: &TriMesh, offset: Vec2) {
 
 /// Uses [`macroquad`] to display a wireframe of the polygon.
 #[allow(dead_code)]
-pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, color: Color) {
+pub fn draw_polygon(polygon: &[Vector], scale: f32, shift: Vector, color: Color) {
     for i in 0..polygon.len() {
         let a = polygon[i];
         let b = polygon[(i + 1) % polygon.len()];
@@ -111,7 +110,7 @@ pub fn draw_polygon(polygon: &[Point2<f32>], scale: f32, shift: Point2<f32>, col
 
 /// Uses [`macroquad`] to display the a cross, representing a point.
 #[allow(dead_code)]
-pub fn draw_point(point: Point2<f32>, scale: f32, shift: Point2<f32>, color: Color) {
+pub fn draw_point(point: Vector, scale: f32, shift: Vector, color: Color) {
     let edge_len = 0.15;
     draw_line(
         (point.x - edge_len) * scale + shift.x,

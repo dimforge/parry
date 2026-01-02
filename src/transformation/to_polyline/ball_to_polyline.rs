@@ -1,12 +1,11 @@
-use crate::math::Real;
+use crate::math::{Real, RealField, Vector2};
 use crate::shape::Ball;
 use crate::transformation::utils;
 use alloc::vec::Vec;
-use na::{self, Point2, RealField};
 
 impl Ball {
     /// Discretize the boundary of this ball as a polygonal line.
-    pub fn to_polyline(&self, nsubdivs: u32) -> Vec<Point2<Real>> {
+    pub fn to_polyline(&self, nsubdivs: u32) -> Vec<Vector2> {
         let diameter = self.radius * 2.0;
         let two_pi = Real::two_pi();
         let dtheta = two_pi / (nsubdivs as Real);

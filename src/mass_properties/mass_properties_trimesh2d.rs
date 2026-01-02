@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 use crate::shape::Triangle;
 
 impl MassProperties {
@@ -41,16 +41,16 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create an L-shaped mesh from two rectangles (4 triangles)
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(2.0, 0.0),
-    ///     Point2::new(2.0, 1.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(1.0, 3.0),
-    ///     Point2::new(0.0, 3.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0),
+    ///     Vector::new(2.0, 1.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(1.0, 3.0),
+    ///     Vector::new(0.0, 3.0),
     /// ];
     ///
     /// let indices = vec![
@@ -73,15 +73,15 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Square pyramid: 4 vertices at base + 1 apex
     /// let vertices = vec![
-    ///     Point3::new(-1.0, 0.0, -1.0), // Base corner 1
-    ///     Point3::new(1.0, 0.0, -1.0),  // Base corner 2
-    ///     Point3::new(1.0, 0.0, 1.0),   // Base corner 3
-    ///     Point3::new(-1.0, 0.0, 1.0),  // Base corner 4
-    ///     Point3::new(0.0, 2.0, 0.0),   // Apex
+    ///     Vector::new(-1.0, 0.0, -1.0), // Base corner 1
+    ///     Vector::new(1.0, 0.0, -1.0),  // Base corner 2
+    ///     Vector::new(1.0, 0.0, 1.0),   // Base corner 3
+    ///     Vector::new(-1.0, 0.0, 1.0),  // Base corner 4
+    ///     Vector::new(0.0, 2.0, 0.0),   // Apex
     /// ];
     ///
     /// let indices = vec![
@@ -161,7 +161,7 @@ impl MassProperties {
     /// - `from_compound()`: Combine multiple simpler shapes
     pub fn from_trimesh(
         density: Real,
-        vertices: &[Point<Real>],
+        vertices: &[Vector],
         indices: &[[u32; 3]],
     ) -> MassProperties {
         let (area, com) = trimesh_area_and_center_of_mass(vertices, indices);
@@ -191,10 +191,10 @@ impl MassProperties {
 
 /// Computes the area and center-of-mass of a triangle-mesh.
 pub fn trimesh_area_and_center_of_mass(
-    vertices: &[Point<Real>],
+    vertices: &[Vector],
     indices: &[[u32; 3]],
-) -> (Real, Point<Real>) {
-    let mut res = Point::origin();
+) -> (Real, Vector) {
+    let mut res = Vector::ZERO;
     let mut areasum = 0.0;
 
     for idx in indices {
@@ -206,13 +206,14 @@ pub fn trimesh_area_and_center_of_mass(
         let area = triangle.area();
         let center = triangle.center();
 
-        res += center.coords * area;
+        res += center * area;
         areasum += area;
     }
 
     if areasum == 0.0 {
         (areasum, res)
     } else {
-        (areasum, res / areasum)
+        res /= areasum;
+        (areasum, res)
     }
 }

@@ -36,14 +36,14 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::Bvh;
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     ///
     /// // Insert objects with custom IDs
-    /// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 100);
-    /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 200);
-    /// bvh.insert(Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), 300);
+    /// bvh.insert(Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)), 100);
+    /// bvh.insert(Aabb::new(Vector::new(5.0, 0.0, 0.0), Vector::new(6.0, 1.0, 1.0)), 200);
+    /// bvh.insert(Aabb::new(Vector::new(10.0, 0.0, 0.0), Vector::new(11.0, 1.0, 1.0)), 300);
     ///
     /// assert_eq!(bvh.leaf_count(), 3);
     /// # }
@@ -55,15 +55,15 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::Bvh;
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     ///
     /// // Insert an object
-    /// bvh.insert(Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)), 42);
+    /// bvh.insert(Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)), 42);
     ///
     /// // Simulate the object moving - just insert with the same ID
-    /// bvh.insert(Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)), 42);
+    /// bvh.insert(Aabb::new(Vector::new(5.0, 0.0, 0.0), Vector::new(6.0, 1.0, 1.0)), 42);
     ///
     /// // The BVH still has only 1 leaf, but at the new position
     /// assert_eq!(bvh.leaf_count(), 1);
@@ -76,7 +76,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -84,8 +84,8 @@ impl Bvh {
     /// // Add initial objects
     /// for i in 0..100 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///         Vector::new(i as f32, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0, 1.0, 1.0)
     ///     );
     ///     bvh.insert(aabb, i);
     /// }
@@ -94,8 +94,8 @@ impl Bvh {
     /// // then refit once at the end
     /// for i in 0..100 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32 + 0.1, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.1, 1.0, 1.0)
+    ///         Vector::new(i as f32 + 0.1, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.1, 1.0, 1.0)
     ///     );
     ///     bvh.insert_or_update_partially(aabb, i, 0.0);
     /// }
@@ -143,8 +143,8 @@ impl Bvh {
 
             if change_detection_margin > 0.0 {
                 if !node.contains_aabb(&aabb) {
-                    node.mins = aabb.mins - Vector::repeat(change_detection_margin);
-                    node.maxs = aabb.maxs + Vector::repeat(change_detection_margin);
+                    node.mins = aabb.mins - Vector::splat(change_detection_margin);
+                    node.maxs = aabb.maxs + Vector::splat(change_detection_margin);
                     node.data.set_change_pending();
                 } else {
                     // No change detected, no propagation needed.
@@ -181,8 +181,8 @@ impl Bvh {
                     break;
                 }
 
-                node.mins = node.mins.inf(&aabb.mins);
-                node.maxs = node.maxs.sup(&aabb.maxs);
+                node.mins = node.mins.min(aabb.mins);
+                node.maxs = node.maxs.max(aabb.maxs);
 
                 let wide_node_id = parent.decompose().0;
                 if wide_node_id == 0 {
@@ -217,8 +217,8 @@ impl Bvh {
 
             if change_detection_margin > 0.0 {
                 if !node.contains_aabb(&aabb) {
-                    node.mins = aabb.mins - Vector::repeat(change_detection_margin);
-                    node.maxs = aabb.maxs + Vector::repeat(change_detection_margin);
+                    node.mins = aabb.mins - Vector::splat(change_detection_margin);
+                    node.maxs = aabb.maxs + Vector::splat(change_detection_margin);
                     node.data.set_change_pending();
                 }
             } else {
@@ -318,15 +318,15 @@ impl Bvh {
 
                     left.children = new_leaf_id as u32;
                     left.data.add_leaf_count(1);
-                    left.mins = left.mins.inf(&aabb.mins);
-                    left.maxs = left.maxs.sup(&aabb.maxs);
+                    left.mins = left.mins.min(aabb.mins);
+                    left.maxs = left.maxs.max(aabb.maxs);
                     break;
                 } else {
                     let left = &mut self.nodes[curr_id as usize].left;
                     curr_id = left.children;
                     left.data.add_leaf_count(1);
-                    left.mins = left.mins.inf(&aabb.mins);
-                    left.maxs = left.maxs.sup(&aabb.maxs);
+                    left.mins = left.mins.min(aabb.mins);
+                    left.maxs = left.maxs.max(aabb.maxs);
                 }
             } else {
                 // Insert right. The `right` node will become an internal node.
@@ -349,15 +349,15 @@ impl Bvh {
 
                     right.children = new_leaf_id as u32;
                     right.data.add_leaf_count(1);
-                    right.mins = right.mins.inf(&aabb.mins);
-                    right.maxs = right.maxs.sup(&aabb.maxs);
+                    right.mins = right.mins.min(aabb.mins);
+                    right.maxs = right.maxs.max(aabb.maxs);
                     break;
                 } else {
                     let right = &mut self.nodes[curr_id as usize].right;
                     curr_id = right.children;
                     right.data.add_leaf_count(1);
-                    right.mins = right.mins.inf(&aabb.mins);
-                    right.maxs = right.maxs.sup(&aabb.maxs);
+                    right.mins = right.mins.min(aabb.mins);
+                    right.maxs = right.maxs.max(aabb.maxs);
                 }
             }
         }

@@ -1,7 +1,7 @@
 use super::{Bvh, BvhNode};
 use crate::bounding_volume::{Aabb, BoundingVolume};
-use crate::math::Point;
 use crate::math::Real;
+use crate::math::Vector;
 use crate::query::PointProjection;
 use crate::query::{PointQuery, Ray};
 use crate::shape::FeatureId;
@@ -11,8 +11,8 @@ pub(super) struct SimdInvRay {
     // TODO: we need to use `glam` here instead of `wide` because `wide` is lacking
     //       operations for getting the min/max vector element.
     //       We can switch back to `wide` once it's supported.
-    pub origin: glam::Vec3A,
-    pub inv_dir: glam::Vec3A,
+    pub origin: glamx::Vec3A,
+    pub inv_dir: glamx::Vec3A,
 }
 
 #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
@@ -26,8 +26,8 @@ impl From<Ray> for SimdInvRay {
             }
         });
         Self {
-            origin: glam::Vec3A::from([ray.origin.x, ray.origin.y, ray.origin.z]),
-            inv_dir: glam::Vec3A::from([inv_dir.x, inv_dir.y, inv_dir.z]),
+            origin: glamx::Vec3A::from([ray.origin.x, ray.origin.y, ray.origin.z]),
+            inv_dir: glamx::Vec3A::from([inv_dir.x, inv_dir.y, inv_dir.z]),
         }
     }
 }
@@ -68,21 +68,21 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a scene with objects
     /// let objects = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(5.0, 0.0, 0.0), Vector::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(10.0, 0.0, 0.0), Vector::new(11.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
     ///
     /// // Query: which objects are near the origin?
     /// let query_region = Aabb::new(
-    ///     Point3::new(-1.0, -1.0, -1.0),
-    ///     Point3::new(2.0, 2.0, 2.0)
+    ///     Vector::new(-1.0, -1.0, -1.0),
+    ///     Vector::new(2.0, 2.0, 2.0)
     /// );
     ///
     /// for leaf_id in bvh.intersect_aabb(&query_region) {
@@ -98,12 +98,12 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let objects = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(0.5, 0.0, 0.0), Point3::new(1.5, 1.0, 1.0)),  // Overlaps first
-    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)), // Far away
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(0.5, 0.0, 0.0), Vector::new(1.5, 1.0, 1.0)),  // Overlaps first
+    ///     Aabb::new(Vector::new(10.0, 0.0, 0.0), Vector::new(11.0, 1.0, 1.0)), // Far away
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
@@ -130,20 +130,20 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let scene_objects = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)), // Far away
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(2.0, 0.0, 0.0), Vector::new(3.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(100.0, 0.0, 0.0), Vector::new(101.0, 1.0, 1.0)), // Far away
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &scene_objects);
     ///
     /// // Camera frustum as an AABB (simplified - real frustums are more complex)
     /// let camera_frustum = Aabb::new(
-    ///     Point3::new(-10.0, -10.0, -10.0),
-    ///     Point3::new(10.0, 10.0, 10.0)
+    ///     Vector::new(-10.0, -10.0, -10.0),
+    ///     Vector::new(10.0, 10.0, 10.0)
     /// );
     ///
     /// let mut visible_objects = Vec::new();
@@ -162,12 +162,12 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let objects = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(1.5, 0.0, 0.0), Point3::new(2.5, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(100.0, 0.0, 0.0), Point3::new(101.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(1.5, 0.0, 0.0), Vector::new(2.5, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(100.0, 0.0, 0.0), Vector::new(101.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &objects);
@@ -212,7 +212,7 @@ impl Bvh {
     /// `max_distance` if no projection was found so far).
     pub fn project_point(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         max_distance: Real,
         primitive_check: impl Fn(u32, Real) -> Option<PointProjection>,
     ) -> Option<(u32, (Real, PointProjection))> {
@@ -221,7 +221,7 @@ impl Bvh {
             |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
             |primitive, _| {
                 let proj = primitive_check(primitive, max_distance)?;
-                Some((na::distance(&proj.point, point), proj))
+                Some((proj.point.distance(point), proj))
             },
         )
     }
@@ -236,7 +236,7 @@ impl Bvh {
     /// `max_distance` if no projection was found so far).
     pub fn project_point_and_get_feature(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         max_distance: Real,
         primitive_check: impl Fn(u32, Real) -> Option<(PointProjection, FeatureId)>,
     ) -> Option<(u32, (Real, (PointProjection, FeatureId)))> {
@@ -245,7 +245,7 @@ impl Bvh {
             |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
             |primitive, _| {
                 let proj = primitive_check(primitive, max_distance)?;
-                Some((na::distance(&proj.0.point, point), proj))
+                Some((proj.0.point.distance(point), proj))
             },
         )
     }

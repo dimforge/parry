@@ -1,11 +1,9 @@
 mod common_macroquad2d;
 
-extern crate nalgebra as na;
-
 use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
 use macroquad::prelude::*;
-use na::{Isometry2, Vector2};
 use parry2d::bounding_volume::{Aabb, BoundingVolume};
+use parry2d::math::{Pose, Vector, Vector};
 use parry2d::shape::Cuboid;
 
 const RENDER_SCALE: f32 = 30.0;
@@ -21,12 +19,12 @@ async fn main() {
         /*
          * Initialize the shapes.
          */
-        let cube1: Cuboid = Cuboid::new(Vector2::repeat(0.5));
-        let cube2 = Cuboid::new(Vector2::new(1., 0.5));
+        let cube1: Cuboid = Cuboid::new(Vector::splat(0.5));
+        let cube2 = Cuboid::new(Vector::new(1., 0.5));
 
-        let cube1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
-        let cube1_pos = Isometry2::from(cube1_pos);
-        let cube2_pos = Isometry2::identity();
+        let cube1_pt = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
+        let cube1_pos = Pose::from_translation(cube1_pt);
+        let cube2_pos = Pose::identity();
 
         /*
          * Compute their bounding spheres.
@@ -58,12 +56,10 @@ async fn main() {
         assert!(loose_bounding_sphere_cube2.contains(&bounding_sphere_cube1));
         assert!(loose_bounding_sphere_cube2.contains(&bounding_sphere_cube2));
 
-        let cube1_translation =
-            mquad_from_na(cube1_pos.translation.vector.into()) * RENDER_SCALE + render_pos;
+        let cube1_translation = mquad_from_na(cube1_pos.translation) * RENDER_SCALE + render_pos;
         draw_cuboid(cube1, cube1_translation, color);
 
-        let cube2_translation =
-            mquad_from_na(cube2_pos.translation.vector.into()) * RENDER_SCALE + render_pos;
+        let cube2_translation = mquad_from_na(cube2_pos.translation) * RENDER_SCALE + render_pos;
         draw_cuboid(cube2, cube2_translation, color);
         draw_circle_lines(
             bounding_sphere_cube1.center.x * RENDER_SCALE + render_pos.x,

@@ -1,5 +1,5 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector, VectorExt};
 use crate::query::{ContactManifold, PointQuery, TrackedContact};
 use crate::shape::{
     Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelState, VoxelType, Voxels,
@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 /// Computes the contact manifold between a convex shape and a ball, both represented as a `Shape` trait-object.
 pub fn contact_manifolds_voxels_ball_shapes<ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -33,7 +33,7 @@ pub fn contact_manifolds_voxels_ball_shapes<ManifoldData, ContactData>(
 
 /// Computes the contact manifold between a convex shape and a ball.
 pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     voxels1: &'a Voxels,
     ball2: &'a Ball,
     prediction: Real,
@@ -47,7 +47,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
     manifolds.clear();
 
     let radius2 = ball2.radius;
-    let center2 = Point::origin(); // The ball’s center.
+    let center2 = Vector::ZERO; // The ball’s center.
     let radius1 = voxels1.voxel_size() / 2.0;
 
     // FIXME: optimize this.
@@ -79,11 +79,11 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
 }
 
 pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
-    pos12: Isometry<Real>,
-    center1: Point<Real>,
-    radius1: Vector<Real>,
+    pos12: Pose,
+    center1: Vector,
+    radius1: Vector,
     data1: VoxelState,
-    center2: Point<Real>,
+    center2: Vector,
     radius2: Real,
     prediction: Real,
     flipped: bool,
@@ -99,7 +99,7 @@ pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
         let dist = dist_to_voxel - radius2;
 
         if dist <= prediction {
-            let local_n2 = pos12.inverse_transform_vector(&-local_n1);
+            let local_n2 = pos12.rotation.inverse() * -local_n1;
             let local_p1 = center2_1 - local_n1 * dist_to_voxel;
             let local_p2 = center2 + local_n2 * radius2;
             let contact_point = TrackedContact::<ContactData>::flipped(
@@ -128,11 +128,11 @@ pub(crate) fn detect_hit_voxel_ball<ManifoldData, ContactData>(
 }
 
 pub fn project_point_on_pseudo_cube(
-    voxel_center: Point<Real>,
-    voxel_radius: Vector<Real>,
+    voxel_center: Vector,
+    voxel_radius: Vector,
     voxel_mask: u32,
-    point: Point<Real>,
-) -> Option<(Vector<Real>, Real)> {
+    point: Vector,
+) -> Option<(Vector, Real)> {
     let dpos = point - voxel_center;
 
     // This maps our easy-to map octant_key, to the vertex key as
@@ -150,7 +150,7 @@ pub fn project_point_on_pseudo_cube(
         | (((dpos.z >= 0.0) as usize) << 2);
     let aabb_octant_key = AABB_OCTANT_KEYS[octant_key];
     let dpos_signs = dpos.map(|x| x.signum());
-    let unit_dpos = dpos.abs().component_div(&voxel_radius); // Project the point in "local unit octant space".
+    let unit_dpos = dpos.abs() / voxel_radius; // Project the point in "local unit octant space".
 
     // Extract the feature pattern specific to the selected octant.
     let pattern = (voxel_mask >> (aabb_octant_key * 3)) & 0b0111;
@@ -161,21 +161,21 @@ pub fn project_point_on_pseudo_cube(
             // PERF: inline the projection on cuboid to improve performances further.
             //       In particular we already know on what octant we are to compute the
             //       collision.
-            let cuboid = Cuboid::new(Vector::repeat(1.0));
-            let unit_dpos_pt = Point::from(unit_dpos);
-            let proj = cuboid.project_local_point(&unit_dpos_pt, false);
-            let mut normal = unit_dpos_pt - proj.point;
-            let dist = normal.try_normalize_mut(1.0e-8)?;
-            Some((normal, dist))
+            let cuboid = Cuboid::new(Vector::splat(1.0));
+            let unit_dpos_pt = unit_dpos;
+            let proj = cuboid.project_local_point(unit_dpos_pt, false);
+            let normal = unit_dpos_pt - proj.point;
+            let (normal, dist) = normal.normalize_and_length();
+            (dist != 0.0).then_some((normal, dist))
         }
         #[cfg(feature = "dim3")]
         OctantPattern::EDGE_X | OctantPattern::EDGE_Y | OctantPattern::EDGE_Z => {
-            let cuboid = Cuboid::new(Vector::repeat(1.0));
-            let unit_dpos_pt = Point::from(unit_dpos);
-            let proj = cuboid.project_local_point(&unit_dpos_pt, false);
-            let mut normal = unit_dpos_pt - proj.point;
-            let dist = normal.try_normalize_mut(1.0e-8)?;
-            Some((normal, dist))
+            let cuboid = Cuboid::new(Vector::splat(1.0));
+            let unit_dpos_pt = unit_dpos;
+            let proj = cuboid.project_local_point(unit_dpos_pt, false);
+            let normal = unit_dpos_pt - proj.point;
+            let (normal, dist) = normal.normalize_and_length();
+            (dist != 0.0).then_some((normal, dist))
         }
         #[cfg(feature = "dim2")]
         OctantPattern::FACE_X | OctantPattern::FACE_Y => {
@@ -210,8 +210,8 @@ pub fn project_point_on_pseudo_cube(
     };
 
     unit_result.map(|(n, d)| {
-        let mut scaled_n = n.component_mul(&dpos_signs).component_mul(&voxel_radius);
-        let scaled_d = scaled_n.normalize_mut();
-        (scaled_n, d * scaled_d)
+        let scaled_n = n * (dpos_signs) * (voxel_radius);
+        let (n, scaled_d) = scaled_n.normalize_and_length();
+        (n, d * scaled_d)
     })
 }

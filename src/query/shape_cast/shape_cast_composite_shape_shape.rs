@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::partitioning::BvhNode;
 use crate::query::shape_cast::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit};
@@ -14,15 +14,15 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn cast_shape<D: ?Sized + QueryDispatcher>(
         &self,
         dispatcher: &D,
-        pose12: &Isometry<Real>,
-        vel12: &Vector<Real>,
+        pose12: &Pose,
+        vel12: Vector,
         g2: &dyn Shape,
         options: ShapeCastOptions,
     ) -> Option<(u32, ShapeCastHit)> {
         let ls_aabb2 = g2.compute_aabb(pose12);
-        let ray = Ray::new(Point::origin(), *vel12);
-        let msum_shift = -ls_aabb2.center().coords;
-        let msum_margin = ls_aabb2.half_extents() + Vector::repeat(options.target_distance);
+        let ray = Ray::new(Vector::ZERO, vel12);
+        let msum_shift = -ls_aabb2.center();
+        let msum_margin = ls_aabb2.half_extents() + Vector::splat(options.target_distance);
 
         self.0.bvh().find_best(
             options.max_time_of_impact,
@@ -44,7 +44,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
                             dispatcher
                                 .cast_shapes(
                                     &part_pose1.inv_mul(pose12),
-                                    &part_pose1.inverse_transform_vector(vel12),
+                                    part_pose1.rotation.inverse() * vel12,
                                     part_g1,
                                     g2,
                                     options,
@@ -65,8 +65,8 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
 /// Time Of Impact of a composite shape with any other shape, under translational movement.
 pub fn cast_shapes_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Pose,
+    vel12: Vector,
     g1: &G1,
     g2: &dyn Shape,
     options: ShapeCastOptions,
@@ -83,8 +83,8 @@ where
 /// Time Of Impact of any shape with a composite shape, under translational movement.
 pub fn cast_shapes_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Pose,
+    vel12: Vector,
     g1: &dyn Shape,
     g2: &G2,
     options: ShapeCastOptions,
@@ -96,7 +96,7 @@ where
     cast_shapes_composite_shape_shape(
         dispatcher,
         &pos12.inverse(),
-        &-pos12.inverse_transform_vector(vel12),
+        -(pos12.rotation.inverse() * vel12),
         g2,
         g1,
         options,
