@@ -317,7 +317,7 @@ mod tests {
         ]
         .map(|[x, y]| Vector2::new(x, y));
         let pt = Vector2::new(596.0181884765625, 427.9162902832031);
-        assert!(point_in_poly2d(&pt, &poly));
+        assert!(point_in_poly2d(pt, &poly));
     }
 
     #[test]

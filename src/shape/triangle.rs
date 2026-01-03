@@ -919,10 +919,10 @@ mod test {
         let not_contained_coplanar_p = o + (va * -0.5 + vb * 0.8 + vc * 0.7);
         let not_coplanar_p = o + (va * 0.2 + vb * 0.3 + vc * 0.5) + n * 0.1;
         let not_coplanar_p2 = o + (va * -0.5 + vb * 0.8 + vc * 0.7) + n * 0.1;
-        assert!(tri.contains_point(&contained_p));
-        assert!(!tri.contains_point(&not_contained_coplanar_p));
-        assert!(!tri.contains_point(&not_coplanar_p));
-        assert!(!tri.contains_point(&not_coplanar_p2));
+        assert!(tri.contains_point(contained_p));
+        assert!(!tri.contains_point(not_contained_coplanar_p));
+        assert!(!tri.contains_point(not_coplanar_p));
+        assert!(!tri.contains_point(not_coplanar_p2));
 
         // Test that points that are clearly within the triangle as seen as such, by testing
         // a number of points along a line intersecting the triangle.
@@ -934,13 +934,13 @@ mod test {
 
             match i {
                 ii if ii < 0 || ii > 85 => assert!(
-                    !tri.contains_point(&p),
+                    !tri.contains_point(p),
                     "Should not contain: i = {}, b = {}",
                     i,
                     b
                 ),
                 ii if ii > 0 && ii < 85 => assert!(
-                    tri.contains_point(&p),
+                    tri.contains_point(p),
                     "Should contain: i = {}, b = {}",
                     i,
                     b

@@ -324,16 +324,7 @@ impl Capsule {
             dir = -dir;
         }
         let dir = dir.normalize_or(Vector::Y);
-
-        #[cfg(feature = "dim2")]
-        {
-            Rotation::rotation_between(Vector::Y, dir)
-        }
-
-        #[cfg(feature = "dim3")]
-        {
-            Rotation::from_rotation_arc(Vector::Y, dir)
-        }
+        Rotation::from_rotation_arc(Vector::Y, dir)
     }
 
     /// The transform `t` such that `t * Y` is collinear with `b - a` and such that `t * origin = (b + a) / 2.0`.

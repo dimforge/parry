@@ -18,7 +18,7 @@ impl PoseOps for Pose {
         }
         #[cfg(feature = "dim2")]
         {
-            let rot_matrix = self.rotation.to_rotation_matrix();
+            let rot_matrix = self.rotation.to_mat();
             rot_matrix.abs() * v
         }
     }

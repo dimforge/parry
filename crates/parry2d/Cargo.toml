@@ -55,7 +55,7 @@ parallel = ["rayon"]
 alloc = ["hashbrown"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
-encase = [ "dep:encase" ]
+encase = [ "dep:encase", "glamx/encase" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
@@ -100,7 +100,8 @@ simba = { version = "0.9", default-features = false }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.9" }
-macroquad = "0.4.12"
+kiss3d = { path = "../../../claude_workspace/kiss3d" }
+web-time = "1"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

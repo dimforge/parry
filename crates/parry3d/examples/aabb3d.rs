@@ -1,25 +1,24 @@
-mod common_macroquad3d;
+mod utils;
 
-use common_macroquad3d::{lissajous_3d, mquad_from_na, na_from_mquad};
-use macroquad::prelude::*;
-use parry3d::bounding_volume::{Aabb, BoundingVolume};
+use kiss3d::prelude::*;
+use parry3d::bounding_volume::BoundingVolume;
 use parry3d::math::Pose;
 use parry3d::shape::Ball;
+use utils::{draw_aabb3, lissajous_3d};
 
-#[macroquad::main("aabb3d")]
+#[kiss3d::main]
 async fn main() {
-    let camera_pos = Vec3::new(8f32, 8f32, 12f32);
+    let mut window = Window::new("aabb3d").await;
+    let mut camera = OrbitCamera3d::new(Vec3::new(8.0, 8.0, 12.0), Vec3::new(0.5, 0.0, 0.5));
+    let mut scene = SceneNode3d::empty();
+    scene
+        .add_light(Light::point(100.0))
+        .set_position(Vec3::new(0.0, 10.0, 10.0));
 
-    loop {
-        let elapsed_time = get_time() as f32 * 0.7;
-        clear_background(BLACK);
-        // Initialize 3D camera.
-        set_camera(&Camera3D {
-            position: camera_pos,
-            up: Vec3::new(0f32, 1f32, 0f32),
-            target: Vec3::new(0.5f32, 0f32, 0.5f32),
-            ..Default::default()
-        });
+    let start_time = web_time::Instant::now();
+
+    while window.render_3d(&mut scene, &mut camera).await {
+        let elapsed_time = start_time.elapsed().as_secs_f32() * 0.7;
 
         /*
          * Initialize the shapes.
@@ -27,8 +26,8 @@ async fn main() {
         let ball1 = Ball::new(0.5);
         let ball2 = Ball::new(1.0);
 
-        let ball1_translation = na_from_mquad(lissajous_3d(elapsed_time)) * 4f32;
-        let ball1_pos = Pose::from_translation(ball1_translation.into());
+        let ball1_translation = lissajous_3d(elapsed_time) * 4f32;
+        let ball1_pos = Pose::from_translation(ball1_translation);
         let ball2_pos = Pose::identity();
 
         /*
@@ -54,38 +53,23 @@ async fn main() {
         assert!(bounding_aabb.contains(&aabb_ball2));
         assert!(loose_aabb_ball2.contains(&aabb_ball2));
 
-        draw_sphere(
-            mquad_from_na(ball1_pos.translation.into()),
-            ball1.radius,
-            None,
-            color,
-        );
-        draw_sphere(
-            mquad_from_na(ball2_pos.translation.into()),
-            ball2.radius,
-            None,
-            color,
-        );
+        window.draw_point(ball1_pos.translation, color, ball1.radius * 50.0);
+        window.draw_point(ball2_pos.translation, color, ball2.radius * 50.0);
 
-        draw_aabb(aabb_ball1, color);
-        draw_aabb(aabb_ball2, color);
-        draw_aabb(bounding_aabb, YELLOW);
+        draw_aabb3(&mut window, aabb_ball1.mins, aabb_ball1.maxs, color);
+        draw_aabb3(&mut window, aabb_ball2.mins, aabb_ball2.maxs, color);
+        draw_aabb3(&mut window, bounding_aabb.mins, bounding_aabb.maxs, YELLOW);
 
         let color_included: Color = if loose_aabb_ball2.contains(&aabb_ball1) {
             BLUE
         } else {
             MAGENTA
         };
-        draw_aabb(loose_aabb_ball2, color_included);
-        next_frame().await
+        draw_aabb3(
+            &mut window,
+            loose_aabb_ball2.mins,
+            loose_aabb_ball2.maxs,
+            color_included,
+        );
     }
-}
-
-fn draw_aabb(aabb: Aabb, color: Color) {
-    let size = aabb.maxs - aabb.mins;
-    draw_cube_wires(
-        mquad_from_na(aabb.maxs - size / 2f32),
-        mquad_from_na(size.into()),
-        color,
-    );
 }
