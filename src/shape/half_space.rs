@@ -32,7 +32,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// The plane always passes through the origin `(0, 0)` in 2D or `(0, 0, 0)` in 3D of the
 /// half-space's local coordinate system. To position the plane elsewhere in your world,
-/// use an [`Pose`](na::Pose) transformation when performing queries.
+/// use a [`Pose`](crate::math::Pose) transformation when performing queries.
 ///
 /// # Examples
 ///

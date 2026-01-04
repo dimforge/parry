@@ -20,10 +20,10 @@ fn ball_cuboid_toi() {
 
     let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
@@ -31,10 +31,10 @@ fn ball_cuboid_toi() {
     .map(|hit| hit.time_of_impact);
     let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel2,
+        cuboid_vel2,
         &cuboid,
         ShapeCastOptions::default(),
     )
@@ -42,10 +42,10 @@ fn ball_cuboid_toi() {
     .map(|hit| hit.time_of_impact);
     let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )

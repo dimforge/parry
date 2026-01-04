@@ -1,5 +1,5 @@
 use parry2d::{
-    math::{Pose, Real, Vector, Vector},
+    math::{Pose, Vector},
     query,
     shape::{Capsule, ConvexPolygon, SharedShape},
 };

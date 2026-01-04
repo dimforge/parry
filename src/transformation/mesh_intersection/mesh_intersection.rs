@@ -738,6 +738,7 @@ fn is_topologically_degenerate(tri_idx: [u32; 3]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::Vector;
     use crate::shape::{Ball, Cuboid, TriMeshFlags};
     use obj::Obj;
     use obj::ObjData;

@@ -13,7 +13,7 @@ fn test_ball_ball_toi() {
     let v1 = Vector::new(0.0, 10.0);
     let v2 = Vector::ZERO;
 
-    let cast = query::cast_shapes(&m1, &v1, &b, &m2, &v2, &b, ShapeCastOptions::default()).unwrap();
+    let cast = query::cast_shapes(&m1, v1, &b, &m2, v2, &b, ShapeCastOptions::default()).unwrap();
 
     assert_eq!(cast.unwrap().time_of_impact, 0.9);
 }

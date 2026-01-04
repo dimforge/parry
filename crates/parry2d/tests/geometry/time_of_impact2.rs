@@ -1,4 +1,4 @@
-use parry2d::math::{Pose, Real, Vector, Vector};
+use parry2d::math::{Pose, Real, Vector};
 use parry2d::query;
 use parry2d::query::details::ShapeCastOptions;
 use parry2d::shape::{Ball, Cuboid, Polyline, Segment};
@@ -17,10 +17,10 @@ fn ball_ball_intersecting_toi() {
 
     let toi_separating = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_separating,
+        ball1_vel_separating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions::default(),
     )
@@ -28,10 +28,10 @@ fn ball_ball_intersecting_toi() {
 
     let toi_penetrating_ignore_pen = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_penetrating,
+        ball1_vel_penetrating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions {
             stop_at_penetration: false,
@@ -42,10 +42,10 @@ fn ball_ball_intersecting_toi() {
 
     let toi_separating_ignore_pen = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_separating,
+        ball1_vel_separating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions {
             stop_at_penetration: false,
@@ -85,30 +85,30 @@ fn ball_cuboid_toi() {
 
     let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel2,
+        cuboid_vel2,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
@@ -135,10 +135,10 @@ fn cuboid_cuboid_toi_issue_214() {
 
     let hit = query::cast_shapes(
         &pos1,
-        &vel1,
+        vel1,
         &shape1,
         &pos2,
-        &vel2,
+        vel2,
         &shape2,
         ShapeCastOptions::default(),
     )
@@ -166,10 +166,10 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
 
     let hit = query::cast_shapes(
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         &polyline_isometry,
-        &polyline_velocity,
+        polyline_velocity,
         &polyline,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )
@@ -198,10 +198,10 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
 
     let hit = query::cast_shapes(
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         &segment_isometry,
-        &segment_velocity,
+        segment_velocity,
         &segment,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )
@@ -230,10 +230,10 @@ fn cast_shapes_should_return_toi_for_rotated_segment_and_ball() {
 
     let hit = query::cast_shapes(
         &segment_isometry,
-        &segment_velocity,
+        segment_velocity,
         &segment,
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )

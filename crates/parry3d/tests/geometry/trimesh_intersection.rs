@@ -36,9 +36,9 @@ fn trimesh_plane_edge_intersection() {
         // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
-        assert!(vertices.contains(Vector::new(-1.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(1.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(0.0, 1.5, 0.5)));
+        assert!(vertices.contains(&Vector::new(-1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(0.0, 1.5, 0.5)));
     }
 }
 
@@ -54,9 +54,9 @@ fn trimesh_plane_vertex_intersection() {
         // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 3);
-        assert!(vertices.contains(Vector::new(-2.0, -1.0, 0.0)));
-        assert!(vertices.contains(Vector::new(2.0, -1.0, 0.0)));
-        assert!(vertices.contains(Vector::new(0.0, 2.0, 0.0)));
+        assert!(vertices.contains(&Vector::new(-2.0, -1.0, 0.0)));
+        assert!(vertices.contains(&Vector::new(2.0, -1.0, 0.0)));
+        assert!(vertices.contains(&Vector::new(0.0, 2.0, 0.0)));
     }
 }
 
@@ -72,10 +72,10 @@ fn trimesh_plane_mixed_intersection() {
         // Need to check points individually since order is not guaranteed
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 4);
-        assert!(vertices.contains(Vector::new(0.0, 2.0, 0.0)));
-        assert!(vertices.contains(Vector::new(0.0, 0.0, 2.0)));
-        assert!(vertices.contains(Vector::new(0.0, -1.0, 0.0)));
-        assert!(vertices.contains(Vector::new(0.0, 0.0, -2.0)));
+        assert!(vertices.contains(&Vector::new(0.0, 2.0, 0.0)));
+        assert!(vertices.contains(&Vector::new(0.0, 0.0, 2.0)));
+        assert!(vertices.contains(&Vector::new(0.0, -1.0, 0.0)));
+        assert!(vertices.contains(&Vector::new(0.0, 0.0, -2.0)));
     }
 }
 
@@ -93,13 +93,13 @@ fn trimesh_plane_multi_intersection() {
         let vertices = line.vertices();
         assert_eq!(vertices.len(), 6);
 
-        assert!(vertices.contains(Vector::new(-1.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(1.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(0.0, 1.5, 0.5)));
+        assert!(vertices.contains(&Vector::new(-1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(1.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(0.0, 1.5, 0.5)));
 
-        assert!(vertices.contains(Vector::new(-6.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(-3.5, -0.75, 0.5)));
-        assert!(vertices.contains(Vector::new(-5.0, 1.5, 0.5)));
+        assert!(vertices.contains(&Vector::new(-6.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(-3.5, -0.75, 0.5)));
+        assert!(vertices.contains(&Vector::new(-5.0, 1.5, 0.5)));
     }
 }
 

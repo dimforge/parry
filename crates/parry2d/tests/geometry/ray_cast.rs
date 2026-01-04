@@ -1,4 +1,4 @@
-use parry2d::math::{Pose, Real, Vector, Vector};
+use parry2d::math::{Pose, Real, Vector};
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::{ConvexPolygon, Segment, Triangle};
 

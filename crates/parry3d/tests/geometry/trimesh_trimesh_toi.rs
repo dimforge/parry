@@ -26,18 +26,18 @@ fn do_toi_test() -> Option<Real> {
     let pos_one = Vector::new(0.0, 0.0, 0.0);
     let pos_two = Vector::new(1000.0, 0.0, 0.0);
 
-    let transform_one = Pose::from_parts(pos_one.into(), parry3d::glam::Quat::IDENTITY);
-    let transform_two = Pose::from_parts(pos_two.into(), parry3d::glam::Quat::IDENTITY);
+    let transform_one = Pose::from_parts(pos_one.into(), parry3d::glamx::Quat::IDENTITY);
+    let transform_two = Pose::from_parts(pos_two.into(), parry3d::glamx::Quat::IDENTITY);
 
     let vel_one = Vector::new(SPEED, 0.0, 0.0);
     let vel_two = Vector::new(0.0, 0.0, 0.0);
 
     query::cast_shapes(
         &transform_one,
-        &vel_one,
+        vel_one,
         &shape_one,
         &transform_two,
-        &vel_two,
+        vel_two,
         &shape_two,
         ShapeCastOptions::default(),
     )

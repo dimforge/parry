@@ -9,23 +9,23 @@ fn main() {
 
     // Solid projection.
     assert_eq!(
-        cuboid.distance_to_point(&Pose::identity(), &pt_inside, true),
+        cuboid.distance_to_point(&Pose::identity(), pt_inside, true),
         0.0
     );
 
     // Non-solid projection.
     assert_eq!(
-        cuboid.distance_to_point(&Pose::identity(), &pt_inside, false),
+        cuboid.distance_to_point(&Pose::identity(), pt_inside, false),
         -1.0
     );
 
     // The other point is outside of the cuboid so the `solid` flag has no effect.
     assert_eq!(
-        cuboid.distance_to_point(&Pose::identity(), &pt_outside, false),
+        cuboid.distance_to_point(&Pose::identity(), pt_outside, false),
         1.0
     );
     assert_eq!(
-        cuboid.distance_to_point(&Pose::identity(), &pt_outside, true),
+        cuboid.distance_to_point(&Pose::identity(), pt_outside, true),
         1.0
     );
 }

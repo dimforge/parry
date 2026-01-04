@@ -17,9 +17,9 @@ where
         let ray = Ray::new(ray_origin, Vector::ZERO - ray_origin);
 
         let rotation = if rng.rand_float() < 0.01 {
-            parry3d::glam::Quat::IDENTITY
+            parry3d::glamx::Quat::IDENTITY
         } else {
-            parry3d::glam::Quat::from_xyzw(
+            parry3d::glamx::Quat::from_xyzw(
                 rng.rand_float(),
                 rng.rand_float(),
                 rng.rand_float(),
@@ -41,7 +41,7 @@ where
         let point_nudged_out = point + intersection.normal * 0.001;
 
         assert!(
-            shape.contains_point(&position, &point_nudged_in),
+            shape.contains_point(&position, point_nudged_in),
             "Shape {} rotated with {:#?} does not contain point nudged in {:#?}",
             name,
             rotation,
@@ -49,7 +49,7 @@ where
         );
 
         assert!(
-            !shape.contains_point(&position, &point_nudged_out),
+            !shape.contains_point(&position, point_nudged_out),
             "Shape {} rotated with {:#?} does contains point nudged out {:#?}",
             name,
             rotation,

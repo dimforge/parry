@@ -27,10 +27,10 @@ fn collide(v_y: f32) -> Option<f32> {
 
     cast_shapes(
         &pos1,
-        &vel1,
+        vel1,
         &cuboid,
         &pos2,
-        &vel2,
+        vel2,
         &cuboid,
         ShapeCastOptions::default(),
     )

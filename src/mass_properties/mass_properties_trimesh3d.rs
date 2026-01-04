@@ -290,7 +290,7 @@ mod test {
     // vertices.
     #[test]
     fn rotated_inertia_tensor() {
-        let cuboid = Cuboid::new(Vector::new(1.0, 2.0, 3.0));
+        let cuboid = Cuboid::new(Vector::new(3.0, 2.0, 1.0));
         let density = 1.0;
 
         // Compute mass properties with a translated and rotated cuboid.

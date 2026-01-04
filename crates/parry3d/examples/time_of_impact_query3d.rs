@@ -19,30 +19,30 @@ fn main() {
 
     let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel2,
+        cuboid_vel2,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
