@@ -1,9 +1,9 @@
-## Unreleased
+## 0.26.0
 
 ### Breaking changes
 
-This release migrates parry from `nalgebra` to `glam` (via the `glamx` crate). This is a major breaking
-change affecting almost all public APIs.
+This release migrates parry from `nalgebra` to `glam` (via the `glamx` crate) for future compatibility with
+`rust-gpu`. This is a major breaking change affecting almost all public APIs.
 
 #### Type renames
 
