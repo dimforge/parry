@@ -1,10 +1,12 @@
-use crate::math::{Pose, Real, Vector, Vector2};
-use crate::query::details::closest_points_segment_segment_2d;
-#[cfg(feature = "alloc")]
-use crate::query::{ContactManifold, TrackedContact};
+use crate::math::{Pose, Vector};
 use crate::shape::{PackedFeatureId, Segment, Triangle};
-use crate::utils::WBasis;
-use approx::AbsDiffEq;
+#[cfg(feature = "alloc")]
+use crate::{
+    math::{Real, Vector2},
+    query::details::closest_points_segment_segment_2d,
+    query::{ContactManifold, TrackedContact},
+    utils::WBasis,
+};
 
 /// A polygonal feature representing the local polygonal approximation of
 /// a vertex, face, or edge of a convex shape.
@@ -368,7 +370,10 @@ impl PolygonalFeature {
 
 /// Compute the barycentric coordinates of the intersection between the two given lines.
 /// Returns `None` if the lines are parallel.
+#[cfg(feature = "alloc")]
 fn closest_points_line2d(edge1: [Vector2; 2], edge2: [Vector2; 2]) -> Option<(Real, Real)> {
+    use crate::approx::AbsDiffEq;
+
     // Inspired by Real-time collision detection by Christer Ericson.
     let dir1 = edge1[1] - edge1[0];
     let dir2 = edge2[1] - edge2[0];

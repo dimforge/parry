@@ -2,6 +2,9 @@
 
 use crate::math::{Matrix, Real, Vector};
 
+#[cfg(not(feature = "std"))]
+use simba::scalar::ComplexField;
+
 /// Extension trait for glam vector types to provide additional functionality.
 pub trait VectorExt: Sized + Copy {
     /// Creates a vector with the i-th component set to `val` and all others to zero.

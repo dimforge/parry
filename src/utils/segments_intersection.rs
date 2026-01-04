@@ -3,9 +3,6 @@ use crate::math::Vector2;
 use crate::math::Real;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
 
-#[cfg(not(feature = "alloc"))]
-use crate::math::ComplexField;
-
 /// Intersection between two segments.
 pub enum SegmentsIntersection {
     /// Single point of intersection.

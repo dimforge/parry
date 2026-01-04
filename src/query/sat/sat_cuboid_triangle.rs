@@ -7,6 +7,9 @@ use crate::query::sat;
 use crate::query::sat::support_map_support_map_compute_separation;
 use crate::shape::{Cuboid, SupportMap, Triangle};
 
+#[cfg(all(feature = "dim3", not(feature = "std")))]
+use simba::scalar::ComplexField;
+
 /// Finds the best separating axis by testing all edge-edge combinations between a cuboid and a triangle (3D only).
 ///
 /// In 3D collision detection, when a box and triangle intersect, the contact may occur along an

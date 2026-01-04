@@ -5,8 +5,6 @@ use core::fmt::Debug;
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Pose, Real, RealField, Vector};
-#[cfg(not(feature = "alloc"))]
-use crate::num::Float;
 use crate::query::{PointQuery, RayCast};
 #[cfg(feature = "serde-serialize")]
 use crate::shape::SharedShape;

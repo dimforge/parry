@@ -1,6 +1,5 @@
 use crate::math::{Pose, Real, Vector};
 use crate::shape::SupportMap;
-use either::Either;
 
 /// A ball shape, also known as a sphere in 3D or a circle in 2D.
 ///
@@ -147,17 +146,19 @@ impl Ball {
         self,
         scale: Vector,
         nsubdivs: u32,
-    ) -> Option<Either<Self, super::ConvexPolygon>> {
+    ) -> Option<either::Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
             // The scaled shape isn't a ball.
             let mut vtx = self.to_polyline(nsubdivs);
             vtx.iter_mut().for_each(|pt| *pt *= scale);
-            Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
-                vtx,
-            )?))
+            Some(either::Either::Right(
+                super::ConvexPolygon::from_convex_polyline(vtx)?,
+            ))
         } else {
             let uniform_scale = scale.x;
-            Some(Either::Left(Self::new(self.radius * uniform_scale.abs())))
+            Some(either::Either::Left(Self::new(
+                self.radius * uniform_scale.abs(),
+            )))
         }
     }
 
@@ -208,17 +209,19 @@ impl Ball {
         self,
         scale: Vector,
         nsubdivs: u32,
-    ) -> Option<Either<Self, super::ConvexPolyhedron>> {
+    ) -> Option<either::Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
             // The scaled shape isn't a ball.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
             vtx.iter_mut().for_each(|pt| *pt *= scale);
-            Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
-                vtx, &idx,
-            )?))
+            Some(either::Either::Right(
+                super::ConvexPolyhedron::from_convex_mesh(vtx, &idx)?,
+            ))
         } else {
             let uniform_scale = scale.x;
-            Some(Either::Left(Self::new(self.radius * uniform_scale.abs())))
+            Some(either::Either::Left(Self::new(
+                self.radius * uniform_scale.abs(),
+            )))
         }
     }
 }

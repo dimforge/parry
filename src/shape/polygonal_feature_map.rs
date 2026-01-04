@@ -3,9 +3,6 @@ use crate::math::Vector;
 use crate::shape::{Cone, Cylinder, PackedFeatureId};
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
 
-#[cfg(not(feature = "alloc"))]
-use crate::math::{ComplexField, RealField}; // for .abs() and .copysign()
-
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
     /// Compute the support polygonal face of `self` towards the `dir`.

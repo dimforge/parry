@@ -6,9 +6,6 @@ use crate::shape::SupportMap;
 #[cfg(feature = "alloc")]
 use either::Either;
 
-#[cfg(not(feature = "alloc"))]
-use crate::math::ComplexField;
-
 #[cfg(feature = "rkyv")]
 use rkyv::{bytecheck, CheckBytes};
 

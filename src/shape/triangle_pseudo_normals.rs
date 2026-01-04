@@ -1,7 +1,7 @@
-use crate::math::{Vector, Vector3};
+use crate::math::Vector;
 
 #[cfg(feature = "alloc")]
-use crate::query::details::NormalConstraints;
+use crate::{math::Vector3, query::details::NormalConstraints};
 
 // NOTE: ideally, the normal cone should take into account the point where the normal cone is
 //       considered. But as long as we assume that the triangles are one-way we can get away with

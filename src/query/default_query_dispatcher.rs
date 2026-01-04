@@ -10,9 +10,12 @@ use crate::query::{
     query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
-use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
+use crate::shape::{HalfSpace, Segment, Shape};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::shape::ShapeType;
 
 /// The default query dispatcher implementation provided by Parry.
 ///

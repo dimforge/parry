@@ -23,6 +23,7 @@ pub use self::sdp_matrix::{SdpMatrix2, SdpMatrix3};
 pub use self::vec_map::VecMap;
 
 pub use self::as_bytes::AsBytes;
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) use self::consts::*;
 pub use self::cov::{center_cov, cov};
 pub use self::hashable_partial_eq::HashablePartialEq;
@@ -50,6 +51,7 @@ mod center;
 #[cfg(feature = "dim3")]
 #[cfg(feature = "alloc")]
 mod cleanup;
+#[cfg(any(feature = "alloc", feature = "std"))]
 mod consts;
 mod cov;
 #[cfg(feature = "enhanced-determinism")]

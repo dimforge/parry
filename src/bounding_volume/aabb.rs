@@ -1,8 +1,6 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-#[cfg(feature = "dim3")]
-use crate::math::ComplexField;
 use crate::math::{Pose, Real, Vector, DIM, TWO_DIM};
 use crate::shape::{Cuboid, SupportMap};
 use crate::utils::PoseOps;
@@ -825,7 +823,7 @@ impl Aabb {
                 // NOTE: we construct the rotation matrix explicitly here instead
                 //       of using `Rotation2::new()` because we will use similar
                 //       formulas on the interval methods.
-                let (sin, cos) = <Real as ComplexField>::sin_cos(angle);
+                let (sin, cos) = <Real as simba::scalar::ComplexField>::sin_cos(angle);
                 // Mat2 in column-major: first column is [cos, sin], second is [-sin, cos]
                 let rotmat = Matrix2::from_cols(Vector2::new(cos, sin), Vector2::new(-sin, cos));
 
