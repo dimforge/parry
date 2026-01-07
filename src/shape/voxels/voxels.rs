@@ -32,25 +32,25 @@ use alloc::{vec, vec::Vec};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Voxels, VoxelType};
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// // Create a small 2x2x2 cube of voxels
 /// let voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
 ///     &[
-///         Vector::new(0, 0, 0),
-///         Vector::new(1, 0, 0),
-///         Vector::new(0, 1, 0),
-///         Vector::new(1, 1, 0),
-///         Vector::new(0, 0, 1),
-///         Vector::new(1, 0, 1),
-///         Vector::new(0, 1, 1),
-///         Vector::new(1, 1, 1),
+///         IVector::new(0, 0, 0),
+///         IVector::new(1, 0, 0),
+///         IVector::new(0, 1, 0),
+///         IVector::new(1, 1, 0),
+///         IVector::new(0, 0, 1),
+///         IVector::new(1, 0, 1),
+///         IVector::new(0, 1, 1),
+///         IVector::new(1, 1, 1),
 ///     ],
 /// );
 ///
 /// // Check voxel type - interior voxels are fully surrounded
-/// let state = voxels.voxel_state(Vector::new(0, 0, 0)).unwrap();
+/// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
 /// let voxel_type = state.voxel_type();
 /// println!("Voxel type: {:?}", voxel_type);
 /// # }
@@ -190,16 +190,16 @@ impl OctantPattern {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Voxels, VoxelState, AxisMask};
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// // Create a simple voxel shape
 /// let voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
 /// );
 ///
 /// // Query the state of a voxel
-/// let state = voxels.voxel_state(Vector::new(0, 0, 0)).unwrap();
+/// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
 ///
 /// // Check if empty
 /// assert!(!state.is_empty());
@@ -274,11 +274,11 @@ impl VoxelState {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
 ///     Vector::new(0.5, 0.5, 0.5),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
 /// );
 ///
 /// // Iterate through all voxels
@@ -350,7 +350,7 @@ pub struct VoxelData {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// // Create a simple 3×3×3 cube of voxels
 /// let voxel_size = Vector::new(1.0, 1.0, 1.0);
@@ -358,7 +358,7 @@ pub struct VoxelData {
 /// for x in 0..3 {
 ///     for y in 0..3 {
 ///         for z in 0..3 {
-///             coords.push(Vector::new(x, y, z));
+///             coords.push(IVector::new(x, y, z));
 ///         }
 ///     }
 /// }
@@ -373,7 +373,7 @@ pub struct VoxelData {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::Vector;
 ///
 /// // Sample points in world space (e.g., from a point cloud)
 /// let points = vec![
@@ -393,15 +393,15 @@ pub struct VoxelData {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
 /// );
 ///
 /// // Check if a specific grid position is filled
-/// if let Some(state) = voxels.voxel_state(Vector::new(0, 0, 0)) {
+/// if let Some(state) = voxels.voxel_state(IVector::new(0, 0, 0)) {
 ///     println!("Voxel is filled!");
 ///     println!("Type: {:?}", state.voxel_type());
 ///     println!("Free faces: {:?}", state.free_faces());
@@ -421,11 +421,11 @@ pub struct VoxelData {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
 ///     Vector::new(0.5, 0.5, 0.5),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0), Vector::new(0, 1, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0), IVector::new(0, 1, 0)],
 /// );
 ///
 /// // Iterate through all non-empty voxels
@@ -443,22 +443,22 @@ pub struct VoxelData {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let mut voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
-///     &[Vector::new(0, 0, 0)],
+///     &[IVector::new(0, 0, 0)],
 /// );
 ///
 /// // Add a new voxel
-/// voxels.set_voxel(Vector::new(1, 0, 0), true);
+/// voxels.set_voxel(IVector::new(1, 0, 0), true);
 ///
 /// // Remove a voxel
-/// voxels.set_voxel(Vector::new(0, 0, 0), false);
+/// voxels.set_voxel(IVector::new(0, 0, 0), false);
 ///
 /// // Check the result
-/// assert!(voxels.voxel_state(Vector::new(0, 0, 0)).unwrap().is_empty());
-/// assert!(!voxels.voxel_state(Vector::new(1, 0, 0)).unwrap().is_empty());
+/// assert!(voxels.voxel_state(IVector::new(0, 0, 0)).unwrap().is_empty());
+/// assert!(!voxels.voxel_state(IVector::new(1, 0, 0)).unwrap().is_empty());
 /// # }
 /// ```
 ///
@@ -468,11 +468,11 @@ pub struct VoxelData {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
 /// use parry3d::bounding_volume::Aabb;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0), Vector::new(2, 0, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0), IVector::new(2, 0, 0)],
 /// );
 ///
 /// // Find voxels intersecting an AABB
@@ -533,21 +533,21 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a 2×2×2 cube of voxels with 1.0 unit size
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
     ///     &[
-    ///         Vector::new(0, 0, 0), Vector::new(1, 0, 0),
-    ///         Vector::new(0, 1, 0), Vector::new(1, 1, 0),
-    ///         Vector::new(0, 0, 1), Vector::new(1, 0, 1),
-    ///         Vector::new(0, 1, 1), Vector::new(1, 1, 1),
+    ///         IVector::new(0, 0, 0), IVector::new(1, 0, 0),
+    ///         IVector::new(0, 1, 0), IVector::new(1, 1, 0),
+    ///         IVector::new(0, 0, 1), IVector::new(1, 0, 1),
+    ///         IVector::new(0, 1, 1), IVector::new(1, 1, 1),
     ///     ],
     /// );
     ///
     /// // Verify the first voxel's center position
-    /// let center = voxels.voxel_center(Vector::new(0, 0, 0));
+    /// let center = voxels.voxel_center(IVector::new(0, 0, 0));
     /// assert_eq!(center, Vector::new(0.5, 0.5, 0.5));
     /// # }
     /// ```
@@ -555,18 +555,18 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a line of voxels along the X axis
     /// let voxels = Voxels::new(
     ///     Vector::new(0.5, 0.5, 0.5),
-    ///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0), Vector::new(2, 0, 0)],
+    ///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0), IVector::new(2, 0, 0)],
     /// );
     ///
     /// // Query the domain (bounding grid coordinates)
     /// // Note: domain is aligned to internal chunk boundaries for efficiency
     /// let [mins, maxs] = voxels.domain();
-    /// assert_eq!(mins, Vector::new(0, 0, 0));
+    /// assert_eq!(mins, IVector::new(0, 0, 0));
     /// // maxs will be chunk-aligned (chunks are 8x8x8), so it includes more space
     /// assert!(maxs.x >= 3 && maxs.y >= 1 && maxs.z >= 1);
     /// # }
@@ -632,7 +632,7 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// // Sample points in world space
     /// let points = vec![
@@ -656,7 +656,7 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Higher resolution voxelization
     /// let points = vec![
@@ -668,8 +668,8 @@ impl Voxels {
     /// let voxels = Voxels::from_points(Vector::new(0.5, 0.5, 0.5), &points);
     ///
     /// // First point at grid (0,0,0), second at grid (2,2,2) due to smaller voxel size
-    /// assert!(voxels.voxel_state(Vector::new(0, 0, 0)).is_some());
-    /// assert!(voxels.voxel_state(Vector::new(2, 2, 2)).is_some());
+    /// assert!(voxels.voxel_state(IVector::new(0, 0, 0)).is_some());
+    /// assert!(voxels.voxel_state(IVector::new(2, 2, 2)).is_some());
     /// # }
     /// ```
     pub fn from_points(voxel_size: Vector, points: &[Vector]) -> Self {
@@ -700,15 +700,15 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0), Vector::new(2, 3, 1)],
+    ///     &[IVector::new(0, 0, 0), IVector::new(2, 3, 1)],
     /// );
     ///
     /// let [mins, maxs] = voxels.domain();
-    /// assert_eq!(mins, Vector::new(0, 0, 0));
+    /// assert_eq!(mins, IVector::new(0, 0, 0));
     /// // Domain is conservative and chunk-aligned
     /// assert!(maxs.x > 2 && maxs.y > 3 && maxs.z > 1);
     ///
@@ -779,21 +779,21 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+    ///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
     /// );
     ///
     /// // Query an existing voxel
-    /// if let Some(state) = voxels.voxel_state(Vector::new(0, 0, 0)) {
+    /// if let Some(state) = voxels.voxel_state(IVector::new(0, 0, 0)) {
     ///     assert!(!state.is_empty());
     ///     println!("Voxel type: {:?}", state.voxel_type());
     /// }
     ///
     /// // Query a non-existent voxel
-    /// assert!(voxels.voxel_state(Vector::new(10, 10, 10)).is_none());
+    /// assert!(voxels.voxel_state(IVector::new(10, 10, 10)).is_none());
     /// # }
     /// ```
     pub fn voxel_state(&self, key: IVector) -> Option<VoxelState> {
@@ -811,28 +811,28 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0)],
+    ///     &[IVector::new(0, 0, 0)],
     /// );
     ///
     /// // Vector in first voxel (center at 0.5, 0.5, 0.5)
-    /// assert_eq!(voxels.voxel_at_point(Vector::new(0.3, 0.7, 0.2)), Vector::new(0, 0, 0));
+    /// assert_eq!(voxels.voxel_at_point(Vector::new(0.3, 0.7, 0.2)), IVector::new(0, 0, 0));
     ///
     /// // Vector just inside second voxel boundary
-    /// assert_eq!(voxels.voxel_at_point(Vector::new(1.0, 0.0, 0.0)), Vector::new(1, 0, 0));
+    /// assert_eq!(voxels.voxel_at_point(Vector::new(1.0, 0.0, 0.0)), IVector::new(1, 0, 0));
     ///
     /// // Negative coordinates work too
-    /// assert_eq!(voxels.voxel_at_point(Vector::new(-0.5, -0.5, -0.5)), Vector::new(-1, -1, -1));
+    /// assert_eq!(voxels.voxel_at_point(Vector::new(-0.5, -0.5, -0.5)), IVector::new(-1, -1, -1));
     /// # }
     /// ```
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // With non-uniform voxel size
     /// let voxels = Voxels::new(
@@ -841,7 +841,7 @@ impl Voxels {
     /// );
     ///
     /// // X coordinate divided by 2.0, Y by 0.5, Z by 1.0
-    /// assert_eq!(voxels.voxel_at_point(Vector::new(3.0, 1.2, 0.8)), Vector::new(1, 2, 0));
+    /// assert_eq!(voxels.voxel_at_point(Vector::new(3.0, 1.2, 0.8)), IVector::new(1, 2, 0));
     /// # }
     /// ```
     pub fn voxel_at_point(&self, point: Vector) -> IVector {
@@ -1007,18 +1007,18 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0)],
+    ///     &[IVector::new(0, 0, 0)],
     /// );
     ///
     /// // Center of voxel at origin
-    /// assert_eq!(voxels.voxel_center(Vector::new(0, 0, 0)), Vector::new(0.5, 0.5, 0.5));
+    /// assert_eq!(voxels.voxel_center(IVector::new(0, 0, 0)), Vector::new(0.5, 0.5, 0.5));
     ///
     /// // Center of voxel at (1, 2, 3)
-    /// assert_eq!(voxels.voxel_center(Vector::new(1, 2, 3)), Vector::new(1.5, 2.5, 3.5));
+    /// assert_eq!(voxels.voxel_center(IVector::new(1, 2, 3)), Vector::new(1.5, 2.5, 3.5));
     /// # }
     /// ```
     pub fn voxel_center(&self, key: IVector) -> Vector {

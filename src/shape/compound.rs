@@ -460,8 +460,7 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Cuboid, SharedShape};
-    /// use parry3d::math::Pose;
-    /// use nalgebra::{Vector3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let shapes = vec![
     ///     (Pose::identity(), SharedShape::new(Cuboid::new(Vector::new(1.0, 1.0, 1.0)))),
@@ -567,7 +566,7 @@ impl Compound {
     /// let potentially_containing: Vec<usize> = compound.aabbs()
     ///     .iter()
     ///     .enumerate()
-    ///     .filter(|(_, aabb)| aabb.contains_local_point(&query_point))
+    ///     .filter(|(_, aabb)| aabb.contains_local_point(query_point))
     ///     .map(|(i, _)| i)
     ///     .collect();
     ///

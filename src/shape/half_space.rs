@@ -102,7 +102,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
 /// use parry3d::query::{PointQuery};
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Create a ground plane with normal pointing up
 /// let ground = HalfSpace::new((Vector::Y.normalize()));
@@ -114,7 +114,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// let point = Vector::new(0.0, 3.0, 0.0); // Vector at Y = 3.0 (below the plane)
 ///
 /// // Project the point onto the ground plane
-/// let proj = ground.project_point(&ground_pos, &point, true);
+/// let proj = ground.project_point(&ground_pos, point, true);
 ///
 /// // The point is below the ground (inside the half-space)
 /// assert!(proj.is_inside);
@@ -158,10 +158,10 @@ pub struct HalfSpace {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::math::{Vector};
     ///
-    /// let ground = HalfSpace::new((Vector::Y.normalize()));
+    /// let ground = HalfSpace::new(Vector::Y.normalize());
     ///
     /// // The normal points up (positive Y direction)
-    /// assert_eq!(*ground.normal, Vector::Y);
+    /// assert_eq!(ground.normal, Vector::Y);
     /// # }
     /// ```
     pub normal: Vector,
@@ -258,11 +258,11 @@ impl HalfSpace {
     /// use parry3d::shape::HalfSpace;
     /// use parry3d::math::{Vector};
     ///
-    /// let ground = HalfSpace::new((Vector::Y.normalize()));
+    /// let ground = HalfSpace::new(Vector::Y.normalize());
     ///
     /// // Uniform scaling doesn't change the normal direction
-    /// let scaled = ground.scaled(Vector::new(2.0, 2.0, 2.0)).unwrap();
-    /// assert_eq!(*scaled.normal, Vector::Y);
+    /// let scaled = ground.scaled(Vector::splat(2.0)).unwrap();
+    /// assert_eq!(scaled.normal, Vector::Y);
     /// # }
     /// ```
     ///
@@ -315,7 +315,7 @@ impl HalfSpace {
     ///
     /// // Apply level scaling (e.g., for pixel-perfect rendering)
     /// let pixel_scale = Vector::new(16.0, 16.0);
-    /// if let Some(scaled_wall) = wall.scaled(&pixel_scale) {
+    /// if let Some(scaled_wall) = wall.scaled(pixel_scale) {
     ///     // Use the scaled wall for collision detection
     /// }
     /// # }

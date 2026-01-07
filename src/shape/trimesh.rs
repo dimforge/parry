@@ -878,7 +878,7 @@ impl TriMesh {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::TriMesh;
-    /// use nalgebra::{Vector3, Vector3, Pose3};
+    /// use parry3d::math::{Vector, Pose};
     ///
     /// let vertices = vec![
     ///     Vector::ZERO,
@@ -941,7 +941,7 @@ impl TriMesh {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::TriMesh;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let vertices = vec![
     ///     Vector::ZERO,
@@ -1738,7 +1738,7 @@ impl TriMesh {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::TriMesh;
-    /// use nalgebra::{Vector3, Pose3};
+    /// use parry3d::math::{Vector, Pose};
     ///
     /// let vertices = vec![
     ///     Vector::ZERO,

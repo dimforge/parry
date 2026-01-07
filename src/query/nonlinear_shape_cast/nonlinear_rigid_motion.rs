@@ -41,7 +41,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Object moving right at 5 units/second, no rotation
 /// let motion = NonlinearRigidMotion::new(
@@ -62,7 +62,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 /// use std::f32::consts::PI;
 ///
 /// // Object spinning around Y axis, no translation
@@ -84,7 +84,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Spinning projectile moving forward
 /// let motion = NonlinearRigidMotion::new(
@@ -105,7 +105,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Object rotating around a point that's NOT its center
 /// // Useful for: swinging weapons, rotating around pivot point, etc.
@@ -128,7 +128,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use parry3d::math::{Pose, Vector, Vector};
+/// # use parry3d::math::{Pose, Vector};
 /// let bullet = NonlinearRigidMotion::new(
 ///     Pose::translation(0.0, 1.5, 0.0),
 ///     Vector::ZERO,
@@ -143,7 +143,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use parry3d::math::{Pose, Vector, Vector};
+/// # use parry3d::math::{Pose, Vector};
 /// let debris = NonlinearRigidMotion::new(
 ///     Pose::translation(0.0, 2.0, 0.0),
 ///     Vector::ZERO,
@@ -158,7 +158,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use parry3d::math::{Pose, Vector, Vector};
+/// # use parry3d::math::{Pose, Vector};
 /// let blade = NonlinearRigidMotion::new(
 ///     Pose::translation(0.0, 1.0, 0.0),
 ///     Vector::ZERO,           // spin around center
@@ -173,7 +173,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use parry3d::math::Pose3;
+/// # use parry3d::math::Pose;
 /// let wall = NonlinearRigidMotion::constant_position(
 ///     Pose::translation(10.0, 0.0, 0.0)
 /// );
@@ -192,7 +192,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::query::NonlinearRigidMotion;
-/// use parry2d::math::{Pose, Vector, Vector};
+/// use parry2d::math::{Pose, Vector};
 ///
 /// let motion = NonlinearRigidMotion::new(
 ///     Pose::translation(0.0, 0.0),
@@ -211,7 +211,7 @@ use crate::math::{Pose, Real, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use parry3d::math::{Pose, Vector, Vector};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let motion = NonlinearRigidMotion::new(
 ///     Pose::translation(0.0, 0.0, 0.0),
@@ -277,7 +277,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::query::NonlinearRigidMotion;
-    /// use parry2d::math::{Pose, Vector, Vector};
+    /// use parry2d::math::{Pose, Vector};
     /// use std::f32::consts::PI;
     ///
     /// // Object moving right and rotating counter-clockwise
@@ -295,7 +295,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Object moving forward and spinning around its movement axis
     /// let motion = NonlinearRigidMotion::new(
@@ -330,7 +330,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Object moving forward and spinning around its movement axis
     /// let motion = NonlinearRigidMotion::new(
@@ -383,7 +383,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// // A wall that never moves
     /// let wall_motion = NonlinearRigidMotion::constant_position(
@@ -433,7 +433,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let mut motion = NonlinearRigidMotion::new(
     ///     Pose::translation(0.0, 0.0, 0.0),
@@ -518,7 +518,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let motion = NonlinearRigidMotion::new(
     ///     Pose::translation(0.0, 0.0, 0.0),
@@ -544,7 +544,7 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let motion = NonlinearRigidMotion::new(
     ///     Pose::translation(0.0, 5.0, 0.0),

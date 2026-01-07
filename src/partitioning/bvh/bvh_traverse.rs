@@ -226,7 +226,7 @@ impl Bvh {
     /// let mut found_leaf = None;
     ///
     /// bvh.traverse(|node| {
-    ///     if !node.aabb().contains_local_point(&target_point) {
+    ///     if !node.aabb().contains_local_point(target_point) {
     ///         return TraversalAction::Prune;
     ///     }
     ///

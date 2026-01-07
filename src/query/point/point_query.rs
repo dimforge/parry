@@ -35,14 +35,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::PointQuery;
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let ball = Ball::new(5.0);
 /// let ball_pos = Pose::translation(10.0, 0.0, 0.0);
 ///
 /// // Project a point outside the ball
 /// let outside_point = Vector::ZERO;
-/// let proj = ball.project_point(&ball_pos, &outside_point, true);
+/// let proj = ball.project_point(&ball_pos, outside_point, true);
 ///
 /// // Closest point on ball surface
 /// assert_eq!(proj.point, Vector::new(5.0, 0.0, 0.0));
@@ -50,7 +50,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// // Project a point inside the ball
 /// let inside_point = Vector::new(10.0, 0.0, 0.0); // At center
-/// let proj2 = ball.project_point(&ball_pos, &inside_point, true);
+/// let proj2 = ball.project_point(&ball_pos, inside_point, true);
 /// assert!(proj2.is_inside);
 /// # }
 /// ```
@@ -129,24 +129,24 @@ impl PointProjection {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::PointQuery;
 /// use parry3d::shape::Cuboid;
-/// use parry3d::math::{Vector3, Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
-/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
 /// let cuboid_pos = Pose::translation(5.0, 0.0, 0.0);
 ///
 /// let query_point = Vector::ZERO;
 ///
 /// // Project point onto cuboid surface
-/// let projection = cuboid.project_point(&cuboid_pos, &query_point, true);
+/// let projection = cuboid.project_point(&cuboid_pos, query_point, true);
 /// println!("Closest point on cuboid: {:?}", projection.point);
 /// println!("Is inside: {}", projection.is_inside);
 ///
 /// // Calculate distance to cuboid
-/// let distance = cuboid.distance_to_point(&cuboid_pos, &query_point, true);
+/// let distance = cuboid.distance_to_point(&cuboid_pos, query_point, true);
 /// println!("Distance: {}", distance);
 ///
 /// // Test if point is inside cuboid
-/// let is_inside = cuboid.contains_point(&cuboid_pos, &query_point);
+/// let is_inside = cuboid.contains_point(&cuboid_pos, query_point);
 /// println!("Contains: {}", is_inside);
 /// # }
 /// ```
@@ -170,20 +170,20 @@ pub trait PointQuery {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::PointQuery;
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Vector3;
+    /// use parry3d::math::Vector;
     ///
     /// let ball = Ball::new(1.0);
     /// let far_point = Vector::new(100.0, 0.0, 0.0);
     ///
     /// // Projection exists but is far away
-    /// assert!(ball.project_local_point(&far_point, true).point.x > 0.0);
+    /// assert!(ball.project_local_point(far_point, true).point.x > 0.0);
     ///
     /// // With max distance limit of 10, projection is rejected
-    /// assert!(ball.project_local_point_with_max_dist(&far_point, true, 10.0).is_none());
+    /// assert!(ball.project_local_point_with_max_dist(far_point, true, 10.0).is_none());
     ///
     /// // Nearby point is accepted
     /// let near_point = Vector::new(2.0, 0.0, 0.0);
-    /// assert!(ball.project_local_point_with_max_dist(&near_point, true, 10.0).is_some());
+    /// assert!(ball.project_local_point_with_max_dist(near_point, true, 10.0).is_some());
     /// # }
     /// ```
     fn project_local_point_with_max_dist(

@@ -68,7 +68,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// // Check if a point is inside
 /// let inside = Vector::new(1.0, 1.0, 0.0);
-/// assert!(triangle.contains_point(&inside));
+/// assert!(triangle.contains_point(inside));
 /// # }
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

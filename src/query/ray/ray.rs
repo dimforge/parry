@@ -41,7 +41,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{Ray, RayCast};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Vector3, Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// // Create a ray from origin pointing along +X axis
 /// let ray = Ray::new(
@@ -100,7 +100,7 @@ impl Ray {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Vector3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// // Horizontal ray pointing along +X axis
     /// let ray = Ray::new(
@@ -126,16 +126,16 @@ impl Ray {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Pose3, Vector3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
-    /// let ray = Ray::new(Vector::ZERO, Vector3::X);
+    /// let ray = Ray::new(Vector::ZERO, Vector::X);
     ///
     /// // Translate by (5, 0, 0)
     /// let transform = Pose::translation(5.0, 0.0, 0.0);
     /// let transformed = ray.transform_by(&transform);
     ///
     /// assert_eq!(transformed.origin, Vector::new(5.0, 0.0, 0.0));
-    /// assert_eq!(transformed.dir, Vector3::X);
+    /// assert_eq!(transformed.dir, Vector::X);
     /// # }
     /// ```
     #[inline]
@@ -152,9 +152,9 @@ impl Ray {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Pose3, Vector3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
-    /// let ray = Ray::new(Vector::new(10.0, 0.0, 0.0), Vector3::X);
+    /// let ray = Ray::new(Vector::new(10.0, 0.0, 0.0), Vector::X);
     ///
     /// let transform = Pose::translation(5.0, 0.0, 0.0);
     /// let local_ray = ray.inverse_transform_by(&transform);
@@ -180,13 +180,13 @@ impl Ray {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Vector3, Vector3};
+    /// use parry3d::math::Vector;
     ///
-    /// let ray = Ray::new(Vector::ZERO, Vector3::X);
+    /// let ray = Ray::new(Vector::ZERO, Vector::X);
     /// let translated = ray.translate_by(Vector::new(10.0, 5.0, 0.0));
     ///
     /// assert_eq!(translated.origin, Vector::new(10.0, 5.0, 0.0));
-    /// assert_eq!(translated.dir, Vector3::X); // Direction unchanged
+    /// assert_eq!(translated.dir, Vector::X); // Direction unchanged
     /// # }
     /// ```
     #[inline]
@@ -207,7 +207,7 @@ impl Ray {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Vector3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// let ray = Ray::new(
     ///     Vector::ZERO,
@@ -257,7 +257,7 @@ impl Ray {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{Ray, RayCast};
 /// use parry3d::shape::Cuboid;
-/// use parry3d::math::{Vector3, Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 /// let ray = Ray::new(

@@ -45,7 +45,7 @@ impl MassProperties {
     /// let c = Vector::new(0.0, 4.0);
     /// let density = 100.0; // kg/m²
     ///
-    /// let triangle_props = MassProperties::from_triangle(density, &a, &b, &c);
+    /// let triangle_props = MassProperties::from_triangle(density, a, b, c);
     ///
     /// // Area = (1/2) × base × height = (1/2) × 3 × 4 = 6 m²
     /// // Mass = area × density = 600 kg
@@ -78,7 +78,7 @@ impl MassProperties {
     /// let c = Vector::new(side / 2.0, height);
     /// let density = 50.0;
     ///
-    /// let tri_props = MassProperties::from_triangle(density, &a, &b, &c);
+    /// let tri_props = MassProperties::from_triangle(density, a, b, c);
     ///
     /// // For equilateral triangle: Area = (side² × √3) / 4
     /// let expected_area = side * side * 3.0_f32.sqrt() / 4.0;
@@ -102,7 +102,7 @@ impl MassProperties {
     /// let c = Vector::new(1.0, 2.0, 0.0);
     /// let density = 200.0; // kg/m² (sheet metal)
     ///
-    /// let plate_props = MassProperties::from_triangle(density, &a, &b, &c);
+    /// let plate_props = MassProperties::from_triangle(density, a, b, c);
     ///
     /// // Area = 2 m² (base=2, height=2, area=(1/2)×2×2=2)
     /// // Mass = 400 kg
@@ -126,7 +126,7 @@ impl MassProperties {
     /// let c = Vector::new(2.0, 2.0);
     /// let density = 100.0;
     ///
-    /// let degenerate = MassProperties::from_triangle(density, &a, &b, &c);
+    /// let degenerate = MassProperties::from_triangle(density, a, b, c);
     ///
     /// // Zero area means zero mass
     /// assert_eq!(degenerate.mass(), 0.0);

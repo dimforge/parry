@@ -61,7 +61,7 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query;
 //! use parry3d::shape::Ball;
-//! use parry3d::math::Pose3;
+//! use parry3d::math::Pose;
 //!
 //! let ball1 = Ball::new(0.5);
 //! let ball2 = Ball::new(1.0);
@@ -81,7 +81,7 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 //! use parry3d::shape::Ball;
-//! use parry3d::math::Pose3;
+//! use parry3d::math::Pose;
 //!
 //! let dispatcher = DefaultQueryDispatcher;
 //! let ball1 = Ball::new(0.5);
@@ -93,7 +93,7 @@
 //! // Compute relative position of shape2 in shape1's local space
 //! let pos12 = pos1.inv_mul(&pos2);
 //!
-//! let distance = dispatcher.distance(pos12, &ball1, &ball2).unwrap();
+//! let distance = dispatcher.distance(&pos12, &ball1, &ball2).unwrap();
 //! # }
 //! ```
 //!
@@ -343,12 +343,12 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let dispatcher = DefaultQueryDispatcher;
 ///
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector::new(2.0, 2.0, 2.0));
+/// let cuboid = Cuboid::new(Vector::splat(2.0));
 ///
 /// let pos1 = Pose::identity();
 /// let pos2 = Pose::translation(5.0, 0.0, 0.0);
@@ -358,7 +358,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// let intersects = dispatcher.intersection_test(&pos12, &ball, &cuboid).unwrap();
 ///
 /// // Compute distance
-/// let dist = dispatcher.distance(pos12, &ball, &cuboid).unwrap();
+/// let dist = dispatcher.distance(&pos12, &ball, &cuboid).unwrap();
 ///
 /// println!("Intersects: {}, Distance: {}", intersects, dist);
 /// # }

@@ -33,7 +33,7 @@ use alloc::{vec, vec::Vec};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull;
-/// use parry3d::math::Vector3;
+/// use parry3d::math::Vector;
 ///
 /// // Vectors forming a tetrahedron
 /// let points = vec![
@@ -80,7 +80,7 @@ pub fn convex_hull(points: &[Vector3]) -> (Vec<Vector3>, Vec<[u32; 3]>) {
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::try_convex_hull;
-/// use parry3d::math::Vector3;
+/// use parry3d::math::Vector;
 ///
 /// // Valid input
 /// let points = vec![

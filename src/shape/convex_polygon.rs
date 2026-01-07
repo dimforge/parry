@@ -312,7 +312,7 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use parry2d::math::{Vector, Vector};
+    /// use parry2d::math::Vector;
     ///
     /// // Create a square aligned with the axes
     /// let square = ConvexPolygon::from_convex_polyline(vec![
@@ -355,7 +355,7 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use parry2d::math::{Vector, Vector};
+    /// use parry2d::math::Vector;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
     ///     Vector::ZERO,
@@ -378,7 +378,7 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use parry2d::math::{Vector, Vector};
+    /// use parry2d::math::Vector;
     ///
     /// let square = ConvexPolygon::from_convex_polyline(vec![
     ///     Vector::ZERO,

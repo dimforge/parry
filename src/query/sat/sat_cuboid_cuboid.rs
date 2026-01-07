@@ -37,8 +37,8 @@ use crate::shape::{Cuboid, SupportMap};
 /// use parry3d::query::sat::cuboid_cuboid_compute_separation_wrt_local_line;
 /// use parry3d::math::{Pose, Vector};
 ///
-/// let cube1 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
-/// let cube2 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cube1 = Cuboid::new(Vector::splat(1.0));
+/// let cube2 = Cuboid::new(Vector::splat(1.0));
 ///
 /// // Position cube2 at (3, 0, 0) relative to cube1
 /// let pos12 = Pose::translation(3.0, 0.0, 0.0);
@@ -48,7 +48,7 @@ use crate::shape::{Cuboid, SupportMap};
 ///     &cube1,
 ///     &cube2,
 ///     &pos12,
-///     Vector3::X
+///     Vector::X
 /// );
 ///
 /// // Should be separated by 1.0 (distance 3.0 - half_extents 1.0 - 1.0)

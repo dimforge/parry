@@ -229,7 +229,7 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
     ///     Vector::new(1.0, 2.0, 3.0),
@@ -255,7 +255,7 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
     ///     Vector::ZERO,
@@ -331,7 +331,7 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
     ///     Vector::ZERO,
@@ -342,7 +342,7 @@ impl Segment {
     ///     // Direction is normalized
     ///     assert!((dir.length() - 1.0).abs() < 1e-6);
     ///     // Vectors from a to b
-    ///     assert_eq!(*dir, Vector::new(0.6, 0.8, 0.0));
+    ///     assert_eq!(dir, Vector::new(0.6, 0.8, 0.0));
     /// }
     ///
     /// // Degenerate segment (zero length)

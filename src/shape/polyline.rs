@@ -203,7 +203,7 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::{Vector3, Pose3, Translation3};
+    /// use parry3d::math::{Vector, Pose};
     ///
     /// // Create a polyline along the X axis
     /// let vertices = vec![
@@ -219,10 +219,7 @@ impl Polyline {
     /// assert_eq!(aabb.maxs.x, 2.0);
     ///
     /// // Compute AABB after translating by (10, 5, 0)
-    /// let translated = Pose3::from_parts(
-    ///     Translation3::new(10.0, 5.0, 0.0),
-    ///     nalgebra::UnitQuaternion::identity()
-    /// );
+    /// let translated = Pose::translation(10.0, 5.0, 0.0);
     /// let aabb_translated = polyline.aabb(&translated);
     /// assert_eq!(aabb_translated.mins.x, 10.0);
     /// assert_eq!(aabb_translated.maxs.x, 12.0);
@@ -536,7 +533,7 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use parry2d::math::{Vector, Vector};
+    /// use parry2d::math::Vector;
     ///
     /// let vertices = vec![
     ///     Vector::new(1.0, 2.0),
@@ -561,7 +558,7 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let vertices = vec![Vector::ZERO, Vector::new(1.0, 0.0, 0.0)];
     /// let original = Polyline::new(vertices, None);

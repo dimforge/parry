@@ -573,13 +573,13 @@ impl Tetrahedron {
     /// );
     ///
     /// // Vector at vertex a
-    /// let bcoords = tetra.barycentric_coordinates(&tetra.a).unwrap();
+    /// let bcoords = tetra.barycentric_coordinates(tetra.a).unwrap();
     /// assert!((bcoords[0] - 1.0).abs() < 1e-6);
     /// assert!(bcoords[1].abs() < 1e-6);
     ///
     /// // Vector at center
     /// let center = tetra.center();
-    /// let bcoords = tetra.barycentric_coordinates(&center).unwrap();
+    /// let bcoords = tetra.barycentric_coordinates(center).unwrap();
     /// // All coordinates should be approximately 0.25
     /// for coord in &bcoords {
     ///     assert!((coord - 0.25).abs() < 1e-6);
@@ -713,7 +713,7 @@ impl Tetrahedron {
     /// assert!((center.z - 0.25).abs() < 1e-6);
     ///
     /// // The center has equal barycentric coordinates
-    /// let bcoords = tetra.barycentric_coordinates(&center).unwrap();
+    /// let bcoords = tetra.barycentric_coordinates(center).unwrap();
     /// for coord in &bcoords {
     ///     assert!((coord - 0.25).abs() < 1e-6);
     /// }

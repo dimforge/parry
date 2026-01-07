@@ -69,7 +69,7 @@
 //! # {
 //! use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 //! use parry3d::shape::Cuboid;
-//! use parry3d::math::{Vector, Vector};
+//! use parry3d::math::Vector;
 //!
 //! // Create a simple cuboid and convert it to a triangle mesh
 //! let cuboid = Cuboid::new(Vector::new(1.0, 0.5, 0.3));

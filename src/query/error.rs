@@ -34,9 +34,9 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, distance};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use parry3d::math::{Pose3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// # let shape1 = Ball::new(1.0);
-/// # let shape2 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// # let shape2 = Cuboid::new(Vector::splat(1.0));
 /// # let pos1 = Pose::identity();
 /// # let pos2 = Pose::identity();
 /// // If contact manifolds are unsupported, try basic contact:
@@ -57,7 +57,7 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::{TriMesh, Ball, Compound, SharedShape};
 /// # use parry3d::query::distance;
-/// # use parry3d::math::{Pose3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// # let mesh = TriMesh::new(vec![], vec![]).unwrap();
 /// # let ball = Ball::new(1.0);
 /// # let pos1 = Pose::identity();
@@ -79,7 +79,7 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::TriMesh;
 /// # use parry3d::bounding_volume::Aabb;
-/// # use parry3d::math::Vector3;
+/// # use parry3d::math::Vector;
 /// # let mesh = TriMesh::new(vec![Vector::ZERO], vec![[0, 0, 0]]).unwrap();
 /// # let query_aabb = Aabb::new(Vector::ZERO, Vector::ZERO);
 /// // Use BVH queries instead of direct shape queries:
@@ -114,9 +114,9 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, Unsupported};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use parry3d::math::{Pose3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
 /// let pos1 = Pose::identity();
 /// let pos2 = Pose::identity();
 ///

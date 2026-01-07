@@ -154,22 +154,22 @@ impl Cylinder {
     /// let cylinder = Cylinder::new(2.0, 1.0);
     ///
     /// // Uniform scaling: produces a larger cylinder
-    /// let scale1 = Vector::new(2.0, 2.0, 2.0);
-    /// if let Some(Either::Left(scaled)) = cylinder.scaled(&scale1, 20) {
+    /// let scale1 = Vector::splat(2.0);
+    /// if let Some(Either::Left(scaled)) = cylinder.scaled(scale1, 20) {
     ///     assert_eq!(scaled.radius, 2.0);      // 1.0 * 2.0
     ///     assert_eq!(scaled.half_height, 4.0); // 2.0 * 2.0
     /// }
     ///
     /// // Different Y scale: still a cylinder
     /// let scale2 = Vector::new(1.5, 3.0, 1.5);
-    /// if let Some(Either::Left(scaled)) = cylinder.scaled(&scale2, 20) {
+    /// if let Some(Either::Left(scaled)) = cylinder.scaled(scale2, 20) {
     ///     assert_eq!(scaled.radius, 1.5);      // 1.0 * 1.5
     ///     assert_eq!(scaled.half_height, 6.0); // 2.0 * 3.0
     /// }
     ///
     /// // Non-uniform X/Z: produces elliptical cylinder (mesh approximation)
     /// let scale3 = Vector::new(2.0, 1.0, 1.0);
-    /// if let Some(Either::Right(polyhedron)) = cylinder.scaled(&scale3, 20) {
+    /// if let Some(Either::Right(polyhedron)) = cylinder.scaled(scale3, 20) {
     ///     // Result is a convex mesh approximating an elliptical cylinder
     ///     assert!(polyhedron.points().len() > 0);
     /// }

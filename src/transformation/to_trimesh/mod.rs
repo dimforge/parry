@@ -89,13 +89,14 @@
 //! # {
 //! use parry3d::shape::HeightField;
 //! use parry3d::math::Vector;
-//! use parry3d::na::DMatrix;
+//! use parry3d::utils::Array2;
 //!
 //! // Create a simple 3×3 height field
-//! let heights = DMatrix::from_row_slice(3, 3, &[
-//!     0.0, 1.0, 0.0,
-//!     1.0, 2.0, 1.0,
-//!     0.0, 1.0, 0.0,
+//! // Column-major order: column 0 first, then column 1, then column 2
+//! let heights = Array2::new(3, 3, vec![
+//!     0.0, 1.0, 0.0,  // column 0
+//!     1.0, 2.0, 1.0,  // column 1
+//!     0.0, 1.0, 0.0,  // column 2
 //! ]);
 //!
 //! let heightfield = HeightField::new(heights, Vector::new(10.0, 10.0, 1.0));

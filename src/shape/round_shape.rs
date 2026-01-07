@@ -105,7 +105,7 @@ use crate::shape::SupportMap;
 /// use parry3d_f64::shape::{RoundShape, Cuboid, SupportMap};
 /// use parry3d::math::Vector;
 ///
-/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
 /// let rounded_cuboid = RoundShape {
 ///     inner_shape: cuboid,
 ///     border_radius: 0.5,
@@ -113,11 +113,11 @@ use crate::shape::SupportMap;
 ///
 /// // Query the support point in the direction (1, 1, 1)
 /// let direction = Vector::new(1.0, 1.0, 1.0);
-/// let support_point = rounded_cuboid.local_support_point(&direction);
+/// let support_point = rounded_cuboid.local_support_point(direction);
 ///
 /// // The support point will be further out than the original cuboid's support point
 /// // due to the border radius
-/// let cuboid_support = cuboid.local_support_point(&direction);
+/// let cuboid_support = cuboid.local_support_point(direction);
 ///
 /// // The rounded shape extends further in all directions
 /// assert!(support_point.x > cuboid_support.x);
@@ -136,7 +136,7 @@ use crate::shape::SupportMap;
 /// use parry3d::shape::{RoundShape, Ball, Segment, SupportMap};
 /// # #[cfg(feature = "f64")]
 /// use parry3d_f64::shape::{RoundShape, Ball, Segment, SupportMap};
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::Vector;
 ///
 /// // Rounded ball (creates a slightly larger sphere)
 /// let ball = Ball::new(1.0);
@@ -217,7 +217,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     /// use parry3d_f64::shape::{RoundShape, Cuboid, SupportMap};
     /// use parry3d::math::Vector;
     ///
-    /// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+    /// let cuboid = Cuboid::new(Vector::splat(1.0));
     /// let rounded = RoundShape {
     ///     inner_shape: cuboid,
     ///     border_radius: 0.5,
@@ -225,7 +225,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     ///
     /// // Support point in the positive X direction
     /// let dir = Vector::new(1.0, 0.0, 0.0);
-    /// let support = rounded.local_support_point(&dir);
+    /// let support = rounded.local_support_point(dir);
     ///
     /// // The X coordinate is the cuboid's half-extent plus the border radius
     /// assert!((support.x - 1.5).abs() < 1e-6);
@@ -266,7 +266,7 @@ impl<S: SupportMap> SupportMap for RoundShape<S> {
     ///
     /// // Create a unit direction
     /// let dir = Vector::new(1.0, 1.0).normalize();
-    /// let support = rounded.local_support_point_toward(&dir);
+    /// let support = rounded.local_support_point_toward(dir);
     ///
     /// // The distance from origin should be ball radius + border radius
     /// let distance = (support.x.powi(2) + support.y.powi(2)).sqrt();

@@ -36,7 +36,7 @@
 //! use parry3d::query::{ContactManifold, TrackedContact};
 //! use parry3d::query::details::contact_manifold_ball_ball;
 //! use parry3d::shape::Ball;
-//! use parry3d::math::{Pose, Vector, Vector};
+//! use parry3d::math::{Pose, Vector};
 //!
 //! // Create two balls
 //! let ball1 = Ball::new(1.0);

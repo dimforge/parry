@@ -37,7 +37,7 @@ use crate::shape::{Cuboid, SupportMap};
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::Cuboid;
 /// use parry2d::query::sat::point_cuboid_find_local_separating_normal_oneway;
-/// use parry2d::math::{Vector, Vector, Pose};
+/// use parry2d::math::{Vector, Pose};
 ///
 /// let point = Vector::ZERO;
 /// let normal = Some((Vector::X.normalize()));

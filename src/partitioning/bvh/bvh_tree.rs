@@ -344,9 +344,9 @@ impl BvhNodeWide {
     /// let nodes = node_wide.as_array_mut();
     ///
     /// // Scale both nodes by 2.0
-    /// let scale = Vector::new(2.0, 2.0, 2.0);
-    /// nodes[0].scale(&scale);
-    /// nodes[1].scale(&scale);
+    /// let scale = Vector::splat(2.0);
+    /// nodes[0].scale(scale);
+    /// nodes[1].scale(scale);
     /// # }
     /// ```
     ///
@@ -797,7 +797,7 @@ impl BvhNode {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let aabb = Aabb::new(Vector::new(1.0, 1.0, 1.0), Vector::new(2.0, 2.0, 2.0));
     /// let mut node = BvhNode::leaf(aabb, 0);
@@ -1157,7 +1157,7 @@ impl BvhNode {
     /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use parry3d::query::Ray;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let aabb = Aabb::new(Vector::new(5.0, -1.0, -1.0), Vector::new(6.0, 1.0, 1.0));
     /// let node = BvhNode::leaf(aabb, 0);
@@ -1572,7 +1572,7 @@ impl IndexMut<BvhNodeIndex> for BvhNodeVec {
 /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
 /// use parry3d::bounding_volume::Aabb;
 /// use parry3d::query::{Ray, RayCast};
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::Vector;
 ///
 /// let objects = vec![
 ///     Aabb::new(Vector::new(0.0, 0.0, 5.0), Vector::new(1.0, 1.0, 6.0)),
@@ -2020,7 +2020,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy};
     /// use parry3d::bounding_volume::Aabb;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let aabbs = vec![
     ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),

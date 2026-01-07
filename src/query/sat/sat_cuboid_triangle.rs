@@ -45,7 +45,7 @@ use simba::scalar::ComplexField;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Triangle};
 /// use parry3d::query::sat::cuboid_triangle_find_local_separating_edge_twoway;
-/// use parry3d::math::{Vector, Vector, Pose};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 /// let triangle = Triangle::new(
@@ -289,7 +289,7 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Triangle, Cuboid};
 /// use parry3d::query::sat::triangle_cuboid_find_local_separating_normal_oneway;
-/// use parry3d::math::{Vector3, Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// // Horizontal triangle in the XY plane
 /// let triangle = Triangle::new(

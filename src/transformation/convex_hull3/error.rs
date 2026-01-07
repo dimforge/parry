@@ -24,7 +24,7 @@
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::{try_convex_hull, ConvexHullError};
-/// use parry3d::math::Vector3;
+/// use parry3d::math::Vector;
 ///
 /// let points = vec![
 ///     Vector::ZERO,
@@ -69,7 +69,7 @@ pub enum ConvexHullError {
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// # use parry3d::math::Vector3;
+    /// # use parry3d::math::Vector;
     /// # let points = vec![Vector::ZERO];
     /// match try_convex_hull(&points) {
     ///     Err(ConvexHullError::InternalError(msg)) => {
@@ -138,7 +138,7 @@ pub enum ConvexHullError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// use parry3d::math::Vector3;
+    /// use parry3d::math::Vector;
     ///
     /// // Only 2 points - not enough for 3D hull
     /// let points = vec![
@@ -188,7 +188,7 @@ pub enum ConvexHullError {
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// # use parry3d::math::Vector3;
+    /// # use parry3d::math::Vector;
     /// # let points = vec![Vector::ZERO];
     /// match try_convex_hull(&points) {
     ///     Err(ConvexHullError::TJunction(tri_id, v1, v2)) => {
@@ -216,8 +216,7 @@ pub enum ConvexHullError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::try_convex_hull;
-    /// use parry3d::math::Vector3;
-    /// use std::collections::HashSet;
+    /// use parry3d::math::Vector;
     ///
     /// let points = vec![
     ///     Vector::ZERO,
@@ -228,12 +227,11 @@ pub enum ConvexHullError {
     /// ];
     ///
     /// // Remove duplicates (note: this is a simple example, not production code)
-    /// fn remove_duplicates(points: Vec<Vector3<f32>>) -> Vec<Vector3<f32>> {
-    ///     let mut seen = Vec::new();
+    /// fn remove_duplicates(points: Vec<Vector>) -> Vec<Vector> {
+    ///     let mut seen: Vec<Vector> = Vec::new();
     ///     let mut result = Vec::new();
     ///     for pt in points {
-    ///         use parry3d::math::VectorExt;
-    ///         if !seen.iter().any(|&p: Vector3<f32>| (p - pt).length() < 1e-6) {
+    ///         if !seen.iter().any(|p| (*p - pt).length() < 1e-6) {
     ///             seen.push(pt);
     ///             result.push(pt);
     ///         }

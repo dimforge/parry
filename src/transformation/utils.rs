@@ -113,9 +113,8 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))]
 //! # {
 //! use parry3d::transformation::utils::{transform, scaled};
-//! use parry3d::math::{Vector, Vector, Pose};
-//! use parry3d::na::{Translation3, UnitQuaternion};
-//! use std::f32::consts::PI;
+//! use parry3d::math::{Vector, Pose, Rotation};
+//! use core::f32::consts::PI;
 //!
 //! let mut points = vec![
 //!     Vector::new(1.0, 0.0, 0.0),
@@ -127,9 +126,9 @@
 //! let points = scaled(points, Vector::new(2.0, 1.0, 0.5));
 //!
 //! // Then rotate 45 degrees around Y axis
-//! let rotation = UnitQuaternion::from_axis_angle(Vector::Y, PI / 4.0);
-//! let translation = Translation3::new(10.0, 5.0, 0.0);
-//! let isometry = Pose::from_parts(translation.into(), rotation);
+//! let rotation = Rotation::from_axis_angle(Vector::Y, PI / 4.0);
+//! let translation = Vector::new(10.0, 5.0, 0.0);
+//! let isometry = Pose::from_parts(translation, rotation);
 //!
 //! let final_points = parry3d::transformation::utils::transformed(points, isometry);
 //! # }
@@ -181,8 +180,7 @@ use {crate::math::DIM, num::Zero};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::transform;
-/// use parry3d::math::{Vector, Pose, Vector};
-/// use parry3d::na::Translation3;
+/// use parry3d::math::{Vector, Pose, Rotation};
 ///
 /// // Create some points
 /// let mut points = vec![
@@ -193,8 +191,8 @@ use {crate::math::DIM, num::Zero};
 ///
 /// // Create a translation
 /// let transform_iso = Pose::from_parts(
-///     Translation3::new(10.0, 20.0, 30.0).into(),
-///     parry3d::na::UnitQuaternion::identity()
+///     Vector::new(10.0, 20.0, 30.0),
+///     Rotation::IDENTITY
 /// );
 ///
 /// // Apply the transformation in-place
@@ -268,7 +266,7 @@ pub fn transformed(mut points: Vec<Vector>, m: Pose) -> Vec<Vector> {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::scaled;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::Vector;
 ///
 /// let points = vec![
 ///     Vector::new(1.0, 2.0, 3.0),

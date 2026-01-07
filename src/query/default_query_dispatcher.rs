@@ -67,7 +67,7 @@ use crate::shape::ShapeType;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query;
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -91,12 +91,12 @@ use crate::shape::ShapeType;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let dispatcher = DefaultQueryDispatcher;
 ///
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
 ///
 /// let pos1 = Pose::identity();
 /// let pos2 = Pose::translation(3.0, 0.0, 0.0);
@@ -107,7 +107,7 @@ use crate::shape::ShapeType;
 ///     .expect("This shape pair is supported");
 ///
 /// // Query distance
-/// let dist = dispatcher.distance(pos12, &ball, &cuboid)
+/// let dist = dispatcher.distance(&pos12, &ball, &cuboid)
 ///     .expect("This shape pair is supported");
 ///
 /// println!("Distance: {}, Intersecting: {}", dist, intersects);

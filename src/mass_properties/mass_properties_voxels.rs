@@ -43,18 +43,18 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a 3×3×3 voxel grid with 1m voxels
     /// let voxel_size = Vector::new(1.0, 1.0, 1.0);
     ///
     /// // Fill some voxels to create an L-shape
     /// let voxels = &[
-    ///     Vector::new(0, 0, 0), // Bottom bar
-    ///     Vector::new(1, 0, 0),
-    ///     Vector::new(2, 0, 0),
-    ///     Vector::new(0, 1, 0), // Vertical part
-    ///     Vector::new(0, 2, 0),
+    ///     IVector::new(0, 0, 0), // Bottom bar
+    ///     IVector::new(1, 0, 0),
+    ///     IVector::new(2, 0, 0),
+    ///     IVector::new(0, 1, 0), // Vertical part
+    ///     IVector::new(0, 2, 0),
     /// ];
     /// let voxels = Voxels::new(voxel_size, voxels);
     ///
@@ -73,7 +73,7 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a chunk of destructible terrain
     /// let voxel_size = Vector::new(0.5, 0.5, 0.5); // 50cm voxels
@@ -83,7 +83,7 @@ impl MassProperties {
     /// for x in 0..4 {
     ///     for y in 0..4 {
     ///         for z in 0..4 {
-    ///             voxels.push(Vector::new(x, y, z));
+    ///             voxels.push(IVector::new(x, y, z));
     ///         }
     ///     }
     /// }
@@ -103,16 +103,16 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Large sparse grid (only stores filled voxels since v0.25.0)
     /// let voxel_size = Vector::new(0.1, 0.1, 0.1);
     ///
     /// // Scatter some voxels in a large space (efficient with sparse storage)
     /// let voxels = &[
-    ///     Vector::new(0, 0, 0),
-    ///     Vector::new(100, 50, 75),
-    ///     Vector::new(-50, 200, -30),
+    ///     IVector::new(0, 0, 0),
+    ///     IVector::new(100, 50, 75),
+    ///     IVector::new(-50, 200, -30),
     /// ];
     /// let voxels = Voxels::new(voxel_size, voxels);
     /// let density = 1000.0;

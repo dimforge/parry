@@ -30,7 +30,7 @@ use core::mem;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -83,7 +83,7 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(2.0);
     /// let ball2 = Ball::new(2.0);
@@ -112,7 +112,7 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);
@@ -150,7 +150,7 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);
@@ -184,7 +184,7 @@ impl ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(2.0);
@@ -221,7 +221,7 @@ impl ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use parry3d::math::Pose3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(2.0);
@@ -270,7 +270,7 @@ impl ClosestPoints {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ClosestPoints;
-    /// use parry3d::math::{Pose3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Vectors in local space
     /// let local_result = ClosestPoints::WithinMargin(

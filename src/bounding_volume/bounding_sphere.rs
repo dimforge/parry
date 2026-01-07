@@ -65,7 +65,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// let sphere = BoundingSphere::new(Vector::ZERO, 2.0);
 ///
 /// // Check basic properties
-/// assert_eq!(*sphere.center(), Vector::ZERO);
+/// assert_eq!(sphere.center(), Vector::ZERO);
 /// assert_eq!(sphere.radius(), 2.0);
 ///
 /// // Test if a point is within the sphere
@@ -78,14 +78,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::BoundingSphere;
-/// use nalgebra::{Vector3, Vector3, Translation3};
+/// use parry3d::math::Vector;
 ///
 /// // Create a sphere and translate it
 /// let sphere = BoundingSphere::new(Vector::new(1.0, 2.0, 3.0), 1.5);
 /// let translation = Vector::new(5.0, 0.0, 0.0);
-/// let moved = sphere.translated(&translation);
+/// let moved = sphere.translated(translation);
 ///
-/// assert_eq!(*moved.center(), Vector::new(6.0, 2.0, 3.0));
+/// assert_eq!(moved.center(), Vector::new(6.0, 2.0, 3.0));
 /// assert_eq!(moved.radius(), 1.5); // Radius unchanged by translation
 /// # }
 /// ```
@@ -146,7 +146,7 @@ impl BoundingSphere {
     ///     5.0
     /// );
     ///
-    /// assert_eq!(*sphere.center(), Vector::new(1.0, 2.0, 3.0));
+    /// assert_eq!(sphere.center(), Vector::new(1.0, 2.0, 3.0));
     /// assert_eq!(sphere.radius(), 5.0);
     /// # }
     /// ```
@@ -166,7 +166,7 @@ impl BoundingSphere {
     /// let sphere = BoundingSphere::new(Vector::new(1.0, 2.0, 3.0), 5.0);
     /// let center = sphere.center();
     ///
-    /// assert_eq!(*center, Vector::new(1.0, 2.0, 3.0));
+    /// assert_eq!(center, Vector::new(1.0, 2.0, 3.0));
     /// # }
     /// ```
     #[inline]
@@ -210,19 +210,19 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::{Vector3, Vector3, Pose3, UnitQuaternion};
+    /// use parry3d::math::{Vector, Pose, Rotation};
     ///
     /// let sphere = BoundingSphere::new(Vector::new(1.0, 0.0, 0.0), 2.0);
     ///
     /// // Create a transformation: translate by (5, 0, 0) and rotate 90 degrees around Z
     /// let translation = Vector::new(5.0, 0.0, 0.0);
-    /// let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, std::f32::consts::FRAC_PI_2);
-    /// let transform = Pose3::from_parts(translation.into(), rotation);
+    /// let rotation = Rotation::from_rotation_z(std::f32::consts::FRAC_PI_2);
+    /// let transform = Pose::from_parts(translation, rotation);
     ///
     /// let transformed = sphere.transform_by(&transform);
     ///
     /// // The center is transformed
-    /// assert!((*transformed.center() - Vector::new(5.0, 1.0, 0.0)).length() < 1e-5);
+    /// assert!((transformed.center() - Vector::new(5.0, 1.0, 0.0)).length() < 1e-5);
     /// // The radius is unchanged
     /// assert_eq!(transformed.radius(), 2.0);
     /// # }
@@ -246,14 +246,14 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let sphere = BoundingSphere::new(Vector::ZERO, 1.0);
     /// let translation = Vector::new(10.0, 5.0, -3.0);
     ///
-    /// let moved = sphere.translated(&translation);
+    /// let moved = sphere.translated(translation);
     ///
-    /// assert_eq!(*moved.center(), Vector::new(10.0, 5.0, -3.0));
+    /// assert_eq!(moved.center(), Vector::new(10.0, 5.0, -3.0));
     /// assert_eq!(moved.radius(), 1.0); // Radius unchanged
     /// # }
     /// ```
@@ -468,7 +468,7 @@ impl BoundingVolume for BoundingSphere {
     /// sphere.loosen(2.0);
     ///
     /// assert_eq!(sphere.radius(), 7.0);
-    /// assert_eq!(*sphere.center(), Vector::ZERO); // Center unchanged
+    /// assert_eq!(sphere.center(), Vector::ZERO); // Center unchanged
     /// # }
     /// ```
     #[inline]
@@ -502,7 +502,7 @@ impl BoundingVolume for BoundingSphere {
     ///
     /// assert_eq!(sphere.radius(), 5.0); // Original unchanged
     /// assert_eq!(larger.radius(), 8.0);
-    /// assert_eq!(*larger.center(), Vector::ZERO);
+    /// assert_eq!(larger.center(), Vector::ZERO);
     /// # }
     /// ```
     #[inline]
@@ -535,7 +535,7 @@ impl BoundingVolume for BoundingSphere {
     /// sphere.tighten(3.0);
     ///
     /// assert_eq!(sphere.radius(), 7.0);
-    /// assert_eq!(*sphere.center(), Vector::ZERO); // Center unchanged
+    /// assert_eq!(sphere.center(), Vector::ZERO); // Center unchanged
     /// # }
     /// ```
     #[inline]
@@ -570,7 +570,7 @@ impl BoundingVolume for BoundingSphere {
     ///
     /// assert_eq!(sphere.radius(), 10.0); // Original unchanged
     /// assert_eq!(smaller.radius(), 6.0);
-    /// assert_eq!(*smaller.center(), Vector::ZERO);
+    /// assert_eq!(smaller.center(), Vector::ZERO);
     /// # }
     /// ```
     #[inline]

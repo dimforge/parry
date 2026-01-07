@@ -60,7 +60,7 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// // Create a wooden crate: 2m × 1m × 1m (half_extents = 1.0, 0.5, 0.5)
     /// // Wood density: approximately 600 kg/m³

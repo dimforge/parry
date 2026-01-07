@@ -61,7 +61,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -88,7 +88,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -114,7 +114,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Cuboid;
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let box1 = Cuboid::new(Vector::new(2.0, 2.0, 2.0));
 /// let box2 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
@@ -136,7 +136,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// // Enemy detection radius
 /// let detection_radius = 15.0;
@@ -177,7 +177,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball = Ball::new(2.0);
 /// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));

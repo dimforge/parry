@@ -108,13 +108,13 @@ impl Ball {
     ///
     /// // Uniform scaling: produces another ball
     /// let uniform_scale = Vector::new(3.0, 3.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 32) {
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 32) {
     ///     assert_eq!(scaled_ball.radius, 6.0); // 2.0 * 3.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polygon (ellipse approximation)
     /// let non_uniform_scale = Vector::new(2.0, 1.0);
-    /// if let Some(Either::Right(polygon)) = ball.scaled(&non_uniform_scale, 32) {
+    /// if let Some(Either::Right(polygon)) = ball.scaled(non_uniform_scale, 32) {
     ///     // The polygon approximates an ellipse with radii 4.0 and 2.0
     ///     assert!(polygon.points().len() >= 32);
     /// }
@@ -128,13 +128,13 @@ impl Ball {
     ///
     /// // Uniform scaling: produces another ball
     /// let uniform_scale = Vector::new(3.0, 3.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 32) {
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 32) {
     ///     assert_eq!(scaled_ball.radius, 6.0); // 2.0 * 3.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polygon (ellipse approximation)
     /// let non_uniform_scale = Vector::new(2.0, 1.0);
-    /// if let Some(Either::Right(polygon)) = ball.scaled(&non_uniform_scale, 32) {
+    /// if let Some(Either::Right(polygon)) = ball.scaled(non_uniform_scale, 32) {
     ///     // The polygon approximates an ellipse with radii 4.0 and 2.0
     ///     assert!(polygon.points().len() >= 32);
     /// }
@@ -191,13 +191,13 @@ impl Ball {
     ///
     /// // Uniform scaling: produces another ball
     /// let uniform_scale = Vector::new(2.0, 2.0, 2.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 10) {
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 10) {
     ///     assert_eq!(scaled_ball.radius, 10.0); // 5.0 * 2.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polyhedron (ellipsoid approximation)
     /// let non_uniform_scale = Vector::new(2.0, 1.0, 1.5);
-    /// if let Some(Either::Right(polyhedron)) = ball.scaled(&non_uniform_scale, 10) {
+    /// if let Some(Either::Right(polyhedron)) = ball.scaled(non_uniform_scale, 10) {
     ///     // The polyhedron approximates an ellipsoid
     ///     assert!(polyhedron.points().len() > 0);
     /// }

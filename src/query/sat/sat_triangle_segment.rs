@@ -38,7 +38,7 @@ use crate::shape::{Segment, SupportMap, Triangle};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Triangle, Segment};
 /// use parry3d::query::sat::triangle_segment_find_local_separating_normal_oneway;
-/// use parry3d::math::{Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// // Triangle in the XY plane
 /// let triangle = Triangle::new(
@@ -129,7 +129,7 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Segment, Triangle};
 /// use parry3d::query::sat::segment_triangle_find_local_separating_edge_twoway;
-/// use parry3d::math::{Vector3, Pose3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let segment = Segment::new(
 ///     Vector::ZERO,

@@ -116,16 +116,14 @@ use crate::math::{Pose, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid, SupportMap};
-/// use parry3d::math::{Vector, Vector, Real};
-/// extern crate nalgebra as na;
-/// use parry3d::math::Vector;
+/// use parry3d::math::{Vector, Real};
 ///
 /// // Create a ball (sphere) with radius 1.0
 /// let ball = Ball::new(1.0);
 ///
 /// // Get the support point in the direction (1, 0, 0) - pointing right
 /// let dir = Vector::new(1.0, 0.0, 0.0);
-/// let support_point = ball.local_support_point(&dir);
+/// let support_point = ball.local_support_point(dir);
 ///
 /// // For a ball centered at origin, this should be approximately (1, 0, 0)
 /// assert!((support_point.x - 1.0).abs() < 1e-6);
@@ -134,7 +132,7 @@ use crate::math::{Pose, Vector};
 ///
 /// // Try another direction - diagonal up and right
 /// let dir2 = Vector::new(1.0, 1.0, 0.0);
-/// let support_point2 = ball.local_support_point(&dir2);
+/// let support_point2 = ball.local_support_point(dir2);
 ///
 /// // The point should be on the surface of the ball (distance = radius)
 /// let distance = (support_point2.length() - 1.0).abs();
@@ -147,7 +145,6 @@ use crate::math::{Pose, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, SupportMap};
-/// extern crate nalgebra as na;
 /// use parry3d::math::Vector;
 ///
 /// // Create a cuboid (box) with half-extents 2x3x4
@@ -155,17 +152,17 @@ use crate::math::{Pose, Vector};
 ///
 /// // Support point in positive X direction should be at the right face
 /// let dir_x = Vector::new(1.0, 0.0, 0.0);
-/// let support_x = cuboid.local_support_point(&dir_x);
+/// let support_x = cuboid.local_support_point(dir_x);
 /// assert!((support_x.x - 2.0).abs() < 1e-6);
 ///
 /// // Support point in negative Y direction should be at the bottom face
 /// let dir_neg_y = Vector::new(0.0, -1.0, 0.0);
-/// let support_neg_y = cuboid.local_support_point(&dir_neg_y);
+/// let support_neg_y = cuboid.local_support_point(dir_neg_y);
 /// assert!((support_neg_y.y + 3.0).abs() < 1e-6);
 ///
 /// // Support point in diagonal direction should be at a corner
 /// let dir_diag = Vector::new(1.0, 1.0, 1.0);
-/// let support_diag = cuboid.local_support_point(&dir_diag);
+/// let support_diag = cuboid.local_support_point(dir_diag);
 /// assert!((support_diag.x - 2.0).abs() < 1e-6);
 /// assert!((support_diag.y - 3.0).abs() < 1e-6);
 /// assert!((support_diag.z - 4.0).abs() < 1e-6);
@@ -182,9 +179,7 @@ use crate::math::{Pose, Vector};
 /// # // since we can't implement traits for external types in doc tests.
 /// # // It's here for educational purposes.
 /// use parry3d::shape::SupportMap;
-/// use parry3d::math::{Vector, Vector, Real};
-/// extern crate nalgebra as na;
-/// use parry3d::math::Vector;
+/// use parry3d::math::{Vector, Real};
 ///
 /// // A simple pill-shaped object aligned with the X axis
 /// struct SimplePill {
@@ -238,14 +233,13 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
-    /// extern crate nalgebra as na;
     /// use parry3d::math::Vector;
     ///
     /// let ball = Ball::new(2.5);
     ///
     /// // Support point pointing up (Z direction)
     /// let up = Vector::new(0.0, 0.0, 1.0);
-    /// let support_up = ball.local_support_point(&up);
+    /// let support_up = ball.local_support_point(up);
     ///
     /// // Should be at the top of the ball
     /// assert!((support_up.z - 2.5).abs() < 1e-6);
@@ -254,7 +248,7 @@ pub trait SupportMap {
     ///
     /// // Support point pointing in negative X direction
     /// let left = Vector::new(-1.0, 0.0, 0.0);
-    /// let support_left = ball.local_support_point(&left);
+    /// let support_left = ball.local_support_point(left);
     ///
     /// // Should be at the left side of the ball
     /// assert!((support_left.x + 2.5).abs() < 1e-6);
@@ -283,15 +277,14 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
-    /// extern crate nalgebra as na;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::Vector;
     ///
     /// let ball = Ball::new(1.5);
     ///
     /// // Create a normalized direction vector
-    /// let dir = (Vector::new(1.0, 1.0, 0.0).normalize());
+    /// let dir = Vector::new(1.0, 1.0, 0.0).normalize();
     ///
-    /// let support = ball.local_support_point_toward(&dir);
+    /// let support = ball.local_support_point_toward(dir);
     ///
     /// // The support point should be on the sphere's surface
     /// let distance_from_origin = support.length();
@@ -331,9 +324,7 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
-    /// use parry3d::math::Pose;
-    /// extern crate nalgebra as na;
-    /// use parry3d::na::{Vector3, Translation3, UnitQuaternion};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let ball = Ball::new(1.0);
     ///
@@ -342,7 +333,7 @@ pub trait SupportMap {
     ///
     /// // Get support point in the positive X direction
     /// let dir = Vector::new(1.0, 0.0, 0.0);
-    /// let support = ball.support_point(&transform, &dir);
+    /// let support = ball.support_point(&transform, dir);
     ///
     /// // The support point should be at (11, 0, 0) - the rightmost point of the translated ball
     /// assert!((support.x - 11.0).abs() < 1e-6);
@@ -356,25 +347,23 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Cuboid, SupportMap};
-    /// use parry3d::math::Pose;
-    /// extern crate nalgebra as na;
-    /// use parry3d::na::{Vector3, UnitQuaternion};
-    /// use std::f32::consts::PI;
+    /// use parry3d::math::{Pose, Rotation, Vector};
+    /// use core::f32::consts::PI;
     ///
     /// let cuboid = Cuboid::new(Vector::new(2.0, 1.0, 1.0));
     ///
     /// // Rotate the cuboid 90 degrees around the Z axis
-    /// let rotation = UnitQuaternion::from_axis_angle(Vector3::z_axis(), PI / 2.0);
-    /// let transform = Pose::from_parts(Vector::ZERO.into(), rotation);
+    /// let rotation = Rotation::from_axis_angle(Vector::Z, PI / 2.0);
+    /// let transform = Pose::from_parts(Vector::ZERO, rotation);
     ///
     /// // In world space, ask for support in the X direction
     /// let dir = Vector::new(1.0, 0.0, 0.0);
-    /// let support = cuboid.support_point(&transform, &dir);
+    /// let support = cuboid.support_point(&transform, dir);
     ///
     /// // After 90° rotation, the long axis (originally X) now points in Y direction
     /// // So the support in X direction comes from the short axis
     /// assert!(support.x.abs() <= 1.0 + 1e-5); // Should be around 1.0 (the short axis)
-    /// }
+    /// # }
     /// ```
     fn support_point(&self, transform: &Pose, dir: Vector) -> Vector {
         let local_dir = transform.rotation.inverse() * dir;
@@ -397,9 +386,7 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, SupportMap};
-    /// use parry3d::math::Pose;
-    /// extern crate nalgebra as na;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let ball = Ball::new(2.0);
     ///
@@ -407,9 +394,9 @@ pub trait SupportMap {
     /// let transform = Pose::translation(5.0, 3.0, -2.0);
     ///
     /// // Create a normalized direction
-    /// let dir = (Vector::new(1.0, 1.0, 1.0).normalize());
+    /// let dir = Vector::new(1.0, 1.0, 1.0).normalize();
     ///
-    /// let support = ball.support_point_toward(&transform, &dir);
+    /// let support = ball.support_point_toward(&transform, dir);
     ///
     /// // The support point should be 2.0 units away from the center in the diagonal direction
     /// let center = Vector::new(5.0, 3.0, -2.0);
@@ -431,9 +418,7 @@ pub trait SupportMap {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Ball, Cuboid, SupportMap};
-    /// use parry3d::math::Pose;
-    /// extern crate nalgebra as na;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Two shapes at different positions
     /// let ball = Ball::new(1.0);
@@ -443,17 +428,17 @@ pub trait SupportMap {
     /// let cuboid_pos = Pose::translation(3.0, 0.0, 0.0);
     ///
     /// // Direction from ball to cuboid
-    /// let dir = (Vector::new(1.0, 0.0, 0.0).normalize());
+    /// let dir = Vector::new(1.0, 0.0, 0.0).normalize();
     ///
     /// // Get support points for the Minkowski difference (used in GJK)
-    /// let support_ball = ball.support_point_toward(&ball_pos, &dir);
-    /// let support_cuboid = cuboid.support_point_toward(&cuboid_pos, &-dir);
+    /// let support_ball = ball.support_point_toward(&ball_pos, dir);
+    /// let support_cuboid = cuboid.support_point_toward(&cuboid_pos, -dir);
     ///
     /// // The Minkowski difference support point
     /// let minkowski_support = support_ball - support_cuboid;
     ///
     /// println!("Support point for Minkowski difference: {:?}", minkowski_support);
-    /// }
+    /// # }
     /// ```
     fn support_point_toward(&self, transform: &Pose, dir: Vector) -> Vector {
         let local_dir = transform.rotation.inverse() * dir;

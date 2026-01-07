@@ -75,9 +75,8 @@
 //! # #[cfg(all(feature = "dim3", feature = "spade", feature = "f32"))]
 //! # {
 //! use parry3d::shape::TriMesh;
-//! use parry3d::math::{Vector, Vector};
+//! use parry3d::math::Vector;
 //! use parry3d::query::SplitResult;
-//! use parry3d::math::Unit;
 //!
 //! # let vertices = vec![
 //! #     Vector::new(0.0, 0.0, 0.0),

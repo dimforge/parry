@@ -42,7 +42,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::distance;
 /// use parry3d::shape::Ball;
-/// use parry3d::math::Pose3;
+/// use parry3d::math::Pose;
 ///
 /// // Create two balls
 /// let ball1 = Ball::new(1.0);
@@ -64,7 +64,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::distance;
 /// use parry3d::shape::Cuboid;
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Create two boxes
 /// let box1 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));

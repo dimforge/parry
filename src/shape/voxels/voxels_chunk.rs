@@ -125,11 +125,11 @@ impl VoxelsChunk {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
 ///     Vector::new(1.0, 1.0, 1.0),
-///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
 /// );
 ///
 /// // Get a chunk reference (chunk IDs come from BVH traversal)

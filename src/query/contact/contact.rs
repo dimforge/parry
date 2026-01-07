@@ -37,7 +37,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::contact;
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -119,13 +119,13 @@ impl Contact {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Contact;
-    /// use parry3d::math::{Vector3, Unit, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// // Create a contact representing two spheres touching
     /// let point1 = Vector::new(1.0, 0.0, 0.0);
     /// let point2 = Vector::new(2.0, 0.0, 0.0);
-    /// let normal1 = (Vector::new(1.0, 0.0, 0.0).normalize());
-    /// let normal2 = (Vector::new(-1.0, 0.0, 0.0).normalize());
+    /// let normal1 = Vector::new(1.0, 0.0, 0.0).normalize();
+    /// let normal2 = Vector::new(-1.0, 0.0, 0.0).normalize();
     ///
     /// let contact = Contact::new(point1, point2, normal1, normal2, 0.0);
     /// assert_eq!(contact.dist, 0.0); // Touching, not penetrating

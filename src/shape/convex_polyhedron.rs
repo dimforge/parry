@@ -812,7 +812,7 @@ impl ConvexPolyhedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let points = vec![
     ///     Vector::ZERO,
@@ -839,7 +839,7 @@ impl ConvexPolyhedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::ConvexPolyhedron;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// // Start with a unit cube
     /// let vertices = vec![

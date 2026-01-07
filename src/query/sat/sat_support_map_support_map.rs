@@ -40,21 +40,21 @@ use crate::shape::SupportMap;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid};
 /// use parry3d::query::sat::support_map_support_map_compute_separation;
-/// use parry3d::math::{Pose3, Vector3, Unit};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let sphere = Ball::new(1.0);
-/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::splat(1.0));
 ///
 /// // Position cube to the right of the sphere
 /// let pos12 = Pose::translation(3.0, 0.0, 0.0);
 ///
 /// // Test separation along the X axis
-/// let dir = (Vector3::X.normalize());
+/// let dir = Vector::X.normalize();
 /// let separation = support_map_support_map_compute_separation(
 ///     &sphere,
 ///     &cube,
 ///     &pos12,
-///     &dir
+///     dir
 /// );
 ///
 /// // They should be separated (sphere radius 1.0 + cube extent 1.0 = 2.0, distance 3.0)

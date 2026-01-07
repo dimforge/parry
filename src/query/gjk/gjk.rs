@@ -489,7 +489,7 @@ where
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Ball;
 /// use parry3d::query::{Ray, gjk::{cast_local_ray, VoronoiSimplex}};
-/// use parry3d::math::{Vector, Vector};
+/// use parry3d::math::Vector;
 ///
 /// // Create a ball at the origin
 /// let ball = Ball::new(1.0);
@@ -591,7 +591,7 @@ pub fn cast_local_ray<G: ?Sized + SupportMap>(
 ///     &pos12,
 ///     &ball1,
 ///     &ball2,
-///     &direction,
+///     direction,
 ///     &mut simplex
 /// ) {
 ///     println!("Ball1 can move {} units before contact", distance);

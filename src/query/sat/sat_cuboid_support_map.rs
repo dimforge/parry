@@ -37,21 +37,21 @@ use crate::shape::{Cuboid, SupportMap};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Ball};
 /// use parry3d::query::sat::cuboid_support_map_compute_separation_wrt_local_line;
-/// use parry2d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
-/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::splat(1.0));
 /// let sphere = Ball::new(0.5);
 ///
 /// // Position sphere near the cube
 /// let pos12 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// // Test separation along an arbitrary axis
-/// let axis = (Vector::new(1.0, 1.0, 0.0).normalize());
+/// let axis = Vector::new(1.0, 1.0, 0.0).normalize();
 /// let (separation, chosen_axis) = cuboid_support_map_compute_separation_wrt_local_line(
 ///     &cube,
 ///     &sphere,
 ///     &pos12,
-///     &axis
+///     axis
 /// );
 ///
 /// println!("Separation: {} along axis: {:?}", separation, chosen_axis);
@@ -130,20 +130,20 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Capsule};
 /// use parry3d::query::sat::cuboid_support_map_find_local_separating_edge_twoway;
-/// use parry2d::math::{Pose3, Vector3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
-/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::splat(1.0));
 /// let capsule = Capsule::new(Vector::new(0.0, -1.0, 0.0), Vector::new(0.0, 1.0, 0.0), 0.5);
 ///
 /// // Position capsule near the cube
 /// let pos12 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// // Compute edge cross products
-/// let capsule_dir = Vector3::Y; // capsule's axis direction
+/// let capsule_dir = Vector::Y; // capsule's axis direction
 /// let axes = [
-///     Vector3::X.cross(capsule_dir), // cube X × capsule axis
-///     Vector3::Y.cross(capsule_dir), // cube Y × capsule axis
-///     Vector3::Z.cross(capsule_dir), // cube Z × capsule axis
+///     Vector::X.cross(capsule_dir), // cube X × capsule axis
+///     Vector::Y.cross(capsule_dir), // cube Y × capsule axis
+///     Vector::Z.cross(capsule_dir), // cube Z × capsule axis
 /// ];
 ///
 /// let (separation, axis) = cuboid_support_map_find_local_separating_edge_twoway(
@@ -153,7 +153,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 ///     &pos12
 /// );
 ///
-/// println!("Best edge-edge separation: {} along {}", separation, axis);
+/// println!("Best edge-edge separation: {} along {:?}", separation, axis);
 /// # }
 /// ```
 ///

@@ -67,7 +67,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// // Check if a point is inside
 /// let point = Vector::ZERO;
-/// assert!(aabb.contains_local_point(&point));
+/// assert!(aabb.contains_local_point(point));
 ///
 /// // Get center and extents
 /// assert_eq!(aabb.center(), Vector::ZERO);
@@ -227,7 +227,7 @@ impl Aabb {
     /// );
     ///
     /// assert_eq!(aabb.center(), Vector::ZERO);
-    /// assert_eq!(aabb.extents(), nalgebra::Vector::new(2.0, 2.0, 2.0));
+    /// assert_eq!(aabb.extents(), Vector::new(2.0, 2.0, 2.0));
     /// # }
     /// ```
     #[inline]
@@ -281,7 +281,7 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// // Create a 10x6x8 box centered at (5, 0, 0)
     /// let aabb = Aabb::from_half_extents(
@@ -397,7 +397,7 @@ impl Aabb {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::Aabb;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::Vector;
     ///
     /// let aabb = Aabb::new(
     ///     Vector::new(-5.0, -3.0, -2.0),

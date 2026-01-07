@@ -75,7 +75,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Pose3, Vector3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -115,7 +115,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Cuboid;
-/// use parry3d::math::{Pose3, Vector3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // A cuboid tumbling through space
 /// let cube = Cuboid::new(Vector::new(0.5, 0.5, 0.5));
@@ -158,7 +158,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Pose3, Vector3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(2.0);
 /// let ball2 = Ball::new(2.0);

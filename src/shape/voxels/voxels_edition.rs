@@ -37,16 +37,16 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(Vector::new(1.0, 1.0, 1.0), &[]);
     ///
     /// // Add a voxel at (0, 0, 0)
-    /// let prev_state = voxels.set_voxel(Vector::new(0, 0, 0), true);
+    /// let prev_state = voxels.set_voxel(IVector::new(0, 0, 0), true);
     /// assert!(prev_state.is_empty()); // Was empty before
     ///
     /// // Verify it was added
-    /// let state = voxels.voxel_state(Vector::new(0, 0, 0)).unwrap();
+    /// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
     /// assert!(!state.is_empty());
     /// # }
     /// ```
@@ -56,18 +56,18 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0), Vector::new(1, 0, 0)],
+    ///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
     /// );
     ///
     /// // Remove the voxel at (0, 0, 0)
-    /// voxels.set_voxel(Vector::new(0, 0, 0), false);
+    /// voxels.set_voxel(IVector::new(0, 0, 0), false);
     ///
     /// // Verify it was removed
-    /// let state = voxels.voxel_state(Vector::new(0, 0, 0)).unwrap();
+    /// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
     /// assert!(state.is_empty());
     /// # }
     /// ```
@@ -77,14 +77,14 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(Vector::new(1.0, 1.0, 1.0), &[]);
     ///
     /// // Build a 3×3 floor
     /// for x in 0..3 {
     ///     for z in 0..3 {
-    ///         voxels.set_voxel(Vector::new(x, 0, z), true);
+    ///         voxels.set_voxel(IVector::new(x, 0, z), true);
     ///     }
     /// }
     ///
@@ -101,15 +101,15 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
-    ///     &[Vector::new(0, 0, 0)],
+    ///     &[IVector::new(0, 0, 0)],
     /// );
     ///
     /// // Try to add a voxel that already exists
-    /// let prev = voxels.set_voxel(Vector::new(0, 0, 0), true);
+    /// let prev = voxels.set_voxel(IVector::new(0, 0, 0), true);
     /// if !prev.is_empty() {
     ///     println!("Voxel was already filled!");
     /// }
@@ -183,20 +183,20 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
     ///     &[
-    ///         Vector::new(0, 0, 0),
-    ///         Vector::new(1, 0, 0),
-    ///         Vector::new(2, 0, 0),
-    ///         Vector::new(3, 0, 0),
+    ///         IVector::new(0, 0, 0),
+    ///         IVector::new(1, 0, 0),
+    ///         IVector::new(2, 0, 0),
+    ///         IVector::new(3, 0, 0),
     ///     ],
     /// );
     ///
     /// // Keep only voxels in the range [1, 2]
-    /// voxels.crop(Vector::new(1, 0, 0), Vector::new(2, 0, 0));
+    /// voxels.crop(IVector::new(1, 0, 0), IVector::new(2, 0, 0));
     ///
     /// // Only two voxels remain
     /// let count = voxels.voxels()
@@ -254,14 +254,14 @@ impl Voxels {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
     /// use parry3d::bounding_volume::Aabb;
-    /// use parry3d::math::{Vector, Vector};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
     ///     Vector::new(1.0, 1.0, 1.0),
     ///     &[
-    ///         Vector::new(0, 0, 0),  // Center at (0.5, 0.5, 0.5)
-    ///         Vector::new(2, 0, 0),  // Center at (2.5, 0.5, 0.5)
-    ///         Vector::new(4, 0, 0),  // Center at (4.5, 0.5, 0.5)
+    ///         IVector::new(0, 0, 0),  // Center at (0.5, 0.5, 0.5)
+    ///         IVector::new(2, 0, 0),  // Center at (2.5, 0.5, 0.5)
+    ///         IVector::new(4, 0, 0),  // Center at (4.5, 0.5, 0.5)
     ///     ],
     /// );
     ///

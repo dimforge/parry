@@ -194,7 +194,7 @@ impl Default for ShapeCastOptions {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
@@ -209,7 +209,7 @@ impl Default for ShapeCastOptions {
 ///
 /// let options = ShapeCastOptions::default();
 ///
-/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, vel1, &ball1, &pos2, vel2, &ball2, options) {
 ///     // Time when surfaces touch
 ///     // Distance to cover: 10.0 - 1.0 (radius) - 1.0 (radius) = 8.0
 ///     // Speed: 2.0, so time = 8.0 / 2.0 = 4.0
@@ -228,7 +228,7 @@ impl Default for ShapeCastOptions {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions, ShapeCastStatus};
 /// use parry3d::shape::Ball;
-/// use parry3d::math::{Pose3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(2.0);
 /// let ball2 = Ball::new(2.0);
@@ -236,12 +236,12 @@ impl Default for ShapeCastOptions {
 /// // Overlapping balls (centers 3 units apart, radii sum to 4)
 /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
 /// let pos2 = Pose::translation(3.0, 0.0, 0.0);
-/// let vel1 = Vector3::X;
+/// let vel1 = Vector::X;
 /// let vel2 = Vector::ZERO;
 ///
 /// let options = ShapeCastOptions::default();
 ///
-/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, vel1, &ball1, &pos2, vel2, &ball2, options) {
 ///     // Already penetrating
 ///     assert_eq!(hit.time_of_impact, 0.0);
 ///     assert_eq!(hit.status, ShapeCastStatus::PenetratingOrWithinTargetDist);

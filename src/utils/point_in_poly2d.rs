@@ -37,8 +37,8 @@ use num::Zero;
 /// let inside = Vector::new(1.0, 1.0);
 /// let outside = Vector::new(3.0, 1.0);
 ///
-/// assert!(point_in_convex_poly2d(&inside, &square));
-/// assert!(!point_in_convex_poly2d(&outside, &square));
+/// assert!(point_in_convex_poly2d(inside, &square));
+/// assert!(!point_in_convex_poly2d(outside, &square));
 /// # }
 /// ```
 ///
@@ -56,7 +56,7 @@ use num::Zero;
 /// ];
 ///
 /// let on_edge = Vector::new(1.0, 0.0);
-/// assert!(point_in_convex_poly2d(&on_edge, &triangle));
+/// assert!(point_in_convex_poly2d(on_edge, &triangle));
 /// # }
 /// ```
 ///
@@ -71,7 +71,7 @@ use num::Zero;
 /// let point = Vector::new(1.0, 1.0);
 ///
 /// // An empty polygon contains no points
-/// assert!(!point_in_convex_poly2d(&point, &empty));
+/// assert!(!point_in_convex_poly2d(point, &empty));
 /// # }
 /// ```
 pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
@@ -136,8 +136,8 @@ pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
 /// let inside = Vector::new(1.0, 1.0);
 /// let outside = Vector::new(3.0, 1.0);
 ///
-/// assert!(point_in_poly2d(&inside, &square));
-/// assert!(!point_in_poly2d(&outside, &square));
+/// assert!(point_in_poly2d(inside, &square));
+/// assert!(!point_in_poly2d(outside, &square));
 /// # }
 /// ```
 ///
@@ -161,8 +161,8 @@ pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
 /// let inside_corner = Vector::new(0.5, 0.5);
 /// let outside_corner = Vector::new(1.5, 1.5);
 ///
-/// assert!(point_in_poly2d(&inside_corner, &l_shape));
-/// assert!(!point_in_poly2d(&outside_corner, &l_shape));
+/// assert!(point_in_poly2d(inside_corner, &l_shape));
+/// assert!(!point_in_poly2d(outside_corner, &l_shape));
 /// # }
 /// ```
 ///
@@ -188,7 +188,7 @@ pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
 /// ];
 ///
 /// let center = Vector::new(0.0, 0.5);
-/// assert!(point_in_poly2d(&center, &star));
+/// assert!(point_in_poly2d(center, &star));
 /// # }
 /// ```
 ///
@@ -203,7 +203,7 @@ pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
 /// let point = Vector::new(1.0, 1.0);
 ///
 /// // An empty polygon contains no points
-/// assert!(!point_in_poly2d(&point, &empty));
+/// assert!(!point_in_poly2d(point, &empty));
 /// # }
 /// ```
 pub fn point_in_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {

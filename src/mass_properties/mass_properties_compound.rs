@@ -96,7 +96,7 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::{Capsule, Cuboid, SharedShape};
-    /// use parry3d::math::{Pose, Vector, Vector};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Simple robot arm with multiple segments
     /// let base = SharedShape::new(Cuboid::new(Vector::new(0.3, 0.2, 0.3)));
