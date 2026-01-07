@@ -3,9 +3,6 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{Pose, Real, Vector};
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A Bounding Sphere.
 ///
 /// A bounding sphere is a spherical bounding volume defined by a center point and a radius.
@@ -109,8 +106,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]

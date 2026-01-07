@@ -1,9 +1,6 @@
 use crate::math::{Pose, Real, Vector};
 use crate::shape::FeatureId;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// The result of projecting a point onto a shape.
 ///
 /// Vector projection finds the closest point on a shape's surface to a given query point.
@@ -58,8 +55,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct PointProjection {
     /// Whether the query point was inside the shape.

@@ -6,9 +6,6 @@ use crate::shape::SupportMap;
 #[cfg(feature = "alloc")]
 use either::Either;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A 3D cone shape with apex pointing upward along the Y axis.
 ///
 /// A cone is a shape that tapers from a circular base to a point (apex). In Parry,
@@ -67,8 +64,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]

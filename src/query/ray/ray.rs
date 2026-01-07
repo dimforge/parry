@@ -5,8 +5,6 @@ use crate::shape::FeatureId;
 
 #[cfg(feature = "alloc")]
 use crate::partitioning::BvhLeafCost;
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// A ray for ray-casting queries.
 ///
@@ -68,8 +66,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[repr(C)]
 pub struct Ray {
@@ -287,8 +284,7 @@ impl Ray {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct RayIntersection {
     /// The time of impact (parameter `t`) where the ray hits the shape.

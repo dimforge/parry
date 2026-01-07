@@ -8,9 +8,6 @@ use crate::shape::Segment;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
 use crate::utils::WSign;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A cuboid shape, also known as a box or rectangle.
 ///
 /// A cuboid is defined by its **half-extents**, which are half the width, height
@@ -62,8 +59,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]

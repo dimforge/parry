@@ -14,9 +14,6 @@ use crate::shape::FeatureId;
 #[cfg(feature = "dim2")]
 use crate::shape::PackedFeatureId;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A triangle shape defined by three vertices.
 ///
 /// A triangle is one of the most fundamental shapes in computational geometry.
@@ -76,8 +73,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone, Default)]
 #[repr(C)]

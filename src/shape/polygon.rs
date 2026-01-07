@@ -8,7 +8,6 @@ use parry::bounding_volume::Aabb;
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
 )]
 /// A convex planar polygon.
 pub struct Polygon {

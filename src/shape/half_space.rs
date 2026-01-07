@@ -1,9 +1,6 @@
 //! Support mapping based HalfSpace shape.
 use crate::math::Vector;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A half-space delimited by an infinite plane.
 ///
 /// # What is a HalfSpace?
@@ -140,8 +137,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[repr(C)]
 pub struct HalfSpace {

@@ -8,8 +8,6 @@ use arrayvec::ArrayVec;
 use num::Bounded;
 
 use crate::query::{Ray, RayCast};
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// An Axis-Aligned Bounding Box (AABB).
 ///
@@ -98,8 +96,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]

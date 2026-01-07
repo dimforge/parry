@@ -10,7 +10,6 @@ use simba::simd::{SimdPartialOrd, SimdValue};
 #[cfg_attr(
     feature = "rkyv",
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
 )]
 pub struct SimdAabb {
     /// The min coordinates of the Aabbs.

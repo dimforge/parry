@@ -68,6 +68,7 @@ Common patterns:
 
 - Re-export `glamx` instead of `nalgebra` as the public linear algebra dependency
 - Migrate visual examples from `macroquad` to `kiss3d`
+- Renamed `rkyv-serialize` feature to just `rkyv`
 
 ## 0.25.3
 

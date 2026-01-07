@@ -11,9 +11,6 @@ use crate::math::CrossMatrix; // Mat3 for glam
 #[cfg(all(feature = "dim2", not(feature = "std")))]
 use crate::math::ComplexField; // for .abs()
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A tetrahedron with 4 vertices.
 ///
 /// # What is a Tetrahedron?
@@ -107,8 +104,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]

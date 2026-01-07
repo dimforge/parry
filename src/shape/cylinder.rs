@@ -6,9 +6,6 @@ use crate::shape::SupportMap;
 #[cfg(feature = "alloc")]
 use either::Either;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A 3D cylinder shape with axis aligned along the Y axis.
 ///
 /// A cylinder is a shape with circular cross-sections perpendicular to its axis.
@@ -67,8 +64,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]

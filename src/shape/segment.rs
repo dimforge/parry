@@ -4,9 +4,6 @@ use crate::math::{Pose, Real, Vector};
 use crate::shape::{FeatureId, SupportMap};
 use core::mem;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// A line segment shape.
 ///
 /// A segment is the simplest 1D shape, defined by two endpoints. It represents
@@ -61,8 +58,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]

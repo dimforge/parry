@@ -5,9 +5,6 @@ use crate::utils;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use num::Zero;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 #[cfg_attr(feature = "f32", expect(clippy::unnecessary_cast))]
 const EPSILON: Real = f32::EPSILON as Real;
 
@@ -15,8 +12,7 @@ const EPSILON: Real = f32::EPSILON as Real;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 /// The mass properties of a rigid body.
 ///

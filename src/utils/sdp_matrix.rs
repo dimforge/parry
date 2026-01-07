@@ -2,16 +2,12 @@ use crate::math::{Matrix2, Matrix3, Real, Vector2, Vector3};
 use core::ops::{Add, Div, Mul, Neg, Sub};
 use num_traits::{One, Zero};
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, Archive, CheckBytes};
-
 /// A 2x2 symmetric-definite-positive matrix.
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct SdpMatrix2<N> {
     /// The component at the first row and first column of this matrix.
@@ -148,8 +144,7 @@ impl Mul<Real> for SdpMatrix2<Real> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct SdpMatrix3<N> {
     /// The component at the first row and first column of this matrix.

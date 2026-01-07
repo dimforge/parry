@@ -1,9 +1,6 @@
 use crate::math::{Pose, Real, Vector};
 use core::mem;
 
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// Geometric description of a contact between two shapes.
 ///
 /// A contact represents the point(s) where two shapes touch or penetrate. This structure
@@ -64,8 +61,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct Contact {
     /// Position of the contact point on the first shape's surface.
