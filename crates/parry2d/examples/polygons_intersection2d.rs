@@ -1,10 +1,10 @@
-mod utils;
+mod utils2d;
 
 use kiss3d::prelude::*;
 use parry2d::math::Rotation;
 use parry2d::shape::Ball;
 use parry2d::transformation::polygons_intersection_points;
-use utils::draw_polygon;
+use utils2d::draw_polygon;
 
 const RENDER_SCALE: f32 = 30.0;
 

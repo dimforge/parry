@@ -1,10 +1,10 @@
-mod utils;
+mod utils3d;
 
 use core::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6};
 
 use kiss3d::prelude::*;
 use parry3d::transformation;
-use utils::{create_mesh_from_trimesh, lissajous_3d_with_params};
+use utils3d::{create_mesh_from_trimesh, lissajous_3d_with_params};
 
 #[kiss3d::main]
 async fn main() {

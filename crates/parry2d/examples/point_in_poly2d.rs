@@ -1,9 +1,9 @@
-mod utils;
+mod utils2d;
 
 use kiss3d::prelude::*;
 use parry2d::math::Rotation;
 use parry2d::utils::point_in_poly2d;
-use utils::{draw_point, draw_polygon};
+use utils2d::{draw_point, draw_polygon};
 
 const RENDER_SCALE: f32 = 30.0;
 

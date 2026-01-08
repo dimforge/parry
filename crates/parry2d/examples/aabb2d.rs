@@ -1,10 +1,10 @@
-mod utils;
+mod utils2d;
 
 use kiss3d::prelude::*;
 use parry2d::bounding_volume::BoundingVolume;
 use parry2d::math::Pose;
 use parry2d::shape::Ball;
-use utils::{draw_aabb2, draw_circle, lissajous_2d};
+use utils2d::{draw_aabb2, draw_circle, lissajous_2d};
 
 const RENDER_SCALE: f32 = 30.0;
 

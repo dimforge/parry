@@ -1,10 +1,10 @@
-mod utils;
+mod utils2d;
 
 use kiss3d::prelude::*;
 use parry2d::math::{Pose, Rotation};
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::Cuboid;
-use utils::draw_point;
+use utils2d::draw_point;
 
 const RENDER_SCALE: f32 = 30.0;
 

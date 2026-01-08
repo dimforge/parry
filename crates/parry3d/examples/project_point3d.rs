@@ -1,9 +1,9 @@
-mod utils;
+mod utils3d;
 
 use kiss3d::prelude::*;
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
-use utils::{create_mesh_from_trimesh, lissajous_3d};
+use utils3d::{create_mesh_from_trimesh, lissajous_3d};
 
 #[kiss3d::main]
 async fn main() {

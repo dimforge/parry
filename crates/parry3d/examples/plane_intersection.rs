@@ -1,9 +1,9 @@
-mod utils;
+mod utils3d;
 
 use kiss3d::prelude::*;
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
-use utils::{create_mesh_from_trimesh, draw_polyline, draw_text};
+use utils3d::{create_mesh_from_trimesh, draw_polyline, draw_text};
 
 #[kiss3d::main]
 async fn main() {

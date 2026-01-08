@@ -1,10 +1,10 @@
-mod utils;
+mod utils3d;
 
 use kiss3d::prelude::*;
 use parry3d::bounding_volume::BoundingVolume;
 use parry3d::math::Pose;
 use parry3d::shape::Cuboid;
-use utils::{draw_aabb3, draw_sphere_wires, lissajous_3d};
+use utils3d::{draw_aabb3, draw_sphere_wires, lissajous_3d};
 
 #[kiss3d::main]
 async fn main() {

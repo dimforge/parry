@@ -1,10 +1,10 @@
-mod utils;
+mod utils2d;
 
 use kiss3d::prelude::*;
 use parry2d::math::{Pose, Rotation};
 use parry2d::query::PointQuery;
 use parry2d::shape::{Cuboid, TriMesh, TriMeshFlags};
-use utils::{draw_circle, draw_line_2d, draw_trimesh2, lissajous_2d};
+use utils2d::{draw_circle, draw_line_2d, draw_trimesh2, lissajous_2d};
 
 #[kiss3d::main]
 async fn main() {

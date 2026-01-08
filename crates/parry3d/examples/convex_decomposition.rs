@@ -1,11 +1,11 @@
-mod utils;
+mod utils3d;
 
 use kiss3d::prelude::*;
 use parry3d::{
     math::Real,
     shape::{SharedShape, TriMesh, TriMeshFlags},
 };
-use utils::{create_mesh_from_trimesh, draw_text, hue_to_rgb};
+use utils3d::{create_mesh_from_trimesh, draw_text, hue_to_rgb};
 
 #[kiss3d::main]
 async fn main() {
