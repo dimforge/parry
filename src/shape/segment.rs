@@ -373,7 +373,8 @@ impl Segment {
     /// In 2D, the normalized counterclockwise normal of this segment.
     #[cfg(feature = "dim2")]
     pub fn normal(&self) -> Option<Vector> {
-        self.scaled_normal().try_normalize()
+        let (dir, length) = self.scaled_normal().normalize_and_length();
+        (length > crate::math::DEFAULT_EPSILON).then_some(dir)
     }
 
     /// Returns `None`. Exists only for API similarity with the 2D parry.

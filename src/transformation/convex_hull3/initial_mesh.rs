@@ -230,10 +230,6 @@ pub fn try_get_initial_mesh(
 mod tests {
     #[test]
     #[cfg(feature = "f32")]
-    // TODO: ideally we would want this test to actually fail (i.e. we want the
-    // convex hull calculation to succeed in this case). Though right now almost-coplanar
-    // points can result in a failure of the algorithm. So we are testing here that the
-    // error is correctly reported (instead of panicking internally).
     fn try_get_initial_mesh_should_fail_for_missing_support_points() {
         use super::*;
         use crate::math::Vector;
@@ -247,6 +243,6 @@ mod tests {
             Vector::new(106.55043, 303.44974, 106.125),
         ];
         let result = try_convex_hull(&point_cloud);
-        assert_eq!(ConvexHullError::MissingSupportPoint, result.unwrap_err());
+        assert!(result.is_ok());
     }
 }
