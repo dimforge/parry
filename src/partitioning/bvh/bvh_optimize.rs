@@ -240,15 +240,15 @@ impl Bvh {
         }
 
         workspace.rebuild_leaves.clear();
-        workspace.rebuild_frame_index = workspace.rebuild_frame_index.overflowing_add(1).0;
-        let config = self.optimization_config(workspace.rebuild_frame_index);
+        self.optimization.rebuild_frame_index = self.optimization.rebuild_frame_index.overflowing_add(1).0;
+        let config = self.optimization_config(self.optimization.rebuild_frame_index);
 
         /*
          * Subtree optimizations.
          */
         // let t0 = core::time::Instant::now();
         let num_leaves = self.nodes[0].leaf_count();
-        let mut start_index = workspace.rebuild_start_index;
+        let mut start_index = self.optimization.rebuild_start_index;
 
         // println!("Max candidate leaf count = {}", max_candidate_leaf_count);
         self.find_optimization_roots(
@@ -266,7 +266,7 @@ impl Bvh {
             //       to reach the target subtree count.
         }
 
-        workspace.rebuild_start_index = start_index;
+        self.optimization.rebuild_start_index = start_index;
 
         // println!(
         //     "Num refinement candidates: {}, list: {:?}",
@@ -520,6 +520,19 @@ impl Bvh {
             }
         }
     }
+}
+
+/// The optimization state for used by `Bvh::optimize_incremental`.
+/// This allows each call to `optimize_incremental` to continue from where the last one left off.
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
+)]
+pub(super) struct BvhIncrementalOptimizationState {
+    pub(super) rebuild_frame_index: u32,
+    pub(super) rebuild_start_index: u32,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

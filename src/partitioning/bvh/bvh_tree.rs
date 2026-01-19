@@ -1,4 +1,5 @@
 use super::BvhOptimizationHeapEntry;
+use super::bvh_optimize::BvhIncrementalOptimizationState;
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Real, Vector};
 use crate::query::{Ray, RayCast};
@@ -136,8 +137,6 @@ pub enum BvhBuildStrategy {
 pub struct BvhWorkspace {
     pub(super) refit_tmp: BvhNodeVec,
     pub(super) rebuild_leaves: Vec<BvhNode>,
-    pub(super) rebuild_frame_index: u32,
-    pub(super) rebuild_start_index: u32,
     pub(super) optimization_roots: Vec<u32>,
     pub(super) queue: BinaryHeap<BvhOptimizationHeapEntry>,
     pub(super) dequeue: VecDeque<u32>,
@@ -1752,6 +1751,7 @@ pub struct Bvh {
     // We don’t store this in `Self::nodes` since it’s only useful for node removal.
     pub(super) parents: Vec<BvhNodeIndex>,
     pub(super) leaf_node_indices: VecMap<BvhNodeIndex>,
+    pub(super) optimization: BvhIncrementalOptimizationState,
 }
 
 impl Bvh {
@@ -2186,6 +2186,7 @@ impl Bvh {
             nodes,
             parents,
             leaf_node_indices,
+            optimization: _,
         } = self;
         nodes.capacity() * size_of::<BvhNodeWide>()
             + parents.capacity() * size_of::<BvhNodeIndex>()
