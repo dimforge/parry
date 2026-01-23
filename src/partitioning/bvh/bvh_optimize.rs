@@ -522,7 +522,7 @@ impl Bvh {
     }
 }
 
-/// The optimization state for used by `Bvh::optimize_incremental`.
+/// The optimization state used by `Bvh::optimize_incremental`.
 /// This allows each call to `optimize_incremental` to continue from where the last one left off.
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
