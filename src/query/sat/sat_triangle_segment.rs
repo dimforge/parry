@@ -1,7 +1,6 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Segment, SupportMap, Triangle};
-use na::Unit;
 
 /// Finds the best separating axis by testing a triangle's face normal against a segment (3D only).
 ///
@@ -26,7 +25,7 @@ use na::Unit;
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
 ///   - **Very negative** if the triangle has no normal (degenerate triangle)
-/// - `Vector<Real>`: The face normal direction (or its negation) that gives this separation
+/// - `Vector`: The face normal direction (or its negation) that gives this separation
 ///
 /// # Degenerate Triangles
 ///
@@ -39,22 +38,22 @@ use na::Unit;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Triangle, Segment};
 /// use parry3d::query::sat::triangle_segment_find_local_separating_normal_oneway;
-/// use nalgebra::{Point3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// // Triangle in the XY plane
 /// let triangle = Triangle::new(
-///     Point3::origin(),
-///     Point3::new(2.0, 0.0, 0.0),
-///     Point3::new(1.0, 2.0, 0.0)
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0, 0.0),
+///     Vector::new(1.0, 2.0, 0.0)
 /// );
 ///
 /// // Vertical segment above the triangle
 /// let segment = Segment::new(
-///     Point3::new(1.0, 1.0, 1.0),
-///     Point3::new(1.0, 1.0, 3.0)
+///     Vector::new(1.0, 1.0, 1.0),
+///     Vector::new(1.0, 1.0, 3.0)
 /// );
 ///
-/// let pos12 = Isometry3::identity();
+/// let pos12 = Pose::identity();
 ///
 /// let (separation, normal) = triangle_segment_find_local_separating_normal_oneway(
 ///     &triangle,
@@ -77,21 +76,21 @@ use na::Unit;
 pub fn triangle_segment_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     segment2: &Segment,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     if let Some(dir) = triangle1.normal() {
-        let p2a = segment2.support_point_toward(pos12, &-dir);
-        let p2b = segment2.support_point_toward(pos12, &dir);
-        let sep_a = (p2a - triangle1.a).dot(&dir);
-        let sep_b = -(p2b - triangle1.a).dot(&dir);
+        let p2a = segment2.support_point_toward(pos12, -dir);
+        let p2b = segment2.support_point_toward(pos12, dir);
+        let sep_a = (p2a - triangle1.a).dot(dir);
+        let sep_b = -(p2b - triangle1.a).dot(dir);
 
         if sep_a >= sep_b {
-            (sep_a, *dir)
+            (sep_a, dir)
         } else {
-            (sep_b, -*dir)
+            (sep_b, -dir)
         }
     } else {
-        (-Real::MAX, Vector::zeros())
+        (-Real::MAX, Vector::ZERO)
     }
 }
 
@@ -113,7 +112,7 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 /// - `Real`: The maximum separation found across all edge-edge axes
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The axis direction that gives this separation
+/// - `Vector`: The axis direction that gives this separation
 ///
 /// # The Axes Tested
 ///
@@ -130,20 +129,20 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Segment, Triangle};
 /// use parry3d::query::sat::segment_triangle_find_local_separating_edge_twoway;
-/// use nalgebra::{Point3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let segment = Segment::new(
-///     Point3::origin(),
-///     Point3::new(0.0, 0.0, 2.0)
+///     Vector::ZERO,
+///     Vector::new(0.0, 0.0, 2.0)
 /// );
 ///
 /// let triangle = Triangle::new(
-///     Point3::new(1.0, 0.0, 1.0),
-///     Point3::new(3.0, 0.0, 1.0),
-///     Point3::new(2.0, 2.0, 1.0)
+///     Vector::new(1.0, 0.0, 1.0),
+///     Vector::new(3.0, 0.0, 1.0),
+///     Vector::new(2.0, 2.0, 1.0)
 /// );
 ///
-/// let pos12 = Isometry3::identity();
+/// let pos12 = Pose::identity();
 ///
 /// let (separation, axis) = segment_triangle_find_local_separating_edge_twoway(
 ///     &segment,
@@ -173,14 +172,14 @@ pub fn triangle_segment_find_local_separating_normal_oneway(
 pub fn segment_triangle_find_local_separating_edge_twoway(
     segment1: &Segment,
     triangle2: &Triangle,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
-    let x2 = pos12 * (triangle2.b - triangle2.a);
-    let y2 = pos12 * (triangle2.c - triangle2.b);
-    let z2 = pos12 * (triangle2.a - triangle2.c);
+    pos12: &Pose,
+) -> (Real, Vector) {
+    let x2 = pos12.rotation * (triangle2.b - triangle2.a);
+    let y2 = pos12.rotation * (triangle2.c - triangle2.b);
+    let z2 = pos12.rotation * (triangle2.a - triangle2.c);
     let dir1 = segment1.scaled_direction();
 
-    let crosses1 = [dir1.cross(&x2), dir1.cross(&y2), dir1.cross(&z2)];
+    let crosses1 = [dir1.cross(x2), dir1.cross(y2), dir1.cross(z2)];
     let axes1 = [
         crosses1[0],
         crosses1[1],
@@ -193,13 +192,13 @@ pub fn segment_triangle_find_local_separating_edge_twoway(
     let mut sep_dir = axes1[0];
 
     for axis1 in &axes1 {
-        if let Some(axis1) = Unit::try_new(*axis1, 0.0) {
+        if let Some(axis1) = (*axis1).try_normalize() {
             let sep =
-                sat::support_map_support_map_compute_separation(segment1, triangle2, pos12, &axis1);
+                sat::support_map_support_map_compute_separation(segment1, triangle2, pos12, axis1);
 
             if sep > max_separation {
                 max_separation = sep;
-                sep_dir = *axis1;
+                sep_dir = axis1;
             }
         }
     }

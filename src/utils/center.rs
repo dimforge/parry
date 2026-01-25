@@ -1,5 +1,4 @@
-use crate::math::{Point, Real};
-use na;
+use crate::math::{Real, Vector};
 
 /// Computes the geometric center (centroid) of a set of points.
 ///
@@ -12,7 +11,7 @@ use na;
 ///
 /// # Returns
 ///
-/// The geometric center as a `Point<Real>`.
+/// The geometric center as a `Vector`.
 ///
 /// # Panics
 ///
@@ -25,13 +24,13 @@ use na;
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::center;
-/// use parry2d::math::Point;
+/// use parry2d::math::Vector;
 ///
 /// let points = vec![
-///     Point::new(0.0, 0.0),
-///     Point::new(2.0, 0.0),
-///     Point::new(2.0, 2.0),
-///     Point::new(0.0, 2.0),
+///     Vector::new(0.0, 0.0),
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
 /// let c = center(&points);
@@ -47,12 +46,12 @@ use na;
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::utils::center;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// let points = vec![
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(4.0, 0.0, 0.0),
-///     Point::new(0.0, 4.0, 0.0),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(4.0, 0.0, 0.0),
+///     Vector::new(0.0, 4.0, 0.0),
 /// ];
 ///
 /// let c = center(&points);
@@ -64,14 +63,14 @@ use na;
 /// # }
 /// ```
 ///
-/// ## Single Point
+/// ## Single Vector
 ///
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::center;
-/// use parry2d::math::Point;
+/// use parry2d::math::Vector;
 ///
-/// let points = vec![Point::new(5.0, 10.0)];
+/// let points = vec![Vector::new(5.0, 10.0)];
 /// let c = center(&points);
 ///
 /// // The center of a single point is the point itself
@@ -79,19 +78,19 @@ use na;
 /// # }
 /// ```
 #[inline]
-pub fn center(pts: &[Point<Real>]) -> Point<Real> {
+pub fn center(pts: &[Vector]) -> Vector {
     assert!(
         !pts.is_empty(),
         "Cannot compute the center of less than 1 point."
     );
 
-    let denom: Real = na::convert::<f64, Real>(1.0 / (pts.len() as f64));
+    let denom: Real = 1.0 / (pts.len() as Real);
 
     let mut piter = pts.iter();
     let mut res = *piter.next().unwrap() * denom;
 
     for pt in piter {
-        res += pt.coords * denom;
+        res += pt * denom;
     }
 
     res

@@ -1,8 +1,8 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::{Contact, QueryDispatcher};
 use crate::shape::{CompositeShape, CompositeShapeRef, Shape};
-use crate::utils::IsometryOpt;
+use crate::utils::PoseOpt;
 
 impl<S: ?Sized + CompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the closest/deepest contact between `self` and the given `shape2` positioned at
@@ -14,7 +14,7 @@ impl<S: ?Sized + CompositeShape> CompositeShapeRef<'_, S> {
     pub fn contact_with_shape<D: ?Sized + QueryDispatcher>(
         &self,
         dispatcher: &D,
-        pose12: &Isometry<Real>,
+        pose12: &Pose,
         shape2: &dyn Shape,
         prediction: Real,
     ) -> Option<(u32, Contact)> {
@@ -45,7 +45,7 @@ impl<S: ?Sized + CompositeShape> CompositeShapeRef<'_, S> {
 /// Best contact between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn contact_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pose12: &Isometry<Real>,
+    pose12: &Pose,
     g1: &G1,
     g2: &dyn Shape,
     prediction: Real,
@@ -62,7 +62,7 @@ where
 /// Best contact between a shape and a composite (`Mesh`, `Compound`) shape.
 pub fn contact_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pose12: &Isometry<Real>,
+    pose12: &Pose,
     g1: &dyn Shape,
     g2: &G2,
     prediction: Real,

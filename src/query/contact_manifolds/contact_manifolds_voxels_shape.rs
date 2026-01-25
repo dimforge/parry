@@ -1,26 +1,38 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Translation, Vector, DIM};
+use crate::math::{IVector, Int, Pose, Real, Vector, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
 use crate::shape::{AxisMask, Cuboid, Shape, SupportMap, VoxelData, VoxelType, Voxels};
 use crate::utils::hashmap::{Entry, HashMap};
-use crate::utils::IsometryOpt;
+use crate::utils::PoseOpt;
 use alloc::{boxed::Box, vec::Vec};
-use na::{SVector, Vector2};
+use num::AsPrimitive;
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Clone)]
 pub(crate) struct VoxelsShapeSubDetector {
     pub manifold_id: usize,
     pub selected_contacts: u32,
     pub timestamp: bool,
+}
+
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub(crate) struct VoxelsWorkspaceKey<const N: usize> {
+    #[cfg_attr(feature = "serde-serialize", serde(with = "serde_arrays"))]
+    idx: [u32; N],
+}
+
+impl<const N: usize> From<[u32; N]> for VoxelsWorkspaceKey<N> {
+    fn from(idx: [u32; N]) -> Self {
+        Self { idx }
+    }
 }
 
 // NOTE: this is using a similar kind of cache as compound shape and height-field.
@@ -30,7 +42,7 @@ pub(crate) struct VoxelsShapeSubDetector {
 #[derive(Clone, Default)]
 pub struct VoxelsShapeContactManifoldsWorkspace<const N: usize> {
     pub(crate) timestamp: bool,
-    pub(crate) sub_detectors: HashMap<SVector<u32, N>, VoxelsShapeSubDetector>,
+    pub(crate) sub_detectors: HashMap<VoxelsWorkspaceKey<N>, VoxelsShapeSubDetector>,
 }
 
 impl<const N: usize> VoxelsShapeContactManifoldsWorkspace<N> {
@@ -72,7 +84,7 @@ impl WorkspaceData for VoxelsShapeContactManifoldsWorkspace<2> {
 /// Computes the contact manifold between a convex shape and a voxels shape, both represented as a `Shape` trait-object.
 pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &dyn Shape,
     shape2: &dyn Shape,
     prediction: Real,
@@ -103,7 +115,7 @@ pub fn contact_manifolds_voxels_shape_shapes<ManifoldData, ContactData>(
 /// Computes the contact manifold between a convex shape and a voxels shape.
 pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     voxels1: &Voxels,
     shape2: &dyn Shape,
     prediction: Real,
@@ -146,7 +158,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             // TODO: could we refactor the workspace system between Voxels, HeightField, and CompoundShape?
             //       (and maybe TriMesh too but it’s using a different approach).
             let (sub_detector, manifold_updated) =
-                match workspace.sub_detectors.entry(canon1.workspace_key) {
+                match workspace.sub_detectors.entry(canon1.workspace_key.into()) {
                     Entry::Occupied(entry) => {
                         let sub_detector = entry.into_mut();
 
@@ -193,7 +205,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     canon1.cuboid(voxels1, &vox1, domain2_1);
 
                 let canonical_shape1 = &canonical_pseudo_cube1 as &dyn Shape;
-                let canonical_pos12 = Translation::from(-canonical_center1) * pos12;
+                let canonical_pos12 = Pose::from_translation(-canonical_center1) * pos12;
 
                 // If we already computed contacts in the previous simulation step, their
                 // local points are relative to the previously calculated canonical shape
@@ -205,16 +217,16 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     manifold
                         .subshape_pos2
                         .as_ref()
-                        .map(|p| p.translation.vector)
+                        .map(|p| p.translation)
                         .unwrap_or_default()
                 } else {
                     manifold
                         .subshape_pos1
                         .as_ref()
-                        .map(|p| p.translation.vector)
+                        .map(|p| p.translation)
                         .unwrap_or_default()
                 };
-                let delta_center = canonical_center1.coords - prev_center;
+                let delta_center = canonical_center1 - prev_center;
 
                 if flipped {
                     for pt in &mut manifold.points {
@@ -228,7 +240,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
 
                 // Update contacts.
                 if flipped {
-                    manifold.subshape_pos2 = Some(Isometry::from(canonical_center1));
+                    manifold.subshape_pos2 = Some(Pose::from_translation(canonical_center1));
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12.inverse(),
                         shape2,
@@ -239,7 +251,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                         manifold,
                     );
                 } else {
-                    manifold.subshape_pos1 = Some(Isometry::from(canonical_center1));
+                    manifold.subshape_pos1 = Some(Pose::from_translation(canonical_center1));
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12,
                         canonical_shape1,
@@ -255,7 +267,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
             /*
              * Filter-out points that don’t belong to this block.
              */
-            let test_voxel = Cuboid::new(radius1 + Vector::repeat(1.0e-2));
+            let test_voxel = Cuboid::new(radius1 + Vector::splat(1.0e-2));
             let penetration_dir1 = if flipped {
                 manifold.local_n2
             } else {
@@ -268,12 +280,12 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     // interior of the infinitely expanded canonical shape by checking if
                     // the opposite normal had led to a better vector.
                     let cuboid1 = Cuboid::new(radius1);
-                    let sp1 = cuboid1.local_support_point(&-penetration_dir1) + vox1.center.coords;
+                    let sp1 = cuboid1.local_support_point(-penetration_dir1) + vox1.center;
                     let sm2 = shape2
                         .as_support_map()
                         .expect("Unsupported collision pair.");
-                    let sp2 = sm2.support_point(pos12, &penetration_dir1);
-                    let test_dist = (sp2 - sp1).dot(&-penetration_dir1);
+                    let sp2 = sm2.support_point(pos12, penetration_dir1);
+                    let test_dist = (sp2 - sp1).dot(-penetration_dir1);
                     let keep = test_dist < pt.dist;
 
                     if !keep {
@@ -284,12 +296,12 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 }
 
                 let pt_in_voxel_space = if flipped {
-                    manifold.subshape_pos2.transform_point(&pt.local_p2) - vox1.center.coords
+                    manifold.subshape_pos2.transform_point(pt.local_p2) - vox1.center
                 } else {
-                    manifold.subshape_pos1.transform_point(&pt.local_p1) - vox1.center.coords
+                    manifold.subshape_pos1.transform_point(pt.local_p1) - vox1.center
                 };
                 sub_detector.selected_contacts |=
-                    (test_voxel.contains_local_point(&pt_in_voxel_space) as u32) << i;
+                    (test_voxel.contains_local_point(pt_in_voxel_space) as u32) << i;
             }
         }
     }
@@ -315,8 +327,8 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct CanonicalVoxelShape {
-    pub range: [Point<i32>; 2],
-    pub workspace_key: Vector2<u32>,
+    pub range: [IVector; 2],
+    pub workspace_key: [u32; 2],
 }
 
 impl CanonicalVoxelShape {
@@ -327,14 +339,14 @@ impl CanonicalVoxelShape {
         // NOTE: the mins/maxs here are offset by 1 so we can expand past the last voxel if it
         //       happens to also be infinite along the same axis (due to cross-voxels internal edges
         //       detection).
-        let mins = voxels.domain()[0] - Vector::repeat(1);
+        let mins = voxels.domain()[0] - IVector::splat(1);
         let maxs = voxels.domain()[1];
         let counts = maxs - mins;
         let mask1 = vox.state.free_faces();
 
-        let adjust_canon = |axis: AxisMask, i: usize, key: &mut Point<i32>, val: i32| {
+        let adjust_canon = |axis: AxisMask, i: usize, key: &mut IVector, val: Int| {
             if !mask1.contains(axis) {
-                key[i] = val;
+                key[i] = val.as_();
             }
         };
 
@@ -350,29 +362,24 @@ impl CanonicalVoxelShape {
         }
 
         #[cfg(feature = "dim2")]
-        let workspace_id = |vox: Point<i32>| {
+        let workspace_id = |vox: IVector| {
             let local = vox - mins;
             (local.x + local.y * counts.x) as u32
         };
 
         #[cfg(feature = "dim3")]
-        let workspace_id = |vox: Point<i32>| {
+        let workspace_id = |vox: IVector| {
             let local = vox - mins;
             (local.x + local.y * counts.x + local.z * counts.x * counts.y) as u32
         };
 
         Self {
             range: [key_low, key_high],
-            workspace_key: Vector2::new(workspace_id(key_low), workspace_id(key_high)),
+            workspace_key: [workspace_id(key_low), workspace_id(key_high)],
         }
     }
 
-    pub fn cuboid(
-        &self,
-        voxels: &Voxels,
-        vox: &VoxelData,
-        domain2_1: Aabb,
-    ) -> (Point<Real>, Cuboid) {
+    pub fn cuboid(&self, voxels: &Voxels, vox: &VoxelData, domain2_1: Aabb) -> (Vector, Cuboid) {
         let radius = voxels.voxel_size() / 2.0;
         let mut canonical_mins = voxels.voxel_center(self.range[0]);
         let mut canonical_maxs = voxels.voxel_center(self.range[1]);
@@ -388,7 +395,7 @@ impl CanonicalVoxelShape {
         }
 
         let canonical_half_extents = (canonical_maxs - canonical_mins) / 2.0 + radius;
-        let canonical_center = na::center(&canonical_mins, &canonical_maxs);
+        let canonical_center = canonical_mins.midpoint(canonical_maxs);
         let canonical_cube = Cuboid::new(canonical_half_extents);
 
         (canonical_center, canonical_cube)

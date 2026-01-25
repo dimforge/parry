@@ -1,4 +1,4 @@
-//! Point inclusion and projection.
+//! Vector inclusion and projection.
 
 #[doc(inline)]
 pub use self::point_query::{PointProjection, PointQuery, PointQueryWithLocation};

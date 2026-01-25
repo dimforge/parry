@@ -16,20 +16,20 @@
 // >
 // > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{Int, Real, Vector, VectorExt, DIM};
 use crate::transformation::vhacd::VHACDParameters;
 use crate::transformation::voxelization::{VoxelSet, VoxelizedVolume};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
 #[cfg(feature = "dim2")]
-type ConvexHull = Vec<Point<Real>>;
+type ConvexHull = Vec<Vector>;
 #[cfg(feature = "dim3")]
-type ConvexHull = (Vec<Point<Real>>, Vec<[u32; 3]>);
+type ConvexHull = (Vec<Vector>, Vec<[u32; 3]>);
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct CutPlane {
-    pub abc: Vector<Real>,
+    pub abc: Vector,
     pub d: Real,
     pub axis: u8,
     pub index: u32,
@@ -60,15 +60,15 @@ pub(crate) struct CutPlane {
 ///
 /// ```no_run
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 ///
 /// // Define a simple mesh (tetrahedron)
 /// let vertices = vec![
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.5, 1.0, 0.0),
-///     Point::new(0.5, 0.5, 1.0),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.5, 1.0, 0.0),
+///     Vector::new(0.5, 0.5, 1.0),
 /// ];
 /// let indices = vec![
 ///     [0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2],
@@ -94,12 +94,12 @@ pub(crate) struct CutPlane {
 ///
 /// ```no_run
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
 ///
 /// # let vertices = vec![
-/// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-/// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+/// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+/// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
 /// # ];
 /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
 /// #
@@ -178,13 +178,13 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// // Simple L-shaped mesh
     /// let vertices = vec![
-    ///     Point::new(0.0, 0.0, 0.0), Point::new(2.0, 0.0, 0.0),
-    ///     Point::new(2.0, 1.0, 0.0), Point::new(1.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 0.0), Vector::new(2.0, 0.0, 0.0),
+    ///     Vector::new(2.0, 1.0, 0.0), Vector::new(1.0, 1.0, 0.0),
     /// ];
     /// let indices = vec![
     ///     [0, 1, 2], [0, 2, 3],
@@ -205,12 +205,12 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -231,12 +231,12 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -260,7 +260,7 @@ impl VHACD {
     /// - [`compute_exact_convex_hulls`](VHACD::compute_exact_convex_hulls): Generate mesh-based hulls
     pub fn decompose(
         params: &VHACDParameters,
-        points: &[Point<Real>],
+        points: &[Vector],
         indices: &[[u32; DIM]],
         keep_voxel_to_primitives_map: bool,
     ) -> Self {
@@ -312,13 +312,13 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     /// use parry3d::transformation::voxelization::{VoxelizedVolume, FillMode};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -389,12 +389,12 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -426,13 +426,13 @@ impl VHACD {
     }
 
     #[cfg(feature = "dim2")]
-    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
+    fn compute_preferred_cutting_direction(eigenvalues: Vector) -> (Vector, Real) {
         let vx = eigenvalues.y * eigenvalues.y;
         let vy = eigenvalues.x * eigenvalues.x;
 
         if vx < vy {
             let e = eigenvalues.y * eigenvalues.y;
-            let dir = Vector::x();
+            let dir = Vector::X;
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -441,7 +441,7 @@ impl VHACD {
             }
         } else {
             let e = eigenvalues.x * eigenvalues.x;
-            let dir = Vector::y();
+            let dir = Vector::Y;
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -452,14 +452,14 @@ impl VHACD {
     }
 
     #[cfg(feature = "dim3")]
-    fn compute_preferred_cutting_direction(eigenvalues: &Vector<Real>) -> (Vector<Real>, Real) {
+    fn compute_preferred_cutting_direction(eigenvalues: Vector) -> (Vector, Real) {
         let vx = (eigenvalues.y - eigenvalues.z) * (eigenvalues.y - eigenvalues.z);
         let vy = (eigenvalues.x - eigenvalues.z) * (eigenvalues.x - eigenvalues.z);
         let vz = (eigenvalues.x - eigenvalues.y) * (eigenvalues.x - eigenvalues.y);
 
         if vx < vy && vx < vz {
             let e = eigenvalues.y * eigenvalues.y + eigenvalues.z * eigenvalues.z;
-            let dir = Vector::x();
+            let dir = Vector::X;
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -468,7 +468,7 @@ impl VHACD {
             }
         } else if vy < vx && vy < vz {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.z * eigenvalues.z;
-            let dir = Vector::y();
+            let dir = Vector::Y;
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -477,7 +477,7 @@ impl VHACD {
             }
         } else {
             let e = eigenvalues.x * eigenvalues.x + eigenvalues.y * eigenvalues.y;
-            let dir = Vector::z();
+            let dir = Vector::Z;
 
             if e == 0.0 {
                 (dir, 0.0)
@@ -497,15 +497,15 @@ impl VHACD {
         let max_v = vset.max_bb_voxels();
 
         let best_id = best_plane.axis as usize;
-        let i0 = min_v[best_id].max(best_plane.index.saturating_sub(downsampling));
-        let i1 = max_v[best_id].min(best_plane.index + downsampling);
+        let i0 = min_v[best_id].max(best_plane.index.saturating_sub(downsampling) as Int);
+        let i1 = max_v[best_id].min((best_plane.index + downsampling) as Int);
 
         for i in i0..=i1 {
             let plane = CutPlane {
                 abc: Vector::ith(best_id, 1.0),
                 axis: best_plane.axis,
                 d: -(vset.origin[best_id] + (i as Real + 0.5) * vset.scale),
-                index: i,
+                index: i as u32,
             };
             planes.push(plane);
         }
@@ -517,7 +517,7 @@ impl VHACD {
         input_voxels: &VoxelSet,
         input_voxels_ch: &ConvexHull,
         planes: &[CutPlane],
-        preferred_cutting_direction: &Vector<Real>,
+        preferred_cutting_direction: Vector,
         w: Real,
         alpha: Real,
         beta: Real,
@@ -584,11 +584,11 @@ impl VHACD {
             let symmetry = beta * d;
             let total = concavity + balance + symmetry;
 
-            if total < min_total || (total == min_total && (x as i32) < i_best) {
+            if total < min_total || (total == min_total && (x as Int) < i_best) {
                 min_concavity = concavity;
                 best_plane = *plane;
                 min_total = total;
-                i_best = x as i32;
+                i_best = x as Int;
             }
         }
 
@@ -622,7 +622,7 @@ impl VHACD {
         if concavity > params.concavity {
             let eigenvalues = voxels.compute_principal_axes();
             let (preferred_cutting_direction, w) =
-                Self::compute_preferred_cutting_direction(&eigenvalues);
+                Self::compute_preferred_cutting_direction(eigenvalues);
 
             let mut planes = Vec::new();
             voxels.compute_axes_aligned_clipping_planes(params.plane_downsampling, &mut planes);
@@ -631,7 +631,7 @@ impl VHACD {
                 &voxels,
                 &voxels_convex_hull,
                 &planes,
-                &preferred_cutting_direction,
+                preferred_cutting_direction,
                 w,
                 concavity * params.alpha,
                 concavity * params.beta,
@@ -653,7 +653,7 @@ impl VHACD {
                     &voxels,
                     &voxels_convex_hull,
                     &planes_ref,
-                    &preferred_cutting_direction,
+                    preferred_cutting_direction,
                     w,
                     concavity * params.alpha,
                     concavity * params.beta,
@@ -786,9 +786,9 @@ impl VHACD {
     /// `self`.
     pub fn compute_primitive_intersections(
         &self,
-        points: &[Point<Real>],
+        points: &[Vector],
         indices: &[[u32; DIM]],
-    ) -> Vec<Vec<Point<Real>>> {
+    ) -> Vec<Vec<Vector>> {
         self.voxel_parts
             .iter()
             .map(|part| part.compute_primitive_intersections(points, indices))
@@ -816,7 +816,7 @@ impl VHACD {
     /// # Returns
     ///
     /// A vector of convex polygons (one per decomposed part), where each polygon is
-    /// represented as a `Vec<Point<Real>>` containing the hull vertices in order.
+    /// represented as a `Vec<Vector>` containing the hull vertices in order.
     ///
     /// # Performance
     ///
@@ -828,14 +828,14 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
-    /// use parry2d::math::Point;
+    /// use parry2d::math::Vector;
     /// use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// // Define an L-shaped polyline
     /// let vertices = vec![
-    ///     Point::new(0.0, 0.0), Point::new(2.0, 0.0),
-    ///     Point::new(2.0, 1.0), Point::new(1.0, 1.0),
-    ///     Point::new(1.0, 2.0), Point::new(0.0, 2.0),
+    ///     Vector::new(0.0, 0.0), Vector::new(2.0, 0.0),
+    ///     Vector::new(2.0, 1.0), Vector::new(1.0, 1.0),
+    ///     Vector::new(1.0, 2.0), Vector::new(0.0, 2.0),
     /// ];
     /// let indices = vec![
     ///     [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
@@ -869,9 +869,9 @@ impl VHACD {
     #[cfg(feature = "dim2")]
     pub fn compute_exact_convex_hulls(
         &self,
-        points: &[Point<Real>],
+        points: &[Vector],
         indices: &[[u32; DIM]],
-    ) -> Vec<Vec<Point<Real>>> {
+    ) -> Vec<Vec<Vector>> {
         self.voxel_parts
             .iter()
             .map(|part| part.compute_exact_convex_hull(points, indices))
@@ -900,7 +900,7 @@ impl VHACD {
     ///
     /// A vector of convex hulls (one per decomposed part), where each hull is represented as
     /// a tuple `(vertices, indices)`:
-    /// - `vertices`: `Vec<Point<Real>>` - The hull vertices
+    /// - `vertices`: `Vec<Vector>` - The hull vertices
     /// - `indices`: `Vec<[u32; 3]>` - Triangle indices defining the hull surface
     ///
     /// # Performance
@@ -913,12 +913,12 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -950,9 +950,9 @@ impl VHACD {
     #[cfg(feature = "dim3")]
     pub fn compute_exact_convex_hulls(
         &self,
-        points: &[Point<Real>],
+        points: &[Vector],
         indices: &[[u32; DIM]],
-    ) -> Vec<(Vec<Point<Real>>, Vec<[u32; DIM]>)> {
+    ) -> Vec<(Vec<Vector>, Vec<[u32; DIM]>)> {
         self.voxel_parts
             .iter()
             .map(|part| part.compute_exact_convex_hull(points, indices))
@@ -978,7 +978,7 @@ impl VHACD {
     /// # Returns
     ///
     /// A vector of convex polygons (one per decomposed part), where each polygon is
-    /// represented as a `Vec<Point<Real>>` containing the hull vertices in order.
+    /// represented as a `Vec<Vector>` containing the hull vertices in order.
     ///
     /// # Performance
     ///
@@ -1002,14 +1002,14 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
-    /// use parry2d::math::Point;
+    /// use parry2d::math::Vector;
     /// use parry2d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// // Define an L-shaped polyline
     /// let vertices = vec![
-    ///     Point::new(0.0, 0.0), Point::new(2.0, 0.0),
-    ///     Point::new(2.0, 1.0), Point::new(1.0, 1.0),
-    ///     Point::new(1.0, 2.0), Point::new(0.0, 2.0),
+    ///     Vector::new(0.0, 0.0), Vector::new(2.0, 0.0),
+    ///     Vector::new(2.0, 1.0), Vector::new(1.0, 1.0),
+    ///     Vector::new(1.0, 2.0), Vector::new(0.0, 2.0),
     /// ];
     /// let indices = vec![
     ///     [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
@@ -1036,7 +1036,7 @@ impl VHACD {
     /// - [`compute_exact_convex_hulls`](VHACD::compute_exact_convex_hulls): More accurate mesh-based hulls
     /// - [`voxel_parts`](VHACD::voxel_parts): Access the raw voxel data
     #[cfg(feature = "dim2")]
-    pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<Vec<Point<Real>>> {
+    pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<Vec<Vector>> {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
@@ -1064,7 +1064,7 @@ impl VHACD {
     ///
     /// A vector of convex hulls (one per decomposed part), where each hull is represented as
     /// a tuple `(vertices, indices)`:
-    /// - `vertices`: `Vec<Point<Real>>` - The hull vertices
+    /// - `vertices`: `Vec<Vector>` - The hull vertices
     /// - `indices`: `Vec<[u32; 3]>` - Triangle indices defining the hull surface
     ///
     /// # Performance
@@ -1091,12 +1091,12 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -1120,14 +1120,14 @@ impl VHACD {
     ///
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     /// use parry3d::shape::{SharedShape, Compound};
     /// use parry3d::transformation::vhacd::{VHACD, VHACDParameters};
-    /// use parry3d::na::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// # let vertices = vec![
-    /// #     Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0),
-    /// #     Point::new(0.5, 1.0, 0.0), Point::new(0.5, 0.5, 1.0),
+    /// #     Vector::new(0.0, 0.0, 0.0), Vector::new(1.0, 0.0, 0.0),
+    /// #     Vector::new(0.5, 1.0, 0.0), Vector::new(0.5, 0.5, 1.0),
     /// # ];
     /// # let indices = vec![[0, 1, 2], [0, 2, 3], [0, 3, 1], [1, 3, 2]];
     /// #
@@ -1148,10 +1148,7 @@ impl VHACD {
     /// - [`voxel_parts`](VHACD::voxel_parts): Access the raw voxel data
     /// - [`SharedShape::convex_decomposition`](crate::shape::SharedShape::convex_decomposition): High-level API
     #[cfg(feature = "dim3")]
-    pub fn compute_convex_hulls(
-        &self,
-        downsampling: u32,
-    ) -> Vec<(Vec<Point<Real>>, Vec<[u32; DIM]>)> {
+    pub fn compute_convex_hulls(&self, downsampling: u32) -> Vec<(Vec<Vector>, Vec<[u32; DIM]>)> {
         let downsampling = downsampling.max(1);
         self.voxel_parts
             .iter()
@@ -1165,13 +1162,13 @@ fn compute_concavity(volume: Real, volume_ch: Real, volume0: Real) -> Real {
 }
 
 fn clip_mesh(
-    points: &[Point<Real>],
+    points: &[Vector],
     plane: &CutPlane,
-    positive_part: &mut Vec<Point<Real>>,
-    negative_part: &mut Vec<Point<Real>>,
+    positive_part: &mut Vec<Vector>,
+    negative_part: &mut Vec<Vector>,
 ) {
     for pt in points {
-        let d = plane.abc.dot(&pt.coords) + plane.d;
+        let d = plane.abc.dot(*pt) + plane.d;
 
         if d > 0.0 {
             positive_part.push(*pt);
@@ -1185,7 +1182,7 @@ fn clip_mesh(
 }
 
 #[cfg(feature = "dim2")]
-fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
+fn convex_hull(vertices: &[Vector]) -> Vec<Vector> {
     if vertices.len() > 1 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -1194,7 +1191,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> Vec<Point<Real>> {
 }
 
 #[cfg(feature = "dim3")]
-fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+fn convex_hull(vertices: &[Vector]) -> (Vec<Vector>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
         crate::transformation::convex_hull(vertices)
     } else {
@@ -1203,7 +1200,7 @@ fn convex_hull(vertices: &[Point<Real>]) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) 
 }
 
 #[cfg(feature = "dim2")]
-fn compute_volume(polygon: &[Point<Real>]) -> Real {
+fn compute_volume(polygon: &[Vector]) -> Real {
     if !polygon.is_empty() {
         crate::mass_properties::details::convex_polygon_area_and_center_of_mass(polygon).0
     } else {
@@ -1212,7 +1209,7 @@ fn compute_volume(polygon: &[Point<Real>]) -> Real {
 }
 
 #[cfg(feature = "dim3")]
-fn compute_volume(mesh: &(Vec<Point<Real>>, Vec<[u32; DIM]>)) -> Real {
+fn compute_volume(mesh: &(Vec<Vector>, Vec<[u32; DIM]>)) -> Real {
     if !mesh.0.is_empty() {
         crate::mass_properties::details::trimesh_signed_volume_and_center_of_mass(&mesh.0, &mesh.1)
             .0

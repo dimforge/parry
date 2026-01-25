@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::sat;
 use crate::shape::{Cuboid, Segment};
 
@@ -20,7 +20,7 @@ use crate::shape::{Cuboid, Segment};
 /// - `Real`: The maximum separation found across all edge-edge axes
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The axis direction that gives this separation
+/// - `Vector`: The axis direction that gives this separation
 ///
 /// # The 3 Axes Tested
 ///
@@ -38,16 +38,16 @@ use crate::shape::{Cuboid, Segment};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Segment};
 /// use parry3d::query::sat::cuboid_segment_find_local_separating_edge_twoway;
-/// use nalgebra::{Point3, Vector3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 /// let segment = Segment::new(
-///     Point3::origin(),
-///     Point3::new(0.0, 2.0, 0.0)
+///     Vector::ZERO,
+///     Vector::new(0.0, 2.0, 0.0)
 /// );
 ///
 /// // Position segment to the right of the cube
-/// let pos12 = Isometry3::translation(2.5, 0.0, 0.0);
+/// let pos12 = Pose::translation(2.5, 0.0, 0.0);
 ///
 /// let (separation, axis) = cuboid_segment_find_local_separating_edge_twoway(
 ///     &cube,
@@ -69,9 +69,9 @@ use crate::shape::{Cuboid, Segment};
 pub fn cuboid_segment_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     segment2: &Segment,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
-    let x2 = pos12 * (segment2.b - segment2.a);
+    pos12: &Pose,
+) -> (Real, Vector) {
+    let x2 = pos12.rotation * (segment2.b - segment2.a);
 
     let axes = [
         // Vector::{x, y ,z}().cross(y2)
@@ -105,7 +105,7 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 /// - `Real`: The separation distance along the segment's normal
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The normal direction that gives this separation
+/// - `Vector`: The normal direction that gives this separation
 ///
 /// # Example
 ///
@@ -113,17 +113,17 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{Segment, Cuboid};
 /// use parry2d::query::sat::segment_cuboid_find_local_separating_normal_oneway;
-/// use nalgebra::{Point2, Vector2, Isometry2};
+/// use parry2d::math::{Vector, Pose};
 ///
 /// // Horizontal segment
 /// let segment = Segment::new(
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0)
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0)
 /// );
-/// let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0));
 ///
 /// // Position cuboid above the segment
-/// let pos12 = Isometry2::translation(1.0, 2.5);
+/// let pos12 = Pose::translation(1.0, 2.5);
 ///
 /// let (separation, normal) = segment_cuboid_find_local_separating_normal_oneway(
 ///     &segment,
@@ -144,8 +144,8 @@ pub fn cuboid_segment_find_local_separating_edge_twoway(
 pub fn segment_cuboid_find_local_separating_normal_oneway(
     segment1: &Segment,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     sat::point_cuboid_find_local_separating_normal_oneway(
         segment1.a,
         segment1.normal(),

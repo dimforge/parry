@@ -1,12 +1,7 @@
 //! Bounding sphere.
 
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Point, Real, Vector};
-use na;
-use num::Zero;
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
+use crate::math::{Pose, Real, Vector};
 
 /// A Bounding Sphere.
 ///
@@ -61,18 +56,18 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::BoundingSphere;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a bounding sphere with center at origin and radius 2.0
-/// let sphere = BoundingSphere::new(Point3::origin(), 2.0);
+/// let sphere = BoundingSphere::new(Vector::ZERO, 2.0);
 ///
 /// // Check basic properties
-/// assert_eq!(*sphere.center(), Point3::origin());
+/// assert_eq!(sphere.center(), Vector::ZERO);
 /// assert_eq!(sphere.radius(), 2.0);
 ///
 /// // Test if a point is within the sphere
-/// let point = Point3::new(1.0, 1.0, 0.0);
-/// let distance = (point - sphere.center()).norm();
+/// let point = Vector::new(1.0, 1.0, 0.0);
+/// let distance = (point - sphere.center()).length();
 /// assert!(distance <= sphere.radius());
 /// # }
 /// ```
@@ -80,14 +75,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::BoundingSphere;
-/// use nalgebra::{Point3, Vector3, Translation3};
+/// use parry3d::math::Vector;
 ///
 /// // Create a sphere and translate it
-/// let sphere = BoundingSphere::new(Point3::new(1.0, 2.0, 3.0), 1.5);
-/// let translation = Vector3::new(5.0, 0.0, 0.0);
-/// let moved = sphere.translated(&translation);
+/// let sphere = BoundingSphere::new(Vector::new(1.0, 2.0, 3.0), 1.5);
+/// let translation = Vector::new(5.0, 0.0, 0.0);
+/// let moved = sphere.translated(translation);
 ///
-/// assert_eq!(*moved.center(), Point3::new(6.0, 2.0, 3.0));
+/// assert_eq!(moved.center(), Vector::new(6.0, 2.0, 3.0));
 /// assert_eq!(moved.radius(), 1.5); // Radius unchanged by translation
 /// # }
 /// ```
@@ -95,11 +90,11 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Merge two bounding spheres
-/// let sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
-/// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
+/// let sphere1 = BoundingSphere::new(Vector::ZERO, 1.0);
+/// let sphere2 = BoundingSphere::new(Vector::new(4.0, 0.0, 0.0), 1.0);
 ///
 /// let merged = sphere1.merged(&sphere2);
 /// // The merged sphere contains both original spheres
@@ -111,14 +106,13 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(C)]
 pub struct BoundingSphere {
     /// The center point of the bounding sphere.
-    pub center: Point<Real>,
+    pub center: Vector,
 
     /// The radius of the bounding sphere.
     ///
@@ -140,19 +134,19 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a sphere centered at (1, 2, 3) with radius 5.0
     /// let sphere = BoundingSphere::new(
-    ///     Point3::new(1.0, 2.0, 3.0),
+    ///     Vector::new(1.0, 2.0, 3.0),
     ///     5.0
     /// );
     ///
-    /// assert_eq!(*sphere.center(), Point3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(sphere.center(), Vector::new(1.0, 2.0, 3.0));
     /// assert_eq!(sphere.radius(), 5.0);
     /// # }
     /// ```
-    pub fn new(center: Point<Real>, radius: Real) -> BoundingSphere {
+    pub fn new(center: Vector, radius: Real) -> BoundingSphere {
         BoundingSphere { center, radius }
     }
 
@@ -163,17 +157,17 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::new(1.0, 2.0, 3.0), 5.0);
+    /// let sphere = BoundingSphere::new(Vector::new(1.0, 2.0, 3.0), 5.0);
     /// let center = sphere.center();
     ///
-    /// assert_eq!(*center, Point3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(center, Vector::new(1.0, 2.0, 3.0));
     /// # }
     /// ```
     #[inline]
-    pub fn center(&self) -> &Point<Real> {
-        &self.center
+    pub fn center(&self) -> Vector {
+        self.center
     }
 
     /// Returns the radius of this bounding sphere.
@@ -185,9 +179,9 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::origin(), 10.0);
+    /// let sphere = BoundingSphere::new(Vector::ZERO, 10.0);
     ///
     /// assert_eq!(sphere.radius(), 10.0);
     /// # }
@@ -212,25 +206,25 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::{Point3, Vector3, Isometry3, UnitQuaternion};
+    /// use parry3d::math::{Vector, Pose, Rotation};
     ///
-    /// let sphere = BoundingSphere::new(Point3::new(1.0, 0.0, 0.0), 2.0);
+    /// let sphere = BoundingSphere::new(Vector::new(1.0, 0.0, 0.0), 2.0);
     ///
     /// // Create a transformation: translate by (5, 0, 0) and rotate 90 degrees around Z
-    /// let translation = Vector3::new(5.0, 0.0, 0.0);
-    /// let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, std::f32::consts::FRAC_PI_2);
-    /// let transform = Isometry3::from_parts(translation.into(), rotation);
+    /// let translation = Vector::new(5.0, 0.0, 0.0);
+    /// let rotation = Rotation::from_rotation_z(std::f32::consts::FRAC_PI_2);
+    /// let transform = Pose::from_parts(translation, rotation);
     ///
     /// let transformed = sphere.transform_by(&transform);
     ///
     /// // The center is transformed
-    /// assert!((*transformed.center() - Point3::new(5.0, 1.0, 0.0)).norm() < 1e-5);
+    /// assert!((transformed.center() - Vector::new(5.0, 1.0, 0.0)).length() < 1e-5);
     /// // The radius is unchanged
     /// assert_eq!(transformed.radius(), 2.0);
     /// # }
     /// ```
     #[inline]
-    pub fn transform_by(&self, m: &Isometry<Real>) -> BoundingSphere {
+    pub fn transform_by(&self, m: &Pose) -> BoundingSphere {
         BoundingSphere::new(m * self.center, self.radius)
     }
 
@@ -248,19 +242,19 @@ impl BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::BoundingSphere;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::origin(), 1.0);
-    /// let translation = Vector3::new(10.0, 5.0, -3.0);
+    /// let sphere = BoundingSphere::new(Vector::ZERO, 1.0);
+    /// let translation = Vector::new(10.0, 5.0, -3.0);
     ///
-    /// let moved = sphere.translated(&translation);
+    /// let moved = sphere.translated(translation);
     ///
-    /// assert_eq!(*moved.center(), Point3::new(10.0, 5.0, -3.0));
+    /// assert_eq!(moved.center(), Vector::new(10.0, 5.0, -3.0));
     /// assert_eq!(moved.radius(), 1.0); // Radius unchanged
     /// # }
     /// ```
     #[inline]
-    pub fn translated(&self, translation: &Vector<Real>) -> BoundingSphere {
+    pub fn translated(&self, translation: Vector) -> BoundingSphere {
         BoundingSphere::new(self.center + translation, self.radius)
     }
 }
@@ -273,17 +267,17 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::new(1.0, 2.0, 3.0), 5.0);
+    /// let sphere = BoundingSphere::new(Vector::new(1.0, 2.0, 3.0), 5.0);
     ///
-    /// // BoundingVolume::center() returns a Point by value
-    /// assert_eq!(BoundingVolume::center(&sphere), Point3::new(1.0, 2.0, 3.0));
+    /// // BoundingVolume::center() returns a Vector by value
+    /// assert_eq!(BoundingVolume::center(&sphere), Vector::new(1.0, 2.0, 3.0));
     /// # }
     /// ```
     #[inline]
-    fn center(&self) -> Point<Real> {
-        *self.center()
+    fn center(&self) -> Vector {
+        self.center()
     }
 
     /// Tests if this bounding sphere intersects another bounding sphere.
@@ -300,11 +294,11 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere1 = BoundingSphere::new(Point3::origin(), 2.0);
-    /// let sphere2 = BoundingSphere::new(Point3::new(3.0, 0.0, 0.0), 2.0);
-    /// let sphere3 = BoundingSphere::new(Point3::new(10.0, 0.0, 0.0), 1.0);
+    /// let sphere1 = BoundingSphere::new(Vector::ZERO, 2.0);
+    /// let sphere2 = BoundingSphere::new(Vector::new(3.0, 0.0, 0.0), 2.0);
+    /// let sphere3 = BoundingSphere::new(Vector::new(10.0, 0.0, 0.0), 1.0);
     ///
     /// assert!(sphere1.intersects(&sphere2)); // Distance 3.0 <= sum of radii 4.0
     /// assert!(!sphere1.intersects(&sphere3)); // Distance 10.0 > sum of radii 3.0
@@ -314,7 +308,7 @@ impl BoundingVolume for BoundingSphere {
     fn intersects(&self, other: &BoundingSphere) -> bool {
         // TODO: refactor that with the code from narrow_phase::ball_ball::collide(...) ?
         let delta_pos = other.center - self.center;
-        let distance_squared = delta_pos.norm_squared();
+        let distance_squared = delta_pos.length_squared();
         let sum_radius = self.radius + other.radius;
 
         distance_squared <= sum_radius * sum_radius
@@ -334,11 +328,11 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let large = BoundingSphere::new(Point3::origin(), 10.0);
-    /// let small = BoundingSphere::new(Point3::new(2.0, 0.0, 0.0), 1.0);
-    /// let outside = BoundingSphere::new(Point3::new(15.0, 0.0, 0.0), 2.0);
+    /// let large = BoundingSphere::new(Vector::ZERO, 10.0);
+    /// let small = BoundingSphere::new(Vector::new(2.0, 0.0, 0.0), 1.0);
+    /// let outside = BoundingSphere::new(Vector::new(15.0, 0.0, 0.0), 2.0);
     ///
     /// assert!(large.contains(&small)); // Small sphere is inside large sphere
     /// assert!(!large.contains(&outside)); // Outside sphere extends beyond large sphere
@@ -348,7 +342,7 @@ impl BoundingVolume for BoundingSphere {
     #[inline]
     fn contains(&self, other: &BoundingSphere) -> bool {
         let delta_pos = other.center - self.center;
-        let distance = delta_pos.norm();
+        let distance = delta_pos.length();
 
         distance + other.radius <= self.radius
     }
@@ -367,30 +361,30 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let mut sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
-    /// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
+    /// let mut sphere1 = BoundingSphere::new(Vector::ZERO, 1.0);
+    /// let sphere2 = BoundingSphere::new(Vector::new(4.0, 0.0, 0.0), 1.0);
     ///
     /// sphere1.merge(&sphere2);
     ///
     /// // The merged sphere now contains both original spheres
-    /// assert!(sphere1.contains(&BoundingSphere::new(Point3::origin(), 1.0)));
+    /// assert!(sphere1.contains(&BoundingSphere::new(Vector::ZERO, 1.0)));
     /// assert!(sphere1.contains(&sphere2));
     /// # }
     /// ```
     #[inline]
     fn merge(&mut self, other: &BoundingSphere) {
-        let mut dir = *other.center() - *self.center();
-        let norm = dir.normalize_mut();
+        let dir = other.center() - self.center();
+        let (dir, length) = dir.normalize_and_length();
 
-        if norm.is_zero() {
+        if length == 0.0 {
             if other.radius > self.radius {
                 self.radius = other.radius
             }
         } else {
-            let s_center_dir = self.center.coords.dot(&dir);
-            let o_center_dir = other.center.coords.dot(&dir);
+            let s_center_dir = self.center.dot(dir);
+            let o_center_dir = other.center.dot(dir);
 
             let right = if s_center_dir + self.radius > o_center_dir + other.radius {
                 self.center + dir * self.radius
@@ -404,8 +398,8 @@ impl BoundingVolume for BoundingSphere {
                 other.center - dir * other.radius
             };
 
-            self.center = na::center(&left, &right);
-            self.radius = na::distance(&right, &self.center);
+            self.center = left.midpoint(right);
+            self.radius = right.distance(self.center);
         }
     }
 
@@ -423,10 +417,10 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere1 = BoundingSphere::new(Point3::origin(), 1.0);
-    /// let sphere2 = BoundingSphere::new(Point3::new(4.0, 0.0, 0.0), 1.0);
+    /// let sphere1 = BoundingSphere::new(Vector::ZERO, 1.0);
+    /// let sphere2 = BoundingSphere::new(Vector::new(4.0, 0.0, 0.0), 1.0);
     ///
     /// let merged = sphere1.merged(&sphere2);
     ///
@@ -464,13 +458,13 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let mut sphere = BoundingSphere::new(Point3::origin(), 5.0);
+    /// let mut sphere = BoundingSphere::new(Vector::ZERO, 5.0);
     /// sphere.loosen(2.0);
     ///
     /// assert_eq!(sphere.radius(), 7.0);
-    /// assert_eq!(*sphere.center(), Point3::origin()); // Center unchanged
+    /// assert_eq!(sphere.center(), Vector::ZERO); // Center unchanged
     /// # }
     /// ```
     #[inline]
@@ -497,14 +491,14 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::origin(), 5.0);
+    /// let sphere = BoundingSphere::new(Vector::ZERO, 5.0);
     /// let larger = sphere.loosened(3.0);
     ///
     /// assert_eq!(sphere.radius(), 5.0); // Original unchanged
     /// assert_eq!(larger.radius(), 8.0);
-    /// assert_eq!(*larger.center(), Point3::origin());
+    /// assert_eq!(larger.center(), Vector::ZERO);
     /// # }
     /// ```
     #[inline]
@@ -531,13 +525,13 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let mut sphere = BoundingSphere::new(Point3::origin(), 10.0);
+    /// let mut sphere = BoundingSphere::new(Vector::ZERO, 10.0);
     /// sphere.tighten(3.0);
     ///
     /// assert_eq!(sphere.radius(), 7.0);
-    /// assert_eq!(*sphere.center(), Point3::origin()); // Center unchanged
+    /// assert_eq!(sphere.center(), Vector::ZERO); // Center unchanged
     /// # }
     /// ```
     #[inline]
@@ -565,14 +559,14 @@ impl BoundingVolume for BoundingSphere {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::bounding_volume::{BoundingSphere, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let sphere = BoundingSphere::new(Point3::origin(), 10.0);
+    /// let sphere = BoundingSphere::new(Vector::ZERO, 10.0);
     /// let smaller = sphere.tightened(4.0);
     ///
     /// assert_eq!(sphere.radius(), 10.0); // Original unchanged
     /// assert_eq!(smaller.radius(), 6.0);
-    /// assert_eq!(*smaller.center(), Point3::origin());
+    /// assert_eq!(smaller.center(), Vector::ZERO);
     /// # }
     /// ```
     #[inline]

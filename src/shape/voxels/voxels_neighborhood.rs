@@ -1,5 +1,5 @@
 use super::VoxelsChunk;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{ivect_to_vect, IVector, DIM};
 use crate::shape::{VoxelState, Voxels};
 
 impl Voxels {
@@ -10,7 +10,7 @@ impl Voxels {
     #[must_use]
     pub(super) fn update_neighbors_state(
         &mut self,
-        key: Point<i32>,
+        key: IVector,
         center_is_empty: bool,
     ) -> VoxelState {
         let mut key_data = 0;
@@ -66,7 +66,7 @@ impl Voxels {
         }
     }
 
-    fn compute_voxel_state(&self, key: Point<i32>) -> VoxelState {
+    fn compute_voxel_state(&self, key: IVector) -> VoxelState {
         let Some(id) = self.linear_index(key) else {
             return VoxelState::EMPTY;
         };
@@ -78,7 +78,7 @@ impl Voxels {
         self.compute_voxel_neighborhood_bits(key)
     }
 
-    pub(super) fn compute_voxel_neighborhood_bits(&self, key: Point<i32>) -> VoxelState {
+    pub(super) fn compute_voxel_neighborhood_bits(&self, key: IVector) -> VoxelState {
         let mut occupied_faces = 0;
 
         for k in 0..DIM {
@@ -111,8 +111,8 @@ impl Voxels {
     pub fn propagate_voxel_change(
         &mut self,
         other: &mut Self,
-        voxel: Point<i32>,
-        origin_shift: Vector<i32>,
+        voxel: IVector,
+        origin_shift: IVector,
     ) {
         let center_is_empty = self
             .voxel_state(voxel)
@@ -137,17 +137,17 @@ impl Voxels {
     /// `origin_shift` represents the distance (as a multiple of the `voxel_size`) from the origin
     /// of `self` to the origin of `other`. Therefore, a voxel with coordinates `key` on `other`
     /// will have coordinates `key + origin_shift` on `self`.
-    pub fn combine_voxel_states(&mut self, other: &mut Self, origin_shift: Vector<i32>) {
-        let one = Vector::repeat(1);
-        let origin_shift_worldspace = origin_shift.cast::<Real>().component_mul(&self.voxel_size);
+    pub fn combine_voxel_states(&mut self, other: &mut Self, origin_shift: IVector) {
+        let one = IVector::splat(1);
+        let origin_shift_worldspace = ivect_to_vect(origin_shift) * self.voxel_size;
 
         for chunk_key in &self.chunk_keys {
-            let mut aabb = VoxelsChunk::aabb(chunk_key, &self.voxel_size);
+            let mut aabb = VoxelsChunk::aabb(chunk_key, self.voxel_size);
             // Enlarge by one-half voxel so we detect cases where we also detect neighbor chunks from `other`.
             aabb.mins -= self.voxel_size / 2.0;
             aabb.maxs += self.voxel_size / 2.0;
             // Shift to the local coordinate system of `other`.
-            let shifted_aabb = aabb.translated(&-origin_shift_worldspace);
+            let shifted_aabb = aabb.translated(-origin_shift_worldspace);
 
             if other.chunk_bvh.intersect_aabb(&shifted_aabb).any(|_| true) {
                 // Check the voxels from this chunk against the other voxels shape.
@@ -170,9 +170,9 @@ impl Voxels {
                         let k_range = domain[0].z..domain[1].z;
                         for _k in k_range {
                             #[cfg(feature = "dim2")]
-                            let key0 = Point::new(i, j);
+                            let key0 = IVector::new(i, j);
                             #[cfg(feature = "dim3")]
-                            let key0 = Point::new(i, j, _k);
+                            let key0 = IVector::new(i, j, _k);
                             let key1 = key0 - origin_shift;
                             let vox0 = self
                                 .linear_index(key0)

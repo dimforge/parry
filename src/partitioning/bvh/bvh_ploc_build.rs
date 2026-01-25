@@ -14,8 +14,8 @@ impl Bvh {
 
         // Sort the leaves.
         leaves.sort_by_cached_key(|node| {
-            let center = (node.center() - aabb.mins).component_mul(&inv_extents);
-            morton::morton_encode_u64_unorm(center.cast::<f64>())
+            let center = (node.center() - aabb.mins) * (inv_extents);
+            morton::morton_encode_u64_unorm(center)
         });
 
         // Build all the levels.

@@ -34,11 +34,11 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, distance};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use parry3d::na::{Isometry3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// # let shape1 = Ball::new(1.0);
-/// # let shape2 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// # let pos1 = Isometry3::identity();
-/// # let pos2 = Isometry3::identity();
+/// # let shape2 = Cuboid::new(Vector::splat(1.0));
+/// # let pos1 = Pose::identity();
+/// # let pos2 = Pose::identity();
 /// // If contact manifolds are unsupported, try basic contact:
 /// if let Ok(contact) = contact(&pos1, &shape1, &pos2, &shape2, 0.0) {
 ///     // Process the contact point
@@ -57,11 +57,11 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::{TriMesh, Ball, Compound, SharedShape};
 /// # use parry3d::query::distance;
-/// # use parry3d::na::{Isometry3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// # let mesh = TriMesh::new(vec![], vec![]).unwrap();
 /// # let ball = Ball::new(1.0);
-/// # let pos1 = Isometry3::identity();
-/// # let pos2 = Isometry3::identity();
+/// # let pos1 = Pose::identity();
+/// # let pos2 = Pose::identity();
 /// // Instead of querying against a complex mesh directly,
 /// // iterate through its triangles:
 /// for triangle in mesh.triangles() {
@@ -79,9 +79,9 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::shape::TriMesh;
 /// # use parry3d::bounding_volume::Aabb;
-/// # use parry3d::na::Point3;
-/// # let mesh = TriMesh::new(vec![Point3::origin()], vec![[0, 0, 0]]).unwrap();
-/// # let query_aabb = Aabb::new(Point3::origin(), Point3::origin());
+/// # use parry3d::math::Vector;
+/// # let mesh = TriMesh::new(vec![Vector::ZERO], vec![[0, 0, 0]]).unwrap();
+/// # let query_aabb = Aabb::new(Vector::ZERO, Vector::ZERO);
 /// // Use BVH queries instead of direct shape queries:
 /// for leaf_id in mesh.bvh().intersect_aabb(&query_aabb) {
 ///     let triangle = mesh.triangle(leaf_id);
@@ -99,7 +99,7 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// # use parry3d::shape::Shape;
-/// # use parry3d::math::{Isometry, Real};
+/// # use parry3d::math::{Pose, Real};
 /// struct MyQueryDispatcher {
 ///     default: DefaultQueryDispatcher,
 /// }
@@ -114,11 +114,11 @@ use core::fmt;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::{contact, Unsupported};
 /// # use parry3d::shape::{Ball, Cuboid};
-/// # use parry3d::na::{Isometry3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// let pos1 = Isometry3::identity();
-/// let pos2 = Isometry3::identity();
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
+/// let pos1 = Pose::identity();
+/// let pos2 = Pose::identity();
 ///
 /// // Most queries return Result<T, Unsupported>
 /// match contact(&pos1, &ball, &pos2, &cuboid, 0.0) {

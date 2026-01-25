@@ -1,11 +1,10 @@
 use super::InitialMesh;
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::Vector3;
 use crate::transformation::convex_hull_utils::indexed_support_point_nth;
 use crate::transformation::convex_hull_utils::{indexed_support_point_id, normalize};
 use crate::utils;
 use alloc::{vec, vec::Vec};
-use na::{self, Point3};
 
 /// Computes the convex hull of a set of 3D points.
 ///
@@ -34,14 +33,14 @@ use na::{self, Point3};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::convex_hull;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
-/// // Points forming a tetrahedron
+/// // Vectors forming a tetrahedron
 /// let points = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0),
-///     Point3::new(0.0, 0.0, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// ];
 ///
 /// let (vertices, indices) = convex_hull(&points);
@@ -57,7 +56,7 @@ use na::{self, Point3};
 /// # See Also
 ///
 /// - [`try_convex_hull`] - Returns `Result` instead of panicking
-pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+pub fn convex_hull(points: &[Vector3]) -> (Vec<Vector3>, Vec<[u32; 3]>) {
     try_convex_hull(points).unwrap()
 }
 
@@ -81,14 +80,14 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::try_convex_hull;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Valid input
 /// let points = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0),
-///     Point3::new(0.0, 0.0, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// ];
 ///
 /// match try_convex_hull(&points) {
@@ -101,13 +100,13 @@ pub fn convex_hull(points: &[Point3<Real>]) -> (Vec<Point3<Real>>, Vec<[u32; 3]>
 /// }
 ///
 /// // Degenerate input (too few points)
-/// let bad_points = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0)];
+/// let bad_points = vec![Vector::ZERO, Vector::new(1.0, 0.0, 0.0)];
 /// assert!(try_convex_hull(&bad_points).is_err());
 /// # }
 /// ```
 pub fn try_convex_hull(
-    points: &[Point3<Real>],
-) -> Result<(Vec<Point3<Real>>, Vec<[u32; 3]>), ConvexHullError> {
+    points: &[Vector3],
+) -> Result<(Vec<Vector3>, Vec<[u32; 3]>), ConvexHullError> {
     if points.len() < 3 {
         return Err(ConvexHullError::IncompleteInput);
     }
@@ -144,7 +143,7 @@ pub fn try_convex_hull(
 
         // TODO: use triangles[i].furthest_point instead.
         let pt_id = indexed_support_point_id(
-            &triangles[i].normal,
+            triangles[i].normal,
             &normalized_points[..],
             triangles[i].visible_points[..].iter().copied(),
         );
@@ -252,7 +251,7 @@ fn compute_silhouette(
     indirect_id: usize,
     point: usize,
     out_facets_and_idx: &mut Vec<(usize, usize)>,
-    points: &[Point3<Real>],
+    points: &[Vector3],
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
 ) {
@@ -296,7 +295,7 @@ fn compute_silhouette(
 }
 
 fn fix_silhouette_topology(
-    points: &[Point3<Real>],
+    points: &[Vector3],
     out_facets_and_idx: &mut Vec<(usize, usize)>,
     removed_facets: &mut Vec<usize>,
     triangles: &mut [TriangleFacet],
@@ -327,7 +326,7 @@ fn fix_silhouette_topology(
             let p1 = points[triangles[*facet].second_point_from_edge(*adj_id)];
             let p2 = points[triangles[*facet].first_point_from_edge(*adj_id)];
             let supp = indexed_support_point_nth(
-                &(p2 - p1),
+                p2 - p1,
                 points,
                 out_facets_and_idx
                     .iter()
@@ -394,7 +393,7 @@ fn fix_silhouette_topology(
 fn attach_and_push_facets(
     silhouette_loop_facets_and_idx: &[(usize, usize)],
     point: usize,
-    points: &[Point3<Real>],
+    points: &[Vector3],
     triangles: &mut Vec<TriangleFacet>,
     removed_facets: &[usize],
     undecidable: &mut Vec<usize>,
@@ -509,22 +508,22 @@ fn attach_and_push_facets(
 
 #[cfg(test)]
 mod test {
-    use crate::transformation;
     #[cfg(feature = "dim2")]
-    use na::Point2;
+    use crate::math::Vector2;
+    use crate::transformation;
 
     #[cfg(feature = "dim2")]
     #[test]
     fn test_simple_convex_hull() {
         let points = [
-            Point2::new(4.723881f32, 3.597233),
-            Point2::new(3.333363, 3.429991),
-            Point2::new(3.137215, 2.812263),
+            Vector::new(4.723881f32, 3.597233),
+            Vector::new(3.333363, 3.429991),
+            Vector::new(3.137215, 2.812263),
         ];
 
         let chull = transformation::convex_hull(points.as_slice());
 
-        assert!(chull.coords.len() == 3);
+        assert!(chull.len() == 3);
     }
 
     #[cfg(feature = "dim3")]

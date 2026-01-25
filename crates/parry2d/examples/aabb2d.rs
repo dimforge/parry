@@ -1,22 +1,23 @@
-mod common_macroquad2d;
+mod utils2d;
 
-extern crate nalgebra as na;
-
-use common_macroquad2d::{draw_polyline, lissajous_2d, mquad_from_na, na_from_mquad};
-use macroquad::prelude::*;
-use na::Isometry2;
-use parry2d::bounding_volume::{Aabb, BoundingVolume};
+use kiss3d::prelude::*;
+use parry2d::bounding_volume::BoundingVolume;
+use parry2d::math::Pose;
 use parry2d::shape::Ball;
+use utils2d::{draw_aabb2, draw_circle, lissajous_2d};
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("aabb2d")]
+#[kiss3d::main]
 async fn main() {
-    let render_pos = Vec2::new(300.0, 300.0);
+    let mut window = Window::new("aabb2d").await;
+    let mut camera = PanZoomCamera2d::new(Vec2::ZERO, 4.0);
+    let mut scene = SceneNode2d::empty();
 
-    loop {
-        let elapsed_time = get_time() as f32 * 0.7;
-        clear_background(BLACK);
+    let start_time = web_time::Instant::now();
+
+    while window.render_2d(&mut scene, &mut camera).await {
+        let elapsed_time = start_time.elapsed().as_secs_f32() * 0.7;
 
         /*
          * Initialize the shapes.
@@ -24,14 +25,15 @@ async fn main() {
         let ball1 = Ball::new(0.5);
         let ball2 = Ball::new(1.0);
 
-        let ball1_pos = na_from_mquad(lissajous_2d(elapsed_time)) * 5f32;
-        let ball2_pos = Isometry2::identity();
+        let ball1_pos = lissajous_2d(elapsed_time) * 5f32;
+        let ball1_pose = Pose::from_translation(ball1_pos);
+        let ball2_pose = Pose::identity();
 
         /*
          * Compute their axis-aligned bounding boxes.
          */
-        let aabb_ball1 = ball1.aabb(&ball1_pos.into());
-        let aabb_ball2 = ball2.aabb(&ball2_pos);
+        let aabb_ball1 = ball1.aabb(&ball1_pose);
+        let aabb_ball2 = ball2.aabb(&ball2_pose);
 
         // Merge the two boxes.
         let bounding_aabb = aabb_ball1.merged(&aabb_ball2);
@@ -50,25 +52,37 @@ async fn main() {
         assert!(bounding_aabb.contains(&aabb_ball2));
         assert!(loose_aabb_ball2.contains(&aabb_ball2));
 
-        let ball1_translation = mquad_from_na(ball1_pos.coords.into()) * RENDER_SCALE + render_pos;
         draw_circle(
-            ball1_translation.x,
-            ball1_translation.y,
+            &mut window,
+            ball1_pos * RENDER_SCALE,
             ball1.radius * RENDER_SCALE,
             color,
         );
-        let ball2_translation =
-            mquad_from_na(ball2_pos.translation.vector.into()) * RENDER_SCALE + render_pos;
         draw_circle(
-            ball2_translation.x,
-            ball2_translation.y,
+            &mut window,
+            ball2_pose.translation * RENDER_SCALE,
             ball2.radius * RENDER_SCALE,
             color,
         );
 
-        draw_aabb(aabb_ball1, render_pos, color);
-        draw_aabb(aabb_ball2, render_pos, color);
-        draw_aabb(bounding_aabb, render_pos, YELLOW);
+        draw_aabb2(
+            &mut window,
+            aabb_ball1.mins * RENDER_SCALE,
+            aabb_ball1.maxs * RENDER_SCALE,
+            color,
+        );
+        draw_aabb2(
+            &mut window,
+            aabb_ball2.mins * RENDER_SCALE,
+            aabb_ball2.maxs * RENDER_SCALE,
+            color,
+        );
+        draw_aabb2(
+            &mut window,
+            bounding_aabb.mins * RENDER_SCALE,
+            bounding_aabb.maxs * RENDER_SCALE,
+            YELLOW,
+        );
 
         // Inclusion test
         let color_included: Color = if loose_aabb_ball2.contains(&aabb_ball1) {
@@ -76,26 +90,11 @@ async fn main() {
         } else {
             MAGENTA
         };
-        draw_aabb(loose_aabb_ball2, render_pos, color_included);
-        next_frame().await
+        draw_aabb2(
+            &mut window,
+            loose_aabb_ball2.mins * RENDER_SCALE,
+            loose_aabb_ball2.maxs * RENDER_SCALE,
+            color_included,
+        );
     }
-}
-
-fn draw_aabb(aabb: Aabb, offset: Vec2, color: Color) {
-    let mins = mquad_from_na(aabb.mins) * RENDER_SCALE + offset;
-    let maxs = mquad_from_na(aabb.maxs) * RENDER_SCALE + offset;
-
-    let line = vec![
-        Vec2::new(mins.x, mins.y),
-        Vec2::new(mins.x, maxs.y),
-        Vec2::new(maxs.x, maxs.y),
-        Vec2::new(maxs.x, mins.y),
-        Vec2::new(mins.x, mins.y),
-    ];
-    let drawable_line = line
-        .iter()
-        .zip(line.iter().cycle().skip(1).take(line.len()))
-        .map(|item| (item.0.clone(), item.1.clone()))
-        .collect();
-    draw_polyline(drawable_line, color);
 }

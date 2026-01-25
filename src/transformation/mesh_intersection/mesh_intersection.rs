@@ -1,6 +1,6 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real, Vector3};
 use crate::partitioning::BvhNode;
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::PointQuery;
@@ -11,9 +11,6 @@ use crate::utils::hashmap::HashMap;
 use crate::utils::hashset::HashSet;
 use alloc::collections::BTreeMap;
 use alloc::{vec, vec::Vec};
-#[cfg(not(feature = "std"))]
-use na::ComplexField;
-use na::{Point3, Vector3};
 use rstar::RTree;
 use spade::{ConstrainedDelaunayTriangulation, InsertionError, Triangulation as _};
 #[cfg(feature = "wavefront")]
@@ -71,10 +68,10 @@ impl Default for MeshIntersectionTolerances {
 /// The meshes must be oriented, have their half-edge topology computed, and must not be self-intersecting.
 /// The result mesh vertex coordinates are given in the local-space of `mesh1`.
 pub fn intersect_meshes(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     mesh1: &TriMesh,
     flip1: bool,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     mesh2: &TriMesh,
     flip2: bool,
 ) -> Result<Option<TriMesh>, MeshIntersectionError> {
@@ -94,10 +91,10 @@ pub fn intersect_meshes(
 /// It allows to specify epsilons for how the algorithm will behave.
 /// See `MeshIntersectionTolerances` for details.
 pub fn intersect_meshes_with_tolerances(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     mesh1: &TriMesh,
     flip1: bool,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     mesh2: &TriMesh,
     flip2: bool,
     tolerances: MeshIntersectionTolerances,
@@ -168,10 +165,10 @@ pub fn intersect_meshes_with_tolerances(
 
     // 4: Initialize a new mesh by inserting points into a set. Duplicate points should
     // hash to the same index.
-    let mut point_set = RTree::<TreePoint, _>::new();
+    let mut point_set = RTree::<TreeVector, _>::new();
     let mut topology_indices = HashMap::default();
     {
-        let mut insert_point = |position: Point3<Real>| {
+        let mut insert_point = |position: Vector3| {
             insert_into_set(
                 position,
                 &mut point_set,
@@ -280,7 +277,7 @@ pub fn intersect_meshes_with_tolerances(
     // 7: Sort the output points by insertion order.
     let mut vertices: Vec<_> = point_set.iter().copied().collect();
     vertices.sort_by(|a, b| a.id.cmp(&b.id));
-    let vertices: Vec<_> = vertices.iter().map(|p| Point3::from(p.point)).collect();
+    let vertices: Vec<_> = vertices.iter().map(|p| Vector3::from(p.point)).collect();
 
     if !topology_indices.is_empty() {
         Ok(Some(TriMesh::new(
@@ -293,7 +290,7 @@ pub fn intersect_meshes_with_tolerances(
 }
 
 fn extract_connected_components(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     mesh1: &TriMesh,
     mesh2: &TriMesh,
     flip2: bool,
@@ -326,7 +323,7 @@ fn extract_connected_components(
                     let tri1 = mesh1.triangle(twin.face);
 
                     if flip2
-                        ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&tri1.center()))
+                        ^ mesh2.contains_local_point(pos12.inverse_transform_point(tri1.center()))
                     {
                         to_visit.push(twin.face);
                     }
@@ -372,7 +369,7 @@ fn extract_connected_components(
                 let repr_pt = mesh1.triangle(repr_face).center();
                 let indices = mesh1.indices();
 
-                if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+                if flip2 ^ mesh2.contains_local_point(pos12.inverse_transform_point(repr_pt)) {
                     new_indices1.extend(
                         cc.grouped_faces[range[0]..range[1]]
                             .iter()
@@ -385,7 +382,7 @@ fn extract_connected_components(
         // Deal with the case where there is no intersection between the meshes.
         let repr_pt = mesh1.triangle(0).center();
 
-        if flip2 ^ mesh2.contains_local_point(&pos12.inverse_transform_point(&repr_pt)) {
+        if flip2 ^ mesh2.contains_local_point(pos12.inverse_transform_point(repr_pt)) {
             new_indices1.extend_from_slice(mesh1.indices());
         }
     }
@@ -393,18 +390,18 @@ fn extract_connected_components(
 
 fn triangulate_constraints_and_merge_duplicates(
     tri: &Triangle,
-    constraints: &[[Point3<Real>; 2]],
+    constraints: &[[Vector3; 2]],
     epsilon: Real,
 ) -> Result<
     (
         ConstrainedDelaunayTriangulation<spade::Point2<Real>>,
-        Vec<Point3<Real>>,
+        Vec<Vector3>,
     ),
     InsertionError,
 > {
     let mut constraints = constraints.to_vec();
     // Add the triangle points to the triangulation.
-    let mut point_set = RTree::<TreePoint, _>::new();
+    let mut point_set = RTree::<TreeVector, _>::new();
     let _ = insert_into_set(tri.a, &mut point_set, epsilon);
     let _ = insert_into_set(tri.b, &mut point_set, epsilon);
     let _ = insert_into_set(tri.c, &mut point_set, epsilon);
@@ -421,14 +418,14 @@ fn triangulate_constraints_and_merge_duplicates(
             let q1 = tri_vtx[i];
             let q2 = tri_vtx[(i + 1) % 3];
 
-            let proj1 = project_point_to_segment(&p1, &[q1, q2]);
-            if (p1 - proj1).norm() < epsilon {
-                point_pair[0] = Point3::from(proj1);
+            let proj1 = project_point_to_segment(p1, &[q1, q2]);
+            if (p1 - proj1).length() < epsilon {
+                point_pair[0] = Vector3::from(proj1);
             }
 
-            let proj2 = project_point_to_segment(&p2, &[q1, q2]);
-            if (p2 - proj2).norm() < epsilon {
-                point_pair[1] = Point3::from(proj2);
+            let proj2 = project_point_to_segment(p2, &[q1, q2]);
+            if (p2 - proj2).length() < epsilon {
+                point_pair[1] = Vector3::from(proj2);
             }
         }
     }
@@ -453,27 +450,27 @@ fn triangulate_constraints_and_merge_duplicates(
     let d2 = tri_points[best_source] - tri_points[(best_source + 1) % 3];
     let (e1, e2) = planar_gram_schmidt(d1, d2);
 
-    let project = |p: &Point3<Real>| spade::Point2::new(e1.dot(&p.coords), e2.dot(&p.coords));
+    let project = |p: Vector3| spade::Point2::new(e1.dot(p), e2.dot(p));
 
     // Project points into 2D and triangulate the resulting set.
     let planar_points: Vec<_> = points
         .iter()
         .copied()
         .map(|point| {
-            let point_proj = project(&point.point);
+            let point_proj = project(point.point);
             utils::sanitize_spade_point(point_proj)
         })
         .collect();
     let cdt_triangulation = ConstrainedDelaunayTriangulation::bulk_load_cdt(planar_points, edges)?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
-    let points = points.into_iter().map(|p| Point3::from(p.point)).collect();
+    let points = points.into_iter().map(|p| Vector3::from(p.point)).collect();
     Ok((cdt_triangulation, points))
 }
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
 #[cfg(feature = "wavefront")]
-fn _points_to_obj(mesh: &[Point3<Real>], path: &PathBuf) {
+fn _points_to_obj(mesh: &[Vector3], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
 
@@ -484,7 +481,7 @@ fn _points_to_obj(mesh: &[Point3<Real>], path: &PathBuf) {
 
 // We heavily recommend that this is left here in case one needs to debug the above code.
 #[cfg(feature = "wavefront")]
-fn _points_and_edges_to_obj(mesh: &[Point3<Real>], edges: &[[usize; 2]], path: &PathBuf) {
+fn _points_and_edges_to_obj(mesh: &[Vector3], edges: &[[usize; 2]], path: &PathBuf) {
     use std::io::Write;
     let mut file = std::fs::File::create(path).unwrap();
 
@@ -498,18 +495,18 @@ fn _points_and_edges_to_obj(mesh: &[Point3<Real>], edges: &[[usize; 2]], path: &
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
-struct TreePoint {
-    point: Point3<Real>,
+struct TreeVector {
+    point: Vector3,
     id: usize,
 }
 
-impl rstar::Point for TreePoint {
+impl rstar::Point for TreeVector {
     type Scalar = Real;
     const DIMENSIONS: usize = 3;
 
     fn generate(mut generator: impl FnMut(usize) -> Self::Scalar) -> Self {
-        TreePoint {
-            point: Point3::new(generator(0), generator(1), generator(2)),
+        TreeVector {
+            point: Vector3::new(generator(0), generator(1), generator(2)),
             id: usize::MAX,
         }
     }
@@ -523,20 +520,16 @@ impl rstar::Point for TreePoint {
     }
 }
 
-fn insert_into_set(
-    position: Point3<Real>,
-    point_set: &mut RTree<TreePoint>,
-    epsilon: Real,
-) -> usize {
+fn insert_into_set(position: Vector3, point_set: &mut RTree<TreeVector>, epsilon: Real) -> usize {
     let point_count = point_set.size();
-    let point_to_insert = TreePoint {
+    let point_to_insert = TreeVector {
         point: position,
         id: point_count,
     };
 
     match point_set.nearest_neighbor(&point_to_insert) {
         Some(tree_point) => {
-            if (tree_point.point - position).norm_squared() <= epsilon {
+            if (tree_point.point - position).length_squared() <= epsilon {
                 tree_point.id
             } else {
                 point_set.insert(point_to_insert);
@@ -552,7 +545,7 @@ fn insert_into_set(
     }
 }
 
-fn smallest_angle(points: &[Point3<Real>]) -> Real {
+fn smallest_angle(points: &[Vector3]) -> Real {
     let n = points.len();
 
     let mut worst_cos: Real = -2.0;
@@ -560,7 +553,7 @@ fn smallest_angle(points: &[Point3<Real>]) -> Real {
         let d1 = (points[i] - points[(i + 1) % n]).normalize();
         let d2 = (points[(i + 2) % n] - points[(i + 1) % n]).normalize();
 
-        let cos = d1.dot(&d2);
+        let cos = d1.dot(d2);
         if cos > worst_cos {
             worst_cos = cos;
         }
@@ -569,9 +562,9 @@ fn smallest_angle(points: &[Point3<Real>]) -> Real {
     worst_cos.acos()
 }
 
-fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, Vector3<Real>) {
+fn planar_gram_schmidt(v1: Vector3, v2: Vector3) -> (Vector3, Vector3) {
     let u1 = v1;
-    let u2 = v2 - (v2.dot(&u1) / u1.norm_squared()) * u1;
+    let u2 = v2 - (v2.dot(u1) / u1.length_squared()) * u1;
 
     let e1 = u1.normalize();
     let e2 = u2.normalize();
@@ -579,13 +572,13 @@ fn planar_gram_schmidt(v1: Vector3<Real>, v2: Vector3<Real>) -> (Vector3<Real>, 
     (e1, e2)
 }
 
-fn project_point_to_segment(point: &Point3<Real>, segment: &[Point3<Real>; 2]) -> Point3<Real> {
+fn project_point_to_segment(point: Vector3, segment: &[Vector3; 2]) -> Vector3 {
     let dir = segment[1] - segment[0];
     let local = point - segment[0];
 
-    let norm = dir.norm();
+    let norm = dir.length();
     // Restrict the result to the segment portion of the line.
-    let coeff = (dir.dot(&local) / norm).clamp(0., norm);
+    let coeff = (dir.dot(local) / norm).clamp(0., norm);
 
     segment[0] + coeff * dir.normalize()
 }
@@ -594,7 +587,7 @@ fn project_point_to_segment(point: &Point3<Real>, segment: &[Point3<Real>; 2]) -
 /// to create ultra thin triangles when a point lies on an edge of a triangle. These
 /// are degenerate and need to be removed.
 fn is_triangle_degenerate(
-    triangle: &[Point3<Real>; 3],
+    triangle: &[Vector3; 3],
     epsilon_angle: Real,
     epsilon_distance: Real,
 ) -> bool {
@@ -603,14 +596,14 @@ fn is_triangle_degenerate(
     }
 
     for i in 0..3 {
-        let mut dir = triangle[(i + 1) % 3] - triangle[(i + 2) % 3];
-        if dir.normalize_mut() < epsilon_distance {
+        let (dir, dist) = (triangle[(i + 1) % 3] - triangle[(i + 2) % 3]).normalize_and_length();
+        if dist < epsilon_distance {
             return true;
         }
 
-        let proj = triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(&dir) * dir;
+        let proj = triangle[(i + 2) % 3] + (triangle[i] - triangle[(i + 2) % 3]).dot(dir) * dir;
 
-        if (proj - triangle[i]).norm() < epsilon_distance {
+        if (proj - triangle[i]).length() < epsilon_distance {
             return true;
         }
     }
@@ -621,13 +614,13 @@ fn is_triangle_degenerate(
 fn merge_triangle_sets(
     mesh1: &TriMesh,
     mesh2: &TriMesh,
-    triangle_constraints: &BTreeMap<&u32, Vec<[Point3<Real>; 2]>>,
-    pos1: &Isometry<Real>,
-    pos2: &Isometry<Real>,
+    triangle_constraints: &BTreeMap<&u32, Vec<[Vector3; 2]>>,
+    pos1: &Pose,
+    pos2: &Pose,
     flip1: bool,
     flip2: bool,
     metadata: &MeshIntersectionTolerances,
-    point_set: &mut RTree<TreePoint>,
+    point_set: &mut RTree<TreeVector>,
     topology_indices: &mut HashMap<HashableTriangleIndices, [u32; 3]>,
 ) -> Result<(), MeshIntersectionError> {
     // For each triangle, and each constraint edge associated to that triangle,
@@ -670,10 +663,10 @@ fn merge_triangle_sets(
 
             let epsilon = metadata.global_insertion_epsilon;
             let projection = mesh2
-                .project_local_point_and_get_location(&pos2.inverse_transform_point(&center), true)
+                .project_local_point_and_get_location(pos2.inverse_transform_point(center), true)
                 .0;
 
-            if flip2 ^ (projection.is_inside_eps(&center, epsilon)) {
+            if flip2 ^ (projection.is_inside_eps(center, epsilon)) {
                 let mut new_tri_idx = [
                     insert_into_set(p1, point_set, epsilon) as u32,
                     insert_into_set(p2, point_set, epsilon) as u32,
@@ -745,6 +738,7 @@ fn is_topologically_degenerate(tri_idx: [u32; 3]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::Vector;
     use crate::shape::{Ball, Cuboid, TriMeshFlags};
     use obj::Obj;
     use obj::ObjData;
@@ -761,7 +755,7 @@ mod tests {
         let mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -773,10 +767,10 @@ mod tests {
         .unwrap();
 
         let _ = intersect_meshes(
-            &Isometry::identity(),
+            &Pose::identity(),
             &mesh,
             false,
-            &Isometry::identity(),
+            &Pose::identity(),
             &mesh,
             false,
         )
@@ -789,17 +783,17 @@ mod tests {
     #[test]
     fn test_non_origin_pos1_pos2_intersection() {
         let ball = Ball::new(2f32 as Real).to_trimesh(10, 10);
-        let cuboid = Cuboid::new(Vector3::new(2.0, 1.0, 1.0)).to_trimesh();
+        let cuboid = Cuboid::new(Vector::new(2.0, 1.0, 1.0)).to_trimesh();
         let mut sphere_mesh = TriMesh::new(ball.0, ball.1).unwrap();
         sphere_mesh.set_flags(TriMeshFlags::all()).unwrap();
         let mut cuboid_mesh = TriMesh::new(cuboid.0, cuboid.1).unwrap();
         cuboid_mesh.set_flags(TriMeshFlags::all()).unwrap();
 
         let res = intersect_meshes(
-            &Isometry::translation(1.0, 0.0, 0.0),
+            &Pose::translation(1.0, 0.0, 0.0),
             &cuboid_mesh,
             false,
-            &Isometry::translation(2.0, 0.0, 0.0),
+            &Pose::translation(2.0, 0.0, 0.0),
             &sphere_mesh,
             false,
         )
@@ -809,7 +803,7 @@ mod tests {
         let _ = res.to_obj_file(&PathBuf::from("test_non_origin_pos1_pos2_intersection.obj"));
 
         let bounding_sphere = res.local_bounding_sphere();
-        assert!(bounding_sphere.center == Point3::new(1.5, 0.0, 0.0));
+        assert!(bounding_sphere.center == Vector::new(1.5, 0.0, 0.0));
         assert_relative_eq!(2.0615528, bounding_sphere.radius, epsilon = 1.0e-5);
     }
 
@@ -825,7 +819,7 @@ mod tests {
         let offset_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -846,7 +840,7 @@ mod tests {
         let center_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -858,10 +852,10 @@ mod tests {
         .unwrap();
 
         let res = intersect_meshes(
-            &Isometry::identity(),
+            &Pose::identity(),
             &center_mesh,
             false,
-            &Isometry::identity(),
+            &Pose::identity(),
             &offset_mesh,
             false,
         )
@@ -883,7 +877,7 @@ mod tests {
         let stair_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -904,7 +898,7 @@ mod tests {
         let bar_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -916,10 +910,10 @@ mod tests {
         .unwrap();
 
         let res = intersect_meshes(
-            &Isometry::identity(),
+            &Pose::identity(),
             &stair_mesh,
             false,
-            &Isometry::identity(),
+            &Pose::identity(),
             &bar_mesh,
             false,
         )
@@ -941,7 +935,7 @@ mod tests {
         let bunny_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -962,7 +956,7 @@ mod tests {
         let cylinder_mesh = TriMesh::with_flags(
             position
                 .iter()
-                .map(|v| Point3::new(v[0] as Real, v[1] as Real, v[2] as Real))
+                .map(|v| Vector::new(v[0] as Real, v[1] as Real, v[2] as Real))
                 .collect::<Vec<_>>(),
             objects[0].groups[0]
                 .polys
@@ -974,10 +968,10 @@ mod tests {
         .unwrap();
 
         let res = intersect_meshes(
-            &Isometry::identity(),
+            &Pose::identity(),
             &bunny_mesh,
             false,
-            &Isometry::identity(),
+            &Pose::identity(),
             &cylinder_mesh,
             true,
         )

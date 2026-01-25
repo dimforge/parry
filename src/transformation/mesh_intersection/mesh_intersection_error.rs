@@ -24,14 +24,13 @@ use crate::shape::{TriMesh, TriMeshFlags};
 // /// # #[cfg(all(feature = "dim3", feature = "spade"))] {
 // /// use parry3d::shape::{TriMesh, TriMeshFlags};
 // /// use parry3d::transformation::{intersect_meshes, MeshIntersectionError};
-// /// use nalgebra::{Point3, Isometry3};
 // ///
 // /// // Create two meshes with proper flags
 // /// let vertices1 = vec![
-// ///     Point3::new(-1.0, -1.0, -1.0),
-// ///     Point3::new(1.0, -1.0, -1.0),
-// ///     Point3::new(1.0, 1.0, -1.0),
-// ///     Point3::new(-1.0, 1.0, -1.0),
+// ///     Vector::new(-1.0, -1.0, -1.0),
+// ///     Vector::new(1.0, -1.0, -1.0),
+// ///     Vector::new(1.0, 1.0, -1.0),
+// ///     Vector::new(-1.0, 1.0, -1.0),
 // /// ];
 // /// let indices1 = vec![[0, 1, 2], [0, 2, 3]];
 // ///
@@ -43,10 +42,10 @@ use crate::shape::{TriMesh, TriMeshFlags};
 // /// ).expect("Failed to create mesh");
 // ///
 // /// let vertices2 = vec![
-// ///     Point3::new(0.0, -1.0, -1.0),
-// ///     Point3::new(2.0, -1.0, -1.0),
-// ///     Point3::new(2.0, 1.0, -1.0),
-// ///     Point3::new(0.0, 1.0, -1.0),
+// ///     Vector::new(0.0, -1.0, -1.0),
+// ///     Vector::new(2.0, -1.0, -1.0),
+// ///     Vector::new(2.0, 1.0, -1.0),
+// ///     Vector::new(0.0, 1.0, -1.0),
 // /// ];
 // /// let indices2 = vec![[0, 1, 2], [0, 2, 3]];
 // /// let mesh2 = TriMesh::with_flags(
@@ -55,8 +54,8 @@ use crate::shape::{TriMesh, TriMeshFlags};
 // ///     TriMeshFlags::ORIENTED
 // /// ).expect("Failed to create mesh");
 // ///
-// /// let pos1 = Isometry3::identity();
-// /// let pos2 = Isometry3::identity();
+// /// let pos1 = Pose::identity();
+// /// let pos2 = Pose::identity();
 // ///
 // /// match intersect_meshes(&pos1, &mesh1, false, &pos2, &mesh2, false) {
 // ///     Ok(intersection_mesh) => {
@@ -90,8 +89,8 @@ pub enum MeshIntersectionError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
-    /// # use nalgebra::Point3;
-    /// # let vertices = vec![Point3::origin()];
+    /// # use parry3d::math::Vector;
+    /// # let vertices = vec![Vector::ZERO];
     /// # let indices = vec![[0, 0, 0]];
     /// // Instead of:
     /// // let mesh = TriMesh::new(vertices, indices)?;
@@ -112,8 +111,8 @@ pub enum MeshIntersectionError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{TriMesh, TriMeshFlags};
-    /// # use nalgebra::Point3;
-    /// # let vertices = vec![Point3::origin()];
+    /// # use parry3d::math::Vector;
+    /// # let vertices = vec![Vector::ZERO];
     /// # let indices = vec![[0, 0, 0]];
     /// let mut mesh = TriMesh::new(vertices, indices).unwrap();
     /// mesh.set_flags(TriMeshFlags::ORIENTED).unwrap();

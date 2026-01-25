@@ -3,11 +3,11 @@
 // From https://github.com/DGriffin91/obvhs/tree/main/src/ploc/morton.rs
 // MIT/Apache 2 license.
 
-use crate::math::Vector;
-
 //---------------------------------------------------
 // --- 21 bit resolution per channel morton curve ---
 //---------------------------------------------------
+
+use crate::math::Vector;
 
 #[inline]
 fn split_by_3_u64(a: u32) -> u64 {
@@ -30,8 +30,13 @@ fn morton_encode_u64(x: u32, y: u32, z: u32) -> u64 {
 #[inline]
 /// Encode a 3D position into a u64 morton value.
 /// Input should be 0.0..=1.0
-pub fn morton_encode_u64_unorm(p: Vector<f64>) -> u64 {
-    let p = p * (1 << 21) as f64;
+pub fn morton_encode_u64_unorm(p: Vector) -> u64 {
+    #[cfg(feature = "dim2")]
+    #[cfg_attr(feature = "f64", expect(clippy::unnecessary_cast))]
+    let p = glamx::DVec2::new(p.x as f64, p.y as f64) * (1 << 21) as f64;
+    #[cfg(feature = "dim3")]
+    #[cfg_attr(feature = "f64", expect(clippy::unnecessary_cast))]
+    let p = glamx::DVec3::new(p.x as f64, p.y as f64, p.z as f64) * (1 << 21) as f64;
 
     #[cfg(feature = "dim2")]
     return morton_encode_u64(p.x as u32, p.y as u32, 0);

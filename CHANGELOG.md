@@ -1,3 +1,75 @@
+## 0.26.0
+
+### Breaking changes
+
+This release migrates parry from `nalgebra` to `glam` (via the `glamx` crate) for future compatibility with
+`rust-gpu`. This is a major breaking change affecting almost all public APIs.
+
+#### Type renames
+
+- `Isometry` → `Pose` (using `glamx::Pose2`/`Pose3`)
+- `Rotation` → `Rot2`/`Rot3` (using `glamx::Rot2`/`Rot3`)
+- `IsometryOps` → `PoseOps`
+- `IsometryOpt` → `PoseOpt`
+
+#### Removed types
+
+- `Point<Real>` - use `Vector` instead. Points and vectors are now unified.
+- `UnitVector<Real>` - use `Vector` instead. Normalization is no longer encoded in the type.
+- `Translation<Real>` - use `Vector` for translations.
+
+#### Math type changes
+
+- `Vector` is now `glam::Vec2`/`Vec3`/`DVec2`/`DVec3` depending on dimension and precision features
+- `Matrix` is now `glam::Mat2`/`Mat3`/`DMat2`/`DMat3`
+- The `math` module now re-exports glam types and provides dimension-agnostic aliases
+
+#### API signature changes
+
+- Many functions that previously took `&Point<Real>` or `&Vector<Real>` now take `Vector` by value
+- Functions taking `&Isometry<Real>` now take `&Pose` or `Pose` by value
+- `HalfSpace::new` now takes `Vector` instead of `Unit<Vector<Real>>`
+- Shape constructors like `Segment::new`, `Triangle::new`, `Capsule::new` now take `Vector` instead of `Point`
+- `Aabb::mins` and `Aabb::maxs` are now `Vector` instead of `Point<Real>`
+
+#### Migration guide
+
+If your codebase currently relies on `nalgebra`, note that `nalgebra` and `glamx` provide type conversion. Enable the
+corresponding features:
+- `nalgebra = { version = "0.34", features = [ "convert-glam030" ] }`
+- `glamx = { version = "0.1", features = ["nalgebra"] }`
+  then you can convert between `glam` and `nalgebra` types using `.into()`.
+
+```rust
+// Before (nalgebra)
+use parry3d::na::{Point3, Vector3, Isometry3, Unit};
+let point = Point3::new(1.0, 2.0, 3.0);
+let vector = Vector3::new(1.0, 0.0, 0.0);
+let normal = Unit::new_normalize(vector);
+let pos = Isometry3::translation(1.0, 2.0, 3.0);
+
+// After (glam)
+use parry3d::math::{Vector, Pose};
+let point = Vector::new(1.0, 2.0, 3.0);  // Points are now Vector
+let vector = Vector::X;
+let normal = vector.normalize();          // No Unit wrapper
+let pos = Pose::translation(1.0, 2.0, 3.0);
+```
+
+Common patterns:
+- `Point3::origin()` → `Vector::ZERO`
+- `Vector3::x()` → `Vector::X`
+- `point.coords` → just use the vector directly
+- `Unit::new_normalize(v)` → `v.normalize()`
+- `Isometry3::identity()` → `Pose::IDENTITY`
+- `isometry.translation.vector` → `pose.translation`
+
+### Modified
+
+- Re-export `glamx` instead of `nalgebra` as the public linear algebra dependency
+- Migrate visual examples from `macroquad` to `kiss3d`
+- Renamed `rkyv-serialize` feature to just `rkyv`
+
 ## 0.25.3
 
 - Significantly improve performances of `Voxels::combine_voxel_states`.

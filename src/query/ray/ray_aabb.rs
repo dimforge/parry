@@ -1,7 +1,5 @@
 use core::mem;
 
-use na;
-
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector, DIM};
 use crate::query::{Ray, RayCast, RayIntersection};
@@ -72,12 +70,12 @@ fn ray_aabb(
     ray: &Ray,
     max_time_of_impact: Real,
     solid: bool,
-) -> Option<(Real, Vector<Real>, isize)> {
+) -> Option<(Real, Vector, isize)> {
     use crate::query::clip;
-    clip::clip_aabb_line(aabb, &ray.origin, &ray.dir).and_then(|(near, far)| {
+    clip::clip_aabb_line(aabb, ray.origin, ray.dir).and_then(|(near, far)| {
         if near.0 < 0.0 {
             if solid {
-                Some((0.0, na::zero(), far.2))
+                Some((0.0, Vector::ZERO, far.2))
             } else if far.0 <= max_time_of_impact {
                 Some(far)
             } else {

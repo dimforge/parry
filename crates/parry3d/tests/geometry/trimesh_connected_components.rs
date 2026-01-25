@@ -1,4 +1,4 @@
-use parry3d::math::Point;
+use parry3d::math::Vector;
 use parry3d::shape::{TriMesh, TriMeshFlags};
 
 #[test]
@@ -6,13 +6,13 @@ use parry3d::shape::{TriMesh, TriMeshFlags};
 fn mesh_connected_components_grouped_faces() {
     let verts = vec![
         // Face 0
-        Point::new(15.82, 6.455, -0.15), // <- Vertex shared with face 1.
-        Point::new(9.915, 6.455, -0.15),
-        Point::new(9.915, 6.4, 0.0), // <- Vertex shared with face 1.
+        Vector::new(15.82, 6.455, -0.15), // <- Vertex shared with face 1.
+        Vector::new(9.915, 6.455, -0.15),
+        Vector::new(9.915, 6.4, 0.0), // <- Vertex shared with face 1.
         // Face1
-        Point::new(15.82, 6.455, -0.15), // <- Vertex shared with face 0.
-        Point::new(9.915, 6.4, 0.0),     // <- Vertex shared with face 0.
-        Point::new(15.82, 6.4, 0.0),
+        Vector::new(15.82, 6.455, -0.15), // <- Vertex shared with face 0.
+        Vector::new(9.915, 6.4, 0.0),     // <- Vertex shared with face 0.
+        Vector::new(15.82, 6.4, 0.0),
     ];
 
     let mut roof = TriMesh::new(verts, vec![[0, 1, 2], [3, 4, 5]]).unwrap();

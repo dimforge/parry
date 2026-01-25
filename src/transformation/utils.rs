@@ -9,7 +9,7 @@
 //!
 //! The utilities fall into several categories:
 //!
-//! ## Point Transformations
+//! ## Vector Transformations
 //! - [`transform`] / [`transformed`] - Apply rigid transformations (rotation + translation)
 //! - [`scaled`] - Apply non-uniform scaling
 //!
@@ -45,7 +45,7 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))]
 //! # {
 //! use parry3d::transformation::utils::{push_circle, push_ring_indices, push_filled_circle_indices};
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use std::f32::consts::PI;
 //!
 //! let mut vertices = Vec::new();
@@ -79,7 +79,7 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))]
 //! # {
 //! use parry3d::transformation::utils::{push_circle, push_degenerate_top_ring_indices, push_filled_circle_indices};
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use std::f32::consts::PI;
 //!
 //! let mut vertices = Vec::new();
@@ -94,7 +94,7 @@
 //! push_circle(radius, nsubdiv, dtheta, 0.0, &mut vertices);
 //!
 //! // Add apex point at the top
-//! vertices.push(Point::new(0.0, height, 0.0));
+//! vertices.push(Vector::new(0.0, height, 0.0));
 //! let apex_idx = (vertices.len() - 1) as u32;
 //!
 //! // Connect base circle to apex
@@ -113,23 +113,22 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))]
 //! # {
 //! use parry3d::transformation::utils::{transform, scaled};
-//! use parry3d::math::{Point, Vector, Isometry};
-//! use parry3d::na::{Translation3, UnitQuaternion};
-//! use std::f32::consts::PI;
+//! use parry3d::math::{Vector, Pose, Rotation};
+//! use core::f32::consts::PI;
 //!
 //! let mut points = vec![
-//!     Point::new(1.0, 0.0, 0.0),
-//!     Point::new(0.0, 1.0, 0.0),
-//!     Point::new(0.0, 0.0, 1.0),
+//!     Vector::new(1.0, 0.0, 0.0),
+//!     Vector::new(0.0, 1.0, 0.0),
+//!     Vector::new(0.0, 0.0, 1.0),
 //! ];
 //!
 //! // First, scale non-uniformly
 //! let points = scaled(points, Vector::new(2.0, 1.0, 0.5));
 //!
 //! // Then rotate 45 degrees around Y axis
-//! let rotation = UnitQuaternion::from_axis_angle(&Vector::y_axis(), PI / 4.0);
-//! let translation = Translation3::new(10.0, 5.0, 0.0);
-//! let isometry = Isometry::from_parts(translation.into(), rotation);
+//! let rotation = Rotation::from_axis_angle(Vector::Y, PI / 4.0);
+//! let translation = Vector::new(10.0, 5.0, 0.0);
+//! let isometry = Pose::from_parts(translation, rotation);
 //!
 //! let final_points = parry3d::transformation::utils::transformed(points, isometry);
 //! # }
@@ -138,7 +137,7 @@
 //! # Design Philosophy
 //!
 //! These functions follow a "builder" pattern where:
-//! 1. Vertices are pushed to a `Vec<Point<Real>>`
+//! 1. Vertices are pushed to a `Vec<Vector>`
 //! 2. Indices are pushed to a `Vec<[u32; 3]>` (triangles) or `Vec<[u32; 2]>` (edges)
 //! 3. Functions work with index offsets, allowing incremental construction
 //! 4. No memory is allocated except for the output buffers
@@ -149,7 +148,7 @@
 //!
 //! - All functions use simple loops without SIMD (suitable for small to medium subdivisions)
 //! - Index generation has O(n) complexity where n is the subdivision count
-//! - Point generation involves trigonometric functions (sin/cos) per subdivision
+//! - Vector generation involves trigonometric functions (sin/cos) per subdivision
 //! - For high subdivision counts (>1000), consider caching generated geometry
 //!
 //! # See Also
@@ -158,8 +157,11 @@
 //! - [`convex_hull`](crate::transformation::convex_hull) - Convex hull computation
 //! - [`TriMesh`](crate::shape::TriMesh) - Triangle mesh shape
 
-use crate::math::{Isometry, Point, Real, Vector};
-use crate::na::ComplexField;
+#[cfg(feature = "dim3")]
+use crate::math::RealField;
+#[cfg(feature = "dim2")]
+use crate::math::VectorExt;
+use crate::math::{ComplexField, Pose, Real, Vector};
 use alloc::vec::Vec;
 #[cfg(feature = "dim3")]
 use {crate::math::DIM, num::Zero};
@@ -178,31 +180,30 @@ use {crate::math::DIM, num::Zero};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::transform;
-/// use parry3d::math::{Point, Isometry, Vector};
-/// use parry3d::na::Translation3;
+/// use parry3d::math::{Vector, Pose, Rotation};
 ///
 /// // Create some points
 /// let mut points = vec![
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.0, 1.0, 0.0),
-///     Point::new(0.0, 0.0, 1.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// ];
 ///
 /// // Create a translation
-/// let transform_iso = Isometry::from_parts(
-///     Translation3::new(10.0, 20.0, 30.0).into(),
-///     parry3d::na::UnitQuaternion::identity()
+/// let transform_iso = Pose::from_parts(
+///     Vector::new(10.0, 20.0, 30.0),
+///     Rotation::IDENTITY
 /// );
 ///
 /// // Apply the transformation in-place
 /// transform(&mut points, transform_iso);
 ///
-/// assert_eq!(points[0], Point::new(11.0, 20.0, 30.0));
-/// assert_eq!(points[1], Point::new(10.0, 21.0, 30.0));
-/// assert_eq!(points[2], Point::new(10.0, 20.0, 31.0));
+/// assert_eq!(points[0], Vector::new(11.0, 20.0, 30.0));
+/// assert_eq!(points[1], Vector::new(10.0, 21.0, 30.0));
+/// assert_eq!(points[2], Vector::new(10.0, 20.0, 31.0));
 /// # }
 /// ```
-pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
+pub fn transform(points: &mut [Vector], m: Pose) {
     points.iter_mut().for_each(|p| *p = m * *p);
 }
 
@@ -223,27 +224,26 @@ pub fn transform(points: &mut [Point<Real>], m: Isometry<Real>) {
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::transformed;
-/// use parry2d::math::{Point, Isometry};
-/// use parry2d::na::{Translation2, UnitComplex};
+/// use parry2d::math::{Vector, Pose, Rotation};
 /// use std::f32::consts::PI;
 ///
 /// let points = vec![
-///     Point::new(1.0, 0.0),
-///     Point::new(0.0, 1.0),
+///     Vector::new(1.0, 0.0),
+///     Vector::new(0.0, 1.0),
 /// ];
 ///
 /// // Rotate 90 degrees counter-clockwise around origin
-/// let rotation = UnitComplex::new(PI / 2.0);
-/// let transform = Isometry::from_parts(Translation2::identity().into(), rotation);
+/// let rotation = Rotation::new(PI / 2.0);
+/// let transform = Pose::from_parts(Vector::ZERO, rotation);
 ///
 /// let result = transformed(points, transform);
 ///
-/// // Points are now rotated
+/// // Vectors are now rotated
 /// assert!((result[0].x - 0.0).abs() < 1e-6);
 /// assert!((result[0].y - 1.0).abs() < 1e-6);
 /// # }
 /// ```
-pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point<Real>> {
+pub fn transformed(mut points: Vec<Vector>, m: Pose) -> Vec<Vector> {
     transform(&mut points, m);
     points
 }
@@ -266,25 +266,23 @@ pub fn transformed(mut points: Vec<Point<Real>>, m: Isometry<Real>) -> Vec<Point
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::scaled;
-/// use parry3d::math::{Point, Vector};
+/// use parry3d::math::Vector;
 ///
 /// let points = vec![
-///     Point::new(1.0, 2.0, 3.0),
-///     Point::new(4.0, 5.0, 6.0),
+///     Vector::new(1.0, 2.0, 3.0),
+///     Vector::new(4.0, 5.0, 6.0),
 /// ];
 ///
 /// // Scale x by 2, y by 3, z by 0.5
 /// let scale = Vector::new(2.0, 3.0, 0.5);
 /// let result = scaled(points, scale);
 ///
-/// assert_eq!(result[0], Point::new(2.0, 6.0, 1.5));
-/// assert_eq!(result[1], Point::new(8.0, 15.0, 3.0));
+/// assert_eq!(result[0], Vector::new(2.0, 6.0, 1.5));
+/// assert_eq!(result[1], Vector::new(8.0, 15.0, 3.0));
 /// # }
 /// ```
-pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Real>> {
-    points
-        .iter_mut()
-        .for_each(|p| p.coords.component_mul_assign(&scale));
+pub fn scaled(mut points: Vec<Vector>, scale: Vector) -> Vec<Vector> {
+    points.iter_mut().for_each(|p| *p *= scale);
     points
 }
 
@@ -292,7 +290,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
 /// Pushes a discretized counterclockwise circle to a buffer.
 ///
 /// This function generates points along a circle in the XZ plane at a given Y coordinate.
-/// Points are generated counter-clockwise when viewed from above (positive Y direction).
+/// Vectors are generated counter-clockwise when viewed from above (positive Y direction).
 ///
 /// # Arguments
 /// * `radius` - The radius of the circle
@@ -306,7 +304,7 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::push_circle;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use std::f32::consts::PI;
 ///
 /// let mut points = Vec::new();
@@ -327,14 +325,14 @@ pub fn scaled(mut points: Vec<Point<Real>>, scale: Vector<Real>) -> Vec<Point<Re
 /// ```
 #[cfg(feature = "dim3")]
 #[inline]
-pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut Vec<Point<Real>>) {
+pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut Vec<Vector>) {
     let mut curr_theta = Real::zero();
 
     for _ in 0..nsubdiv {
-        out.push(Point::new(
-            ComplexField::cos(curr_theta) * radius,
+        out.push(Vector::new(
+            <Real as ComplexField>::cos(curr_theta) * radius,
             y,
-            ComplexField::sin(curr_theta) * radius,
+            <Real as ComplexField>::sin(curr_theta) * radius,
         ));
         curr_theta += dtheta;
     }
@@ -344,7 +342,7 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 ///
 /// This function generates points along an arc in the XY plane (2D).
 /// The arc is contained on the plane spanned by the X and Y axes.
-/// Points are generated counter-clockwise starting from angle 0 (positive X axis).
+/// Vectors are generated counter-clockwise starting from angle 0 (positive X axis).
 ///
 /// # Arguments
 /// * `radius` - The radius of the arc
@@ -357,7 +355,7 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::push_xy_arc;
-/// use parry2d::math::Point;
+/// use parry2d::math::Vector;
 /// use std::f32::consts::PI;
 ///
 /// let mut points = Vec::new();
@@ -375,15 +373,15 @@ pub fn push_circle(radius: Real, nsubdiv: u32, dtheta: Real, y: Real, out: &mut 
 /// ```
 #[inline]
 #[cfg(feature = "dim2")]
-pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point<Real>>) {
+pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Vector>) {
     let mut curr_theta: Real = 0.0;
 
     for _ in 0..nsubdiv {
-        let mut pt_coords = Vector::zeros();
+        let mut pt_coords = Vector::ZERO;
 
-        pt_coords[0] = ComplexField::cos(curr_theta) * radius;
-        pt_coords[1] = ComplexField::sin(curr_theta) * radius;
-        out.push(Point::from(pt_coords));
+        pt_coords[0] = <Real as ComplexField>::cos(curr_theta) * radius;
+        pt_coords[1] = <Real as ComplexField>::sin(curr_theta) * radius;
+        out.push(pt_coords);
 
         curr_theta += dtheta;
     }
@@ -406,7 +404,7 @@ pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Point
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::{push_circle, push_ring_indices};
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use std::f32::consts::PI;
 ///
 /// let mut vertices = Vec::new();
@@ -466,7 +464,7 @@ pub fn push_ring_indices(
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::utils::{push_circle, push_open_ring_indices};
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use std::f32::consts::PI;
 ///
 /// let mut vertices = Vec::new();
@@ -640,11 +638,11 @@ pub fn push_open_circle_outline_indices(indices: &mut Vec<[u32; 2]>, range: core
 /// the `start` and `end` points).
 #[cfg(feature = "dim3")]
 pub fn push_arc_and_idx(
-    center: Point<Real>,
+    center: Vector,
     start: u32,
     end: u32,
     nsubdivs: u32,
-    out_vtx: &mut Vec<Point<Real>>,
+    out_vtx: &mut Vec<Vector>,
     out_idx: &mut Vec<[u32; 2]>,
 ) {
     let base = out_vtx.len() as u32;
@@ -682,12 +680,12 @@ pub fn push_arc_and_idx(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::transformation::utils::push_arc;
-/// use parry2d::math::Point;
+/// use parry2d::math::Vector;
 ///
 /// let mut points = Vec::new();
-/// let center = Point::new(0.0, 0.0);
-/// let start = Point::new(5.0, 0.0);  // 5 units to the right
-/// let end = Point::new(0.0, 5.0);    // 5 units up (90 degree arc)
+/// let center = Vector::new(0.0, 0.0);
+/// let start = Vector::new(5.0, 0.0);  // 5 units to the right
+/// let end = Vector::new(0.0, 5.0);    // 5 units up (90 degree arc)
 ///
 /// // Generate 3 intermediate points
 /// push_arc(center, start, end, 3, &mut points);
@@ -696,44 +694,39 @@ pub fn push_arc_and_idx(
 /// assert_eq!(points.len(), 2);
 /// # }
 /// ```
-pub fn push_arc(
-    center: Point<Real>,
-    start: Point<Real>,
-    end: Point<Real>,
-    nsubdivs: u32,
-    out: &mut Vec<Point<Real>>,
-) {
+pub fn push_arc(center: Vector, start: Vector, end: Vector, nsubdivs: u32, out: &mut Vec<Vector>) {
     assert!(nsubdivs > 0);
-    if let (Some((start_dir, start_len)), Some((end_dir, end_len))) = (
-        na::Unit::try_new_and_get(start - center, 0.0),
-        na::Unit::try_new_and_get(end - center, 0.0),
-    ) {
+    let (start_dir, start_len) = (start - center).normalize_and_length();
+    let (end_dir, end_len) = (end - center).normalize_and_length();
+
+    if start_len > 0.0 && end_len > 0.0 {
         let len_inc = (end_len - start_len) / nsubdivs as Real;
 
         #[cfg(feature = "dim2")]
-        let rot = Some(na::UnitComplex::scaled_rotation_between_axis(
-            &start_dir,
-            &end_dir,
-            1.0 / nsubdivs as Real,
-        ));
+        let rot = {
+            use crate::math::Rot2;
+            let angle = start_dir.angle(end_dir);
+            let angle_inc = angle / nsubdivs as Real;
+            Rot2::new(angle_inc)
+        };
 
         #[cfg(feature = "dim3")]
-        let rot = na::UnitQuaternion::scaled_rotation_between_axis(
-            &start_dir,
-            &end_dir,
-            1.0 / nsubdivs as Real,
-        );
+        let rot = {
+            use crate::math::Rot3;
+            // Compute rotation from start_dir to end_dir
+            let rot = Rot3::from_rotation_arc(start_dir, end_dir);
+            let axisangle = rot.to_scaled_axis();
+            Rot3::from_scaled_axis(axisangle / nsubdivs as Real)
+        };
 
-        if let Some(rot) = rot {
-            let mut curr_dir = start_dir;
-            let mut curr_len = start_len;
+        let mut curr_dir = start_dir;
+        let mut curr_len = start_len;
 
-            for _ in 0..nsubdivs - 1 {
-                curr_dir = rot * curr_dir;
-                curr_len += len_inc;
+        for _ in 0..nsubdivs - 1 {
+            curr_dir = rot * curr_dir;
+            curr_len += len_inc;
 
-                out.push(center + *curr_dir * curr_len);
-            }
+            out.push(center + curr_dir * curr_len);
         }
     }
 }
@@ -760,10 +753,9 @@ pub fn apply_revolution(
     collapse_top: bool,
     circle_ranges: &[core::ops::Range<u32>],
     nsubdivs: u32,
-    out_vtx: &mut Vec<Point<Real>>, // Must be set to the half-profile.
+    out_vtx: &mut Vec<Vector>, // Must be set to the half-profile.
     out_idx: &mut Vec<[u32; 2]>,
 ) {
-    use na::RealField;
     let ang_increment = Real::two_pi() / (nsubdivs as Real);
     let angles = [
         ang_increment * (nsubdivs / 4) as Real,
@@ -789,7 +781,7 @@ pub fn apply_revolution(
     // Push rotated profiles.
     for angle in angles {
         let base = out_vtx.len() as u32;
-        let rot = na::UnitQuaternion::new(Vector::y() * angle);
+        let rot = crate::math::Rot3::from_axis_angle(Vector::Y, angle);
 
         if collapse_bottom {
             out_idx.push([0, base]);
@@ -816,7 +808,7 @@ pub fn apply_revolution(
             let pt = out_vtx[i as usize];
             let base = out_vtx.len() as u32;
             push_circle(
-                pt.coords.xz().norm(),
+                crate::math::Vector2::new(pt.x, pt.z).length(),
                 nsubdivs,
                 ang_increment,
                 pt.y,

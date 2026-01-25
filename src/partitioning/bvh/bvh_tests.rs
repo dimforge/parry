@@ -3,7 +3,7 @@ use crate::math::{Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 
 fn make_test_aabb(i: usize) -> Aabb {
-    Aabb::from_half_extents(Vector::repeat(i as Real).into(), Vector::repeat(1.0))
+    Aabb::from_half_extents(Vector::splat(i as Real).into(), Vector::splat(1.0))
 }
 
 #[test]

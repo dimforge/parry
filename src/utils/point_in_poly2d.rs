@@ -1,5 +1,4 @@
-use crate::math::Real;
-use na::Point2;
+use crate::math::Vector2;
 use num::Zero;
 
 /// Tests if the given point is inside a convex polygon with arbitrary orientation.
@@ -21,43 +20,43 @@ use num::Zero;
 ///
 /// # Examples
 ///
-/// ## Point Inside a Square
+/// ## Vector Inside a Square
 ///
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_convex_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
 /// let square = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
-/// let inside = Point2::new(1.0, 1.0);
-/// let outside = Point2::new(3.0, 1.0);
+/// let inside = Vector::new(1.0, 1.0);
+/// let outside = Vector::new(3.0, 1.0);
 ///
-/// assert!(point_in_convex_poly2d(&inside, &square));
-/// assert!(!point_in_convex_poly2d(&outside, &square));
+/// assert!(point_in_convex_poly2d(inside, &square));
+/// assert!(!point_in_convex_poly2d(outside, &square));
 /// # }
 /// ```
 ///
-/// ## Point on the Boundary
+/// ## Vector on the Boundary
 ///
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_convex_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
 /// let triangle = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(1.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(1.0, 2.0),
 /// ];
 ///
-/// let on_edge = Point2::new(1.0, 0.0);
-/// assert!(point_in_convex_poly2d(&on_edge, &triangle));
+/// let on_edge = Vector::new(1.0, 0.0);
+/// assert!(point_in_convex_poly2d(on_edge, &triangle));
 /// # }
 /// ```
 ///
@@ -66,16 +65,16 @@ use num::Zero;
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_convex_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
-/// let empty: Vec<Point2<f32>> = vec![];
-/// let point = Point2::new(1.0, 1.0);
+/// let empty: Vec<Vector> = vec![];
+/// let point = Vector::new(1.0, 1.0);
 ///
 /// // An empty polygon contains no points
-/// assert!(!point_in_convex_poly2d(&point, &empty));
+/// assert!(!point_in_convex_poly2d(point, &empty));
 /// # }
 /// ```
-pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
+pub fn point_in_convex_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
     if poly.is_empty() {
         false
     } else {
@@ -85,7 +84,7 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
             let i2 = (i1 + 1) % poly.len();
             let seg_dir = poly[i2] - poly[i1];
             let dpt = pt - poly[i1];
-            let perp = dpt.perp(&seg_dir);
+            let perp = dpt.perp_dot(seg_dir);
 
             if sign.is_zero() {
                 sign = perp;
@@ -125,20 +124,20 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
 /// let square = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
-/// let inside = Point2::new(1.0, 1.0);
-/// let outside = Point2::new(3.0, 1.0);
+/// let inside = Vector::new(1.0, 1.0);
+/// let outside = Vector::new(3.0, 1.0);
 ///
-/// assert!(point_in_poly2d(&inside, &square));
-/// assert!(!point_in_poly2d(&outside, &square));
+/// assert!(point_in_poly2d(inside, &square));
+/// assert!(!point_in_poly2d(outside, &square));
 /// # }
 /// ```
 ///
@@ -147,23 +146,23 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
 /// // L-shaped polygon (concave)
 /// let l_shape = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 1.0),
-///     Point2::new(1.0, 1.0),
-///     Point2::new(1.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 1.0),
+///     Vector::new(1.0, 1.0),
+///     Vector::new(1.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
-/// let inside_corner = Point2::new(0.5, 0.5);
-/// let outside_corner = Point2::new(1.5, 1.5);
+/// let inside_corner = Vector::new(0.5, 0.5);
+/// let outside_corner = Vector::new(1.5, 1.5);
 ///
-/// assert!(point_in_poly2d(&inside_corner, &l_shape));
-/// assert!(!point_in_poly2d(&outside_corner, &l_shape));
+/// assert!(point_in_poly2d(inside_corner, &l_shape));
+/// assert!(!point_in_poly2d(outside_corner, &l_shape));
 /// # }
 /// ```
 ///
@@ -172,24 +171,24 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
 /// // A star shape (self-intersecting creates a complex winding pattern)
 /// let star = vec![
-///     Point2::new(0.0, 1.0),
-///     Point2::new(0.5, 0.5),
-///     Point2::new(1.0, 1.0),
-///     Point2::new(0.7, 0.3),
-///     Point2::new(1.0, -0.5),
-///     Point2::origin(),
-///     Point2::new(-1.0, -0.5),
-///     Point2::new(-0.7, 0.3),
-///     Point2::new(-1.0, 1.0),
-///     Point2::new(-0.5, 0.5),
+///     Vector::new(0.0, 1.0),
+///     Vector::new(0.5, 0.5),
+///     Vector::new(1.0, 1.0),
+///     Vector::new(0.7, 0.3),
+///     Vector::new(1.0, -0.5),
+///     Vector::ZERO,
+///     Vector::new(-1.0, -0.5),
+///     Vector::new(-0.7, 0.3),
+///     Vector::new(-1.0, 1.0),
+///     Vector::new(-0.5, 0.5),
 /// ];
 ///
-/// let center = Point2::new(0.0, 0.5);
-/// assert!(point_in_poly2d(&center, &star));
+/// let center = Vector::new(0.0, 0.5);
+/// assert!(point_in_poly2d(center, &star));
 /// # }
 /// ```
 ///
@@ -198,16 +197,16 @@ pub fn point_in_convex_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool 
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::utils::point_in_poly2d;
-/// use parry2d::na::Point2;
+/// use parry2d::math::Vector;
 ///
-/// let empty: Vec<Point2<f32>> = vec![];
-/// let point = Point2::new(1.0, 1.0);
+/// let empty: Vec<Vector> = vec![];
+/// let point = Vector::new(1.0, 1.0);
 ///
 /// // An empty polygon contains no points
-/// assert!(!point_in_poly2d(&point, &empty));
+/// assert!(!point_in_poly2d(point, &empty));
 /// # }
 /// ```
-pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
+pub fn point_in_poly2d(pt: Vector2, poly: &[Vector2]) -> bool {
     if poly.is_empty() {
         return false;
     }
@@ -218,7 +217,7 @@ pub fn point_in_poly2d(pt: &Point2<Real>, poly: &[Point2<Real>]) -> bool {
         let b = poly[(i + 1) % poly.len()];
         let seg_dir = b - a;
         let dpt = pt - a;
-        let perp = dpt.perp(&seg_dir);
+        let perp = dpt.perp_dot(seg_dir);
         winding += match (dpt.y >= 0.0, b.y > pt.y) {
             (true, true) if perp < 0.0 => 1,
             (false, false) if perp > 0.0 => 1,
@@ -245,9 +244,9 @@ mod tests {
             [1.0, 2.0],
             [-1.0, 2.0],
         ]
-        .map(Point2::from);
-        assert!(!point_in_poly2d(&[-0.5, -0.5].into(), &poly));
-        assert!(point_in_poly2d(&[0.5, -0.5].into(), &poly));
+        .map(|[x, y]| Vector2::new(x, y));
+        assert!(!point_in_poly2d(Vector2::new(-0.5, -0.5), &poly));
+        assert!(point_in_poly2d(Vector2::new(0.5, -0.5), &poly));
     }
 
     #[test]
@@ -316,23 +315,23 @@ mod tests {
             [615.4741821289063, 280.65472412109375],
             [615.4741821289063, 279.4120788574219],
         ]
-        .map(Point2::from);
-        let pt = Point2::from([596.0181884765625, 427.9162902832031]);
-        assert!(point_in_poly2d(&pt, &poly));
+        .map(|[x, y]| Vector2::new(x, y));
+        let pt = Vector2::new(596.0181884765625, 427.9162902832031);
+        assert!(point_in_poly2d(pt, &poly));
     }
 
     #[test]
     #[cfg(all(feature = "dim2", feature = "alloc"))]
     fn point_in_poly2d_concave_exact_vertex_bug() {
         let poly = crate::shape::Ball::new(1.0).to_polyline(10);
-        assert!(point_in_poly2d(&Point2::origin(), &poly));
-        assert!(point_in_poly2d(&Point2::new(-0.25, 0.0), &poly));
-        assert!(point_in_poly2d(&Point2::new(0.25, 0.0), &poly));
-        assert!(point_in_poly2d(&Point2::new(0.0, -0.25), &poly));
-        assert!(point_in_poly2d(&Point2::new(0.0, 0.25), &poly));
-        assert!(!point_in_poly2d(&Point2::new(-2.0, 0.0), &poly));
-        assert!(!point_in_poly2d(&Point2::new(2.0, 0.0), &poly));
-        assert!(!point_in_poly2d(&Point2::new(0.0, -2.0), &poly));
-        assert!(!point_in_poly2d(&Point2::new(0.0, 2.0), &poly));
+        assert!(point_in_poly2d(Vector2::ZERO, &poly));
+        assert!(point_in_poly2d(Vector2::new(-0.25, 0.0), &poly));
+        assert!(point_in_poly2d(Vector2::new(0.25, 0.0), &poly));
+        assert!(point_in_poly2d(Vector2::new(0.0, -0.25), &poly));
+        assert!(point_in_poly2d(Vector2::new(0.0, 0.25), &poly));
+        assert!(!point_in_poly2d(Vector2::new(-2.0, 0.0), &poly));
+        assert!(!point_in_poly2d(Vector2::new(2.0, 0.0), &poly));
+        assert!(!point_in_poly2d(Vector2::new(0.0, -2.0), &poly));
+        assert!(!point_in_poly2d(Vector2::new(0.0, 2.0), &poly));
     }
 }

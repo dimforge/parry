@@ -1,12 +1,12 @@
-use crate::math::{Isometry, Point, Real, Translation, Vector};
+use crate::math::{IVector, Pose, Real, Vector};
 use crate::query::{QueryDispatcher, ShapeCastHit, ShapeCastOptions};
 use crate::shape::{Cuboid, Shape, Voxels};
 
 /// Time Of Impact of a voxels shape with any other shape, under a translational movement.
 pub fn cast_shapes_voxels_shape<D>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Pose,
+    vel12: Vector,
     g1: &Voxels,
     g2: &dyn Shape,
     options: ShapeCastOptions,
@@ -20,13 +20,13 @@ where
     let mut smallest_t = options.max_time_of_impact;
     let start_aabb2_1 = g2.compute_aabb(pos12);
 
-    let mut check_voxels_in_range = |search_domain: [Point<i32>; 2]| {
+    let mut check_voxels_in_range = |search_domain: [IVector; 2]| {
         for vox in g1.voxels_in_range(search_domain[0], search_domain[1]) {
             if !vox.state.is_empty() {
                 // PERF: could we check the canonical shape instead, and deduplicate accordingly?
                 let center = g1.voxel_center(vox.grid_coords);
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
-                let vox_pos12 = Translation::from(center).inverse() * pos12;
+                let vox_pos12 = Pose::from_translation(center).inverse() * pos12;
                 if let Some(new_hit) = dispatcher
                     .cast_shapes(&vox_pos12, vel12, &cuboid, g2, options)
                     .ok()
@@ -89,7 +89,7 @@ where
             break;
         }
 
-        let imin = Vector::from(toi.map(|t| t.0)).imin();
+        let imin = Vector::from(toi.map(|t| t.0)).min_position();
 
         if toi[imin].1 {
             search_domain[0][imin] += 1;
@@ -130,8 +130,8 @@ where
 /// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
 pub fn cast_shapes_shape_voxels<D>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
-    vel12: &Vector<Real>,
+    pos12: &Pose,
+    vel12: Vector,
     g1: &dyn Shape,
     g2: &Voxels,
     options: ShapeCastOptions,
@@ -142,7 +142,7 @@ where
     cast_shapes_voxels_shape(
         dispatcher,
         &pos12.inverse(),
-        &-pos12.inverse_transform_vector(vel12),
+        -(pos12.rotation.inverse() * vel12),
         g2,
         g1,
         options,

@@ -1,13 +1,9 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Pose, Real, Vector};
 use crate::shape::FeatureId;
-use na;
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// The result of projecting a point onto a shape.
 ///
-/// Point projection finds the closest point on a shape's surface to a given query point.
+/// Vector projection finds the closest point on a shape's surface to a given query point.
 /// This is fundamental for many geometric queries including distance calculation,
 /// collision detection, and surface sampling.
 ///
@@ -36,22 +32,22 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::PointQuery;
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Point3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// let ball = Ball::new(5.0);
-/// let ball_pos = Isometry3::translation(10.0, 0.0, 0.0);
+/// let ball_pos = Pose::translation(10.0, 0.0, 0.0);
 ///
 /// // Project a point outside the ball
-/// let outside_point = Point3::origin();
-/// let proj = ball.project_point(&ball_pos, &outside_point, true);
+/// let outside_point = Vector::ZERO;
+/// let proj = ball.project_point(&ball_pos, outside_point, true);
 ///
 /// // Closest point on ball surface
-/// assert_eq!(proj.point, Point3::new(5.0, 0.0, 0.0));
+/// assert_eq!(proj.point, Vector::new(5.0, 0.0, 0.0));
 /// assert!(!proj.is_inside);
 ///
 /// // Project a point inside the ball
-/// let inside_point = Point3::new(10.0, 0.0, 0.0); // At center
-/// let proj2 = ball.project_point(&ball_pos, &inside_point, true);
+/// let inside_point = Vector::new(10.0, 0.0, 0.0); // At center
+/// let proj2 = ball.project_point(&ball_pos, inside_point, true);
 /// assert!(proj2.is_inside);
 /// # }
 /// ```
@@ -59,31 +55,30 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct PointProjection {
     /// Whether the query point was inside the shape.
     ///
-    /// - `true`: Point is in the interior (for solid shapes)
-    /// - `false`: Point is outside the shape
+    /// - `true`: Vector is in the interior (for solid shapes)
+    /// - `false`: Vector is outside the shape
     pub is_inside: bool,
 
     /// The closest point on the shape's surface to the query point.
     ///
     /// If `is_inside = true`, this is the nearest point on the boundary.
     /// If `is_inside = false`, this is the nearest surface point.
-    pub point: Point<Real>,
+    pub point: Vector,
 }
 
 impl PointProjection {
     /// Initializes a new `PointProjection`.
-    pub fn new(is_inside: bool, point: Point<Real>) -> Self {
+    pub fn new(is_inside: bool, point: Vector) -> Self {
         PointProjection { is_inside, point }
     }
 
     /// Transforms `self.point` by `pos`.
-    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, pos: &Pose) -> Self {
         PointProjection {
             is_inside: self.is_inside,
             point: pos * self.point,
@@ -91,8 +86,8 @@ impl PointProjection {
     }
 
     /// Returns `true` if `Self::is_inside` is `true` or if the distance between the projected point and `point` is smaller than `min_dist`.
-    pub fn is_inside_eps(&self, original_point: &Point<Real>, min_dist: Real) -> bool {
-        self.is_inside || na::distance_squared(original_point, &self.point) < min_dist * min_dist
+    pub fn is_inside_eps(&self, original_point: Vector, min_dist: Real) -> bool {
+        self.is_inside || (original_point - self.point).length_squared() < min_dist * min_dist
     }
 }
 
@@ -115,8 +110,8 @@ impl PointProjection {
 /// # Local vs World Space
 ///
 /// Methods with `local_` prefix work in the shape's local coordinate system:
-/// - **Local methods**: Point must be in shape's coordinate frame
-/// - **World methods**: Point in world space, shape transformation applied
+/// - **Local methods**: Vector must be in shape's coordinate frame
+/// - **World methods**: Vector in world space, shape transformation applied
 ///
 /// # Solid Parameter
 ///
@@ -130,24 +125,24 @@ impl PointProjection {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::PointQuery;
 /// use parry3d::shape::Cuboid;
-/// use nalgebra::{Point3, Vector3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// let cuboid_pos = Isometry3::translation(5.0, 0.0, 0.0);
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
+/// let cuboid_pos = Pose::translation(5.0, 0.0, 0.0);
 ///
-/// let query_point = Point3::origin();
+/// let query_point = Vector::ZERO;
 ///
 /// // Project point onto cuboid surface
-/// let projection = cuboid.project_point(&cuboid_pos, &query_point, true);
+/// let projection = cuboid.project_point(&cuboid_pos, query_point, true);
 /// println!("Closest point on cuboid: {:?}", projection.point);
 /// println!("Is inside: {}", projection.is_inside);
 ///
 /// // Calculate distance to cuboid
-/// let distance = cuboid.distance_to_point(&cuboid_pos, &query_point, true);
+/// let distance = cuboid.distance_to_point(&cuboid_pos, query_point, true);
 /// println!("Distance: {}", distance);
 ///
 /// // Test if point is inside cuboid
-/// let is_inside = cuboid.contains_point(&cuboid_pos, &query_point);
+/// let is_inside = cuboid.contains_point(&cuboid_pos, query_point);
 /// println!("Contains: {}", is_inside);
 /// # }
 /// ```
@@ -171,30 +166,30 @@ pub trait PointQuery {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::PointQuery;
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let ball = Ball::new(1.0);
-    /// let far_point = Point3::new(100.0, 0.0, 0.0);
+    /// let far_point = Vector::new(100.0, 0.0, 0.0);
     ///
     /// // Projection exists but is far away
-    /// assert!(ball.project_local_point(&far_point, true).point.x > 0.0);
+    /// assert!(ball.project_local_point(far_point, true).point.x > 0.0);
     ///
     /// // With max distance limit of 10, projection is rejected
-    /// assert!(ball.project_local_point_with_max_dist(&far_point, true, 10.0).is_none());
+    /// assert!(ball.project_local_point_with_max_dist(far_point, true, 10.0).is_none());
     ///
     /// // Nearby point is accepted
-    /// let near_point = Point3::new(2.0, 0.0, 0.0);
-    /// assert!(ball.project_local_point_with_max_dist(&near_point, true, 10.0).is_some());
+    /// let near_point = Vector::new(2.0, 0.0, 0.0);
+    /// assert!(ball.project_local_point_with_max_dist(near_point, true, 10.0).is_some());
     /// # }
     /// ```
     fn project_local_point_with_max_dist(
         &self,
-        pt: &Point<Real>,
+        pt: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
         let proj = self.project_local_point(pt, solid);
-        if na::distance(&proj.point, pt) > max_dist {
+        if (proj.point - pt).length() > max_dist {
             None
         } else {
             Some(proj)
@@ -204,29 +199,28 @@ pub trait PointQuery {
     /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
     fn project_point_with_max_dist(
         &self,
-        m: &Isometry<Real>,
-        pt: &Point<Real>,
+        m: &Pose,
+        pt: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
-        self.project_local_point_with_max_dist(&m.inverse_transform_point(pt), solid, max_dist)
+        self.project_local_point_with_max_dist(m.inverse_transform_point(pt), solid, max_dist)
             .map(|proj| proj.transform_by(m))
     }
 
     /// Projects a point on `self`.
     ///
     /// The point is assumed to be expressed in the local-space of `self`.
-    fn project_local_point(&self, pt: &Point<Real>, solid: bool) -> PointProjection;
+    fn project_local_point(&self, pt: Vector, solid: bool) -> PointProjection;
 
     /// Projects a point on the boundary of `self` and returns the id of the
     /// feature the point was projected on.
-    fn project_local_point_and_get_feature(&self, pt: &Point<Real>)
-        -> (PointProjection, FeatureId);
+    fn project_local_point_and_get_feature(&self, pt: Vector) -> (PointProjection, FeatureId);
 
     /// Computes the minimal distance between a point and `self`.
-    fn distance_to_local_point(&self, pt: &Point<Real>, solid: bool) -> Real {
+    fn distance_to_local_point(&self, pt: Vector, solid: bool) -> Real {
         let proj = self.project_local_point(pt, solid);
-        let dist = na::distance(pt, &proj.point);
+        let dist = (pt - proj.point).length();
 
         if solid || !proj.is_inside {
             dist
@@ -236,37 +230,33 @@ pub trait PointQuery {
     }
 
     /// Tests if the given point is inside of `self`.
-    fn contains_local_point(&self, pt: &Point<Real>) -> bool {
+    fn contains_local_point(&self, pt: Vector) -> bool {
         self.project_local_point(pt, true).is_inside
     }
 
     /// Projects a point on `self` transformed by `m`.
-    fn project_point(&self, m: &Isometry<Real>, pt: &Point<Real>, solid: bool) -> PointProjection {
-        self.project_local_point(&m.inverse_transform_point(pt), solid)
+    fn project_point(&self, m: &Pose, pt: Vector, solid: bool) -> PointProjection {
+        self.project_local_point(m.inverse_transform_point(pt), solid)
             .transform_by(m)
     }
 
     /// Computes the minimal distance between a point and `self` transformed by `m`.
     #[inline]
-    fn distance_to_point(&self, m: &Isometry<Real>, pt: &Point<Real>, solid: bool) -> Real {
-        self.distance_to_local_point(&m.inverse_transform_point(pt), solid)
+    fn distance_to_point(&self, m: &Pose, pt: Vector, solid: bool) -> Real {
+        self.distance_to_local_point(m.inverse_transform_point(pt), solid)
     }
 
     /// Projects a point on the boundary of `self` transformed by `m` and returns the id of the
     /// feature the point was projected on.
-    fn project_point_and_get_feature(
-        &self,
-        m: &Isometry<Real>,
-        pt: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
-        let res = self.project_local_point_and_get_feature(&m.inverse_transform_point(pt));
+    fn project_point_and_get_feature(&self, m: &Pose, pt: Vector) -> (PointProjection, FeatureId) {
+        let res = self.project_local_point_and_get_feature(m.inverse_transform_point(pt));
         (res.0.transform_by(m), res.1)
     }
 
     /// Tests if the given point is inside of `self` transformed by `m`.
     #[inline]
-    fn contains_point(&self, m: &Isometry<Real>, pt: &Point<Real>) -> bool {
-        self.contains_local_point(&m.inverse_transform_point(pt))
+    fn contains_point(&self, m: &Pose, pt: Vector) -> bool {
+        self.contains_local_point(m.inverse_transform_point(pt))
     }
 }
 
@@ -296,30 +286,30 @@ pub trait PointQueryWithLocation {
     /// Projects a point on `self`.
     fn project_local_point_and_get_location(
         &self,
-        pt: &Point<Real>,
+        pt: Vector,
         solid: bool,
     ) -> (PointProjection, Self::Location);
 
     /// Projects a point on `self` transformed by `m`.
     fn project_point_and_get_location(
         &self,
-        m: &Isometry<Real>,
-        pt: &Point<Real>,
+        m: &Pose,
+        pt: Vector,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
-        let res = self.project_local_point_and_get_location(&m.inverse_transform_point(pt), solid);
+        let res = self.project_local_point_and_get_location(m.inverse_transform_point(pt), solid);
         (res.0.transform_by(m), res.1)
     }
 
     /// Projects a point on `self`, with a maximum projection distance.
     fn project_local_point_and_get_location_with_max_dist(
         &self,
-        pt: &Point<Real>,
+        pt: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<(PointProjection, Self::Location)> {
         let (proj, location) = self.project_local_point_and_get_location(pt, solid);
-        if na::distance(&proj.point, pt) > max_dist {
+        if (proj.point - pt).length() > max_dist {
             None
         } else {
             Some((proj, location))
@@ -329,13 +319,13 @@ pub trait PointQueryWithLocation {
     /// Projects a point on `self` transformed by `m`, with a maximum projection distance.
     fn project_point_and_get_location_with_max_dist(
         &self,
-        m: &Isometry<Real>,
-        pt: &Point<Real>,
+        m: &Pose,
+        pt: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<(PointProjection, Self::Location)> {
         self.project_local_point_and_get_location_with_max_dist(
-            &m.inverse_transform_point(pt),
+            m.inverse_transform_point(pt),
             solid,
             max_dist,
         )

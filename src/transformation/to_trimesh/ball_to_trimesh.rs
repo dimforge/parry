@@ -1,8 +1,7 @@
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{ComplexField, Real, RealField, Vector, Vector3, DIM};
 use crate::shape::Ball;
 use crate::transformation::utils;
 use alloc::vec::Vec;
-use na::{self, ComplexField, Point3, RealField};
 
 impl Ball {
     /// Discretize the boundary of this ball as a triangle-mesh.
@@ -10,34 +9,34 @@ impl Ball {
         &self,
         ntheta_subdiv: u32,
         nphi_subdiv: u32,
-    ) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    ) -> (Vec<Vector3>, Vec<[u32; 3]>) {
         let diameter = self.radius * 2.0;
         let (vtx, idx) = unit_sphere(ntheta_subdiv, nphi_subdiv);
-        (utils::scaled(vtx, Vector::repeat(diameter)), idx)
+        (utils::scaled(vtx, Vector::splat(diameter)), idx)
     }
 }
 
-fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Vector3>, Vec<[u32; 3]>) {
     let dtheta = Real::two_pi() / (ntheta_subdiv as Real);
     let dphi = Real::pi() / (nphi_subdiv as Real);
 
     let mut coords = Vec::new();
     let mut curr_phi: Real = -Real::frac_pi_2() + dphi;
 
-    coords.push(Point::new(0.0, -1.0, 0.0));
+    coords.push(Vector::new(0.0, -1.0, 0.0));
 
     for _ in 1..nphi_subdiv {
         utils::push_circle(
-            ComplexField::cos(curr_phi),
+            <Real as ComplexField>::cos(curr_phi),
             ntheta_subdiv,
             dtheta,
-            ComplexField::sin(curr_phi),
+            <Real as ComplexField>::sin(curr_phi),
             &mut coords,
         );
         curr_phi += dphi;
     }
 
-    coords.push(Point::new(0.0, 1.0, 0.0));
+    coords.push(Vector::new(0.0, 1.0, 0.0));
 
     let mut idx = Vec::new();
 
@@ -60,14 +59,14 @@ fn unit_sphere(ntheta_subdiv: u32, nphi_subdiv: u32) -> (Vec<Point3<Real>>, Vec<
         &mut idx,
     );
 
-    (utils::scaled(coords, Vector::repeat(0.5)), idx)
+    (utils::scaled(coords, Vector::splat(0.5)), idx)
 }
 
 /// Creates an hemisphere with a diameter of 1.
 pub(crate) fn unit_hemisphere(
     ntheta_subdiv: u32,
     nphi_subdiv: u32,
-) -> (Vec<Point<Real>>, Vec<[u32; DIM]>) {
+) -> (Vec<Vector>, Vec<[u32; DIM]>) {
     let two_pi = Real::two_pi();
     let pi_two = Real::frac_pi_2();
     let dtheta = two_pi / (ntheta_subdiv as Real);
@@ -78,16 +77,16 @@ pub(crate) fn unit_hemisphere(
 
     for _ in 0..nphi_subdiv {
         utils::push_circle(
-            ComplexField::cos(curr_phi),
+            <Real as ComplexField>::cos(curr_phi),
             ntheta_subdiv,
             dtheta,
-            ComplexField::sin(curr_phi),
+            <Real as ComplexField>::sin(curr_phi),
             &mut coords,
         );
         curr_phi += dphi;
     }
 
-    coords.push(Point::new(0.0, 1.0, 0.0));
+    coords.push(Vector::new(0.0, 1.0, 0.0));
 
     let mut idx = Vec::new();
 
@@ -107,5 +106,5 @@ pub(crate) fn unit_hemisphere(
         &mut idx,
     );
 
-    (utils::scaled(coords, Vector::repeat(0.5)), idx)
+    (utils::scaled(coords, Vector::splat(0.5)), idx)
 }

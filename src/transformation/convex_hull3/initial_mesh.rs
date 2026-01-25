@@ -1,20 +1,19 @@
 use super::{ConvexHullError, TriangleFacet};
-use crate::math::Real;
+use crate::math::{MatExt, Vector2, Vector3};
 use crate::shape::Triangle;
 use crate::transformation;
 use crate::transformation::convex_hull_utils::support_point_id;
 use crate::utils;
 use alloc::{vec, vec::Vec};
 use core::cmp::Ordering;
-use na::{Point2, Point3, Vector3};
 
 #[derive(Debug)]
 pub enum InitialMesh {
     Facets(Vec<TriangleFacet>),
-    ResultMesh(Vec<Point3<Real>>, Vec<[u32; 3]>),
+    ResultMesh(Vec<Vector3>, Vec<[u32; 3]>),
 }
 
-fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+fn build_degenerate_mesh_point(point: Vector3) -> (Vec<Vector3>, Vec<[u32; 3]>) {
     let ta = [0u32; 3];
     let tb = [0u32; 3];
 
@@ -22,11 +21,11 @@ fn build_degenerate_mesh_point(point: Point3<Real>) -> (Vec<Point3<Real>>, Vec<[
 }
 
 fn build_degenerate_mesh_segment(
-    dir: &Vector3<Real>,
-    points: &[Point3<Real>],
-) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    dir: Vector3,
+    points: &[Vector3],
+) -> (Vec<Vector3>, Vec<[u32; 3]>) {
     let a = utils::point_cloud_support_point(dir, points);
-    let b = utils::point_cloud_support_point(&-*dir, points);
+    let b = utils::point_cloud_support_point(-dir, points);
 
     let ta = [0u32, 1, 0];
     let tb = [1u32, 0, 0];
@@ -35,8 +34,8 @@ fn build_degenerate_mesh_segment(
 }
 
 pub fn try_get_initial_mesh(
-    original_points: &[Point3<Real>],
-    normalized_points: &mut [Point3<Real>],
+    original_points: &[Vector3],
+    normalized_points: &mut [Vector3],
     undecidable: &mut Vec<usize>,
 ) -> Result<InitialMesh, ConvexHullError> {
     /*
@@ -55,14 +54,15 @@ pub fn try_get_initial_mesh(
 
     #[cfg(feature = "improved_fixed_point_support")]
     {
+        use crate::math::{Matrix3, MatrixExt};
         eigvec = Matrix3::identity();
-        eigval = Vector3::repeat(1.0);
+        eigval = Vector3::splat(1.0);
     }
 
     let mut eigpairs = [
-        (eigvec.column(0).into_owned(), eigval[0]),
-        (eigvec.column(1).into_owned(), eigval[1]),
-        (eigvec.column(2).into_owned(), eigval[2]),
+        (eigvec.x_axis, eigval[0]),
+        (eigvec.y_axis, eigval[1]),
+        (eigvec.z_axis, eigval[2]),
     ];
 
     /*
@@ -98,22 +98,19 @@ pub fn try_get_initial_mesh(
         }
         1 => {
             // The hull is a segment.
-            let (vtx, idx) = build_degenerate_mesh_segment(&eigpairs[0].0, original_points);
+            let (vtx, idx) = build_degenerate_mesh_segment(eigpairs[0].0, original_points);
             Ok(InitialMesh::ResultMesh(vtx, idx))
         }
         2 => {
             // The hull is a triangle.
             // Project into the principal halfspace…
-            let axis1 = &eigpairs[0].0;
-            let axis2 = &eigpairs[1].0;
+            let axis1 = eigpairs[0].0;
+            let axis2 = eigpairs[1].0;
 
             let mut subspace_points = Vec::with_capacity(normalized_points.len());
 
             for point in normalized_points.iter() {
-                subspace_points.push(Point2::new(
-                    point.coords.dot(axis1),
-                    point.coords.dot(axis2),
-                ))
+                subspace_points.push(Vector2::new(point.dot(axis1), point.dot(axis2)))
             }
 
             // … and compute the 2d convex hull.
@@ -143,13 +140,21 @@ pub fn try_get_initial_mesh(
             // Find a initial triangle lying on the principal halfspace…
             let center = utils::center(normalized_points);
 
+            // Get the maximum absolute value from the eigenvalues
+            let max_eigval = {
+                let ax = eigval.x.abs();
+                let ay = eigval.y.abs();
+                let az = eigval.z.abs();
+                ax.max(ay).max(az)
+            };
+
             for point in normalized_points.iter_mut() {
-                *point = Point3::from((*point - center) / eigval.amax());
+                *point = Vector3::from((*point - center) / max_eigval);
             }
 
-            let p1 = support_point_id(&eigpairs[0].0, normalized_points)
+            let p1 = support_point_id(eigpairs[0].0, normalized_points)
                 .ok_or(ConvexHullError::MissingSupportPoint)?;
-            let p2 = support_point_id(&-eigpairs[0].0, normalized_points)
+            let p2 = support_point_id(-eigpairs[0].0, normalized_points)
                 .ok_or(ConvexHullError::MissingSupportPoint)?;
 
             let mut max_area = 0.0;
@@ -225,23 +230,19 @@ pub fn try_get_initial_mesh(
 mod tests {
     #[test]
     #[cfg(feature = "f32")]
-    // TODO: ideally we would want this test to actually fail (i.e. we want the
-    // convex hull calculation to succeed in this case). Though right now almost-coplanar
-    // points can result in a failure of the algorithm. So we are testing here that the
-    // error is correctly reported (instead of panicking internally).
     fn try_get_initial_mesh_should_fail_for_missing_support_points() {
         use super::*;
+        use crate::math::Vector;
         use crate::transformation::try_convex_hull;
-        use na::Point3;
 
         let point_cloud = vec![
-            Point3::new(103.05024, 303.44974, 106.125),
-            Point3::new(103.21692, 303.44974, 106.125015),
-            Point3::new(104.16538, 303.44974, 106.125),
-            Point3::new(106.55025, 303.44974, 106.125),
-            Point3::new(106.55043, 303.44974, 106.125),
+            Vector::new(103.05024, 303.44974, 106.125),
+            Vector::new(103.21692, 303.44974, 106.125015),
+            Vector::new(104.16538, 303.44974, 106.125),
+            Vector::new(106.55025, 303.44974, 106.125),
+            Vector::new(106.55043, 303.44974, 106.125),
         ];
         let result = try_convex_hull(&point_cloud);
-        assert_eq!(ConvexHullError::MissingSupportPoint, result.unwrap_err());
+        assert!(result.is_ok());
     }
 }

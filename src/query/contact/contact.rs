@@ -1,9 +1,5 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use core::mem;
-use na::{self, Unit};
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// Geometric description of a contact between two shapes.
 ///
@@ -38,14 +34,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::contact;
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Overlapping balls (centers 1.5 units apart, combined radii = 2.0)
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(1.5, 0.0, 0.0);
 ///
 /// if let Ok(Some(contact)) = contact(&pos1, &ball1, &pos2, &ball2, 0.0) {
 ///     // Penetration depth (negative distance)
@@ -56,8 +52,8 @@ use rkyv::{bytecheck, CheckBytes};
 ///     println!("Normal: {:?}", contact.normal1);
 ///
 ///     // Contact points are on each shape's surface
-///     println!("Point on ball1: {:?}", contact.point1);
-///     println!("Point on ball2: {:?}", contact.point2);
+///     println!("Vector on ball1: {:?}", contact.point1);
+///     println!("Vector on ball2: {:?}", contact.point2);
 /// }
 /// # }
 /// ```
@@ -65,34 +61,33 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct Contact {
     /// Position of the contact point on the first shape's surface.
     ///
     /// This is the point on shape 1 that is closest to (or penetrating into) shape 2.
     /// Expressed in the same coordinate system as the contact (world or local space).
-    pub point1: Point<Real>,
+    pub point1: Vector,
 
     /// Position of the contact point on the second shape's surface.
     ///
     /// This is the point on shape 2 that is closest to (or penetrating into) shape 1.
     /// When shapes are penetrating, this point may be inside shape 1.
-    pub point2: Point<Real>,
+    pub point2: Vector,
 
     /// Contact normal pointing outward from the first shape.
     ///
     /// This unit vector points from shape 1 toward shape 2, perpendicular to the
     /// contact surface. Used to compute separation direction and collision response
     /// forces for shape 1.
-    pub normal1: Unit<Vector<Real>>,
+    pub normal1: Vector,
 
     /// Contact normal pointing outward from the second shape.
     ///
     /// In world space, this is always equal to `-normal1`. In local space coordinates,
     /// it may differ due to different shape orientations.
-    pub normal2: Unit<Vector<Real>>,
+    pub normal2: Vector,
 
     /// Signed distance between the two contact points.
     ///
@@ -120,13 +115,13 @@ impl Contact {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::Contact;
-    /// use nalgebra::{Point3, Unit, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// // Create a contact representing two spheres touching
-    /// let point1 = Point3::new(1.0, 0.0, 0.0);
-    /// let point2 = Point3::new(2.0, 0.0, 0.0);
-    /// let normal1 = Unit::new_normalize(Vector3::new(1.0, 0.0, 0.0));
-    /// let normal2 = Unit::new_normalize(Vector3::new(-1.0, 0.0, 0.0));
+    /// let point1 = Vector::new(1.0, 0.0, 0.0);
+    /// let point2 = Vector::new(2.0, 0.0, 0.0);
+    /// let normal1 = Vector::new(1.0, 0.0, 0.0).normalize();
+    /// let normal2 = Vector::new(-1.0, 0.0, 0.0).normalize();
     ///
     /// let contact = Contact::new(point1, point2, normal1, normal2, 0.0);
     /// assert_eq!(contact.dist, 0.0); // Touching, not penetrating
@@ -134,10 +129,10 @@ impl Contact {
     /// ```
     #[inline]
     pub fn new(
-        point1: Point<Real>,
-        point2: Point<Real>,
-        normal1: Unit<Vector<Real>>,
-        normal2: Unit<Vector<Real>>,
+        point1: Vector,
+        point2: Vector,
+        normal1: Vector,
+        normal2: Vector,
         dist: Real,
     ) -> Self {
         Contact {
@@ -168,16 +163,16 @@ impl Contact {
     /// Transform the points and normals from this contact by
     /// the given transformations.
     #[inline]
-    pub fn transform_by_mut(&mut self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) {
+    pub fn transform_by_mut(&mut self, pos1: &Pose, pos2: &Pose) {
         self.point1 = pos1 * self.point1;
         self.point2 = pos2 * self.point2;
-        self.normal1 = pos1 * self.normal1;
-        self.normal2 = pos2 * self.normal2;
+        self.normal1 = pos1.rotation * self.normal1;
+        self.normal2 = pos2.rotation * self.normal2;
     }
 
     /// Transform `self.point1` and `self.normal1` by the `pos`.
-    pub fn transform1_by_mut(&mut self, pos: &Isometry<Real>) {
+    pub fn transform1_by_mut(&mut self, pos: &Pose) {
         self.point1 = pos * self.point1;
-        self.normal1 = pos * self.normal1;
+        self.normal1 = pos.rotation * self.normal1;
     }
 }

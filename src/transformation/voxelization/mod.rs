@@ -69,10 +69,10 @@
 //! # {
 //! use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 //! use parry3d::shape::Cuboid;
-//! use nalgebra::{Point3, Vector3};
+//! use parry3d::math::Vector;
 //!
 //! // Create a simple cuboid and convert it to a triangle mesh
-//! let cuboid = Cuboid::new(Vector3::new(1.0, 0.5, 0.3));
+//! let cuboid = Cuboid::new(Vector::new(1.0, 0.5, 0.3));
 //! let (vertices, indices) = cuboid.to_trimesh();
 //!
 //! // Voxelize with resolution of 10 voxels along the longest axis
@@ -89,7 +89,7 @@
 //!
 //! // Access individual voxels
 //! for voxel in voxels.voxels() {
-//!     println!("Voxel at grid position: {:?}", voxel.coords);
+//!     println!("Voxel at grid position: {:?}", voxel);
 //!     println!("  World position: {:?}", voxels.get_voxel_point(voxel));
 //!     println!("  On surface: {}", voxel.is_on_surface);
 //! }
@@ -103,7 +103,7 @@
 //! # {
 //! use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 //! use parry3d::shape::Ball;
-//! use nalgebra::Point3;
+//! use parry3d::math::Vector;
 //!
 //! // Create a sphere mesh
 //! let ball = Ball::new(1.0);
@@ -138,14 +138,14 @@
 //! # #[cfg(all(feature = "dim2", feature = "f32"))]
 //! # {
 //! use parry2d::transformation::voxelization::{FillMode, VoxelSet};
-//! use nalgebra::Point2;
+//! use parry2d::math::Vector;
 //!
 //! // Define a simple square as a polyline (boundary)
 //! let vertices = vec![
-//!     Point2::origin(),
-//!     Point2::new(2.0, 0.0),
-//!     Point2::new(2.0, 2.0),
-//!     Point2::new(0.0, 2.0),
+//!     Vector::ZERO,
+//!     Vector::new(2.0, 0.0),
+//!     Vector::new(2.0, 2.0),
+//!     Vector::new(0.0, 2.0),
 //! ];
 //!
 //! // Create index buffer for the polyline segments (closed loop)
@@ -179,9 +179,9 @@
 //! # {
 //! use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 //! use parry3d::shape::Cuboid;
-//! use nalgebra::Vector3;
+//! use parry3d::math::Vector;
 //!
-//! let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+//! let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 //! let (vertices, indices) = cuboid.to_trimesh();
 //!
 //! let voxels = VoxelSet::voxelize(
@@ -208,9 +208,9 @@
 //! # {
 //! use parry3d::transformation::voxelization::{FillMode, VoxelSet};
 //! use parry3d::shape::Cuboid;
-//! use nalgebra::Vector3;
+//! use parry3d::math::Vector;
 //!
-//! let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+//! let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 //! let (vertices, indices) = cuboid.to_trimesh();
 //!
 //! // Enable voxel-to-primitives mapping

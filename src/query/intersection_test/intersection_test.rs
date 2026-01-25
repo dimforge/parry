@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
@@ -47,20 +47,20 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::intersection_test;
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Overlapping balls
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(1.5, 0.0, 0.0);
 ///
 /// let intersecting = intersection_test(&pos1, &ball1, &pos2, &ball2).unwrap();
 /// assert!(intersecting); // Distance 1.5 < combined radii 2.0
 ///
 /// // Separated balls
-/// let pos3 = Isometry3::translation(5.0, 0.0, 0.0);
+/// let pos3 = Pose::translation(5.0, 0.0, 0.0);
 /// let not_intersecting = intersection_test(&pos1, &ball1, &pos3, &ball2).unwrap();
 /// assert!(!not_intersecting); // Distance 5.0 > combined radii 2.0
 /// # }
@@ -86,9 +86,9 @@ use crate::shape::Shape;
 /// - [`distance`](crate::query::distance()) - Get separation distance
 /// - [`closest_points`](crate::query::closest_points()) - Get closest point locations
 pub fn intersection_test(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     g2: &dyn Shape,
 ) -> Result<bool, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);

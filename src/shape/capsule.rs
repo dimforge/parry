@@ -1,12 +1,8 @@
-use crate::math::{Isometry, Point, Real, Rotation, Vector};
+use crate::math::{Pose, Real, Rotation, Vector};
 use crate::shape::{Segment, SupportMap};
-use na::Unit;
 
 #[cfg(feature = "alloc")]
 use either::Either;
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -14,8 +10,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[repr(C)]
 /// A capsule shape, also known as a pill or capped cylinder.
@@ -58,7 +53,7 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Capsule;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a vertical capsule (aligned with Y axis)
 /// // Half-height of 2.0 means the segment is 4.0 units long
@@ -67,8 +62,8 @@ use rkyv::{bytecheck, CheckBytes};
 /// assert_eq!(capsule.height(), 4.0);
 ///
 /// // Create a custom capsule between two points
-/// let a = Point3::origin();
-/// let b = Point3::new(3.0, 4.0, 0.0);
+/// let a = Vector::ZERO;
+/// let b = Vector::new(3.0, 4.0, 0.0);
 /// let custom = Capsule::new(a, b, 1.0);
 /// assert_eq!(custom.height(), 5.0); // Distance from a to b
 /// # }
@@ -111,11 +106,11 @@ impl Capsule {
     ///
     /// // The center is at the origin
     /// let center = capsule.center();
-    /// assert!(center.coords.norm() < 1e-6);
+    /// assert!(center.length() < 1e-6);
     /// # }
     /// ```
     pub fn new_x(half_height: Real, radius: Real) -> Self {
-        let b = Point::from(Vector::x() * half_height);
+        let b = Vector::X * half_height;
         Self::new(-b, b, radius)
     }
 
@@ -144,7 +139,7 @@ impl Capsule {
     /// # }
     /// ```
     pub fn new_y(half_height: Real, radius: Real) -> Self {
-        let b = Point::from(Vector::y() * half_height);
+        let b = Vector::Y * half_height;
         Self::new(-b, b, radius)
     }
 
@@ -171,7 +166,7 @@ impl Capsule {
     /// ```
     #[cfg(feature = "dim3")]
     pub fn new_z(half_height: Real, radius: Real) -> Self {
-        let b = Point::from(Vector::z() * half_height);
+        let b = Vector::Z * half_height;
         Self::new(-b, b, radius)
     }
 
@@ -191,11 +186,11 @@ impl Capsule {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a diagonal capsule
-    /// let a = Point3::origin();
-    /// let b = Point3::new(3.0, 4.0, 0.0);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(3.0, 4.0, 0.0);
     /// let capsule = Capsule::new(a, b, 0.5);
     ///
     /// // Height is the distance between a and b
@@ -203,10 +198,10 @@ impl Capsule {
     ///
     /// // Center is the midpoint
     /// let center = capsule.center();
-    /// assert_eq!(center, Point3::new(1.5, 2.0, 0.0));
+    /// assert_eq!(center, Vector::new(1.5, 2.0, 0.0));
     /// # }
     /// ```
-    pub fn new(a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
+    pub fn new(a: Vector, b: Vector, radius: Real) -> Self {
         let segment = Segment::new(a, b);
         Self { segment, radius }
     }
@@ -234,7 +229,7 @@ impl Capsule {
     /// # }
     /// ```
     pub fn height(&self) -> Real {
-        (self.segment.b - self.segment.a).norm()
+        (self.segment.b - self.segment.a).length()
     }
 
     /// Returns half the length of the capsule's central segment.
@@ -265,18 +260,18 @@ impl Capsule {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let a = Point3::new(-2.0, 0.0, 0.0);
-    /// let b = Point3::new(4.0, 0.0, 0.0);
+    /// let a = Vector::new(-2.0, 0.0, 0.0);
+    /// let b = Vector::new(4.0, 0.0, 0.0);
     /// let capsule = Capsule::new(a, b, 1.0);
     ///
     /// let center = capsule.center();
-    /// assert_eq!(center, Point3::new(1.0, 0.0, 0.0));
+    /// assert_eq!(center, Vector::new(1.0, 0.0, 0.0));
     /// # }
     /// ```
-    pub fn center(&self) -> Point<Real> {
-        na::center(&self.segment.a, &self.segment.b)
+    pub fn center(&self) -> Vector {
+        self.segment.a.midpoint(self.segment.b)
     }
 
     /// Creates a new capsule equal to `self` with all its endpoints transformed by `pos`.
@@ -292,12 +287,12 @@ impl Capsule {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Capsule;
-    /// use nalgebra::{Isometry3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let capsule = Capsule::new_y(1.0, 0.5);
     ///
     /// // Translate the capsule 5 units along X axis
-    /// let transform = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let transform = Pose::translation(5.0, 0.0, 0.0);
     /// let transformed = capsule.transform_by(&transform);
     ///
     /// // Center moved by 5 units
@@ -306,40 +301,32 @@ impl Capsule {
     /// assert_eq!(transformed.radius, 0.5);
     /// # }
     /// ```
-    pub fn transform_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform_by(&self, pos: &Pose) -> Self {
         Self::new(pos * self.segment.a, pos * self.segment.b, self.radius)
     }
 
     /// The transformation such that `t * Y` is collinear with `b - a` and `t * origin` equals
     /// the capsule's center.
-    pub fn canonical_transform(&self) -> Isometry<Real> {
-        let tra = self.center().coords;
+    pub fn canonical_transform(&self) -> Pose {
+        let tra = self.center();
         let rot = self.rotation_wrt_y();
-        Isometry::from_parts(tra.into(), rot)
+        Pose::from_parts(tra, rot)
     }
 
     /// The rotation `r` such that `r * Y` is collinear with `b - a`.
-    pub fn rotation_wrt_y(&self) -> Rotation<Real> {
+    pub fn rotation_wrt_y(&self) -> Rotation {
         let mut dir = self.segment.b - self.segment.a;
         if dir.y < 0.0 {
             dir = -dir;
         }
-
-        #[cfg(feature = "dim2")]
-        {
-            Rotation::rotation_between(&Vector::y(), &dir)
-        }
-
-        #[cfg(feature = "dim3")]
-        {
-            Rotation::rotation_between(&Vector::y(), &dir).unwrap_or(Rotation::identity())
-        }
+        let dir = dir.normalize_or(Vector::Y);
+        Rotation::from_rotation_arc(Vector::Y, dir)
     }
 
     /// The transform `t` such that `t * Y` is collinear with `b - a` and such that `t * origin = (b + a) / 2.0`.
-    pub fn transform_wrt_y(&self) -> Isometry<Real> {
+    pub fn transform_wrt_y(&self) -> Pose {
         let rot = self.rotation_wrt_y();
-        Isometry::from_parts(self.center().coords.into(), rot)
+        Pose::from_parts(self.center(), rot)
     }
 
     /// Computes a scaled version of this capsule.
@@ -351,14 +338,13 @@ impl Capsule {
     #[cfg(all(feature = "dim2", feature = "alloc"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
             // The scaled shape is not a capsule.
             let mut vtx = self.to_polyline(nsubdivs);
-            vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+            vtx.iter_mut().for_each(|pt| *pt *= scale);
             Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
                 vtx,
             )?))
@@ -381,14 +367,13 @@ impl Capsule {
     #[cfg(all(feature = "dim3", feature = "alloc"))]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
             // The scaled shape is not a capsule.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
-            vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+            vtx.iter_mut().for_each(|pt| *pt *= scale);
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -404,16 +389,16 @@ impl Capsule {
 }
 
 impl SupportMap for Capsule {
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        let dir = Unit::try_new(*dir, 0.0).unwrap_or(Vector::y_axis());
-        self.local_support_point_toward(&dir)
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        let dir = dir.normalize_or(Vector::Y);
+        self.local_support_point_toward(dir)
     }
 
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        if dir.dot(&self.segment.a.coords) > dir.dot(&self.segment.b.coords) {
-            self.segment.a + **dir * self.radius
+    fn local_support_point_toward(&self, dir: Vector) -> Vector {
+        if dir.dot(self.segment.a) > dir.dot(self.segment.b) {
+            self.segment.a + dir * self.radius
         } else {
-            self.segment.b + **dir * self.radius
+            self.segment.b + dir * self.radius
         }
     }
 }

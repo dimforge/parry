@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::shape::Capsule;
 
@@ -41,20 +41,20 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a capsule for a standing character (height ~2m, radius 0.3m)
     /// // Endpoints at (0, 0, 0) and (0, 2, 0) form vertical capsule
-    /// let a = Point3::origin();
-    /// let b = Point3::new(0.0, 2.0, 0.0);
+    /// let a = Vector::ZERO;
+    /// let b = Vector::new(0.0, 2.0, 0.0);
     /// let radius = 0.3;
     /// let density = 985.0; // Similar to human body density
     ///
     /// let character_props = MassProperties::from_capsule(density, a, b, radius);
     ///
     /// // Center of mass is at the midpoint
-    /// let expected_com = Point3::new(0.0, 1.0, 0.0);
-    /// assert!((character_props.local_com - expected_com).norm() < 0.01);
+    /// let expected_com = Vector::new(0.0, 1.0, 0.0);
+    /// assert!((character_props.local_com - expected_com).length() < 0.01);
     ///
     /// let mass = character_props.mass();
     /// println!("Character mass: {:.2} kg", mass); // Approximately 70-80 kg
@@ -70,18 +70,18 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a horizontal capsule along the X-axis
-    /// let a = Point3::new(-1.0, 0.0, 0.0);
-    /// let b = Point3::new(1.0, 0.0, 0.0);
+    /// let a = Vector::new(-1.0, 0.0, 0.0);
+    /// let b = Vector::new(1.0, 0.0, 0.0);
     /// let radius = 0.5;
     /// let density = 1000.0;
     ///
     /// let capsule_props = MassProperties::from_capsule(density, a, b, radius);
     ///
     /// // Center of mass at midpoint (origin)
-    /// assert_eq!(capsule_props.local_com, Point3::origin());
+    /// assert_eq!(capsule_props.local_com, Vector::ZERO);
     ///
     /// // Total length = distance + 2*radius = 2.0 + 1.0 = 3.0 meters
     /// println!("Mass: {:.2} kg", capsule_props.mass());
@@ -93,11 +93,11 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a horizontal 2D capsule (stadium/discorectangle shape)
-    /// let a = Point2::new(-2.0, 0.0);
-    /// let b = Point2::new(2.0, 0.0);
+    /// let a = Vector::new(-2.0, 0.0);
+    /// let b = Vector::new(2.0, 0.0);
     /// let radius = 1.0;
     /// let density = 100.0; // kg/m²
     ///
@@ -120,7 +120,7 @@ impl MassProperties {
     ///
     /// - **Total length confusion**: The visual length is `distance(a, b) + 2 * radius`,
     ///   not just `distance(a, b)`. The hemispheres add extra length.
-    /// - **Endpoint placement**: Points `a` and `b` are centers of the hemispherical caps,
+    /// - **Endpoint placement**: Vectors `a` and `b` are centers of the hemispherical caps,
     ///   not the extreme ends of the capsule.
     ///
     /// # Performance Note
@@ -128,14 +128,14 @@ impl MassProperties {
     /// Capsules are very efficient for collision detection (almost as fast as spheres)
     /// and provide smooth rolling behavior. They're preferred over cylinders for
     /// dynamic objects that need to move smoothly.
-    pub fn from_capsule(density: Real, a: Point<Real>, b: Point<Real>, radius: Real) -> Self {
-        let half_height = (b - a).norm() / 2.0;
+    pub fn from_capsule(density: Real, a: Vector, b: Vector, radius: Real) -> Self {
+        let half_height = (b - a).length() / 2.0;
         let (cyl_vol, cyl_unit_i) = Self::cylinder_y_volume_unit_inertia(half_height, radius);
         let (ball_vol, ball_unit_i) = Self::ball_volume_unit_angular_inertia(radius);
         let cap_vol = cyl_vol + ball_vol;
         let cap_mass = cap_vol * density;
         let mut cap_i = (cyl_unit_i * cyl_vol + ball_unit_i * ball_vol) * density;
-        let local_com = na::center(&a, &b);
+        let local_com = a.midpoint(b);
 
         #[cfg(feature = "dim2")]
         {

@@ -1,10 +1,10 @@
 use crate::math::Real;
 use crate::shape::ConvexPolyhedron;
-use na::Point3;
+use crate::math::Vector3;
 
 impl ConvexPolyhedron {
     /// Outlines this convex polyhedron’s shape using polylines.
-    pub fn to_outline(&self) -> (Vec<Point3<Real>>, Vec<[u32; 3]>) {
+    pub fn to_outline(&self) -> (Vec<Vector>, Vec<[u32; 3]>) {
         let mut indices = Vec::new();
 
         for face in self.faces() {

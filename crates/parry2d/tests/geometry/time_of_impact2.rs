@@ -1,5 +1,4 @@
-use na::{self, Isometry2, Point2, Vector2};
-use parry2d::math::Real;
+use parry2d::math::{Pose, Real, Vector};
 use parry2d::query;
 use parry2d::query::details::ShapeCastOptions;
 use parry2d::shape::{Ball, Cuboid, Polyline, Segment};
@@ -9,19 +8,19 @@ fn ball_ball_intersecting_toi() {
     let ball1 = Ball::new(1.0);
     let ball2 = Ball::new(2.0);
 
-    let ball1_pos_intersecting = Isometry2::new(Vector2::new(1.0, 1.0), 0.0);
-    let ball2_pos = Isometry2::identity();
+    let ball1_pos_intersecting = Pose::new(Vector::new(1.0, 1.0), 0.0);
+    let ball2_pos = Pose::identity();
 
-    let ball1_vel_separating = Vector2::new(1.0, 2.0);
-    let ball1_vel_penetrating = Vector2::new(1.0, -2.0);
-    let ball2_vel = Vector2::zeros();
+    let ball1_vel_separating = Vector::new(1.0, 2.0);
+    let ball1_vel_penetrating = Vector::new(1.0, -2.0);
+    let ball2_vel = Vector::ZERO;
 
     let toi_separating = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_separating,
+        ball1_vel_separating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions::default(),
     )
@@ -29,10 +28,10 @@ fn ball_ball_intersecting_toi() {
 
     let toi_penetrating_ignore_pen = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_penetrating,
+        ball1_vel_penetrating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions {
             stop_at_penetration: false,
@@ -43,10 +42,10 @@ fn ball_ball_intersecting_toi() {
 
     let toi_separating_ignore_pen = query::cast_shapes(
         &ball1_pos_intersecting,
-        &ball1_vel_separating,
+        ball1_vel_separating,
         &ball1,
         &ball2_pos,
-        &ball2_vel,
+        ball2_vel,
         &ball2,
         ShapeCastOptions {
             stop_at_penetration: false,
@@ -70,46 +69,46 @@ fn ball_ball_intersecting_toi() {
 
 #[test]
 fn ball_cuboid_toi() {
-    let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));
+    let cuboid = Cuboid::new(Vector::new(1.0, 1.0));
     let ball = Ball::new(1.0);
 
-    let cuboid_pos = Isometry2::identity();
-    let ball_pos_intersecting = Isometry2::new(Vector2::new(1.0, 1.0), 0.0);
-    let ball_pos_will_touch = Isometry2::new(Vector2::new(2.0, 2.0), 0.0);
-    let ball_pos_wont_touch = Isometry2::new(Vector2::new(3.0, 3.0), 0.0);
+    let cuboid_pos = Pose::identity();
+    let ball_pos_intersecting = Pose::new(Vector::new(1.0, 1.0), 0.0);
+    let ball_pos_will_touch = Pose::new(Vector::new(2.0, 2.0), 0.0);
+    let ball_pos_wont_touch = Pose::new(Vector::new(3.0, 3.0), 0.0);
 
-    let cuboid_vel1 = Vector2::new(-1.0, 1.0);
-    let cuboid_vel2 = Vector2::new(1.0, 1.0);
+    let cuboid_vel1 = Vector::new(-1.0, 1.0);
+    let cuboid_vel2 = Vector::new(1.0, 1.0);
 
-    let ball_vel1 = Vector2::new(2.0, 2.0);
-    let ball_vel2 = Vector2::new(-0.5, -0.5);
+    let ball_vel1 = Vector::new(2.0, 2.0);
+    let ball_vel2 = Vector::new(-0.5, -0.5);
 
     let toi_intersecting = query::cast_shapes(
         &ball_pos_intersecting,
-        &ball_vel1,
+        ball_vel1,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_will_touch = query::cast_shapes(
         &ball_pos_will_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel2,
+        cuboid_vel2,
         &cuboid,
         ShapeCastOptions::default(),
     )
     .unwrap();
     let toi_wont_touch = query::cast_shapes(
         &ball_pos_wont_touch,
-        &ball_vel2,
+        ball_vel2,
         &ball,
         &cuboid_pos,
-        &cuboid_vel1,
+        cuboid_vel1,
         &cuboid,
         ShapeCastOptions::default(),
     )
@@ -118,28 +117,28 @@ fn ball_cuboid_toi() {
     assert_eq!(toi_intersecting.map(|hit| hit.time_of_impact), Some(0.0));
     assert!(relative_eq!(
         toi_will_touch.unwrap().time_of_impact,
-        ((2.0 as Real).sqrt() - 1.0) / (ball_vel2 - cuboid_vel2).norm()
+        ((2.0 as Real).sqrt() - 1.0) / (ball_vel2 - cuboid_vel2).length()
     ));
     assert_eq!(toi_wont_touch.map(|hit| hit.time_of_impact), None);
 }
 
 #[test]
 fn cuboid_cuboid_toi_issue_214() {
-    let shape1 = Cuboid::new(Vector2::new(1.0, 1.0));
-    let shape2 = Cuboid::new(Vector2::new(1.0, 1.5));
+    let shape1 = Cuboid::new(Vector::new(1.0, 1.0));
+    let shape2 = Cuboid::new(Vector::new(1.0, 1.5));
 
-    let pos1 = Isometry2::new(Vector2::new(0.0, 0.0), 0.0);
-    let pos2 = Isometry2::new(Vector2::new(10.0, 0.0), 0.0);
+    let pos1 = Pose::new(Vector::new(0.0, 0.0), 0.0);
+    let pos2 = Pose::new(Vector::new(10.0, 0.0), 0.0);
 
-    let vel1 = Vector2::new(1.0, 0.0);
-    let vel2 = Vector2::new(0.0, 0.0);
+    let vel1 = Vector::new(1.0, 0.0);
+    let vel2 = Vector::new(0.0, 0.0);
 
     let hit = query::cast_shapes(
         &pos1,
-        &vel1,
+        vel1,
         &shape1,
         &pos2,
-        &vel2,
+        vel2,
         &shape2,
         ShapeCastOptions::default(),
     )
@@ -149,28 +148,28 @@ fn cuboid_cuboid_toi_issue_214() {
 
 #[test]
 fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
-    let ball_isometry = Isometry2::identity();
-    let ball_velocity = Vector2::new(1.0, 0.0);
+    let ball_isometry = Pose::identity();
+    let ball_velocity = Vector::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let polyline_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
-    let polyline_velocity = Vector2::zeros();
-    let polyline = Polyline::new(vec![Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0)], None);
+    let polyline_isometry = Pose::new(Vector::ZERO, -core::f32::consts::FRAC_PI_2);
+    let polyline_velocity = Vector::ZERO;
+    let polyline = Polyline::new(vec![Vector::new(1.0, 1.0), Vector::new(-1.0, 1.0)], None);
 
     assert_eq!(
-        polyline_isometry.transform_point(&Point2::new(1.0, 1.0)),
-        Point2::new(0.99999994, -1.0)
+        polyline_isometry.transform_point(Vector::new(1.0, 1.0)),
+        Vector::new(0.99999994, -1.0)
     );
     assert_eq!(
-        polyline_isometry.transform_point(&Point2::new(-1.0, 1.0)),
-        Point2::new(1.0, 0.99999994)
+        polyline_isometry.transform_point(Vector::new(-1.0, 1.0)),
+        Vector::new(1.0, 0.99999994)
     );
 
     let hit = query::cast_shapes(
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         &polyline_isometry,
-        &polyline_velocity,
+        polyline_velocity,
         &polyline,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )
@@ -181,28 +180,28 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_polyline() {
 
 #[test]
 fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
-    let ball_isometry = Isometry2::identity();
-    let ball_velocity = Vector2::new(1.0, 0.0);
+    let ball_isometry = Pose::identity();
+    let ball_velocity = Vector::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let segment_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
-    let segment_velocity = Vector2::zeros();
-    let segment = Segment::new(Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0));
+    let segment_isometry = Pose::new(Vector::ZERO, -core::f32::consts::FRAC_PI_2);
+    let segment_velocity = Vector::ZERO;
+    let segment = Segment::new(Vector::new(1.0, 1.0), Vector::new(-1.0, 1.0));
 
     assert_eq!(
-        segment_isometry.transform_point(&Point2::new(1.0, 1.0)),
-        Point2::new(0.99999994, -1.0)
+        segment_isometry.transform_point(Vector::new(1.0, 1.0)),
+        Vector::new(0.99999994, -1.0)
     );
     assert_eq!(
-        segment_isometry.transform_point(&Point2::new(-1.0, 1.0)),
-        Point2::new(1.0, 0.99999994)
+        segment_isometry.transform_point(Vector::new(-1.0, 1.0)),
+        Vector::new(1.0, 0.99999994)
     );
 
     let hit = query::cast_shapes(
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         &segment_isometry,
-        &segment_velocity,
+        segment_velocity,
         &segment,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )
@@ -213,28 +212,28 @@ fn cast_shapes_should_return_toi_for_ball_and_rotated_segment() {
 
 #[test]
 fn cast_shapes_should_return_toi_for_rotated_segment_and_ball() {
-    let ball_isometry = Isometry2::identity();
-    let ball_velocity = Vector2::new(1.0, 0.0);
+    let ball_isometry = Pose::identity();
+    let ball_velocity = Vector::new(1.0, 0.0);
     let ball = Ball::new(0.5);
-    let segment_isometry = Isometry2::rotation(-core::f32::consts::FRAC_PI_2);
-    let segment_velocity = Vector2::zeros();
-    let segment = Segment::new(Point2::new(1.0, 1.0), Point2::new(-1.0, 1.0));
+    let segment_isometry = Pose::new(Vector::ZERO, -core::f32::consts::FRAC_PI_2);
+    let segment_velocity = Vector::ZERO;
+    let segment = Segment::new(Vector::new(1.0, 1.0), Vector::new(-1.0, 1.0));
 
     assert_eq!(
-        segment_isometry.transform_point(&Point2::new(1.0, 1.0)),
-        Point2::new(0.99999994, -1.0)
+        segment_isometry.transform_point(Vector::new(1.0, 1.0)),
+        Vector::new(0.99999994, -1.0)
     );
     assert_eq!(
-        segment_isometry.transform_point(&Point2::new(-1.0, 1.0)),
-        Point2::new(1.0, 0.99999994)
+        segment_isometry.transform_point(Vector::new(-1.0, 1.0)),
+        Vector::new(1.0, 0.99999994)
     );
 
     let hit = query::cast_shapes(
         &segment_isometry,
-        &segment_velocity,
+        segment_velocity,
         &segment,
         &ball_isometry,
-        &ball_velocity,
+        ball_velocity,
         &ball,
         ShapeCastOptions::with_max_time_of_impact(1.0),
     )

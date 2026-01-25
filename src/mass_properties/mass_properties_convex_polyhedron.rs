@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real, DIM};
+use crate::math::{Real, Vector, DIM};
 
 impl MassProperties {
     /// Computes the mass properties of a convex polyhedron (3D) or polygon (2D).
@@ -30,14 +30,14 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a regular tetrahedron (4 vertices, 4 triangular faces)
     /// let vertices = vec![
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(0.0, 1.0, 0.0),
-    ///     Point3::new(0.0, 0.0, 1.0),
-    ///     Point3::origin(),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
+    ///     Vector::ZERO,
     /// ];
     ///
     /// let indices = vec![
@@ -60,16 +60,16 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Regular octahedron (6 vertices, 8 triangular faces)
     /// let vertices = vec![
-    ///     Point3::new(1.0, 0.0, 0.0),   // +X
-    ///     Point3::new(-1.0, 0.0, 0.0),  // -X
-    ///     Point3::new(0.0, 1.0, 0.0),   // +Y
-    ///     Point3::new(0.0, -1.0, 0.0),  // -Y
-    ///     Point3::new(0.0, 0.0, 1.0),   // +Z
-    ///     Point3::new(0.0, 0.0, -1.0),  // -Z
+    ///     Vector::new(1.0, 0.0, 0.0),   // +X
+    ///     Vector::new(-1.0, 0.0, 0.0),  // -X
+    ///     Vector::new(0.0, 1.0, 0.0),   // +Y
+    ///     Vector::new(0.0, -1.0, 0.0),  // -Y
+    ///     Vector::new(0.0, 0.0, 1.0),   // +Z
+    ///     Vector::new(0.0, 0.0, -1.0),  // -Z
     /// ];
     ///
     /// let indices = vec![
@@ -120,7 +120,7 @@ impl MassProperties {
     /// - `from_compound()`: For combining multiple convex shapes
     pub fn from_convex_polyhedron(
         density: Real,
-        vertices: &[Point<Real>],
+        vertices: &[Vector],
         indices: &[[u32; DIM]],
     ) -> MassProperties {
         Self::from_trimesh(density, vertices, indices)

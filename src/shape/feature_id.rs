@@ -1,6 +1,3 @@
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
-
 /// An identifier of a geometric feature (vertex, edge, or face) of a shape.
 ///
 /// Feature IDs are used throughout Parry to identify specific geometric features on shapes
@@ -110,8 +107,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum FeatureId {
@@ -439,8 +435,7 @@ impl FeatureId {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct PackedFeatureId(pub u32);

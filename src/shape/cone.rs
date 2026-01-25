@@ -1,18 +1,10 @@
 //! Support mapping based Cone shape.
 
-use crate::math::{Point, Real, Vector};
+use crate::math::{Real, Vector};
 use crate::shape::SupportMap;
-use na;
-use num::Zero;
 
 #[cfg(feature = "alloc")]
 use either::Either;
-
-#[cfg(not(feature = "alloc"))]
-use na::RealField; // for .copysign()
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// A 3D cone shape with apex pointing upward along the Y axis.
 ///
@@ -24,7 +16,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// - **Axis**: Always aligned with Y axis (apex points up)
 /// - **Base**: Circular base at y = -half_height with the given radius
-/// - **Apex**: Point at y = +half_height
+/// - **Apex**: Vector at y = +half_height
 /// - **Total height**: `2 * half_height`
 ///
 /// # Properties
@@ -72,8 +64,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
@@ -135,16 +126,15 @@ impl Cone {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: Vector,
         nsubdivs: u32,
     ) -> Option<Either<Self, super::ConvexPolyhedron>> {
         // NOTE: if the y scale is negative, the result cone points downwards,
         //       which can’t be represented with this Cone (without a transform).
         if scale.x != scale.z || scale.y < 0.0 {
-            // The scaled shape isn’t a cone.
+            // The scaled shape isn't a cone.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs);
-            vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
+            vtx.iter_mut().for_each(|pt| *pt *= scale);
             Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
                 vtx, &idx,
             )?))
@@ -159,24 +149,25 @@ impl Cone {
 
 impl SupportMap for Cone {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        let mut vres = *dir;
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        let mut vres = dir;
 
         vres[1] = 0.0;
+        let (mut vres, length) = vres.normalize_and_length();
 
-        if vres.normalize_mut().is_zero() {
-            vres = na::zero();
+        if length == 0.0 {
+            vres = Vector::ZERO;
             vres[1] = self.half_height.copysign(dir[1]);
         } else {
             vres *= self.radius;
             vres[1] = -self.half_height;
 
-            if dir.dot(&vres) < dir[1] * self.half_height {
-                vres = na::zero();
+            if dir.dot(vres) < dir[1] * self.half_height {
+                vres = Vector::ZERO;
                 vres[1] = self.half_height
             }
         }
 
-        Point::from(vres)
+        vres
     }
 }

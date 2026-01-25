@@ -1,13 +1,12 @@
 #![allow(unused_parens)] // Needed by the macro.
 
-use crate::math::{Point, Real};
+use crate::math::{Real, Vector};
 use crate::partitioning::BvhNode;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{
     CompositeShapeRef, FeatureId, SegmentPointLocation, TriMesh, TrianglePointLocation,
     TypedCompositeShape,
 };
-use na;
 
 use crate::shape::{Compound, Polyline};
 
@@ -19,7 +18,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     #[inline]
     pub fn project_local_point_and_get_location(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         max_dist: Real,
         solid: bool,
     ) -> Option<(
@@ -45,7 +44,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                             shape.project_local_point_and_get_location(point, solid)
                         }
                     })?;
-                    let cost = na::distance(&proj.0.point, point);
+                    let cost = (proj.0.point - point).length();
                     Some((cost, proj))
                 },
             )
@@ -57,7 +56,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
     /// If `solid` is `false` then the point will be projected to the closest boundary of `self` even
     /// if it is contained by one of its sub-shapes.
-    pub fn project_local_point(&self, point: &Point<Real>, solid: bool) -> (u32, PointProjection) {
+    pub fn project_local_point(&self, point: Vector, solid: bool) -> (u32, PointProjection) {
         let (best_id, (_, proj)) = self
             .0
             .bvh()
@@ -72,7 +71,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                             shape.project_local_point(point, solid)
                         }
                     })?;
-                    let dist = na::distance(&proj.point, point);
+                    let dist = (proj.point - point).length();
                     Some((dist, proj))
                 },
             )
@@ -88,7 +87,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     #[inline]
     pub fn project_local_point_and_get_feature(
         &self,
-        point: &Point<Real>,
+        point: Vector,
     ) -> (u32, (PointProjection, FeatureId)) {
         let (best_id, (_, (proj, feature_id))) = self
             .0
@@ -104,7 +103,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                             shape.project_local_point_and_get_feature(point)
                         }
                     })?;
-                    let cost = na::distance(&proj.0.point, point);
+                    let cost = (proj.0.point - point).length();
                     Some((cost, proj))
                 },
             )
@@ -116,7 +115,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 
     /// Returns the index of any sub-shape of `self` that contains the given point.
     #[inline]
-    pub fn contains_local_point(&self, point: &Point<Real>) -> Option<u32> {
+    pub fn contains_local_point(&self, point: Vector) -> Option<u32> {
         self.0
             .bvh()
             .leaves(|node: &BvhNode| node.aabb().contains_local_point(point))
@@ -136,15 +135,12 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 
 impl PointQuery for Polyline {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self).project_local_point(point, solid).1
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         let (seg_id, (proj, feature)) =
             CompositeShapeRef(self).project_local_point_and_get_feature(point);
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
@@ -154,7 +150,7 @@ impl PointQuery for Polyline {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: Vector) -> bool {
         CompositeShapeRef(self)
             .contains_local_point(point)
             .is_some()
@@ -163,15 +159,12 @@ impl PointQuery for Polyline {
 
 impl PointQuery for TriMesh {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self).project_local_point(point, solid).1
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals().is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
@@ -188,7 +181,7 @@ impl PointQuery for TriMesh {
     // TODO: implement distance_to_point too?
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: Vector) -> bool {
         #[cfg(feature = "dim3")]
         if self.pseudo_normals.is_some() {
             // If we can, in 3D, take the pseudo-normals into account.
@@ -206,7 +199,7 @@ impl PointQuery for TriMesh {
     /// Projects a point on `self` transformed by `m`, unless the projection lies further than the given max distance.
     fn project_local_point_with_max_dist(
         &self,
-        pt: &Point<Real>,
+        pt: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<PointProjection> {
@@ -217,15 +210,12 @@ impl PointQuery for TriMesh {
 
 impl PointQuery for Compound {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self).project_local_point(point, solid).1
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         (
             CompositeShapeRef(self)
                 .project_local_point_and_get_feature(point)
@@ -236,7 +226,7 @@ impl PointQuery for Compound {
     }
 
     #[inline]
-    fn contains_local_point(&self, point: &Point<Real>) -> bool {
+    fn contains_local_point(&self, point: Vector) -> bool {
         CompositeShapeRef(self)
             .contains_local_point(point)
             .is_some()
@@ -249,7 +239,7 @@ impl PointQueryWithLocation for Polyline {
     #[inline]
     fn project_local_point_and_get_location(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         let (seg_id, (proj, loc)) = CompositeShapeRef(self)
@@ -266,7 +256,7 @@ impl PointQueryWithLocation for TriMesh {
     #[allow(unused_mut)] // Because we need mut in 3D but not in 2D.
     fn project_local_point_and_get_location(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
@@ -276,7 +266,7 @@ impl PointQueryWithLocation for TriMesh {
     /// Projects a point on `self`, with a maximum projection distance.
     fn project_local_point_and_get_location_with_max_dist(
         &self,
-        point: &Point<Real>,
+        point: Vector,
         solid: bool,
         max_dist: Real,
     ) -> Option<(PointProjection, Self::Location)> {
@@ -305,7 +295,7 @@ impl PointQueryWithLocation for TriMesh {
 
                 if let Some(pseudo_normal) = pseudo_normal {
                     let dpt = point - proj.point;
-                    proj.is_inside = dpt.dot(&pseudo_normal) <= 0.0;
+                    proj.is_inside = dpt.dot(pseudo_normal) <= 0.0;
                 }
             }
 

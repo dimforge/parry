@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
@@ -10,9 +10,12 @@ use crate::query::{
     query_dispatcher::PersistentQueryDispatcher,
     ContactManifold,
 };
-use crate::shape::{HalfSpace, Segment, Shape, ShapeType};
+use crate::shape::{HalfSpace, Segment, Shape};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::shape::ShapeType;
 
 /// The default query dispatcher implementation provided by Parry.
 ///
@@ -64,12 +67,12 @@ use alloc::vec::Vec;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query;
 /// use parry3d::shape::Ball;
-/// use parry3d::na::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
-/// let pos1 = Isometry3::identity();
-/// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+/// let pos1 = Pose::identity();
+/// let pos2 = Pose::translation(5.0, 0.0, 0.0);
 ///
 /// // This uses DefaultQueryDispatcher internally
 /// let distance = query::distance(&pos1, &ball1, &pos2, &ball2);
@@ -88,15 +91,15 @@ use alloc::vec::Vec;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{QueryDispatcher, DefaultQueryDispatcher};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use parry3d::na::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let dispatcher = DefaultQueryDispatcher;
 ///
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::splat(1.0));
 ///
-/// let pos1 = Isometry3::identity();
-/// let pos2 = Isometry3::translation(3.0, 0.0, 0.0);
+/// let pos1 = Pose::identity();
+/// let pos2 = Pose::translation(3.0, 0.0, 0.0);
 /// let pos12 = pos1.inv_mul(&pos2);
 ///
 /// // Query intersection
@@ -125,7 +128,7 @@ use alloc::vec::Vec;
 ///
 /// // Now queries will use your custom logic when applicable,
 /// // and Parry's default logic otherwise
-/// let dist = dispatcher.distance(&pos12, shape1, shape2)?;
+/// let dist = dispatcher.distance(pos12, shape1, shape2)?;
 /// # }
 /// ```
 ///
@@ -173,13 +176,13 @@ pub struct DefaultQueryDispatcher;
 impl QueryDispatcher for DefaultQueryDispatcher {
     fn intersection_test(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<bool, Unsupported> {
         if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
-            let p12 = Point::from(pos12.translation.vector);
-            Ok(query::details::intersection_test_ball_ball(&p12, b1, b2))
+            let p12 = pos12.translation;
+            Ok(query::details::intersection_test_ball_ball(p12, b1, b2))
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
             Ok(query::details::intersection_test_cuboid_cuboid(
                 pos12, c1, c2,
@@ -245,7 +248,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
     /// Returns `0.0` if the objects are touching or penetrating.
     fn distance(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
     ) -> Result<Real, Unsupported> {
@@ -253,8 +256,8 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         let ball2 = shape2.as_ball();
 
         if let (Some(b1), Some(b2)) = (ball1, ball2) {
-            let p2 = Point::from(pos12.translation.vector);
-            Ok(query::details::distance_ball_ball(b1, &p2, b2))
+            let p2 = pos12.translation;
+            Ok(query::details::distance_ball_ball(b1, p2, b2))
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
             Ok(query::details::distance_ball_convex_polyhedron(
                 pos12, b1, shape2,
@@ -301,7 +304,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn contact(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -357,7 +360,7 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn closest_points(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         max_dist: Real,
@@ -433,8 +436,8 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 
     fn cast_shapes(
         &self,
-        pos12: &Isometry<Real>,
-        local_vel12: &Vector<Real>,
+        pos12: &Pose,
+        local_vel12: Vector,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         options: ShapeCastOptions,
@@ -628,7 +631,7 @@ where
 {
     fn contact_manifolds(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         prediction: Real,
@@ -748,7 +751,7 @@ where
 
     fn contact_manifold_convex_convex(
         &self,
-        pos12: &Isometry<Real>,
+        pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
         normal_constraints1: Option<&dyn NormalConstraints>,

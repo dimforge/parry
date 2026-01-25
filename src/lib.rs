@@ -19,7 +19,8 @@ the rust programming language.
 #![allow(clippy::module_inception)]
 #![allow(clippy::manual_range_contains)] // This usually makes it way more verbose that it could be.
 #![allow(clippy::type_complexity)] // Complains about closures that are fairly simple.
-#![doc(html_root_url = "http://docs.rs/parry/0.1.1")]
+#![cfg_attr(feature = "dim2", doc(html_root_url = "https://docs.rs/parry2d"))]
+#![cfg_attr(feature = "dim3", doc(html_root_url = "https://docs.rs/parry3d"))]
 #![no_std]
 
 #[cfg(all(
@@ -34,6 +35,7 @@ std::compile_error!(
 );
 
 #[cfg(feature = "simd-is-enabled")]
+#[allow(unused_macros)]
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
         {
@@ -66,169 +68,18 @@ extern crate approx;
 extern crate num_traits as num;
 
 pub extern crate either;
-pub extern crate nalgebra as na;
+pub extern crate glamx;
 pub extern crate simba;
 
 pub mod bounding_volume;
 pub mod mass_properties;
+pub mod math;
 pub mod partitioning;
 pub mod query;
 pub mod shape;
 #[cfg(feature = "alloc")]
 pub mod transformation;
 pub mod utils;
-
-mod real {
-    /// The scalar type used throughout this crate.
-    #[cfg(feature = "f64")]
-    pub use f64 as Real;
-
-    /// The scalar type used throughout this crate.
-    #[cfg(feature = "f32")]
-    pub use f32 as Real;
-}
-
-/// Compilation flags dependent aliases for mathematical types.
-#[cfg(feature = "dim3")]
-pub mod math {
-    pub use super::real::*;
-    pub use super::simd::*;
-    use na::{
-        Isometry3, Matrix3, Point3, Translation3, UnitQuaternion, UnitVector3, Vector3, Vector6,
-        U3, U6,
-    };
-
-    /// The default tolerance used for geometric operations.
-    pub const DEFAULT_EPSILON: Real = Real::EPSILON;
-
-    /// The dimension of the space.
-    pub const DIM: usize = 3;
-
-    /// The dimension of the space multiplied by two.
-    pub const TWO_DIM: usize = DIM * 2;
-
-    /// The dimension of the ambient space.
-    pub type Dim = U3;
-
-    /// The dimension of a spatial vector.
-    pub type SpatialDim = U6;
-
-    /// The dimension of the rotations.
-    pub type AngDim = U3;
-
-    /// The point type.
-    pub type Point<N> = Point3<N>;
-
-    /// The angular vector type.
-    pub type AngVector<N> = Vector3<N>;
-
-    /// The vector type.
-    pub type Vector<N> = Vector3<N>;
-
-    /// The unit vector type.
-    pub type UnitVector<N> = UnitVector3<N>;
-
-    /// The matrix type.
-    pub type Matrix<N> = Matrix3<N>;
-
-    /// The vector type with dimension `SpatialDim × 1`.
-    pub type SpatialVector<N> = Vector6<N>;
-
-    /// The orientation type.
-    pub type Orientation<N> = Vector3<N>;
-
-    /// The transformation matrix type.
-    pub type Isometry<N> = Isometry3<N>;
-
-    /// The rotation matrix type.
-    pub type Rotation<N> = UnitQuaternion<N>;
-
-    /// The translation type.
-    pub type Translation<N> = Translation3<N>;
-
-    /// The angular inertia of a rigid body.
-    pub type AngularInertia<N> = crate::utils::SdpMatrix3<N>;
-
-    /// The principal angular inertia of a rigid body.
-    pub type PrincipalAngularInertia<N> = Vector3<N>;
-
-    /// A matrix that represent the cross product with a given vector.
-    pub type CrossMatrix<N> = Matrix3<N>;
-
-    /// A vector with a dimension equal to the maximum number of degrees of freedom of a rigid body.
-    pub type SpacialVector<N> = Vector6<N>;
-
-    /// A 3D symmetric-definite-positive matrix.
-    pub type SdpMatrix<N> = crate::utils::SdpMatrix3<N>;
-}
-
-/// Compilation flags dependent aliases for mathematical types.
-#[cfg(feature = "dim2")]
-pub mod math {
-    pub use super::real::*;
-    pub use super::simd::*;
-    use na::{
-        Isometry2, Matrix2, Point2, Translation2, UnitComplex, UnitVector2, Vector1, Vector2,
-        Vector3, U1, U2,
-    };
-
-    /// The default tolerance used for geometric operations.
-    pub const DEFAULT_EPSILON: Real = Real::EPSILON;
-
-    /// The dimension of the space.
-    pub const DIM: usize = 2;
-
-    /// The dimension of the space multiplied by two.
-    pub const TWO_DIM: usize = DIM * 2;
-
-    /// The dimension of the ambient space.
-    pub type Dim = U2;
-
-    /// The dimension of the rotations.
-    pub type AngDim = U1;
-
-    /// The point type.
-    pub type Point<N> = Point2<N>;
-
-    /// The angular vector type.
-    pub type AngVector<N> = N;
-
-    /// The vector type.
-    pub type Vector<N> = Vector2<N>;
-
-    /// The unit vector type.
-    pub type UnitVector<N> = UnitVector2<N>;
-
-    /// The matrix type.
-    pub type Matrix<N> = Matrix2<N>;
-
-    /// The orientation type.
-    pub type Orientation<N> = Vector1<N>;
-
-    /// The transformation matrix type.
-    pub type Isometry<N> = Isometry2<N>;
-
-    /// The rotation matrix type.
-    pub type Rotation<N> = UnitComplex<N>;
-
-    /// The translation type.
-    pub type Translation<N> = Translation2<N>;
-
-    /// The angular inertia of a rigid body.
-    pub type AngularInertia<N> = N;
-
-    /// The principal angular inertia of a rigid body.
-    pub type PrincipalAngularInertia<N> = N;
-
-    /// A matrix that represent the cross product with a given vector.
-    pub type CrossMatrix<N> = Vector2<N>;
-
-    /// A vector with a dimension equal to the maximum number of degrees of freedom of a rigid body.
-    pub type SpacialVector<N> = Vector3<N>;
-
-    /// A 2D symmetric-definite-positive matrix.
-    pub type SdpMatrix<N> = crate::utils::SdpMatrix2<N>;
-}
 
 #[cfg(not(feature = "simd-is-enabled"))]
 mod simd {

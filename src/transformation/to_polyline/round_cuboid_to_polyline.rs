@@ -1,30 +1,35 @@
-use crate::math::Real;
+use crate::math::Vector2;
 use crate::shape::RoundCuboid;
 use crate::transformation::utils;
 use alloc::{vec, vec::Vec};
-use na::{self, Point2};
 
 impl RoundCuboid {
     /// Discretize the boundary of this round cuboid as a polygonal line.
-    pub fn to_polyline(&self, border_subdivs: u32) -> Vec<Point2<Real>> {
+    pub fn to_polyline(&self, border_subdivs: u32) -> Vec<Vector2> {
         let mut out_vtx = vec![];
         let he = self.inner_shape.half_extents;
         let br = self.border_radius;
 
         let arc_centers = [
-            Point2::new(-he.x, -he.y),
-            Point2::new(he.x, -he.y),
-            Point2::new(he.x, he.y),
-            Point2::new(-he.x, he.y),
+            Vector2::new(-he.x, -he.y),
+            Vector2::new(he.x, -he.y),
+            Vector2::new(he.x, he.y),
+            Vector2::new(-he.x, he.y),
         ];
         let arc_vertices = [
             (
-                Point2::new(-he.x - br, -he.y),
-                Point2::new(-he.x, -he.y - br),
+                Vector2::new(-he.x - br, -he.y),
+                Vector2::new(-he.x, -he.y - br),
             ),
-            (Point2::new(he.x, -he.y - br), Point2::new(he.x + br, -he.y)),
-            (Point2::new(he.x + br, he.y), Point2::new(he.x, he.y + br)),
-            (Point2::new(-he.x, he.y + br), Point2::new(-he.x - br, he.y)),
+            (
+                Vector2::new(he.x, -he.y - br),
+                Vector2::new(he.x + br, -he.y),
+            ),
+            (Vector2::new(he.x + br, he.y), Vector2::new(he.x, he.y + br)),
+            (
+                Vector2::new(-he.x, he.y + br),
+                Vector2::new(-he.x - br, he.y),
+            ),
         ];
 
         for i in 0..4 {

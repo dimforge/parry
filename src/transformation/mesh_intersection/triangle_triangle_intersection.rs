@@ -1,5 +1,6 @@
 use super::EPS;
-use crate::math::{Point, Real, Vector};
+use crate::math::Vector2;
+use crate::math::{Real, Vector};
 use crate::query;
 use crate::query::PointQuery;
 use crate::shape::{FeatureId, Segment, Triangle};
@@ -8,20 +9,19 @@ use crate::transformation::polygon_intersection::{
 };
 use crate::utils::WBasis;
 use alloc::{vec, vec::Vec};
-use na::Point2;
 
 #[derive(Copy, Clone, Debug, Default)]
-pub struct TriangleTriangleIntersectionPoint {
-    pub p1: Point<Real>,
+pub struct TriangleTriangleIntersectionVector {
+    pub p1: Vector,
 }
 
 #[derive(Clone, Debug)]
 pub enum TriangleTriangleIntersection {
     Segment {
-        a: TriangleTriangleIntersectionPoint,
-        b: TriangleTriangleIntersectionPoint,
+        a: TriangleTriangleIntersectionVector,
+        b: TriangleTriangleIntersectionVector,
     },
-    Polygon(Vec<TriangleTriangleIntersectionPoint>),
+    Polygon(Vec<TriangleTriangleIntersectionVector>),
 }
 
 impl Default for TriangleTriangleIntersection {
@@ -41,23 +41,23 @@ pub(crate) fn triangle_triangle_intersection(
     let normal1 = tri1.robust_normal();
     let normal2 = tri2.robust_normal();
 
-    if let Some(intersection_dir) = normal1.cross(&normal2).try_normalize(1.0e-6) {
+    if let Some(intersection_dir) = normal1.cross(normal2).try_normalize() {
         let mut range1 = [
-            (Real::MAX, Point::origin(), FeatureId::Unknown),
-            (-Real::MAX, Point::origin(), FeatureId::Unknown),
+            (Real::MAX, Vector::ZERO, FeatureId::Unknown),
+            (-Real::MAX, Vector::ZERO, FeatureId::Unknown),
         ];
         let mut range2 = [
-            (Real::MAX, Point::origin(), FeatureId::Unknown),
-            (-Real::MAX, Point::origin(), FeatureId::Unknown),
+            (Real::MAX, Vector::ZERO, FeatureId::Unknown),
+            (-Real::MAX, Vector::ZERO, FeatureId::Unknown),
         ];
 
         let hits1 = [
-            segment_plane_intersection(&tri2.a, &normal2, &Segment::new(tri1.a, tri1.b), 0, (0, 1))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
-            segment_plane_intersection(&tri2.a, &normal2, &Segment::new(tri1.b, tri1.c), 1, (1, 2))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
-            segment_plane_intersection(&tri2.a, &normal2, &Segment::new(tri1.c, tri1.a), 2, (2, 0))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
+            segment_plane_intersection(tri2.a, normal2, &Segment::new(tri1.a, tri1.b), 0, (0, 1))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
+            segment_plane_intersection(tri2.a, normal2, &Segment::new(tri1.b, tri1.c), 1, (1, 2))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
+            segment_plane_intersection(tri2.a, normal2, &Segment::new(tri1.c, tri1.a), 2, (2, 0))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
         ];
 
         for hit1 in hits1.into_iter().flatten() {
@@ -75,12 +75,12 @@ pub(crate) fn triangle_triangle_intersection(
         }
 
         let hits2 = [
-            segment_plane_intersection(&tri1.a, &normal1, &Segment::new(tri2.a, tri2.b), 0, (0, 1))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
-            segment_plane_intersection(&tri1.a, &normal1, &Segment::new(tri2.b, tri2.c), 1, (1, 2))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
-            segment_plane_intersection(&tri1.a, &normal1, &Segment::new(tri2.c, tri2.a), 2, (2, 0))
-                .map(|(p, feat)| (intersection_dir.dot(&p.coords), p, feat)),
+            segment_plane_intersection(tri1.a, normal1, &Segment::new(tri2.a, tri2.b), 0, (0, 1))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
+            segment_plane_intersection(tri1.a, normal1, &Segment::new(tri2.b, tri2.c), 1, (1, 2))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
+            segment_plane_intersection(tri1.a, normal1, &Segment::new(tri2.c, tri2.a), 2, (2, 0))
+                .map(|(p, feat)| (intersection_dir.dot(p), p, feat)),
         ];
 
         for hit2 in hits2.into_iter().flatten() {
@@ -103,23 +103,23 @@ pub(crate) fn triangle_triangle_intersection(
         }
 
         let a = if range2[0].0 > range1[0].0 + EPS {
-            TriangleTriangleIntersectionPoint { p1: range2[0].1 }
+            TriangleTriangleIntersectionVector { p1: range2[0].1 }
         } else {
-            TriangleTriangleIntersectionPoint { p1: range1[0].1 }
+            TriangleTriangleIntersectionVector { p1: range1[0].1 }
         };
 
         let b = if range2[1].0 < range1[1].0 - EPS {
-            TriangleTriangleIntersectionPoint { p1: range2[1].1 }
+            TriangleTriangleIntersectionVector { p1: range2[1].1 }
         } else {
-            TriangleTriangleIntersectionPoint { p1: range1[1].1 }
+            TriangleTriangleIntersectionVector { p1: range1[1].1 }
         };
 
         Some(TriangleTriangleIntersection::Segment { a, b })
     } else {
         let unit_normal2 = normal2.normalize();
-        if (tri1.a - tri2.a).dot(&unit_normal2) < EPS {
+        if (tri1.a - tri2.a).dot(unit_normal2) < EPS {
             let basis = unit_normal2.orthonormal_basis();
-            let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
+            let proj = |vect: Vector| Vector2::new(vect.dot(basis[0]), vect.dot(basis[1]));
 
             let mut intersections = vec![];
 
@@ -131,12 +131,12 @@ pub(crate) fn triangle_triangle_intersection(
                 proj(tri1.c - tri2.a),
             ];
             let poly2 = [
-                proj(Vector::zeros()), // = proj(tri2.a - tri2.a)
+                proj(Vector::ZERO), // = proj(tri2.a - tri2.a)
                 proj(tri2.b - tri2.a),
                 proj(tri2.c - tri2.a),
             ];
 
-            let convert_loc = |loc, pts: &[Point<Real>; 3]| match loc {
+            let convert_loc = |loc, pts: &[Vector; 3]| match loc {
                 PolylinePointLocation::OnVertex(vid) => (FeatureId::Vertex(vid as u32), pts[vid]),
                 PolylinePointLocation::OnEdge(vid1, vid2, bcoords) => (
                     match (vid1, vid2) {
@@ -145,7 +145,7 @@ pub(crate) fn triangle_triangle_intersection(
                         (2, 0) | (0, 2) => FeatureId::Edge(2),
                         _ => unreachable!(),
                     },
-                    pts[vid1] * bcoords[0] + pts[vid2].coords * bcoords[1],
+                    pts[vid1] * bcoords[0] + pts[vid2] * bcoords[1],
                 ),
             };
 
@@ -160,15 +160,15 @@ pub(crate) fn triangle_triangle_intersection(
                         (Some(loc1), Some(loc2)) => {
                             let (_f1, p1) = convert_loc(loc1, pts1);
                             let (_f2, _p2) = convert_loc(loc2, pts2);
-                            TriangleTriangleIntersectionPoint { p1 }
+                            TriangleTriangleIntersectionVector { p1 }
                         }
                         (Some(loc1), None) => {
                             let (_f1, p1) = convert_loc(loc1, pts1);
-                            TriangleTriangleIntersectionPoint { p1 }
+                            TriangleTriangleIntersectionVector { p1 }
                         }
                         (None, Some(loc2)) => {
                             let (_f2, p2) = convert_loc(loc2, pts2);
-                            TriangleTriangleIntersectionPoint { p1: p2 }
+                            TriangleTriangleIntersectionVector { p1: p2 }
                         }
                         (None, None) => unreachable!(),
                     };
@@ -194,17 +194,17 @@ pub(crate) fn triangle_triangle_intersection(
 }
 
 fn segment_plane_intersection(
-    plane_center: &Point<Real>,
-    plane_normal: &Vector<Real>,
+    plane_center: Vector,
+    plane_normal: Vector,
     segment: &Segment,
     eid: u32,
     vids: (u32, u32),
-) -> Option<(Point<Real>, FeatureId)> {
+) -> Option<(Vector, FeatureId)> {
     let dir = segment.b - segment.a;
-    let dir_norm = dir.norm();
+    let dir_norm = dir.length();
 
     let time_of_impact =
-        query::details::line_toi_with_halfspace(plane_center, plane_normal, &segment.a, &dir)?;
+        query::details::line_toi_with_halfspace(plane_center, plane_normal, segment.a, dir)?;
     let scaled_toi = time_of_impact * dir_norm;
 
     if scaled_toi < -EPS || scaled_toi > dir_norm + EPS {
@@ -229,27 +229,27 @@ fn segment_plane_intersection(
 fn debug_check_intersections(
     tri1: &Triangle,
     tri2: &Triangle,
-    basis: &[na::Vector3<Real>; 2],
-    poly1: &[Point2<Real>], // Projection of tri1 on the basis `basis1` with the origin at tri2.a.
-    poly2: &[Point2<Real>], // Projection of tri2 on the basis `basis2` with the origin at tri2.a.
-    intersections: &[TriangleTriangleIntersectionPoint],
+    basis: &[Vector; 2],
+    poly1: &[Vector2], // Projection of tri1 on the basis `basis1` with the origin at tri2.a.
+    poly2: &[Vector2], // Projection of tri2 on the basis `basis2` with the origin at tri2.a.
+    intersections: &[TriangleTriangleIntersectionVector],
 ) {
     use std::{print, println};
 
-    let proj = |vect: Vector<Real>| Point2::new(vect.dot(&basis[0]), vect.dot(&basis[1]));
+    let proj = |vect: Vector| Vector2::new(vect.dot(basis[0]), vect.dot(basis[1]));
     let mut incorrect = false;
     for pt in intersections {
         if !tri1
-            .project_local_point(&pt.p1, false)
-            .is_inside_eps(&pt.p1, 1.0e-5)
+            .project_local_point(pt.p1, false)
+            .is_inside_eps(pt.p1, 1.0e-5)
         {
             incorrect = true;
             break;
         }
 
         if !tri2
-            .project_local_point(&pt.p1, false)
-            .is_inside_eps(&pt.p1, 1.0e-5)
+            .project_local_point(pt.p1, false)
+            .is_inside_eps(pt.p1, 1.0e-5)
         {
             incorrect = true;
             break;
@@ -283,12 +283,12 @@ fn debug_check_intersections(
         println!("~~~~~~~ (copy/paste the following input in the `intersect_triangle_common_vertex` test)");
         println!("(Triangle::new(");
         for pt1 in poly1 {
-            println!("    Point2::new({},{}),", pt1.x, pt1.y);
+            println!("    Vector::new({},{}),", pt1.x, pt1.y);
         }
         println!("),");
         println!("Triangle::new(");
         for pt2 in poly2 {
-            println!("    Point2::new({},{}),", pt2.x, pt2.y);
+            println!("    Vector::new({},{}),", pt2.x, pt2.y);
         }
         println!("),),");
     }

@@ -1,7 +1,5 @@
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::shape::{Cuboid, SupportMap};
-
-use na::Unit;
 
 /// Computes the separation distance between a point and a cuboid along a specified normal direction.
 ///
@@ -31,7 +29,7 @@ use na::Unit;
 ///   - **Positive**: The point and cuboid are separated
 ///   - **Negative**: The point penetrates the cuboid (or normal is None)
 ///   - **Zero**: The point exactly touches the cuboid surface
-/// - `Vector<Real>`: The oriented normal direction used for the test (pointing from point toward cuboid)
+/// - `Vector`: The oriented normal direction used for the test (pointing from point toward cuboid)
 ///
 /// # Example
 ///
@@ -39,14 +37,14 @@ use na::Unit;
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::Cuboid;
 /// use parry2d::query::sat::point_cuboid_find_local_separating_normal_oneway;
-/// use nalgebra::{Point2, Vector2, Isometry2, Unit};
+/// use parry2d::math::{Vector, Pose};
 ///
-/// let point = Point2::origin();
-/// let normal = Some(Unit::new_normalize(Vector2::x()));
-/// let cuboid = Cuboid::new(Vector2::new(1.0, 1.0));
+/// let point = Vector::ZERO;
+/// let normal = Some((Vector::X.normalize()));
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0));
 ///
 /// // Position cuboid 3 units to the right
-/// let pos12 = Isometry2::translation(3.0, 0.0);
+/// let pos12 = Pose::translation(3.0, 0.0);
 ///
 /// let (separation, _dir) = point_cuboid_find_local_separating_normal_oneway(
 ///     point,
@@ -66,27 +64,27 @@ use na::Unit;
 /// because it exploits the cuboid's symmetry around the origin. The cuboid must be centered at
 /// its local origin for this optimization to be valid.
 pub fn point_cuboid_find_local_separating_normal_oneway(
-    point1: Point<Real>,
-    normal1: Option<Unit<Vector<Real>>>,
+    point1: Vector,
+    normal1: Option<Vector>,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
-    let mut best_dir = Vector::zeros();
+    let mut best_dir = Vector::ZERO;
 
     if let Some(normal1) = normal1 {
-        let axis1 = if (pos12.translation.vector - point1.coords).dot(&normal1) >= 0.0 {
+        let axis1 = if (pos12.translation - point1).dot(normal1) >= 0.0 {
             normal1
         } else {
             -normal1
         };
 
-        let pt2 = shape2.support_point_toward(pos12, &-axis1);
-        let separation = (pt2 - point1).dot(&axis1);
+        let pt2 = shape2.support_point_toward(pos12, -axis1);
+        let separation = (pt2 - point1).dot(axis1);
 
         if separation > best_separation {
             best_separation = separation;
-            best_dir = *axis1;
+            best_dir = axis1;
         }
     }
 

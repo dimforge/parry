@@ -1,9 +1,9 @@
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::partitioning::BvhNode;
 use crate::query::QueryDispatcher;
 use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
-use crate::utils::IsometryOpt;
+use crate::utils::PoseOpt;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the index of the shape in `self` that intersects the given other `shape` positioned
@@ -13,7 +13,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn intersects_shape<D: ?Sized + QueryDispatcher>(
         &self,
         dispatcher: &D,
-        pose12: &Isometry<Real>,
+        pose12: &Pose,
         shape: &dyn Shape,
     ) -> Option<u32> {
         let ls_aabb2 = shape.compute_aabb(pose12);
@@ -34,7 +34,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
 /// Intersection test between a composite shape (`Mesh`, `Compound`) and any other shape.
 pub fn intersection_test_composite_shape_shape<D, G1>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     g1: &G1,
     g2: &dyn Shape,
 ) -> bool
@@ -50,7 +50,7 @@ where
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
 pub fn intersection_test_shape_composite_shape<D, G2>(
     dispatcher: &D,
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     g1: &dyn Shape,
     g2: &G2,
 ) -> bool

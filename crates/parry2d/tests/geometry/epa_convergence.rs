@@ -1,6 +1,5 @@
-use na::Vector2;
 use parry2d::{
-    math::{Isometry, Point, Real},
+    math::{Pose, Vector},
     query,
     shape::{Capsule, ConvexPolygon, SharedShape},
 };
@@ -9,14 +8,14 @@ use parry2d::{
 #[test]
 fn capsule_convergence() {
     let shape1 = Capsule::new_y(5.0, 10.0);
-    let mut vec = Vec::<Point<Real>>::with_capacity(3);
-    vec.push(Point::<Real>::new(64.0, 507.0));
-    vec.push(Point::<Real>::new(440.0, 326.0));
-    vec.push(Point::<Real>::new(1072.0, 507.0));
+    let mut vec = Vec::<Vector>::with_capacity(3);
+    vec.push(Vector::new(64.0, 507.0));
+    vec.push(Vector::new(440.0, 326.0));
+    vec.push(Vector::new(1072.0, 507.0));
     let shape2 = ConvexPolygon::from_convex_polyline(vec);
     let shape2 = shape2.unwrap();
-    let transform1 = Isometry::new(Vector2::new(381.592, 348.491), 0.0);
-    let transform2 = Isometry::new(Vector2::new(0.0, 0.0), 0.0);
+    let transform1 = Pose::new(Vector::new(381.592, 348.491), 0.0);
+    let transform2 = Pose::new(Vector::new(0.0, 0.0), 0.0);
 
     let _res = query::details::contact_support_map_support_map(
         &transform1.inv_mul(&transform2),

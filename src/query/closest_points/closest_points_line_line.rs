@@ -1,5 +1,4 @@
-use crate::math::{Point, Real, Vector};
-use crate::na::{Point as SPoint, SVector};
+use crate::math::{Real, Vector};
 
 /// Closest points between two lines.
 ///
@@ -7,10 +6,10 @@ use crate::na::{Point as SPoint, SVector};
 /// `orig1 + dir1 * res.0` and `orig2 + dir2 * res.1`.
 #[inline]
 pub fn closest_points_line_line_parameters(
-    orig1: &Point<Real>,
-    dir1: &Vector<Real>,
-    orig2: &Point<Real>,
-    dir2: &Vector<Real>,
+    orig1: Vector,
+    dir1: Vector,
+    orig2: Vector,
+    dir2: Vector,
 ) -> (Real, Real) {
     let res = closest_points_line_line_parameters_eps(
         orig1,
@@ -29,26 +28,26 @@ pub fn closest_points_line_line_parameters(
 /// then `res.2` is set to `true` and the returned closest points are `orig1` and
 /// its projection on the second line.
 #[inline]
-pub fn closest_points_line_line_parameters_eps<const D: usize>(
-    orig1: &SPoint<Real, D>,
-    dir1: &SVector<Real, D>,
-    orig2: &SPoint<Real, D>,
-    dir2: &SVector<Real, D>,
+pub fn closest_points_line_line_parameters_eps(
+    orig1: Vector,
+    dir1: Vector,
+    orig2: Vector,
+    dir2: Vector,
     eps: Real,
 ) -> (Real, Real, bool) {
     // Inspired by RealField-time collision detection by Christer Ericson.
     let r = orig1 - orig2;
 
-    let a = dir1.norm_squared();
-    let e = dir2.norm_squared();
-    let f = dir2.dot(&r);
+    let a = dir1.length_squared();
+    let e = dir2.length_squared();
+    let f = dir2.dot(r);
 
     if a <= eps && e <= eps {
         (0.0, 0.0, false)
     } else if a <= eps {
         (0.0, f / e, false)
     } else {
-        let c = dir1.dot(&r);
+        let c = dir1.dot(r);
         if e <= eps {
             (-c / a, 0.0, false)
         } else {
@@ -75,11 +74,11 @@ pub fn closest_points_line_line_parameters_eps<const D: usize>(
 /// Closest points between two segments.
 #[inline]
 pub fn closest_points_line_line(
-    orig1: &Point<Real>,
-    dir1: &Vector<Real>,
-    orig2: &Point<Real>,
-    dir2: &Vector<Real>,
-) -> (Point<Real>, Point<Real>) {
+    orig1: Vector,
+    dir1: Vector,
+    orig2: Vector,
+    dir2: Vector,
+) -> (Vector, Vector) {
     let (s, t) = closest_points_line_line_parameters(orig1, dir1, orig2, dir2);
-    (*orig1 + *dir1 * s, *orig2 + *dir2 * t)
+    (orig1 + dir1 * s, orig2 + dir2 * t)
 }

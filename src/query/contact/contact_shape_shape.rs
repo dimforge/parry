@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::{Contact, DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
@@ -61,14 +61,14 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::contact;
 /// use parry3d::shape::{Ball, Cuboid};
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball = Ball::new(1.0);
-/// let cuboid = Cuboid::new(Vector3::new(2.0, 2.0, 2.0));
+/// let cuboid = Cuboid::new(Vector::new(2.0, 2.0, 2.0));
 ///
 /// // Position shapes so they're penetrating
-/// let pos_ball = Isometry3::translation(2.5, 0.0, 0.0);
-/// let pos_cuboid = Isometry3::identity();
+/// let pos_ball = Pose::translation(2.5, 0.0, 0.0);
+/// let pos_cuboid = Pose::identity();
 ///
 /// // Compute contact (no prediction distance)
 /// if let Ok(Some(contact)) = contact(&pos_ball, &ball, &pos_cuboid, &cuboid, 0.0) {
@@ -92,14 +92,14 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::contact;
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Balls separated by 2.2 units (just outside contact range)
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(4.2, 0.0, 0.0); // radii sum = 2.0, gap = 2.2
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(4.2, 0.0, 0.0); // radii sum = 2.0, gap = 2.2
 ///
 /// // Without prediction: no contact
 /// assert!(contact(&pos1, &ball1, &pos2, &ball2, 0.0).unwrap().is_none());
@@ -121,9 +121,9 @@ use crate::shape::Shape;
 /// - [`closest_points`](crate::query::closest_points::closest_points()) - For closest point locations
 /// - [`intersection_test`](crate::query::intersection_test::intersection_test()) - For boolean overlap test
 pub fn contact(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     g2: &dyn Shape,
     prediction: Real,
 ) -> Result<Option<Contact>, Unsupported> {

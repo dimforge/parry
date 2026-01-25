@@ -62,26 +62,26 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::query::{cast_shapes, cast_shapes_nonlinear, ShapeCastOptions, NonlinearRigidMotion};
 //! use parry3d::shape::Cuboid;
-//! use parry3d::na::{Isometry3, Vector3};
+//! use parry3d::math::{Pose, Vector};
 //!
-//! let cube1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-//! let cube2 = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
+//! let cube1 = Cuboid::new(Vector::splat(1.0));
+//! let cube2 = Cuboid::new(Vector::splat(0.5));
 //!
-//! let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-//! let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+//! let pos1 = Pose::translation(0.0, 0.0, 0.0);
+//! let pos2 = Pose::translation(5.0, 0.0, 0.0);
 //!
 //! // Linear motion: cube moves right
-//! let vel1 = Vector3::new(1.0, 0.0, 0.0);
+//! let vel1 = Vector::new(1.0, 0.0, 0.0);
 //! let options = ShapeCastOptions::default();
 //!
-//! let linear_hit = cast_shapes(&pos1, &vel1, &cube1, &pos2, &Vector3::zeros(), &cube2, options);
+//! let linear_hit = cast_shapes(&pos1, vel1, &cube1, &pos2, Vector::ZERO, &cube2, options);
 //!
 //! // Nonlinear motion: cube moves right AND spins around Y axis
 //! let motion1 = NonlinearRigidMotion::new(
 //!     pos1,
-//!     parry3d::na::Point3::origin(), // rotation center
+//!     Vector::ZERO, // rotation center
 //!     vel1,                        // linear velocity
-//!     Vector3::new(0.0, 5.0, 0.0), // angular velocity (spinning fast)
+//!     Vector::new(0.0, 5.0, 0.0), // angular velocity (spinning fast)
 //! );
 //! let motion2 = NonlinearRigidMotion::constant_position(pos2);
 //!

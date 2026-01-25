@@ -36,14 +36,14 @@
 //! use parry3d::query::{ContactManifold, TrackedContact};
 //! use parry3d::query::details::contact_manifold_ball_ball;
 //! use parry3d::shape::Ball;
-//! use parry3d::math::{Isometry, Point, Vector};
+//! use parry3d::math::{Pose, Vector};
 //!
 //! // Create two balls
 //! let ball1 = Ball::new(1.0);
 //! let ball2 = Ball::new(1.0);
 //!
 //! // Position them so they're touching
-//! let pos12 = Isometry::translation(1.9, 0.0, 0.0);
+//! let pos12 = Pose::translation(1.9, 0.0, 0.0);
 //!
 //! // Create an empty contact manifold
 //! // Note: ManifoldData and ContactData are user-defined types for tracking data
@@ -72,18 +72,18 @@
 //! use parry3d::query::{ContactManifold, TrackedContact};
 //! use parry3d::query::details::contact_manifold_ball_ball;
 //! use parry3d::shape::Ball;
-//! use parry3d::math::Isometry;
+//! use parry3d::math::Pose;
 //!
 //! let ball1 = Ball::new(1.0);
 //! let ball2 = Ball::new(1.0);
 //! let mut manifold = ContactManifold::<(), ()>::new();
 //!
 //! // Initial contact computation
-//! let pos12_frame1 = Isometry::translation(1.9, 0.0, 0.0);
+//! let pos12_frame1 = Pose::translation(1.9, 0.0, 0.0);
 //! contact_manifold_ball_ball(&pos12_frame1, &ball1, &ball2, 0.1, &mut manifold);
 //!
 //! // On the next frame, try to update using spatial coherence
-//! let pos12_frame2 = Isometry::translation(1.85, 0.0, 0.0);
+//! let pos12_frame2 = Pose::translation(1.85, 0.0, 0.0);
 //!
 //! // Try to update contacts efficiently
 //! if !manifold.try_update_contacts(&pos12_frame2) {

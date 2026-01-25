@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Pose, Vector};
 
 use core::mem;
 
@@ -30,13 +30,13 @@ use core::mem;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(5.0, 0.0, 0.0);
 ///
 /// // Search for closest points within 10.0 units
 /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
@@ -48,7 +48,7 @@ use core::mem;
 ///     ClosestPoints::WithinMargin(pt1, pt2) => {
 ///         println!("Closest point on shape1: {:?}", pt1);
 ///         println!("Closest point on shape2: {:?}", pt2);
-///         let distance = (pt2 - pt1).norm();
+///         let distance = (pt2 - pt1).length();
 ///         println!("Distance between shapes: {}", distance);
 ///     }
 ///     ClosestPoints::Disjoint => {
@@ -67,8 +67,7 @@ use core::mem;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub enum ClosestPoints {
     /// The two shapes are intersecting (overlapping or touching).
@@ -83,14 +82,14 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(2.0);
     /// let ball2 = Ball::new(2.0);
     ///
     /// // Overlapping balls (centers 3.0 apart, combined radii 4.0)
-    /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(3.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(3.0, 0.0, 0.0);
     ///
     /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
     /// assert_eq!(result, ClosestPoints::Intersecting);
@@ -112,31 +111,31 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);
     ///
     /// // Balls separated by 3.0 units (centers 5.0 apart, combined radii 2.0)
-    /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(5.0, 0.0, 0.0);
     ///
     /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
     ///
     /// if let ClosestPoints::WithinMargin(pt1, pt2) = result {
-    ///     // Points are on the surface, facing each other
+    ///     // Vectors are on the surface, facing each other
     ///     assert!((pt1.x - 1.0).abs() < 1e-5); // ball1 surface at x=1.0
     ///     assert!((pt2.x - 4.0).abs() < 1e-5); // ball2 surface at x=4.0
     ///
     ///     // Distance between points
-    ///     let dist = (pt2 - pt1).norm();
+    ///     let dist = (pt2 - pt1).length();
     ///     assert!((dist - 3.0).abs() < 1e-5);
     /// } else {
     ///     panic!("Expected WithinMargin");
     /// }
     /// # }
     /// ```
-    WithinMargin(Point<Real>, Point<Real>),
+    WithinMargin(Vector, Vector),
 
     /// The shapes are separated by more than the specified maximum distance.
     ///
@@ -150,14 +149,14 @@ pub enum ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(1.0);
     ///
     /// // Balls separated by 8.0 units
-    /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(10.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(10.0, 0.0, 0.0);
     ///
     /// // Only search within 5.0 units
     /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 5.0).unwrap();
@@ -184,13 +183,13 @@ impl ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(2.0);
     ///
-    /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(5.0, 0.0, 0.0);
     ///
     /// let mut result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
     ///
@@ -221,13 +220,13 @@ impl ClosestPoints {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::{closest_points, ClosestPoints};
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// let ball1 = Ball::new(1.0);
     /// let ball2 = Ball::new(2.0);
     ///
-    /// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(5.0, 0.0, 0.0);
     ///
     /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 10.0).unwrap();
     /// let flipped = result.flipped();
@@ -256,8 +255,8 @@ impl ClosestPoints {
     /// respective local coordinate frames to world-space coordinates. This is used
     /// internally by the query system.
     ///
-    /// - Point 1 is transformed by `pos1`
-    /// - Point 2 is transformed by `pos2`
+    /// - Vector 1 is transformed by `pos1`
+    /// - Vector 2 is transformed by `pos2`
     /// - `Intersecting` and `Disjoint` variants are returned unchanged
     ///
     /// # Arguments
@@ -270,17 +269,17 @@ impl ClosestPoints {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::ClosestPoints;
-    /// use nalgebra::{Isometry3, Point3};
+    /// use parry3d::math::{Pose, Vector};
     ///
-    /// // Points in local space
+    /// // Vectors in local space
     /// let local_result = ClosestPoints::WithinMargin(
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(-1.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(-1.0, 0.0, 0.0),
     /// );
     ///
     /// // Transform to world space
-    /// let pos1 = Isometry3::translation(10.0, 0.0, 0.0);
-    /// let pos2 = Isometry3::translation(20.0, 0.0, 0.0);
+    /// let pos1 = Pose::translation(10.0, 0.0, 0.0);
+    /// let pos2 = Pose::translation(20.0, 0.0, 0.0);
     ///
     /// let world_result = local_result.transform_by(&pos1, &pos2);
     ///
@@ -291,7 +290,7 @@ impl ClosestPoints {
     /// # }
     /// ```
     #[must_use]
-    pub fn transform_by(self, pos1: &Isometry<Real>, pos2: &Isometry<Real>) -> Self {
+    pub fn transform_by(self, pos1: &Pose, pos2: &Pose) -> Self {
         if let ClosestPoints::WithinMargin(p1, p2) = self {
             ClosestPoints::WithinMargin(pos1 * p1, pos2 * p2)
         } else {

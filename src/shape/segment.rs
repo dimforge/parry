@@ -1,13 +1,8 @@
 //! Definition of the segment shape.
 
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::shape::{FeatureId, SupportMap};
-
 use core::mem;
-use na::{self, Unit};
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
 
 /// A line segment shape.
 ///
@@ -18,7 +13,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// - **a**: The first endpoint
 /// - **b**: The second endpoint
-/// - **Direction**: Points from `a` toward `b`
+/// - **Direction**: Vectors from `a` toward `b`
 ///
 /// # Properties
 ///
@@ -46,11 +41,11 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Segment;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a horizontal segment of length 5
-/// let a = Point3::origin();
-/// let b = Point3::new(5.0, 0.0, 0.0);
+/// let a = Vector::ZERO;
+/// let b = Vector::new(5.0, 0.0, 0.0);
 /// let segment = Segment::new(a, b);
 ///
 /// assert_eq!(segment.length(), 5.0);
@@ -63,16 +58,15 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Segment {
     /// The first endpoint of the segment.
-    pub a: Point<Real>,
+    pub a: Vector,
     /// The second endpoint of the segment.
-    pub b: Point<Real>,
+    pub b: Vector,
 }
 
 /// Describes where a point is located on a segment.
@@ -82,8 +76,8 @@ pub struct Segment {
 ///
 /// # Variants
 ///
-/// - **OnVertex(id)**: Point projects to an endpoint (0 = `a`, 1 = `b`)
-/// - **OnEdge(bary)**: Point projects to the interior with barycentric coordinates
+/// - **OnVertex(id)**: Vector projects to an endpoint (0 = `a`, 1 = `b`)
+/// - **OnEdge(bary)**: Vector projects to the interior with barycentric coordinates
 ///
 /// # Example
 ///
@@ -91,15 +85,15 @@ pub struct Segment {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::SegmentPointLocation;
 ///
-/// // Point at first vertex
+/// // Vector at first vertex
 /// let loc = SegmentPointLocation::OnVertex(0);
 /// assert_eq!(loc.barycentric_coordinates(), [1.0, 0.0]);
 ///
-/// // Point at second vertex
+/// // Vector at second vertex
 /// let loc = SegmentPointLocation::OnVertex(1);
 /// assert_eq!(loc.barycentric_coordinates(), [0.0, 1.0]);
 ///
-/// // Point halfway along the segment
+/// // Vector halfway along the segment
 /// let loc = SegmentPointLocation::OnEdge([0.5, 0.5]);
 /// assert_eq!(loc.barycentric_coordinates(), [0.5, 0.5]);
 /// # }
@@ -108,15 +102,15 @@ pub struct Segment {
 pub enum SegmentPointLocation {
     /// The point lies on a vertex (endpoint).
     ///
-    /// - `0` = Point is at `segment.a`
-    /// - `1` = Point is at `segment.b`
+    /// - `0` = Vector is at `segment.a`
+    /// - `1` = Vector is at `segment.b`
     OnVertex(u32),
 
     /// The point lies on the segment interior.
     ///
     /// Contains barycentric coordinates `[u, v]` where:
     /// - `u + v = 1.0`
-    /// - Point = `a * u + b * v`
+    /// - Vector = `a * u + b * v`
     /// - `0.0 < u, v < 1.0` (strictly between endpoints)
     OnEdge([Real; 2]),
 }
@@ -126,29 +120,29 @@ impl SegmentPointLocation {
     ///
     /// Barycentric coordinates `[u, v]` satisfy:
     /// - `u + v = 1.0`
-    /// - Point = `a * u + b * v`
+    /// - Vector = `a * u + b * v`
     ///
     /// # Example
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::{Segment, SegmentPointLocation};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
-    ///     Point3::origin(),
-    ///     Point3::new(10.0, 0.0, 0.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(10.0, 0.0, 0.0)
     /// );
     ///
-    /// // Point at endpoint a
+    /// // Vector at endpoint a
     /// let loc_a = SegmentPointLocation::OnVertex(0);
     /// assert_eq!(loc_a.barycentric_coordinates(), [1.0, 0.0]);
     ///
-    /// // Point at endpoint b
+    /// // Vector at endpoint b
     /// let loc_b = SegmentPointLocation::OnVertex(1);
     /// assert_eq!(loc_b.barycentric_coordinates(), [0.0, 1.0]);
     ///
-    /// // Point at 30% from a to b
+    /// // Vector at 30% from a to b
     /// let loc_mid = SegmentPointLocation::OnEdge([0.7, 0.3]);
     /// let coords = loc_mid.barycentric_coordinates();
     /// assert_eq!(coords[0], 0.7);
@@ -183,17 +177,17 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
-    ///     Point3::origin(),
-    ///     Point3::new(5.0, 0.0, 0.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(5.0, 0.0, 0.0)
     /// );
     /// assert_eq!(segment.length(), 5.0);
     /// # }
     /// ```
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>) -> Segment {
+    pub fn new(a: Vector, b: Vector) -> Segment {
         Segment { a, b }
     }
 
@@ -206,15 +200,15 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
-    /// let points = [Point3::origin(), Point3::new(1.0, 0.0, 0.0)];
+    /// let points = [Vector::ZERO, Vector::new(1.0, 0.0, 0.0)];
     /// let segment = Segment::from_array(&points);
     /// assert_eq!(segment.a, points[0]);
     /// assert_eq!(segment.b, points[1]);
     /// # }
     /// ```
-    pub fn from_array(arr: &[Point<Real>; 2]) -> &Segment {
+    pub fn from_array(arr: &[Vector; 2]) -> &Segment {
         unsafe { mem::transmute(arr) }
     }
 
@@ -231,23 +225,20 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
-    ///     Point3::new(1.0, 2.0, 3.0),
-    ///     Point3::new(4.0, 5.0, 6.0)
+    ///     Vector::new(1.0, 2.0, 3.0),
+    ///     Vector::new(4.0, 5.0, 6.0)
     /// );
     ///
-    /// let scaled = segment.scaled(&Vector3::new(2.0, 2.0, 2.0));
-    /// assert_eq!(scaled.a, Point3::new(2.0, 4.0, 6.0));
-    /// assert_eq!(scaled.b, Point3::new(8.0, 10.0, 12.0));
+    /// let scaled = segment.scaled(Vector::new(2.0, 2.0, 2.0));
+    /// assert_eq!(scaled.a, Vector::new(2.0, 4.0, 6.0));
+    /// assert_eq!(scaled.b, Vector::new(8.0, 10.0, 12.0));
     /// # }
     /// ```
-    pub fn scaled(self, scale: &Vector<Real>) -> Self {
-        Self::new(
-            na::Scale::from(*scale) * self.a,
-            na::Scale::from(*scale) * self.b,
-        )
+    pub fn scaled(self, scale: Vector) -> Self {
+        Self::new(self.a * scale, self.b * scale)
     }
 
     /// Returns the direction vector of this segment scaled by its length.
@@ -260,19 +251,19 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
-    ///     Point3::origin(),
-    ///     Point3::new(3.0, 4.0, 0.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(3.0, 4.0, 0.0)
     /// );
     ///
     /// let dir = segment.scaled_direction();
-    /// assert_eq!(dir, Vector3::new(3.0, 4.0, 0.0));
-    /// assert_eq!(dir.norm(), 5.0); // Length of the segment
+    /// assert_eq!(dir, Vector::new(3.0, 4.0, 0.0));
+    /// assert_eq!(dir.length(), 5.0); // Length of the segment
     /// # }
     /// ```
-    pub fn scaled_direction(&self) -> Vector<Real> {
+    pub fn scaled_direction(&self) -> Vector {
         self.b - self.a
     }
 
@@ -283,18 +274,18 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // 3-4-5 right triangle
     /// let segment = Segment::new(
-    ///     Point3::origin(),
-    ///     Point3::new(3.0, 4.0, 0.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(3.0, 4.0, 0.0)
     /// );
     /// assert_eq!(segment.length(), 5.0);
     /// # }
     /// ```
     pub fn length(&self) -> Real {
-        self.scaled_direction().norm()
+        self.scaled_direction().length()
     }
 
     /// Swaps the two endpoints of this segment.
@@ -306,16 +297,16 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut segment = Segment::new(
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(5.0, 0.0, 0.0)
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(5.0, 0.0, 0.0)
     /// );
     ///
     /// segment.swap();
-    /// assert_eq!(segment.a, Point3::new(5.0, 0.0, 0.0));
-    /// assert_eq!(segment.b, Point3::new(1.0, 0.0, 0.0));
+    /// assert_eq!(segment.a, Vector::new(5.0, 0.0, 0.0));
+    /// assert_eq!(segment.b, Vector::new(1.0, 0.0, 0.0));
     /// # }
     /// ```
     pub fn swap(&mut self) {
@@ -324,7 +315,7 @@ impl Segment {
 
     /// Returns the unit direction vector of this segment.
     ///
-    /// Points from `a` toward `b` with length 1.0.
+    /// Vectors from `a` toward `b` with length 1.0.
     ///
     /// # Returns
     ///
@@ -336,32 +327,32 @@ impl Segment {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Segment;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// let segment = Segment::new(
-    ///     Point3::origin(),
-    ///     Point3::new(3.0, 4.0, 0.0)
+    ///     Vector::ZERO,
+    ///     Vector::new(3.0, 4.0, 0.0)
     /// );
     ///
     /// if let Some(dir) = segment.direction() {
     ///     // Direction is normalized
-    ///     assert!((dir.norm() - 1.0).abs() < 1e-6);
-    ///     // Points from a to b
-    ///     assert_eq!(*dir, Vector3::new(0.6, 0.8, 0.0));
+    ///     assert!((dir.length() - 1.0).abs() < 1e-6);
+    ///     // Vectors from a to b
+    ///     assert_eq!(dir, Vector::new(0.6, 0.8, 0.0));
     /// }
     ///
     /// // Degenerate segment (zero length)
-    /// let degenerate = Segment::new(Point3::origin(), Point3::origin());
+    /// let degenerate = Segment::new(Vector::ZERO, Vector::ZERO);
     /// assert!(degenerate.direction().is_none());
     /// # }
     /// ```
-    pub fn direction(&self) -> Option<Unit<Vector<Real>>> {
-        Unit::try_new(self.scaled_direction(), crate::math::DEFAULT_EPSILON)
+    pub fn direction(&self) -> Option<Vector> {
+        self.scaled_direction().try_normalize()
     }
 
     /// In 2D, the not-normalized counterclockwise normal of this segment.
     #[cfg(feature = "dim2")]
-    pub fn scaled_normal(&self) -> Vector<Real> {
+    pub fn scaled_normal(&self) -> Vector {
         let dir = self.scaled_direction();
         Vector::new(dir.y, -dir.x)
     }
@@ -369,7 +360,7 @@ impl Segment {
     /// The not-normalized counterclockwise normal of this segment, assuming it lies on the plane
     /// with the normal collinear to the given axis (0 = X, 1 = Y, 2 = Z).
     #[cfg(feature = "dim3")]
-    pub fn scaled_planar_normal(&self, plane_axis: u8) -> Vector<Real> {
+    pub fn scaled_planar_normal(&self, plane_axis: u8) -> Vector {
         let dir = self.scaled_direction();
         match plane_axis {
             0 => Vector::new(0.0, dir.z, -dir.y),
@@ -381,45 +372,41 @@ impl Segment {
 
     /// In 2D, the normalized counterclockwise normal of this segment.
     #[cfg(feature = "dim2")]
-    pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
-        Unit::try_new(self.scaled_normal(), crate::math::DEFAULT_EPSILON)
+    pub fn normal(&self) -> Option<Vector> {
+        let (dir, length) = self.scaled_normal().normalize_and_length();
+        (length > crate::math::DEFAULT_EPSILON).then_some(dir)
     }
 
     /// Returns `None`. Exists only for API similarity with the 2D parry.
     #[cfg(feature = "dim3")]
-    pub fn normal(&self) -> Option<Unit<Vector<Real>>> {
+    pub fn normal(&self) -> Option<Vector> {
         None
     }
 
     /// The normalized counterclockwise normal of this segment, assuming it lies on the plane
     /// with the normal collinear to the given axis (0 = X, 1 = Y, 2 = Z).
     #[cfg(feature = "dim3")]
-    pub fn planar_normal(&self, plane_axis: u8) -> Option<Unit<Vector<Real>>> {
-        Unit::try_new(
-            self.scaled_planar_normal(plane_axis),
-            crate::math::DEFAULT_EPSILON,
-        )
+    pub fn planar_normal(&self, plane_axis: u8) -> Option<Vector> {
+        self.scaled_planar_normal(plane_axis).try_normalize()
     }
 
     /// Applies the isometry `m` to the vertices of this segment and returns the resulting segment.
-    pub fn transformed(&self, m: &Isometry<Real>) -> Self {
+    pub fn transformed(&self, m: &Pose) -> Self {
         Segment::new(m * self.a, m * self.b)
     }
 
     /// Computes the point at the given location.
-    pub fn point_at(&self, location: &SegmentPointLocation) -> Point<Real> {
+    pub fn point_at(&self, location: &SegmentPointLocation) -> Vector {
         match *location {
             SegmentPointLocation::OnVertex(0) => self.a,
             SegmentPointLocation::OnVertex(1) => self.b,
-            SegmentPointLocation::OnEdge(bcoords) => {
-                self.a * bcoords[0] + self.b.coords * bcoords[1]
-            }
+            SegmentPointLocation::OnEdge(bcoords) => self.a * bcoords[0] + self.b * bcoords[1],
             _ => panic!(),
         }
     }
 
     /// The normal of the given feature of this shape.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Vector> {
         if let Some(direction) = self.direction() {
             match feature {
                 FeatureId::Vertex(id) => {
@@ -431,14 +418,14 @@ impl Segment {
                 }
                 #[cfg(feature = "dim3")]
                 FeatureId::Edge(_) => {
-                    let iamin = direction.iamin();
-                    let mut normal = Vector::zeros();
-                    normal[iamin] = 1.0;
-                    normal -= *direction * direction[iamin];
-                    Some(Unit::new_normalize(normal))
+                    let imin = direction.abs().min_position();
+                    let mut normal = Vector::ZERO;
+                    normal[imin] = 1.0;
+                    normal -= direction * direction[imin];
+                    Some(normal.normalize())
                 }
                 FeatureId::Face(id) => {
-                    let mut dir = Vector::zeros();
+                    let mut dir = Vector::ZERO;
                     if id == 0 {
                         dir[0] = direction[1];
                         dir[1] = -direction[0];
@@ -446,20 +433,20 @@ impl Segment {
                         dir[0] = -direction[1];
                         dir[1] = direction[0];
                     }
-                    Some(Unit::new_unchecked(dir))
+                    Some(dir)
                 }
                 _ => None,
             }
         } else {
-            Some(Vector::y_axis())
+            Some(Vector::Y)
         }
     }
 }
 
 impl SupportMap for Segment {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        if self.a.coords.dot(dir) > self.b.coords.dot(dir) {
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        if self.a.dot(dir) > self.b.dot(dir) {
             self.a
         } else {
             self.b
@@ -467,15 +454,15 @@ impl SupportMap for Segment {
     }
 }
 
-impl From<[Point<Real>; 2]> for Segment {
-    fn from(arr: [Point<Real>; 2]) -> Self {
+impl From<[Vector; 2]> for Segment {
+    fn from(arr: [Vector; 2]) -> Self {
         *Self::from_array(&arr)
     }
 }
 
 /*
 impl ConvexPolyhedron for Segment {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Vector {
         if id.unwrap_vertex() == 0 {
             self.a
         } else {
@@ -484,7 +471,7 @@ impl ConvexPolyhedron for Segment {
     }
 
     #[cfg(feature = "dim3")]
-    fn edge(&self, _: FeatureId) -> (Point<Real>, Point<Real>, FeatureId, FeatureId) {
+    fn edge(&self, _: FeatureId) -> (Vector, Vector, FeatureId, FeatureId) {
         (self.a, self.b, FeatureId::Vertex(0), FeatureId::Vertex(1))
     }
 
@@ -522,8 +509,8 @@ impl ConvexPolyhedron for Segment {
     #[cfg(feature = "dim2")]
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Pose,
+        dir: Vector,
         face: &mut ConvexPolygonalFeature,
     ) {
         let seg_dir = self.scaled_direction();
@@ -539,8 +526,8 @@ impl ConvexPolyhedron for Segment {
     #[cfg(feature = "dim3")]
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        _: &Unit<Vector<Real>>,
+        m: &Pose,
+        _: Vector,
         face: &mut ConvexPolygonalFeature,
     ) {
         face.clear();
@@ -553,17 +540,17 @@ impl ConvexPolyhedron for Segment {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Pose,
+        dir: Vector,
         eps: Real,
         face: &mut ConvexPolygonalFeature,
     ) {
         face.clear();
         let seg = self.transformed(transform);
-        let ceps = ComplexField::sin(eps);
+        let ceps = <Real as ComplexField>::sin(eps);
 
         if let Some(seg_dir) = seg.direction() {
-            let cang = dir.dot(&seg_dir);
+            let cang = dir.dot(seg_dir);
 
             if cang > ceps {
                 face.set_feature_id(FeatureId::Vertex(1));
@@ -591,10 +578,10 @@ impl ConvexPolyhedron for Segment {
         }
     }
 
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    fn support_feature_id_toward(&self, local_dir: Vector) -> FeatureId {
         if let Some(seg_dir) = self.direction() {
-            let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-            let seps = ComplexField::sin(eps);
+            let eps: Real = (f64::consts::PI / 180.0) as Real;
+            let seps = <Real as ComplexField>::sin(eps);
             let dot = seg_dir.dot(local_dir.as_ref());
 
             if dot <= seps {
@@ -630,15 +617,15 @@ mod test {
     #[test]
     fn segment_intersect_zero_length_issue_31() {
         // never intersect each other
-        let ray = Ray::new(Point::origin(), Vector::x());
+        let ray = Ray::new(Vector::ZERO, Vector::X);
         let segment = Segment {
-            a: Point::new(
+            a: Vector::new(
                 10.0,
                 10.0,
                 #[cfg(feature = "dim3")]
                 10.0,
             ),
-            b: Point::new(
+            b: Vector::new(
                 10.0,
                 10.0,
                 #[cfg(feature = "dim3")]
@@ -646,7 +633,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Pose::identity(), &ray, Real::MAX);
         assert_eq!(hit, false);
     }
     #[test]
@@ -654,17 +641,17 @@ mod test {
         let epsilon = 1.1920929e-7;
         // intersect each other
         let ray = Ray::new(
-            Point::new(
+            Vector::new(
                 epsilon * 0.5,
                 0.3,
                 #[cfg(feature = "dim3")]
                 0.0,
             ),
-            -Vector::y(),
+            -Vector::Y,
         );
         let segment = Segment {
-            a: Point::origin(),
-            b: Point::new(
+            a: Vector::ZERO,
+            b: Vector::new(
                 // Theoretically, epsilon would suffice but imprecisions force us to add some more offset.
                 epsilon * 1.01,
                 0.0,
@@ -673,7 +660,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Pose::identity(), &ray, Real::MAX);
         assert_eq!(hit, true);
     }
     #[test]
@@ -681,18 +668,18 @@ mod test {
         let epsilon = 1.1920929e-7;
         // never intersect each other
         let ray = Ray::new(
-            Point::new(
+            Vector::new(
                 // Theoretically, epsilon would suffice  but imprecisions force us to add some more offset.
                 epsilon * 11.0,
                 0.1,
                 #[cfg(feature = "dim3")]
                 0.0,
             ),
-            -Vector::y(),
+            -Vector::Y,
         );
         let segment = Segment {
-            a: Point::origin(),
-            b: Point::new(
+            a: Vector::ZERO,
+            b: Vector::new(
                 epsilon * 0.9,
                 0.0,
                 #[cfg(feature = "dim3")]
@@ -700,7 +687,7 @@ mod test {
             ),
         };
 
-        let hit = segment.intersects_ray(&Isometry::identity(), &ray, Real::MAX);
+        let hit = segment.intersects_ray(&Pose::identity(), &ray, Real::MAX);
         assert_eq!(hit, false);
     }
 }

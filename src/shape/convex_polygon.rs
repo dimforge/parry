@@ -1,8 +1,7 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::{ComplexField, Real, RealField, Vector};
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 use crate::utils;
 use alloc::vec::Vec;
-use na::{self, ComplexField, RealField, Unit};
 
 /// A 2D convex polygon.
 ///
@@ -32,7 +31,7 @@ use na::{self, ComplexField, RealField, Unit};
 /// # Representation
 ///
 /// This structure stores:
-/// - **Points**: The vertices of the polygon in counter-clockwise order
+/// - **Vectors**: The vertices of the polygon in counter-clockwise order
 /// - **Normals**: Unit vectors perpendicular to each edge, pointing outward
 ///
 /// The normals are pre-computed for efficient collision detection algorithms.
@@ -42,13 +41,13 @@ use na::{self, ComplexField, RealField, Unit};
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::ConvexPolygon;
-/// use nalgebra::Point2;
+/// use parry2d::math::Vector;
 ///
 /// // Create a triangle from three vertices (counter-clockwise order)
 /// let vertices = vec![
-///     Point2::origin(),    // bottom-left
-///     Point2::new(2.0, 0.0),    // bottom-right
-///     Point2::new(1.0, 2.0),    // top
+///     Vector::ZERO,    // bottom-left
+///     Vector::new(2.0, 0.0),    // bottom-right
+///     Vector::new(1.0, 2.0),    // top
 /// ];
 ///
 /// let triangle = ConvexPolygon::from_convex_polyline(vertices)
@@ -63,13 +62,12 @@ use na::{self, ComplexField, RealField, Unit};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Clone, Debug)]
 pub struct ConvexPolygon {
-    points: Vec<Point<Real>>,
-    normals: Vec<Unit<Vector<Real>>>,
+    points: Vec<Vector>,
+    normals: Vec<Vector>,
 }
 
 impl ConvexPolygon {
@@ -94,14 +92,14 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Some arbitrary points (including one inside the convex hull)
     /// let points = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(4.0, 0.0),
-    ///     Point2::new(2.0, 3.0),
-    ///     Point2::new(2.0, 1.0),  // This point is inside the triangle
+    ///     Vector::ZERO,
+    ///     Vector::new(4.0, 0.0),
+    ///     Vector::new(2.0, 3.0),
+    ///     Vector::new(2.0, 1.0),  // This point is inside the triangle
     /// ];
     ///
     /// let polygon = ConvexPolygon::from_convex_hull(&points)
@@ -117,17 +115,17 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // A cloud of points that roughly forms a circle
     /// let mut points = Vec::new();
     /// for i in 0..20 {
     ///     let angle = (i as f32) * std::f32::consts::TAU / 20.0;
-    ///     points.push(Point2::new(angle.cos(), angle.sin()));
+    ///     points.push(Vector::new(angle.cos(), angle.sin()));
     /// }
     /// // Add some interior points
-    /// points.push(Point2::origin());
-    /// points.push(Point2::new(0.5, 0.5));
+    /// points.push(Vector::ZERO);
+    /// points.push(Vector::new(0.5, 0.5));
     ///
     /// let polygon = ConvexPolygon::from_convex_hull(&points)
     ///     .expect("Failed to create convex hull");
@@ -136,7 +134,7 @@ impl ConvexPolygon {
     /// assert_eq!(polygon.points().len(), 20);
     /// # }
     /// ```
-    pub fn from_convex_hull(points: &[Point<Real>]) -> Option<Self> {
+    pub fn from_convex_hull(points: &[Vector]) -> Option<Self> {
         let vertices = crate::transformation::convex_hull(points);
         Self::from_convex_polyline(vertices)
     }
@@ -148,7 +146,7 @@ impl ConvexPolygon {
     /// convex hull. The convexity is **not verified** - if you pass non-convex points, the resulting
     /// shape may behave incorrectly in collision detection.
     ///
-    /// **Important**: Points must be ordered **counter-clockwise** (CCW). If you're unsure about the
+    /// **Important**: Vectors must be ordered **counter-clockwise** (CCW). If you're unsure about the
     /// ordering or convexity, use [`from_convex_hull`] instead.
     ///
     /// This method automatically removes collinear vertices (points that lie on the line between
@@ -172,14 +170,14 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // A square with vertices in counter-clockwise order
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),  // bottom-left
-    ///     Point2::new(1.0, 0.0),  // bottom-right
-    ///     Point2::new(1.0, 1.0),  // top-right
-    ///     Point2::new(0.0, 1.0),  // top-left
+    ///     Vector::ZERO,  // bottom-left
+    ///     Vector::new(1.0, 0.0),  // bottom-right
+    ///     Vector::new(1.0, 1.0),  // top-right
+    ///     Vector::new(0.0, 1.0),  // top-left
     /// ]).expect("Failed to create square");
     ///
     /// assert_eq!(square.points().len(), 4);
@@ -191,15 +189,15 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // A quadrilateral with one vertex on an edge (making it collinear)
     /// let polygon = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(2.0, 0.0),
-    ///     Point2::new(2.0, 1.0),   // This point is on the line from (2,0) to (2,2)
-    ///     Point2::new(2.0, 2.0),
-    ///     Point2::new(0.0, 2.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0),
+    ///     Vector::new(2.0, 1.0),   // This point is on the line from (2,0) to (2,2)
+    ///     Vector::new(2.0, 2.0),
+    ///     Vector::new(0.0, 2.0),
     /// ]).expect("Failed to create polygon");
     ///
     /// // The collinear point at (2.0, 1.0) was removed, leaving a rectangle
@@ -209,21 +207,21 @@ impl ConvexPolygon {
     ///
     /// [`from_convex_hull`]: ConvexPolygon::from_convex_hull
     /// [`from_convex_polyline_unmodified`]: ConvexPolygon::from_convex_polyline_unmodified
-    pub fn from_convex_polyline(mut points: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_convex_polyline(mut points: Vec<Vector>) -> Option<Self> {
         if points.is_empty() {
             return None;
         }
-        let eps = ComplexField::sqrt(crate::math::DEFAULT_EPSILON);
+        let eps = <Real as ComplexField>::sqrt(crate::math::DEFAULT_EPSILON);
         let mut normals = Vec::with_capacity(points.len());
         // First, compute all normals.
         for i1 in 0..points.len() {
             let i2 = (i1 + 1) % points.len();
-            normals.push(utils::ccw_face_normal([&points[i1], &points[i2]])?);
+            normals.push(utils::ccw_face_normal([points[i1], points[i2]])?);
         }
 
         let mut nremoved = 0;
         // See if the first vertex must be removed.
-        if normals[0].dot(&*normals[normals.len() - 1]) > 1.0 - eps {
+        if normals[0].dot(normals[normals.len() - 1]) > 1.0 - eps {
             nremoved = 1;
         }
 
@@ -231,7 +229,7 @@ impl ConvexPolygon {
         // of collinearity of adjacent faces.
         for i2 in 1..points.len() {
             let i1 = i2 - 1;
-            if normals[i1].dot(&*normals[i2]) > 1.0 - eps {
+            if normals[i1].dot(normals[i2]) > 1.0 - eps {
                 // Remove
                 nremoved += 1;
             } else {
@@ -258,7 +256,7 @@ impl ConvexPolygon {
     /// from the input even if some are coplanar.
     ///
     /// Returns `None` if `points` doesn’t contain at least three points.
-    pub fn from_convex_polyline_unmodified(points: Vec<Point<Real>>) -> Option<Self> {
+    pub fn from_convex_polyline_unmodified(points: Vec<Vector>) -> Option<Self> {
         if points.len() <= 2 {
             return None;
         }
@@ -266,7 +264,7 @@ impl ConvexPolygon {
         // First, compute all normals.
         for i1 in 0..points.len() {
             let i2 = (i1 + 1) % points.len();
-            normals.push(utils::ccw_face_normal([&points[i1], &points[i2]])?);
+            normals.push(utils::ccw_face_normal([points[i1], points[i2]])?);
         }
 
         Some(ConvexPolygon { points, normals })
@@ -282,21 +280,21 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(0.5, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(0.5, 1.0),
     /// ]).unwrap();
     ///
     /// let vertices = triangle.points();
     /// assert_eq!(vertices.len(), 3);
-    /// assert_eq!(vertices[0], Point2::origin());
+    /// assert_eq!(vertices[0], Vector::ZERO);
     /// # }
     /// ```
     #[inline]
-    pub fn points(&self) -> &[Point<Real>] {
+    pub fn points(&self) -> &[Vector] {
         &self.points
     }
 
@@ -313,14 +311,14 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::{Point2, Vector2};
+    /// use parry2d::math::Vector;
     ///
     /// // Create a square aligned with the axes
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),  // bottom-left
-    ///     Point2::new(1.0, 0.0),  // bottom-right
-    ///     Point2::new(1.0, 1.0),  // top-right
-    ///     Point2::new(0.0, 1.0),  // top-left
+    ///     Vector::ZERO,  // bottom-left
+    ///     Vector::new(1.0, 0.0),  // bottom-right
+    ///     Vector::new(1.0, 1.0),  // top-right
+    ///     Vector::new(0.0, 1.0),  // top-left
     /// ]).unwrap();
     ///
     /// let normals = square.normals();
@@ -333,7 +331,7 @@ impl ConvexPolygon {
     /// # }
     /// ```
     #[inline]
-    pub fn normals(&self) -> &[Unit<Vector<Real>>] {
+    pub fn normals(&self) -> &[Vector] {
         &self.normals
     }
 
@@ -356,21 +354,21 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::{Point2, Vector2};
+    /// use parry2d::math::Vector;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(0.5, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(0.5, 1.0),
     /// ]).unwrap();
     ///
     /// // Scale uniformly by 2x
-    /// let scaled = triangle.scaled(&Vector2::new(2.0, 2.0))
+    /// let scaled = triangle.scaled(Vector::new(2.0, 2.0))
     ///     .expect("Failed to scale");
     ///
     /// // All coordinates are doubled
-    /// assert_eq!(scaled.points()[1], Point2::new(2.0, 0.0));
-    /// assert_eq!(scaled.points()[2], Point2::new(1.0, 2.0));
+    /// assert_eq!(scaled.points()[1], Vector::new(2.0, 0.0));
+    /// assert_eq!(scaled.points()[2], Vector::new(1.0, 2.0));
     /// # }
     /// ```
     ///
@@ -379,29 +377,28 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::{Point2, Vector2};
+    /// use parry2d::math::Vector;
     ///
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(0.0, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(0.0, 1.0),
     /// ]).unwrap();
     ///
     /// // Scale to make it wider (2x) and taller (3x)
-    /// let rectangle = square.scaled(&Vector2::new(2.0, 3.0))
+    /// let rectangle = square.scaled(Vector::new(2.0, 3.0))
     ///     .expect("Failed to scale");
     ///
-    /// assert_eq!(rectangle.points()[2], Point2::new(2.0, 3.0));
+    /// assert_eq!(rectangle.points()[2], Vector::new(2.0, 3.0));
     /// # }
     /// ```
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Option<Self> {
-        self.points
-            .iter_mut()
-            .for_each(|pt| pt.coords.component_mul_assign(scale));
+    pub fn scaled(mut self, scale: Vector) -> Option<Self> {
+        self.points.iter_mut().for_each(|pt| *pt *= scale);
 
         for n in &mut self.normals {
-            *n = Unit::try_new(n.component_mul(scale), 0.0)?;
+            let scaled = *n * scale;
+            *n = scaled.try_normalize()?;
         }
 
         Some(self)
@@ -434,12 +431,12 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// let triangle = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(2.0, 0.0),
-    ///     Point2::new(1.0, 2.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0),
+    ///     Vector::new(1.0, 2.0),
     /// ]).unwrap();
     ///
     /// // Expand the triangle by 0.5 units
@@ -457,13 +454,13 @@ impl ConvexPolygon {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::ConvexPolygon;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// let square = ConvexPolygon::from_convex_polyline(vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(0.0, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(0.0, 1.0),
     /// ]).unwrap();
     ///
     /// // Create a 0.2 unit margin around the square
@@ -491,35 +488,33 @@ impl ConvexPolygon {
                 i2 - 1
             };
             let normal_a = normals[i1];
-            let direction = normal_a.into_inner() + normals[i2].into_inner();
-            points.push(self.points[i2] + (amount / direction.dot(&normal_a)) * direction);
+            let direction = normal_a + normals[i2];
+            points.push(self.points[i2] + (amount / direction.dot(normal_a)) * direction);
         }
 
         ConvexPolygon { points, normals }
     }
 
     /// Get the ID of the feature with a normal that maximizes the dot product with `local_dir`.
-    pub fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
+    pub fn support_feature_id_toward(&self, local_dir: Vector) -> FeatureId {
         let eps: Real = Real::pi() / 180.0;
-        let ceps = ComplexField::cos(eps);
+        let ceps = <Real as ComplexField>::cos(eps);
 
         // Check faces.
         for i in 0..self.normals.len() {
             let normal = &self.normals[i];
 
-            if normal.dot(local_dir.as_ref()) >= ceps {
+            if normal.dot(local_dir) >= ceps {
                 return FeatureId::Face(i as u32);
             }
         }
 
         // Support vertex.
-        FeatureId::Vertex(
-            utils::point_cloud_support_point_id(local_dir.as_ref(), &self.points) as u32,
-        )
+        FeatureId::Vertex(utils::point_cloud_support_point_id(local_dir, &self.points) as u32)
     }
 
     /// The normal of the given feature.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Unit<Vector<Real>>> {
+    pub fn feature_normal(&self, feature: FeatureId) -> Option<Vector> {
         match feature {
             FeatureId::Face(id) => Some(self.normals[id as usize]),
             FeatureId::Vertex(id2) => {
@@ -528,9 +523,8 @@ impl ConvexPolygon {
                 } else {
                     id2 as usize - 1
                 };
-                Some(Unit::new_normalize(
-                    *self.normals[id1] + *self.normals[id2 as usize],
-                ))
+                let sum = self.normals[id1] + self.normals[id2 as usize];
+                sum.try_normalize()
             }
             _ => None,
         }
@@ -539,14 +533,14 @@ impl ConvexPolygon {
 
 impl SupportMap for ConvexPolygon {
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
+    fn local_support_point(&self, dir: Vector) -> Vector {
         utils::point_cloud_support_point(dir, self.points())
     }
 }
 
 impl PolygonalFeatureMap for ConvexPolygon {
-    fn local_support_feature(&self, dir: &Unit<Vector<Real>>, out_feature: &mut PolygonalFeature) {
-        let cuboid = crate::shape::Cuboid::new(self.points[2].coords);
+    fn local_support_feature(&self, dir: Vector, out_feature: &mut PolygonalFeature) {
+        let cuboid = crate::shape::Cuboid::new(self.points[2]);
         cuboid.local_support_feature(dir, out_feature);
         let mut best_face = 0;
         let mut max_dot = self.normals[0].dot(dir);
@@ -573,7 +567,7 @@ impl PolygonalFeatureMap for ConvexPolygon {
 
 /*
 impl ConvexPolyhedron for ConvexPolygon {
-    fn vertex(&self, id: FeatureId) -> Point<Real> {
+    fn vertex(&self, id: FeatureId) -> Vector {
         self.points[id.unwrap_vertex() as usize]
     }
 
@@ -593,16 +587,16 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_face_toward(
         &self,
-        m: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        m: &Pose,
+        dir: Vector,
         out: &mut ConvexPolygonalFeature,
     ) {
         let ls_dir = m.inverse_transform_vector(dir);
         let mut best_face = 0;
-        let mut max_dot = self.normals[0].dot(&ls_dir);
+        let mut max_dot = self.normals[0].dot(ls_dir);
 
         for i in 1..self.points.len() {
-            let dot = self.normals[i].dot(&ls_dir);
+            let dot = self.normals[i].dot(ls_dir);
 
             if dot > max_dot {
                 max_dot = dot;
@@ -616,8 +610,8 @@ impl ConvexPolyhedron for ConvexPolygon {
 
     fn support_feature_toward(
         &self,
-        transform: &Isometry<Real>,
-        dir: &Unit<Vector<Real>>,
+        transform: &Pose,
+        dir: Vector,
         _angle: Real,
         out: &mut ConvexPolygonalFeature,
     ) {
@@ -626,9 +620,9 @@ impl ConvexPolyhedron for ConvexPolygon {
         self.support_face_toward(transform, dir, out)
     }
 
-    fn support_feature_id_toward(&self, local_dir: &Unit<Vector<Real>>) -> FeatureId {
-        let eps: Real = na::convert::<f64, Real>(f64::consts::PI / 180.0);
-        let ceps = ComplexField::cos(eps);
+    fn support_feature_id_toward(&self, local_dir: Vector) -> FeatureId {
+        let eps: Real = (f64::consts::PI / 180.0) as Real;
+        let ceps = <Real as ComplexField>::cos(eps);
 
         // Check faces.
         for i in 0..self.normals.len() {
@@ -655,17 +649,17 @@ mod tests {
     #[test]
     fn test_dilation() {
         let polygon = ConvexPolygon::from_convex_polyline(vec![
-            Point::new(1., 0.),
-            Point::new(-1., 0.),
-            Point::new(0., -1.),
+            Vector::new(1., 0.),
+            Vector::new(-1., 0.),
+            Vector::new(0., -1.),
         ])
         .unwrap();
 
         let offsetted = polygon.offsetted(0.5);
         let expected = vec![
-            Point::new(2.207, 0.5),
-            Point::new(-2.207, 0.5),
-            Point::new(0., -1.707),
+            Vector::new(2.207, 0.5),
+            Vector::new(-2.207, 0.5),
+            Vector::new(0., -1.707),
         ];
 
         assert_eq!(offsetted.points().len(), 3);
@@ -673,6 +667,6 @@ mod tests {
             .points()
             .iter()
             .zip(expected.iter())
-            .all(|(a, b)| (a.coords - b.coords).magnitude() < 0.001));
+            .all(|(a, b)| (a - b).length() < 0.001));
     }
 }

@@ -1,7 +1,5 @@
-use crate::math::{Isometry, Real, Vector, DIM};
+use crate::math::{Pose, Real, Vector, VectorExt, DIM};
 use crate::shape::{Cuboid, SupportMap};
-
-use na::Unit;
 
 /// Computes the separation distance between a cuboid and a convex support map shape along a given axis.
 ///
@@ -22,7 +20,7 @@ use na::Unit;
 /// - `Real`: The separation distance along the better of the two axis directions
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Unit<Vector<Real>>`: The axis direction (either `axis1` or `-axis1`) that gives this separation
+/// - `Vector`: The axis direction (either `axis1` or `-axis1`) that gives this separation
 ///
 /// # Why Test Both Directions?
 ///
@@ -39,21 +37,21 @@ use na::Unit;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Ball};
 /// use parry3d::query::sat::cuboid_support_map_compute_separation_wrt_local_line;
-/// use nalgebra::{Isometry3, Vector3, Unit};
+/// use parry3d::math::{Pose, Vector};
 ///
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::splat(1.0));
 /// let sphere = Ball::new(0.5);
 ///
 /// // Position sphere near the cube
-/// let pos12 = Isometry3::translation(2.0, 0.0, 0.0);
+/// let pos12 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// // Test separation along an arbitrary axis
-/// let axis = Unit::new_normalize(Vector3::new(1.0, 1.0, 0.0));
+/// let axis = Vector::new(1.0, 1.0, 0.0).normalize();
 /// let (separation, chosen_axis) = cuboid_support_map_compute_separation_wrt_local_line(
 ///     &cube,
 ///     &sphere,
 ///     &pos12,
-///     &axis
+///     axis
 /// );
 ///
 /// println!("Separation: {} along axis: {:?}", separation, chosen_axis);
@@ -69,30 +67,30 @@ use na::Unit;
 pub fn cuboid_support_map_compute_separation_wrt_local_line(
     cube1: &Cuboid,
     shape2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-    axis1: &Unit<Vector<Real>>,
-) -> (Real, Unit<Vector<Real>>) {
-    let axis1_2 = pos12.inverse_transform_unit_vector(axis1);
+    pos12: &Pose,
+    axis1: Vector,
+) -> (Real, Vector) {
+    let axis1_2 = pos12.rotation.inverse() * axis1;
     let separation1 = {
         let axis2 = -axis1_2;
         let local_pt1 = cube1.local_support_point_toward(axis1);
-        let local_pt2 = shape2.local_support_point_toward(&axis2);
+        let local_pt2 = shape2.local_support_point_toward(axis2);
         let pt2 = pos12 * local_pt2;
         (pt2 - local_pt1).dot(axis1)
     };
 
     let separation2 = {
         let axis2 = axis1_2;
-        let local_pt1 = cube1.local_support_point_toward(&-*axis1);
-        let local_pt2 = shape2.local_support_point_toward(&axis2);
+        let local_pt1 = cube1.local_support_point_toward(-axis1);
+        let local_pt2 = shape2.local_support_point_toward(axis2);
         let pt2 = pos12 * local_pt2;
-        (pt2 - local_pt1).dot(&-*axis1)
+        (pt2 - local_pt1).dot(-axis1)
     };
 
     if separation1 > separation2 {
-        (separation1, *axis1)
+        (separation1, axis1)
     } else {
-        (separation2, -*axis1)
+        (separation2, -axis1)
     }
 }
 
@@ -115,7 +113,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// - `Real`: The maximum separation found across all tested axes
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping (minimum penetration)
-/// - `Vector<Real>`: The axis direction that gives this separation (normalized)
+/// - `Vector`: The axis direction that gives this separation (normalized)
 ///
 /// # Why Precomputed Axes?
 ///
@@ -132,20 +130,20 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Capsule};
 /// use parry3d::query::sat::cuboid_support_map_find_local_separating_edge_twoway;
-/// use nalgebra::{Isometry3, Vector3, Point3};
+/// use parry3d::math::{Pose, Vector};
 ///
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// let capsule = Capsule::new(Point3::new(0.0, -1.0, 0.0), Point3::new(0.0, 1.0, 0.0), 0.5);
+/// let cube = Cuboid::new(Vector::splat(1.0));
+/// let capsule = Capsule::new(Vector::new(0.0, -1.0, 0.0), Vector::new(0.0, 1.0, 0.0), 0.5);
 ///
 /// // Position capsule near the cube
-/// let pos12 = Isometry3::translation(2.0, 0.0, 0.0);
+/// let pos12 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// // Compute edge cross products
-/// let capsule_dir = Vector3::y(); // capsule's axis direction
+/// let capsule_dir = Vector::Y; // capsule's axis direction
 /// let axes = [
-///     Vector3::x().cross(&capsule_dir), // cube X × capsule axis
-///     Vector3::y().cross(&capsule_dir), // cube Y × capsule axis
-///     Vector3::z().cross(&capsule_dir), // cube Z × capsule axis
+///     Vector::X.cross(capsule_dir), // cube X × capsule axis
+///     Vector::Y.cross(capsule_dir), // cube Y × capsule axis
+///     Vector::Z.cross(capsule_dir), // cube Z × capsule axis
 /// ];
 ///
 /// let (separation, axis) = cuboid_support_map_find_local_separating_edge_twoway(
@@ -155,7 +153,7 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 ///     &pos12
 /// );
 ///
-/// println!("Best edge-edge separation: {} along {}", separation, axis);
+/// println!("Best edge-edge separation: {} along {:?}", separation, axis);
 /// # }
 /// ```
 ///
@@ -169,21 +167,20 @@ pub fn cuboid_support_map_compute_separation_wrt_local_line(
 pub fn cuboid_support_map_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     shape2: &impl SupportMap,
-    axes: &[Vector<Real>],
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
-    use approx::AbsDiffEq;
+    axes: &[Vector],
+    pos12: &Pose,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
-    let mut best_dir = Vector::zeros();
+    let mut best_dir = Vector::ZERO;
 
     for axis1 in axes {
-        if let Some(axis1) = Unit::try_new(*axis1, Real::default_epsilon()) {
+        if let Some(axis1) = (*axis1).try_normalize() {
             let (separation, axis1) =
-                cuboid_support_map_compute_separation_wrt_local_line(cube1, shape2, pos12, &axis1);
+                cuboid_support_map_compute_separation_wrt_local_line(cube1, shape2, pos12, axis1);
 
             if separation > best_separation {
                 best_separation = separation;
-                best_dir = *axis1;
+                best_dir = axis1;
             }
         }
     }
@@ -208,7 +205,7 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 /// - `Real`: The maximum separation found among the cuboid's face normals
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The face normal direction that gives this separation
+/// - `Vector`: The face normal direction that gives this separation
 ///
 /// # Usage in Complete SAT
 ///
@@ -225,13 +222,13 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{Cuboid, Ball};
 /// use parry2d::query::sat::cuboid_support_map_find_local_separating_normal_oneway;
-/// use nalgebra::{Isometry2, Vector2};
+/// use parry2d::math::{Pose, Vector};
 ///
-/// let cube = Cuboid::new(Vector2::new(1.0, 1.0));
+/// let cube = Cuboid::new(Vector::new(1.0, 1.0));
 /// let sphere = Ball::new(0.5);
 ///
 /// // Position sphere to the right of the cube
-/// let pos12 = Isometry2::translation(2.0, 0.0);
+/// let pos12 = Pose::translation(2.0, 0.0);
 ///
 /// let (separation, normal) = cuboid_support_map_find_local_separating_normal_oneway(
 ///     &cube,
@@ -255,15 +252,15 @@ pub fn cuboid_support_map_find_local_separating_edge_twoway(
 pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
     cube1: &Cuboid,
     shape2: &S,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     let mut best_separation = -Real::MAX;
-    let mut best_dir = Vector::zeros();
+    let mut best_dir = Vector::ZERO;
 
     for i in 0..DIM {
         for sign in &[-1.0, 1.0] {
             let axis1 = Vector::ith(i, *sign);
-            let pt2 = shape2.support_point_toward(pos12, &Unit::new_unchecked(-axis1));
+            let pt2 = shape2.support_point_toward(pos12, -axis1);
             let separation = pt2[i] * *sign - cube1.half_extents[i];
 
             if separation > best_separation {

@@ -1,13 +1,13 @@
-use na::Point3;
-use parry3d::query::gjk::{CSOPoint, VoronoiSimplex};
+use parry3d::math::Vec3;
+use parry3d::query::gjk::{CsoPoint, VoronoiSimplex};
 use test::Bencher;
 
 #[bench]
 fn bench_johnson_simplex(bh: &mut Bencher) {
-    let a = CSOPoint::single_point(Point3::new(-0.5f32, -0.5, -0.5));
-    let b = CSOPoint::single_point(Point3::new(0.0, 0.5, 0.0));
-    let c = CSOPoint::single_point(Point3::new(0.5, -0.5, -0.5));
-    let d = CSOPoint::single_point(Point3::new(0.0, -0.5, -0.5));
+    let a = CsoPoint::single_point(Vec3::new(-0.5f32, -0.5, -0.5));
+    let b = CsoPoint::single_point(Vec3::new(0.0, 0.5, 0.0));
+    let c = CsoPoint::single_point(Vec3::new(0.5, -0.5, -0.5));
+    let d = CsoPoint::single_point(Vec3::new(0.0, -0.5, -0.5));
 
     bh.iter(|| {
         let mut spl = VoronoiSimplex::new();
@@ -24,10 +24,10 @@ fn bench_johnson_simplex(bh: &mut Bencher) {
 
 #[bench]
 fn bench_johnson_simplex_tls(bh: &mut Bencher) {
-    let a = CSOPoint::single_point(Point3::new(-0.5f32, -0.5, -0.5));
-    let b = CSOPoint::single_point(Point3::new(0.0, 0.5, 0.0));
-    let c = CSOPoint::single_point(Point3::new(0.5, -0.5, -0.5));
-    let d = CSOPoint::single_point(Point3::new(0.0, -0.5, -0.5));
+    let a = CsoPoint::single_point(Vec3::new(-0.5f32, -0.5, -0.5));
+    let b = CsoPoint::single_point(Vec3::new(0.0, 0.5, 0.0));
+    let c = CsoPoint::single_point(Vec3::new(0.5, -0.5, -0.5));
+    let d = CsoPoint::single_point(Vec3::new(0.0, -0.5, -0.5));
 
     bh.iter(|| {
         let mut spl = VoronoiSimplex::new();

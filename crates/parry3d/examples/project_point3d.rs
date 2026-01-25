@@ -1,43 +1,37 @@
-use macroquad::prelude::*;
-use nalgebra::Vector3;
+mod utils3d;
+
+use kiss3d::prelude::*;
 use parry3d::query::PointQuery;
 use parry3d::shape::{Cuboid, TriMesh, TriMeshFlags};
+use utils3d::{create_mesh_from_trimesh, lissajous_3d};
 
-mod common_macroquad3d;
-use common_macroquad3d::*;
-
-#[macroquad::main("project_point3d")]
+#[kiss3d::main]
 async fn main() {
-    let trimesh = Cuboid::new(Vector3::new(0.2, 0.5, 1.0)).to_trimesh();
+    let mut window = Window::new("project_point3d").await;
+    let mut scene = SceneNode3d::empty();
+    scene
+        .add_light(Light::point(100.0))
+        .set_position(Vec3::new(1.0, 3.0, 3.0));
 
-    let mesh = mquad_mesh_from_points(
-        &trimesh,
-        Vec3::new(1f32, 3f32, 3f32),
-        Color::from_rgba(200, 200, 200, 150),
-    );
-    let (points, indices) = trimesh;
-    let trimesh = TriMesh::with_flags(points, indices, TriMeshFlags::ORIENTED).unwrap();
-    for _i in 1.. {
-        clear_background(BLACK);
+    let (points, indices) = Cuboid::new(Vec3::new(0.2, 0.5, 1.0)).to_trimesh();
+    let trimesh =
+        TriMesh::with_flags(points.clone(), indices.clone(), TriMeshFlags::ORIENTED).unwrap();
 
-        let elapsed_time = get_time() as f32;
+    // Add the mesh to the scene
+    let mesh = create_mesh_from_trimesh(points, indices);
+    scene
+        .add_mesh(mesh, Vec3::splat(1.0))
+        .set_color(Color::new(0.8, 0.8, 0.8, 0.6));
+
+    let start_time = web_time::Instant::now();
+    let mut camera = OrbitCamera3d::new(Vec3::new(3.0, 1.0, 3.0), Vec3::ZERO);
+
+    while window.render_3d(&mut scene, &mut camera).await {
+        let elapsed_time = start_time.elapsed().as_secs_f32();
         let slow_elapsed_time = elapsed_time / 3.0;
 
         let point_to_project = lissajous_3d(slow_elapsed_time);
-        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
-
-        let slow_elapsed_time = slow_elapsed_time * 0.7;
-        // Setup 3D camera.
-        set_camera(&Camera3D {
-            position: Vec3::new(
-                slow_elapsed_time.sin() * 3.0,
-                slow_elapsed_time.sin(),
-                slow_elapsed_time.cos() * 3.0,
-            ),
-            up: Vec3::Y,
-            target: Vec3::ZERO,
-            ..Default::default()
-        });
+        let projected_point = trimesh.project_local_point(point_to_project, true);
 
         /*
          *
@@ -50,37 +44,18 @@ async fn main() {
             YELLOW
         };
 
-        draw_line_3d(
-            point_to_project,
-            mquad_from_na(projected_point.point),
-            color,
-        );
-        draw_sphere(point_to_project, 0.1, None, color);
-
-        draw_line_3d(
-            point_to_project,
-            mquad_from_na(projected_point.point),
-            color,
-        );
+        window.draw_line(point_to_project, projected_point.point, color, 2.0, false);
+        window.draw_point(point_to_project, color, 10.0);
 
         // fixed point inside the shape
         let point_to_project = Vec3::ZERO;
-        let projected_point = trimesh.project_local_point(&na_from_mquad(point_to_project), true);
+        let projected_point = trimesh.project_local_point(point_to_project, true);
         let color = if projected_point.is_inside {
             RED
         } else {
             YELLOW
         };
-        draw_sphere(point_to_project, 0.1, None, color);
-
-        draw_line_3d(
-            point_to_project,
-            mquad_from_na(projected_point.point),
-            color,
-        );
-        // Mesh is rendered in the back, so we can see the other graphics elements
-        draw_mesh(&mesh);
-
-        next_frame().await
+        window.draw_point(point_to_project, color, 10.0);
+        window.draw_line(point_to_project, projected_point.point, color, 2.0, false);
     }
 }

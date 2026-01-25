@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::query::{ClosestPoints, DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
@@ -61,14 +61,14 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Position balls 5 units apart
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(5.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(5.0, 0.0, 0.0);
 ///
 /// // Find closest points (unlimited distance)
 /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, f32::MAX).unwrap();
@@ -76,7 +76,7 @@ use crate::shape::Shape;
 /// if let ClosestPoints::WithinMargin(pt1, pt2) = result {
 ///     // pt1 is at (1.0, 0.0, 0.0) - surface of ball1
 ///     // pt2 is at (4.0, 0.0, 0.0) - surface of ball2
-///     let distance = (pt2 - pt1).norm();
+///     let distance = (pt2 - pt1).length();
 ///     assert!((distance - 3.0).abs() < 1e-5); // 5.0 - 1.0 - 1.0 = 3.0
 /// }
 /// # }
@@ -88,13 +88,13 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(10.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(10.0, 0.0, 0.0);
 ///
 /// // Only search within 5.0 units
 /// let result = closest_points(&pos1, &ball1, &pos2, &ball2, 5.0).unwrap();
@@ -114,14 +114,14 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Cuboid;
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
-/// let box1 = Cuboid::new(Vector3::new(2.0, 2.0, 2.0));
-/// let box2 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let box1 = Cuboid::new(Vector::new(2.0, 2.0, 2.0));
+/// let box2 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 ///
 /// // Position boxes so they overlap
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(2.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// let result = closest_points(&pos1, &box1, &pos2, &box2, 10.0).unwrap();
 ///
@@ -136,7 +136,7 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// // Enemy detection radius
 /// let detection_radius = 15.0;
@@ -144,8 +144,8 @@ use crate::shape::Shape;
 /// let player = Ball::new(0.5);
 /// let enemy = Ball::new(0.5);
 ///
-/// let player_pos = Isometry3::translation(0.0, 0.0, 0.0);
-/// let enemy_pos = Isometry3::translation(12.0, 0.0, 0.0);
+/// let player_pos = Pose::translation(0.0, 0.0, 0.0);
+/// let enemy_pos = Pose::translation(12.0, 0.0, 0.0);
 ///
 /// let result = closest_points(
 ///     &player_pos,
@@ -177,13 +177,13 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{closest_points, ClosestPoints};
 /// use parry3d::shape::{Ball, Cuboid};
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball = Ball::new(2.0);
-/// let cuboid = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cuboid = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 ///
-/// let pos_ball = Isometry3::translation(5.0, 0.0, 0.0);
-/// let pos_cuboid = Isometry3::translation(0.0, 0.0, 0.0);
+/// let pos_ball = Pose::translation(5.0, 0.0, 0.0);
+/// let pos_cuboid = Pose::translation(0.0, 0.0, 0.0);
 ///
 /// let result = closest_points(&pos_ball, &ball, &pos_cuboid, &cuboid, 10.0).unwrap();
 ///
@@ -194,7 +194,7 @@ use crate::shape::Shape;
 ///     println!("Closest point on cuboid: {:?}", pt_cuboid);
 ///
 ///     // Verify distance
-///     let separation = (pt_ball - pt_cuboid).norm();
+///     let separation = (pt_ball - pt_cuboid).length();
 ///     println!("Separation distance: {}", separation);
 /// }
 /// # }
@@ -206,7 +206,7 @@ use crate::shape::Shape;
 ///
 /// | Query | Returns | Use When |
 /// |-------|---------|----------|
-/// | `closest_points` | Point locations | You need exact surface points |
+/// | `closest_points` | Vector locations | You need exact surface points |
 /// | [`distance`](crate::query::distance::distance()) | Distance value | You only need the distance |
 /// | [`contact`](crate::query::contact::contact()) | Contact info | Shapes are touching/penetrating |
 /// | [`intersection_test`](crate::query::intersection_test::intersection_test()) | Boolean | You only need yes/no overlap |
@@ -218,9 +218,9 @@ use crate::shape::Shape;
 /// - [`contact`](crate::query::contact::contact()) - For penetration depth and contact normals
 /// - [`intersection_test`](crate::query::intersection_test::intersection_test()) - For boolean overlap test
 pub fn closest_points(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     g2: &dyn Shape,
     max_dist: Real,
 ) -> Result<ClosestPoints, Unsupported> {

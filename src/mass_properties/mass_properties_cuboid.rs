@@ -1,10 +1,10 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, PrincipalAngularInertia, Real, Vector};
+use crate::math::{PrincipalAngularInertia, Real, Vector};
 
 impl MassProperties {
     pub(crate) fn cuboid_volume_unit_inertia(
-        half_extents: Vector<Real>,
-    ) -> (Real, PrincipalAngularInertia<Real>) {
+        half_extents: Vector,
+    ) -> (Real, PrincipalAngularInertia) {
         #[cfg(feature = "dim2")]
         {
             let volume = half_extents.x * half_extents.y * 4.0;
@@ -37,8 +37,8 @@ impl MassProperties {
     ///   - In 3D: units are typically kg/m³ (e.g., wood = 500-900, concrete = 2400)
     ///   - In 2D: units are typically kg/m² (mass per unit area)
     /// * `half_extents` - Half the size along each axis (center to face distance).
-    ///   - In 3D: `Vector3::new(hx, hy, hz)` creates a box with dimensions 2hx × 2hy × 2hz
-    ///   - In 2D: `Vector2::new(hx, hy)` creates a rectangle with dimensions 2hx × 2hy
+    ///   - In 3D: `Vector::new(hx, hy, hz)` creates a box with dimensions 2hx × 2hy × 2hz
+    ///   - In 2D: `Vector::new(hx, hy)` creates a rectangle with dimensions 2hx × 2hy
     ///
     /// # Returns
     ///
@@ -60,11 +60,11 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
     /// // Create a wooden crate: 2m × 1m × 1m (half_extents = 1.0, 0.5, 0.5)
     /// // Wood density: approximately 600 kg/m³
-    /// let half_extents = Vector3::new(1.0, 0.5, 0.5);
+    /// let half_extents = Vector::new(1.0, 0.5, 0.5);
     /// let density = 600.0;
     /// let crate_props = MassProperties::from_cuboid(density, half_extents);
     ///
@@ -80,7 +80,7 @@ impl MassProperties {
     /// println!("Inertia around z-axis: {:.2}", inertia.z); // Higher
     ///
     /// // Center of mass is at the origin
-    /// assert_eq!(crate_props.local_com, Point3::origin());
+    /// assert_eq!(crate_props.local_com, Vector::ZERO);
     /// # }
     /// ```
     ///
@@ -89,10 +89,10 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a 1m × 1m × 1m cube (half_extents = 0.5 on all axes)
-    /// let half_extents = Vector3::new(0.5, 0.5, 0.5);
+    /// let half_extents = Vector::new(0.5, 0.5, 0.5);
     /// let density = 1000.0; // Water density
     /// let cube_props = MassProperties::from_cuboid(density, half_extents);
     ///
@@ -111,10 +111,10 @@ impl MassProperties {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
-    /// use nalgebra::Vector2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a 4m × 2m rectangular platform (half_extents = 2.0, 1.0)
-    /// let half_extents = Vector2::new(2.0, 1.0);
+    /// let half_extents = Vector::new(2.0, 1.0);
     /// let density = 500.0; // kg/m²
     /// let platform_props = MassProperties::from_cuboid(density, half_extents);
     ///
@@ -139,7 +139,7 @@ impl MassProperties {
     /// # Common Mistakes
     ///
     /// - **Wrong dimensions**: Remember that `half_extents` are HALF the total size.
-    ///   For a 2m × 2m × 2m box, use `Vector3::new(1.0, 1.0, 1.0)`, not `(2.0, 2.0, 2.0)`
+    ///   For a 2m × 2m × 2m box, use `Vector::new(1.0, 1.0, 1.0)`, not `(2.0, 2.0, 2.0)`
     /// - **Unit confusion**: Ensure density units match your distance units
     ///   (kg/m³ with meters, kg/cm³ with centimeters, etc.)
     ///
@@ -147,9 +147,9 @@ impl MassProperties {
     ///
     /// This is a very fast computation (constant time). Cuboids are the second simplest
     /// shape after balls and are highly efficient for collision detection.
-    pub fn from_cuboid(density: Real, half_extents: Vector<Real>) -> Self {
+    pub fn from_cuboid(density: Real, half_extents: Vector) -> Self {
         let (vol, unit_i) = Self::cuboid_volume_unit_inertia(half_extents);
         let mass = vol * density;
-        Self::new(Point::origin(), mass, unit_i * mass)
+        Self::new(Vector::ZERO, mass, unit_i * mass)
     }
 }

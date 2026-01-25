@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::partitioning::Bvh;
 use crate::query::details::NormalConstraints;
 use crate::shape::Shape;
@@ -27,7 +27,7 @@ pub trait CompositeShape {
     fn map_part_at(
         &self,
         shape_id: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>),
     );
 
     /// Gets the acceleration structure of the composite shape.
@@ -42,11 +42,7 @@ pub trait TypedCompositeShape: CompositeShape {
     fn map_typed_part_at<T>(
         &self,
         shape_id: u32,
-        f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ) -> T,
+        f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
     ) -> Option<T>;
 
     // TODO: we need this method because the compiler won't want
@@ -55,7 +51,7 @@ pub trait TypedCompositeShape: CompositeShape {
     fn map_untyped_part_at<T>(
         &self,
         shape_id: u32,
-        f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+        f: impl FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T>;
 }
 
@@ -67,11 +63,7 @@ impl TypedCompositeShape for dyn CompositeShape + '_ {
     fn map_typed_part_at<T>(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ) -> T,
+        mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
     ) -> Option<T> {
         let mut result = None;
         self.map_part_at(shape_id, &mut |pose, part, normals| {
@@ -83,7 +75,7 @@ impl TypedCompositeShape for dyn CompositeShape + '_ {
     fn map_untyped_part_at<T>(
         &self,
         shape_id: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+        mut f: impl FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T> {
         let mut result = None;
         self.map_part_at(shape_id, &mut |pose, part, normals| {

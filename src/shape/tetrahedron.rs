@@ -1,16 +1,15 @@
 //! Definition of the tetrahedron shape.
 
-use crate::math::{Matrix, Point, Real};
+use crate::math::{MatExt, Matrix, Real, Vector};
 use crate::shape::{Segment, Triangle};
 use crate::utils;
 use core::mem;
-use na::Matrix3;
+
+#[cfg(feature = "dim3")]
+use crate::math::CrossMatrix; // Mat3 for glam
 
 #[cfg(all(feature = "dim2", not(feature = "std")))]
-use na::ComplexField; // for .abs()
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
+use crate::math::ComplexField; // for .abs()
 
 /// A tetrahedron with 4 vertices.
 ///
@@ -43,14 +42,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Tetrahedron;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// // Create a tetrahedron with vertices at unit positions
 /// let tetra = Tetrahedron::new(
-///     Point::new(0.0, 0.0, 0.0),  // vertex a
-///     Point::new(1.0, 0.0, 0.0),  // vertex b
-///     Point::new(0.0, 1.0, 0.0),  // vertex c
-///     Point::new(0.0, 0.0, 1.0),  // vertex d
+///     Vector::new(0.0, 0.0, 0.0),  // vertex a
+///     Vector::new(1.0, 0.0, 0.0),  // vertex b
+///     Vector::new(0.0, 1.0, 0.0),  // vertex c
+///     Vector::new(0.0, 0.0, 1.0),  // vertex d
 /// );
 ///
 /// println!("First vertex: {:?}", tetra.a);
@@ -62,14 +61,14 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Tetrahedron;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// // Create a regular tetrahedron
 /// let tetra = Tetrahedron::new(
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.5, 0.866, 0.0),
-///     Point::new(0.5, 0.433, 0.816),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.5, 0.866, 0.0),
+///     Vector::new(0.5, 0.433, 0.816),
 /// );
 ///
 /// let volume = tetra.volume();
@@ -83,13 +82,13 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Tetrahedron;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// let tetra = Tetrahedron::new(
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.0, 1.0, 0.0),
-///     Point::new(0.0, 0.0, 1.0),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// );
 ///
 /// // Get the first face (triangle ABC)
@@ -105,20 +104,19 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub struct Tetrahedron {
     /// The tetrahedron's first vertex.
-    pub a: Point<Real>,
+    pub a: Vector,
     /// The tetrahedron's second vertex.
-    pub b: Point<Real>,
+    pub b: Vector,
     /// The tetrahedron's third vertex.
-    pub c: Point<Real>,
+    pub c: Vector,
     /// The tetrahedron's fourth vertex.
-    pub d: Point<Real>,
+    pub d: Vector,
 }
 
 /// Logical description of the location of a point on a tetrahedron.
@@ -129,23 +127,23 @@ pub struct Tetrahedron {
 ///
 /// # Variants
 ///
-/// - `OnVertex`: Point is at one of the four vertices (0=a, 1=b, 2=c, 3=d)
-/// - `OnEdge`: Point lies on one of the six edges with barycentric coordinates
-/// - `OnFace`: Point lies on one of the four triangular faces with barycentric coordinates
-/// - `OnSolid`: Point is inside the tetrahedron volume
+/// - `OnVertex`: Vector is at one of the four vertices (0=a, 1=b, 2=c, 3=d)
+/// - `OnEdge`: Vector lies on one of the six edges with barycentric coordinates
+/// - `OnFace`: Vector lies on one of the four triangular faces with barycentric coordinates
+/// - `OnSolid`: Vector is inside the tetrahedron volume
 ///
 /// # Examples
 ///
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Tetrahedron, TetrahedronPointLocation};
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 ///
 /// let tetra = Tetrahedron::new(
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.0, 1.0, 0.0),
-///     Point::new(0.0, 0.0, 1.0),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// );
 ///
 /// // Check location of vertex
@@ -312,21 +310,21 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a simple tetrahedron
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// assert!(tetra.volume() > 0.0);
     /// # }
     /// ```
     #[inline]
-    pub fn new(a: Point<Real>, b: Point<Real>, c: Point<Real>, d: Point<Real>) -> Tetrahedron {
+    pub fn new(a: Vector, b: Vector, c: Vector, d: Vector) -> Tetrahedron {
         Tetrahedron { a, b, c, d }
     }
 
@@ -340,13 +338,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let points = [
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// ];
     ///
     /// let tetra = Tetrahedron::from_array(&points);
@@ -354,7 +352,7 @@ impl Tetrahedron {
     /// assert_eq!(tetra.b, points[1]);
     /// # }
     /// ```
-    pub fn from_array(arr: &[Point<Real>; 4]) -> &Tetrahedron {
+    pub fn from_array(arr: &[Vector; 4]) -> &Tetrahedron {
         unsafe { mem::transmute(arr) }
     }
 
@@ -375,13 +373,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// // Get the first face (triangle ABC)
@@ -465,13 +463,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// // Get edge 0 (segment AB)
@@ -561,34 +559,34 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
-    /// // Point at vertex a
-    /// let bcoords = tetra.barycentric_coordinates(&tetra.a).unwrap();
+    /// // Vector at vertex a
+    /// let bcoords = tetra.barycentric_coordinates(tetra.a).unwrap();
     /// assert!((bcoords[0] - 1.0).abs() < 1e-6);
     /// assert!(bcoords[1].abs() < 1e-6);
     ///
-    /// // Point at center
+    /// // Vector at center
     /// let center = tetra.center();
-    /// let bcoords = tetra.barycentric_coordinates(&center).unwrap();
+    /// let bcoords = tetra.barycentric_coordinates(center).unwrap();
     /// // All coordinates should be approximately 0.25
     /// for coord in &bcoords {
     ///     assert!((coord - 0.25).abs() < 1e-6);
     /// }
     /// # }
     /// ```
-    pub fn barycentric_coordinates(&self, p: &Point<Real>) -> Option<[Real; 4]> {
+    pub fn barycentric_coordinates(&self, p: Vector) -> Option<[Real; 4]> {
         let ab = self.b - self.a;
         let ac = self.c - self.a;
         let ad = self.d - self.a;
-        let m = Matrix::new(ab.x, ac.x, ad.x, ab.y, ac.y, ad.y, ab.z, ac.z, ad.z);
+        let m = Matrix::from_cols_array(&[ab.x, ab.y, ab.z, ac.x, ac.y, ac.z, ad.x, ad.y, ad.z]);
 
         m.try_inverse().map(|im| {
             let bcoords = im * (p - self.a);
@@ -615,13 +613,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// let volume = tetra.volume();
@@ -650,13 +648,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// let signed_vol = tetra.signed_volume();
@@ -677,11 +675,9 @@ impl Tetrahedron {
         let p1p3 = self.c - self.a;
         let p1p4 = self.d - self.a;
 
-        let mat = Matrix3::new(
-            p1p2[0], p1p3[0], p1p4[0], p1p2[1], p1p3[1], p1p4[1], p1p2[2], p1p3[2], p1p4[2],
-        );
+        let mat = CrossMatrix::from_cols(p1p2, p1p3, p1p4);
 
-        mat.determinant() / na::convert::<f64, Real>(6.0f64)
+        mat.determinant() / 6.0
     }
 
     /// Computes the center of this tetrahedron.
@@ -698,13 +694,13 @@ impl Tetrahedron {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Tetrahedron;
-    /// use parry3d::math::Point;
+    /// use parry3d::math::Vector;
     ///
     /// let tetra = Tetrahedron::new(
-    ///     Point::new(0.0, 0.0, 0.0),
-    ///     Point::new(1.0, 0.0, 0.0),
-    ///     Point::new(0.0, 1.0, 0.0),
-    ///     Point::new(0.0, 0.0, 1.0),
+    ///     Vector::new(0.0, 0.0, 0.0),
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
     /// );
     ///
     /// let center = tetra.center();
@@ -713,14 +709,14 @@ impl Tetrahedron {
     /// assert!((center.z - 0.25).abs() < 1e-6);
     ///
     /// // The center has equal barycentric coordinates
-    /// let bcoords = tetra.barycentric_coordinates(&center).unwrap();
+    /// let bcoords = tetra.barycentric_coordinates(center).unwrap();
     /// for coord in &bcoords {
     ///     assert!((coord - 0.25).abs() < 1e-6);
     /// }
     /// # }
     /// ```
     #[inline]
-    pub fn center(&self) -> Point<Real> {
+    pub fn center(&self) -> Vector {
         utils::center(&[self.a, self.b, self.c, self.d])
     }
 }

@@ -1,7 +1,6 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector};
+use crate::math::{ivect_to_vect, IVector, Int, Real, Vector};
 use crate::shape::{VoxelData, VoxelState, Voxels};
-use na::point;
 
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -64,41 +63,39 @@ impl VoxelsChunk {
         Self::VOXELS_PER_CHUNK_DIM * Self::VOXELS_PER_CHUNK_DIM * Self::VOXELS_PER_CHUNK_DIM;
 
     #[cfg(feature = "dim2")]
-    pub(super) const INVALID_CHUNK_KEY: Point<i32> = point![i32::MAX, i32::MAX];
+    pub(super) const INVALID_CHUNK_KEY: IVector = IVector::new(Int::MAX, Int::MAX);
     #[cfg(feature = "dim3")]
-    pub(super) const INVALID_CHUNK_KEY: Point<i32> = point![i32::MAX, i32::MAX, i32::MAX];
+    pub(super) const INVALID_CHUNK_KEY: IVector = IVector::new(Int::MAX, Int::MAX, Int::MAX);
 
     /// The key of the voxel at the given linearized index within this chunk.
     #[cfg(feature = "dim2")]
-    pub(super) fn voxel_key_at_id(chunk_key: Point<i32>, id_in_chunk: u32) -> Point<i32> {
-        let y = id_in_chunk as i32 / Self::VOXELS_PER_CHUNK_DIM as i32;
-        let x = id_in_chunk as i32 % Self::VOXELS_PER_CHUNK_DIM as i32;
-        chunk_key * (Self::VOXELS_PER_CHUNK_DIM as i32) + Vector::new(x, y)
+    pub(super) fn voxel_key_at_id(chunk_key: IVector, id_in_chunk: u32) -> IVector {
+        let y = id_in_chunk as Int / Self::VOXELS_PER_CHUNK_DIM as Int;
+        let x = id_in_chunk as Int % Self::VOXELS_PER_CHUNK_DIM as Int;
+        chunk_key * (Self::VOXELS_PER_CHUNK_DIM as Int) + IVector::new(x, y)
     }
 
     /// The key of the voxel at the given linearized index.
     #[cfg(feature = "dim3")]
-    pub(super) fn voxel_key_at_id(chunk_key: Point<i32>, id_in_chunk: u32) -> Point<i32> {
+    pub(super) fn voxel_key_at_id(chunk_key: IVector, id_in_chunk: u32) -> IVector {
         let d0d1 = (Self::VOXELS_PER_CHUNK_DIM * Self::VOXELS_PER_CHUNK_DIM) as u32;
         let z = id_in_chunk / d0d1;
         let y = (id_in_chunk - z * d0d1) / Self::VOXELS_PER_CHUNK_DIM as u32;
         let x = id_in_chunk % Self::VOXELS_PER_CHUNK_DIM as u32;
-        chunk_key * (Self::VOXELS_PER_CHUNK_DIM as i32) + Vector::new(x as i32, y as i32, z as i32)
+        chunk_key * (Self::VOXELS_PER_CHUNK_DIM as Int) + IVector::new(x as Int, y as Int, z as Int)
     }
 
     /// The semi-open range of valid voxel keys for this chunk.
-    pub(super) fn keys_bounds(chunk_key: &Point<i32>) -> [Point<i32>; 2] {
-        let imins = chunk_key * Self::VOXELS_PER_CHUNK_DIM as i32;
-        let imaxs = imins + Vector::repeat(Self::VOXELS_PER_CHUNK_DIM as i32);
+    pub(super) fn keys_bounds(chunk_key: &IVector) -> [IVector; 2] {
+        let imins = chunk_key * Self::VOXELS_PER_CHUNK_DIM as Int;
+        let imaxs = imins + IVector::splat(Self::VOXELS_PER_CHUNK_DIM as Int);
         [imins, imaxs]
     }
 
-    pub(super) fn aabb(chunk_key: &Point<i32>, voxel_size: &Vector<Real>) -> Aabb {
+    pub(super) fn aabb(chunk_key: &IVector, voxel_size: Vector) -> Aabb {
         let [imins, imaxs] = Self::keys_bounds(chunk_key);
-        let mut aabb = Aabb::new(imins.cast(), imaxs.cast());
-        aabb.mins.coords.component_mul_assign(voxel_size);
-        aabb.maxs.coords.component_mul_assign(voxel_size);
-        aabb
+        let aabb = Aabb::new(ivect_to_vect(imins), ivect_to_vect(imaxs));
+        Aabb::new(aabb.mins * voxel_size, aabb.maxs * voxel_size)
     }
 }
 
@@ -128,11 +125,11 @@ impl VoxelsChunk {
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Voxels;
-/// use nalgebra::{Point3, Vector3};
+/// use parry3d::math::{Vector, IVector};
 ///
 /// let voxels = Voxels::new(
-///     Vector3::new(1.0, 1.0, 1.0),
-///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+///     Vector::new(1.0, 1.0, 1.0),
+///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
 /// );
 ///
 /// // Get a chunk reference (chunk IDs come from BVH traversal)
@@ -159,7 +156,7 @@ pub struct VoxelsChunkRef<'a> {
     /// The fill status of each voxel from this chunk.
     pub states: &'a [VoxelState; VoxelsChunk::VOXELS_PER_CHUNK],
     /// The spatial index of this chunk.
-    pub key: &'a Point<i32>,
+    pub key: &'a IVector,
 }
 
 impl<'a> VoxelsChunkRef<'a> {
@@ -168,21 +165,21 @@ impl<'a> VoxelsChunkRef<'a> {
     /// Note that this return the AABB of the whole chunk, without taking into account the fact
     /// that some voxels are empty.
     pub fn local_aabb(&self) -> Aabb {
-        VoxelsChunk::aabb(self.key, &self.parent.voxel_size)
+        VoxelsChunk::aabb(self.key, self.parent.voxel_size)
     }
 
     /// The domain of this chunk of voxels.
-    pub fn domain(&self) -> [Point<i32>; 2] {
+    pub fn domain(&self) -> [IVector; 2] {
         VoxelsChunk::keys_bounds(self.key)
     }
 
     /// Returns the spatial index of the voxel containing the given point.
-    pub fn voxel_at_point_unchecked(&self, pt: Point<Real>) -> Point<i32> {
+    pub fn voxel_at_point_unchecked(&self, pt: Vector) -> IVector {
         self.parent.voxel_at_point(pt)
     }
 
     /// The state of the voxel with key `voxel_key`.
-    pub fn voxel_state(&self, voxel_key: Point<i32>) -> Option<VoxelState> {
+    pub fn voxel_state(&self, voxel_key: IVector) -> Option<VoxelState> {
         let (chunk_key, id_in_chunk) = Voxels::chunk_key_and_id_in_chunk(voxel_key);
         if &chunk_key != self.key {
             return None;
@@ -191,18 +188,15 @@ impl<'a> VoxelsChunkRef<'a> {
     }
 
     /// Clamps the `voxel_key` so it is within the bounds of `self`.
-    pub fn clamp_voxel(&self, voxel_key: Point<i32>) -> Point<i32> {
+    pub fn clamp_voxel(&self, voxel_key: IVector) -> IVector {
         let [mins, maxs] = self.domain();
-        voxel_key
-            .coords
-            .zip_zip_map(&mins.coords, &maxs.coords, |k, min, max| k.clamp(min, max))
-            .into()
+        voxel_key.clamp(mins, maxs)
     }
 
     /// The AABB of the voxel with this key.
     ///
     /// Returns a result even if the voxel doesn’t belong to this chunk.
-    pub fn voxel_aabb_unchecked(&self, voxel_key: Point<i32>) -> Aabb {
+    pub fn voxel_aabb_unchecked(&self, voxel_key: IVector) -> Aabb {
         self.parent.voxel_aabb(voxel_key)
     }
 
@@ -210,7 +204,7 @@ impl<'a> VoxelsChunkRef<'a> {
     /// chunk alone) into a flat index within a voxel chunk.
     ///
     /// Returns `None` if the voxel isn’t part of this chunk.
-    pub fn flat_id(&self, voxel_key: Point<i32>) -> Option<u32> {
+    pub fn flat_id(&self, voxel_key: IVector) -> Option<u32> {
         let (chunk_key, id_in_chunk) = Voxels::chunk_key_and_id_in_chunk(voxel_key);
         if &chunk_key != self.key {
             return None;
@@ -241,12 +235,12 @@ impl<'a> VoxelsChunkRef<'a> {
     #[cfg(feature = "dim2")]
     pub fn voxels_in_range(
         self,
-        mins: Point<i32>,
-        maxs: Point<i32>,
+        mins: IVector,
+        maxs: IVector,
     ) -> impl Iterator<Item = VoxelData> + use<'a> {
         let [chunk_mins, chunk_maxs] = VoxelsChunk::keys_bounds(self.key);
-        let mins = mins.coords.sup(&chunk_mins.coords);
-        let maxs = maxs.coords.inf(&chunk_maxs.coords);
+        let mins = mins.max(chunk_mins);
+        let maxs = maxs.min(chunk_maxs);
 
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).flat_map(move |iy| {
@@ -258,16 +252,16 @@ impl<'a> VoxelsChunkRef<'a> {
                     return None;
                 }
 
-                let grid_coords = Point::new(ix, iy);
-                let center = Vector::new(ix as Real + 0.5, iy as Real + 0.5)
-                    .component_mul(&self.parent.voxel_size);
+                let grid_coords = IVector::new(ix, iy);
+                let center =
+                    Vector::new(ix as Real + 0.5, iy as Real + 0.5) * (self.parent.voxel_size);
                 Some(VoxelData {
                     linear_id: VoxelIndex {
                         chunk_id: self.my_id,
                         id_in_chunk,
                     },
                     grid_coords,
-                    center: center.into(),
+                    center,
                     state,
                 })
             })
@@ -281,12 +275,12 @@ impl<'a> VoxelsChunkRef<'a> {
     #[cfg(feature = "dim3")]
     pub fn voxels_in_range(
         self,
-        mins: Point<i32>,
-        maxs: Point<i32>,
+        mins: IVector,
+        maxs: IVector,
     ) -> impl Iterator<Item = VoxelData> + use<'a> {
         let [chunk_mins, chunk_maxs] = VoxelsChunk::keys_bounds(self.key);
-        let mins = mins.coords.sup(&chunk_mins.coords);
-        let maxs = maxs.coords.inf(&chunk_maxs.coords);
+        let mins = mins.max(chunk_mins);
+        let maxs = maxs.min(chunk_maxs);
 
         (mins[0]..maxs[0]).flat_map(move |ix| {
             (mins[1]..maxs[1]).flat_map(move |iy| {
@@ -302,16 +296,16 @@ impl<'a> VoxelsChunkRef<'a> {
                         return None;
                     }
 
-                    let grid_coords = Point::new(ix, iy, iz);
+                    let grid_coords = IVector::new(ix, iy, iz);
                     let center = Vector::new(ix as Real + 0.5, iy as Real + 0.5, iz as Real + 0.5)
-                        .component_mul(&self.parent.voxel_size);
+                        * (self.parent.voxel_size);
                     Some(VoxelData {
                         linear_id: VoxelIndex {
                             chunk_id: self.my_id,
                             id_in_chunk,
                         },
                         grid_coords,
-                        center: center.into(),
+                        center,
                         state,
                     })
                 })

@@ -2,7 +2,7 @@
 //!
 //! This module provides functionality to convert various geometric shapes into triangle meshes
 //! (also called "trimesh" in Parry's nomenclature). A triangle mesh is represented as a pair
-//! of vectors: `(Vec<Point<Real>>, Vec<[u32; 3]>)` containing vertices and triangle indices.
+//! of vectors: `(Vec<Vector>, Vec<[u32; 3]>)` containing vertices and triangle indices.
 //!
 //! # Overview
 //!
@@ -89,13 +89,14 @@
 //! # {
 //! use parry3d::shape::HeightField;
 //! use parry3d::math::Vector;
-//! use parry3d::na::DMatrix;
+//! use parry3d::utils::Array2;
 //!
 //! // Create a simple 3×3 height field
-//! let heights = DMatrix::from_row_slice(3, 3, &[
-//!     0.0, 1.0, 0.0,
-//!     1.0, 2.0, 1.0,
-//!     0.0, 1.0, 0.0,
+//! // Column-major order: column 0 first, then column 1, then column 2
+//! let heights = Array2::new(3, 3, vec![
+//!     0.0, 1.0, 0.0,  // column 0
+//!     1.0, 2.0, 1.0,  // column 1
+//!     0.0, 1.0, 0.0,  // column 2
 //! ]);
 //!
 //! let heightfield = HeightField::new(heights, Vector::new(10.0, 10.0, 1.0));
@@ -109,9 +110,9 @@
 //!
 //! # Return Format
 //!
-//! All `to_trimesh()` methods return a tuple `(Vec<Point<Real>>, Vec<[u32; 3]>)`:
+//! All `to_trimesh()` methods return a tuple `(Vec<Vector>, Vec<[u32; 3]>)`:
 //!
-//! - **Vertices** (`Vec<Point<Real>>`): Array of 3D points (or 2D for `dim2` feature)
+//! - **Vertices** (`Vec<Vector>`): Array of 3D points (or 2D for `dim2` feature)
 //! - **Indices** (`Vec<[u32; 3]>`): Array of triangle indices, where each `[u32; 3]` contains
 //!   three indices into the vertices array
 //!

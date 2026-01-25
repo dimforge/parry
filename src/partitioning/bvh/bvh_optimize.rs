@@ -4,7 +4,7 @@ use core::cmp::Ordering;
 use ordered_float::OrderedFloat;
 
 #[cfg(not(feature = "std"))]
-use na::ComplexField; // For `round` and `sqrt` in no-std+alloc builds.
+use crate::math::ComplexField; // For `round` and `sqrt` in no-std+alloc builds.
 
 impl Bvh {
     fn optimization_config(&self, frame_index: u32) -> OptimizationConfig {
@@ -92,7 +92,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -100,8 +100,8 @@ impl Bvh {
     /// // Add initial objects
     /// for i in 0..1000 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///         Vector::new(i as f32, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0, 1.0, 1.0)
     ///     );
     ///     bvh.insert(aabb, i);
     /// }
@@ -113,8 +113,8 @@ impl Bvh {
     ///         let time = frame as f32 * 0.016;
     ///         let offset = (time * (i as f32 + 1.0)).sin() * 5.0;
     ///         let aabb = Aabb::new(
-    ///             Point3::new(i as f32 + offset, 0.0, 0.0),
-    ///             Point3::new(i as f32 + offset + 1.0, 1.0, 1.0)
+    ///             Vector::new(i as f32 + offset, 0.0, 0.0),
+    ///             Vector::new(i as f32 + offset + 1.0, 1.0, 1.0)
     ///         );
     ///         bvh.insert_or_update_partially(aabb, i, 0.0);
     ///     }
@@ -138,7 +138,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -164,7 +164,7 @@ impl Bvh {
     /// }
     ///
     /// # fn get_body_aabb(id: u32) -> Aabb {
-    /// #     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0))
+    /// #     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0))
     /// # }
     /// # }
     /// ```
@@ -175,7 +175,7 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhWorkspace};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let mut bvh = Bvh::new();
     /// let mut workspace = BvhWorkspace::default();
@@ -183,8 +183,8 @@ impl Bvh {
     /// // Dynamically add many objects over time
     /// for i in 0..1000 {
     ///     let aabb = Aabb::new(
-    ///         Point3::new(i as f32, 0.0, 0.0),
-    ///         Point3::new(i as f32 + 1.0, 1.0, 1.0)
+    ///         Vector::new(i as f32, 0.0, 0.0),
+    ///         Vector::new(i as f32 + 1.0, 1.0, 1.0)
     ///     );
     ///     bvh.insert(aabb, i);
     ///

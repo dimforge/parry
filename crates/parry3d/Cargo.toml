@@ -1,6 +1,6 @@
 [package]
 name = "parry3d"
-version = "0.25.3"
+version = "0.26.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 
 description = "3 dimensional collision detection library in Rust."
@@ -23,7 +23,7 @@ workspace = true
 default = ["required-features", "std", "spade"]
 required-features = ["dim3", "f32"]
 std = [
-    "nalgebra/std",
+    "glamx/std",
     "slab",
     "simba/std",
     "arrayvec/std",
@@ -36,32 +36,28 @@ f32 = []
 serde-serialize = [
     "serde",
     "serde_arrays",
-    "nalgebra/serde-serialize",
+    "glamx/serde",
     "bitflags/serde",
     "hashbrown?/serde",
     "spade?/serde",
 ]
-rkyv-serialize = [
-    "rkyv/validation",
-    "nalgebra/rkyv-serialize",
-    "simba/rkyv-serialize",
-]
-bytemuck-serialize = ["bytemuck", "nalgebra/convert-bytemuck"]
+rkyv = ["dep:rkyv", "glamx/rkyv"]
+bytemuck-serialize = ["bytemuck", "glamx/bytemuck"]
 
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
-enhanced-determinism = ["simba/libm_force", "indexmap"]
+enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm"]
 parallel = ["rayon"]
 # Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
-alloc = ["nalgebra/alloc", "hashbrown"]
+alloc = ["hashbrown"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
-encase = [ "dep:encase", "nalgebra/encase" ]
+encase = [ "dep:encase", "glamx/encase" ]
 
 # Do not enable this feature directly. It is automatically
 # enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = [ "glam" ]
+simd-is-enabled = []
 
 [lib]
 name = "parry3d"
@@ -76,11 +72,11 @@ num-traits = { version = "0.2", default-features = false }
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.9", default-features = false }
-nalgebra = { version = "0.34", default-features = false, features = ["libm", "macros"] }
+glamx = { version = "0.1.2", default-features = false, features = ["nostd-libm", "approx"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
 serde_arrays = { version = "0.2", optional = true }
-rkyv = { version = "0.7.41", optional = true }
+rkyv = { version = "0.8", optional = true, default-features = false, features = ["bytecheck", "alloc"] }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
 hashbrown = { version = "0.16", optional = true, default-features = false, features = [
@@ -100,18 +96,14 @@ static_assertions = "1"
 foldhash = { version = "0.2", default-features = false }
 encase = { version = "0.12", optional = true }
 
-# NOTE: needed only for element_min for SIMD BVH ray-casting.
-#       can be removed once `wide` supports it (and allows filtering-out the
-#       fourth element).
-glam = { version = "0.30.4", optional = true }
 
 [dev-dependencies]
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.9" }
-macroquad = "0.4.12"
-nalgebra = { version = "0.34", default-features = false, features = ["rand"] }
+kiss3d = "0.39"
 rand_isaac = "0.4"
+web-time = "1"
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

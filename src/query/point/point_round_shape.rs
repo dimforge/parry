@@ -1,4 +1,5 @@
-use crate::math::{Point, Real};
+use crate::math::Vector;
+#[cfg(feature = "alloc")]
 use crate::query::gjk::VoronoiSimplex;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::{FeatureId, RoundShape, SupportMap};
@@ -7,7 +8,9 @@ use crate::shape::{FeatureId, RoundShape, SupportMap};
 // call this and adjust the projected point accordingly.
 impl<S: SupportMap> PointQuery for RoundShape<S> {
     #[inline]
-    fn project_local_point(&self, point: &Point<Real>, solid: bool) -> PointProjection {
+    #[allow(unreachable_code)]
+    #[allow(clippy::diverging_sub_expression)]
+    fn project_local_point(&self, _point: Vector, _solid: bool) -> PointProjection {
         #[cfg(not(feature = "alloc"))]
         return unimplemented!(
             "The projection of points on a round shape isn't supported without alloc yet."
@@ -17,16 +20,13 @@ impl<S: SupportMap> PointQuery for RoundShape<S> {
         return crate::query::details::local_point_projection_on_support_map(
             self,
             &mut VoronoiSimplex::new(),
-            point,
-            solid,
+            _point,
+            _solid,
         );
     }
 
     #[inline]
-    fn project_local_point_and_get_feature(
-        &self,
-        point: &Point<Real>,
-    ) -> (PointProjection, FeatureId) {
+    fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         (self.project_local_point(point, false), FeatureId::Unknown)
     }
 }

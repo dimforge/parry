@@ -1,25 +1,34 @@
-use macroquad::prelude::*;
-use nalgebra::{UnitVector3, Vector3};
+mod utils3d;
+
+use kiss3d::prelude::*;
 use parry3d::query::IntersectResult;
 use parry3d::shape::{Cuboid, TriMesh};
+use utils3d::{create_mesh_from_trimesh, draw_polyline, draw_text};
 
-mod common_macroquad3d;
-use common_macroquad3d::*;
-
-#[macroquad::main("plane_intersection")]
+#[kiss3d::main]
 async fn main() {
-    let trimesh = Cuboid::new(Vector3::repeat(1.0)).to_trimesh();
+    let mut window = Window::new("plane_intersection").await;
+    let mut camera = OrbitCamera3d::new(Vec3::new(-1.5, 2.5, -3.0), Vec3::new(0.5, 0.0, 0.5));
+    let mut scene = SceneNode3d::empty();
+    scene
+        .add_light(Light::point(100.0))
+        .set_position(Vec3::new(-1.0, 3.5, -3.0));
 
-    let light_pos = Vec3::new(-1f32, 3.5f32, -3f32);
-    let camera_pos = Vec3::new(-1.5f32, 2.5f32, -3f32);
+    let font = Font::default();
 
-    let mesh = mquad_mesh_from_points(&trimesh, light_pos, DARKGRAY);
-    let trimesh = TriMesh::new(trimesh.0, trimesh.1).unwrap();
+    let (points, indices) = Cuboid::new(Vec3::splat(1.0)).to_trimesh();
+    let trimesh = TriMesh::new(points.clone(), indices.clone()).unwrap();
 
-    for _ in 1.. {
-        clear_background(BLACK);
+    // Add mesh to scene
+    let mesh = create_mesh_from_trimesh(points, indices);
+    scene
+        .add_mesh(mesh, Vec3::splat(1.0))
+        .set_color(Color::new(0.3, 0.3, 0.3, 1.0));
 
-        let elapsed_time = get_time();
+    let start_time = web_time::Instant::now();
+
+    while window.render_3d(&mut scene, &mut camera).await {
+        let elapsed_time = start_time.elapsed().as_secs_f64();
 
         // Animated rotation for the intersection plane.
         let bias = -1.2 * (elapsed_time as f32 / 3f32).sin();
@@ -27,29 +36,21 @@ async fn main() {
         let up_plane_vector = rotation * Vec3::Y;
 
         // Get the intersection polyline.
-        let intersection_result = trimesh.intersection_with_local_plane(
-            &UnitVector3::new_normalize(Vector3::new(
-                up_plane_vector.x,
-                up_plane_vector.y,
-                up_plane_vector.z,
-            )),
-            bias,
-            0.0005,
+        let intersection_result =
+            trimesh.intersection_with_local_plane(up_plane_vector.normalize(), bias, 0.0005);
+
+        // Draw the plane normal
+        let plane_center = up_plane_vector * bias;
+        window.draw_line(
+            plane_center,
+            plane_center + up_plane_vector,
+            GREEN,
+            4.0,
+            false,
         );
 
-        // Initialize 3D camera.
-        set_camera(&Camera3D {
-            position: camera_pos,
-            up: Vec3::new(0f32, 1f32, 0f32),
-            target: Vec3::new(0.5f32, 0f32, 0.5f32),
-            ..Default::default()
-        });
-
-        // Draw involved shapes.
-        let plane_center = up_plane_vector * bias;
-        draw_line_3d(plane_center, plane_center + up_plane_vector, GREEN);
-        draw_mesh(&mesh);
-        draw_grid_ex(10, 0.333, BLUE, RED, plane_center, rotation);
+        // Draw a grid to represent the plane
+        draw_grid(&mut window, plane_center, rotation, 10, 0.333);
 
         /*
          *
@@ -59,24 +60,46 @@ async fn main() {
         match intersection_result {
             IntersectResult::Intersect(points) => {
                 draw_polyline(
-                    points
-                        .segments()
-                        .map(|s| (mquad_from_na(s.a), mquad_from_na(s.b)))
-                        .collect(),
+                    &mut window,
+                    points.segments().map(|s| (s.a, s.b)).collect(),
                     Color::new(0f32, 1f32, 0f32, 1f32),
                 );
-                set_default_camera();
-                easy_draw_text("Intersection found!");
+                draw_text(&mut window, &font, "Intersection found!");
             }
             IntersectResult::Negative => {
-                set_default_camera();
-                easy_draw_text("No intersection found, the shape is below the plane.");
+                draw_text(
+                    &mut window,
+                    &font,
+                    "No intersection found, the shape is below the plane.",
+                );
             }
             IntersectResult::Positive => {
-                set_default_camera();
-                easy_draw_text("No intersection found, the shape is above the plane.");
+                draw_text(
+                    &mut window,
+                    &font,
+                    "No intersection found, the shape is above the plane.",
+                );
             }
         }
-        next_frame().await
+    }
+}
+
+fn draw_grid(window: &mut Window, center: Vec3, rotation: Quat, subdivisions: i32, spacing: f32) {
+    let half_size = subdivisions as f32 * spacing / 2.0;
+
+    for i in 0..=subdivisions {
+        let offset = -half_size + i as f32 * spacing;
+
+        // Lines along X axis
+        let start = rotation * Vec3::new(-half_size, 0.0, offset) + center;
+        let end = rotation * Vec3::new(half_size, 0.0, offset) + center;
+        let color = if i == subdivisions / 2 { RED } else { BLUE };
+        window.draw_line(start, end, color, 2.0, false);
+
+        // Lines along Z axis
+        let start = rotation * Vec3::new(offset, 0.0, -half_size) + center;
+        let end = rotation * Vec3::new(offset, 0.0, half_size) + center;
+        let color = if i == subdivisions / 2 { RED } else { BLUE };
+        window.draw_line(start, end, color, 2.0, false);
     }
 }

@@ -1,39 +1,44 @@
-mod common_macroquad2d;
+mod utils2d;
 
-use common_macroquad2d::draw_point;
-use macroquad::prelude::*;
-use nalgebra::{Isometry2, Point2, UnitComplex, Vector2};
-use parry2d::math::Isometry;
+use kiss3d::prelude::*;
+use parry2d::math::{Pose, Rotation};
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::Cuboid;
+use utils2d::draw_point;
 
 const RENDER_SCALE: f32 = 30.0;
 
-#[macroquad::main("raycasts_animated")]
+#[kiss3d::main]
 async fn main() {
+    let mut window = Window::new("raycasts_animated").await;
+    let mut camera = PanZoomCamera2d::new(Vec2::ZERO, 4.0);
+    let mut scene = SceneNode2d::empty();
+
     let animation_scale = 1.4;
     let animation_rotation = 0.04;
 
-    for i in 1.. {
-        clear_background(BLACK);
+    let screen_shift = Vec2::ZERO;
+    let start_time = web_time::Instant::now();
 
-        let screen_shift = Point2::new(screen_width() / 2.0, screen_height() / 2.0);
+    while window.render_2d(&mut scene, &mut camera).await {
+        let i = (start_time.elapsed().as_secs_f32() * 60.0) as i32 + 1;
+
         /*
          *
          * Compute the scaled cuboid.
          *
          */
         let cube =
-            Cuboid::new(Vector2::new(2.0, 2.0) * ((i as f32 / 50.0).sin().abs() * animation_scale));
-        let cube_pose = Isometry2::rotation(0.008 * i as f32);
+            Cuboid::new(Vec2::new(2.0, 2.0) * ((i as f32 / 50.0).sin().abs() * animation_scale));
+        let cube_pose = Pose::new(Vec2::ZERO, 0.008 * i as f32);
         /*
          *
          * Prepare a Raycast and compute its result against the shape.
          *
          */
         let ray = Ray::new(
-            Point2::new(2.0, 2.0),
-            UnitComplex::new(animation_rotation * i as f32) * -Vector2::x(),
+            Vec2::new(2.0, 2.0),
+            Rotation::new(animation_rotation * i as f32).transform_vector(-Vec2::X),
         );
         let toi = cube.cast_ray(&cube_pose, &ray, f32::MAX, true);
 
@@ -44,9 +49,10 @@ async fn main() {
          */
         if let Some(toi) = toi {
             if toi == 0f32 {
-                draw_point(ray.origin, RENDER_SCALE, screen_shift, YELLOW);
+                draw_point(&mut window, ray.origin, RENDER_SCALE, screen_shift, YELLOW);
             } else {
                 drawline_from_to(
+                    &mut window,
                     ray.origin,
                     ray.origin + ray.dir * toi,
                     RENDER_SCALE,
@@ -56,6 +62,7 @@ async fn main() {
             }
         } else {
             drawline_from_to(
+                &mut window,
                 ray.origin,
                 ray.origin + ray.dir * 1000f32,
                 RENDER_SCALE,
@@ -69,47 +76,39 @@ async fn main() {
          * Render the cuboid.
          *
          */
-        draw_polygon(
+        draw_cuboid_polygon(
+            &mut window,
             &cube.to_polyline(),
             &cube_pose,
             RENDER_SCALE,
             screen_shift,
             GREEN,
         );
-
-        next_frame().await
     }
 }
 
-fn draw_polygon(
-    polygon: &[Point2<f32>],
-    pose: &Isometry<f32>,
+fn draw_cuboid_polygon(
+    window: &mut Window,
+    polygon: &[Vec2],
+    pose: &Pose,
     scale: f32,
-    shift: Point2<f32>,
+    shift: Vec2,
     color: Color,
 ) {
     for i in 0..polygon.len() {
-        let a = pose * (scale * polygon[i]);
-        let b = pose * (scale * polygon[(i + 1) % polygon.len()]);
-        draw_line(
-            a.x + shift.x,
-            a.y + shift.y,
-            b.x + shift.x,
-            b.y + shift.y,
-            2.0,
-            color,
-        );
+        let a = pose * (polygon[i] * scale) + shift;
+        let b = pose * (polygon[(i + 1) % polygon.len()] * scale) + shift;
+        window.draw_line_2d(a, b, color, 2.0);
     }
 }
 
 fn drawline_from_to(
-    from: Point2<f32>,
-    to: Point2<f32>,
+    window: &mut Window,
+    from: Vec2,
+    to: Vec2,
     scale: f32,
-    shift: Point2<f32>,
+    shift: Vec2,
     color: Color,
 ) {
-    let from = from * scale + shift.coords;
-    let to = to * scale + shift.coords;
-    draw_line(from.x, from.y, to.x, to.y, 2.0, color);
+    window.draw_line_2d(from * scale + shift, to * scale + shift, color, 2.0);
 }

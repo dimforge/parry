@@ -1,14 +1,13 @@
-use crate::math::Real;
+use crate::math::{Real, Vector3};
 use crate::shape::Triangle;
 use alloc::vec::Vec;
-use na::{Point3, Vector3};
 use num::Bounded;
 
 #[derive(Debug)]
 pub struct TriangleFacet {
     pub valid: bool,
     pub affinely_dependent: bool,
-    pub normal: Vector3<Real>,
+    pub normal: Vector3,
     pub adj: [usize; 3],
     pub indirect_adj_id: [usize; 3],
     pub pts: [usize; 3],
@@ -18,11 +17,11 @@ pub struct TriangleFacet {
 }
 
 impl TriangleFacet {
-    pub fn new(p1: usize, p2: usize, p3: usize, points: &[Point3<Real>]) -> TriangleFacet {
+    pub fn new(p1: usize, p2: usize, p3: usize, points: &[Vector3]) -> TriangleFacet {
         let p1p2 = points[p2] - points[p1];
         let p1p3 = points[p3] - points[p1];
 
-        let normal = p1p2.cross(&p1p3).normalize();
+        let normal = p1p2.cross(p1p3).normalize();
 
         TriangleFacet {
             valid: true,
@@ -38,7 +37,7 @@ impl TriangleFacet {
         }
     }
 
-    pub fn add_visible_point(&mut self, pid: usize, points: &[Point3<Real>]) {
+    pub fn add_visible_point(&mut self, pid: usize, points: &[Vector3]) {
         let distance = self.distance_to_point(pid, points);
         assert!(distance > crate::math::DEFAULT_EPSILON);
 
@@ -50,8 +49,8 @@ impl TriangleFacet {
         self.visible_points.push(pid);
     }
 
-    pub fn distance_to_point(&self, point: usize, points: &[Point3<Real>]) -> Real {
-        self.normal.dot(&(points[point] - points[self.pts[0]]))
+    pub fn distance_to_point(&self, point: usize, points: &[Vector3]) -> Real {
+        self.normal.dot(points[point] - points[self.pts[0]])
     }
 
     pub fn set_facets_adjascency(
@@ -80,7 +79,7 @@ impl TriangleFacet {
         self.pts[(id + 1) % 3]
     }
 
-    pub fn can_see_point(&self, point: usize, points: &[Point3<Real>]) -> bool {
+    pub fn can_see_point(&self, point: usize, points: &[Vector3]) -> bool {
         // An affinely-dependent triangle cannot see any point.
         if self.affinely_dependent {
             return false;
@@ -89,7 +88,7 @@ impl TriangleFacet {
         let p0 = points[self.pts[0]];
         let pt = points[point];
 
-        if (pt - p0).dot(&self.normal) < crate::math::DEFAULT_EPSILON * 100.0 {
+        if (pt - p0).dot(self.normal) < crate::math::DEFAULT_EPSILON * 100.0 {
             return false;
         }
 
@@ -99,11 +98,7 @@ impl TriangleFacet {
     // Check that a given point can see this triangle,
     // making sure that the order of the three indices of
     // this triangle don't affect the test result.
-    pub fn order_independent_can_be_seen_by_point(
-        &self,
-        point: usize,
-        points: &[Point3<Real>],
-    ) -> bool {
+    pub fn order_independent_can_be_seen_by_point(&self, point: usize, points: &[Vector3]) -> bool {
         // An affinely-dependent triangle can be seen by any point.
         if self.affinely_dependent {
             return true;
@@ -113,7 +108,7 @@ impl TriangleFacet {
             let p0 = points[self.pts[i]];
             let pt = points[point];
 
-            if (pt - p0).dot(&self.normal) >= 0.0 {
+            if (pt - p0).dot(self.normal) >= 0.0 {
                 return true;
             }
         }

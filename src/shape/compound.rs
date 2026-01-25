@@ -3,7 +3,7 @@
 //!
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
 use crate::shape::{CompositeShape, Shape, SharedShape, TypedCompositeShape};
@@ -21,7 +21,7 @@ use alloc::vec::Vec;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Compound {
-    shapes: Vec<(Isometry<Real>, SharedShape)>,
+    shapes: Vec<(Pose, SharedShape)>,
     bvh: Bvh,
     aabbs: Vec<Aabb>,
     aabb: Aabb,
@@ -38,7 +38,7 @@ impl Compound {
     /// # Arguments
     ///
     /// * `shapes` - A vector of (position, shape) pairs. Each pair defines:
-    ///   - An [`Isometry`] representing the sub-shape's position and orientation relative to the compound's origin
+    ///   - An [`Pose`] representing the sub-shape's position and orientation relative to the compound's origin
     ///   - A [`SharedShape`] containing the actual geometry
     ///
     /// # Panics
@@ -57,24 +57,24 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Pose;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a compound shape resembling a dumbbell
     /// let shapes = vec![
     ///     // Left sphere
     ///     (
-    ///         Isometry::translation(-2.0, 0.0, 0.0),
+    ///         Pose::translation(-2.0, 0.0, 0.0),
     ///         SharedShape::new(Ball::new(0.5))
     ///     ),
     ///     // Center bar
     ///     (
-    ///         Isometry::identity(),
-    ///         SharedShape::new(Cuboid::new(Vector3::new(2.0, 0.2, 0.2)))
+    ///         Pose::identity(),
+    ///         SharedShape::new(Cuboid::new(Vector::new(2.0, 0.2, 0.2)))
     ///     ),
     ///     // Right sphere
     ///     (
-    ///         Isometry::translation(2.0, 0.0, 0.0),
+    ///         Pose::translation(2.0, 0.0, 0.0),
     ///         SharedShape::new(Ball::new(0.5))
     ///     ),
     /// ];
@@ -89,20 +89,20 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, Ball, Cuboid, SharedShape};
-    /// # use parry2d::math::Isometry;
-    /// # use nalgebra::Vector2;
+    /// # use parry2d::math::Pose;
+    /// # use parry2d::math::Vector;
     ///
     /// // Create an L-shaped compound
     /// let shapes = vec![
     ///     // Vertical rectangle
     ///     (
-    ///         Isometry::translation(0.0, 1.0),
-    ///         SharedShape::new(Cuboid::new(Vector2::new(0.5, 1.0)))
+    ///         Pose::translation(0.0, 1.0),
+    ///         SharedShape::new(Cuboid::new(Vector::new(0.5, 1.0)))
     ///     ),
     ///     // Horizontal rectangle
     ///     (
-    ///         Isometry::translation(1.0, 0.0),
-    ///         SharedShape::new(Cuboid::new(Vector2::new(1.0, 0.5)))
+    ///         Pose::translation(1.0, 0.0),
+    ///         SharedShape::new(Cuboid::new(Vector::new(1.0, 0.5)))
     ///     ),
     /// ];
     ///
@@ -110,7 +110,7 @@ impl Compound {
     /// assert_eq!(l_shape.shapes().len(), 2);
     /// # }
     /// ```
-    pub fn new(shapes: Vec<(Isometry<Real>, SharedShape)>) -> Compound {
+    pub fn new(shapes: Vec<(Pose, SharedShape)>) -> Compound {
         assert!(
             !shapes.is_empty(),
             "A compound shape must contain at least one shape."
@@ -174,14 +174,14 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, TriMesh};
-    /// # use nalgebra::Point2;
+    /// # use parry2d::math::Vector;
     ///
     /// // Create a simple square mesh (2 triangles)
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(0.0, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(0.0, 1.0),
     /// ];
     ///
     /// let indices = vec![
@@ -204,16 +204,16 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::shape::{Compound, TriMesh};
-    /// # use nalgebra::Point2;
+    /// # use parry2d::math::Vector;
     ///
     /// // Create an L-shaped mesh
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(2.0, 0.0),
-    ///     Point2::new(2.0, 1.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(1.0, 2.0),
-    ///     Point2::new(0.0, 2.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0),
+    ///     Vector::new(2.0, 1.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(1.0, 2.0),
+    ///     Vector::new(0.0, 2.0),
     /// ];
     ///
     /// let indices = vec![
@@ -246,7 +246,7 @@ impl Compound {
                     }
                     _ => ConvexPolygon::from_convex_polyline(points).map(SharedShape::new),
                 }
-                .map(|shape| (Isometry::identity(), shape))
+                .map(|shape| (Pose::IDENTITY, shape))
             })
             .collect();
         Some(Self::new(shapes?))
@@ -257,7 +257,7 @@ impl Compound {
     /// Returns a slice containing all sub-shapes and their positions in this compound.
     ///
     /// Each element in the returned slice is a tuple containing:
-    /// - The sub-shape's position and orientation ([`Isometry`]) relative to the compound's origin
+    /// - The sub-shape's position and orientation ([`Pose`]) relative to the compound's origin
     /// - The sub-shape itself ([`SharedShape`])
     ///
     /// The order of shapes matches the order they were provided to [`Compound::new`].
@@ -273,13 +273,13 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Pose;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(-1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.3))),
-    ///     (Isometry::identity(), SharedShape::new(Cuboid::new(Vector3::new(0.5, 0.5, 0.5)))),
+    ///     (Pose::translation(1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(-1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.3))),
+    ///     (Pose::identity(), SharedShape::new(Cuboid::new(Vector::new(0.5, 0.5, 0.5)))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -304,11 +304,11 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
+    /// use parry3d::math::Pose;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(1.0))),
-    ///     (Isometry::translation(2.0, 0.0, 0.0), SharedShape::new(Ball::new(1.0))),
+    ///     (Pose::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(1.0))),
+    ///     (Pose::translation(2.0, 0.0, 0.0), SharedShape::new(Ball::new(1.0))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -318,7 +318,7 @@ impl Compound {
     ///     .iter()
     ///     .map(|(pos, shape)| {
     ///         // Shift all shapes up by 1 unit
-    ///         let new_pos = pos * Isometry::translation(0.0, 1.0, 0.0);
+    ///         let new_pos = pos * Pose::translation(0.0, 1.0, 0.0);
     ///         (new_pos, shape.clone())
     ///     })
     ///     .collect();
@@ -328,7 +328,7 @@ impl Compound {
     /// # }
     /// ```
     #[inline]
-    pub fn shapes(&self) -> &[(Isometry<Real>, SharedShape)] {
+    pub fn shapes(&self) -> &[(Pose, SharedShape)] {
         &self.shapes[..]
     }
 
@@ -355,12 +355,12 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Pose;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(-2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(-2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -373,8 +373,8 @@ impl Compound {
     /// assert!(aabb.maxs.x >= 2.5);
     ///
     /// // Check if a point is inside the AABB
-    /// assert!(aabb.contains_local_point(&Point3::origin()));
-    /// assert!(!aabb.contains_local_point(&Point3::new(10.0, 0.0, 0.0)));
+    /// assert!(aabb.contains_local_point(Vector::ZERO));
+    /// assert!(!aabb.contains_local_point(Vector::new(10.0, 0.0, 0.0)));
     /// # }
     /// ```
     ///
@@ -383,12 +383,12 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Cuboid, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Pose;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::identity(), SharedShape::new(Cuboid::new(Vector3::new(1.0, 1.0, 1.0)))),
-    ///     (Isometry::translation(3.0, 0.0, 0.0), SharedShape::new(Cuboid::new(Vector3::new(0.5, 0.5, 0.5)))),
+    ///     (Pose::identity(), SharedShape::new(Cuboid::new(Vector::new(1.0, 1.0, 1.0)))),
+    ///     (Pose::translation(3.0, 0.0, 0.0), SharedShape::new(Cuboid::new(Vector::new(0.5, 0.5, 0.5)))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -433,11 +433,11 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
+    /// use parry3d::math::Pose;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(-1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(-1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(1.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -448,7 +448,7 @@ impl Compound {
     /// println!("Radius: {}", bounding_sphere.radius());
     ///
     /// // The center should be near the origin
-    /// assert!(bounding_sphere.center().coords.norm() < 0.1);
+    /// assert!(bounding_sphere.center().length() < 0.1);
     ///
     /// // The radius should be at least 1.5 (distance to ball edge: 1.0 + 0.5)
     /// assert!(bounding_sphere.radius() >= 1.5);
@@ -460,26 +460,25 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Cuboid, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::{Vector3, Point3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let shapes = vec![
-    ///     (Isometry::identity(), SharedShape::new(Cuboid::new(Vector3::new(1.0, 1.0, 1.0)))),
-    ///     (Isometry::translation(2.0, 0.0, 0.0), SharedShape::new(Cuboid::new(Vector3::new(0.5, 0.5, 0.5)))),
+    ///     (Pose::identity(), SharedShape::new(Cuboid::new(Vector::new(1.0, 1.0, 1.0)))),
+    ///     (Pose::translation(2.0, 0.0, 0.0), SharedShape::new(Cuboid::new(Vector::new(0.5, 0.5, 0.5)))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
     /// let sphere = compound.local_bounding_sphere();
     ///
     /// // Quick test: is a point potentially inside the compound?
-    /// let test_point = Point3::new(5.0, 5.0, 5.0);
-    /// let distance_to_center = (test_point - sphere.center()).norm();
+    /// let test_point = Vector::new(5.0, 5.0, 5.0);
+    /// let distance_to_center = (test_point - sphere.center()).length();
     ///
     /// if distance_to_center > sphere.radius() {
-    ///     println!("Point is definitely outside the compound");
+    ///     println!("Vector is definitely outside the compound");
     ///     assert!(distance_to_center > sphere.radius());
     /// } else {
-    ///     println!("Point might be inside - need detailed check");
+    ///     println!("Vector might be inside - need detailed check");
     /// }
     /// # }
     /// ```
@@ -514,13 +513,13 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, Cuboid, SharedShape};
-    /// use parry3d::math::Isometry;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Pose;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(-2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::identity(), SharedShape::new(Cuboid::new(Vector3::new(1.0, 1.0, 1.0)))),
-    ///     (Isometry::translation(3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.3))),
+    ///     (Pose::translation(-2.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::identity(), SharedShape::new(Cuboid::new(Vector::new(1.0, 1.0, 1.0)))),
+    ///     (Pose::translation(3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.3))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -548,26 +547,26 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
+    /// use parry3d::math::Pose;
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(-5.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(5.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(-5.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(5.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
     ///
     /// // Define a query point
-    /// let query_point = Point3::origin();
+    /// let query_point = Vector::ZERO;
     ///
     /// // Find which sub-shapes might contain this point
     /// let potentially_containing: Vec<usize> = compound.aabbs()
     ///     .iter()
     ///     .enumerate()
-    ///     .filter(|(_, aabb)| aabb.contains_local_point(&query_point))
+    ///     .filter(|(_, aabb)| aabb.contains_local_point(query_point))
     ///     .map(|(i, _)| i)
     ///     .collect();
     ///
@@ -611,14 +610,14 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
+    /// use parry3d::math::Pose;
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let shapes = vec![
-    ///     (Isometry::translation(-3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
-    ///     (Isometry::translation(3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(-3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(0.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
+    ///     (Pose::translation(3.0, 0.0, 0.0), SharedShape::new(Ball::new(0.5))),
     /// ];
     ///
     /// let compound = Compound::new(shapes);
@@ -635,13 +634,13 @@ impl Compound {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// # use parry3d::shape::{Compound, Ball, SharedShape};
-    /// use parry3d::math::Isometry;
+    /// use parry3d::math::Pose;
     ///
     /// let mut shapes = vec![];
     /// for i in 0..10 {
     ///     let x = i as f32 * 2.0;
     ///     shapes.push((
-    ///         Isometry::translation(x, 0.0, 0.0),
+    ///         Pose::translation(x, 0.0, 0.0),
     ///         SharedShape::new(Ball::new(0.5))
     ///     ));
     /// }
@@ -669,7 +668,7 @@ impl CompositeShape for Compound {
     fn map_part_at(
         &self,
         shape_id: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         if let Some(shape) = self.shapes.get(shape_id as usize) {
             f(Some(&shape.0), &*shape.1, None)
@@ -690,11 +689,7 @@ impl TypedCompositeShape for Compound {
     fn map_typed_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ) -> T,
+        mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
     ) -> Option<T> {
         let (part_pos, part) = &self.shapes[i as usize];
         Some(f(Some(part_pos), &**part, None))
@@ -704,11 +699,7 @@ impl TypedCompositeShape for Compound {
     fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&dyn NormalConstraints>,
-        ) -> T,
+        mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T> {
         let (part_pos, part) = &self.shapes[i as usize];
         Some(f(Some(part_pos), &**part, None))

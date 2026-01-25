@@ -47,14 +47,14 @@
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::shape::Cuboid;
 //! use parry3d::query::sat::*;
-//! use parry3d::na::{Isometry3, Vector3};
+//! use parry3d::math::{Pose, Vector};
 //!
 //! // Create two boxes
-//! let box1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-//! let box2 = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
+//! let box1 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+//! let box2 = Cuboid::new(Vector::new(0.5, 0.5, 0.5));
 //!
 //! // Position them close together
-//! let pos12 = Isometry3::translation(1.5, 0.0, 0.0);
+//! let pos12 = Pose::translation(1.5, 0.0, 0.0);
 //!
 //! // Test face normals from box1
 //! let (separation, _normal) = cuboid_cuboid_find_local_separating_normal_oneway(

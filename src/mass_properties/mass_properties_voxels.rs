@@ -1,5 +1,7 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Point, Real};
+#[cfg(feature = "dim3")]
+use crate::math::Matrix;
+use crate::math::{Real, Vector};
 use crate::shape::Voxels;
 
 impl MassProperties {
@@ -41,18 +43,18 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a 3×3×3 voxel grid with 1m voxels
-    /// let voxel_size = Vector3::new(1.0, 1.0, 1.0);
+    /// let voxel_size = Vector::new(1.0, 1.0, 1.0);
     ///
     /// // Fill some voxels to create an L-shape
     /// let voxels = &[
-    ///     Point3::new(0, 0, 0), // Bottom bar
-    ///     Point3::new(1, 0, 0),
-    ///     Point3::new(2, 0, 0),
-    ///     Point3::new(0, 1, 0), // Vertical part
-    ///     Point3::new(0, 2, 0),
+    ///     IVector::new(0, 0, 0), // Bottom bar
+    ///     IVector::new(1, 0, 0),
+    ///     IVector::new(2, 0, 0),
+    ///     IVector::new(0, 1, 0), // Vertical part
+    ///     IVector::new(0, 2, 0),
     /// ];
     /// let voxels = Voxels::new(voxel_size, voxels);
     ///
@@ -71,17 +73,17 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Create a chunk of destructible terrain
-    /// let voxel_size = Vector3::new(0.5, 0.5, 0.5); // 50cm voxels
+    /// let voxel_size = Vector::new(0.5, 0.5, 0.5); // 50cm voxels
     /// let mut voxels = vec![];
     ///
     /// // Fill a 4×4×4 solid block
     /// for x in 0..4 {
     ///     for y in 0..4 {
     ///         for z in 0..4 {
-    ///             voxels.push(Point3::new(x, y, z));
+    ///             voxels.push(IVector::new(x, y, z));
     ///         }
     ///     }
     /// }
@@ -101,16 +103,16 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// // Large sparse grid (only stores filled voxels since v0.25.0)
-    /// let voxel_size = Vector3::new(0.1, 0.1, 0.1);
+    /// let voxel_size = Vector::new(0.1, 0.1, 0.1);
     ///
     /// // Scatter some voxels in a large space (efficient with sparse storage)
     /// let voxels = &[
-    ///     Point3::new(0, 0, 0),
-    ///     Point3::new(100, 50, 75),
-    ///     Point3::new(-50, 200, -30),
+    ///     IVector::new(0, 0, 0),
+    ///     IVector::new(100, 50, 75),
+    ///     IVector::new(-50, 200, -30),
     /// ];
     /// let voxels = Voxels::new(voxel_size, voxels);
     /// let density = 1000.0;
@@ -170,19 +172,22 @@ impl MassProperties {
     /// - `from_trimesh()`: Alternative for precise shapes
     /// - `from_compound()`: Combine multiple shapes efficiently
     pub fn from_voxels(density: Real, voxels: &Voxels) -> Self {
-        let mut com = Point::origin();
+        let mut com = Vector::ZERO;
         let mut num_not_empty = 0;
-        let mut angular_inertia = na::zero();
+        #[cfg(feature = "dim2")]
+        let mut angular_inertia = 0.0;
+        #[cfg(feature = "dim3")]
+        let mut angular_inertia = Matrix::ZERO;
         let block_ref_mprops = MassProperties::from_cuboid(density, voxels.voxel_size() / 2.0);
 
         for vox in voxels.voxels() {
             if !vox.state.is_empty() {
-                com += vox.center.coords;
+                com += vox.center;
                 num_not_empty += 1;
             }
         }
 
-        com.coords /= num_not_empty as Real;
+        com /= num_not_empty as Real;
 
         for vox in voxels.voxels() {
             if !vox.state.is_empty() {

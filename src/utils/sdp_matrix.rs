@@ -1,18 +1,13 @@
-use crate::math::Real;
-use core::ops::{Add, Mul};
-use na::{Matrix2, Matrix3, Matrix3x2, SimdRealField, Vector2, Vector3};
-
-#[cfg(feature = "rkyv")]
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, Archive, CheckBytes};
+use crate::math::{Matrix2, Matrix3, Real, Vector2, Vector3};
+use core::ops::{Add, Div, Mul, Neg, Sub};
+use num_traits::{One, Zero};
 
 /// A 2x2 symmetric-definite-positive matrix.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct SdpMatrix2<N> {
     /// The component at the first row and first column of this matrix.
@@ -23,23 +18,22 @@ pub struct SdpMatrix2<N> {
     pub m22: N,
 }
 
-impl<N: SimdRealField + Copy> SdpMatrix2<N> {
+impl<
+        N: Copy
+            + Zero
+            + One
+            + Add<Output = N>
+            + Sub<Output = N>
+            + Mul<Output = N>
+            + Div<Output = N>
+            + Neg<Output = N>,
+    > SdpMatrix2<N>
+{
     /// A new SDP 2x2 matrix with the given components.
     ///
     /// Because the matrix is symmetric, only the lower off-diagonal component is required.
     pub fn new(m11: N, m12: N, m22: N) -> Self {
         Self { m11, m12, m22 }
-    }
-
-    /// Build an `SdpMatrix2` structure from a plain matrix, assuming it is SDP.
-    ///
-    /// No check is performed to ensure `mat` is actually SDP.
-    pub fn from_sdp_matrix(mat: Matrix2<N>) -> Self {
-        Self {
-            m11: mat.m11,
-            m12: mat.m12,
-            m22: mat.m22,
-        }
     }
 
     /// Create a new SDP matrix filled with zeros.
@@ -83,25 +77,29 @@ impl<N: SimdRealField + Copy> SdpMatrix2<N> {
 
         (Self { m11, m12, m22 }, determinant)
     }
+}
+
+impl SdpMatrix2<Real> {
+    /// Build an `SdpMatrix2` structure from a plain matrix, assuming it is SDP.
+    pub fn from_sdp_matrix(mat: Matrix2) -> Self {
+        let cols = mat.to_cols_array_2d();
+        Self {
+            m11: cols[0][0],
+            m12: cols[1][0],
+            m22: cols[1][1],
+        }
+    }
 
     /// Convert this SDP matrix to a regular matrix representation.
-    pub fn into_matrix(self) -> Matrix2<N> {
-        Matrix2::new(self.m11, self.m12, self.m12, self.m22)
+    pub fn into_matrix(self) -> Matrix2 {
+        Matrix2::from_cols(
+            Vector2::new(self.m11, self.m12),
+            Vector2::new(self.m12, self.m22),
+        )
     }
-}
 
-impl<N: SimdRealField + Copy> Add<SdpMatrix2<N>> for SdpMatrix2<N> {
-    type Output = Self;
-
-    fn add(self, rhs: SdpMatrix2<N>) -> Self {
-        Self::new(self.m11 + rhs.m11, self.m12 + rhs.m12, self.m22 + rhs.m22)
-    }
-}
-
-impl<N: SimdRealField + Copy> Mul<Vector2<N>> for SdpMatrix2<N> {
-    type Output = Vector2<N>;
-
-    fn mul(self, rhs: Vector2<N>) -> Self::Output {
+    /// Multiply this matrix by a vector.
+    pub fn mul_vec(&self, rhs: Vector2) -> Vector2 {
         Vector2::new(
             self.m11 * rhs.x + self.m12 * rhs.y,
             self.m12 * rhs.x + self.m22 * rhs.y,
@@ -109,11 +107,35 @@ impl<N: SimdRealField + Copy> Mul<Vector2<N>> for SdpMatrix2<N> {
     }
 }
 
+impl<N: Add<Output = N>> Add<SdpMatrix2<N>> for SdpMatrix2<N> {
+    type Output = Self;
+
+    fn add(self, rhs: SdpMatrix2<N>) -> Self {
+        Self {
+            m11: self.m11 + rhs.m11,
+            m12: self.m12 + rhs.m12,
+            m22: self.m22 + rhs.m22,
+        }
+    }
+}
+
+impl Mul<Vector2> for SdpMatrix2<Real> {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Vector2) -> Self::Output {
+        self.mul_vec(rhs)
+    }
+}
+
 impl Mul<Real> for SdpMatrix2<Real> {
     type Output = SdpMatrix2<Real>;
 
     fn mul(self, rhs: Real) -> Self::Output {
-        SdpMatrix2::new(self.m11 * rhs, self.m12 * rhs, self.m22 * rhs)
+        SdpMatrix2 {
+            m11: self.m11 * rhs,
+            m12: self.m12 * rhs,
+            m22: self.m22 * rhs,
+        }
     }
 }
 
@@ -122,8 +144,7 @@ impl Mul<Real> for SdpMatrix2<Real> {
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self", bound(archive = "N: Archive<Archived = N>"))
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct SdpMatrix3<N> {
     /// The component at the first row and first column of this matrix.
@@ -140,7 +161,18 @@ pub struct SdpMatrix3<N> {
     pub m33: N,
 }
 
-impl<N: SimdRealField + Copy> SdpMatrix3<N> {
+impl<
+        N: Copy
+            + Zero
+            + One
+            + Add<Output = N>
+            + Sub<Output = N>
+            + Mul<Output = N>
+            + Div<Output = N>
+            + Neg<Output = N>
+            + PartialEq,
+    > SdpMatrix3<N>
+{
     /// A new SDP 3x3 matrix with the given components.
     ///
     /// Because the matrix is symmetric, only the lower off-diagonal components is required.
@@ -152,20 +184,6 @@ impl<N: SimdRealField + Copy> SdpMatrix3<N> {
             m22,
             m23,
             m33,
-        }
-    }
-
-    /// Build an `SdpMatrix3` structure from a plain matrix, assuming it is SDP.
-    ///
-    /// No check is performed to ensure `mat` is actually SDP.
-    pub fn from_sdp_matrix(mat: Matrix3<N>) -> Self {
-        Self {
-            m11: mat.m11,
-            m12: mat.m12,
-            m13: mat.m13,
-            m22: mat.m22,
-            m23: mat.m23,
-            m33: mat.m33,
         }
     }
 
@@ -195,12 +213,12 @@ impl<N: SimdRealField + Copy> SdpMatrix3<N> {
 
     /// Are all components of this matrix equal to zero?
     pub fn is_zero(&self) -> bool {
-        self.m11.is_zero()
-            && self.m12.is_zero()
-            && self.m13.is_zero()
-            && self.m22.is_zero()
-            && self.m23.is_zero()
-            && self.m33.is_zero()
+        self.m11 == N::zero()
+            && self.m12 == N::zero()
+            && self.m13 == N::zero()
+            && self.m22 == N::zero()
+            && self.m23 == N::zero()
+            && self.m33 == N::zero()
     }
 
     /// Compute the inverse of this SDP matrix without performing any inversibility check.
@@ -223,55 +241,6 @@ impl<N: SimdRealField + Copy> SdpMatrix3<N> {
         }
     }
 
-    /// Compute the quadratic form `m.transpose() * self * m`.
-    pub fn quadform3x2(&self, m: &Matrix3x2<N>) -> SdpMatrix2<N> {
-        let x0 = self.m11 * m.m11 + self.m12 * m.m21 + self.m13 * m.m31;
-        let y0 = self.m12 * m.m11 + self.m22 * m.m21 + self.m23 * m.m31;
-        let z0 = self.m13 * m.m11 + self.m23 * m.m21 + self.m33 * m.m31;
-
-        let x1 = self.m11 * m.m12 + self.m12 * m.m22 + self.m13 * m.m32;
-        let y1 = self.m12 * m.m12 + self.m22 * m.m22 + self.m23 * m.m32;
-        let z1 = self.m13 * m.m12 + self.m23 * m.m22 + self.m33 * m.m32;
-
-        let m11 = m.m11 * x0 + m.m21 * y0 + m.m31 * z0;
-        let m12 = m.m11 * x1 + m.m21 * y1 + m.m31 * z1;
-        let m22 = m.m12 * x1 + m.m22 * y1 + m.m32 * z1;
-
-        SdpMatrix2 { m11, m12, m22 }
-    }
-
-    /// Compute the quadratic form `m.transpose() * self * m`.
-    pub fn quadform(&self, m: &Matrix3<N>) -> Self {
-        let x0 = self.m11 * m.m11 + self.m12 * m.m21 + self.m13 * m.m31;
-        let y0 = self.m12 * m.m11 + self.m22 * m.m21 + self.m23 * m.m31;
-        let z0 = self.m13 * m.m11 + self.m23 * m.m21 + self.m33 * m.m31;
-
-        let x1 = self.m11 * m.m12 + self.m12 * m.m22 + self.m13 * m.m32;
-        let y1 = self.m12 * m.m12 + self.m22 * m.m22 + self.m23 * m.m32;
-        let z1 = self.m13 * m.m12 + self.m23 * m.m22 + self.m33 * m.m32;
-
-        let x2 = self.m11 * m.m13 + self.m12 * m.m23 + self.m13 * m.m33;
-        let y2 = self.m12 * m.m13 + self.m22 * m.m23 + self.m23 * m.m33;
-        let z2 = self.m13 * m.m13 + self.m23 * m.m23 + self.m33 * m.m33;
-
-        let m11 = m.m11 * x0 + m.m21 * y0 + m.m31 * z0;
-        let m12 = m.m11 * x1 + m.m21 * y1 + m.m31 * z1;
-        let m13 = m.m11 * x2 + m.m21 * y2 + m.m31 * z2;
-
-        let m22 = m.m12 * x1 + m.m22 * y1 + m.m32 * z1;
-        let m23 = m.m12 * x2 + m.m22 * y2 + m.m32 * z2;
-        let m33 = m.m13 * x2 + m.m23 * y2 + m.m33 * z2;
-
-        Self {
-            m11,
-            m12,
-            m13,
-            m22,
-            m23,
-            m33,
-        }
-    }
-
     /// Adds `elt` to the diagonal components of `self`.
     pub fn add_diagonal(&self, elt: N) -> Self {
         Self {
@@ -285,8 +254,76 @@ impl<N: SimdRealField + Copy> SdpMatrix3<N> {
     }
 }
 
-impl<N: Add<N>> Add<SdpMatrix3<N>> for SdpMatrix3<N> {
-    type Output = SdpMatrix3<N::Output>;
+impl SdpMatrix3<Real> {
+    /// Build an `SdpMatrix3` structure from a plain matrix, assuming it is SDP.
+    pub fn from_sdp_matrix(mat: Matrix3) -> Self {
+        let cols = mat.to_cols_array_2d();
+        Self {
+            m11: cols[0][0],
+            m12: cols[1][0],
+            m13: cols[2][0],
+            m22: cols[1][1],
+            m23: cols[2][1],
+            m33: cols[2][2],
+        }
+    }
+
+    /// Multiply this matrix by a vector.
+    pub fn mul_vec(&self, rhs: Vector3) -> Vector3 {
+        let x = self.m11 * rhs.x + self.m12 * rhs.y + self.m13 * rhs.z;
+        let y = self.m12 * rhs.x + self.m22 * rhs.y + self.m23 * rhs.z;
+        let z = self.m13 * rhs.x + self.m23 * rhs.y + self.m33 * rhs.z;
+        Vector3::new(x, y, z)
+    }
+
+    /// Multiply this matrix by a 3x3 matrix.
+    pub fn mul_mat(&self, rhs: Matrix3) -> Matrix3 {
+        let cols = rhs.to_cols_array_2d();
+        let col0 = self.mul_vec(Vector3::new(cols[0][0], cols[0][1], cols[0][2]));
+        let col1 = self.mul_vec(Vector3::new(cols[1][0], cols[1][1], cols[1][2]));
+        let col2 = self.mul_vec(Vector3::new(cols[2][0], cols[2][1], cols[2][2]));
+        Matrix3::from_cols(col0, col1, col2)
+    }
+
+    /// Compute the quadratic form `m.transpose() * self * m`.
+    pub fn quadform(&self, m: &Matrix3) -> Self {
+        let sm = self.mul_mat(*m);
+        let result = m.transpose() * sm;
+        Self::from_sdp_matrix(result)
+    }
+
+    /// Compute the quadratic form `m.transpose() * self * m` for a 3x2 matrix.
+    pub fn quadform3x2(
+        &self,
+        m11: Real,
+        m12: Real,
+        m21: Real,
+        m22: Real,
+        m31: Real,
+        m32: Real,
+    ) -> SdpMatrix2<Real> {
+        let x0 = self.m11 * m11 + self.m12 * m21 + self.m13 * m31;
+        let y0 = self.m12 * m11 + self.m22 * m21 + self.m23 * m31;
+        let z0 = self.m13 * m11 + self.m23 * m21 + self.m33 * m31;
+
+        let x1 = self.m11 * m12 + self.m12 * m22 + self.m13 * m32;
+        let y1 = self.m12 * m12 + self.m22 * m22 + self.m23 * m32;
+        let z1 = self.m13 * m12 + self.m23 * m22 + self.m33 * m32;
+
+        let r11 = m11 * x0 + m21 * y0 + m31 * z0;
+        let r12 = m11 * x1 + m21 * y1 + m31 * z1;
+        let r22 = m12 * x1 + m22 * y1 + m32 * z1;
+
+        SdpMatrix2 {
+            m11: r11,
+            m12: r12,
+            m22: r22,
+        }
+    }
+}
+
+impl<N: Add<Output = N>> Add<SdpMatrix3<N>> for SdpMatrix3<N> {
+    type Output = SdpMatrix3<N>;
 
     fn add(self, rhs: SdpMatrix3<N>) -> Self::Output {
         SdpMatrix3 {
@@ -315,50 +352,19 @@ impl Mul<Real> for SdpMatrix3<Real> {
     }
 }
 
-impl<N: SimdRealField + Copy> Mul<Vector3<N>> for SdpMatrix3<N> {
-    type Output = Vector3<N>;
+impl Mul<Vector3> for SdpMatrix3<Real> {
+    type Output = Vector3;
 
-    fn mul(self, rhs: Vector3<N>) -> Self::Output {
-        let x = self.m11 * rhs.x + self.m12 * rhs.y + self.m13 * rhs.z;
-        let y = self.m12 * rhs.x + self.m22 * rhs.y + self.m23 * rhs.z;
-        let z = self.m13 * rhs.x + self.m23 * rhs.y + self.m33 * rhs.z;
-        Vector3::new(x, y, z)
+    fn mul(self, rhs: Vector3) -> Self::Output {
+        self.mul_vec(rhs)
     }
 }
 
-impl<N: SimdRealField + Copy> Mul<Matrix3<N>> for SdpMatrix3<N> {
-    type Output = Matrix3<N>;
+impl Mul<Matrix3> for SdpMatrix3<Real> {
+    type Output = Matrix3;
 
-    fn mul(self, rhs: Matrix3<N>) -> Self::Output {
-        let x0 = self.m11 * rhs.m11 + self.m12 * rhs.m21 + self.m13 * rhs.m31;
-        let y0 = self.m12 * rhs.m11 + self.m22 * rhs.m21 + self.m23 * rhs.m31;
-        let z0 = self.m13 * rhs.m11 + self.m23 * rhs.m21 + self.m33 * rhs.m31;
-
-        let x1 = self.m11 * rhs.m12 + self.m12 * rhs.m22 + self.m13 * rhs.m32;
-        let y1 = self.m12 * rhs.m12 + self.m22 * rhs.m22 + self.m23 * rhs.m32;
-        let z1 = self.m13 * rhs.m12 + self.m23 * rhs.m22 + self.m33 * rhs.m32;
-
-        let x2 = self.m11 * rhs.m13 + self.m12 * rhs.m23 + self.m13 * rhs.m33;
-        let y2 = self.m12 * rhs.m13 + self.m22 * rhs.m23 + self.m23 * rhs.m33;
-        let z2 = self.m13 * rhs.m13 + self.m23 * rhs.m23 + self.m33 * rhs.m33;
-
-        Matrix3::new(x0, x1, x2, y0, y1, y2, z0, z1, z2)
-    }
-}
-
-impl<N: SimdRealField + Copy> Mul<Matrix3x2<N>> for SdpMatrix3<N> {
-    type Output = Matrix3x2<N>;
-
-    fn mul(self, rhs: Matrix3x2<N>) -> Self::Output {
-        let x0 = self.m11 * rhs.m11 + self.m12 * rhs.m21 + self.m13 * rhs.m31;
-        let y0 = self.m12 * rhs.m11 + self.m22 * rhs.m21 + self.m23 * rhs.m31;
-        let z0 = self.m13 * rhs.m11 + self.m23 * rhs.m21 + self.m33 * rhs.m31;
-
-        let x1 = self.m11 * rhs.m12 + self.m12 * rhs.m22 + self.m13 * rhs.m32;
-        let y1 = self.m12 * rhs.m12 + self.m22 * rhs.m22 + self.m23 * rhs.m32;
-        let z1 = self.m13 * rhs.m12 + self.m23 * rhs.m22 + self.m33 * rhs.m32;
-
-        Matrix3x2::new(x0, x1, y0, y1, z0, z1)
+    fn mul(self, rhs: Matrix3) -> Self::Output {
+        self.mul_mat(rhs)
     }
 }
 
@@ -374,190 +380,6 @@ where
             m22: T::from([data[0].m22, data[1].m22, data[2].m22, data[3].m22]),
             m23: T::from([data[0].m23, data[1].m23, data[2].m23, data[3].m23]),
             m33: T::from([data[0].m33, data[1].m33, data[2].m33, data[3].m33]),
-        }
-    }
-}
-
-#[cfg(feature = "simd-nightly")]
-impl From<[SdpMatrix3<Real>; 8]> for SdpMatrix3<simba::simd::f32x8> {
-    fn from(data: [SdpMatrix3<Real>; 8]) -> Self {
-        SdpMatrix3 {
-            m11: simba::simd::f32x8::from([
-                data[0].m11,
-                data[1].m11,
-                data[2].m11,
-                data[3].m11,
-                data[4].m11,
-                data[5].m11,
-                data[6].m11,
-                data[7].m11,
-            ]),
-            m12: simba::simd::f32x8::from([
-                data[0].m12,
-                data[1].m12,
-                data[2].m12,
-                data[3].m12,
-                data[4].m12,
-                data[5].m12,
-                data[6].m12,
-                data[7].m12,
-            ]),
-            m13: simba::simd::f32x8::from([
-                data[0].m13,
-                data[1].m13,
-                data[2].m13,
-                data[3].m13,
-                data[4].m13,
-                data[5].m13,
-                data[6].m13,
-                data[7].m13,
-            ]),
-            m22: simba::simd::f32x8::from([
-                data[0].m22,
-                data[1].m22,
-                data[2].m22,
-                data[3].m22,
-                data[4].m22,
-                data[5].m22,
-                data[6].m22,
-                data[7].m22,
-            ]),
-            m23: simba::simd::f32x8::from([
-                data[0].m23,
-                data[1].m23,
-                data[2].m23,
-                data[3].m23,
-                data[4].m23,
-                data[5].m23,
-                data[6].m23,
-                data[7].m23,
-            ]),
-            m33: simba::simd::f32x8::from([
-                data[0].m33,
-                data[1].m33,
-                data[2].m33,
-                data[3].m33,
-                data[4].m33,
-                data[5].m33,
-                data[6].m33,
-                data[7].m33,
-            ]),
-        }
-    }
-}
-
-#[cfg(feature = "simd-nightly")]
-impl From<[SdpMatrix3<Real>; 16]> for SdpMatrix3<simba::simd::f32x16> {
-    fn from(data: [SdpMatrix3<Real>; 16]) -> Self {
-        SdpMatrix3 {
-            m11: simba::simd::f32x16::from([
-                data[0].m11,
-                data[1].m11,
-                data[2].m11,
-                data[3].m11,
-                data[4].m11,
-                data[5].m11,
-                data[6].m11,
-                data[7].m11,
-                data[8].m11,
-                data[9].m11,
-                data[10].m11,
-                data[11].m11,
-                data[12].m11,
-                data[13].m11,
-                data[14].m11,
-                data[15].m11,
-            ]),
-            m12: simba::simd::f32x16::from([
-                data[0].m12,
-                data[1].m12,
-                data[2].m12,
-                data[3].m12,
-                data[4].m12,
-                data[5].m12,
-                data[6].m12,
-                data[7].m12,
-                data[8].m12,
-                data[9].m12,
-                data[10].m12,
-                data[11].m12,
-                data[12].m12,
-                data[13].m12,
-                data[14].m12,
-                data[15].m12,
-            ]),
-            m13: simba::simd::f32x16::from([
-                data[0].m13,
-                data[1].m13,
-                data[2].m13,
-                data[3].m13,
-                data[4].m13,
-                data[5].m13,
-                data[6].m13,
-                data[7].m13,
-                data[8].m13,
-                data[9].m13,
-                data[10].m13,
-                data[11].m13,
-                data[12].m13,
-                data[13].m13,
-                data[14].m13,
-                data[15].m13,
-            ]),
-            m22: simba::simd::f32x16::from([
-                data[0].m22,
-                data[1].m22,
-                data[2].m22,
-                data[3].m22,
-                data[4].m22,
-                data[5].m22,
-                data[6].m22,
-                data[7].m22,
-                data[8].m22,
-                data[9].m22,
-                data[10].m22,
-                data[11].m22,
-                data[12].m22,
-                data[13].m22,
-                data[14].m22,
-                data[15].m22,
-            ]),
-            m23: simba::simd::f32x16::from([
-                data[0].m23,
-                data[1].m23,
-                data[2].m23,
-                data[3].m23,
-                data[4].m23,
-                data[5].m23,
-                data[6].m23,
-                data[7].m23,
-                data[8].m23,
-                data[9].m23,
-                data[10].m23,
-                data[11].m23,
-                data[12].m23,
-                data[13].m23,
-                data[14].m23,
-                data[15].m23,
-            ]),
-            m33: simba::simd::f32x16::from([
-                data[0].m33,
-                data[1].m33,
-                data[2].m33,
-                data[3].m33,
-                data[4].m33,
-                data[5].m33,
-                data[6].m33,
-                data[7].m33,
-                data[8].m33,
-                data[9].m33,
-                data[10].m33,
-                data[11].m33,
-                data[12].m33,
-                data[13].m33,
-                data[14].m33,
-                data[15].m33,
-            ]),
         }
     }
 }

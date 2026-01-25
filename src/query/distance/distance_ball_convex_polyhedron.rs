@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real};
+use crate::math::{Pose, Real};
 use crate::shape::{Ball, Shape};
 
 /// Distance between a ball and a convex polyhedron.
@@ -7,7 +7,7 @@ use crate::shape::{Ball, Shape};
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn distance_ball_convex_polyhedron(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     ball1: &Ball,
     shape2: &(impl Shape + ?Sized),
 ) -> Real {
@@ -20,11 +20,11 @@ pub fn distance_ball_convex_polyhedron(
 /// both the ConvexPolyhedron and PointQuery traits.
 #[inline]
 pub fn distance_convex_polyhedron_ball(
-    pos12: &Isometry<Real>,
+    pos12: &Pose,
     shape1: &(impl Shape + ?Sized),
     ball2: &Ball,
 ) -> Real {
-    let center2_1 = Point::from(pos12.translation.vector);
-    let proj = shape1.project_local_point(&center2_1, true);
-    (na::distance(&proj.point, &center2_1) - ball2.radius).max(0.0)
+    let center2_1 = pos12.translation;
+    let proj = shape1.project_local_point(center2_1, true);
+    ((proj.point - center2_1).length() - ball2.radius).max(0.0)
 }

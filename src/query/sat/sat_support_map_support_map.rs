@@ -1,6 +1,5 @@
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::shape::SupportMap;
-use na::Unit;
 
 /// Computes the separation distance between two convex shapes along a given direction.
 ///
@@ -41,21 +40,21 @@ use na::Unit;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Ball, Cuboid};
 /// use parry3d::query::sat::support_map_support_map_compute_separation;
-/// use nalgebra::{Isometry3, Vector3, Unit};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let sphere = Ball::new(1.0);
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::splat(1.0));
 ///
 /// // Position cube to the right of the sphere
-/// let pos12 = Isometry3::translation(3.0, 0.0, 0.0);
+/// let pos12 = Pose::translation(3.0, 0.0, 0.0);
 ///
 /// // Test separation along the X axis
-/// let dir = Unit::new_normalize(Vector3::x());
+/// let dir = Vector::X.normalize();
 /// let separation = support_map_support_map_compute_separation(
 ///     &sphere,
 ///     &cube,
 ///     &pos12,
-///     &dir
+///     dir
 /// );
 ///
 /// // They should be separated (sphere radius 1.0 + cube extent 1.0 = 2.0, distance 3.0)
@@ -80,10 +79,10 @@ use na::Unit;
 pub fn support_map_support_map_compute_separation(
     sm1: &impl SupportMap,
     sm2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-    dir1: &Unit<Vector<Real>>,
+    pos12: &Pose,
+    dir1: Vector,
 ) -> Real {
     let p1 = sm1.local_support_point_toward(dir1);
-    let p2 = sm2.support_point_toward(pos12, &-*dir1);
+    let p2 = sm2.support_point_toward(pos12, -dir1);
     (p2 - p1).dot(dir1)
 }

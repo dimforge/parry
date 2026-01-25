@@ -35,7 +35,7 @@ cargo build -p parry2d
 cd crates/parry3d && cargo build --features simd-stable
 
 # Build with all serialization features
-cargo build --features bytemuck-serialize,serde-serialize,rkyv-serialize
+cargo build --features bytemuck-serialize,serde-serialize,rkyv
 
 # Build with enhanced determinism (incompatible with SIMD)
 cargo build --features enhanced-determinism

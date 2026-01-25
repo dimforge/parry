@@ -1,13 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real};
-use crate::num::Bounded;
+use crate::math::{Pose, Vector};
 use crate::shape::HalfSpace;
-use na;
 
 impl HalfSpace {
     /// Computes the world-space [`Aabb`] of this half-space.
     #[inline]
-    pub fn aabb(&self, _pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, _pos: &Pose) -> Aabb {
         self.local_aabb()
     }
 
@@ -16,7 +14,7 @@ impl HalfSpace {
     pub fn local_aabb(&self) -> Aabb {
         // We divide by 2.0  so that we can still make some operations with it (like loosening)
         // without breaking the box.
-        let max = Point::max_value() * na::convert::<f64, Real>(0.5f64);
+        let max = Vector::MAX * 0.5;
         Aabb::new(-max, max)
     }
 }

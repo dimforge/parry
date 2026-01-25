@@ -75,22 +75,22 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Ball 1: moving right AND spinning around Y axis
 /// let motion1 = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0), // start position
-///     Point3::origin(),                      // rotation center (local space)
-///     Vector3::new(2.0, 0.0, 0.0),          // moving right at speed 2
-///     Vector3::new(0.0, 10.0, 0.0),         // spinning around Y axis
+///     Pose::translation(0.0, 0.0, 0.0), // start position
+///     Vector::ZERO,                      // rotation center (local space)
+///     Vector::new(2.0, 0.0, 0.0),          // moving right at speed 2
+///     Vector::new(0.0, 10.0, 0.0),         // spinning around Y axis
 /// );
 ///
 /// // Ball 2: stationary at x=10
 /// let motion2 = NonlinearRigidMotion::constant_position(
-///     Isometry3::translation(10.0, 0.0, 0.0)
+///     Pose::translation(10.0, 0.0, 0.0)
 /// );
 ///
 /// let result = cast_shapes_nonlinear(
@@ -115,25 +115,25 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Cuboid;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // A cuboid tumbling through space
-/// let cube = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
+/// let cube = Cuboid::new(Vector::new(0.5, 0.5, 0.5));
 ///
 /// // Large wall (very wide cuboid)
-/// let wall = Cuboid::new(Vector3::new(10.0, 10.0, 0.1));
+/// let wall = Cuboid::new(Vector::new(10.0, 10.0, 0.1));
 ///
 /// // Cube falling and tumbling
 /// let motion_cube = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 5.0, 0.0),  // starting 5 units above
-///     Point3::origin(),                        // rotate around center
-///     Vector3::new(0.0, -2.0, 0.0),           // falling down
-///     Vector3::new(1.0, 0.5, 2.0),            // tumbling (complex rotation)
+///     Pose::translation(0.0, 5.0, 0.0),  // starting 5 units above
+///     Vector::ZERO,                        // rotate around center
+///     Vector::new(0.0, -2.0, 0.0),           // falling down
+///     Vector::new(1.0, 0.5, 2.0),            // tumbling (complex rotation)
 /// );
 ///
 /// // Wall is stationary
 /// let motion_wall = NonlinearRigidMotion::constant_position(
-///     Isometry3::translation(0.0, 0.0, 0.0)
+///     Pose::translation(0.0, 0.0, 0.0)
 /// );
 ///
 /// let result = cast_shapes_nonlinear(
@@ -158,21 +158,21 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes_nonlinear, NonlinearRigidMotion};
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(2.0);
 /// let ball2 = Ball::new(2.0);
 ///
 /// // Balls overlapping (3 units apart, but radii sum to 4)
 /// let motion1 = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0),
-///     Point3::origin(),
-///     Vector3::new(-1.0, 0.0, 0.0),  // moving AWAY from ball2
-///     Vector3::zeros(),
+///     Pose::translation(0.0, 0.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(-1.0, 0.0, 0.0),  // moving AWAY from ball2
+///     Vector::ZERO,
 /// );
 ///
 /// let motion2 = NonlinearRigidMotion::constant_position(
-///     Isometry3::translation(3.0, 0.0, 0.0)
+///     Pose::translation(3.0, 0.0, 0.0)
 /// );
 ///
 /// // With stop_at_penetration = true

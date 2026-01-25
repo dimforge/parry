@@ -1,11 +1,14 @@
 #[cfg(feature = "dim3")]
 use crate::approx::AbsDiffEq;
-use crate::math::{Isometry, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::query::sat;
 #[cfg(feature = "dim2")]
 use crate::query::sat::support_map_support_map_compute_separation;
 use crate::shape::{Cuboid, SupportMap, Triangle};
+
+#[cfg(all(feature = "dim3", not(feature = "std")))]
+use simba::scalar::ComplexField;
 
 /// Finds the best separating axis by testing all edge-edge combinations between a cuboid and a triangle (3D only).
 ///
@@ -25,7 +28,7 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 /// - `Real`: The maximum separation found across all edge-edge axes
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping (penetration depth)
-/// - `Vector<Real>`: The axis direction that gives this separation
+/// - `Vector`: The axis direction that gives this separation
 ///
 /// # The 9 Axes Tested
 ///
@@ -42,17 +45,17 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Cuboid, Triangle};
 /// use parry3d::query::sat::cuboid_triangle_find_local_separating_edge_twoway;
-/// use nalgebra::{Point3, Vector3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 /// let triangle = Triangle::new(
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0)
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0)
 /// );
 ///
 /// // Position triangle near the cube
-/// let pos12 = Isometry3::translation(2.0, 0.0, 0.0);
+/// let pos12 = Pose::translation(2.0, 0.0, 0.0);
 ///
 /// let (separation, axis) = cuboid_triangle_find_local_separating_edge_twoway(
 ///     &cube,
@@ -75,8 +78,8 @@ use crate::shape::{Cuboid, SupportMap, Triangle};
 pub fn cuboid_triangle_find_local_separating_edge_twoway(
     cube1: &Cuboid,
     triangle2: &Triangle,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     // NOTE: everything in this method will be expressed
     // in the local-space of the first triangle. So we
     // don't bother adding 2_1 suffixes (e.g. `a2_1`) to everything in
@@ -106,30 +109,30 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
     ];
 
     let tri_dots = [
-        (axes[0].dot(&a.coords), axes[0].dot(&c.coords)),
-        (axes[1].dot(&a.coords), axes[1].dot(&c.coords)),
-        (axes[2].dot(&a.coords), axes[2].dot(&c.coords)),
-        (axes[3].dot(&a.coords), axes[3].dot(&c.coords)),
-        (axes[4].dot(&a.coords), axes[4].dot(&c.coords)),
-        (axes[5].dot(&a.coords), axes[5].dot(&c.coords)),
-        (axes[6].dot(&a.coords), axes[6].dot(&b.coords)),
-        (axes[7].dot(&a.coords), axes[7].dot(&b.coords)),
-        (axes[8].dot(&a.coords), axes[8].dot(&b.coords)),
+        (axes[0].dot(a), axes[0].dot(c)),
+        (axes[1].dot(a), axes[1].dot(c)),
+        (axes[2].dot(a), axes[2].dot(c)),
+        (axes[3].dot(a), axes[3].dot(c)),
+        (axes[4].dot(a), axes[4].dot(c)),
+        (axes[5].dot(a), axes[5].dot(c)),
+        (axes[6].dot(a), axes[6].dot(b)),
+        (axes[7].dot(a), axes[7].dot(b)),
+        (axes[8].dot(a), axes[8].dot(b)),
     ];
 
     let mut best_sep = -Real::MAX;
     let mut best_axis = axes[0];
 
     for (i, axis) in axes.iter().enumerate() {
-        let axis_norm_squared = axis.norm_squared();
+        let axis_norm_squared = axis.length_squared();
 
         if axis_norm_squared > Real::default_epsilon() {
-            let axis_norm = na::ComplexField::sqrt(axis_norm_squared);
+            let axis_norm = axis_norm_squared.sqrt();
 
             // NOTE: for both axis and -axis, the dot1 will have the same
             // value because of the cuboid's symmetry.
-            let local_pt1 = cube1.local_support_point(axis);
-            let dot1 = local_pt1.coords.dot(axis) / axis_norm;
+            let local_pt1 = cube1.local_support_point(*axis);
+            let dot1 = local_pt1.dot(*axis) / axis_norm;
 
             let (dot2_min, dot2_max) = crate::utils::sort2(tri_dots[i].0, tri_dots[i].1);
 
@@ -169,7 +172,7 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 /// - `Real`: The maximum separation found among the triangle's edge normals
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The edge normal direction that gives this separation
+/// - `Vector`: The edge normal direction that gives this separation
 ///
 /// # 2D vs 3D
 ///
@@ -182,16 +185,16 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::{Triangle, Ball};
 /// use parry2d::query::sat::triangle_support_map_find_local_separating_normal_oneway;
-/// use nalgebra::{Point2, Isometry2};
+/// use parry2d::math::{Vector, Pose};
 ///
 /// let triangle = Triangle::new(
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(1.0, 2.0)
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(1.0, 2.0)
 /// );
 /// let sphere = Ball::new(0.5);
 ///
-/// let pos12 = Isometry2::translation(3.0, 1.0);
+/// let pos12 = Pose::translation(3.0, 1.0);
 ///
 /// let (separation, normal) = triangle_support_map_find_local_separating_normal_oneway(
 ///     &triangle,
@@ -208,18 +211,18 @@ pub fn cuboid_triangle_find_local_separating_edge_twoway(
 pub fn triangle_support_map_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &impl SupportMap,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     let mut best_sep = -Real::MAX;
-    let mut best_normal = Vector::zeros();
+    let mut best_normal = Vector::ZERO;
 
     for edge in &triangle1.edges() {
         if let Some(normal) = edge.normal() {
-            let sep = support_map_support_map_compute_separation(triangle1, shape2, pos12, &normal);
+            let sep = support_map_support_map_compute_separation(triangle1, shape2, pos12, normal);
 
             if sep > best_sep {
                 best_sep = sep;
-                best_normal = *normal;
+                best_normal = normal;
             }
         }
     }
@@ -248,8 +251,8 @@ pub fn triangle_support_map_find_local_separating_normal_oneway(
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     triangle_support_map_find_local_separating_normal_oneway(triangle1, shape2, pos12)
 }
 
@@ -278,7 +281,7 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 /// - `Real`: The separation distance along the triangle's face normal
 ///   - **Positive**: Shapes are separated
 ///   - **Negative**: Shapes are overlapping
-/// - `Vector<Real>`: The face normal direction (or its negation) that gives this separation
+/// - `Vector`: The face normal direction (or its negation) that gives this separation
 ///
 /// # Example
 ///
@@ -286,18 +289,18 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{Triangle, Cuboid};
 /// use parry3d::query::sat::triangle_cuboid_find_local_separating_normal_oneway;
-/// use nalgebra::{Point3, Vector3, Isometry3};
+/// use parry3d::math::{Vector, Pose};
 ///
 /// // Horizontal triangle in the XY plane
 /// let triangle = Triangle::new(
-///     Point3::origin(),
-///     Point3::new(2.0, 0.0, 0.0),
-///     Point3::new(1.0, 2.0, 0.0)
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0, 0.0),
+///     Vector::new(1.0, 2.0, 0.0)
 /// );
-/// let cube = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
+/// let cube = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
 ///
 /// // Position cube above the triangle
-/// let pos12 = Isometry3::translation(1.0, 1.0, 2.0);
+/// let pos12 = Pose::translation(1.0, 1.0, 2.0);
 ///
 /// let (separation, normal) = triangle_cuboid_find_local_separating_normal_oneway(
 ///     &triangle,
@@ -318,8 +321,8 @@ pub fn triangle_cuboid_find_local_separating_normal_oneway(
 pub fn triangle_cuboid_find_local_separating_normal_oneway(
     triangle1: &Triangle,
     shape2: &Cuboid,
-    pos12: &Isometry<Real>,
-) -> (Real, Vector<Real>) {
+    pos12: &Pose,
+) -> (Real, Vector) {
     sat::point_cuboid_find_local_separating_normal_oneway(
         triangle1.a,
         triangle1.normal(),

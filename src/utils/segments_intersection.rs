@@ -1,10 +1,7 @@
-use na::Point2;
+use crate::math::Vector2;
 
 use crate::math::Real;
 use crate::shape::{SegmentPointLocation, Triangle, TriangleOrientation};
-
-#[cfg(not(feature = "alloc"))]
-use na::ComplexField;
 
 /// Intersection between two segments.
 pub enum SegmentsIntersection {
@@ -30,10 +27,10 @@ pub enum SegmentsIntersection {
 
 /// Computes the intersection between two segments.
 pub fn segments_intersection2d(
-    a: &Point2<Real>,
-    b: &Point2<Real>,
-    c: &Point2<Real>,
-    d: &Point2<Real>,
+    a: Vector2,
+    b: Vector2,
+    c: Vector2,
+    d: Vector2,
     epsilon: Real,
 ) -> Option<SegmentsIntersection> {
     let denom = a.x * (d.y - c.y) + b.x * (c.y - d.y) + d.x * (b.y - a.y) + c.x * (a.y - b.y);
@@ -73,10 +70,10 @@ pub fn segments_intersection2d(
 }
 
 fn parallel_intersection(
-    a: &Point2<Real>,
-    b: &Point2<Real>,
-    c: &Point2<Real>,
-    d: &Point2<Real>,
+    a: Vector2,
+    b: Vector2,
+    c: Vector2,
+    d: Vector2,
     epsilon: Real,
 ) -> Option<SegmentsIntersection> {
     if Triangle::orientation2d(a, b, c, epsilon) != TriangleOrientation::Degenerate {
@@ -146,7 +143,7 @@ fn parallel_intersection(
 
 // Checks that `c` is in-between `a` and `b`.
 // Assumes the three points are collinear.
-fn between(a: &Point2<Real>, b: &Point2<Real>, c: &Point2<Real>) -> Option<SegmentPointLocation> {
+fn between(a: Vector2, b: Vector2, c: Vector2) -> Option<SegmentPointLocation> {
     // If ab not vertical, check betweenness on x; else on y.
     // TODO: handle cases where we actually are on a vertex (to return OnEdge instead of OnVertex)?
     if a.x != b.x {

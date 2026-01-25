@@ -25,10 +25,10 @@
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::bounding_volume::Aabb;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use parry3d::query::SplitResult;
 ///
-/// let aabb = Aabb::new(Point::new(0.0, 0.0, 0.0), Point::new(10.0, 10.0, 10.0));
+/// let aabb = Aabb::new(Vector::new(0.0, 0.0, 0.0), Vector::new(10.0, 10.0, 10.0));
 ///
 /// // Split along X-axis at x = 5.0
 /// match aabb.canonical_split(0, 5.0, 1e-6) {
@@ -52,10 +52,10 @@
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Segment;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use parry3d::query::SplitResult;
 ///
-/// let segment = Segment::new(Point::new(0.0, 0.0, 0.0), Point::new(10.0, 0.0, 0.0));
+/// let segment = Segment::new(Vector::new(0.0, 0.0, 0.0), Vector::new(10.0, 0.0, 0.0));
 ///
 /// // Split along X-axis at x = 3.0
 /// match segment.canonical_split(0, 3.0, 1e-6) {
@@ -124,15 +124,15 @@ pub enum SplitResult<T> {
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "spade"))] {
 /// use parry3d::shape::TriMesh;
-/// use parry3d::math::Point;
+/// use parry3d::math::Vector;
 /// use parry3d::query::IntersectResult;
 ///
 /// // Create a simple tetrahedron mesh
 /// let vertices = vec![
-///     Point::new(0.0, 0.0, 0.0),
-///     Point::new(1.0, 0.0, 0.0),
-///     Point::new(0.5, 1.0, 0.0),
-///     Point::new(0.5, 0.5, 1.0),
+///     Vector::new(0.0, 0.0, 0.0),
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.5, 1.0, 0.0),
+///     Vector::new(0.5, 0.5, 1.0),
 /// ];
 /// let indices = vec![
 ///     [0u32, 1, 2],  // Bottom face
@@ -169,9 +169,9 @@ pub enum SplitResult<T> {
 /// use parry3d::query::IntersectResult;
 ///
 /// # let vertices = vec![
-/// #     nalgebra::Point3::origin(),
-/// #     nalgebra::Point3::new(1.0, 0.0, 0.0),
-/// #     nalgebra::Point3::new(0.5, 1.0, 0.5),
+/// #     parry3d::math::Vector::ZERO,
+/// #     parry3d::math::Vector::new(1.0, 0.0, 0.0),
+/// #     parry3d::math::Vector::new(0.5, 1.0, 0.5),
 /// # ];
 /// # let indices = vec![[0u32, 1, 2]];
 /// # let mesh = TriMesh::new(vertices, indices).unwrap();

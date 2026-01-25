@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Point, Real, Translation, Vector};
+use crate::math::{Pose, Real, Vector};
 
 /// Describes the complete motion of a rigid body with both translation and rotation.
 ///
@@ -29,7 +29,7 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 ///
 /// * `start` - The initial position and orientation at time `t = 0`
 /// * `local_center` - The point (in the shape's local coordinate system) around which
-///   rotation occurs. For most cases, use the center of mass or `Point::origin()`.
+///   rotation occurs. For most cases, use the center of mass or `Vector::ZERO`.
 /// * `linvel` - Linear velocity vector (units per second). Direction is the direction
 ///   of motion, magnitude is speed.
 /// * `angvel` - Angular velocity:
@@ -41,19 +41,19 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Object moving right at 5 units/second, no rotation
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0), // start at origin
-///     Point3::origin(),                      // rotation center (irrelevant here)
-///     Vector3::new(5.0, 0.0, 0.0),          // moving right
-///     Vector3::zeros(),                      // not rotating
+///     Pose::translation(0.0, 0.0, 0.0), // start at origin
+///     Vector::ZERO,                      // rotation center (irrelevant here)
+///     Vector::new(5.0, 0.0, 0.0),          // moving right
+///     Vector::ZERO,                      // not rotating
 /// );
 ///
 /// // At t=2.0 seconds, object has moved 10 units right
 /// let pos_at_2 = motion.position_at_time(2.0);
-/// assert_eq!(pos_at_2.translation.vector.x, 10.0);
+/// assert_eq!(pos_at_2.translation.x, 10.0);
 /// # }
 /// ```
 ///
@@ -62,15 +62,15 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 /// use std::f32::consts::PI;
 ///
 /// // Object spinning around Y axis, no translation
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0),
-///     Point3::origin(),                // rotate around origin
-///     Vector3::zeros(),                // not translating
-///     Vector3::new(0.0, PI, 0.0),      // rotating around Y at π rad/s (180°/s)
+///     Pose::translation(0.0, 0.0, 0.0),
+///     Vector::ZERO,                // rotate around origin
+///     Vector::ZERO,                // not translating
+///     Vector::new(0.0, PI, 0.0),      // rotating around Y at π rad/s (180°/s)
 /// );
 ///
 /// // At t=1.0 second, object has rotated 180 degrees
@@ -84,14 +84,14 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Spinning projectile moving forward
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0),
-///     Point3::origin(),
-///     Vector3::new(10.0, 0.0, 0.0),     // moving forward at 10 units/s
-///     Vector3::new(20.0, 0.0, 0.0),     // spinning around its movement axis
+///     Pose::translation(0.0, 0.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(10.0, 0.0, 0.0),     // moving forward at 10 units/s
+///     Vector::new(20.0, 0.0, 0.0),     // spinning around its movement axis
 /// );
 ///
 /// // The object traces a helical path (like a bullet with rifling)
@@ -100,20 +100,20 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// # }
 /// ```
 ///
-/// # Example: Rotation Around Off-Center Point
+/// # Example: Rotation Around Off-Center Vector
 ///
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Object rotating around a point that's NOT its center
 /// // Useful for: swinging weapons, rotating around pivot point, etc.
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry3::translation(5.0, 0.0, 0.0), // object is at x=5
-///     Point3::new(-5.0, 0.0, 0.0),           // rotate around x=0 (in local space)
-///     Vector3::zeros(),
-///     Vector3::new(0.0, 1.0, 0.0),           // rotate around Y axis at 1 rad/s
+///     Pose::translation(5.0, 0.0, 0.0), // object is at x=5
+///     Vector::new(-5.0, 0.0, 0.0),           // rotate around x=0 (in local space)
+///     Vector::ZERO,
+///     Vector::new(0.0, 1.0, 0.0),           // rotate around Y axis at 1 rad/s
 /// );
 ///
 /// // The object orbits in a circle around the world origin
@@ -128,12 +128,12 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// let bullet = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 1.5, 0.0),
-///     Point3::origin(),
-///     Vector3::new(100.0, -2.0, 0.0),  // fast forward, slight drop
-///     Vector3::new(50.0, 0.0, 0.0),    // high spin rate
+///     Pose::translation(0.0, 1.5, 0.0),
+///     Vector::ZERO,
+///     Vector::new(100.0, -2.0, 0.0),  // fast forward, slight drop
+///     Vector::new(50.0, 0.0, 0.0),    // high spin rate
 /// );
 /// # }
 /// ```
@@ -143,12 +143,12 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// let debris = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 2.0, 0.0),
-///     Point3::origin(),
-///     Vector3::new(3.0, 5.0, -2.0),    // chaotic velocity
-///     Vector3::new(2.0, -3.0, 1.5),    // chaotic rotation
+///     Pose::translation(0.0, 2.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(3.0, 5.0, -2.0),    // chaotic velocity
+///     Vector::new(2.0, -3.0, 1.5),    // chaotic rotation
 /// );
 /// # }
 /// ```
@@ -158,12 +158,12 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use nalgebra::{Isometry3, Point3, Vector3};
+/// # use parry3d::math::{Pose, Vector};
 /// let blade = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 1.0, 0.0),
-///     Point3::origin(),           // spin around center
-///     Vector3::zeros(),           // blade doesn't translate
-///     Vector3::new(0.0, 10.0, 0.0), // fast rotation
+///     Pose::translation(0.0, 1.0, 0.0),
+///     Vector::ZERO,           // spin around center
+///     Vector::ZERO,           // blade doesn't translate
+///     Vector::new(0.0, 10.0, 0.0), // fast rotation
 /// );
 /// # }
 /// ```
@@ -173,9 +173,9 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// # use parry3d::query::NonlinearRigidMotion;
-/// # use nalgebra::Isometry3;
+/// # use parry3d::math::Pose;
 /// let wall = NonlinearRigidMotion::constant_position(
-///     Isometry3::translation(10.0, 0.0, 0.0)
+///     Pose::translation(10.0, 0.0, 0.0)
 /// );
 /// # }
 /// ```
@@ -192,12 +192,12 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry2, Point2, Vector2};
+/// use parry2d::math::{Pose, Vector};
 ///
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry2::translation(0.0, 0.0),
-///     Point2::origin(),
-///     Vector2::zeros(),
+///     Pose::translation(0.0, 0.0),
+///     Vector::ZERO,
+///     Vector::ZERO,
 ///     3.14,  // rotating counter-clockwise at π rad/s
 /// );
 /// # }
@@ -211,13 +211,13 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::NonlinearRigidMotion;
-/// use nalgebra::{Isometry3, Point3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let motion = NonlinearRigidMotion::new(
-///     Isometry3::translation(0.0, 0.0, 0.0),
-///     Point3::origin(),
-///     Vector3::zeros(),
-///     Vector3::new(0.0, 3.14, 0.0),  // rotate around Y axis at π rad/s
+///     Pose::translation(0.0, 0.0, 0.0),
+///     Vector::ZERO,
+///     Vector::ZERO,
+///     Vector::new(0.0, 3.14, 0.0),  // rotate around Y axis at π rad/s
 /// );
 /// # }
 /// ```
@@ -226,7 +226,7 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 ///
 /// 1. **Local vs World Space**: The `local_center` must be in the **shape's local
 ///    coordinate system**, not world space. For a shape centered at origin,
-///    use `Point::origin()`.
+///    use `Vector::ZERO`.
 ///
 /// 2. **Angular Velocity Units**: Always use **radians per second**, not degrees!
 ///    - To convert: `degrees * (PI / 180.0) = radians`
@@ -239,7 +239,7 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 ///    - Create new `NonlinearRigidMotion` for next timestep
 ///
 /// 4. **Center of Mass**: For realistic physics, `local_center` should be the
-///    shape's center of mass. For simple cases, `Point::origin()` often works.
+///    shape's center of mass. For simple cases, `Vector::ZERO` often works.
 ///
 /// # See Also
 ///
@@ -249,17 +249,17 @@ use crate::math::{Isometry, Point, Real, Translation, Vector};
 #[derive(Debug, Copy, Clone)]
 pub struct NonlinearRigidMotion {
     /// The starting isometry at `t = 0`.
-    pub start: Isometry<Real>,
+    pub start: Pose,
     /// The local-space point at which the rotational part of this motion is applied.
-    pub local_center: Point<Real>,
+    pub local_center: Vector,
     /// The translational velocity of this motion.
-    pub linvel: Vector<Real>,
+    pub linvel: Vector,
     /// The angular velocity of this motion.
     #[cfg(feature = "dim2")]
     pub angvel: Real,
     /// The angular velocity of this motion.
     #[cfg(feature = "dim3")]
-    pub angvel: Vector<Real>,
+    pub angvel: Vector,
 }
 
 impl NonlinearRigidMotion {
@@ -268,7 +268,7 @@ impl NonlinearRigidMotion {
     /// # Arguments
     ///
     /// * `start` - Initial position and orientation at time `t = 0`
-    /// * `local_center` - Point (in local coordinates) around which rotation occurs
+    /// * `local_center` - Vector (in local coordinates) around which rotation occurs
     /// * `linvel` - Linear velocity vector (units per second)
     /// * `angvel` - Angular velocity (2D: radians/sec scalar, 3D: axis-angle vector)
     ///
@@ -277,14 +277,14 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry2, Point2, Vector2};
+    /// use parry2d::math::{Pose, Vector};
     /// use std::f32::consts::PI;
     ///
     /// // Object moving right and rotating counter-clockwise
     /// let motion = NonlinearRigidMotion::new(
-    ///     Isometry2::translation(0.0, 0.0),
-    ///     Point2::origin(),
-    ///     Vector2::new(5.0, 0.0),  // 5 units/sec to the right
+    ///     Pose::translation(0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(5.0, 0.0),  // 5 units/sec to the right
     ///     PI,                       // π rad/sec counter-clockwise
     /// );
     /// # }
@@ -295,24 +295,19 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Object moving forward and spinning around its movement axis
     /// let motion = NonlinearRigidMotion::new(
-    ///     Isometry3::translation(0.0, 0.0, 0.0),
-    ///     Point3::origin(),
-    ///     Vector3::new(10.0, 0.0, 0.0),    // moving forward
-    ///     Vector3::new(5.0, 0.0, 0.0),     // spinning around X axis
+    ///     Pose::translation(0.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(10.0, 0.0, 0.0),    // moving forward
+    ///     Vector::new(5.0, 0.0, 0.0),     // spinning around X axis
     /// );
     /// # }
     /// ```
     #[cfg(feature = "dim2")]
-    pub fn new(
-        start: Isometry<Real>,
-        local_center: Point<Real>,
-        linvel: Vector<Real>,
-        angvel: Real,
-    ) -> Self {
+    pub fn new(start: Pose, local_center: Vector, linvel: Vector, angvel: Real) -> Self {
         NonlinearRigidMotion {
             start,
             local_center,
@@ -326,7 +321,7 @@ impl NonlinearRigidMotion {
     /// # Arguments
     ///
     /// * `start` - Initial position and orientation at time `t = 0`
-    /// * `local_center` - Point (in local coordinates) around which rotation occurs
+    /// * `local_center` - Vector (in local coordinates) around which rotation occurs
     /// * `linvel` - Linear velocity vector (units per second)
     /// * `angvel` - Angular velocity as axis-angle vector (radians per second)
     ///
@@ -335,24 +330,19 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Object moving forward and spinning around its movement axis
     /// let motion = NonlinearRigidMotion::new(
-    ///     Isometry3::translation(0.0, 0.0, 0.0),
-    ///     Point3::origin(),
-    ///     Vector3::new(10.0, 0.0, 0.0),    // moving forward
-    ///     Vector3::new(5.0, 0.0, 0.0),     // spinning around X axis
+    ///     Pose::translation(0.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(10.0, 0.0, 0.0),    // moving forward
+    ///     Vector::new(5.0, 0.0, 0.0),     // spinning around X axis
     /// );
     /// # }
     /// ```
     #[cfg(feature = "dim3")]
-    pub fn new(
-        start: Isometry<Real>,
-        local_center: Point<Real>,
-        linvel: Vector<Real>,
-        angvel: Vector<Real>,
-    ) -> Self {
+    pub fn new(start: Pose, local_center: Vector, linvel: Vector, angvel: Vector) -> Self {
         NonlinearRigidMotion {
             start,
             local_center,
@@ -363,7 +353,7 @@ impl NonlinearRigidMotion {
 
     /// Creates a stationary motion at the origin (identity transformation).
     ///
-    /// Equivalent to `constant_position(Isometry::identity())`.
+    /// Equivalent to `constant_position(Pose::identity())`.
     ///
     /// # Example
     ///
@@ -376,7 +366,7 @@ impl NonlinearRigidMotion {
     /// # }
     /// ```
     pub fn identity() -> Self {
-        Self::constant_position(Isometry::identity())
+        Self::constant_position(Pose::IDENTITY)
     }
 
     /// Creates a motion that stays at a constant position (no translation, no rotation).
@@ -393,31 +383,34 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::Isometry3;
+    /// use parry3d::math::Pose;
     ///
     /// // A wall that never moves
     /// let wall_motion = NonlinearRigidMotion::constant_position(
-    ///     Isometry3::translation(10.0, 0.0, 0.0)
+    ///     Pose::translation(10.0, 0.0, 0.0)
     /// );
     ///
     /// // At any time t, position is always (10, 0, 0)
     /// let pos_at_5 = wall_motion.position_at_time(5.0);
-    /// assert_eq!(pos_at_5.translation.vector.x, 10.0);
+    /// assert_eq!(pos_at_5.translation.x, 10.0);
     /// # }
     /// ```
-    pub fn constant_position(pos: Isometry<Real>) -> Self {
+    pub fn constant_position(pos: Pose) -> Self {
         Self {
             start: pos,
-            linvel: na::zero(),
-            angvel: na::zero(),
-            local_center: Point::origin(),
+            linvel: Vector::ZERO,
+            #[cfg(feature = "dim2")]
+            angvel: 0.0,
+            #[cfg(feature = "dim3")]
+            angvel: Vector::ZERO,
+            local_center: Vector::ZERO,
         }
     }
 
-    fn set_start(&mut self, new_start: Isometry<Real>) {
+    fn set_start(&mut self, new_start: Pose) {
         // NOTE: we need to adjust the local_center so that the angular
         // velocity is still expressed wrt. the original center.
-        self.local_center = new_start.inverse_transform_point(&(self.start * self.local_center));
+        self.local_center = new_start.inverse_transform_point(self.start * self.local_center);
         self.start = new_start;
     }
 
@@ -440,13 +433,13 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let mut motion = NonlinearRigidMotion::new(
-    ///     Isometry3::translation(0.0, 0.0, 0.0),
-    ///     Point3::origin(),
-    ///     Vector3::new(5.0, 0.0, 0.0),  // moving right
-    ///     Vector3::zeros(),
+    ///     Pose::translation(0.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(5.0, 0.0, 0.0),  // moving right
+    ///     Vector::ZERO,
     /// );
     ///
     /// // Freeze at t=2.0 (when object is at x=10)
@@ -454,34 +447,41 @@ impl NonlinearRigidMotion {
     ///
     /// // Now position is constant at x=10, regardless of time
     /// let pos_at_100 = motion.position_at_time(100.0);
-    /// assert_eq!(pos_at_100.translation.vector.x, 10.0);
+    /// assert_eq!(pos_at_100.translation.x, 10.0);
     /// # }
     /// ```
     pub fn freeze(&mut self, t: Real) {
         self.start = self.position_at_time(t);
-        self.linvel = na::zero();
-        self.angvel = na::zero();
+        self.linvel = Vector::ZERO;
+        #[cfg(feature = "dim2")]
+        {
+            self.angvel = 0.0;
+        }
+        #[cfg(feature = "dim3")]
+        {
+            self.angvel = Vector::ZERO;
+        }
     }
 
     /// Appends a constant translation to this rigid-motion.
     #[must_use]
-    pub fn append_translation(&self, tra: Vector<Real>) -> Self {
+    pub fn append_translation(&self, tra: Vector) -> Self {
         let mut result = *self;
-        result.set_start(Translation::from(tra) * result.start);
+        result.set_start(Pose::from_translation(tra) * result.start);
         result
     }
 
     /// Prepends a constant translation to this rigid-motion.
     #[must_use]
-    pub fn prepend_translation(&self, tra: Vector<Real>) -> Self {
+    pub fn prepend_translation(&self, tra: Vector) -> Self {
         let mut result = *self;
-        result.set_start(result.start * Translation::from(tra));
+        result.set_start(result.start * Pose::from_translation(tra));
         result
     }
 
     /// Appends a constant isometry to this rigid-motion.
     #[must_use]
-    pub fn append(&self, iso: Isometry<Real>) -> Self {
+    pub fn append(&self, iso: Pose) -> Self {
         let mut result = *self;
         result.set_start(iso * result.start);
         result
@@ -489,7 +489,7 @@ impl NonlinearRigidMotion {
 
     /// Prepends a constant translation to this rigid-motion.
     #[must_use]
-    pub fn prepend(&self, iso: Isometry<Real>) -> Self {
+    pub fn prepend(&self, iso: Pose) -> Self {
         let mut result = *self;
         result.set_start(result.start * iso);
         result
@@ -518,23 +518,23 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let motion = NonlinearRigidMotion::new(
-    ///     Isometry3::translation(0.0, 0.0, 0.0),
-    ///     Point3::origin(),
-    ///     Vector3::new(3.0, 0.0, 0.0),     // 3 units/sec to the right
-    ///     Vector3::new(0.0, 1.0, 0.0),     // 1 radian/sec around Y axis
+    ///     Pose::translation(0.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(3.0, 0.0, 0.0),     // 3 units/sec to the right
+    ///     Vector::new(0.0, 1.0, 0.0),     // 1 radian/sec around Y axis
     /// );
     ///
     /// // Position at t=0
     /// let pos_0 = motion.position_at_time(0.0);
-    /// assert_eq!(pos_0.translation.vector.x, 0.0);
+    /// assert_eq!(pos_0.translation.x, 0.0);
     ///
     /// // Position at t=2.0 seconds
     /// let pos_2 = motion.position_at_time(2.0);
     /// // Object has moved 6 units to the right
-    /// assert!((pos_2.translation.vector.x - 6.0).abs() < 0.01);
+    /// assert!((pos_2.translation.x - 6.0).abs() < 0.01);
     /// // And rotated 2 radians around Y
     /// # }
     /// ```
@@ -544,13 +544,13 @@ impl NonlinearRigidMotion {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::query::NonlinearRigidMotion;
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// let motion = NonlinearRigidMotion::new(
-    ///     Isometry3::translation(0.0, 5.0, 0.0),
-    ///     Point3::origin(),
-    ///     Vector3::new(0.0, -9.8, 0.0),    // falling (gravity)
-    ///     Vector3::new(1.0, 2.0, 0.5),     // tumbling
+    ///     Pose::translation(0.0, 5.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(0.0, -9.8, 0.0),    // falling (gravity)
+    ///     Vector::new(1.0, 2.0, 0.5),     // tumbling
     /// );
     ///
     /// // Render at 60 FPS
@@ -562,9 +562,9 @@ impl NonlinearRigidMotion {
     /// }
     /// # }
     /// ```
-    pub fn position_at_time(&self, t: Real) -> Isometry<Real> {
+    pub fn position_at_time(&self, t: Real) -> Pose {
         let center = self.start * self.local_center;
-        let shift = Translation::from(center.coords);
-        (shift * Isometry::new(self.linvel * t, self.angvel * t)) * (shift.inverse() * self.start)
+        let shift = Pose::from_translation(center);
+        (shift * Pose::new(self.linvel * t, self.angvel * t)) * (shift.inverse() * self.start)
     }
 }

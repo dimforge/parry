@@ -1,9 +1,5 @@
 //! Support mapping based HalfSpace shape.
-use crate::math::{Real, Vector};
-use na::Unit;
-
-#[cfg(feature = "rkyv")]
-use rkyv::{bytecheck, CheckBytes};
+use crate::math::Vector;
 
 /// A half-space delimited by an infinite plane.
 ///
@@ -33,7 +29,7 @@ use rkyv::{bytecheck, CheckBytes};
 ///
 /// The plane always passes through the origin `(0, 0)` in 2D or `(0, 0, 0)` in 3D of the
 /// half-space's local coordinate system. To position the plane elsewhere in your world,
-/// use an [`Isometry`](na::Isometry) transformation when performing queries.
+/// use a [`Pose`](crate::math::Pose) transformation when performing queries.
 ///
 /// # Examples
 ///
@@ -42,10 +38,10 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
-/// use parry3d::na::{Vector3, Unit};
+/// use parry3d::math::{Vector};
 ///
 /// // Create a horizontal ground plane with normal pointing up (positive Y-axis)
-/// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+/// let ground = HalfSpace::new((Vector::Y.normalize()));
 ///
 /// // The ground plane is at Y = 0 in local coordinates
 /// // Everything below (negative Y) is "inside" the half-space
@@ -57,10 +53,10 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::HalfSpace;
-/// use parry2d::na::{Vector2, Unit};
+/// use parry2d::math::Vector;
 ///
 /// // Create a vertical wall with normal pointing right (positive X-axis)
-/// let wall = HalfSpace::new(Unit::new_normalize(Vector2::x()));
+/// let wall = HalfSpace::new(Vector::X.normalize());
 ///
 /// // The wall is at X = 0 in local coordinates
 /// // Everything to the left (negative X) is "inside" the half-space
@@ -73,16 +69,16 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::{HalfSpace, Ball};
 /// use parry3d::query;
-/// use parry3d::na::{Isometry3, Vector3, Unit};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Create a ground plane at Y = 0, normal pointing up
-/// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
-/// let ground_pos = Isometry3::identity();
+/// let ground = HalfSpace::new((Vector::Y.normalize()));
+/// let ground_pos = Pose::identity();
 ///
 /// // Create a ball with radius 1.0 at position (0, 0.5, 0)
 /// // The ball is resting on the ground, just touching it
 /// let ball = Ball::new(1.0);
-/// let ball_pos = Isometry3::translation(0.0, 0.5, 0.0);
+/// let ball_pos = Pose::translation(0.0, 0.5, 0.0);
 ///
 /// // Check if they're in contact (with a small prediction distance)
 /// let contact = query::contact(
@@ -103,19 +99,19 @@ use rkyv::{bytecheck, CheckBytes};
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
 /// use parry3d::query::{PointQuery};
-/// use parry3d::na::{Isometry3, Vector3, Point3, Unit};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Create a ground plane with normal pointing up
-/// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+/// let ground = HalfSpace::new((Vector::Y.normalize()));
 ///
 /// // Position the plane at Y = 5.0 using an isometry
-/// let ground_pos = Isometry3::translation(0.0, 5.0, 0.0);
+/// let ground_pos = Pose::translation(0.0, 5.0, 0.0);
 ///
 /// // Check if a point is below the ground (inside the half-space)
-/// let point = Point3::new(0.0, 3.0, 0.0); // Point at Y = 3.0 (below the plane)
+/// let point = Vector::new(0.0, 3.0, 0.0); // Vector at Y = 3.0 (below the plane)
 ///
 /// // Project the point onto the ground plane
-/// let proj = ground.project_point(&ground_pos, &point, true);
+/// let proj = ground.project_point(&ground_pos, point, true);
 ///
 /// // The point is below the ground (inside the half-space)
 /// assert!(proj.is_inside);
@@ -127,12 +123,12 @@ use rkyv::{bytecheck, CheckBytes};
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::HalfSpace;
-/// use parry3d::na::{Vector3, Unit};
+/// use parry3d::math::{Vector};
 ///
 /// // Create a plane tilted at 45 degrees
 /// // Normal points up and to the right
-/// let normal = Vector3::new(1.0, 1.0, 0.0);
-/// let tilted_plane = HalfSpace::new(Unit::new_normalize(normal));
+/// let normal = Vector::new(1.0, 1.0, 0.0);
+/// let tilted_plane = HalfSpace::new((normal).normalize());
 ///
 /// // This plane passes through the origin and divides space diagonally
 /// # }
@@ -141,8 +137,7 @@ use rkyv::{bytecheck, CheckBytes};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize, CheckBytes),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[repr(C)]
 pub struct HalfSpace {
@@ -157,15 +152,15 @@ pub struct HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
-    /// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+    /// let ground = HalfSpace::new(Vector::Y.normalize());
     ///
     /// // The normal points up (positive Y direction)
-    /// assert_eq!(*ground.normal, Vector3::y());
+    /// assert_eq!(ground.normal, Vector::Y);
     /// # }
     /// ```
-    pub normal: Unit<Vector<Real>>,
+    pub normal: Vector,
 }
 
 impl HalfSpace {
@@ -178,8 +173,7 @@ impl HalfSpace {
     /// # Parameters
     ///
     /// * `normal` - A unit vector defining the plane's outward normal direction. This must
-    ///   be a normalized vector (use [`Unit::new_normalize`](na::Unit::new_normalize) to
-    ///   create one from any vector).
+    ///   be a normalized vector (use `.normalize()` on any vector to create one).
     ///
     /// # Examples
     ///
@@ -188,10 +182,10 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
     /// // Ground plane with normal pointing up
-    /// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+    /// let ground = HalfSpace::new((Vector::Y.normalize()));
     /// # }
     /// ```
     ///
@@ -200,10 +194,10 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::HalfSpace;
-    /// use parry2d::na::{Vector2, Unit};
+    /// use parry2d::math::Vector;
     ///
     /// // Wall with normal pointing to the right
-    /// let wall = HalfSpace::new(Unit::new_normalize(Vector2::x()));
+    /// let wall = HalfSpace::new(Vector::X.normalize());
     /// # }
     /// ```
     ///
@@ -212,18 +206,18 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
     /// // Plane with normal at 45-degree angle
-    /// let custom_normal = Vector3::new(1.0, 1.0, 0.0);
-    /// let plane = HalfSpace::new(Unit::new_normalize(custom_normal));
+    /// let custom_normal = Vector::new(1.0, 1.0, 0.0);
+    /// let plane = HalfSpace::new((custom_normal).normalize());
     ///
     /// // Verify the normal is normalized
-    /// assert!((plane.normal.norm() - 1.0).abs() < 1e-5);
+    /// assert!((plane.normal.length() - 1.0).abs() < 1e-5);
     /// # }
     /// ```
     #[inline]
-    pub fn new(normal: Unit<Vector<Real>>) -> HalfSpace {
+    pub fn new(normal: Vector) -> HalfSpace {
         HalfSpace { normal }
     }
 
@@ -236,7 +230,7 @@ impl HalfSpace {
     /// # Parameters
     ///
     /// * `scale` - A vector containing the scaling factors for each axis. For example,
-    ///   `Vector3::new(2.0, 1.0, 1.0)` doubles the X-axis scaling.
+    ///   `Vector::new(2.0, 1.0, 1.0)` doubles the X-axis scaling.
     ///
     /// # Returns
     ///
@@ -258,13 +252,13 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
-    /// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+    /// let ground = HalfSpace::new(Vector::Y.normalize());
     ///
     /// // Uniform scaling doesn't change the normal direction
-    /// let scaled = ground.scaled(&Vector3::new(2.0, 2.0, 2.0)).unwrap();
-    /// assert_eq!(*scaled.normal, Vector3::y());
+    /// let scaled = ground.scaled(Vector::splat(2.0)).unwrap();
+    /// assert_eq!(scaled.normal, Vector::Y);
     /// # }
     /// ```
     ///
@@ -273,15 +267,15 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
     /// // Diagonal plane
     /// let plane = HalfSpace::new(
-    ///     Unit::new_normalize(Vector3::new(1.0, 1.0, 0.0))
+    ///     (Vector::new(1.0, 1.0, 0.0).normalize())
     /// );
     ///
     /// // Scale X-axis by 2.0, Y-axis stays 1.0
-    /// let scaled = plane.scaled(&Vector3::new(2.0, 1.0, 1.0)).unwrap();
+    /// let scaled = plane.scaled(Vector::new(2.0, 1.0, 1.0)).unwrap();
     ///
     /// // The normal changes direction due to non-uniform scaling
     /// // It's no longer at 45 degrees
@@ -294,13 +288,13 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::HalfSpace;
-    /// use parry3d::na::{Vector3, Unit};
+    /// use parry3d::math::{Vector};
     ///
     /// // Horizontal ground plane
-    /// let ground = HalfSpace::new(Unit::new_normalize(Vector3::y()));
+    /// let ground = HalfSpace::new((Vector::Y.normalize()));
     ///
     /// // Scaling Y to zero makes the normal degenerate
-    /// let scaled = ground.scaled(&Vector3::new(1.0, 0.0, 1.0));
+    /// let scaled = ground.scaled(Vector::new(1.0, 0.0, 1.0));
     /// assert!(scaled.is_none()); // Returns None because normal becomes zero
     /// # }
     /// ```
@@ -310,19 +304,20 @@ impl HalfSpace {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::HalfSpace;
-    /// use parry2d::na::{Vector2, Unit};
+    /// use parry2d::math::Vector;
     ///
     /// // Create a wall in a 2D platformer
-    /// let wall = HalfSpace::new(Unit::new_normalize(Vector2::x()));
+    /// let wall = HalfSpace::new(Vector::X.normalize());
     ///
     /// // Apply level scaling (e.g., for pixel-perfect rendering)
-    /// let pixel_scale = Vector2::new(16.0, 16.0);
-    /// if let Some(scaled_wall) = wall.scaled(&pixel_scale) {
+    /// let pixel_scale = Vector::new(16.0, 16.0);
+    /// if let Some(scaled_wall) = wall.scaled(pixel_scale) {
     ///     // Use the scaled wall for collision detection
     /// }
     /// # }
     /// ```
-    pub fn scaled(self, scale: &Vector<Real>) -> Option<Self> {
-        Unit::try_new(self.normal.component_mul(scale), 0.0).map(|normal| Self { normal })
+    pub fn scaled(self, scale: Vector) -> Option<Self> {
+        let scaled = self.normal * scale;
+        scaled.try_normalize().map(|normal| Self { normal })
     }
 }

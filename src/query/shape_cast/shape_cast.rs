@@ -1,6 +1,4 @@
-use na::Unit;
-
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
 
@@ -40,25 +38,25 @@ pub struct ShapeCastHit {
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`.
-    pub witness1: Point<Real>,
+    pub witness1: Vector,
     /// The local-space closest point on the second shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub witness2: Point<Real>,
+    pub witness2: Vector,
     /// The local-space outward normal on the first shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub normal1: Unit<Vector<Real>>,
+    pub normal1: Vector,
     /// The local-space outward normal on the second shape at the time of impact.
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
-    pub normal2: Unit<Vector<Real>>,
+    pub normal2: Vector,
     /// The way the shape-casting algorithm terminated.
     pub status: ShapeCastStatus,
 }
@@ -80,12 +78,12 @@ impl ShapeCastHit {
     }
 
     /// Transform `self.witness1` and `self.normal1` by `pos`.
-    pub fn transform1_by(&self, pos: &Isometry<Real>) -> Self {
+    pub fn transform1_by(&self, pos: &Pose) -> Self {
         Self {
             time_of_impact: self.time_of_impact,
             witness1: pos * self.witness1,
             witness2: self.witness2,
-            normal1: pos * self.normal1,
+            normal1: pos.rotation * self.normal1,
             normal2: self.normal2,
             status: self.status,
         }
@@ -153,7 +151,7 @@ impl Default for ShapeCastOptions {
 /// # What is Shape Casting?
 ///
 /// Shape casting extends ray casting to arbitrary shapes:
-/// - **Ray casting**: Point moving in a direction (infinitely thin)
+/// - **Ray casting**: Vector moving in a direction (infinitely thin)
 /// - **Shape casting**: Full shape moving in a direction (has volume)
 ///
 /// The shapes move linearly (no rotation) from their initial positions along their
@@ -196,29 +194,29 @@ impl Default for ShapeCastOptions {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions};
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(1.0);
 ///
 /// // Ball 1 at origin, moving right at speed 2.0
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let vel1 = Vector3::new(2.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let vel1 = Vector::new(2.0, 0.0, 0.0);
 ///
 /// // Ball 2 at x=10, stationary
-/// let pos2 = Isometry3::translation(10.0, 0.0, 0.0);
-/// let vel2 = Vector3::zeros();
+/// let pos2 = Pose::translation(10.0, 0.0, 0.0);
+/// let vel2 = Vector::ZERO;
 ///
 /// let options = ShapeCastOptions::default();
 ///
-/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, vel1, &ball1, &pos2, vel2, &ball2, options) {
 ///     // Time when surfaces touch
 ///     // Distance to cover: 10.0 - 1.0 (radius) - 1.0 (radius) = 8.0
 ///     // Speed: 2.0, so time = 8.0 / 2.0 = 4.0
 ///     assert_eq!(hit.time_of_impact, 4.0);
 ///
 ///     // Position at impact
-///     let impact_pos1 = pos1.translation.vector + vel1 * hit.time_of_impact;
+///     let impact_pos1 = pos1.translation + vel1 * hit.time_of_impact;
 ///     // Ball 1 moved 8 units to x=8.0, touching ball 2 at x=10.0
 /// }
 /// # }
@@ -230,20 +228,20 @@ impl Default for ShapeCastOptions {
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::{cast_shapes, ShapeCastOptions, ShapeCastStatus};
 /// use parry3d::shape::Ball;
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// let ball1 = Ball::new(2.0);
 /// let ball2 = Ball::new(2.0);
 ///
 /// // Overlapping balls (centers 3 units apart, radii sum to 4)
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(3.0, 0.0, 0.0);
-/// let vel1 = Vector3::x();
-/// let vel2 = Vector3::zeros();
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(3.0, 0.0, 0.0);
+/// let vel1 = Vector::X;
+/// let vel2 = Vector::ZERO;
 ///
 /// let options = ShapeCastOptions::default();
 ///
-/// if let Ok(Some(hit)) = cast_shapes(&pos1, &vel1, &ball1, &pos2, &vel2, &ball2, options) {
+/// if let Ok(Some(hit)) = cast_shapes(&pos1, vel1, &ball1, &pos2, vel2, &ball2, options) {
 ///     // Already penetrating
 ///     assert_eq!(hit.time_of_impact, 0.0);
 ///     assert_eq!(hit.status, ShapeCastStatus::PenetratingOrWithinTargetDist);
@@ -272,15 +270,15 @@ impl Default for ShapeCastOptions {
 /// - [`ShapeCastOptions`] - Configuration options
 /// - [`ShapeCastHit`] - Result structure
 pub fn cast_shapes(
-    pos1: &Isometry<Real>,
-    vel1: &Vector<Real>,
+    pos1: &Pose,
+    vel1: Vector,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
-    vel2: &Vector<Real>,
+    pos2: &Pose,
+    vel2: Vector,
     g2: &dyn Shape,
     options: ShapeCastOptions,
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    let vel12 = pos1.inverse_transform_vector(&(vel2 - vel1));
-    DefaultQueryDispatcher.cast_shapes(&pos12, &vel12, g1, g2, options)
+    let vel12 = pos1.rotation.inverse() * vel2 - vel1;
+    DefaultQueryDispatcher.cast_shapes(&pos12, vel12, g1, g2, options)
 }

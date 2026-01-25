@@ -18,9 +18,9 @@
 //! a plane. The plane acts as a "cutting tool" that partitions the shape based on which side
 //! of the plane each part lies on:
 //!
-//! - **Negative half-space**: Points where the dot product with the plane normal is less than the bias
-//! - **Positive half-space**: Points where the dot product with the plane normal is greater than the bias
-//! - **On the plane**: Points that lie exactly on the plane (within an epsilon tolerance)
+//! - **Negative half-space**: Vectors where the dot product with the plane normal is less than the bias
+//! - **Positive half-space**: Vectors where the dot product with the plane normal is greater than the bias
+//! - **On the plane**: Vectors that lie exactly on the plane (within an epsilon tolerance)
 //!
 //! ## Plane Definition
 //!
@@ -45,11 +45,11 @@
 //! ```rust
 //! # #[cfg(all(feature = "dim3", feature = "f32"))] {
 //! use parry3d::bounding_volume::Aabb;
-//! use parry3d::math::Point;
+//! use parry3d::math::Vector;
 //! use parry3d::query::SplitResult;
 //!
 //! // Split an AABB along the X-axis at x = 5.0
-//! let aabb = Aabb::new(Point::new(0.0, 0.0, 0.0), Point::new(10.0, 10.0, 10.0));
+//! let aabb = Aabb::new(Vector::new(0.0, 0.0, 0.0), Vector::new(10.0, 10.0, 10.0));
 //! match aabb.canonical_split(0, 5.0, 1e-6) {
 //!     SplitResult::Pair(left, right) => {
 //!         // AABB was split into two pieces
@@ -75,14 +75,13 @@
 //! # #[cfg(all(feature = "dim3", feature = "spade", feature = "f32"))]
 //! # {
 //! use parry3d::shape::TriMesh;
-//! use parry3d::math::{Point, Vector};
+//! use parry3d::math::Vector;
 //! use parry3d::query::SplitResult;
-//! use parry3d::na::Unit;
 //!
 //! # let vertices = vec![
-//! #     Point::new(0.0, 0.0, 0.0),
-//! #     Point::new(1.0, 0.0, 0.0),
-//! #     Point::new(0.0, 1.0, 0.0),
+//! #     Vector::new(0.0, 0.0, 0.0),
+//! #     Vector::new(1.0, 0.0, 0.0),
+//! #     Vector::new(0.0, 1.0, 0.0),
 //! # ];
 //! # let indices = vec![[0u32, 1, 2]];
 //! # let mesh = TriMesh::new(vertices, indices).unwrap();
@@ -116,10 +115,10 @@
 // //! use parry3d::query::IntersectResult;
 // //!
 // //! # let vertices = vec![
-// //! #     parry3d::na::Point3::origin(),
-// //! #     parry3d::na::Point3::new(1.0, 0.0, 0.0),
-// //! #     parry3d::na::Point3::new(0.5, 1.0, 0.5),
-// //! #     parry3d::na::Point3::new(0.5, 0.0, 1.0),
+// //! #     parry3d::math::Vector::ZERO,
+// //! #     parry3d::math::Vector::new(1.0, 0.0, 0.0),
+// //! #     parry3d::math::Vector::new(0.5, 1.0, 0.5),
+// //! #     parry3d::math::Vector::new(0.5, 0.0, 1.0),
 // //! # ];
 // //! # let indices = vec![[0u32, 1, 2], [0, 1, 3]];
 // //! # let mesh = TriMesh::new(vertices, indices).unwrap();
@@ -161,7 +160,7 @@
 //! # Epsilon Tolerance
 //!
 //! All splitting operations accept an `epsilon` parameter to handle floating-point precision
-//! issues. Points within `epsilon` distance of the plane are considered to lie on the plane.
+//! issues. Vectors within `epsilon` distance of the plane are considered to lie on the plane.
 //! A typical value is `1e-6` for single precision (`f32`) or `1e-10` for double precision (`f64`).
 //!
 //! Choosing an appropriate epsilon is important:

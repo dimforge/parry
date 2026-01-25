@@ -1,5 +1,5 @@
 use crate::mass_properties::MassProperties;
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 use crate::shape::SharedShape;
 
 impl MassProperties {
@@ -16,7 +16,7 @@ impl MassProperties {
     ///   - In 3D: kg/m³ (mass per unit volume)
     ///   - In 2D: kg/m² (mass per unit area)
     /// * `shapes` - Array of (position, shape) pairs
-    ///   - Each shape has an `Isometry` (position + rotation)
+    ///   - Each shape has an `Pose` (position + rotation)
     ///   - Shapes can be any type implementing the `Shape` trait
     ///
     /// # Returns
@@ -40,16 +40,16 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::{Ball, SharedShape};
-    /// use nalgebra::{Isometry3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Create a dumbbell: two balls connected by a bar
     /// let ball = SharedShape::new(Ball::new(0.5));
-    /// let bar = SharedShape::new(parry3d::shape::Cuboid::new(Vector3::new(0.1, 1.0, 0.1)));
+    /// let bar = SharedShape::new(parry3d::shape::Cuboid::new(Vector::new(0.1, 1.0, 0.1)));
     ///
     /// let shapes = vec![
-    ///     (Isometry3::translation(0.0, -1.0, 0.0), ball.clone()),  // Left ball
-    ///     (Isometry3::identity(), bar),                             // Center bar
-    ///     (Isometry3::translation(0.0, 1.0, 0.0), ball),            // Right ball
+    ///     (Pose::translation(0.0, -1.0, 0.0), ball.clone()),  // Left ball
+    ///     (Pose::identity(), bar),                             // Center bar
+    ///     (Pose::translation(0.0, 1.0, 0.0), ball),            // Right ball
     /// ];
     ///
     /// let density = 1000.0;
@@ -71,16 +71,16 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::mass_properties::MassProperties;
     /// use parry2d::shape::{Cuboid, SharedShape};
-    /// use nalgebra::{Isometry2, Vector2};
+    /// use parry2d::math::{Pose, Vector};
     ///
     /// // Create a simple table: top surface + legs
-    /// let top = SharedShape::new(Cuboid::new(Vector2::new(2.0, 0.1)));    // Wide, thin top
-    /// let leg = SharedShape::new(Cuboid::new(Vector2::new(0.1, 0.5)));    // Narrow, tall leg
+    /// let top = SharedShape::new(Cuboid::new(Vector::new(2.0, 0.1)));    // Wide, thin top
+    /// let leg = SharedShape::new(Cuboid::new(Vector::new(0.1, 0.5)));    // Narrow, tall leg
     ///
     /// let shapes = vec![
-    ///     (Isometry2::translation(0.0, 0.6), top),                   // Table top
-    ///     (Isometry2::translation(-1.5, 0.0), leg.clone()),          // Left leg
-    ///     (Isometry2::translation(1.5, 0.0), leg),                   // Right leg
+    ///     (Pose::translation(0.0, 0.6), top),                   // Table top
+    ///     (Pose::translation(-1.5, 0.0), leg.clone()),          // Left leg
+    ///     (Pose::translation(1.5, 0.0), leg),                   // Right leg
     /// ];
     ///
     /// let density = 500.0; // Wood
@@ -96,25 +96,25 @@ impl MassProperties {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::mass_properties::MassProperties;
     /// use parry3d::shape::{Capsule, Cuboid, SharedShape};
-    /// use nalgebra::{Isometry3, Point3, Vector3};
+    /// use parry3d::math::{Pose, Vector};
     ///
     /// // Simple robot arm with multiple segments
-    /// let base = SharedShape::new(Cuboid::new(Vector3::new(0.3, 0.2, 0.3)));
+    /// let base = SharedShape::new(Cuboid::new(Vector::new(0.3, 0.2, 0.3)));
     /// let upper_arm = SharedShape::new(Capsule::new(
-    ///     Point3::origin(),
-    ///     Point3::new(0.0, 1.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(0.0, 1.0, 0.0),
     ///     0.1
     /// ));
     /// let forearm = SharedShape::new(Capsule::new(
-    ///     Point3::origin(),
-    ///     Point3::new(0.0, 0.8, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(0.0, 0.8, 0.0),
     ///     0.08
     /// ));
     ///
     /// let shapes = vec![
-    ///     (Isometry3::identity(), base),
-    ///     (Isometry3::translation(0.0, 0.2, 0.0), upper_arm),
-    ///     (Isometry3::translation(0.0, 1.2, 0.0), forearm),
+    ///     (Pose::identity(), base),
+    ///     (Pose::translation(0.0, 0.2, 0.0), upper_arm),
+    ///     (Pose::translation(0.0, 1.2, 0.0), forearm),
     /// ];
     ///
     /// let density = 2700.0; // Aluminum
@@ -157,7 +157,7 @@ impl MassProperties {
     /// - `MassProperties::transform_by()`: Transform mass properties to a new frame
     /// - `Add` trait: Combine mass properties with `+` operator
     /// - `Sum` trait: Sum an iterator of mass properties
-    pub fn from_compound(density: Real, shapes: &[(Isometry<Real>, SharedShape)]) -> Self {
+    pub fn from_compound(density: Real, shapes: &[(Pose, SharedShape)]) -> Self {
         shapes
             .iter()
             .map(|s| s.1.mass_properties(density).transform_by(&s.0))

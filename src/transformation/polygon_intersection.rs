@@ -1,6 +1,5 @@
+use crate::math::Vector2;
 use alloc::{vec, vec::Vec};
-use log::error;
-use na::Point2;
 use ordered_float::OrderedFloat;
 
 use crate::math::Real;
@@ -68,30 +67,30 @@ enum InFlag {
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::PolylinePointLocation;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let polygon = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
 /// // A point on vertex 0
 /// let loc1 = PolylinePointLocation::OnVertex(0);
 /// let pt1 = loc1.to_point(&polygon);
-/// assert_eq!(pt1, Point2::origin());
+/// assert_eq!(pt1, Vector::ZERO);
 ///
 /// // A point halfway along the edge from vertex 0 to vertex 1
 /// let loc2 = PolylinePointLocation::OnEdge(0, 1, [0.5, 0.5]);
 /// let pt2 = loc2.to_point(&polygon);
-/// assert_eq!(pt2, Point2::new(1.0, 0.0));
+/// assert_eq!(pt2, Vector::new(1.0, 0.0));
 /// # }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PolylinePointLocation {
-    /// Point on a vertex.
+    /// Vector on a vertex.
     OnVertex(usize),
-    /// Point on an edge.
+    /// Vector on an edge.
     OnEdge(usize, usize, [Real; 2]),
 }
 
@@ -128,23 +127,23 @@ impl PolylinePointLocation {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// # use parry2d::transformation::PolylinePointLocation;
-    /// # use parry2d::na::Point2;
+    /// # use parry2d::math::Vector;
     /// let polygon = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(4.0, 0.0),
-    ///     Point2::new(4.0, 4.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(4.0, 0.0),
+    ///     Vector::new(4.0, 4.0),
     /// ];
     ///
     /// let loc = PolylinePointLocation::OnEdge(0, 1, [0.75, 0.25]);
     /// let point = loc.to_point(&polygon);
-    /// assert_eq!(point, Point2::new(1.0, 0.0)); // 75% of vertex 0 + 25% of vertex 1
+    /// assert_eq!(point, Vector::new(1.0, 0.0)); // 75% of vertex 0 + 25% of vertex 1
     /// # }
     /// ```
-    pub fn to_point(self, pts: &[Point2<Real>]) -> Point2<Real> {
+    pub fn to_point(self, pts: &[Vector2]) -> Vector2 {
         match self {
             PolylinePointLocation::OnVertex(i) => pts[i],
             PolylinePointLocation::OnEdge(i1, i2, bcoords) => {
-                pts[i1] * bcoords[0] + pts[i2].coords * bcoords[1]
+                pts[i1] * bcoords[0] + pts[i2] * bcoords[1]
             }
         }
     }
@@ -183,20 +182,20 @@ impl PolylinePointLocation {
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::convex_polygons_intersection_points;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// // Define two overlapping squares
 /// let square1 = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
 /// let square2 = vec![
-///     Point2::new(1.0, 1.0),
-///     Point2::new(3.0, 1.0),
-///     Point2::new(3.0, 3.0),
-///     Point2::new(1.0, 3.0),
+///     Vector::new(1.0, 1.0),
+///     Vector::new(3.0, 1.0),
+///     Vector::new(3.0, 3.0),
+///     Vector::new(1.0, 3.0),
 /// ];
 ///
 /// let mut intersection = Vec::new();
@@ -212,9 +211,9 @@ impl PolylinePointLocation {
 /// * [`convex_polygons_intersection`] - For closure-based output
 /// * [`polygons_intersection_points`] - For non-convex polygons
 pub fn convex_polygons_intersection_points(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
-    out: &mut Vec<Point2<Real>>,
+    poly1: &[Vector2],
+    poly2: &[Vector2],
+    out: &mut Vec<Vector2>,
 ) {
     convex_polygons_intersection_points_with_tolerances(poly1, poly2, Default::default(), out);
 }
@@ -236,17 +235,17 @@ pub fn convex_polygons_intersection_points(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::{convex_polygons_intersection_points_with_tolerances, PolygonIntersectionTolerances};
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let triangle1 = vec![
-///     Point2::origin(),
-///     Point2::new(4.0, 0.0),
-///     Point2::new(2.0, 3.0),
+///     Vector::ZERO,
+///     Vector::new(4.0, 0.0),
+///     Vector::new(2.0, 3.0),
 /// ];
 ///
 /// let triangle2 = vec![
-///     Point2::new(1.0, 0.5),
-///     Point2::new(3.0, 0.5),
-///     Point2::new(2.0, 2.5),
+///     Vector::new(1.0, 0.5),
+///     Vector::new(3.0, 0.5),
+///     Vector::new(2.0, 2.5),
 /// ];
 ///
 /// let mut intersection = Vec::new();
@@ -266,10 +265,10 @@ pub fn convex_polygons_intersection_points(
 /// # }
 /// ```
 pub fn convex_polygons_intersection_points_with_tolerances(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Vector2],
+    poly2: &[Vector2],
     tolerances: PolygonIntersectionTolerances,
-    out: &mut Vec<Point2<Real>>,
+    out: &mut Vec<Vector2>,
 ) {
     convex_polygons_intersection_with_tolerances(poly1, poly2, tolerances, |loc1, loc2| {
         if let Some(loc1) = loc1 {
@@ -307,19 +306,19 @@ pub fn convex_polygons_intersection_points_with_tolerances(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::convex_polygons_intersection;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let square = vec![
-///     Point2::origin(),
-///     Point2::new(2.0, 0.0),
-///     Point2::new(2.0, 2.0),
-///     Point2::new(0.0, 2.0),
+///     Vector::ZERO,
+///     Vector::new(2.0, 0.0),
+///     Vector::new(2.0, 2.0),
+///     Vector::new(0.0, 2.0),
 /// ];
 ///
 /// let diamond = vec![
-///     Point2::new(1.0, -0.5),
-///     Point2::new(2.5, 1.0),
-///     Point2::new(1.0, 2.5),
-///     Point2::new(-0.5, 1.0),
+///     Vector::new(1.0, -0.5),
+///     Vector::new(2.5, 1.0),
+///     Vector::new(1.0, 2.5),
+///     Vector::new(-0.5, 1.0),
 /// ];
 ///
 /// let mut intersection_points = Vec::new();
@@ -341,8 +340,8 @@ pub fn convex_polygons_intersection_points_with_tolerances(
 /// * [`convex_polygons_intersection_points`] - Simpler vector-based output
 /// * [`convex_polygons_intersection_with_tolerances`] - With custom tolerances
 pub fn convex_polygons_intersection(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Vector2],
+    poly2: &[Vector2],
     out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
     convex_polygons_intersection_with_tolerances(poly1, poly2, Default::default(), out)
@@ -374,21 +373,21 @@ pub fn convex_polygons_intersection(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::{convex_polygons_intersection_with_tolerances, PolygonIntersectionTolerances};
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let hexagon = vec![
-///     Point2::new(2.0, 0.0),
-///     Point2::new(1.0, 1.732),
-///     Point2::new(-1.0, 1.732),
-///     Point2::new(-2.0, 0.0),
-///     Point2::new(-1.0, -1.732),
-///     Point2::new(1.0, -1.732),
+///     Vector::new(2.0, 0.0),
+///     Vector::new(1.0, 1.732),
+///     Vector::new(-1.0, 1.732),
+///     Vector::new(-2.0, 0.0),
+///     Vector::new(-1.0, -1.732),
+///     Vector::new(1.0, -1.732),
 /// ];
 ///
 /// let square = vec![
-///     Point2::new(-1.0, -1.0),
-///     Point2::new(1.0, -1.0),
-///     Point2::new(1.0, 1.0),
-///     Point2::new(-1.0, 1.0),
+///     Vector::new(-1.0, -1.0),
+///     Vector::new(1.0, -1.0),
+///     Vector::new(1.0, 1.0),
+///     Vector::new(-1.0, 1.0),
 /// ];
 ///
 /// let tolerances = PolygonIntersectionTolerances::default();
@@ -412,8 +411,8 @@ pub fn convex_polygons_intersection(
 /// # }
 /// ```
 pub fn convex_polygons_intersection_with_tolerances(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Vector2],
+    poly2: &[Vector2],
     tolerances: PolygonIntersectionTolerances,
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) {
@@ -421,16 +420,16 @@ pub fn convex_polygons_intersection_with_tolerances(
     // first triangle of the polygon is degenerate.
     let rev1 = poly1.len() > 2
         && Triangle::orientation2d(
-            &poly1[0],
-            &poly1[1],
-            &poly1[2],
+            poly1[0],
+            poly1[1],
+            poly1[2],
             tolerances.collinearity_epsilon,
         ) == TriangleOrientation::Clockwise;
     let rev2 = poly2.len() > 2
         && Triangle::orientation2d(
-            &poly2[0],
-            &poly2[1],
-            &poly2[2],
+            poly2[0],
+            poly2[1],
+            poly2[2],
             tolerances.collinearity_epsilon,
         ) == TriangleOrientation::Clockwise;
 
@@ -449,14 +448,14 @@ pub fn convex_polygons_intersection_with_tolerances(
         let (a1, b1) = if rev1 {
             ((len1 - i1) % len1, len1 - i1 - 1)
         } else {
-            // Point before `i1`, and point at `i1`.
+            // Vector before `i1`, and point at `i1`.
             ((i1 + len1 - 1) % len1, i1)
         };
 
         let (a2, b2) = if rev2 {
             ((len2 - i2) % len2, len2 - i2 - 1)
         } else {
-            // Point before `i2`, and point at `i2`.
+            // Vector before `i2`, and point at `i2`.
             ((i2 + len2 - 1) % len2, i2)
         };
 
@@ -467,32 +466,32 @@ pub fn convex_polygons_intersection_with_tolerances(
         // Left -> Right (CounterClockwise) or Right -> Left (Clockwise) relative to the edge from
         // poly1.
         let cross = Triangle::orientation2d(
-            &Point2::origin(),
-            &Point2::from(dir_edge1),
-            &Point2::from(dir_edge2),
+            Vector2::ZERO,
+            Vector2::from(dir_edge1),
+            Vector2::from(dir_edge2),
             tolerances.collinearity_epsilon,
         );
         // Determines if b1 is left (CounterClockwise) or right (Clockwise) of [a2, b2].
         let a2_b2_b1 = Triangle::orientation2d(
-            &poly2[a2],
-            &poly2[b2],
-            &poly1[b1],
+            poly2[a2],
+            poly2[b2],
+            poly1[b1],
             tolerances.collinearity_epsilon,
         );
         // Determines if b2 is left (CounterClockwise) or right (Clockwise) of [a1, b1].
         let a1_b1_b2 = Triangle::orientation2d(
-            &poly1[a1],
-            &poly1[b1],
-            &poly2[b2],
+            poly1[a1],
+            poly1[b1],
+            poly2[b2],
             tolerances.collinearity_epsilon,
         );
 
         // If edge1 & edge2 intersect, update inflag.
         if let Some(inter) = utils::segments_intersection2d(
-            &poly1[a1],
-            &poly1[b1],
-            &poly2[a2],
-            &poly2[b2],
+            poly1[a1],
+            poly1[b1],
+            poly2[a2],
+            poly2[b2],
             tolerances.collinearity_epsilon,
         ) {
             match inter {
@@ -527,7 +526,7 @@ pub fn convex_polygons_intersection_with_tolerances(
                     second_loc1,
                     second_loc2,
                 } => {
-                    if dir_edge1.dot(&dir_edge2) < 0.0 {
+                    if dir_edge1.dot(dir_edge2) < 0.0 {
                         // Special case: edge1 & edge2 overlap and oppositely oriented. The
                         //               intersection is degenerate (equals to a segment). Output
                         //               the segment and exit.
@@ -607,9 +606,9 @@ pub fn convex_polygons_intersection_with_tolerances(
             for p2 in poly2 {
                 let a_minus_1 = (a + len1 - 1) % len1; // a - 1
                 let new_orient = Triangle::orientation2d(
-                    &poly1[a_minus_1],
-                    &poly1[a],
-                    p2,
+                    poly1[a_minus_1],
+                    poly1[a],
+                    *p2,
                     tolerances.collinearity_epsilon,
                 );
 
@@ -639,9 +638,9 @@ pub fn convex_polygons_intersection_with_tolerances(
             for p1 in poly1 {
                 let b_minus_1 = (b + len2 - 1) % len2; // = b - 1
                 let new_orient = Triangle::orientation2d(
-                    &poly2[b_minus_1],
-                    &poly2[b],
-                    p1,
+                    poly2[b_minus_1],
+                    poly2[b],
+                    *p1,
                     tolerances.collinearity_epsilon,
                 );
 
@@ -700,7 +699,7 @@ pub enum PolygonsIntersectionError {
 /// # Important Notes
 ///
 /// - **Non-convex support**: This function works with concave polygons
-/// - **Multiple components**: Returns a `Vec<Vec<Point2<Real>>>` because the intersection
+/// - **Multiple components**: Returns a `Vec<Vec<Vector2>>` because the intersection
 ///   of two concave polygons can produce multiple separate regions
 /// - **No self-intersection**: Input polygons must not self-intersect
 /// - **Counter-clockwise winding**: Both polygons must be oriented counter-clockwise
@@ -714,7 +713,7 @@ pub enum PolygonsIntersectionError {
 ///
 /// # Returns
 ///
-/// * `Ok(Vec<Vec<Point2<Real>>>)` - A vector of intersection polygons (usually just one)
+/// * `Ok(Vec<Vec<Vector2>>)` - A vector of intersection polygons (usually just one)
 /// * `Err(PolygonsIntersectionError::InfiniteLoop)` - If the polygons are ill-formed
 ///
 /// # Examples
@@ -724,23 +723,23 @@ pub enum PolygonsIntersectionError {
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::polygons_intersection_points;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// // L-shaped polygon
 /// let l_shape = vec![
-///     Point2::origin(),
-///     Point2::new(3.0, 0.0),
-///     Point2::new(3.0, 1.0),
-///     Point2::new(1.0, 1.0),
-///     Point2::new(1.0, 3.0),
-///     Point2::new(0.0, 3.0),
+///     Vector::ZERO,
+///     Vector::new(3.0, 0.0),
+///     Vector::new(3.0, 1.0),
+///     Vector::new(1.0, 1.0),
+///     Vector::new(1.0, 3.0),
+///     Vector::new(0.0, 3.0),
 /// ];
 ///
 /// // Square overlapping the L-shape
 /// let square = vec![
-///     Point2::new(0.5, 0.5),
-///     Point2::new(2.5, 0.5),
-///     Point2::new(2.5, 2.5),
-///     Point2::new(0.5, 2.5),
+///     Vector::new(0.5, 0.5),
+///     Vector::new(2.5, 0.5),
+///     Vector::new(2.5, 2.5),
+///     Vector::new(0.5, 2.5),
 /// ];
 ///
 /// let result = polygons_intersection_points(&l_shape, &square).unwrap();
@@ -755,18 +754,18 @@ pub enum PolygonsIntersectionError {
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::polygons_intersection_points;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let triangle = vec![
-///     Point2::origin(),
-///     Point2::new(4.0, 0.0),
-///     Point2::new(2.0, 3.0),
+///     Vector::ZERO,
+///     Vector::new(4.0, 0.0),
+///     Vector::new(2.0, 3.0),
 /// ];
 ///
 /// let square = vec![
-///     Point2::new(1.0, 0.5),
-///     Point2::new(3.0, 0.5),
-///     Point2::new(3.0, 2.0),
-///     Point2::new(1.0, 2.0),
+///     Vector::new(1.0, 0.5),
+///     Vector::new(3.0, 0.5),
+///     Vector::new(3.0, 2.0),
+///     Vector::new(1.0, 2.0),
 /// ];
 ///
 /// let result = polygons_intersection_points(&triangle, &square).unwrap();
@@ -786,9 +785,9 @@ pub enum PolygonsIntersectionError {
 /// * [`convex_polygons_intersection_points`] - Faster version for convex polygons only
 /// * [`polygons_intersection`] - Closure-based version with more control
 pub fn polygons_intersection_points(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
-) -> Result<Vec<Vec<Point2<Real>>>, PolygonsIntersectionError> {
+    poly1: &[Vector2],
+    poly2: &[Vector2],
+) -> Result<Vec<Vec<Vector2>>, PolygonsIntersectionError> {
     let mut result = vec![];
     let mut curr_poly = vec![];
     polygons_intersection(poly1, poly2, |loc1, loc2| {
@@ -838,20 +837,20 @@ pub fn polygons_intersection_points(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::polygons_intersection;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let pentagon = vec![
-///     Point2::new(1.0, 0.0),
-///     Point2::new(0.309, 0.951),
-///     Point2::new(-0.809, 0.588),
-///     Point2::new(-0.809, -0.588),
-///     Point2::new(0.309, -0.951),
+///     Vector::new(1.0, 0.0),
+///     Vector::new(0.309, 0.951),
+///     Vector::new(-0.809, 0.588),
+///     Vector::new(-0.809, -0.588),
+///     Vector::new(0.309, -0.951),
 /// ];
 ///
 /// let square = vec![
-///     Point2::new(-0.5, -0.5),
-///     Point2::new(0.5, -0.5),
-///     Point2::new(0.5, 0.5),
-///     Point2::new(-0.5, 0.5),
+///     Vector::new(-0.5, -0.5),
+///     Vector::new(0.5, -0.5),
+///     Vector::new(0.5, 0.5),
+///     Vector::new(-0.5, 0.5),
 /// ];
 ///
 /// let mut components = Vec::new();
@@ -880,25 +879,25 @@ pub fn polygons_intersection_points(
 /// ```
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// # use parry2d::transformation::polygons_intersection;
-/// # use parry2d::na::Point2;
+/// # use parry2d::math::Vector;
 /// let hexagon = vec![
-///     Point2::new(2.0, 0.0),
-///     Point2::new(1.0, 1.732),
-///     Point2::new(-1.0, 1.732),
-///     Point2::new(-2.0, 0.0),
-///     Point2::new(-1.0, -1.732),
-///     Point2::new(1.0, -1.732),
+///     Vector::new(2.0, 0.0),
+///     Vector::new(1.0, 1.732),
+///     Vector::new(-1.0, 1.732),
+///     Vector::new(-2.0, 0.0),
+///     Vector::new(-1.0, -1.732),
+///     Vector::new(1.0, -1.732),
 /// ];
 ///
 /// let circle_approx = vec![
-///     Point2::new(1.0, 0.0),
-///     Point2::new(0.707, 0.707),
-///     Point2::new(0.0, 1.0),
-///     Point2::new(-0.707, 0.707),
-///     Point2::new(-1.0, 0.0),
-///     Point2::new(-0.707, -0.707),
-///     Point2::new(0.0, -1.0),
-///     Point2::new(0.707, -0.707),
+///     Vector::new(1.0, 0.0),
+///     Vector::new(0.707, 0.707),
+///     Vector::new(0.0, 1.0),
+///     Vector::new(-0.707, 0.707),
+///     Vector::new(-1.0, 0.0),
+///     Vector::new(-0.707, -0.707),
+///     Vector::new(0.0, -1.0),
+///     Vector::new(0.707, -0.707),
 /// ];
 ///
 /// let mut vertex_count = 0;
@@ -921,8 +920,8 @@ pub fn polygons_intersection_points(
 /// * [`polygons_intersection_points`] - Simpler vector-based output
 /// * [`convex_polygons_intersection`] - Faster version for convex polygons
 pub fn polygons_intersection(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Vector2],
+    poly2: &[Vector2],
     mut out: impl FnMut(Option<PolylinePointLocation>, Option<PolylinePointLocation>),
 ) -> Result<(), PolygonsIntersectionError> {
     let tolerances = PolygonIntersectionTolerances::default();
@@ -936,7 +935,7 @@ pub fn polygons_intersection(
     let (intersections, num_intersections) =
         compute_sorted_edge_intersections(poly1, poly2, tolerances.collinearity_epsilon);
     let mut visited = vec![false; num_intersections];
-    let segment = |eid: EdgeId, poly: &[Point2<Real>]| [poly[eid], poly[(eid + 1) % poly.len()]];
+    let segment = |eid: EdgeId, poly: &[Vector2]| [poly[eid], poly[(eid + 1) % poly.len()]];
 
     // Traverse all the intersections.
     for inters in intersections[0].values() {
@@ -950,16 +949,11 @@ pub fn polygons_intersection(
             let [a1, b1] = segment(inter.edges[0], poly1);
             let [a2, b2] = segment(inter.edges[1], poly2);
             let poly_to_traverse =
-                match Triangle::orientation2d(&a1, &b1, &a2, tolerances.collinearity_epsilon) {
+                match Triangle::orientation2d(a1, b1, a2, tolerances.collinearity_epsilon) {
                     TriangleOrientation::Clockwise => 1,
                     TriangleOrientation::CounterClockwise => 0,
                     TriangleOrientation::Degenerate => {
-                        match Triangle::orientation2d(
-                            &a1,
-                            &b1,
-                            &b2,
-                            tolerances.collinearity_epsilon,
-                        ) {
+                        match Triangle::orientation2d(a1, b1, b2, tolerances.collinearity_epsilon) {
                             TriangleOrientation::Clockwise => 0,
                             TriangleOrientation::CounterClockwise => 1,
                             TriangleOrientation::Degenerate => {
@@ -1055,12 +1049,12 @@ pub fn polygons_intersection(
 
     // If there are no intersection, check if one polygon is inside the other.
     if intersections[0].is_empty() {
-        if utils::point_in_poly2d(&poly1[0], poly2) {
+        if utils::point_in_poly2d(poly1[0], poly2) {
             for pt_id in 0..poly1.len() {
                 out(Some(PolylinePointLocation::OnVertex(pt_id)), None)
             }
             out(None, None);
-        } else if utils::point_in_poly2d(&poly2[0], poly1) {
+        } else if utils::point_in_poly2d(poly2[0], poly1) {
             for pt_id in 0..poly2.len() {
                 out(None, Some(PolylinePointLocation::OnVertex(pt_id)))
             }
@@ -1075,19 +1069,19 @@ type EdgeId = usize;
 type IntersectionId = usize;
 
 #[derive(Copy, Clone, Debug)]
-struct IntersectionPoint {
+struct IntersectionVector {
     id: IntersectionId,
     edges: [EdgeId; 2],
     locs: [PolylinePointLocation; 2],
 }
 
 fn compute_sorted_edge_intersections(
-    poly1: &[Point2<Real>],
-    poly2: &[Point2<Real>],
+    poly1: &[Vector2],
+    poly2: &[Vector2],
     eps: Real,
-) -> ([HashMap<EdgeId, Vec<IntersectionPoint>>; 2], usize) {
-    let mut inter1: HashMap<EdgeId, Vec<IntersectionPoint>> = HashMap::default();
-    let mut inter2: HashMap<EdgeId, Vec<IntersectionPoint>> = HashMap::default();
+) -> ([HashMap<EdgeId, Vec<IntersectionVector>>; 2], usize) {
+    let mut inter1: HashMap<EdgeId, Vec<IntersectionVector>> = HashMap::default();
+    let mut inter2: HashMap<EdgeId, Vec<IntersectionVector>> = HashMap::default();
     let mut id = 0;
 
     // Find the intersections.
@@ -1099,7 +1093,7 @@ fn compute_sorted_edge_intersections(
             let j2 = (i2 + 1) % poly2.len();
 
             let Some(inter) =
-                utils::segments_intersection2d(&poly1[i1], &poly1[j1], &poly2[i2], &poly2[j2], eps)
+                utils::segments_intersection2d(poly1[i1], poly1[j1], poly2[i2], poly2[j2], eps)
             else {
                 continue;
             };
@@ -1108,7 +1102,7 @@ fn compute_sorted_edge_intersections(
                 SegmentsIntersection::Point { loc1, loc2 } => {
                     let loc1 = PolylinePointLocation::from_segment_point_location(i1, j1, loc1);
                     let loc2 = PolylinePointLocation::from_segment_point_location(i2, j2, loc2);
-                    let intersection = IntersectionPoint {
+                    let intersection = IntersectionVector {
                         id,
                         edges: [i1, i2],
                         locs: [loc1, loc2],
@@ -1147,12 +1141,12 @@ fn compute_sorted_edge_intersections(
 
 #[cfg(all(test, feature = "dim2"))]
 mod test {
+    use crate::math::Vector;
     use crate::query::PointQuery;
     use crate::shape::Triangle;
     use crate::transformation::convex_polygons_intersection_points_with_tolerances;
     use crate::transformation::polygon_intersection::PolygonIntersectionTolerances;
     use alloc::vec::Vec;
-    use na::Point2;
     use std::println;
 
     #[test]
@@ -1160,50 +1154,50 @@ mod test {
         let tris = [
             (
                 Triangle::new(
-                    Point2::new(-0.0008759537858568062, -2.0103871966663305),
-                    Point2::new(0.3903908709629763, -1.3421764825890266),
-                    Point2::new(1.3380817875388151, -2.0098007857739013),
+                    Vector::new(-0.0008759537858568062, -2.0103871966663305),
+                    Vector::new(0.3903908709629763, -1.3421764825890266),
+                    Vector::new(1.3380817875388151, -2.0098007857739013),
                 ),
                 Triangle::new(
-                    Point2::new(0.0, -0.0),
-                    Point2::new(-0.0008759537858568062, -2.0103871966663305),
-                    Point2::new(1.9991979155226394, -2.009511242880474),
-                ),
-            ),
-            (
-                Triangle::new(
-                    Point2::new(0.7319315811016305, -0.00004046981523721891),
-                    Point2::new(2.0004914907008944, -0.00011061077714557787),
-                    Point2::new(1.1848406021956144, -0.8155712451545468),
-                ),
-                Triangle::new(
-                    Point2::origin(),
-                    Point2::new(0.00011061077714557787, -2.000024893134292),
-                    Point2::new(2.0004914907008944, -0.00011061077714557787),
+                    Vector::new(0.0, -0.0),
+                    Vector::new(-0.0008759537858568062, -2.0103871966663305),
+                    Vector::new(1.9991979155226394, -2.009511242880474),
                 ),
             ),
             (
                 Triangle::new(
-                    Point2::new(-0.000049995168258705205, -0.9898801451981707),
-                    Point2::new(0.0, -0.0),
-                    Point2::new(0.583013294019752, -1.4170136900568633),
+                    Vector::new(0.7319315811016305, -0.00004046981523721891),
+                    Vector::new(2.0004914907008944, -0.00011061077714557787),
+                    Vector::new(1.1848406021956144, -0.8155712451545468),
                 ),
                 Triangle::new(
-                    Point2::new(0.0, -0.0),
-                    Point2::new(-0.00010101395240669591, -2.000027389553894),
-                    Point2::new(2.000372544168497, 0.00010101395240669591),
+                    Vector::ZERO,
+                    Vector::new(0.00011061077714557787, -2.000024893134292),
+                    Vector::new(2.0004914907008944, -0.00011061077714557787),
                 ),
             ),
             (
                 Triangle::new(
-                    Point2::new(-0.940565646581769, -0.939804943675256),
-                    Point2::new(0.0, -0.0),
-                    Point2::new(-0.001533592366792066, -0.9283586484736431),
+                    Vector::new(-0.000049995168258705205, -0.9898801451981707),
+                    Vector::new(0.0, -0.0),
+                    Vector::new(0.583013294019752, -1.4170136900568633),
                 ),
                 Triangle::new(
-                    Point2::new(0.0, -0.0),
-                    Point2::new(-2.00752629829582, -2.0059026672784825),
-                    Point2::new(-0.0033081650580626698, -2.0025945022204197),
+                    Vector::new(0.0, -0.0),
+                    Vector::new(-0.00010101395240669591, -2.000027389553894),
+                    Vector::new(2.000372544168497, 0.00010101395240669591),
+                ),
+            ),
+            (
+                Triangle::new(
+                    Vector::new(-0.940565646581769, -0.939804943675256),
+                    Vector::new(0.0, -0.0),
+                    Vector::new(-0.001533592366792066, -0.9283586484736431),
+                ),
+                Triangle::new(
+                    Vector::new(0.0, -0.0),
+                    Vector::new(-2.00752629829582, -2.0059026672784825),
+                    Vector::new(-0.0033081650580626698, -2.0025945022204197),
                 ),
             ),
         ];
@@ -1225,20 +1219,20 @@ mod test {
             println!(
                 "tri1 is in tri2: {}",
                 tri1.vertices().iter().all(|pt| tri2
-                    .project_local_point(pt, false)
-                    .is_inside_eps(pt, 1.0e-5))
+                    .project_local_point(*pt, false)
+                    .is_inside_eps(*pt, 1.0e-5))
             );
             println!(
                 "tri2 is in tri1: {}",
                 tri2.vertices().iter().all(|pt| tri1
-                    .project_local_point(pt, false)
-                    .is_inside_eps(pt, 1.0e-5))
+                    .project_local_point(*pt, false)
+                    .is_inside_eps(*pt, 1.0e-5))
             );
             for pt in &inter {
-                let proj1 = tri1.project_local_point(&pt, false);
-                let proj2 = tri2.project_local_point(&pt, false);
-                assert!(proj1.is_inside_eps(&pt, 1.0e-5));
-                assert!(proj2.is_inside_eps(&pt, 1.0e-5));
+                let proj1 = tri1.project_local_point(*pt, false);
+                let proj2 = tri2.project_local_point(*pt, false);
+                assert!(proj1.is_inside_eps(*pt, 1.0e-5));
+                assert!(proj2.is_inside_eps(*pt, 1.0e-5));
             }
         }
     }

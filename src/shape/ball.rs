@@ -1,7 +1,4 @@
-use either::Either;
-use na::Unit;
-
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Real, Vector};
 use crate::shape::SupportMap;
 
 /// A ball shape, also known as a sphere in 3D or a circle in 2D.
@@ -30,7 +27,7 @@ use crate::shape::SupportMap;
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Ball;
-/// use nalgebra::Vector3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a ball with radius 2.0
 /// let ball = Ball::new(2.0);
@@ -42,8 +39,7 @@ use crate::shape::SupportMap;
 #[cfg_attr(feature = "encase", derive(encase::ShaderType))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(PartialEq, Debug, Copy, Clone)]
 #[repr(C)]
@@ -104,40 +100,40 @@ impl Ball {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "alloc", feature = "f32"))] {
     /// use parry2d::shape::Ball;
-    /// use parry2d::na::Vector2;
+    /// use parry2d::math::Vector;
     /// use either::Either;
     ///
     /// let ball = Ball::new(2.0);
     ///
     /// // Uniform scaling: produces another ball
-    /// let uniform_scale = Vector2::new(3.0, 3.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 32) {
+    /// let uniform_scale = Vector::new(3.0, 3.0);
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 32) {
     ///     assert_eq!(scaled_ball.radius, 6.0); // 2.0 * 3.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polygon (ellipse approximation)
-    /// let non_uniform_scale = Vector2::new(2.0, 1.0);
-    /// if let Some(Either::Right(polygon)) = ball.scaled(&non_uniform_scale, 32) {
+    /// let non_uniform_scale = Vector::new(2.0, 1.0);
+    /// if let Some(Either::Right(polygon)) = ball.scaled(non_uniform_scale, 32) {
     ///     // The polygon approximates an ellipse with radii 4.0 and 2.0
     ///     assert!(polygon.points().len() >= 32);
     /// }
     /// # }
     /// # #[cfg(all(feature = "dim2", feature = "alloc", feature = "f64"))] {
     /// use parry2d_f64::shape::Ball;
-    /// use parry2d_f64::na::Vector2;
+    /// use parry2d_f64::math::Vector;
     /// use either::Either;
     ///
     /// let ball = Ball::new(2.0);
     ///
     /// // Uniform scaling: produces another ball
-    /// let uniform_scale = Vector2::new(3.0, 3.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 32) {
+    /// let uniform_scale = Vector::new(3.0, 3.0);
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 32) {
     ///     assert_eq!(scaled_ball.radius, 6.0); // 2.0 * 3.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polygon (ellipse approximation)
-    /// let non_uniform_scale = Vector2::new(2.0, 1.0);
-    /// if let Some(Either::Right(polygon)) = ball.scaled(&non_uniform_scale, 32) {
+    /// let non_uniform_scale = Vector::new(2.0, 1.0);
+    /// if let Some(Either::Right(polygon)) = ball.scaled(non_uniform_scale, 32) {
     ///     // The polygon approximates an ellipse with radii 4.0 and 2.0
     ///     assert!(polygon.points().len() >= 32);
     /// }
@@ -147,20 +143,21 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: Vector,
         nsubdivs: u32,
-    ) -> Option<Either<Self, super::ConvexPolygon>> {
+    ) -> Option<either::Either<Self, super::ConvexPolygon>> {
         if scale.x != scale.y {
-            // The scaled shape isn’t a ball.
+            // The scaled shape isn't a ball.
             let mut vtx = self.to_polyline(nsubdivs);
-            vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
-            Some(Either::Right(super::ConvexPolygon::from_convex_polyline(
-                vtx,
-            )?))
+            vtx.iter_mut().for_each(|pt| *pt *= scale);
+            Some(either::Either::Right(
+                super::ConvexPolygon::from_convex_polyline(vtx)?,
+            ))
         } else {
             let uniform_scale = scale.x;
-            Some(Either::Left(Self::new(self.radius * uniform_scale.abs())))
+            Some(either::Either::Left(Self::new(
+                self.radius * uniform_scale.abs(),
+            )))
         }
     }
 
@@ -186,20 +183,20 @@ impl Ball {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// use parry3d::shape::Ball;
-    /// use nalgebra::Vector3;
+    /// use parry3d::math::Vector;
     /// use either::Either;
     ///
     /// let ball = Ball::new(5.0);
     ///
     /// // Uniform scaling: produces another ball
-    /// let uniform_scale = Vector3::new(2.0, 2.0, 2.0);
-    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(&uniform_scale, 10) {
+    /// let uniform_scale = Vector::new(2.0, 2.0, 2.0);
+    /// if let Some(Either::Left(scaled_ball)) = ball.scaled(uniform_scale, 10) {
     ///     assert_eq!(scaled_ball.radius, 10.0); // 5.0 * 2.0
     /// }
     ///
     /// // Non-uniform scaling: produces a polyhedron (ellipsoid approximation)
-    /// let non_uniform_scale = Vector3::new(2.0, 1.0, 1.5);
-    /// if let Some(Either::Right(polyhedron)) = ball.scaled(&non_uniform_scale, 10) {
+    /// let non_uniform_scale = Vector::new(2.0, 1.0, 1.5);
+    /// if let Some(Either::Right(polyhedron)) = ball.scaled(non_uniform_scale, 10) {
     ///     // The polyhedron approximates an ellipsoid
     ///     assert!(polyhedron.points().len() > 0);
     /// }
@@ -209,42 +206,43 @@ impl Ball {
     #[inline]
     pub fn scaled(
         self,
-        scale: &Vector<Real>,
+        scale: Vector,
         nsubdivs: u32,
-    ) -> Option<Either<Self, super::ConvexPolyhedron>> {
+    ) -> Option<either::Either<Self, super::ConvexPolyhedron>> {
         if scale.x != scale.y || scale.x != scale.z || scale.y != scale.z {
-            // The scaled shape isn’t a ball.
+            // The scaled shape isn't a ball.
             let (mut vtx, idx) = self.to_trimesh(nsubdivs, nsubdivs);
-            vtx.iter_mut()
-                .for_each(|pt| pt.coords = pt.coords.component_mul(scale));
-            Some(Either::Right(super::ConvexPolyhedron::from_convex_mesh(
-                vtx, &idx,
-            )?))
+            vtx.iter_mut().for_each(|pt| *pt *= scale);
+            Some(either::Either::Right(
+                super::ConvexPolyhedron::from_convex_mesh(vtx, &idx)?,
+            ))
         } else {
             let uniform_scale = scale.x;
-            Some(Either::Left(Self::new(self.radius * uniform_scale.abs())))
+            Some(either::Either::Left(Self::new(
+                self.radius * uniform_scale.abs(),
+            )))
         }
     }
 }
 
 impl SupportMap for Ball {
     #[inline]
-    fn support_point(&self, m: &Isometry<Real>, dir: &Vector<Real>) -> Point<Real> {
-        self.support_point_toward(m, &Unit::new_normalize(*dir))
+    fn support_point(&self, m: &Pose, dir: Vector) -> Vector {
+        self.support_point_toward(m, dir.normalize())
     }
 
     #[inline]
-    fn support_point_toward(&self, m: &Isometry<Real>, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        Point::from(m.translation.vector) + **dir * self.radius
+    fn support_point_toward(&self, m: &Pose, dir: Vector) -> Vector {
+        m.translation + dir * self.radius
     }
 
     #[inline]
-    fn local_support_point(&self, dir: &Vector<Real>) -> Point<Real> {
-        self.local_support_point_toward(&Unit::new_normalize(*dir))
+    fn local_support_point(&self, dir: Vector) -> Vector {
+        self.local_support_point_toward(dir.normalize())
     }
 
     #[inline]
-    fn local_support_point_toward(&self, dir: &Unit<Vector<Real>>) -> Point<Real> {
-        Point::from(**dir * self.radius)
+    fn local_support_point_toward(&self, dir: Vector) -> Vector {
+        dir * self.radius
     }
 }

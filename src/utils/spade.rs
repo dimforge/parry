@@ -21,7 +21,7 @@ pub fn sanitize_spade_coord(coord: Real) -> Real {
     coord
 }
 
-/// Ensures the coordinates of the given point don’t go out of the bounds of spade’s acceptable values.
+/// Ensures the coordinates of the given point don't go out of the bounds of spade's acceptable values.
 pub fn sanitize_spade_point(point: spade::Point2<Real>) -> spade::Point2<Real> {
     spade::Point2::new(sanitize_spade_coord(point.x), sanitize_spade_coord(point.y))
 }

@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Point, Real, Vector};
+use crate::math::{Pose, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::CompositeShape;
@@ -13,8 +13,7 @@ use crate::query::details::NormalConstraints;
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(check_bytes)
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 /// A polyline shape formed by connected line segments.
 ///
@@ -25,7 +24,7 @@ use crate::query::details::NormalConstraints;
 /// # Structure
 ///
 /// A polyline consists of:
-/// - **Vertices**: Points in 2D or 3D space
+/// - **Vertices**: Vectors in 2D or 3D space
 /// - **Indices**: Pairs of vertex indices defining each segment
 /// - **BVH**: Bounding Volume Hierarchy for fast spatial queries
 ///
@@ -50,13 +49,13 @@ use crate::query::details::NormalConstraints;
 /// ```rust
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::shape::Polyline;
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// // Create a simple L-shaped polyline
 /// let vertices = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(1.0, 1.0, 0.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(1.0, 1.0, 0.0),
 /// ];
 ///
 /// // Indices are automatically generated to connect consecutive vertices
@@ -75,13 +74,13 @@ use crate::query::details::NormalConstraints;
 /// ```rust
 /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
 /// use parry2d::shape::Polyline;
-/// use nalgebra::Point2;
+/// use parry2d::math::Vector;
 ///
 /// // Create a triangle polyline (closed loop)
 /// let vertices = vec![
-///     Point2::origin(),
-///     Point2::new(1.0, 0.0),
-///     Point2::new(0.5, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0),
+///     Vector::new(0.5, 1.0),
 /// ];
 ///
 /// // Manually specify edges to create a closed triangle
@@ -97,7 +96,7 @@ use crate::query::details::NormalConstraints;
 /// ```
 pub struct Polyline {
     bvh: Bvh,
-    vertices: Vec<Point<Real>>,
+    vertices: Vec<Vector>,
     indices: Vec<[u32; 2]>,
 }
 
@@ -122,14 +121,14 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Create a zigzag path with automatic sequential connections
     /// let vertices = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 1.0, 0.0),
-    ///     Point3::new(2.0, 0.0, 0.0),
-    ///     Point3::new(3.0, 1.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 1.0, 0.0),
+    ///     Vector::new(2.0, 0.0, 0.0),
+    ///     Vector::new(3.0, 1.0, 0.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     /// assert_eq!(polyline.num_segments(), 3);
@@ -141,14 +140,14 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a square with custom indices
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(1.0, 1.0),
-    ///     Point2::new(0.0, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(1.0, 1.0),
+    ///     Vector::new(0.0, 1.0),
     /// ];
     ///
     /// // Define edges to form a closed square
@@ -161,11 +160,11 @@ impl Polyline {
     ///
     /// // Each segment connects the correct vertices
     /// let first_segment = square.segment(0);
-    /// assert_eq!(first_segment.a, Point2::origin());
-    /// assert_eq!(first_segment.b, Point2::new(1.0, 0.0));
+    /// assert_eq!(first_segment.a, Vector::ZERO);
+    /// assert_eq!(first_segment.b, Vector::new(1.0, 0.0));
     /// # }
     /// ```
-    pub fn new(vertices: Vec<Point<Real>>, indices: Option<Vec<[u32; 2]>>) -> Self {
+    pub fn new(vertices: Vec<Vector>, indices: Option<Vec<[u32; 2]>>) -> Self {
         let indices =
             indices.unwrap_or_else(|| (0..vertices.len() as u32 - 1).map(|i| [i, i + 1]).collect());
         let leaves = indices.iter().enumerate().map(|(i, idx)| {
@@ -203,32 +202,29 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::{Point3, Isometry3, Translation3};
+    /// use parry3d::math::{Vector, Pose};
     ///
     /// // Create a polyline along the X axis
     /// let vertices = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(2.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(2.0, 0.0, 0.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     ///
     /// // Compute AABB at the origin
-    /// let identity = Isometry3::identity();
+    /// let identity = Pose::identity();
     /// let aabb = polyline.aabb(&identity);
     /// assert_eq!(aabb.mins.x, 0.0);
     /// assert_eq!(aabb.maxs.x, 2.0);
     ///
     /// // Compute AABB after translating by (10, 5, 0)
-    /// let translated = Isometry3::from_parts(
-    ///     Translation3::new(10.0, 5.0, 0.0),
-    ///     nalgebra::UnitQuaternion::identity()
-    /// );
+    /// let translated = Pose::translation(10.0, 5.0, 0.0);
     /// let aabb_translated = polyline.aabb(&translated);
     /// assert_eq!(aabb_translated.mins.x, 10.0);
     /// assert_eq!(aabb_translated.maxs.x, 12.0);
     /// # }
     /// ```
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Pose) -> Aabb {
         self.bvh.root_aabb().transform_by(pos)
     }
 
@@ -247,14 +243,14 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a rectangular polyline
     /// let vertices = vec![
-    ///     Point2::new(-1.0, -2.0),
-    ///     Point2::new(3.0, -2.0),
-    ///     Point2::new(3.0, 4.0),
-    ///     Point2::new(-1.0, 4.0),
+    ///     Vector::new(-1.0, -2.0),
+    ///     Vector::new(3.0, -2.0),
+    ///     Vector::new(3.0, 4.0),
+    ///     Vector::new(-1.0, 4.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     ///
@@ -292,15 +288,15 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Sequential polyline: 5 vertices -> 4 segments
     /// let vertices = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(2.0, 0.0, 0.0),
-    ///     Point3::new(3.0, 0.0, 0.0),
-    ///     Point3::new(4.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(2.0, 0.0, 0.0),
+    ///     Vector::new(3.0, 0.0, 0.0),
+    ///     Vector::new(4.0, 0.0, 0.0),
     /// ];
     /// let polyline = Polyline::new(vertices.clone(), None);
     /// assert_eq!(polyline.num_segments(), 4);
@@ -329,13 +325,13 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// // Create a triangle
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(0.5, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(0.5, 1.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     ///
@@ -385,25 +381,25 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let vertices = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(2.0, 1.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(2.0, 1.0, 0.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     ///
     /// // Get the first segment (connects vertex 0 to vertex 1)
     /// let seg0 = polyline.segment(0);
-    /// assert_eq!(seg0.a, Point3::origin());
-    /// assert_eq!(seg0.b, Point3::new(1.0, 0.0, 0.0));
+    /// assert_eq!(seg0.a, Vector::ZERO);
+    /// assert_eq!(seg0.b, Vector::new(1.0, 0.0, 0.0));
     /// assert_eq!(seg0.length(), 1.0);
     ///
     /// // Get the second segment (connects vertex 1 to vertex 2)
     /// let seg1 = polyline.segment(1);
-    /// assert_eq!(seg1.a, Point3::new(1.0, 0.0, 0.0));
-    /// assert_eq!(seg1.b, Point3::new(2.0, 1.0, 0.0));
+    /// assert_eq!(seg1.a, Vector::new(1.0, 0.0, 0.0));
+    /// assert_eq!(seg1.b, Vector::new(2.0, 1.0, 0.0));
     /// # }
     /// ```
     pub fn segment(&self, i: u32) -> Segment {
@@ -441,21 +437,21 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(1.0, 1.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(1.0, 1.0),
     /// ];
     /// let polyline = Polyline::new(vertices.clone(), None);
     ///
     /// // Access all vertices
     /// let verts = polyline.vertices();
     /// assert_eq!(verts.len(), 3);
-    /// assert_eq!(verts[0], Point2::origin());
-    /// assert_eq!(verts[1], Point2::new(1.0, 0.0));
-    /// assert_eq!(verts[2], Point2::new(1.0, 1.0));
+    /// assert_eq!(verts[0], Vector::ZERO);
+    /// assert_eq!(verts[1], Vector::new(1.0, 0.0));
+    /// assert_eq!(verts[2], Vector::new(1.0, 1.0));
     ///
     /// // You can iterate over vertices
     /// for (i, vertex) in polyline.vertices().iter().enumerate() {
@@ -463,7 +459,7 @@ impl Polyline {
     /// }
     /// # }
     /// ```
-    pub fn vertices(&self) -> &[Point<Real>] {
+    pub fn vertices(&self) -> &[Vector] {
         &self.vertices[..]
     }
 
@@ -482,12 +478,12 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let vertices = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(2.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(2.0, 0.0, 0.0),
     /// ];
     ///
     /// // With automatic indices
@@ -536,20 +532,20 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::{Point2, Vector2};
+    /// use parry2d::math::Vector;
     ///
     /// let vertices = vec![
-    ///     Point2::new(1.0, 2.0),
-    ///     Point2::new(3.0, 4.0),
+    ///     Vector::new(1.0, 2.0),
+    ///     Vector::new(3.0, 4.0),
     /// ];
     /// let polyline = Polyline::new(vertices, None);
     ///
     /// // Scale by 2x in X and 3x in Y
-    /// let scaled = polyline.scaled(&Vector2::new(2.0, 3.0));
+    /// let scaled = polyline.scaled(Vector::new(2.0, 3.0));
     ///
     /// // Check scaled vertices
-    /// assert_eq!(scaled.vertices()[0], Point2::new(2.0, 6.0));
-    /// assert_eq!(scaled.vertices()[1], Point2::new(6.0, 12.0));
+    /// assert_eq!(scaled.vertices()[0], Vector::new(2.0, 6.0));
+    /// assert_eq!(scaled.vertices()[1], Vector::new(6.0, 12.0));
     /// # }
     /// ```
     ///
@@ -561,23 +557,21 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Polyline;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::Vector;
     ///
-    /// let vertices = vec![Point3::origin(), Point3::new(1.0, 0.0, 0.0)];
+    /// let vertices = vec![Vector::ZERO, Vector::new(1.0, 0.0, 0.0)];
     /// let original = Polyline::new(vertices, None);
     ///
     /// // Clone before scaling if you need to keep the original
-    /// let scaled = original.clone().scaled(&Vector3::new(2.0, 2.0, 2.0));
+    /// let scaled = original.clone().scaled(Vector::new(2.0, 2.0, 2.0));
     ///
     /// // Both polylines still exist
     /// assert_eq!(original.vertices()[1].x, 1.0);
     /// assert_eq!(scaled.vertices()[1].x, 2.0);
     /// # }
     /// ```
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.vertices
-            .iter_mut()
-            .for_each(|pt| pt.coords.component_mul_assign(scale));
+    pub fn scaled(mut self, scale: Vector) -> Self {
+        self.vertices.iter_mut().for_each(|pt| *pt *= scale);
         let mut bvh = self.bvh.clone();
         bvh.scale(scale);
         Self {
@@ -602,12 +596,12 @@ impl Polyline {
     /// ```
     /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
     /// use parry2d::shape::Polyline;
-    /// use nalgebra::Point2;
+    /// use parry2d::math::Vector;
     ///
     /// let vertices = vec![
-    ///     Point2::origin(),
-    ///     Point2::new(1.0, 0.0),
-    ///     Point2::new(2.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0),
+    ///     Vector::new(2.0, 0.0),
     /// ];
     /// let mut polyline = Polyline::new(vertices, None);
     ///
@@ -726,10 +720,10 @@ impl Polyline {
     /// These properties are not checked.
     pub fn project_local_point_assuming_solid_interior_ccw(
         &self,
-        point: Point<Real>,
+        point: Vector,
         #[cfg(feature = "dim3")] axis: u8,
     ) -> (PointProjection, (u32, SegmentPointLocation)) {
-        let mut proj = self.project_local_point_and_get_location(&point, false);
+        let mut proj = self.project_local_point_and_get_location(point, false);
         let segment1 = self.segment((proj.1).0);
 
         #[cfg(feature = "dim2")]
@@ -757,13 +751,13 @@ impl Polyline {
                         self.segment(adj_seg).scaled_direction()
                     };
 
-                    let dot = normal1.dot(&dir2);
+                    let dot = normal1.dot(dir2);
                     // TODO: is this threshold too big? This corresponds to an angle equal to
                     //       abs(acos(1.0e-3)) = (90 - 0.057) degrees.
                     //       We did encounter some cases where this was needed, but perhaps the
                     //       actual problem was an issue with the SegmentPointLocation (which should
                     //       perhaps have been Edge instead of Vertex)?
-                    let threshold = 1.0e-3 * dir2.norm();
+                    let threshold = 1.0e-3 * dir2.length();
                     if dot.abs() > threshold {
                         // If the vertex is a reentrant vertex, then the point is
                         // inside. Otherwise, it is outside.
@@ -771,10 +765,10 @@ impl Polyline {
                     } else {
                         // If the two edges are collinear, we can’t classify the vertex.
                         // So check against the edge’s normal instead.
-                        (point - proj.0.point).dot(&normal1) <= 0.0
+                        (point - proj.0.point).dot(normal1) <= 0.0
                     }
                 }
-                SegmentPointLocation::OnEdge(_) => (point - proj.0.point).dot(&normal1) <= 0.0,
+                SegmentPointLocation::OnEdge(_) => (point - proj.0.point).dot(normal1) <= 0.0,
             };
         }
 
@@ -786,7 +780,7 @@ impl CompositeShape for Polyline {
     fn map_part_at(
         &self,
         i: u32,
-        f: &mut dyn FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>),
+        f: &mut dyn FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         let tri = self.segment(i);
         f(None, &tri, None)
@@ -805,11 +799,7 @@ impl TypedCompositeShape for Polyline {
     fn map_typed_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(
-            Option<&Isometry<Real>>,
-            &Self::PartShape,
-            Option<&Self::PartNormalConstraints>,
-        ) -> T,
+        mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
     ) -> Option<T> {
         let seg = self.segment(i);
         Some(f(None, &seg, None))
@@ -819,7 +809,7 @@ impl TypedCompositeShape for Polyline {
     fn map_untyped_part_at<T>(
         &self,
         i: u32,
-        mut f: impl FnMut(Option<&Isometry<Real>>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+        mut f: impl FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T> {
         let seg = self.segment(i);
         Some(f(None, &seg, None))

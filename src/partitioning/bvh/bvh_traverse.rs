@@ -173,19 +173,19 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
     /// use parry3d::bounding_volume::{Aabb, BoundingVolume};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(5.0, 0.0, 0.0), Vector::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(10.0, 0.0, 0.0), Vector::new(11.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
     ///
     /// let query_region = Aabb::new(
-    ///     Point3::new(-1.0, -1.0, -1.0),
-    ///     Point3::new(7.0, 2.0, 2.0)
+    ///     Vector::new(-1.0, -1.0, -1.0),
+    ///     Vector::new(7.0, 2.0, 2.0)
     /// );
     ///
     /// let mut count = 0;
@@ -212,21 +212,21 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(5.0, 0.0, 0.0), Point3::new(6.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(10.0, 0.0, 0.0), Point3::new(11.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(5.0, 0.0, 0.0), Vector::new(6.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(10.0, 0.0, 0.0), Vector::new(11.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);
     ///
-    /// let target_point = Point3::new(5.5, 0.5, 0.5);
+    /// let target_point = Vector::new(5.5, 0.5, 0.5);
     /// let mut found_leaf = None;
     ///
     /// bvh.traverse(|node| {
-    ///     if !node.aabb().contains_local_point(&target_point) {
+    ///     if !node.aabb().contains_local_point(target_point) {
     ///         return TraversalAction::Prune;
     ///     }
     ///
@@ -248,12 +248,12 @@ impl Bvh {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::partitioning::{Bvh, BvhBuildStrategy, TraversalAction};
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// let aabbs = vec![
-    ///     Aabb::new(Point3::origin(), Point3::new(1.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(2.0, 0.0, 0.0), Point3::new(3.0, 1.0, 1.0)),
-    ///     Aabb::new(Point3::new(4.0, 0.0, 0.0), Point3::new(5.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::ZERO, Vector::new(1.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(2.0, 0.0, 0.0), Vector::new(3.0, 1.0, 1.0)),
+    ///     Aabb::new(Vector::new(4.0, 0.0, 0.0), Vector::new(5.0, 1.0, 1.0)),
     /// ];
     ///
     /// let bvh = Bvh::from_leaves(BvhBuildStrategy::default(), &aabbs);

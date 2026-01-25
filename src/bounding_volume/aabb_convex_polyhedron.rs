@@ -1,11 +1,11 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Isometry, Real};
+use crate::math::Pose;
 use crate::shape::ConvexPolyhedron;
 
 impl ConvexPolyhedron {
     /// Computes the world-space [`Aabb`] of this convex polyhedron, transformed by `pos`.
     #[inline]
-    pub fn aabb(&self, pos: &Isometry<Real>) -> Aabb {
+    pub fn aabb(&self, pos: &Pose) -> Aabb {
         super::details::point_cloud_aabb_ref(pos, self.points())
     }
 

@@ -1,4 +1,4 @@
-use crate::math::{Point, Real, Vector};
+use crate::math::Vector;
 use crate::query::{self, Ray};
 use alloc::vec::Vec;
 
@@ -7,12 +7,12 @@ use alloc::vec::Vec;
 /// Given the half-space `center` and outward `normal`,
 /// this computes the intersecting between the half-space and
 /// the polygon. (Note that a point `pt` is considered as inside of
-/// the half-space if `normal.dot(&(pt - center)) <= 0.0`.
+/// the half-space if `normal.dot((pt - center)) <= 0.0`.
 pub fn clip_halfspace_polygon(
-    center: &Point<Real>,
-    normal: &Vector<Real>,
-    polygon: &[Point<Real>],
-    result: &mut Vec<Point<Real>>,
+    center: Vector,
+    normal: Vector,
+    polygon: &[Vector],
+    result: &mut Vec<Vector>,
 ) {
     result.clear();
 
@@ -20,24 +20,24 @@ pub fn clip_halfspace_polygon(
         return;
     }
 
-    let keep_point = |pt: &Point<Real>| (pt - center).dot(normal) <= 0.0;
+    let keep_point = |pt: Vector| (pt - center).dot(normal) <= 0.0;
     let last_pt = polygon.last().unwrap();
-    let mut last_keep = keep_point(last_pt);
+    let mut last_keep = keep_point(*last_pt);
 
     if last_keep {
         result.push(*last_pt);
     }
 
     for i in 0..polygon.len() {
-        let pt = &polygon[i];
+        let pt = polygon[i];
         let keep = keep_point(pt);
 
         if keep != last_keep {
             // We crossed the plane, so we need
             // to cut the edge.
             let prev_i = if i == 0 { polygon.len() - 1 } else { i - 1 };
-            let prev_pt = &polygon[prev_i];
-            let ray = Ray::new(*prev_pt, pt - prev_pt);
+            let prev_pt = polygon[prev_i];
+            let ray = Ray::new(prev_pt, pt - prev_pt);
 
             if let Some(time_of_impact) =
                 query::details::ray_toi_with_halfspace(center, normal, &ray)
@@ -51,7 +51,7 @@ pub fn clip_halfspace_polygon(
         }
 
         if keep && i != polygon.len() - 1 {
-            result.push(*pt);
+            result.push(pt);
         }
     }
 }

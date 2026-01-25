@@ -1,16 +1,52 @@
-use alloc::vec::Vec;
-use core::marker::PhantomData;
+//! 2D convex hull computation.
+//!
+//! This module provides functions to compute 2D convex hulls.
 
-use crate::math::Real;
-use crate::transformation::convex_hull_utils::{indexed_support_point_id, support_point_id};
-use na::{self, Point2, Vector2};
+use alloc::vec::Vec;
+
+use crate::math::{Real, Vector2};
 use num_traits::Zero;
+
+// Local 2D-specific support point functions since the generic ones
+// use dimension-agnostic types that don't match Vector2/Vector2.
+fn support_point_id_2d(direction: Vector2, points: &[Vector2]) -> Option<usize> {
+    let mut argmax = None;
+    let mut max = -Real::MAX;
+
+    for (id, pt) in points.iter().enumerate() {
+        let dot = direction.dot(*pt);
+        if dot > max {
+            argmax = Some(id);
+            max = dot;
+        }
+    }
+
+    argmax
+}
+
+fn indexed_support_point_id_2d<I>(direction: Vector2, points: &[Vector2], idx: I) -> Option<usize>
+where
+    I: Iterator<Item = usize>,
+{
+    let mut argmax = None;
+    let mut max = -Real::MAX;
+
+    for i in idx {
+        let dot = direction.dot(points[i]);
+        if dot > max {
+            argmax = Some(i);
+            max = dot;
+        }
+    }
+
+    argmax
+}
 
 /// Computes the convex hull of a set of 2d points.
 ///
 /// The computed convex-hull have its points given in counter-clockwise order.
 #[cfg(feature = "dim2")]
-pub fn convex_hull2(points: &[Point2<Real>]) -> Vec<Point2<Real>> {
+pub fn convex_hull2(points: &[Vector2]) -> Vec<Vector2> {
     convex_hull2_idx(points)
         .into_iter()
         .map(|id| points[id])
@@ -21,7 +57,7 @@ pub fn convex_hull2(points: &[Point2<Real>]) -> Vec<Point2<Real>> {
 /// vertices.
 ///
 /// The computed convex-hull have its points given in counter-clockwise order.
-pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
+pub fn convex_hull2_idx(points: &[Vector2]) -> Vec<usize> {
     let mut undecidable_points = Vec::new();
     let mut segments = get_initial_polyline(points, &mut undecidable_points);
 
@@ -32,8 +68,8 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
             continue;
         }
 
-        let pt_id = indexed_support_point_id(
-            &segments[i].normal,
+        let pt_id = indexed_support_point_id_2d(
+            segments[i].normal,
             points,
             segments[i].visible_points.iter().copied(),
         );
@@ -81,25 +117,22 @@ pub fn convex_hull2_idx(points: &[Point2<Real>]) -> Vec<usize> {
     idx
 }
 
-fn get_initial_polyline(
-    points: &[Point2<Real>],
-    undecidable: &mut Vec<usize>,
-) -> Vec<SegmentFacet> {
+fn get_initial_polyline(points: &[Vector2], undecidable: &mut Vec<usize>) -> Vec<SegmentFacet> {
     let mut res = Vec::new();
 
     assert!(points.len() >= 2);
 
-    let p1 = support_point_id(&Vector2::x(), points).unwrap();
+    let p1 = support_point_id_2d(Vector2::X, points).unwrap();
     let mut p2 = p1;
 
-    let direction = [-Vector2::x(), -Vector2::y(), Vector2::y()];
+    let direction = [-Vector2::X, -Vector2::Y, Vector2::Y];
 
     for dir in direction.iter() {
-        p2 = support_point_id(dir, points).unwrap();
+        p2 = support_point_id_2d(*dir, points).unwrap();
 
         let p1p2 = points[p2] - points[p1];
 
-        if !p1p2.norm_squared().is_zero() {
+        if !p1p2.length_squared().is_zero() {
             break;
         }
     }
@@ -138,7 +171,7 @@ fn attach_and_push_facets2(
     prev_facet: usize,
     next_facet: usize,
     point: usize,
-    points: &[Point2<Real>],
+    points: &[Vector2],
     segments: &mut Vec<SegmentFacet>,
     removed_facet: usize,
     undecidable: &mut Vec<usize>,
@@ -189,44 +222,41 @@ fn attach_and_push_facets2(
 
 struct SegmentFacet {
     pub valid: bool,
-    pub normal: Vector2<Real>,
+    pub normal: Vector2,
     pub next: usize,
     pub prev: usize,
     pub pts: [usize; 2],
     pub visible_points: Vec<usize>,
-    pt_type: PhantomData<Point2<Real>>,
 }
 
 impl SegmentFacet {
-    pub fn new(
-        p1: usize,
-        p2: usize,
-        prev: usize,
-        next: usize,
-        points: &[Point2<Real>],
-    ) -> SegmentFacet {
+    pub fn new(p1: usize, p2: usize, prev: usize, next: usize, points: &[Vector2]) -> SegmentFacet {
         let p1p2 = points[p2] - points[p1];
 
-        let mut normal = Vector2::new(p1p2.y, -p1p2.x);
-        let norm = normal.normalize_mut();
+        let normal = Vector2::new(p1p2.y, -p1p2.x);
+        let norm = normal.length();
+        let normalized = if norm > 0.0 {
+            normal / norm
+        } else {
+            Vector2::ZERO
+        };
 
         SegmentFacet {
             valid: norm != 0.0,
-            normal,
+            normal: normalized,
             prev,
             next,
             pts: [p1, p2],
             visible_points: Vec::new(),
-            pt_type: PhantomData,
         }
     }
 
-    pub fn can_be_seen_by(&self, point: usize, points: &[Point2<Real>]) -> bool {
+    pub fn can_be_seen_by(&self, point: usize, points: &[Vector2]) -> bool {
         let p0 = &points[self.pts[0]];
         let pt = &points[point];
 
         let _eps = crate::math::DEFAULT_EPSILON;
 
-        (*pt - *p0).dot(&self.normal) > _eps * na::convert::<f64, Real>(100.0f64)
+        (*pt - *p0).dot(self.normal) > _eps * 100.0
     }
 }

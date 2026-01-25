@@ -1,13 +1,12 @@
-use na::{self, Isometry2, Point2, Vector2};
-use parry2d::math::Real;
+use parry2d::math::{Pose, Real, Vector};
 use parry2d::query::{Ray, RayCast};
 use parry2d::shape::{ConvexPolygon, Segment, Triangle};
 
 #[test]
 fn issue_178_parallel_raycast() {
-    let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
-    let seg = Segment::new(Point2::new(2.0, 1.0), Point2::new(2.0, 0.0));
+    let m1 = Pose::identity();
+    let ray = Ray::new(Vector::ZERO, Vector::new(0.0, 1.0));
+    let seg = Segment::new(Vector::new(2.0, 1.0), Vector::new(2.0, 0.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
     assert!(cast.is_none());
@@ -15,9 +14,9 @@ fn issue_178_parallel_raycast() {
 
 #[test]
 fn parallel_raycast() {
-    let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
-    let seg = Segment::new(Point2::new(2.0, 1.0), Point2::new(2.0, -1.0));
+    let m1 = Pose::identity();
+    let ray = Ray::new(Vector::ZERO, Vector::new(0.0, 1.0));
+    let seg = Segment::new(Vector::new(2.0, 1.0), Vector::new(2.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
     assert!(cast.is_none());
@@ -25,9 +24,9 @@ fn parallel_raycast() {
 
 #[test]
 fn collinear_raycast_starting_on_segment() {
-    let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::origin(), Vector2::new(0.0, 1.0));
-    let seg = Segment::new(Point2::new(0.0, 1.0), Point2::new(0.0, -1.0));
+    let m1 = Pose::identity();
+    let ray = Ray::new(Vector::ZERO, Vector::new(0.0, 1.0));
+    let seg = Segment::new(Vector::new(0.0, 1.0), Vector::new(0.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
     assert_eq!(cast, Some(0.0));
@@ -35,9 +34,9 @@ fn collinear_raycast_starting_on_segment() {
 
 #[test]
 fn collinear_raycast_starting_below_segment() {
-    let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::new(0.0, -2.0), Vector2::new(0.0, 1.0));
-    let seg = Segment::new(Point2::new(0.0, 1.0), Point2::new(0.0, -1.0));
+    let m1 = Pose::identity();
+    let ray = Ray::new(Vector::new(0.0, -2.0), Vector::new(0.0, 1.0));
+    let seg = Segment::new(Vector::new(0.0, 1.0), Vector::new(0.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
     assert_eq!(cast, Some(1.0));
@@ -45,9 +44,9 @@ fn collinear_raycast_starting_below_segment() {
 
 #[test]
 fn collinear_raycast_starting_above_segment() {
-    let m1 = Isometry2::identity();
-    let ray = Ray::new(Point2::new(0.0, 2.0), Vector2::new(0.0, 1.0));
-    let seg = Segment::new(Point2::new(0.0, 1.0), Point2::new(0.0, -1.0));
+    let m1 = Pose::identity();
+    let ray = Ray::new(Vector::new(0.0, 2.0), Vector::new(0.0, 1.0));
+    let seg = Segment::new(Vector::new(0.0, 1.0), Vector::new(0.0, -1.0));
 
     let cast = seg.cast_ray(&m1, &ray, f32::MAX, true);
     assert_eq!(cast, None);
@@ -55,22 +54,22 @@ fn collinear_raycast_starting_above_segment() {
 
 #[test]
 fn perpendicular_raycast_starting_behind_segment() {
-    let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
-    let ray = Ray::new(Point2::new(-1.0, 0.0), Vector2::new(1.0, 0.0));
+    let segment = Segment::new(Vector::new(0.0f32, -10.0), Vector::new(0.0, 10.0));
+    let ray = Ray::new(Vector::new(-1.0, 0.0), Vector::new(1.0, 0.0));
     assert!(segment.intersects_local_ray(&ray, f32::MAX));
 }
 
 #[test]
 fn perpendicular_raycast_starting_in_front_of_segment() {
-    let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
-    let ray = Ray::new(Point2::new(1.0, 0.0), Vector2::new(1.0, 0.0));
+    let segment = Segment::new(Vector::new(0.0f32, -10.0), Vector::new(0.0, 10.0));
+    let ray = Ray::new(Vector::new(1.0, 0.0), Vector::new(1.0, 0.0));
     assert!(!segment.intersects_local_ray(&ray, f32::MAX));
 }
 
 #[test]
 fn perpendicular_raycast_starting_on_segment() {
-    let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
-    let ray = Ray::new(Point2::new(0.0, 3.0), Vector2::new(1.0, 0.0));
+    let segment = Segment::new(Vector::new(0.0f32, -10.0), Vector::new(0.0, 10.0));
+    let ray = Ray::new(Vector::new(0.0, 3.0), Vector::new(1.0, 0.0));
 
     let cast = segment.cast_local_ray(&ray, f32::MAX, true);
     assert_eq!(cast, Some(0.0));
@@ -78,26 +77,26 @@ fn perpendicular_raycast_starting_on_segment() {
 
 #[test]
 fn perpendicular_raycast_starting_above_segment() {
-    let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
-    let ray = Ray::new(Point2::new(0.0, 11.0), Vector2::new(1.0, 0.0));
+    let segment = Segment::new(Vector::new(0.0f32, -10.0), Vector::new(0.0, 10.0));
+    let ray = Ray::new(Vector::new(0.0, 11.0), Vector::new(1.0, 0.0));
     assert!(!segment.intersects_local_ray(&ray, f32::MAX));
 }
 
 #[test]
 fn perpendicular_raycast_starting_below_segment() {
-    let segment = Segment::new(Point2::new(0.0f32, -10.0), Point2::new(0.0, 10.0));
-    let ray = Ray::new(Point2::new(0.0, -11.0), Vector2::new(1.0, 0.0));
+    let segment = Segment::new(Vector::new(0.0f32, -10.0), Vector::new(0.0, 10.0));
+    let ray = Ray::new(Vector::new(0.0, -11.0), Vector::new(1.0, 0.0));
     assert!(!segment.intersects_local_ray(&ray, f32::MAX));
 }
 
 #[test]
 fn raycast_starting_outside_of_triangle() {
     let triangle = Triangle::new(
-        Point2::new(0.0f32, -10.0),
-        Point2::new(0.0, 10.0),
-        Point2::new(10.0, 0.0),
+        Vector::new(0.0f32, -10.0),
+        Vector::new(0.0, 10.0),
+        Vector::new(10.0, 0.0),
     );
-    let ray = Ray::new(Point2::new(-10.0, 0.0), Vector2::new(1.0, 0.0));
+    let ray = Ray::new(Vector::new(-10.0, 0.0), Vector::new(1.0, 0.0));
     let intersect = triangle
         .cast_local_ray_and_get_normal(&ray, f32::MAX, true)
         .expect("No intersection");
@@ -108,11 +107,11 @@ fn raycast_starting_outside_of_triangle() {
 #[test]
 fn raycast_starting_inside_of_triangle() {
     let triangle = Triangle::new(
-        Point2::new(0.0f32, -10.0),
-        Point2::new(0.0, 10.0),
-        Point2::new(10.0, 0.0),
+        Vector::new(0.0f32, -10.0),
+        Vector::new(0.0, 10.0),
+        Vector::new(10.0, 0.0),
     );
-    let ray = Ray::new(Point2::new(2.0, 0.0), Vector2::new(1.0, 0.0));
+    let ray = Ray::new(Vector::new(2.0, 0.0), Vector::new(1.0, 0.0));
     let intersect = triangle
         .cast_local_ray_and_get_normal(&ray, f32::MAX, true)
         .expect("No intersection");
@@ -123,11 +122,11 @@ fn raycast_starting_inside_of_triangle() {
 #[test]
 fn raycast_starting_on_edge_of_triangle() {
     let triangle = Triangle::new(
-        Point2::new(0.0f32, -10.0),
-        Point2::new(0.0, 10.0),
-        Point2::new(10.0, 0.0),
+        Vector::new(0.0f32, -10.0),
+        Vector::new(0.0, 10.0),
+        Vector::new(10.0, 0.0),
     );
-    let ray = Ray::new(Point2::origin(), Vector2::new(1.0, 0.0));
+    let ray = Ray::new(Vector::ZERO, Vector::new(1.0, 0.0));
     let intersect = triangle
         .cast_local_ray_and_get_normal(&ray, f32::MAX, true)
         .expect("No intersection");
@@ -148,18 +147,18 @@ fn raycast_starting_on_edge_of_triangle() {
 /// Tests the accuracy of raycaster collision detection against a `ConvexPolygon`.
 #[test]
 fn convexpoly_raycast_fuzz() {
-    let vertices: Vec<Point2<Real>> = vec![[2, 1], [2, 2], [1, 2], [1, 1]]
+    let vertices: Vec<Vector> = vec![[2, 1], [2, 2], [1, 2], [1, 1]]
         .into_iter()
-        .map(|[x, y]| Point2::new(x as Real, y as Real))
+        .map(|[x, y]| Vector::new(x as Real, y as Real))
         .collect();
 
     let square = ConvexPolygon::from_convex_polyline(vertices).unwrap();
 
-    let test_raycast = |ray_origin: Point2<Real>, ray_look_at: Point2<Real>| -> Option<Real> {
+    let test_raycast = |ray_origin: Vector, ray_look_at: Vector| -> Option<Real> {
         let ray_angle = ray_look_at - ray_origin;
 
         square.cast_ray(
-            &Isometry2::identity(),
+            &Pose::identity(),
             &Ray::new(ray_origin, ray_angle.normalize()),
             Real::MAX,
             true,
@@ -167,8 +166,8 @@ fn convexpoly_raycast_fuzz() {
     };
 
     for i in 0..10_000 {
-        let ray_origin = Point2::new(3., 1. + (i as Real * 0.0001));
-        let ray_look_at = Point2::new(0., 2.);
+        let ray_origin = Vector::new(3., 1. + (i as Real * 0.0001));
+        let ray_look_at = Vector::new(0., 2.);
         let collision = test_raycast(ray_origin, ray_look_at);
         let eps = 1.0e-5;
 

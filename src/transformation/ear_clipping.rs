@@ -2,7 +2,7 @@
 //! Based on <https://github.com/ivanfratric/polypartition>, contributed by embotech AG.
 
 use crate::{
-    math::{Point, Real},
+    math::{Real, Vector},
     utils::point_in_triangle::{corner_direction, is_point_in_triangle, Orientation},
 };
 use alloc::{vec, vec::Vec};
@@ -23,7 +23,7 @@ struct VertexInfo {
 }
 
 /// Updates the fields `pointiness` and `is_ear` for a given vertex index.
-fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>]) -> bool {
+fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Vector]) -> bool {
     // Get the point and its neighbors.
     let p = points[idx];
     let p1 = points[vertex_info.p_prev];
@@ -32,7 +32,7 @@ fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>
     // Get the pointiness.
     let vec1 = (p1 - p).normalize();
     let vec3 = (p3 - p).normalize();
-    vertex_info.pointiness = vec1.dot(&vec3);
+    vertex_info.pointiness = vec1.dot(vec3);
     if vertex_info.pointiness.is_nan() {
         return false;
     }
@@ -40,11 +40,11 @@ fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>
     // A point is considered an ear when it is convex and no other points are
     // inside the triangle spanned by it and its two neighbors.
     let mut error = false;
-    vertex_info.is_ear = corner_direction(&p1, &p, &p3) == Orientation::Ccw
+    vertex_info.is_ear = corner_direction(p1, p, p3) == Orientation::Ccw
         && (0..points.len())
             .filter(|&i| i != vertex_info.p_prev && i != idx && i != vertex_info.p_next)
             .all(|i| {
-                if let Some(is) = is_point_in_triangle(&points[i], &p1, &p, &p3) {
+                if let Some(is) = is_point_in_triangle(points[i], p1, p, p3) {
                     !is
                 } else {
                     error = true;
@@ -55,7 +55,7 @@ fn update_vertex(idx: usize, vertex_info: &mut VertexInfo, points: &[Point<Real>
 }
 
 /// Ear clipping triangulation algorithm.
-pub(crate) fn triangulate_ear_clipping(vertices: &[Point<Real>]) -> Option<Vec<[u32; 3]>> {
+pub(crate) fn triangulate_ear_clipping(vertices: &[Vector]) -> Option<Vec<[u32; 3]>> {
     let n_vertices = vertices.len();
 
     // Create a new vector to hold the information about vertices.
@@ -138,7 +138,11 @@ mod tests {
 
     #[test]
     fn triangle_ccw() {
-        let vertices = vec![Point::new(0., 0.), Point::new(1., 0.), Point::new(1., 1.)];
+        let vertices = vec![
+            Vector::new(0., 0.),
+            Vector::new(1., 0.),
+            Vector::new(1., 1.),
+        ];
         let triangles = triangulate_ear_clipping(&vertices);
         assert_eq!(triangles.unwrap(), vec![[2, 0, 1]]);
     }
@@ -146,10 +150,10 @@ mod tests {
     #[test]
     fn square_ccw() {
         let vertices = vec![
-            Point::new(0., 0.), // 0
-            Point::new(1., 0.), // 1
-            Point::new(1., 1.), // 2
-            Point::new(0., 1.), // 3
+            Vector::new(0., 0.), // 0
+            Vector::new(1., 0.), // 1
+            Vector::new(1., 1.), // 2
+            Vector::new(0., 1.), // 3
         ];
         let triangles = triangulate_ear_clipping(&vertices);
         assert_eq!(triangles.unwrap(), vec![[2, 3, 0], [2, 0, 1]]);
@@ -158,10 +162,10 @@ mod tests {
     #[test]
     fn square_cw() {
         let vertices = vec![
-            Point::new(0., 1.), // 0
-            Point::new(1., 1.), // 1
-            Point::new(1., 0.), // 2
-            Point::new(0., 0.), // 3
+            Vector::new(0., 1.), // 0
+            Vector::new(1., 1.), // 1
+            Vector::new(1., 0.), // 2
+            Vector::new(0., 0.), // 3
         ];
         // This fails because we expect counter-clockwise ordering.
         let triangles = triangulate_ear_clipping(&vertices);
@@ -171,11 +175,11 @@ mod tests {
     #[test]
     fn square_with_dent() {
         let vertices = vec![
-            Point::new(0., 0.),   // 0
-            Point::new(1., 0.),   // 1
-            Point::new(0.5, 0.5), // 2
-            Point::new(1., 1.),   // 3
-            Point::new(0., 1.),   // 4
+            Vector::new(0., 0.),   // 0
+            Vector::new(1., 0.),   // 1
+            Vector::new(0.5, 0.5), // 2
+            Vector::new(1., 1.),   // 3
+            Vector::new(0., 1.),   // 4
         ];
         let triangles = triangulate_ear_clipping(&vertices);
         assert_eq!(triangles.unwrap(), vec![[2, 3, 4], [2, 4, 0], [2, 0, 1],]);
@@ -192,14 +196,14 @@ mod tests {
     /// 5-------6       1-------2
     fn origin_outside_shape() {
         let vertices = vec![
-            Point::new(2.0, 2.0),   // 0
-            Point::new(2.0, -2.0),  // 1
-            Point::new(4.0, -2.0),  // 2
-            Point::new(4.0, 4.0),   // 3
-            Point::new(-4.0, 4.0),  // 4
-            Point::new(-4.0, -2.0), // 5
-            Point::new(-2.0, -2.0), // 6
-            Point::new(-2.0, 2.0),  // 7
+            Vector::new(2.0, 2.0),   // 0
+            Vector::new(2.0, -2.0),  // 1
+            Vector::new(4.0, -2.0),  // 2
+            Vector::new(4.0, 4.0),   // 3
+            Vector::new(-4.0, 4.0),  // 4
+            Vector::new(-4.0, -2.0), // 5
+            Vector::new(-2.0, -2.0), // 6
+            Vector::new(-2.0, 2.0),  // 7
         ];
         let triangles = triangulate_ear_clipping(&vertices).unwrap();
 

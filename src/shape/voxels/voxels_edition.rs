@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Point, Real, Vector, DIM};
+use crate::math::{IVector, Vector, DIM};
 use crate::shape::voxels::voxels_chunk::{VoxelsChunk, VoxelsChunkHeader};
 use crate::shape::{VoxelState, Voxels};
 use crate::utils::hashmap::Entry;
@@ -10,9 +10,9 @@ impl Voxels {
     ///
     /// Since the internal spatial acceleration structure needs to be updated, this
     /// operation runs in `O(n)` time, where `n` is the number of voxels.
-    pub fn set_voxel_size(&mut self, new_size: Vector<Real>) {
-        let scale = new_size.component_div(&self.voxel_size);
-        self.chunk_bvh.scale(&scale);
+    pub fn set_voxel_size(&mut self, new_size: Vector) {
+        let scale = new_size / self.voxel_size;
+        self.chunk_bvh.scale(scale);
         self.voxel_size = new_size;
     }
 
@@ -37,16 +37,16 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
-    /// let mut voxels = Voxels::new(Vector3::new(1.0, 1.0, 1.0), &[]);
+    /// let mut voxels = Voxels::new(Vector::new(1.0, 1.0, 1.0), &[]);
     ///
     /// // Add a voxel at (0, 0, 0)
-    /// let prev_state = voxels.set_voxel(Point3::new(0, 0, 0), true);
+    /// let prev_state = voxels.set_voxel(IVector::new(0, 0, 0), true);
     /// assert!(prev_state.is_empty()); // Was empty before
     ///
     /// // Verify it was added
-    /// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+    /// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
     /// assert!(!state.is_empty());
     /// # }
     /// ```
@@ -56,18 +56,18 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
-    ///     Vector3::new(1.0, 1.0, 1.0),
-    ///     &[Point3::new(0, 0, 0), Point3::new(1, 0, 0)],
+    ///     Vector::new(1.0, 1.0, 1.0),
+    ///     &[IVector::new(0, 0, 0), IVector::new(1, 0, 0)],
     /// );
     ///
     /// // Remove the voxel at (0, 0, 0)
-    /// voxels.set_voxel(Point3::new(0, 0, 0), false);
+    /// voxels.set_voxel(IVector::new(0, 0, 0), false);
     ///
     /// // Verify it was removed
-    /// let state = voxels.voxel_state(Point3::new(0, 0, 0)).unwrap();
+    /// let state = voxels.voxel_state(IVector::new(0, 0, 0)).unwrap();
     /// assert!(state.is_empty());
     /// # }
     /// ```
@@ -77,14 +77,14 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
-    /// let mut voxels = Voxels::new(Vector3::new(1.0, 1.0, 1.0), &[]);
+    /// let mut voxels = Voxels::new(Vector::new(1.0, 1.0, 1.0), &[]);
     ///
     /// // Build a 3×3 floor
     /// for x in 0..3 {
     ///     for z in 0..3 {
-    ///         voxels.set_voxel(Point3::new(x, 0, z), true);
+    ///         voxels.set_voxel(IVector::new(x, 0, z), true);
     ///     }
     /// }
     ///
@@ -101,21 +101,21 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
-    ///     Vector3::new(1.0, 1.0, 1.0),
-    ///     &[Point3::new(0, 0, 0)],
+    ///     Vector::new(1.0, 1.0, 1.0),
+    ///     &[IVector::new(0, 0, 0)],
     /// );
     ///
     /// // Try to add a voxel that already exists
-    /// let prev = voxels.set_voxel(Point3::new(0, 0, 0), true);
+    /// let prev = voxels.set_voxel(IVector::new(0, 0, 0), true);
     /// if !prev.is_empty() {
     ///     println!("Voxel was already filled!");
     /// }
     /// # }
     /// ```
-    pub fn set_voxel(&mut self, key: Point<i32>, is_filled: bool) -> VoxelState {
+    pub fn set_voxel(&mut self, key: IVector, is_filled: bool) -> VoxelState {
         let (chunk_key, id_in_chunk) = Self::chunk_key_and_id_in_chunk(key);
         let header_entry = self.chunk_headers.entry(chunk_key);
 
@@ -134,7 +134,7 @@ impl Voxels {
 
             self.chunk_keys[id] = chunk_key;
             self.chunk_bvh
-                .insert(VoxelsChunk::aabb(&chunk_key, &self.voxel_size), id as u32);
+                .insert(VoxelsChunk::aabb(&chunk_key, self.voxel_size), id as u32);
             VoxelsChunkHeader { id, len: 0 }
         });
         let chunk_id = chunk_header.id;
@@ -183,20 +183,20 @@ impl Voxels {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let mut voxels = Voxels::new(
-    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     Vector::new(1.0, 1.0, 1.0),
     ///     &[
-    ///         Point3::new(0, 0, 0),
-    ///         Point3::new(1, 0, 0),
-    ///         Point3::new(2, 0, 0),
-    ///         Point3::new(3, 0, 0),
+    ///         IVector::new(0, 0, 0),
+    ///         IVector::new(1, 0, 0),
+    ///         IVector::new(2, 0, 0),
+    ///         IVector::new(3, 0, 0),
     ///     ],
     /// );
     ///
     /// // Keep only voxels in the range [1, 2]
-    /// voxels.crop(Point3::new(1, 0, 0), Point3::new(2, 0, 0));
+    /// voxels.crop(IVector::new(1, 0, 0), IVector::new(2, 0, 0));
     ///
     /// // Only two voxels remain
     /// let count = voxels.voxels()
@@ -205,7 +205,7 @@ impl Voxels {
     /// assert_eq!(count, 2);
     /// # }
     /// ```
-    pub fn crop(&mut self, domain_mins: Point<i32>, domain_maxs: Point<i32>) {
+    pub fn crop(&mut self, domain_mins: IVector, domain_maxs: IVector) {
         // TODO PERF: this could be done more efficiently.
         if let Some(new_shape) = self.cropped(domain_mins, domain_maxs) {
             *self = new_shape;
@@ -215,7 +215,7 @@ impl Voxels {
     /// Returns a cropped version of this voxel shape with a rectangular domain.
     ///
     /// This removes every voxels out of the `[domain_mins, domain_maxs]` bounds.
-    pub fn cropped(&self, domain_mins: Point<i32>, domain_maxs: Point<i32>) -> Option<Self> {
+    pub fn cropped(&self, domain_mins: IVector, domain_maxs: IVector) -> Option<Self> {
         // TODO PERF: can be optimized significantly.
         let mut in_box = vec![];
         for vox in self.voxels() {
@@ -254,21 +254,21 @@ impl Voxels {
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::shape::Voxels;
     /// use parry3d::bounding_volume::Aabb;
-    /// use nalgebra::{Point3, Vector3};
+    /// use parry3d::math::{Vector, IVector};
     ///
     /// let voxels = Voxels::new(
-    ///     Vector3::new(1.0, 1.0, 1.0),
+    ///     Vector::new(1.0, 1.0, 1.0),
     ///     &[
-    ///         Point3::new(0, 0, 0),  // Center at (0.5, 0.5, 0.5)
-    ///         Point3::new(2, 0, 0),  // Center at (2.5, 0.5, 0.5)
-    ///         Point3::new(4, 0, 0),  // Center at (4.5, 0.5, 0.5)
+    ///         IVector::new(0, 0, 0),  // Center at (0.5, 0.5, 0.5)
+    ///         IVector::new(2, 0, 0),  // Center at (2.5, 0.5, 0.5)
+    ///         IVector::new(4, 0, 0),  // Center at (4.5, 0.5, 0.5)
     ///     ],
     /// );
     ///
     /// // Split at X = 3.0
     /// let split_box = Aabb::new(
-    ///     Point3::new(-10.0, -10.0, -10.0),
-    ///     Point3::new(3.0, 10.0, 10.0),
+    ///     Vector::new(-10.0, -10.0, -10.0),
+    ///     Vector::new(3.0, 10.0, 10.0),
     /// );
     ///
     /// let (inside, outside) = voxels.split_with_box(&split_box);
@@ -284,7 +284,7 @@ impl Voxels {
         let mut rest = vec![];
         for vox in self.voxels() {
             if !vox.state.is_empty() {
-                if aabb.contains_local_point(&vox.center) {
+                if aabb.contains_local_point(vox.center) {
                     in_box.push(vox.grid_coords);
                 } else {
                     rest.push(vox.grid_coords);
@@ -308,7 +308,7 @@ impl Voxels {
     }
 }
 
-fn grid_aabb_contains_point(mins: &Point<i32>, maxs: &Point<i32>, point: &Point<i32>) -> bool {
+fn grid_aabb_contains_point(mins: &IVector, maxs: &IVector, point: &IVector) -> bool {
     for i in 0..DIM {
         if point[i] < mins[i] || point[i] > maxs[i] {
             return false;

@@ -21,7 +21,8 @@ pub use self::closest_points_line_line::{
     closest_points_line_line_parameters_eps,
 };
 pub use self::closest_points_segment_segment::{
-    closest_points_segment_segment, closest_points_segment_segment_with_locations,
+    closest_points_segment_segment, closest_points_segment_segment_2d,
+    closest_points_segment_segment_with_locations,
     closest_points_segment_segment_with_locations_nD,
 };
 pub use self::closest_points_shape_shape::closest_points;

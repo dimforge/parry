@@ -24,13 +24,13 @@
 /// ```
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::transformation::{try_convex_hull, ConvexHullError};
-/// use nalgebra::Point3;
+/// use parry3d::math::Vector;
 ///
 /// let points = vec![
-///     Point3::origin(),
-///     Point3::new(1.0, 0.0, 0.0),
-///     Point3::new(0.0, 1.0, 0.0),
-///     Point3::new(0.0, 0.0, 1.0),
+///     Vector::ZERO,
+///     Vector::new(1.0, 0.0, 0.0),
+///     Vector::new(0.0, 1.0, 0.0),
+///     Vector::new(0.0, 0.0, 1.0),
 /// ];
 ///
 /// match try_convex_hull(&points) {
@@ -41,11 +41,11 @@
 ///         println!("Not enough points provided (need at least 4 in 3D)");
 ///     }
 ///     Err(ConvexHullError::MissingSupportPoint) => {
-///         println!("Points are invalid (NaN) or nearly coplanar");
+///         println!("Vectors are invalid (NaN) or nearly coplanar");
 ///         // Try removing duplicate points or checking for degeneracies
 ///     }
 ///     Err(ConvexHullError::DuplicatePoints(i, j)) => {
-///         println!("Points {} and {} are duplicates", i, j);
+///         println!("Vectors {} and {} are duplicates", i, j);
 ///         // Remove duplicates and try again
 ///     }
 ///     Err(err) => {
@@ -69,8 +69,8 @@ pub enum ConvexHullError {
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// # use nalgebra::Point3;
-    /// # let points = vec![Point3::origin()];
+    /// # use parry3d::math::Vector;
+    /// # let points = vec![Vector::ZERO];
     /// match try_convex_hull(&points) {
     ///     Err(ConvexHullError::InternalError(msg)) => {
     ///         eprintln!("Bug in convex hull algorithm: {}", msg);
@@ -93,8 +93,8 @@ pub enum ConvexHullError {
     /// # Common Causes
     ///
     /// - **NaN values**: Check your input data for NaN coordinates
-    /// - **Nearly flat geometry**: Points lie almost on a line (2D) or plane (3D)
-    /// - **Numerical precision**: Points are too close together relative to floating-point precision
+    /// - **Nearly flat geometry**: Vectors lie almost on a line (2D) or plane (3D)
+    /// - **Numerical precision**: Vectors are too close together relative to floating-point precision
     ///
     //    /// TODO: check why this doc-test is failing.
     //    /// # How to Fix
@@ -102,12 +102,12 @@ pub enum ConvexHullError {
     //    /// ```
     //    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     //    /// use parry3d::transformation::try_convex_hull;
-    //    /// use nalgebra::Point3;
+    //    /// use parry3d::math::Vector;
     //    ///
     //    /// let points = vec![
-    //    ///     Point3::origin(),
-    //    ///     Point3::new(1.0, 0.0, 0.0),
-    //    ///     Point3::new(2.0, 0.0, 0.0),  // Collinear!
+    //    ///     Vector::ZERO,
+    //    ///     Vector::new(1.0, 0.0, 0.0),
+    //    ///     Vector::new(2.0, 0.0, 0.0),  // Collinear!
     //    /// ];
     //    ///
     //    /// // This will fail because points are collinear
@@ -115,8 +115,8 @@ pub enum ConvexHullError {
     //    ///
     //    /// // Add a point out of the line
     //    /// let mut fixed_points = points.clone();
-    //    /// fixed_points.push(Point3::new(0.0, 1.0, 0.0));
-    //    /// fixed_points.push(Point3::new(0.0, 0.0, 1.0));
+    //    /// fixed_points.push(Vector::new(0.0, 1.0, 0.0));
+    //    /// fixed_points.push(Vector::new(0.0, 0.0, 1.0));
     //    ///
     //    /// // Now it should work
     //    /// assert!(try_convex_hull(&fixed_points).is_ok());
@@ -138,12 +138,12 @@ pub enum ConvexHullError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// use nalgebra::Point3;
+    /// use parry3d::math::Vector;
     ///
     /// // Only 2 points - not enough for 3D hull
     /// let points = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 0.0, 0.0),
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
     /// ];
     ///
     /// match try_convex_hull(&points) {
@@ -188,8 +188,8 @@ pub enum ConvexHullError {
     /// ```no_run
     /// # #[cfg(all(feature = "dim3", feature = "f32", feature = "alloc"))] {
     /// # use parry3d::transformation::{try_convex_hull, ConvexHullError};
-    /// # use nalgebra::Point3;
-    /// # let points = vec![Point3::origin()];
+    /// # use parry3d::math::Vector;
+    /// # let points = vec![Vector::ZERO];
     /// match try_convex_hull(&points) {
     ///     Err(ConvexHullError::TJunction(tri_id, v1, v2)) => {
     ///         eprintln!("T-junction at triangle {} on edge ({}, {})", tri_id, v1, v2);
@@ -216,23 +216,22 @@ pub enum ConvexHullError {
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
     /// use parry3d::transformation::try_convex_hull;
-    /// use nalgebra::Point3;
-    /// use std::collections::HashSet;
+    /// use parry3d::math::Vector;
     ///
     /// let points = vec![
-    ///     Point3::origin(),
-    ///     Point3::new(1.0, 0.0, 0.0),
-    ///     Point3::new(0.0, 1.0, 0.0),
-    ///     Point3::new(0.0, 0.0, 1.0),
-    ///     Point3::origin(),  // Duplicate!
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    ///     Vector::new(0.0, 0.0, 1.0),
+    ///     Vector::ZERO,  // Duplicate!
     /// ];
     ///
     /// // Remove duplicates (note: this is a simple example, not production code)
-    /// fn remove_duplicates(points: Vec<Point3<f32>>) -> Vec<Point3<f32>> {
-    ///     let mut seen = Vec::new();
+    /// fn remove_duplicates(points: Vec<Vector>) -> Vec<Vector> {
+    ///     let mut seen: Vec<Vector> = Vec::new();
     ///     let mut result = Vec::new();
     ///     for pt in points {
-    ///         if !seen.iter().any(|&p: &Point3<f32>| (p - pt).norm() < 1e-6) {
+    ///         if !seen.iter().any(|p| (*p - pt).length() < 1e-6) {
     ///             seen.push(pt);
     ///             result.push(pt);
     ///         }

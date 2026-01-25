@@ -28,11 +28,11 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
             |node: &BvhNode, _| {
                 let aabb1 = node.aabb();
                 let center1 = aabb1.center();
-                let radius1 = aabb1.half_extents().norm();
+                let radius1 = aabb1.half_extents().length();
                 let ball1 = Ball::new(radius1);
                 let ball2 = Ball::new(sphere2.radius());
-                let ball_motion1 = motion1.prepend_translation(center1.coords);
-                let ball_motion2 = motion2.prepend_translation(sphere2.center.coords);
+                let ball_motion1 = motion1.prepend_translation(center1);
+                let ball_motion2 = motion2.prepend_translation(sphere2.center);
 
                 query::details::cast_shapes_nonlinear_support_map_support_map(
                     dispatcher,

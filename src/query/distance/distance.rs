@@ -1,4 +1,4 @@
-use crate::math::{Isometry, Real};
+use crate::math::{Pose, Real};
 
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
 use crate::shape::Shape;
@@ -42,15 +42,15 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::distance;
 /// use parry3d::shape::Ball;
-/// use nalgebra::Isometry3;
+/// use parry3d::math::Pose;
 ///
 /// // Create two balls
 /// let ball1 = Ball::new(1.0);
 /// let ball2 = Ball::new(2.0);
 ///
 /// // Position them 10 units apart along the x-axis
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(10.0, 0.0, 0.0);
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(10.0, 0.0, 0.0);
 ///
 /// // Compute distance
 /// let dist = distance(&pos1, &ball1, &pos2, &ball2).unwrap();
@@ -64,15 +64,15 @@ use crate::shape::Shape;
 /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
 /// use parry3d::query::distance;
 /// use parry3d::shape::Cuboid;
-/// use nalgebra::{Isometry3, Vector3};
+/// use parry3d::math::{Pose, Vector};
 ///
 /// // Create two boxes
-/// let box1 = Cuboid::new(Vector3::new(1.0, 1.0, 1.0));
-/// let box2 = Cuboid::new(Vector3::new(0.5, 0.5, 0.5));
+/// let box1 = Cuboid::new(Vector::new(1.0, 1.0, 1.0));
+/// let box2 = Cuboid::new(Vector::new(0.5, 0.5, 0.5));
 ///
 /// // Position them so they're touching
-/// let pos1 = Isometry3::translation(0.0, 0.0, 0.0);
-/// let pos2 = Isometry3::translation(1.5, 0.0, 0.0); // Edge to edge
+/// let pos1 = Pose::translation(0.0, 0.0, 0.0);
+/// let pos2 = Pose::translation(1.5, 0.0, 0.0); // Edge to edge
 ///
 /// let dist = distance(&pos1, &box1, &pos2, &box2).unwrap();
 ///
@@ -87,9 +87,9 @@ use crate::shape::Shape;
 /// - [`contact`](crate::query::contact()) - For penetration depth when overlapping
 /// - [`intersection_test`](crate::query::intersection_test()) - For boolean overlap test
 pub fn distance(
-    pos1: &Isometry<Real>,
+    pos1: &Pose,
     g1: &dyn Shape,
-    pos2: &Isometry<Real>,
+    pos2: &Pose,
     g2: &dyn Shape,
 ) -> Result<Real, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);

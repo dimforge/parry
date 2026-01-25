@@ -1,23 +1,22 @@
 use core::ops::Range;
+// TODO: Replace nalgebra Array2 with a custom Vec-based storage for heightfield data
 #[cfg(feature = "alloc")]
-use na::DMatrix;
+use crate::utils::Array2;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
 use crate::shape::{FeatureId, Triangle, TrianglePseudoNormals};
-use na::{Point3, Unit};
 
 #[cfg(not(feature = "std"))]
-use na::ComplexField;
+use crate::math::ComplexField;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-/// The status of the cell of an heightfield.
+/// The status of the cell of a heightfield.
 pub struct HeightFieldCellStatus(u8);
 
 bitflags::bitflags! {
@@ -36,8 +35,7 @@ bitflags::bitflags! {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
-    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize),
-    archive(as = "Self")
+    derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -67,10 +65,10 @@ bitflags::bitflags! {
 #[repr(C)]
 /// A 3D heightfield.
 pub struct HeightField {
-    heights: DMatrix<Real>,
-    status: DMatrix<HeightFieldCellStatus>,
+    heights: Array2<Real>,
+    status: Array2<HeightFieldCellStatus>,
 
-    scale: Vector<Real>,
+    scale: Vector,
     aabb: Aabb,
     num_triangles: usize,
     flags: HeightFieldFlags,
@@ -79,36 +77,36 @@ pub struct HeightField {
 #[cfg(feature = "alloc")]
 impl HeightField {
     /// Initializes a new heightfield with the given heights, scaling factor, and flags.
-    pub fn new(heights: DMatrix<Real>, scale: Vector<Real>) -> Self {
-        Self::with_flags(heights, scale, HeightFieldFlags::empty())
+    ///
+    /// The heights are specified in such a way that the row index `i` of the array advances
+    /// grid coordinates along the `z` axis, and the column index `j` of the array advances
+    /// grid coordinates along the `x` axis.
+    pub fn new(heights_zx: Array2<Real>, scale: Vector) -> Self {
+        Self::with_flags(heights_zx, scale, HeightFieldFlags::empty())
     }
 
     /// Initializes a new heightfield with the given heights and a scaling factor.
-    pub fn with_flags(
-        heights: DMatrix<Real>,
-        scale: Vector<Real>,
-        flags: HeightFieldFlags,
-    ) -> Self {
+    pub fn with_flags(heights_zx: Array2<Real>, scale: Vector, flags: HeightFieldFlags) -> Self {
         assert!(
-            heights.nrows() > 1 && heights.ncols() > 1,
+            heights_zx.nrows() > 1 && heights_zx.ncols() > 1,
             "A heightfield heights must have at least 2 rows and columns."
         );
-        let max = heights.max();
-        let min = heights.min();
+        let max = heights_zx.max();
+        let min = heights_zx.min();
         let hscale = scale * 0.5;
         let aabb = Aabb::new(
-            Point3::new(-hscale.x, min * scale.y, -hscale.z),
-            Point3::new(hscale.x, max * scale.y, hscale.z),
+            Vector::new(-hscale.x, min * scale.y, -hscale.z),
+            Vector::new(hscale.x, max * scale.y, hscale.z),
         );
-        let num_triangles = (heights.nrows() - 1) * (heights.ncols() - 1) * 2;
-        let status = DMatrix::repeat(
-            heights.nrows() - 1,
-            heights.ncols() - 1,
+        let num_triangles = (heights_zx.nrows() - 1) * (heights_zx.ncols() - 1) * 2;
+        let status = Array2::repeat(
+            heights_zx.nrows() - 1,
+            heights_zx.ncols() - 1,
             HeightFieldCellStatus::default(),
         );
 
         HeightField {
-            heights,
+            heights: heights_zx,
             scale,
             aabb,
             num_triangles,
@@ -168,20 +166,20 @@ impl HeightField {
     }
 
     fn quantize_floor(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
-        na::clamp(
-            ((val + 0.5) / cell_size).floor(),
-            0.0,
-            (num_cells - 1) as Real,
-        ) as usize
+        ((val + 0.5) / cell_size)
+            .floor()
+            .clamp(0.0, (num_cells - 1) as Real) as usize
     }
 
     fn quantize_ceil(&self, val: Real, cell_size: Real, num_cells: usize) -> usize {
-        na::clamp(((val + 0.5) / cell_size).ceil(), 0.0, num_cells as Real) as usize
+        ((val + 0.5) / cell_size)
+            .ceil()
+            .clamp(0.0, num_cells as Real) as usize
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn closest_cell_at_point(&self, pt: &Point3<Real>) -> (usize, usize) {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn closest_cell_at_point(&self, pt: Vector) -> (usize, usize) {
+        let scaled_pt = pt / self.scale;
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
         let ncells_x = self.ncols();
@@ -193,8 +191,8 @@ impl HeightField {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn cell_at_point(&self, pt: &Point3<Real>) -> Option<(usize, usize)> {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn cell_at_point(&self, pt: Vector) -> Option<(usize, usize)> {
+        let scaled_pt = pt / self.scale;
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
         let ncells_x = self.ncols();
@@ -211,8 +209,8 @@ impl HeightField {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
-    pub fn unclamped_cell_at_point(&self, pt: &Point3<Real>) -> (isize, isize) {
-        let scaled_pt = pt.coords.component_div(&self.scale);
+    pub fn unclamped_cell_at_point(&self, pt: Vector) -> (isize, isize) {
+        let scaled_pt = pt / self.scale;
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -251,7 +249,7 @@ impl HeightField {
     }
 
     /// An iterator through all the triangles around the given point, after vertical projection on the heightfield.
-    pub fn triangles_around_point(&self, point: &Point3<Real>) -> HeightFieldRadialTriangles<'_> {
+    pub fn triangles_around_point(&self, point: Vector) -> HeightFieldRadialTriangles<'_> {
         let center = self.closest_cell_at_point(point);
         HeightFieldRadialTriangles {
             heightfield: self,
@@ -365,16 +363,16 @@ impl HeightField {
         let y01 = self.heights[(i, j + 1)];
         let y11 = self.heights[(i + 1, j + 1)];
 
-        let mut p00 = Point3::new(x0, y00, z0);
-        let mut p10 = Point3::new(x0, y10, z1);
-        let mut p01 = Point3::new(x1, y01, z0);
-        let mut p11 = Point3::new(x1, y11, z1);
+        let mut p00 = Vector::new(x0, y00, z0);
+        let mut p10 = Vector::new(x0, y10, z1);
+        let mut p01 = Vector::new(x1, y01, z0);
+        let mut p11 = Vector::new(x1, y11, z1);
 
         // Apply scales:
-        p00.coords.component_mul_assign(&self.scale);
-        p10.coords.component_mul_assign(&self.scale);
-        p01.coords.component_mul_assign(&self.scale);
-        p11.coords.component_mul_assign(&self.scale);
+        p00 *= self.scale;
+        p10 *= self.scale;
+        p01 *= self.scale;
+        p11 *= self.scale;
 
         if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
             let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
@@ -420,20 +418,19 @@ impl HeightField {
 
             let (tri_left, tri_right) = self.triangles_at(i, j);
             let tri_normal = if left {
-                *tri_left?.normal()?
+                tri_left?.normal()?
             } else {
-                *tri_right?.normal()?
+                tri_right?.normal()?
             };
 
             // TODO: we only compute bivectors where v is a specific direction
             //       (+/-X, +/-Z, or a combination of both). So this bivector
             //       calculation could be simplified/optimized quite a bit.
             // Computes the pseudo-normal of an edge where the adjacent triangle is missing.
-            let bivector = |v: Vector<Real>| tri_normal.cross(&v).cross(&tri_normal).normalize();
+            let bivector = |v: Vector| tri_normal.cross(v).cross(tri_normal).normalize();
             // Pseudo-normal computed from an adjacent triangle’s normal and the current triangle’s normal.
-            let adj_pseudo_normal = |adj: Option<Triangle>| {
-                adj.map(|adj| adj.normal().map(|n| *n).unwrap_or(tri_normal))
-            };
+            let adj_pseudo_normal =
+                |adj: Option<Triangle>| adj.map(|adj| adj.normal().unwrap_or(tri_normal));
 
             let diag_dir = if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
                 Vector::new(-1.0, 0.0, 1.0)
@@ -443,13 +440,13 @@ impl HeightField {
 
             let (left_pseudo_normal, right_pseudo_normal) = if left {
                 let adj_left = adj_pseudo_normal(self.triangles_at(i.overflowing_sub(1).0, j).1)
-                    .unwrap_or_else(|| bivector(-Vector::z()));
+                    .unwrap_or_else(|| bivector(-Vector::Z));
                 let adj_right = adj_pseudo_normal(tri_right).unwrap_or_else(|| bivector(diag_dir));
                 (adj_left, adj_right)
             } else {
                 let adj_left = adj_pseudo_normal(tri_left).unwrap_or_else(|| bivector(-diag_dir));
                 let adj_right = adj_pseudo_normal(self.triangles_at(i + 1, j).0)
-                    .unwrap_or_else(|| bivector(Vector::z()));
+                    .unwrap_or_else(|| bivector(Vector::Z));
                 (adj_left, adj_right)
             };
 
@@ -471,7 +468,7 @@ impl HeightField {
                     bot_right
                 };
 
-                adj_pseudo_normal(bot_tri).unwrap_or_else(|| bivector(-Vector::x()))
+                adj_pseudo_normal(bot_tri).unwrap_or_else(|| bivector(-Vector::X))
             } else {
                 // The neighbor is above.
                 let ((top_left, top_right), top_status) = if j < self.heights.ncols() - 2 {
@@ -486,17 +483,16 @@ impl HeightField {
                     top_left
                 };
 
-                adj_pseudo_normal(top_tri).unwrap_or_else(|| bivector(Vector::x()))
+                adj_pseudo_normal(top_tri).unwrap_or_else(|| bivector(Vector::X))
             };
 
-            // NOTE: the normalization can only succeed due to the heightfield’s definition.
-            let pseudo_normal1 = Unit::new_normalize((tri_normal + left_pseudo_normal) / 2.0);
-            let pseudo_normal2 = Unit::new_normalize((tri_normal + right_pseudo_normal) / 2.0);
-            let pseudo_normal3 =
-                Unit::new_normalize((tri_normal + top_or_bottom_pseudo_normal) / 2.0);
+            // NOTE: the normalization can only succeed due to the heightfield's definition.
+            let pseudo_normal1 = (tri_normal + left_pseudo_normal).normalize();
+            let pseudo_normal2 = (tri_normal + right_pseudo_normal).normalize();
+            let pseudo_normal3 = (tri_normal + top_or_bottom_pseudo_normal).normalize();
 
             Some(TrianglePseudoNormals {
-                face: Unit::new_unchecked(tri_normal), // No need to re-normalize.
+                face: tri_normal, // No need to re-normalize.
                 // TODO: the normals are given in no particular order. So they are **not**
                 //       guaranteed to be provided in the same order as the triangle’s edge.
                 edges: [pseudo_normal1, pseudo_normal2, pseudo_normal3],
@@ -522,12 +518,12 @@ impl HeightField {
     }
 
     /// The statuses of all the cells of this heightfield.
-    pub fn cells_statuses(&self) -> &DMatrix<HeightFieldCellStatus> {
+    pub fn cells_statuses(&self) -> &Array2<HeightFieldCellStatus> {
         &self.status
     }
 
     /// The mutable statuses of all the cells of this heightfield.
-    pub fn cells_statuses_mut(&mut self) -> &mut DMatrix<HeightFieldCellStatus> {
+    pub fn cells_statuses_mut(&mut self) -> &mut Array2<HeightFieldCellStatus> {
         &mut self.status
     }
 
@@ -542,26 +538,26 @@ impl HeightField {
     }
 
     /// The heights of this heightfield.
-    pub fn heights(&self) -> &DMatrix<Real> {
+    pub fn heights(&self) -> &Array2<Real> {
         &self.heights
     }
 
     /// The scale factor applied to this heightfield.
-    pub fn scale(&self) -> &Vector<Real> {
-        &self.scale
+    pub fn scale(&self) -> Vector {
+        self.scale
     }
 
     /// Sets the scale factor applied to this heightfield.
-    pub fn set_scale(&mut self, new_scale: Vector<Real>) {
-        let ratio = new_scale.component_div(&self.scale);
-        self.aabb.mins.coords.component_mul_assign(&ratio);
-        self.aabb.maxs.coords.component_mul_assign(&ratio);
+    pub fn set_scale(&mut self, new_scale: Vector) {
+        let ratio = new_scale / self.scale;
+        self.aabb.mins *= ratio;
+        self.aabb.maxs *= ratio;
         self.scale = new_scale;
     }
 
     /// Returns a scaled version of this heightfield.
-    pub fn scaled(mut self, scale: &Vector<Real>) -> Self {
-        self.set_scale(self.scale.component_mul(scale));
+    pub fn scaled(mut self, scale: Vector) -> Self {
+        self.set_scale(self.scale * scale);
         self
     }
 
@@ -675,8 +671,8 @@ impl HeightField {
         &self,
         aabb: &Aabb,
     ) -> (Range<isize>, Range<isize>) {
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins / self.scale;
+        let ref_maxs = aabb.maxs / self.scale;
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -693,8 +689,8 @@ impl HeightField {
         let ncells_x = self.ncols();
         let ncells_z = self.nrows();
 
-        let ref_mins = aabb.mins.coords.component_div(&self.scale);
-        let ref_maxs = aabb.maxs.coords.component_div(&self.scale);
+        let ref_mins = aabb.mins / self.scale;
+        let ref_maxs = aabb.maxs / self.scale;
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -739,16 +735,16 @@ impl HeightField {
                     continue;
                 }
 
-                let mut p00 = Point3::new(x0, y00, z0);
-                let mut p10 = Point3::new(x0, y10, z1);
-                let mut p01 = Point3::new(x1, y01, z0);
-                let mut p11 = Point3::new(x1, y11, z1);
+                let mut p00 = Vector::new(x0, y00, z0);
+                let mut p10 = Vector::new(x0, y10, z1);
+                let mut p01 = Vector::new(x1, y01, z0);
+                let mut p11 = Vector::new(x1, y11, z1);
 
                 // Apply scales:
-                p00.coords.component_mul_assign(&self.scale);
-                p10.coords.component_mul_assign(&self.scale);
-                p01.coords.component_mul_assign(&self.scale);
-                p11.coords.component_mul_assign(&self.scale);
+                p00 *= self.scale;
+                p10 *= self.scale;
+                p01 *= self.scale;
+                p11 *= self.scale;
 
                 // Build the two triangles, contact processors and call f.
                 if !status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
