@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
+use crate::math::{Real, Vector, VectorExt, DIM};
 use crate::query::Ray;
 use crate::shape::Segment;
 use num::{Bounded, Zero};
@@ -89,15 +89,15 @@ pub fn clip_aabb_line(
     let mut far_diag = false;
 
     for i in 0usize..DIM {
-        if dir[i].is_zero() {
-            if origin[i] < aabb.mins[i] || origin[i] > aabb.maxs[i] {
+        if dir.vget(i).is_zero() {
+            if origin.vget(i) < aabb.mins.vget(i) || origin.vget(i) > aabb.maxs.vget(i) {
                 return None;
             }
         } else {
-            let denom = 1.0 / dir[i];
+            let denom = 1.0 / dir.vget(i);
             let flip_sides;
-            let mut inter_with_near_halfspace = (aabb.mins[i] - origin[i]) * denom;
-            let mut inter_with_far_halfspace = (aabb.maxs[i] - origin[i]) * denom;
+            let mut inter_with_near_halfspace = (aabb.mins.vget(i) - origin.vget(i)) * denom;
+            let mut inter_with_far_halfspace = (aabb.maxs.vget(i) - origin.vget(i)) * denom;
 
             if inter_with_near_halfspace > inter_with_far_halfspace {
                 flip_sides = true;
@@ -153,9 +153,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::ZERO;
 
         if near_side < 0 {
-            normal[(-near_side - 1) as usize] = 1.0;
+            normal.vset((-near_side - 1) as usize, 1.0);
         } else {
-            normal[(near_side - 1) as usize] = -1.0;
+            normal.vset((near_side - 1) as usize, -1.0);
         }
 
         (tmin, normal, near_side)
@@ -175,9 +175,9 @@ pub fn clip_aabb_line(
         let mut normal = Vector::ZERO;
 
         if far_side < 0 {
-            normal[(-far_side - 1) as usize] = -1.0;
+            normal.vset((-far_side - 1) as usize, -1.0);
         } else {
-            normal[(far_side - 1) as usize] = 1.0;
+            normal.vset((far_side - 1) as usize, 1.0);
         }
 
         (tmax, normal, far_side)

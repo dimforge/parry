@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::Real;
+use crate::math::{Real, VectorExt};
 use crate::query::SplitResult;
 
 impl Aabb {
@@ -14,15 +14,15 @@ impl Aabb {
     /// half-space delimited by the splitting plane. The second `Aabb` returned is the piece lying on the
     /// positive half-space delimited by the splitting plane.
     pub fn canonical_split(&self, axis: usize, bias: Real, epsilon: Real) -> SplitResult<Self> {
-        if self.mins[axis] >= bias - epsilon {
+        if self.mins.vget(axis) >= bias - epsilon {
             SplitResult::Positive
-        } else if self.maxs[axis] <= bias + epsilon {
+        } else if self.maxs.vget(axis) <= bias + epsilon {
             SplitResult::Negative
         } else {
             let mut left = *self;
             let mut right = *self;
-            left.maxs[axis] = bias;
-            right.mins[axis] = bias;
+            left.maxs.vset(axis, bias);
+            right.mins.vset(axis, bias);
             SplitResult::Pair(left, right)
         }
     }

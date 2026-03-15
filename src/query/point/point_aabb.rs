@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
+use crate::math::{Real, Vector, VectorExt, DIM};
 use crate::num::{Bounded, Zero};
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::FeatureId;
@@ -71,7 +71,7 @@ impl PointQuery for Aabb {
         let mut last_not_zero_shift = 0;
 
         for i in 0..DIM {
-            if shift[i].is_zero() {
+            if shift.vget(i).is_zero() {
                 nzero_shifts += 1;
                 last_zero_shift = i;
             } else {
@@ -81,10 +81,10 @@ impl PointQuery for Aabb {
 
         if nzero_shifts == DIM {
             for i in 0..DIM {
-                if ls_pt[i] > self.maxs[i] - crate::math::DEFAULT_EPSILON {
+                if ls_pt.vget(i) > self.maxs.vget(i) - crate::math::DEFAULT_EPSILON {
                     return (proj, FeatureId::Face(i as u32));
                 }
-                if ls_pt[i] <= self.mins[i] + crate::math::DEFAULT_EPSILON {
+                if ls_pt.vget(i) <= self.mins.vget(i) + crate::math::DEFAULT_EPSILON {
                     return (proj, FeatureId::Face((i + DIM) as u32));
                 }
             }
@@ -92,7 +92,7 @@ impl PointQuery for Aabb {
             (proj, FeatureId::Unknown)
         } else if nzero_shifts == DIM - 1 {
             // On a 3D face.
-            if ls_pt[last_not_zero_shift] < self.center()[last_not_zero_shift] {
+            if ls_pt.vget(last_not_zero_shift) < self.center().vget(last_not_zero_shift) {
                 (proj, FeatureId::Face((last_not_zero_shift + DIM) as u32))
             } else {
                 (proj, FeatureId::Face(last_not_zero_shift as u32))
@@ -103,7 +103,7 @@ impl PointQuery for Aabb {
             let center = self.center();
 
             for i in 0..DIM {
-                if ls_pt[i] < center[i] {
+                if ls_pt.vget(i) < center.vget(i) {
                     id |= 1 << i;
                 }
             }

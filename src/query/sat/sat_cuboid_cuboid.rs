@@ -262,12 +262,12 @@ pub fn cuboid_cuboid_find_local_separating_normal_oneway(
 
     for i in 0..DIM {
         #[expect(clippy::unnecessary_cast)]
-        let sign = (1.0 as Real).copysign(pos12.translation[i]);
+        let sign = (1.0 as Real).copysign(pos12.translation.vget(i));
         let axis1 = Vector::ith(i, sign);
         let axis2 = pos12.rotation.inverse() * -axis1;
         let local_pt2 = cuboid2.local_support_point(axis2);
         let pt2 = pos12 * local_pt2;
-        let separation = pt2[i] * sign - cuboid1.half_extents[i];
+        let separation = pt2.vget(i) * sign - cuboid1.half_extents.vget(i);
 
         if separation > best_separation {
             best_separation = separation;

@@ -449,7 +449,7 @@ impl EPA {
 
         if simplex.dimension() == 0 {
             let mut n: Vector = Vector::ZERO;
-            n[1] = 1.0;
+            n.y = 1.0;
             return Some((Vector::ZERO, Vector::ZERO, n));
         } else if simplex.dimension() == 3 {
             let dp1 = self.vertices[1] - self.vertices[0];

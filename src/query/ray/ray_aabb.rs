@@ -1,7 +1,7 @@
 use core::mem;
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
+use crate::math::{Real, Vector, VectorExt, DIM};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::FeatureId;
 use num::Zero;
@@ -12,14 +12,17 @@ impl RayCast for Aabb {
         let mut tmax: Real = max_time_of_impact;
 
         for i in 0usize..DIM {
-            if ray.dir[i].is_zero() {
-                if ray.origin[i] < self.mins[i] || ray.origin[i] > self.maxs[i] {
+            if ray.dir.vget(i).is_zero() {
+                if ray.origin.vget(i) < self.mins.vget(i) || ray.origin.vget(i) > self.maxs.vget(i)
+                {
                     return None;
                 }
             } else {
-                let denom = 1.0 / ray.dir[i];
-                let mut inter_with_near_halfspace = (self.mins[i] - ray.origin[i]) * denom;
-                let mut inter_with_far_halfspace = (self.maxs[i] - ray.origin[i]) * denom;
+                let denom = 1.0 / ray.dir.vget(i);
+                let mut inter_with_near_halfspace =
+                    (self.mins.vget(i) - ray.origin.vget(i)) * denom;
+                let mut inter_with_far_halfspace =
+                    (self.maxs.vget(i) - ray.origin.vget(i)) * denom;
 
                 if inter_with_near_halfspace > inter_with_far_halfspace {
                     mem::swap(

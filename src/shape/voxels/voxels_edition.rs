@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{IVector, Vector, DIM};
+use crate::math::{IVector, IVectorExt, Vector, DIM};
 use crate::shape::voxels::voxels_chunk::{VoxelsChunk, VoxelsChunkHeader};
 use crate::shape::{VoxelState, Voxels};
 use crate::utils::hashmap::Entry;
@@ -310,7 +310,7 @@ impl Voxels {
 
 fn grid_aabb_contains_point(mins: &IVector, maxs: &IVector, point: &IVector) -> bool {
     for i in 0..DIM {
-        if point[i] < mins[i] || point[i] > maxs[i] {
+        if point.ivget(i) < mins.ivget(i) || point.ivget(i) > maxs.ivget(i) {
             return false;
         }
     }

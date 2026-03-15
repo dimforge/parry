@@ -1,5 +1,5 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{IVector, Int, Pose, Real, Vector, DIM};
+use crate::math::{IVector, IVectorExt, Int, Pose, Real, Vector, VectorExt, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
@@ -346,19 +346,19 @@ impl CanonicalVoxelShape {
 
         let adjust_canon = |axis: AxisMask, i: usize, key: &mut IVector, val: Int| {
             if !mask1.contains(axis) {
-                key[i] = val.as_();
+                key.ivset(i, val.as_());
             }
         };
 
-        adjust_canon(AxisMask::X_POS, 0, &mut key_high, maxs[0]);
-        adjust_canon(AxisMask::X_NEG, 0, &mut key_low, mins[0]);
-        adjust_canon(AxisMask::Y_POS, 1, &mut key_high, maxs[1]);
-        adjust_canon(AxisMask::Y_NEG, 1, &mut key_low, mins[1]);
+        adjust_canon(AxisMask::X_POS, 0, &mut key_high, maxs.x);
+        adjust_canon(AxisMask::X_NEG, 0, &mut key_low, mins.x);
+        adjust_canon(AxisMask::Y_POS, 1, &mut key_high, maxs.y);
+        adjust_canon(AxisMask::Y_NEG, 1, &mut key_low, mins.y);
 
         #[cfg(feature = "dim3")]
         {
-            adjust_canon(AxisMask::Z_POS, 2, &mut key_high, maxs[2]);
-            adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, mins[2]);
+            adjust_canon(AxisMask::Z_POS, 2, &mut key_high, maxs.z);
+            adjust_canon(AxisMask::Z_NEG, 2, &mut key_low, mins.z);
         }
 
         #[cfg(feature = "dim2")]
@@ -385,12 +385,12 @@ impl CanonicalVoxelShape {
         let mut canonical_maxs = voxels.voxel_center(self.range[1]);
 
         for k in 0..DIM {
-            if self.range[0][k] != vox.grid_coords[k] {
-                canonical_mins[k] = canonical_mins[k].max(domain2_1.mins[k]);
+            if self.range[0].ivget(k) != vox.grid_coords.ivget(k) {
+                canonical_mins.vset(k, canonical_mins.vget(k).max(domain2_1.mins.vget(k)));
             }
 
-            if self.range[1][k] != vox.grid_coords[k] {
-                canonical_maxs[k] = canonical_maxs[k].min(domain2_1.maxs[k]);
+            if self.range[1].ivget(k) != vox.grid_coords.ivget(k) {
+                canonical_maxs.vset(k, canonical_maxs.vget(k).min(domain2_1.maxs.vget(k)));
             }
         }
 

@@ -48,18 +48,18 @@ pub fn tetrahedron_unit_inertia_tensor_wrt_point(
     let p4 = p4 - point;
 
     // Just for readability.
-    let x1 = p1[0];
-    let y1 = p1[1];
-    let z1 = p1[2];
-    let x2 = p2[0];
-    let y2 = p2[1];
-    let z2 = p2[2];
-    let x3 = p3[0];
-    let y3 = p3[1];
-    let z3 = p3[2];
-    let x4 = p4[0];
-    let y4 = p4[1];
-    let z4 = p4[2];
+    let x1 = p1.x;
+    let y1 = p1.y;
+    let z1 = p1.z;
+    let x2 = p2.x;
+    let y2 = p2.y;
+    let z2 = p2.z;
+    let x3 = p3.x;
+    let y3 = p3.y;
+    let z3 = p3.z;
+    let x4 = p4.x;
+    let y4 = p4.y;
+    let z4 = p4.z;
 
     let diag_x = x1 * x1
         + x1 * x2

@@ -152,19 +152,19 @@ impl SupportMap for Cone {
     fn local_support_point(&self, dir: Vector) -> Vector {
         let mut vres = dir;
 
-        vres[1] = 0.0;
+        vres.y = 0.0;
         let (mut vres, length) = vres.normalize_and_length();
 
         if length == 0.0 {
             vres = Vector::ZERO;
-            vres[1] = self.half_height.copysign(dir[1]);
+            vres.y = self.half_height.copysign(dir.y);
         } else {
             vres *= self.radius;
-            vres[1] = -self.half_height;
+            vres.y = -self.half_height;
 
-            if dir.dot(vres) < dir[1] * self.half_height {
+            if dir.dot(vres) < dir.y * self.half_height {
                 vres = Vector::ZERO;
-                vres[1] = self.half_height
+                vres.y = self.half_height
             }
         }
 

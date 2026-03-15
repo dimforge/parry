@@ -1,7 +1,7 @@
 //! Axis Aligned Bounding Box.
 
 use crate::bounding_volume::{BoundingSphere, BoundingVolume};
-use crate::math::{Pose, Real, Vector, DIM, TWO_DIM};
+use crate::math::{Pose, Real, Vector, VectorExt, DIM, TWO_DIM};
 use crate::shape::{Cuboid, SupportMap};
 use crate::utils::PoseOps;
 use arrayvec::ArrayVec;
@@ -536,7 +536,7 @@ impl Aabb {
     #[inline]
     pub fn contains_local_point(&self, point: Vector) -> bool {
         for i in 0..DIM {
-            if point[i] < self.mins[i] || point[i] > self.maxs[i] {
+            if point.vget(i) < self.mins.vget(i) || point.vget(i) > self.maxs.vget(i) {
                 return false;
             }
         }
@@ -570,7 +570,7 @@ impl Aabb {
         };
 
         for i in 0..DIM {
-            if result.mins[i] > result.maxs[i] {
+            if result.mins.vget(i) > result.maxs.vget(i) {
                 return None;
             }
         }
@@ -636,7 +636,7 @@ impl Aabb {
         //       This isn’t exactly the same as `!self.intersects(rhs)`
         //       because of the equality.
         for i in 0..DIM {
-            if self.mins[i] >= rhs.maxs[i] || self.maxs[i] <= rhs.mins[i] {
+            if self.mins.vget(i) >= rhs.maxs.vget(i) || self.maxs.vget(i) <= rhs.mins.vget(i) {
                 result.push(*self);
                 return (result, cut_sequence);
             }
@@ -645,20 +645,20 @@ impl Aabb {
         let mut rest = *self;
 
         for i in 0..DIM {
-            if rhs.mins[i] > rest.mins[i] {
+            if rhs.mins.vget(i) > rest.mins.vget(i) {
                 let mut fragment = rest;
-                fragment.maxs[i] = rhs.mins[i];
-                rest.mins[i] = rhs.mins[i];
+                fragment.maxs.vset(i, rhs.mins.vget(i));
+                rest.mins.vset(i, rhs.mins.vget(i));
                 result.push(fragment);
-                cut_sequence.push((i as i8 + 1, rhs.mins[i]));
+                cut_sequence.push((i as i8 + 1, rhs.mins.vget(i)));
             }
 
-            if rhs.maxs[i] < rest.maxs[i] {
+            if rhs.maxs.vget(i) < rest.maxs.vget(i) {
                 let mut fragment = rest;
-                fragment.mins[i] = rhs.maxs[i];
-                rest.maxs[i] = rhs.maxs[i];
+                fragment.mins.vset(i, rhs.maxs.vget(i));
+                rest.maxs.vset(i, rhs.maxs.vget(i));
                 result.push(fragment);
-                cut_sequence.push((-(i as i8 + 1), -rhs.maxs[i]));
+                cut_sequence.push((-(i as i8 + 1), -rhs.maxs.vget(i)));
             }
         }
 
@@ -919,12 +919,12 @@ impl Aabb {
         let mut candidates = vec![];
 
         let planes = [
-            (-self.mins[0], -Vector::X, 0),
-            (self.maxs[0], Vector::X, 0),
-            (-self.mins[1], -Vector::Y, 1),
-            (self.maxs[1], Vector::Y, 1),
-            (-self.mins[2], -Vector::Z, 2),
-            (self.maxs[2], Vector::Z, 2),
+            (-self.mins.x, -Vector::X, 0),
+            (self.maxs.x, Vector::X, 0),
+            (-self.mins.y, -Vector::Y, 1),
+            (self.maxs.y, Vector::Y, 1),
+            (-self.mins.z, -Vector::Z, 2),
+            (self.maxs.z, Vector::Z, 2),
         ];
 
         let range = self.project_on_axis(axis);
@@ -948,10 +948,10 @@ impl Aabb {
             for root in roots.drain(..) {
                 let point = distance_fn.spiral_pt_at(root.midpoint());
                 let (j, k) = ((i + 1) % 3, (i + 2) % 3);
-                if point[j] >= self.mins[j]
-                    && point[j] <= self.maxs[j]
-                    && point[k] >= self.mins[k]
-                    && point[k] <= self.maxs[k]
+                if point.vget(j) >= self.mins.vget(j)
+                    && point.vget(j) <= self.maxs.vget(j)
+                    && point.vget(k) >= self.mins.vget(k)
+                    && point.vget(k) <= self.maxs.vget(k)
                 {
                     return true;
                 }

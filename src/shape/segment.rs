@@ -1,6 +1,8 @@
 //! Definition of the segment shape.
 
 use crate::math::{Pose, Real, Vector};
+#[cfg(feature = "dim3")]
+use crate::math::VectorExt;
 use crate::shape::{FeatureId, SupportMap};
 use core::mem;
 
@@ -420,18 +422,18 @@ impl Segment {
                 FeatureId::Edge(_) => {
                     let imin = direction.abs().min_position();
                     let mut normal = Vector::ZERO;
-                    normal[imin] = 1.0;
-                    normal -= direction * direction[imin];
+                    normal.vset(imin, 1.0);
+                    normal -= direction * direction.vget(imin);
                     Some(normal.normalize())
                 }
                 FeatureId::Face(id) => {
                     let mut dir = Vector::ZERO;
                     if id == 0 {
-                        dir[0] = direction[1];
-                        dir[1] = -direction[0];
+                        dir.x = direction.y;
+                        dir.y = -direction.x;
                     } else {
-                        dir[0] = -direction[1];
-                        dir[1] = direction[0];
+                        dir.x = -direction.y;
+                        dir.y = direction.x;
                     }
                     Some(dir)
                 }

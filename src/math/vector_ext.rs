@@ -1,6 +1,6 @@
 //! Vector extension trait for glam types.
 
-use crate::math::{Matrix, Real, Vector};
+use crate::math::{IVector, Int, Matrix, Real, Vector};
 
 #[cfg(not(feature = "std"))]
 use simba::scalar::ComplexField;
@@ -15,6 +15,18 @@ pub trait VectorExt: Sized + Copy {
 
     /// Computes the kronecker product between two vectors.
     fn kronecker(self, other: Self) -> Matrix;
+
+    /// Gets the i-th component of the vector by index.
+    ///
+    /// This is a SPIR-V compatible replacement for bracket indexing (`v[i]`),
+    /// which is not supported on glam types when targeting SPIR-V.
+    fn vget(&self, i: usize) -> Real;
+
+    /// Sets the i-th component of the vector by index.
+    ///
+    /// This is a SPIR-V compatible replacement for bracket indexing (`v[i] = val`),
+    /// which is not supported on glam types when targeting SPIR-V.
+    fn vset(&mut self, i: usize, val: Real);
 }
 
 impl VectorExt for Vector {
@@ -60,5 +72,102 @@ impl VectorExt for Vector {
     #[cfg(feature = "dim3")]
     fn kronecker(self, other: Self) -> Matrix {
         Matrix::from_cols(self * other.x, self * other.y, self * other.z)
+    }
+
+    #[inline]
+    #[cfg(feature = "dim2")]
+    fn vget(&self, i: usize) -> Real {
+        match i {
+            0 => self.x,
+            1 => self.y,
+            _ => panic!("Index out of bounds for 2D vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim3")]
+    fn vget(&self, i: usize) -> Real {
+        match i {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => panic!("Index out of bounds for 3D vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim2")]
+    fn vset(&mut self, i: usize, val: Real) {
+        match i {
+            0 => self.x = val,
+            1 => self.y = val,
+            _ => panic!("Index out of bounds for 2D vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim3")]
+    fn vset(&mut self, i: usize, val: Real) {
+        match i {
+            0 => self.x = val,
+            1 => self.y = val,
+            2 => self.z = val,
+            _ => panic!("Index out of bounds for 3D vector: {i}"),
+        }
+    }
+}
+
+/// Extension trait for integer vector types with index-based component access.
+///
+/// Provides SPIR-V compatible replacement for bracket indexing on glam integer vectors.
+pub trait IVectorExt: Sized + Copy {
+    /// Gets the i-th component of the integer vector by index.
+    fn ivget(&self, i: usize) -> Int;
+
+    /// Sets the i-th component of the integer vector by index.
+    fn ivset(&mut self, i: usize, val: Int);
+}
+
+impl IVectorExt for IVector {
+    #[inline]
+    #[cfg(feature = "dim2")]
+    fn ivget(&self, i: usize) -> Int {
+        match i {
+            0 => self.x,
+            1 => self.y,
+            _ => panic!("Index out of bounds for 2D integer vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim3")]
+    fn ivget(&self, i: usize) -> Int {
+        match i {
+            0 => self.x,
+            1 => self.y,
+            2 => self.z,
+            _ => panic!("Index out of bounds for 3D integer vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim2")]
+    fn ivset(&mut self, i: usize, val: Int) {
+        match i {
+            0 => self.x = val,
+            1 => self.y = val,
+            _ => panic!("Index out of bounds for 2D integer vector: {i}"),
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "dim3")]
+    fn ivset(&mut self, i: usize, val: Int) {
+        match i {
+            0 => self.x = val,
+            1 => self.y = val,
+            2 => self.z = val,
+            _ => panic!("Index out of bounds for 3D integer vector: {i}"),
+        }
     }
 }
