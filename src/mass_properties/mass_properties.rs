@@ -586,6 +586,7 @@ impl approx::AbsDiffEq for MassProperties {
     }
 }
 
+#[cfg(feature = "alloc")] // TODO: this is a workaround because the `approx` feature of `glam` cannot be enabled on spirv targets.
 impl approx::RelativeEq for MassProperties {
     fn default_max_relative() -> Self::Epsilon {
         Real::default_max_relative()

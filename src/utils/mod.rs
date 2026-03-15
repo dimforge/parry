@@ -12,6 +12,7 @@ pub use self::eigen2::SymmetricEigen2;
 pub use self::eigen3::SymmetricEigen3;
 pub(crate) use self::inv::inv;
 pub use self::isometry_ops::{PoseOps, PoseOpt};
+#[cfg(feature = "alloc")]
 pub use self::median::median;
 pub use self::point_cloud_support_point::{
     point_cloud_support_point, point_cloud_support_point_id,
@@ -38,6 +39,7 @@ pub use self::sorted_pair::SortedPair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
 pub(crate) use self::wops::{WBasis, WCross, WSign};
+pub use self::relative_eq::relative_eq_vector;
 
 #[cfg(feature = "simd-is-enabled")]
 #[allow(unused_imports)]
@@ -65,6 +67,7 @@ pub mod hashset;
 mod interval;
 mod inv;
 mod isometry_ops;
+#[cfg(feature = "alloc")]
 mod median;
 pub mod morton;
 mod obb;
@@ -84,3 +87,4 @@ mod eigen2;
 mod eigen3;
 #[cfg(feature = "alloc")]
 mod vec_map;
+mod relative_eq;
