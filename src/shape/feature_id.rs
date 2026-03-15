@@ -484,6 +484,7 @@ impl PackedFeatureId {
     /// # }
     /// ```
     pub fn vertex(code: u32) -> Self {
+        #[cfg(not(target_arch = "spirv"))]
         assert_eq!(code & Self::HEADER_MASK, 0);
         Self(Self::HEADER_VERTEX | code)
     }
@@ -510,6 +511,7 @@ impl PackedFeatureId {
     /// ```
     #[cfg(feature = "dim3")]
     pub fn edge(code: u32) -> Self {
+        #[cfg(not(target_arch = "spirv"))]
         assert_eq!(code & Self::HEADER_MASK, 0);
         Self(Self::HEADER_EDGE | code)
     }
@@ -533,6 +535,7 @@ impl PackedFeatureId {
     /// # }
     /// ```
     pub fn face(code: u32) -> Self {
+        #[cfg(not(target_arch = "spirv"))]
         assert_eq!(code & Self::HEADER_MASK, 0);
         Self(Self::HEADER_FACE | code)
     }

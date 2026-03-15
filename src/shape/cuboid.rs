@@ -296,7 +296,7 @@ impl Cuboid {
             i * 2
         }
 
-        let sign_index = ((sign as i8 + 1) / 2) as usize;
+        let sign_index = ((sign as isize + 1) / 2) as usize;
         // The vertex id as numbered depending on the sign of the vertex
         // component. A + sign means the corresponding bit is 0 while a -
         // sign means the corresponding bit is 1.
