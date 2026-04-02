@@ -13,7 +13,8 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
     # "wavefront" is only used for 3D crates.
     'cfg(feature, values("wavefront"))',
     # "encase" is only used in f32 crates.
-    'cfg(feature, values("encase"))'
+    'cfg(feature, values("encase"))',
+    'cfg(target_arch, values("spirv"))',
 ] }
 
 [workspace.lints.clippy]

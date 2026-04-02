@@ -28,10 +28,20 @@ pub trait WSign<Rhs>: Sized {
 }
 
 impl WSign<Real> for Real {
+    #[inline]
     fn copy_sign_to(self, to: Self) -> Self {
-        let minus_zero: Real = -0.0;
-        let signbit = minus_zero.to_bits();
-        Real::from_bits((signbit & self.to_bits()) | ((!signbit) & to.to_bits()))
+        #[cfg(not(target_arch = "nvptx64"))]
+        return to.copysign(self);
+        #[cfg(target_arch = "nvptx64")]
+        {
+            // TODO: this is a manual implementation of copysign.
+            //       Apparently, the cuda_std copysign doesn’t compile with
+            //       rust-cuda.
+            // return cuda_std::float::GpuFloat::copysign(to, self);
+            let minus_zero: Real = -0.0;
+            let signbit = minus_zero.to_bits();
+            Real::from_bits((signbit & self.to_bits()) | ((!signbit) & to.to_bits()))
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 //! Support mapping based Cone shape.
 
 use crate::math::{Real, Vector};
+use crate::utils::WSign;
 use crate::shape::SupportMap;
 
 #[cfg(feature = "alloc")]
@@ -157,7 +158,7 @@ impl SupportMap for Cone {
 
         if length == 0.0 {
             vres = Vector::ZERO;
-            vres.y = self.half_height.copysign(dir.y);
+            vres.y = dir.y.copy_sign_to(self.half_height);
         } else {
             vres *= self.radius;
             vres.y = -self.half_height;

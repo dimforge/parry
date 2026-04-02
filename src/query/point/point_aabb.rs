@@ -1,8 +1,9 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector, VectorExt, DIM};
-use crate::num::{Bounded, Zero};
+use crate::num::Zero;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::FeatureId;
+use crate::utils::WSign;
 
 impl Aabb {
     fn do_project_local_point(&self, pt: Vector, solid: bool) -> (bool, Vector, Vector) {
@@ -17,7 +18,7 @@ impl Aabb {
         } else {
             // Projection for the case where the point is inside the box.
             let centered_pt = pt - self.center();
-            let pt_sgn_with_zero = Vector::splat(1.0).copysign(centered_pt);
+            let pt_sgn_with_zero = centered_pt.copy_sign_to(Vector::splat(1.0));
             // This is the sign of pt, or -1 for components that were zero.
             // This bias is arbitrary (we could have picked +1), but we picked it so
             // it matches the previous implementation.

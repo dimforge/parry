@@ -2,6 +2,7 @@
 
 use crate::math::{Real, Vector};
 use crate::shape::SupportMap;
+use crate::utils::WSign;
 
 #[cfg(feature = "alloc")]
 use either::Either;
@@ -199,7 +200,7 @@ impl SupportMap for Cylinder {
         let mut vres = dir;
         vres.y = 0.0;
         vres = vres.normalize_or_zero() * self.radius;
-        vres.y = self.half_height.copysign(dir.y);
+        vres.y = dir.y.copy_sign_to(self.half_height);
         vres
     }
 }

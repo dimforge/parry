@@ -2,6 +2,7 @@ use crate::math::Vector;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, PackedFeatureId};
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
+use crate::utils::WSign;
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.
 pub trait PolygonalFeatureMap: SupportMap {
@@ -73,7 +74,7 @@ impl PolygonalFeatureMap for Cylinder {
             out_features.vids = PackedFeatureId::vertices([1, 11, 11, 11]);
         } else {
             // We return a square approximation of the cylinder cap.
-            let y = self.half_height.copysign(dir.y);
+            let y = dir.y.copy_sign_to(self.half_height);
             out_features.vertices[0] = Vector::new(dir2.x * self.radius, y, dir2.y * self.radius);
             out_features.vertices[1] = Vector::new(-dir2.y * self.radius, y, dir2.x * self.radius);
             out_features.vertices[2] = Vector::new(-dir2.x * self.radius, y, -dir2.y * self.radius);

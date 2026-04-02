@@ -96,7 +96,6 @@ static_assertions = "1"
 foldhash = { version = "0.2", default-features = false }
 encase = { version = "0.12", optional = true }
 
-
 [dev-dependencies]
 oorandom = "11"
 ptree = "0.4.0"

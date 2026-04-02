@@ -4,6 +4,7 @@
 use crate::math::Vector;
 use approx::relative_eq;
 
+/// Checks approximate equality between two vectors, component-wise.
 #[inline]
 pub fn relative_eq_vector(a: Vector, b: Vector) -> bool {
     #[cfg(feature = "dim2")]

@@ -188,13 +188,13 @@ impl Cuboid {
         let vertices = match i {
             0 =>
                 [
-                    Vector::new(he.x, he.y.copysign(local_dir.y)),
-                    Vector::new(-he.x, he.y.copysign(local_dir.y))
+                    Vector::new(he.x, local_dir.y.copy_sign_to(he.y)),
+                    Vector::new(-he.x, local_dir.y.copy_sign_to(he.y))
                 ],
             _ =>
                 [
-                    Vector::new(he.x.copysign(local_dir.x), he.y),
-                    Vector::new(he.x.copysign(local_dir.x), -he.y)
+                    Vector::new(local_dir.x.copy_sign_to(he.x), he.y),
+                    Vector::new(local_dir.x.copy_sign_to(he.x), -he.y)
                 ]
         };
 
@@ -256,8 +256,8 @@ impl Cuboid {
         let k = (i + 2) % 3;
         let mut a = Vector::ZERO;
         a.vset(i, he.vget(i));
-        a.vset(j, he.vget(j).copysign(local_dir.vget(j)));
-        a.vset(k, he.vget(k).copysign(local_dir.vget(k)));
+        a.vset(j, local_dir.vget(j).copy_sign_to(he.vget(j)));
+        a.vset(k, local_dir.vget(k).copy_sign_to(he.vget(k)));
 
         let mut b = a;
         b.vset(i, -he.vget(i));
@@ -274,9 +274,9 @@ impl Cuboid {
         let imax = local_dir.abs().max_position();
         #[expect(clippy::unnecessary_cast)]
         let sign = match imax {
-            0 => (1.0 as Real).copysign(local_dir.x),
-            1 => (1.0 as Real).copysign(local_dir.y),
-            2 => (1.0 as Real).copysign(local_dir.z),
+            0 => local_dir.x.copy_sign_to(1.0 as Real),
+            1 => local_dir.y.copy_sign_to(1.0 as Real),
+            2 => local_dir.z.copy_sign_to(1.0 as Real),
             _ => unreachable!(),
         };
 
