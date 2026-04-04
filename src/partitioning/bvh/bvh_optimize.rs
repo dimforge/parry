@@ -240,7 +240,8 @@ impl Bvh {
         }
 
         workspace.rebuild_leaves.clear();
-        self.optimization.rebuild_frame_index = self.optimization.rebuild_frame_index.overflowing_add(1).0;
+        self.optimization.rebuild_frame_index =
+            self.optimization.rebuild_frame_index.overflowing_add(1).0;
         let config = self.optimization_config(self.optimization.rebuild_frame_index);
 
         /*

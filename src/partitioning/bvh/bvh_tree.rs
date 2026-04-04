@@ -1,5 +1,5 @@
-use super::BvhOptimizationHeapEntry;
 use super::bvh_optimize::BvhIncrementalOptimizationState;
+use super::BvhOptimizationHeapEntry;
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Real, Vector};
 use crate::query::{Ray, RayCast};
