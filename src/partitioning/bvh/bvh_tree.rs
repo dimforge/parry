@@ -1751,6 +1751,8 @@ pub struct Bvh {
     // We don’t store this in `Self::nodes` since it’s only useful for node removal.
     pub(super) parents: Vec<BvhNodeIndex>,
     pub(super) leaf_node_indices: VecMap<BvhNodeIndex>,
+    // NOTE: this cannot be in the workspace as we need this to survive serialization/deserialization
+    //       to maintain determinism.
     pub(super) optimization: BvhIncrementalOptimizationState,
 }
 
