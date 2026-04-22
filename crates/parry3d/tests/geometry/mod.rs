@@ -4,6 +4,7 @@ mod ball_triangle_toi;
 mod convex_hull;
 mod cuboid_ray_cast;
 mod cylinder_cuboid_contact;
+mod shape_cast_huge_cuboid_toi;
 mod epa3;
 mod still_objects_toi;
 mod time_of_impact3;

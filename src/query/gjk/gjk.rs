@@ -710,17 +710,14 @@ where
         }
 
         let support_point = if max_bound >= old_max_bound {
-            // Upper bounds inconsistencies. Consider the projection as a valid support point.
+            // Upper-bound inconsistency. Fall back to a virtual support at the
+            // projected origin so the halfspace below can refine `ltoi` one
+            // last time before we give up.
             last_chance = true;
             CsoPoint::single_point(proj + curr_ray.origin)
         } else {
             CsoPoint::from_shapes(pos12, g1, g2, dir)
         };
-
-        if last_chance && ltoi > 0.0 {
-            // last_chance && ltoi > 0.0 && (support_point.point - curr_ray.origin).dot(ldir) >= 0.0 {
-            return Some((ltoi / ray_length, ldir));
-        }
 
         // Clip the ray on the support halfspace (None <=> t < 0)
         // The configurations are:
@@ -732,7 +729,14 @@ where
         //          > 0             |  > 0  | New higher bound.
         match query::details::ray_toi_with_halfspace(support_point.point, dir, &curr_ray) {
             Some(t) => {
-                if dir.dot(curr_ray.dir) < 0.0 && t > 0.0 {
+                // On the `last_chance` virtual support, skip the refine if
+                // `max_bound` is already at the convergence tolerance —
+                // otherwise we'd add precision noise to an `ltoi` that is
+                // already correct.
+                let advance = dir.dot(curr_ray.dir) < 0.0
+                    && t > 0.0
+                    && !(last_chance && max_bound <= _eps_rel * 10.0);
+                if advance {
                     // new lower bound
                     ldir = dir;
                     ltoi += t;
@@ -760,7 +764,11 @@ where
         }
 
         if last_chance {
-            return None;
+            return if ltoi > 0.0 {
+                Some((ltoi / ray_length, ldir))
+            } else {
+                None
+            };
         }
 
         let min_bound = -dir.dot(support_point.point - curr_ray.origin);
