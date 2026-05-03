@@ -334,7 +334,7 @@ impl DeserializableTypedShape {
 }
 
 /// Trait implemented by shapes usable by Rapier.
-pub trait Shape: RayCast + PointQuery + Any {
+pub trait Shape: RayCast + PointQuery + Any + Send + Sync {
     /// Computes the [`Aabb`] of this shape.
     fn compute_local_aabb(&self) -> Aabb;
     /// Computes the bounding-sphere of this shape.
