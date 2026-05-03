@@ -100,7 +100,7 @@ encase = { version = "0.12", optional = true }
 oorandom = "11"
 ptree = "0.4.0"
 rand = { version = "0.9" }
-kiss3d = "0.39"
+kiss3d = "0.41"
 rand_isaac = "0.4"
 web-time = "1"
 
