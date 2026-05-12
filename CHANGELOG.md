@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- Added `Bvh::traverse_indexed` to traverse only a part of the subtree, and to retrieve the node’s indices.
+
 ## 0.26.0
 
 ### Breaking changes

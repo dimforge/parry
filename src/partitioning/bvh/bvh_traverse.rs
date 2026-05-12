@@ -1,6 +1,6 @@
 use super::BvhNode;
 use crate::math::Real;
-use crate::partitioning::Bvh;
+use crate::partitioning::{Bvh, BvhNodeIndex};
 use smallvec::SmallVec;
 
 const TRAVERSAL_STACK_SIZE: usize = 32;
@@ -288,27 +288,54 @@ impl Bvh {
     /// - [`cast_ray`](Self::cast_ray) - Ray casting with best-first traversal
     /// - [`TraversalAction`] - Controls traversal flow
     pub fn traverse(&self, mut check_node: impl FnMut(&BvhNode) -> TraversalAction) {
+        self.traverse_indexed(None, move |node, _| check_node(node));
+    }
+
+    /// Similar to [`Self::traverse`] but starts the traversal with the node at index `subtree`,
+    /// and the `check_node` closure is given the node index.
+    ///
+    /// If `subtree` is `None` the traversal starts at the root of the tree.
+    pub fn traverse_indexed(
+        &self,
+        subtree: Option<BvhNodeIndex>,
+        mut check_node: impl FnMut(&BvhNode, BvhNodeIndex) -> TraversalAction,
+    ) {
         let mut stack = Self::traversal_stack();
         let mut curr_id = 0;
 
-        if self.nodes.is_empty() {
-            return;
-        } else if self.nodes[0].right.leaf_count() == 0 {
-            // Special case for partial root.
-            let _ = check_node(&self.nodes[0].left);
-            return;
+        if let Some(subtree) = subtree {
+            let to_check = &self.nodes[subtree];
+            match check_node(to_check, subtree) {
+                TraversalAction::Continue => {
+                    if to_check.is_leaf() {
+                        return;
+                    }
+
+                    curr_id = to_check.children;
+                }
+                TraversalAction::Prune | TraversalAction::EarlyExit => return,
+            }
+        } else {
+            // Start at the root.
+            if self.nodes.is_empty() {
+                return;
+            } else if self.nodes[0].right.leaf_count() == 0 {
+                // Special case for partial root.
+                let _ = check_node(&self.nodes[0].left, BvhNodeIndex::left(0));
+                return;
+            }
         }
 
         loop {
             let node = &self.nodes[curr_id as usize];
             let left = &node.left;
             let right = &node.right;
-            let go_left = match check_node(left) {
+            let go_left = match check_node(left, BvhNodeIndex::left(curr_id)) {
                 TraversalAction::Continue => !left.is_leaf(),
                 TraversalAction::Prune => false,
                 TraversalAction::EarlyExit => return,
             };
-            let go_right = match check_node(right) {
+            let go_right = match check_node(right, BvhNodeIndex::right(curr_id)) {
                 TraversalAction::Continue => !right.is_leaf(),
                 TraversalAction::Prune => false,
                 TraversalAction::EarlyExit => return,
