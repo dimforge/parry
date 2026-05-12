@@ -104,7 +104,10 @@ fn test_traverse_indexed() {
         assert!(seen_leaves.contains(leaf));
     }
     // Leaf count reported by the subtree's root must match the visited leaves.
-    assert_eq!(bvh.nodes[subtree_root_idx].leaf_count() as usize, subtree_leaves.len());
+    assert_eq!(
+        bvh.nodes[subtree_root_idx].leaf_count() as usize,
+        subtree_leaves.len()
+    );
 
     // Starting from a leaf node visits exactly that leaf.
     let leaf_idx = *traverse_indexed_calls
