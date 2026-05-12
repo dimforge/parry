@@ -1,8 +1,14 @@
-## Unreleased
+## 0.26.1
 
 ### Added
 
-- Added `Bvh::traverse_indexed` to traverse only a part of the subtree, and to retrieve the node’s indices.
+- Added `Bvh::traverse_indexed` to traverse only a part of the subtree, and to retrieve the node’s indices ([#416](https://github.com/dimforge/parry/pull/416)).
+
+### Fixed
+
+- Fix `Bvh::optimize_incremental` being non-deterministic when restored from a serialized snapshot. The
+  incremental optimization state is now stored on the `Bvh` itself (instead of the non-serializable
+  `BvhWorkspace`) so it survives serialization/deserialization ([#403](https://github.com/dimforge/parry/pull/403)).
 
 ## 0.26.0
 
