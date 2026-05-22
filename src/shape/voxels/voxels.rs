@@ -746,6 +746,7 @@ impl Voxels {
     /// Scale this shape.
     pub fn scaled(mut self, scale: Vector) -> Self {
         self.voxel_size *= scale;
+        self.chunk_bvh.scale(scale);
         self
     }
 
