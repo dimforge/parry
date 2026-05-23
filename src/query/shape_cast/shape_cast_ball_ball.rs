@@ -43,7 +43,7 @@ pub fn cast_shapes_ball_ball(
             witness2 = normal2 * b2.radius;
         }
 
-        if !options.stop_at_penetration && time_of_impact < 1.0e-5 && normal1.dot(vel12) >= 0.0 {
+        if !options.stop_at_penetration && time_of_impact < 1.0e-4 && normal1.dot(vel12) >= 0.0 {
             return None;
         }
 
