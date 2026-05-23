@@ -19,8 +19,9 @@ struct FaceId {
 }
 
 impl FaceId {
-    fn new(id: usize, neg_dist: Real) -> Option<Self> {
-        if neg_dist > gjk::eps_tol() {
+    /// Creates a new face id, rejecting faces whose `neg_dist` is positive beyond `tol`.
+    fn new(id: usize, neg_dist: Real, tol: Real) -> Option<Self> {
+        if neg_dist > tol {
             None
         } else {
             Some(FaceId { id, neg_dist })
@@ -361,6 +362,20 @@ impl EPA {
             self.vertices.push(*simplex.point(i));
         }
 
+        // Tolerance used to reject degenerate faces. It is scaled relative to the magnitude of
+        // the simplex coordinates: dot products used to compute face distances accumulate
+        // rounding errors proportional to the coordinate magnitudes, so an absolute tolerance
+        // would spuriously abort EPA for large coordinates.
+        // See <https://github.com/dimforge/parry/issues/415>.
+        let dist_tol = {
+            let scale = self
+                .vertices
+                .iter()
+                .map(|v| v.point.length())
+                .fold(0.0, Real::max);
+            gjk::eps_tol() * scale.max(1.0)
+        };
+
         if simplex.dimension() == 0 {
             const MAX_ITERS: usize = 100; // If there is no convergence, just use whatever direction was extracted so fare
 
@@ -422,17 +437,17 @@ impl EPA {
 
             if proj_inside1 {
                 let dist1 = self.faces[0].normal.dot(self.vertices[0].point);
-                self.heap.push(FaceId::new(0, -dist1)?);
+                self.heap.push(FaceId::new(0, -dist1, dist_tol)?);
             }
 
             if proj_inside2 {
                 let dist2 = self.faces[1].normal.dot(self.vertices[1].point);
-                self.heap.push(FaceId::new(1, -dist2)?);
+                self.heap.push(FaceId::new(1, -dist2, dist_tol)?);
             }
 
             if proj_inside3 {
                 let dist3 = self.faces[2].normal.dot(self.vertices[2].point);
-                self.heap.push(FaceId::new(2, -dist3)?);
+                self.heap.push(FaceId::new(2, -dist3, dist_tol)?);
             }
 
             if !(proj_inside1 || proj_inside2 || proj_inside3) {
@@ -462,8 +477,8 @@ impl EPA {
             let dist1 = self.faces[0].normal.dot(self.vertices[0].point);
             let dist2 = self.faces[1].normal.dot(self.vertices[1].point);
 
-            self.heap.push(FaceId::new(0, dist1)?);
-            self.heap.push(FaceId::new(1, dist2)?);
+            self.heap.push(FaceId::new(0, dist1, dist_tol)?);
+            self.heap.push(FaceId::new(1, dist2, dist_tol)?);
         }
 
         let mut niter = 0;
@@ -526,7 +541,8 @@ impl EPA {
                     }
 
                     if !f.0.deleted {
-                        self.heap.push(FaceId::new(self.faces.len(), -dist)?);
+                        self.heap
+                            .push(FaceId::new(self.faces.len(), -dist, dist_tol)?);
                     }
                 }
 
