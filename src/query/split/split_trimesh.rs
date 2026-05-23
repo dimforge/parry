@@ -577,6 +577,14 @@ impl TriMesh {
                 let mut next = neighbors.first(); // Arbitrary neighbor
 
                 'traversal: while let Some(current) = next {
+                    // If we reach an already-visited index, the traversal cannot make any
+                    // further progress: stop here instead of looping forever. This guards
+                    // against degenerate adjacency graphs that don't form a clean loop back
+                    // to `first`.
+                    if seen[*current] {
+                        break;
+                    }
+
                     seen[*current] = true;
                     polyline_indices.push([prev as u32, *current as u32]);
 

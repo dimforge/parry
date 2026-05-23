@@ -461,7 +461,11 @@ fn triangulate_constraints_and_merge_duplicates(
             utils::sanitize_spade_point(point_proj)
         })
         .collect();
-    let cdt_triangulation = ConstrainedDelaunayTriangulation::bulk_load_cdt(planar_points, edges)?;
+    // NOTE: use the fallible `try_bulk_load_cdt` instead of `bulk_load_cdt`: the latter panics
+    //       when constraint edges overlap, which can legitimately happen for degenerate inputs
+    //       (e.g. co-planar triangles). Overlapping constraints are simply skipped.
+    let cdt_triangulation =
+        ConstrainedDelaunayTriangulation::try_bulk_load_cdt(planar_points, edges, |_conflict| {})?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Vector3::from(p.point)).collect();
