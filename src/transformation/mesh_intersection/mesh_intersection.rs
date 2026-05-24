@@ -531,7 +531,7 @@ fn insert_into_set(position: Vector3, point_set: &mut RTree<TreeVector>, epsilon
         id: point_count,
     };
 
-    match point_set.nearest_neighbor(&point_to_insert) {
+    match point_set.nearest_neighbor(point_to_insert) {
         Some(tree_point) => {
             if (tree_point.point - position).length_squared() <= epsilon {
                 tree_point.id

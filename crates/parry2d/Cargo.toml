@@ -78,7 +78,7 @@ serde_arrays = { version = "0.2", optional = true }
 rkyv = { version = "0.8", optional = true, default-features = false, features = ["bytecheck", "alloc"] }
 num-derive = "0.4"
 indexmap = { version = "2", features = ["serde"], optional = true }
-hashbrown = { version = "0.16", optional = true, default-features = false, features = [
+hashbrown = { version = "0.17", optional = true, default-features = false, features = [
     "default-hasher",
 ] }
 spade = { version = "2", optional = true, default-features = false }
