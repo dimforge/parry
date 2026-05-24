@@ -59,10 +59,11 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point(
         &self,
         point: Vector,
+        max_dist: Real,
         solid: bool,
     ) -> Option<(u32, PointProjection)> {
         let (best_id, (_, proj)) = self.0.bvh().find_best(
-            Real::MAX,
+            max_dist,
             |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
             |primitive, _best_so_far| {
                 let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
@@ -88,9 +89,10 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point_and_get_feature(
         &self,
         point: Vector,
+        max_dist: Real,
     ) -> Option<(u32, (PointProjection, FeatureId))> {
         let (best_id, (_, (proj, feature_id))) = self.0.bvh().find_best(
-            Real::MAX,
+            max_dist,
             |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
             |primitive, _best_so_far| {
                 let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
@@ -133,7 +135,7 @@ impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
-            .project_local_point(point, solid)
+            .project_local_point(point, Real::MAX, solid)
             .unwrap_or_else(|| unreachable!())
             .1
     }
@@ -141,7 +143,7 @@ impl PointQuery for Polyline {
     #[inline]
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         let (seg_id, (proj, feature)) = CompositeShapeRef(self)
-            .project_local_point_and_get_feature(point)
+            .project_local_point_and_get_feature(point, Real::MAX)
             .unwrap_or_else(|| unreachable!());
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
@@ -161,7 +163,7 @@ impl PointQuery for TriMesh {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
-            .project_local_point(point, solid)
+            .project_local_point(point, Real::MAX, solid)
             .unwrap_or_else(|| unreachable!())
             .1
     }
@@ -178,7 +180,7 @@ impl PointQuery for TriMesh {
 
         let solid = cfg!(feature = "dim2");
         let (tri_id, proj) = CompositeShapeRef(self)
-            .project_local_point(point, solid)
+            .project_local_point(point, Real::MAX, solid)
             .unwrap_or_else(|| unreachable!());
         (proj, FeatureId::Face(tri_id))
     }
@@ -217,7 +219,7 @@ impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
-            .project_local_point(point, solid)
+            .project_local_point(point, Real::MAX, solid)
             .unwrap_or_else(|| unreachable!())
             .1
     }
@@ -226,7 +228,7 @@ impl PointQuery for Compound {
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         (
             CompositeShapeRef(self)
-                .project_local_point_and_get_feature(point)
+                .project_local_point_and_get_feature(point, Real::MAX)
                 .unwrap_or_else(|| unreachable!())
                 .1
                  .0,
