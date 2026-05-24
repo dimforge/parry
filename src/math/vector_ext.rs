@@ -39,6 +39,7 @@ impl VectorExt for Vector {
             _ => Self::ZERO,
         }
     }
+
     #[inline]
     #[cfg(feature = "dim3")]
     fn ith(i: usize, val: Real) -> Self {
@@ -75,45 +76,31 @@ impl VectorExt for Vector {
     }
 
     #[inline]
-    #[cfg(feature = "dim2")]
     fn vget(&self, i: usize) -> Real {
-        match i {
+        #[cfg(target_arch = "spirv")]
+        return match i {
             0 => self.x,
             1 => self.y,
-            _ => panic!("Index out of bounds for 2D vector: {i}"),
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "dim3")]
-    fn vget(&self, i: usize) -> Real {
-        match i {
-            0 => self.x,
-            1 => self.y,
+            #[cfg(feature = "dim3")]
             2 => self.z,
-            _ => panic!("Index out of bounds for 3D vector: {i}"),
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "dim2")]
-    fn vset(&mut self, i: usize, val: Real) {
-        match i {
-            0 => self.x = val,
-            1 => self.y = val,
             _ => panic!("Index out of bounds for 2D vector: {i}"),
-        }
+        };
+        #[cfg(not(target_arch = "spirv"))]
+        { self[i] }
     }
 
     #[inline]
-    #[cfg(feature = "dim3")]
     fn vset(&mut self, i: usize, val: Real) {
+        #[cfg(target_arch = "spirv")]
         match i {
             0 => self.x = val,
             1 => self.y = val,
+            #[cfg(feature = "dim3")]
             2 => self.z = val,
-            _ => panic!("Index out of bounds for 3D vector: {i}"),
-        }
+            _ => panic!("Index out of bounds for 2D vector: {i}"),
+        };
+        #[cfg(not(target_arch = "spirv"))]
+        { self[i] = val; }
     }
 }
 
@@ -130,44 +117,30 @@ pub trait IVectorExt: Sized + Copy {
 
 impl IVectorExt for IVector {
     #[inline]
-    #[cfg(feature = "dim2")]
     fn ivget(&self, i: usize) -> Int {
-        match i {
+        #[cfg(target_arch = "spirv")]
+        return match i {
             0 => self.x,
             1 => self.y,
-            _ => panic!("Index out of bounds for 2D integer vector: {i}"),
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "dim3")]
-    fn ivget(&self, i: usize) -> Int {
-        match i {
-            0 => self.x,
-            1 => self.y,
+            #[cfg(feature = "dim3")]
             2 => self.z,
-            _ => panic!("Index out of bounds for 3D integer vector: {i}"),
-        }
+            _ => panic!("Index out of bounds for 2D integer vector: {i}"),
+        };
+        #[cfg(not(target_arch = "spirv"))]
+        { self[i] }
     }
 
     #[inline]
-    #[cfg(feature = "dim2")]
     fn ivset(&mut self, i: usize, val: Int) {
+        #[cfg(target_arch = "spirv")]
         match i {
             0 => self.x = val,
             1 => self.y = val,
+            #[cfg(feature = "dim3")]
+            2 => self.z = val,
             _ => panic!("Index out of bounds for 2D integer vector: {i}"),
         }
-    }
-
-    #[inline]
-    #[cfg(feature = "dim3")]
-    fn ivset(&mut self, i: usize, val: Int) {
-        match i {
-            0 => self.x = val,
-            1 => self.y = val,
-            2 => self.z = val,
-            _ => panic!("Index out of bounds for 3D integer vector: {i}"),
-        }
+        #[cfg(not(target_arch = "spirv"))]
+        { self[i] = val; }
     }
 }
