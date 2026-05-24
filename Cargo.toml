@@ -7,6 +7,18 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+version = "0.26.1"
+authors = ["Sébastien Crozet <developer@crozet.re>"]
+documentation = "https://parry.rs/docs"
+homepage = "https://parry.rs"
+repository = "https://github.com/dimforge/parry"
+readme = "README.md"
+keywords = ["collision", "geometry", "distance", "ray", "convex"]
+categories = ["science", "game-development", "mathematics", "wasm"]
+license = "Apache-2.0"
+edition = "2021"
+
 [workspace.lints]
 rust.unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(feature, values("dim2", "dim3", "f32", "f64"))',
@@ -21,6 +33,46 @@ rust.unexpected_cfgs = { level = "warn", check-cfg = [
 alloc_instead_of_core = "warn"
 std_instead_of_alloc = "warn"
 std_instead_of_core = "warn"
+
+[workspace.dependencies]
+either = { version = "1", default-features = false }
+bitflags = "2.3"
+downcast-rs = { version = "2", default-features = false, features = ["sync"] }
+num-traits = { version = "0.2", default-features = false }
+slab = "0.4"
+arrayvec = { version = "0.7", default-features = false }
+simba = { version = "0.10", default-features = false }
+glamx = { version = "0.3", default-features = false, features = ["nostd-libm"] }
+approx = { version = "0.5", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_arrays = "0.2"
+rkyv = { version = "0.8", default-features = false, features = ["bytecheck", "alloc"] }
+num-derive = "0.4"
+indexmap = { version = "2", features = ["serde"] }
+hashbrown = { version = "0.17", default-features = false, features = [
+    "default-hasher",
+] }
+spade = { version = "2.9", default-features = false }
+rayon = "1"
+bytemuck = { version = "1", features = ["derive"] }
+log = "0.4"
+ordered-float = { version = "5", default-features = false }
+thiserror = { version = "2", default-features = false }
+rstar = "0.13.0"
+obj = "0.10.2"
+ena = { version = "0.14.3", default-features = false }
+smallvec = "1"
+static_assertions = "1"
+foldhash = { version = "0.2", default-features = false }
+encase = "0.12"
+
+# dev-dependencies
+oorandom = "11"
+ptree = "0.4.0"
+rand = "0.10"
+kiss3d = "0.42"
+rand_isaac = "0.5"
+web-time = "1"
 
 [patch.crates-io]
 parry2d = { path = "crates/parry2d" }
