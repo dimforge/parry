@@ -70,8 +70,8 @@ downcast-rs = { version = "2", default-features = false, features = ["sync"], op
 num-traits = { version = "0.2", default-features = false }
 slab = { version = "0.4", optional = true }
 arrayvec = { version = "0.7", default-features = false }
-simba = { version = "0.9", default-features = false }
-glamx = { version = "0.2", default-features = false, features = ["nostd-libm"] }
+simba = { version = "0.10", default-features = false }
+glamx = { version = "0.3", default-features = false, features = ["nostd-libm", "i32"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", optional = true, features = ["derive"] }
 serde_arrays = { version = "0.2", optional = true }
@@ -93,11 +93,11 @@ foldhash = { version = "0.2", default-features = false }
 encase = { version = "0.12", optional = true }
 
 [dev-dependencies]
-simba = { version = "0.9", default-features = false }
+simba = { version = "0.10", default-features = false }
 oorandom = "11"
 ptree = "0.4.0"
-rand = { version = "0.9" }
-kiss3d = "0.41"
+rand = { version = "0.10" }
+kiss3d = "0.42"
 web-time = "1"
 
 [package.metadata.docs.rs]
