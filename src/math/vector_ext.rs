@@ -86,7 +86,9 @@ impl VectorExt for Vector {
             _ => panic!("Index out of bounds for 2D vector: {i}"),
         };
         #[cfg(not(target_arch = "spirv"))]
-        { self[i] }
+        {
+            self[i]
+        }
     }
 
     #[inline]
@@ -100,7 +102,9 @@ impl VectorExt for Vector {
             _ => panic!("Index out of bounds for 2D vector: {i}"),
         };
         #[cfg(not(target_arch = "spirv"))]
-        { self[i] = val; }
+        {
+            self[i] = val;
+        }
     }
 }
 
@@ -127,7 +131,9 @@ impl IVectorExt for IVector {
             _ => panic!("Index out of bounds for 2D integer vector: {i}"),
         };
         #[cfg(not(target_arch = "spirv"))]
-        { self[i] }
+        {
+            self[i]
+        }
     }
 
     #[inline]
@@ -141,6 +147,8 @@ impl IVectorExt for IVector {
             _ => panic!("Index out of bounds for 2D integer vector: {i}"),
         }
         #[cfg(not(target_arch = "spirv"))]
-        { self[i] = val; }
+        {
+            self[i] = val;
+        }
     }
 }
