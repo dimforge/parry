@@ -1,8 +1,8 @@
 //! Definition of the segment shape.
 
-use crate::math::{Pose, Real, Vector};
 #[cfg(feature = "dim3")]
 use crate::math::VectorExt;
+use crate::math::{Pose, Real, Vector};
 use crate::shape::{FeatureId, SupportMap};
 use core::mem;
 

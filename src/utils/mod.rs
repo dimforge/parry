@@ -31,6 +31,7 @@ pub use self::hashable_partial_eq::HashablePartialEq;
 #[cfg(feature = "alloc")]
 pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
 pub use self::obb::obb;
+pub use self::relative_eq::relative_eq_vector;
 pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
 pub use self::sort::sort2;
@@ -39,7 +40,6 @@ pub use self::sorted_pair::SortedPair;
 #[cfg(all(feature = "dim3", feature = "spade"))]
 pub(crate) use self::spade::sanitize_spade_point;
 pub(crate) use self::wops::{WBasis, WCross, WSign};
-pub use self::relative_eq::relative_eq_vector;
 
 #[cfg(feature = "simd-is-enabled")]
 #[allow(unused_imports)]
@@ -85,6 +85,6 @@ mod wops;
 
 mod eigen2;
 mod eigen3;
+mod relative_eq;
 #[cfg(feature = "alloc")]
 mod vec_map;
-mod relative_eq;

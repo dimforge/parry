@@ -30,7 +30,11 @@ impl Aabb {
                 let pick_x = diff.x <= diff.y;
                 let shift_x = Vector::new(diff.x * pt_sgn.x, 0.0);
                 let shift_y = Vector::new(0.0, diff.y * pt_sgn.y);
-                if pick_x { shift_x } else { shift_y }
+                if pick_x {
+                    shift_x
+                } else {
+                    shift_y
+                }
             };
 
             #[cfg(feature = "dim3")]

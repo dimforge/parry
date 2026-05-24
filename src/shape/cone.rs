@@ -1,8 +1,8 @@
 //! Support mapping based Cone shape.
 
 use crate::math::{Real, Vector};
-use crate::utils::WSign;
 use crate::shape::SupportMap;
+use crate::utils::WSign;
 
 #[cfg(feature = "alloc")]
 use either::Either;

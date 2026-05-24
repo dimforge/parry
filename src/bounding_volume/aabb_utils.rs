@@ -1,8 +1,8 @@
 use core::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
-use crate::math::{Pose, Vector, DIM};
 use crate::math::VectorExt;
+use crate::math::{Pose, Vector, DIM};
 use crate::shape::SupportMap;
 
 /// Computes the [`Aabb`] of an [support mapped shape](SupportMap).

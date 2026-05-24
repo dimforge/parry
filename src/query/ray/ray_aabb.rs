@@ -21,8 +21,7 @@ impl RayCast for Aabb {
                 let denom = 1.0 / ray.dir.vget(i);
                 let mut inter_with_near_halfspace =
                     (self.mins.vget(i) - ray.origin.vget(i)) * denom;
-                let mut inter_with_far_halfspace =
-                    (self.maxs.vget(i) - ray.origin.vget(i)) * denom;
+                let mut inter_with_far_halfspace = (self.maxs.vget(i) - ray.origin.vget(i)) * denom;
 
                 if inter_with_near_halfspace > inter_with_far_halfspace {
                     mem::swap(

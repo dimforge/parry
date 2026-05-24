@@ -1,7 +1,3 @@
-#[cfg(feature = "alloc")]
-use alloc::{boxed::Box, vec::Vec};
-use core::fmt::Debug;
-use core::any::Any;
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Pose, Real, RealField, Vector};
@@ -16,6 +12,10 @@ use crate::shape::{
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+use core::any::Any;
+use core::fmt::Debug;
 
 #[cfg(feature = "dim3")]
 #[cfg(feature = "alloc")]
@@ -23,9 +23,7 @@ use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron, Voxels};
 
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]
-use {
-    crate::shape::{ConvexPolygon, RoundConvexPolygon, Voxels},
-};
+use crate::shape::{ConvexPolygon, RoundConvexPolygon, Voxels};
 use num::Zero;
 use num_derive::FromPrimitive;
 

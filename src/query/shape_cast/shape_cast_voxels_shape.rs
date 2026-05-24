@@ -58,16 +58,16 @@ where
 
         let toi = ii.map(|i| {
             if vel12.vget(i) > 0.0 {
-                let t = (search_domain_aabb.maxs.vget(i) - start_aabb2_1.maxs.vget(i))
-                    / vel12.vget(i);
+                let t =
+                    (search_domain_aabb.maxs.vget(i) - start_aabb2_1.maxs.vget(i)) / vel12.vget(i);
                 if t < 0.0 {
                     (Real::max_value(), true)
                 } else {
                     (t, true)
                 }
             } else if vel12.vget(i) < 0.0 {
-                let t = (search_domain_aabb.mins.vget(i) - start_aabb2_1.mins.vget(i))
-                    / vel12.vget(i);
+                let t =
+                    (search_domain_aabb.mins.vget(i) - start_aabb2_1.mins.vget(i)) / vel12.vget(i);
                 if t < 0.0 {
                     (Real::max_value(), false)
                 } else {

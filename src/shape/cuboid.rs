@@ -186,16 +186,14 @@ impl Cuboid {
         let i = local_dir.abs().min_position();
 
         let vertices = match i {
-            0 =>
-                [
-                    Vector::new(he.x, local_dir.y.copy_sign_to(he.y)),
-                    Vector::new(-he.x, local_dir.y.copy_sign_to(he.y))
-                ],
-            _ =>
-                [
-                    Vector::new(local_dir.x.copy_sign_to(he.x), he.y),
-                    Vector::new(local_dir.x.copy_sign_to(he.x), -he.y)
-                ]
+            0 => [
+                Vector::new(he.x, local_dir.y.copy_sign_to(he.y)),
+                Vector::new(-he.x, local_dir.y.copy_sign_to(he.y)),
+            ],
+            _ => [
+                Vector::new(local_dir.x.copy_sign_to(he.x), he.y),
+                Vector::new(local_dir.x.copy_sign_to(he.x), -he.y),
+            ],
         };
 
         let vid1 = Self::vertex_feature_id(vertices[0]);
