@@ -43,6 +43,15 @@ jobs:
         run: cargo check --features bytemuck-serialize,serde-serialize,rkyv;
       - name: Check enhanced-determinism
         run: cargo check --features enhanced-determinism
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y cmake libxcb-composite0-dev
+      # Builds and verifies each crate in isolation (the same way `cargo publish`
+      # does), which catches bugs hidden by workspace feature unification.
+      - name: Publish dry-run
+        run: bash publish.sh --dry-run
   tests:
     runs-on: ubuntu-latest
     env:
