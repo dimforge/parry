@@ -276,7 +276,7 @@ pub fn intersect_meshes_with_tolerances(
 
     // 7: Sort the output points by insertion order.
     let mut vertices: Vec<_> = point_set.iter().copied().collect();
-    vertices.sort_by(|a, b| a.id.cmp(&b.id));
+    vertices.sort_by_key(|a| a.id);
     let vertices: Vec<_> = vertices.iter().map(|p| Vector3::from(p.point)).collect();
 
     if !topology_indices.is_empty() {
@@ -442,7 +442,7 @@ fn triangulate_constraints_and_merge_duplicates(
     }
 
     let mut points: Vec<_> = point_set.iter().cloned().collect();
-    points.sort_by(|a, b| a.id.cmp(&b.id));
+    points.sort_by_key(|a| a.id);
 
     let tri_points = tri.vertices();
     let best_source = tri.angle_closest_to_90();
@@ -461,7 +461,11 @@ fn triangulate_constraints_and_merge_duplicates(
             utils::sanitize_spade_point(point_proj)
         })
         .collect();
-    let cdt_triangulation = ConstrainedDelaunayTriangulation::bulk_load_cdt(planar_points, edges)?;
+    // NOTE: use the fallible `try_bulk_load_cdt` instead of `bulk_load_cdt`: the latter panics
+    //       when constraint edges overlap, which can legitimately happen for degenerate inputs
+    //       (e.g. co-planar triangles). Overlapping constraints are simply skipped.
+    let cdt_triangulation =
+        ConstrainedDelaunayTriangulation::try_bulk_load_cdt(planar_points, edges, |_conflict| {})?;
     debug_assert!(cdt_triangulation.vertices().len() == points.len());
 
     let points = points.into_iter().map(|p| Vector3::from(p.point)).collect();
@@ -527,17 +531,11 @@ fn insert_into_set(position: Vector3, point_set: &mut RTree<TreeVector>, epsilon
         id: point_count,
     };
 
-    match point_set.nearest_neighbor(&point_to_insert) {
-        Some(tree_point) => {
-            if (tree_point.point - position).length_squared() <= epsilon {
-                tree_point.id
-            } else {
-                point_set.insert(point_to_insert);
-                debug_assert!(point_set.size() == point_count + 1);
-                point_count
-            }
+    match point_set.nearest_neighbor(point_to_insert) {
+        Some(tree_point) if (tree_point.point - position).length_squared() <= epsilon => {
+            tree_point.id
         }
-        None => {
+        _ => {
             point_set.insert(point_to_insert);
             debug_assert!(point_set.size() == point_count + 1);
             point_count

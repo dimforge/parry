@@ -56,27 +56,28 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Returns the projected point as well as the index of the sub-shape of `self` that was hit.
     /// If `solid` is `false` then the point will be projected to the closest boundary of `self` even
     /// if it is contained by one of its sub-shapes.
-    pub fn project_local_point(&self, point: Vector, solid: bool) -> (u32, PointProjection) {
-        let (best_id, (_, proj)) = self
-            .0
-            .bvh()
-            .find_best(
-                Real::MAX,
-                |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
-                |primitive, _best_so_far| {
-                    let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
-                        if let Some(pose) = pose {
-                            shape.project_point(pose, point, solid)
-                        } else {
-                            shape.project_local_point(point, solid)
-                        }
-                    })?;
-                    let dist = (proj.point - point).length();
-                    Some((dist, proj))
-                },
-            )
-            .unwrap();
-        (best_id, proj)
+    pub fn project_local_point(
+        &self,
+        point: Vector,
+        max_dist: Real,
+        solid: bool,
+    ) -> Option<(u32, PointProjection)> {
+        let (best_id, (_, proj)) = self.0.bvh().find_best(
+            max_dist,
+            |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
+            |primitive, _best_so_far| {
+                let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
+                    if let Some(pose) = pose {
+                        shape.project_point(pose, point, solid)
+                    } else {
+                        shape.project_local_point(point, solid)
+                    }
+                })?;
+                let dist = (proj.point - point).length();
+                Some((dist, proj))
+            },
+        )?;
+        Some((best_id, proj))
     }
 
     /// Project a point on this composite shape.
@@ -88,27 +89,24 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     pub fn project_local_point_and_get_feature(
         &self,
         point: Vector,
-    ) -> (u32, (PointProjection, FeatureId)) {
-        let (best_id, (_, (proj, feature_id))) = self
-            .0
-            .bvh()
-            .find_best(
-                Real::MAX,
-                |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
-                |primitive, _best_so_far| {
-                    let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
-                        if let Some(pose) = pose {
-                            shape.project_point_and_get_feature(pose, point)
-                        } else {
-                            shape.project_local_point_and_get_feature(point)
-                        }
-                    })?;
-                    let cost = (proj.0.point - point).length();
-                    Some((cost, proj))
-                },
-            )
-            .unwrap();
-        (best_id, (proj, feature_id))
+        max_dist: Real,
+    ) -> Option<(u32, (PointProjection, FeatureId))> {
+        let (best_id, (_, (proj, feature_id))) = self.0.bvh().find_best(
+            max_dist,
+            |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
+            |primitive, _best_so_far| {
+                let proj = self.0.map_typed_part_at(primitive, |pose, shape, _| {
+                    if let Some(pose) = pose {
+                        shape.project_point_and_get_feature(pose, point)
+                    } else {
+                        shape.project_local_point_and_get_feature(point)
+                    }
+                })?;
+                let cost = (proj.0.point - point).length();
+                Some((cost, proj))
+            },
+        )?;
+        Some((best_id, (proj, feature_id)))
     }
 
     // TODO: implement distance_to_point too?
@@ -136,13 +134,17 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+        CompositeShapeRef(self)
+            .project_local_point(point, Real::MAX, solid)
+            .unwrap_or_else(|| unreachable!())
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
-        let (seg_id, (proj, feature)) =
-            CompositeShapeRef(self).project_local_point_and_get_feature(point);
+        let (seg_id, (proj, feature)) = CompositeShapeRef(self)
+            .project_local_point_and_get_feature(point, Real::MAX)
+            .unwrap_or_else(|| unreachable!());
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
     }
@@ -160,7 +162,10 @@ impl PointQuery for Polyline {
 impl PointQuery for TriMesh {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+        CompositeShapeRef(self)
+            .project_local_point(point, Real::MAX, solid)
+            .unwrap_or_else(|| unreachable!())
+            .1
     }
 
     #[inline]
@@ -174,7 +179,9 @@ impl PointQuery for TriMesh {
         }
 
         let solid = cfg!(feature = "dim2");
-        let (tri_id, proj) = CompositeShapeRef(self).project_local_point(point, solid);
+        let (tri_id, proj) = CompositeShapeRef(self)
+            .project_local_point(point, Real::MAX, solid)
+            .unwrap_or_else(|| unreachable!());
         (proj, FeatureId::Face(tri_id))
     }
 
@@ -211,14 +218,18 @@ impl PointQuery for TriMesh {
 impl PointQuery for Compound {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
-        CompositeShapeRef(self).project_local_point(point, solid).1
+        CompositeShapeRef(self)
+            .project_local_point(point, Real::MAX, solid)
+            .unwrap_or_else(|| unreachable!())
+            .1
     }
 
     #[inline]
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         (
             CompositeShapeRef(self)
-                .project_local_point_and_get_feature(point)
+                .project_local_point_and_get_feature(point, Real::MAX)
+                .unwrap_or_else(|| unreachable!())
                 .1
                  .0,
             FeatureId::Unknown,

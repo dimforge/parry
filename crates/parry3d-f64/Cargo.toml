@@ -1,17 +1,16 @@
 [package]
 name = "parry3d-f64"
-version = "0.27.0"
-authors = ["Sébastien Crozet <developer@crozet.re>"]
-
+version.workspace = true
+authors.workspace = true
 description = "3 dimensional collision detection library in Rust. 64-bits precision version."
-documentation = "https://parry.rs/docs"
-homepage = "https://parry.rs"
-repository = "https://github.com/dimforge/parry"
-readme = "README.md"
-keywords = ["collision", "geometry", "distance", "ray", "convex"]
-categories = ["science", "game-development", "mathematics", "wasm"]
-license = "Apache-2.0"
-edition = "2021"
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -63,40 +62,38 @@ path = "../../src/lib.rs"
 required-features = ["required-features"]
 
 [dependencies]
-either = { version = "1", default-features = false }
-bitflags = "2.3"
-downcast-rs = { version = "2", default-features = false, features = ["sync"] }
-num-traits = { version = "0.2", default-features = false }
-slab = { version = "0.4", optional = true }
-arrayvec = { version = "0.7", default-features = false }
-simba = { version = "0.9", default-features = false }
-glamx = { version = "0.2", default-features = false, features = ["nostd-libm", "approx"] }
-approx = { version = "0.5", default-features = false }
-serde = { version = "1.0", optional = true, features = ["derive", "rc"] }
-serde_arrays = { version = "0.2", optional = true }
-rkyv = { version = "0.8", optional = true, default-features = false, features = ["bytecheck", "alloc"] }
-num-derive = "0.4"
-indexmap = { version = "2", features = ["serde"], optional = true }
-hashbrown = { version = "0.16", optional = true, default-features = false, features = [
-    "default-hasher",
-] }
-foldhash = { version = "0.2", default-features = false }
-spade = { version = "2.9", optional = true, default-features = false }
-rayon = { version = "1", optional = true }
-bytemuck = { version = "1", features = ["derive"], optional = true }
-rstar = "0.12.0"
-obj = { version = "0.10.2", optional = true }
-ena = { version = "0.14.3", optional = true, default-features = false }
-smallvec = "1"
+either = { workspace = true }
+bitflags = { workspace = true }
+downcast-rs = { workspace = true }
+num-traits = { workspace = true }
+slab = { workspace = true, optional = true }
+arrayvec = { workspace = true }
+simba = { workspace = true }
+glamx = { workspace = true, features = ["approx", "f64"] }
+approx = { workspace = true }
+serde = { workspace = true, optional = true, features = ["rc"] }
+serde_arrays = { workspace = true, optional = true }
+rkyv = { workspace = true, optional = true }
+num-derive = { workspace = true }
+indexmap = { workspace = true, optional = true }
+hashbrown = { workspace = true, optional = true }
+foldhash = { workspace = true }
+spade = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+rstar = { workspace = true }
+obj = { workspace = true, optional = true }
+ena = { workspace = true, optional = true }
+smallvec = { workspace = true }
 
-log = "0.4"
-ordered-float = { version = "5", default-features = false }
-thiserror = { version = "2", default-features = false }
+log = { workspace = true }
+ordered-float = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-oorandom = "11"
-ptree = "0.4.0"
-rand = { version = "0.9" }
+oorandom = { workspace = true }
+ptree = { workspace = true }
+rand = { workspace = true }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

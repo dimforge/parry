@@ -1,7 +1,7 @@
 use super::bvh_tree::{BvhBuildStrategy, BvhNodeIndex, BvhNodeWide};
 use super::{Bvh, BvhNode, BvhWorkspace};
 use crate::bounding_volume::{Aabb, BoundingVolume};
-use crate::math::Real;
+use crate::math::{Real, VectorExt};
 
 impl Bvh {
     /// Fully rebuilds this BVH using the given strategy.
@@ -48,13 +48,16 @@ impl Bvh {
 
         let centroid_aabb = Aabb::from_points(leaves.iter().map(|node| node.center()));
         let bins_axis = centroid_aabb.extents().max_position();
-        let bins_range = [centroid_aabb.mins[bins_axis], centroid_aabb.maxs[bins_axis]];
+        let bins_range = [
+            centroid_aabb.mins.vget(bins_axis),
+            centroid_aabb.maxs.vget(bins_axis),
+        ];
 
         // Compute bins characteristics.
         let k1 = NUM_BINS as Real * (1.0 - BIN_EPSILON) / (bins_range[1] - bins_range[0]);
         let k0 = bins_range[0];
         for leaf in &*leaves {
-            let bin_id = (k1 * (leaf.center()[bins_axis] - k0)) as usize;
+            let bin_id = (k1 * (leaf.center().vget(bins_axis) - k0)) as usize;
             let bin = &mut bins[bin_id];
             bin.aabb.merge(&leaf.aabb());
             bin.leaf_count += 1;
@@ -102,7 +105,7 @@ impl Bvh {
             // TODO PERF: try with using teh leaves_tmp instead of in-place sorting.
             let bin = |leaves: &mut [BvhNode], id: usize| {
                 let node = &leaves[id];
-                (k1 * (node.center()[bins_axis] - k0)) as usize
+                (k1 * (node.center().vget(bins_axis) - k0)) as usize
             };
 
             let mut left_id = 0;

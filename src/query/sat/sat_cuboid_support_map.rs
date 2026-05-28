@@ -261,7 +261,7 @@ pub fn cuboid_support_map_find_local_separating_normal_oneway<S: SupportMap>(
         for sign in &[-1.0, 1.0] {
             let axis1 = Vector::ith(i, *sign);
             let pt2 = shape2.support_point_toward(pos12, -axis1);
-            let separation = pt2[i] * *sign - cube1.half_extents[i];
+            let separation = pt2.vget(i) * *sign - cube1.half_extents.vget(i);
 
             if separation > best_separation {
                 best_separation = separation;

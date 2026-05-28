@@ -1,4 +1,4 @@
-use crate::math::{MatExt, Pose, Real, Rotation, Vector, DIM};
+use crate::math::{MatExt, Pose, Real, Rotation, Vector, VectorExt, DIM};
 use crate::shape::Cuboid;
 
 /// Computes an oriented bounding box for the given set of points.
@@ -19,8 +19,8 @@ pub fn obb(pts: &[Vector]) -> (Pose, Cuboid) {
     for pt in pts {
         for i in 0..DIM {
             let dot = eigv.col(i).dot(*pt);
-            mins[i] = mins[i].min(dot);
-            maxs[i] = maxs[i].max(dot);
+            mins.vset(i, mins.vget(i).min(dot));
+            maxs.vset(i, maxs.vget(i).max(dot));
         }
     }
 

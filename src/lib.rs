@@ -71,6 +71,9 @@ pub extern crate either;
 pub extern crate glamx;
 pub extern crate simba;
 
+#[macro_use]
+mod macros;
+
 pub mod bounding_volume;
 pub mod mass_properties;
 pub mod math;

@@ -2,6 +2,7 @@
 
 use crate::math::{Real, Vector};
 use crate::shape::SupportMap;
+use crate::utils::WSign;
 
 #[cfg(feature = "alloc")]
 use either::Either;
@@ -152,19 +153,19 @@ impl SupportMap for Cone {
     fn local_support_point(&self, dir: Vector) -> Vector {
         let mut vres = dir;
 
-        vres[1] = 0.0;
+        vres.y = 0.0;
         let (mut vres, length) = vres.normalize_and_length();
 
         if length == 0.0 {
             vres = Vector::ZERO;
-            vres[1] = self.half_height.copysign(dir[1]);
+            vres.y = dir.y.copy_sign_to(self.half_height);
         } else {
             vres *= self.radius;
-            vres[1] = -self.half_height;
+            vres.y = -self.half_height;
 
-            if dir.dot(vres) < dir[1] * self.half_height {
+            if dir.dot(vres) < dir.y * self.half_height {
                 vres = Vector::ZERO;
-                vres[1] = self.half_height
+                vres.y = self.half_height
             }
         }
 

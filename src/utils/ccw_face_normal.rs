@@ -7,7 +7,7 @@ use crate::math::Vector;
 #[cfg(feature = "dim2")]
 pub fn ccw_face_normal(pts: [Vector; 2]) -> Option<Vector> {
     let ab = pts[1] - pts[0];
-    let res = Vector::new(ab[1], -ab[0]);
+    let res = Vector::new(ab.y, -ab.x);
 
     res.try_normalize()
 }

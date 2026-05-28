@@ -1,4 +1,4 @@
-use crate::math::{IVector, Pose, Real, Vector};
+use crate::math::{IVector, IVectorExt, Pose, Real, Vector, VectorExt};
 use crate::query::{QueryDispatcher, ShapeCastHit, ShapeCastOptions};
 use crate::shape::{Cuboid, Shape, Voxels};
 
@@ -57,15 +57,17 @@ where
         let ii = [0, 1, 2];
 
         let toi = ii.map(|i| {
-            if vel12[i] > 0.0 {
-                let t = (search_domain_aabb.maxs[i] - start_aabb2_1.maxs[i]) / vel12[i];
+            if vel12.vget(i) > 0.0 {
+                let t =
+                    (search_domain_aabb.maxs.vget(i) - start_aabb2_1.maxs.vget(i)) / vel12.vget(i);
                 if t < 0.0 {
                     (Real::max_value(), true)
                 } else {
                     (t, true)
                 }
-            } else if vel12[i] < 0.0 {
-                let t = (search_domain_aabb.mins[i] - start_aabb2_1.mins[i]) / vel12[i];
+            } else if vel12.vget(i) < 0.0 {
+                let t =
+                    (search_domain_aabb.mins.vget(i) - start_aabb2_1.mins.vget(i)) / vel12.vget(i);
                 if t < 0.0 {
                     (Real::max_value(), false)
                 } else {
@@ -92,33 +94,33 @@ where
         let imin = Vector::from(toi.map(|t| t.0)).min_position();
 
         if toi[imin].1 {
-            search_domain[0][imin] += 1;
-            search_domain[1][imin] += 1;
+            search_domain[0].ivset(imin, search_domain[0].ivget(imin) + 1);
+            search_domain[1].ivset(imin, search_domain[1].ivget(imin) + 1);
 
-            if search_domain[1][imin] <= domain_maxs[imin] {
+            if search_domain[1].ivget(imin) <= domain_maxs.ivget(imin) {
                 // Check the voxels on the added row.
                 let mut prev_row = search_domain[0];
-                prev_row[imin] = search_domain[1][imin] - 1;
+                prev_row.ivset(imin, search_domain[1].ivget(imin) - 1);
 
                 let range_to_check = [prev_row, search_domain[1]];
                 check_voxels_in_range(range_to_check);
-            } else if search_domain[0][imin] >= domain_maxs[imin] {
-                // Leaving the shape’s bounds.
+            } else if search_domain[0].ivget(imin) >= domain_maxs.ivget(imin) {
+                // Leaving the shape's bounds.
                 break;
             }
         } else {
-            search_domain[0][imin] -= 1;
-            search_domain[1][imin] -= 1;
+            search_domain[0].ivset(imin, search_domain[0].ivget(imin) - 1);
+            search_domain[1].ivset(imin, search_domain[1].ivget(imin) - 1);
 
-            if search_domain[0][imin] >= domain_mins[imin] {
+            if search_domain[0].ivget(imin) >= domain_mins.ivget(imin) {
                 // Check the voxels on the added row.
                 let mut next_row = search_domain[1];
-                next_row[imin] = search_domain[0][imin] + 1;
+                next_row.ivset(imin, search_domain[0].ivget(imin) + 1);
 
                 let range_to_check = [search_domain[0], next_row];
                 check_voxels_in_range(range_to_check);
-            } else if search_domain[1][imin] <= domain_mins[imin] {
-                // Leaving the shape’s bounds.
+            } else if search_domain[1].ivget(imin) <= domain_mins.ivget(imin) {
+                // Leaving the shape's bounds.
                 break;
             }
         }

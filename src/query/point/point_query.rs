@@ -58,17 +58,17 @@ use crate::shape::FeatureId;
     derive(rkyv::Archive, rkyv::Deserialize, rkyv::Serialize)
 )]
 pub struct PointProjection {
-    /// Whether the query point was inside the shape.
-    ///
-    /// - `true`: Vector is in the interior (for solid shapes)
-    /// - `false`: Vector is outside the shape
-    pub is_inside: bool,
-
     /// The closest point on the shape's surface to the query point.
     ///
     /// If `is_inside = true`, this is the nearest point on the boundary.
     /// If `is_inside = false`, this is the nearest surface point.
     pub point: Vector,
+
+    /// Whether the query point was inside the shape.
+    ///
+    /// - `true`: Vector is in the interior (for solid shapes)
+    /// - `false`: Vector is outside the shape
+    pub is_inside: bool,
 }
 
 impl PointProjection {

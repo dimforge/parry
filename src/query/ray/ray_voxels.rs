@@ -1,4 +1,4 @@
-use crate::math::{Real, Vector};
+use crate::math::{IVectorExt, Real, Vector, VectorExt};
 use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{FeatureId, Voxels, VoxelsChunkRef};
@@ -76,15 +76,15 @@ impl<'a> RayCast for VoxelsChunkRef<'a> {
              * Find the next voxel to cast the ray on.
              */
             let toi = ii.map(|i| {
-                if ray.dir[i] > 0.0 {
-                    let t = (aabb.maxs[i] - ray.origin[i]) / ray.dir[i];
+                if ray.dir.vget(i) > 0.0 {
+                    let t = (aabb.maxs.vget(i) - ray.origin.vget(i)) / ray.dir.vget(i);
                     if t < 0.0 {
                         (Real::max_value(), true)
                     } else {
                         (t, true)
                     }
-                } else if ray.dir[i] < 0.0 {
-                    let t = (aabb.mins[i] - ray.origin[i]) / ray.dir[i];
+                } else if ray.dir.vget(i) < 0.0 {
+                    let t = (aabb.mins.vget(i) - ray.origin.vget(i)) / ray.dir.vget(i);
                     if t < 0.0 {
                         (Real::max_value(), false)
                     } else {
@@ -108,14 +108,14 @@ impl<'a> RayCast for VoxelsChunkRef<'a> {
             let imin = Vector::from(toi.map(|t| t.0)).min_position();
 
             if toi[imin].1 {
-                if voxel_key[imin] < domain_maxs[imin] - 1 {
-                    voxel_key[imin] += 1;
+                if voxel_key.ivget(imin) < domain_maxs.ivget(imin) - 1 {
+                    voxel_key.ivset(imin, voxel_key.ivget(imin) + 1);
                 } else {
-                    // Leaving the shape’s bounds.
+                    // Leaving the shape's bounds.
                     break;
                 }
-            } else if voxel_key[imin] > domain_mins[imin] {
-                voxel_key[imin] -= 1;
+            } else if voxel_key.ivget(imin) > domain_mins.ivget(imin) {
+                voxel_key.ivset(imin, voxel_key.ivget(imin) - 1);
             } else {
                 // Leaving the shape’s bounds.
                 break;

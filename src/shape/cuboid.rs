@@ -2,7 +2,7 @@
 
 #[cfg(feature = "dim3")]
 use crate::math::Real;
-use crate::math::Vector;
+use crate::math::{Vector, VectorExt};
 #[cfg(feature = "dim3")]
 use crate::shape::Segment;
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, SupportMap};
@@ -184,20 +184,24 @@ impl Cuboid {
     pub fn support_face(&self, local_dir: Vector) -> PolygonalFeature {
         let he = self.half_extents;
         let i = local_dir.abs().min_position();
-        let j = (i + 1) % 2;
-        let mut a = Vector::ZERO;
-        a[i] = he[i];
-        a[j] = he[j].copysign(local_dir[j]);
 
-        let mut b = a;
-        b[i] = -he[i];
+        let vertices = match i {
+            0 => [
+                Vector::new(he.x, local_dir.y.copy_sign_to(he.y)),
+                Vector::new(-he.x, local_dir.y.copy_sign_to(he.y)),
+            ],
+            _ => [
+                Vector::new(local_dir.x.copy_sign_to(he.x), he.y),
+                Vector::new(local_dir.x.copy_sign_to(he.x), -he.y),
+            ],
+        };
 
-        let vid1 = Self::vertex_feature_id(a);
-        let vid2 = Self::vertex_feature_id(b);
+        let vid1 = Self::vertex_feature_id(vertices[0]);
+        let vid2 = Self::vertex_feature_id(vertices[1]);
         let fid = (vid1.max(vid2) << 2) | vid1.min(vid2) | 0b11_00_00;
 
         PolygonalFeature {
-            vertices: [a, b],
+            vertices,
             vids: PackedFeatureId::vertices([vid1, vid2]),
             fid: PackedFeatureId::face(fid),
             num_vertices: 2,
@@ -249,12 +253,12 @@ impl Cuboid {
         let j = (i + 1) % 3;
         let k = (i + 2) % 3;
         let mut a = Vector::ZERO;
-        a[i] = he[i];
-        a[j] = he[j].copysign(local_dir[j]);
-        a[k] = he[k].copysign(local_dir[k]);
+        a.vset(i, he.vget(i));
+        a.vset(j, local_dir.vget(j).copy_sign_to(he.vget(j)));
+        a.vset(k, local_dir.vget(k).copy_sign_to(he.vget(k)));
 
         let mut b = a;
-        b[i] = -he[i];
+        b.vset(i, -he.vget(i));
 
         Segment::new(a, b)
     }
@@ -267,7 +271,12 @@ impl Cuboid {
         let he = self.half_extents;
         let imax = local_dir.abs().max_position();
         #[expect(clippy::unnecessary_cast)]
-        let sign = (1.0 as Real).copysign(local_dir[imax]);
+        let sign = match imax {
+            0 => local_dir.x.copy_sign_to(1.0 as Real),
+            1 => local_dir.y.copy_sign_to(1.0 as Real),
+            2 => local_dir.z.copy_sign_to(1.0 as Real),
+            _ => unreachable!(),
+        };
 
         let vertices = match imax {
             0 => [
@@ -296,7 +305,7 @@ impl Cuboid {
             i * 2
         }
 
-        let sign_index = ((sign as i8 + 1) / 2) as usize;
+        let sign_index = ((sign as isize + 1) / 2) as usize;
         // The vertex id as numbered depending on the sign of the vertex
         // component. A + sign means the corresponding bit is 0 while a -
         // sign means the corresponding bit is 1.
@@ -358,9 +367,9 @@ impl Cuboid {
                 let mut dir: Vector = Vector::ZERO;
 
                 if id < 2 {
-                    dir[id as usize] = 1.0;
+                    dir.vset(id as usize, 1.0);
                 } else {
-                    dir[id as usize - 2] = -1.0;
+                    dir.vset(id as usize - 2, -1.0);
                 }
                 Some(dir)
             }
@@ -369,20 +378,20 @@ impl Cuboid {
 
                 match id {
                     0b00 => {
-                        dir[0] = 1.0;
-                        dir[1] = 1.0;
+                        dir.x = 1.0;
+                        dir.y = 1.0;
                     }
                     0b01 => {
-                        dir[1] = 1.0;
-                        dir[0] = -1.0;
+                        dir.y = 1.0;
+                        dir.x = -1.0;
                     }
                     0b11 => {
-                        dir[0] = -1.0;
-                        dir[1] = -1.0;
+                        dir.x = -1.0;
+                        dir.y = -1.0;
                     }
                     0b10 => {
-                        dir[1] = -1.0;
-                        dir[0] = 1.0;
+                        dir.y = -1.0;
+                        dir.x = 1.0;
                     }
                     _ => return None,
                 }
@@ -401,9 +410,9 @@ impl Cuboid {
                 let mut dir: Vector = Vector::ZERO;
 
                 if id < 3 {
-                    dir[id as usize] = 1.0;
+                    dir.vset(id as usize, 1.0);
                 } else {
-                    dir[id as usize - 3] = -1.0;
+                    dir.vset(id as usize - 3, -1.0);
                 }
                 Some(dir)
             }
@@ -416,15 +425,15 @@ impl Cuboid {
                 let mut dir: Vector = Vector::ZERO;
 
                 if signs & (1 << face1) != 0 {
-                    dir[face1 as usize] = -1.0
+                    dir.vset(face1 as usize, -1.0)
                 } else {
-                    dir[face1 as usize] = 1.0
+                    dir.vset(face1 as usize, 1.0)
                 }
 
                 if signs & (1 << face2) != 0 {
-                    dir[face2 as usize] = -1.0
+                    dir.vset(face2 as usize, -1.0)
                 } else {
-                    dir[face2 as usize] = 1.0;
+                    dir.vset(face2 as usize, 1.0);
                 }
 
                 Some(dir.normalize())
@@ -433,9 +442,9 @@ impl Cuboid {
                 let mut dir: Vector = Vector::ZERO;
                 for i in 0..3 {
                     if id & (1 << i) != 0 {
-                        dir[i] = -1.0;
+                        dir.vset(i, -1.0);
                     } else {
-                        dir[i] = 1.0
+                        dir.vset(i, 1.0)
                     }
                 }
 
@@ -461,11 +470,11 @@ impl ConvexPolyhedron for Cuboid {
 
         for i in 0..DIM {
             if vid & (1 << i) != 0 {
-                res[i] = -res[i]
+                res.vset(i, -res.vget(i))
             }
         }
 
-        Vector::from(res)
+        res
     }
 
     #[cfg(feature = "dim3")]
@@ -478,13 +487,13 @@ impl ConvexPolyhedron for Cuboid {
 
         for i in 0..DIM {
             if i as u32 != edge_i && (vertex_i & (1 << i) != 0) {
-                res[i] = -res[i]
+                res.vset(i, -res.vget(i))
             }
         }
 
-        let p1 = Vector::from(res);
-        res[edge_i as usize] = -res[edge_i as usize];
-        let p2 = Vector::from(res);
+        let p1 = res;
+        res.vset(edge_i as usize, -res.vget(edge_i as usize));
+        let p2 = res;
         let vid1 = FeatureId::Vertex(vertex_i & !(1 << edge_i));
         let vid2 = FeatureId::Vertex(vertex_i | (1 << edge_i));
 
@@ -511,12 +520,12 @@ impl ConvexPolyhedron for Cuboid {
             let i2 = (i1 + 1) % 2;
 
             let mut vertex = self.half_extents;
-            vertex[i1] *= sign;
-            vertex[i2] *= if i1 == 0 { -sign } else { sign };
+            vertex.vset(i1, vertex.vget(i1) * sign);
+            vertex.vset(i2, vertex.vget(i2) * if i1 == 0 { -sign } else { sign });
 
-            let p1 = Vector::from(vertex);
-            vertex[i2] = -vertex[i2];
-            let p2 = Vector::from(vertex);
+            let p1 = vertex;
+            vertex.vset(i2, -vertex.vget(i2));
+            let p2 = vertex;
 
             let mut vertex_id1 = if sign < 0.0 {
                 1 << i1
@@ -524,7 +533,7 @@ impl ConvexPolyhedron for Cuboid {
                 0
             };
             let mut vertex_id2 = vertex_id1;
-            if p1[i2] < 0.0 {
+            if p1.vget(i2) < 0.0 {
                 vertex_id1 |= 1 << i2;
             } else {
                 vertex_id2 |= 1 << i2;
@@ -534,7 +543,7 @@ impl ConvexPolyhedron for Cuboid {
             out.push(p2, FeatureId::Vertex(vertex_id2));
 
             let mut normal: Vector = Vector::ZERO;
-            normal[i1] = sign;
+            normal.vset(i1, sign);
             out.set_normal(normal);
             out.set_feature_id(FeatureId::Face(i as u32));
         }
@@ -550,7 +559,7 @@ impl ConvexPolyhedron for Cuboid {
             let mask_i2 = !(1 << edge_i2); // The masks are for ensuring each edge has a unique ID.
             let mask_i3 = !(1 << edge_i3);
             let mut vertex = self.half_extents;
-            vertex[i1] *= sign;
+            vertex.vset(i1, vertex.vget(i1) * sign);
 
             let (sbit, msbit) = if sign < 0.0 {
                 (1, 0)
@@ -558,37 +567,37 @@ impl ConvexPolyhedron for Cuboid {
                 (0, 1)
             };
             let mut vertex_id = sbit << i1;
-            out.push(Vector::from(vertex), FeatureId::Vertex(vertex_id));
+            out.push(vertex, FeatureId::Vertex(vertex_id));
             out.push_edge_feature_id(FeatureId::Edge(
                 edge_i2 as u32 | ((vertex_id & mask_i2) << 2),
             ));
 
-            vertex[i2] = -sign * self.half_extents[i2];
-            vertex[i3] = sign * self.half_extents[i3];
+            vertex.vset(i2, -sign * self.half_extents.vget(i2));
+            vertex.vset(i3, sign * self.half_extents.vget(i3));
             vertex_id |= msbit << i2 | sbit << i3;
-            out.push(Vector::from(vertex), FeatureId::Vertex(vertex_id));
+            out.push(vertex, FeatureId::Vertex(vertex_id));
             out.push_edge_feature_id(FeatureId::Edge(
                 edge_i3 as u32 | ((vertex_id & mask_i3) << 2),
             ));
 
-            vertex[i2] = -self.half_extents[i2];
-            vertex[i3] = -self.half_extents[i3];
+            vertex.vset(i2, -self.half_extents.vget(i2));
+            vertex.vset(i3, -self.half_extents.vget(i3));
             vertex_id |= 1 << i2 | 1 << i3;
-            out.push(Vector::from(vertex), FeatureId::Vertex(vertex_id));
+            out.push(vertex, FeatureId::Vertex(vertex_id));
             out.push_edge_feature_id(FeatureId::Edge(
                 edge_i2 as u32 | ((vertex_id & mask_i2) << 2),
             ));
 
-            vertex[i2] = sign * self.half_extents[i2];
-            vertex[i3] = -sign * self.half_extents[i3];
+            vertex.vset(i2, sign * self.half_extents.vget(i2));
+            vertex.vset(i3, -sign * self.half_extents.vget(i3));
             vertex_id = sbit << i1 | sbit << i2 | msbit << i3;
-            out.push(Vector::from(vertex), FeatureId::Vertex(vertex_id));
+            out.push(vertex, FeatureId::Vertex(vertex_id));
             out.push_edge_feature_id(FeatureId::Edge(
                 edge_i3 as u32 | ((vertex_id & mask_i3) << 2),
             ));
 
             let mut normal: Vector = Vector::ZERO;
-            normal[i1] = sign;
+            normal.vset(i1, sign);
             out.set_normal(normal);
 
             if sign > 0.0 {
@@ -611,7 +620,7 @@ impl ConvexPolyhedron for Cuboid {
         let local_dir = m.inverse_transform_vector(dir);
         let imax = iamax(local_dir);
 
-        if local_dir[imax] > 0.0 {
+        if local_dir.vget(imax) > 0.0 {
             self.face(FeatureId::Face(imax as u32), out);
             out.transform_by(m);
         } else {
@@ -637,8 +646,8 @@ impl ConvexPolyhedron for Cuboid {
         {
             let mut support_point_id = 0;
             for i1 in 0..2 {
-                let sign = local_dir[i1].signum();
-                if sign * local_dir[i1] >= cang {
+                let sign = local_dir.vget(i1).signum();
+                if sign * local_dir.vget(i1) >= cang {
                     if sign > 0.0 {
                         self.face(FeatureId::Face(i1 as u32), out);
                         out.transform_by(m);
@@ -651,13 +660,13 @@ impl ConvexPolyhedron for Cuboid {
                     if sign < 0.0 {
                         support_point_id |= 1 << i1;
                     }
-                    support_point[i1] *= sign;
+                    support_point.vset(i1, support_point.vget(i1) * sign);
                 }
             }
 
             // We are not on a face, return the support vertex.
             out.push(
-                m * Vector::from(support_point),
+                m * support_point,
                 FeatureId::Vertex(support_point_id),
             );
             out.set_feature_id(FeatureId::Vertex(support_point_id));
@@ -670,8 +679,8 @@ impl ConvexPolyhedron for Cuboid {
 
             // Check faces.
             for i1 in 0..3 {
-                let sign = local_dir[i1].signum();
-                if sign * local_dir[i1] >= cang {
+                let sign = local_dir.vget(i1).signum();
+                if sign * local_dir.vget(i1) >= cang {
                     if sign > 0.0 {
                         self.face(FeatureId::Face(i1 as u32), out);
                         out.transform_by(m);
@@ -682,7 +691,7 @@ impl ConvexPolyhedron for Cuboid {
                     return;
                 } else {
                     if sign < 0.0 {
-                        support_point[i1] *= sign;
+                        support_point.vset(i1, support_point.vget(i1) * sign);
                         support_point_id |= 1 << i1;
                     }
                 }
@@ -690,14 +699,14 @@ impl ConvexPolyhedron for Cuboid {
 
             // Check edges.
             for i in 0..3 {
-                let sign = local_dir[i].signum();
+                let sign = local_dir.vget(i).signum();
 
-                // sign * local_dir[i] <= cos(pi / 2 - angle)
-                if sign * local_dir[i] <= sang {
-                    support_point[i] = -self.half_extents[i];
-                    let p1 = Vector::from(support_point);
-                    support_point[i] = self.half_extents[i];
-                    let p2 = Vector::from(support_point);
+                // sign * local_dir.vget(i) <= cos(pi / 2 - angle)
+                if sign * local_dir.vget(i) <= sang {
+                    support_point.vset(i, -self.half_extents.vget(i));
+                    let p1 = support_point;
+                    support_point.vset(i, self.half_extents.vget(i));
+                    let p2 = support_point;
                     let p2_id = support_point_id & !(1 << i);
                     out.push(m * p1, FeatureId::Vertex(support_point_id | (1 << i)));
                     out.push(m * p2, FeatureId::Vertex(p2_id));
@@ -711,7 +720,7 @@ impl ConvexPolyhedron for Cuboid {
 
             // We are not on a face or edge, return the support vertex.
             out.push(
-                m * Vector::from(support_point),
+                m * support_point,
                 FeatureId::Vertex(support_point_id),
             );
             out.set_feature_id(FeatureId::Vertex(support_point_id));
@@ -726,8 +735,8 @@ impl ConvexPolyhedron for Cuboid {
         {
             let mut support_point_id = 0;
             for i1 in 0..2 {
-                let sign = local_dir[i1].signum();
-                if sign * local_dir[i1] >= cang {
+                let sign = local_dir.vget(i1).signum();
+                if sign * local_dir.vget(i1) >= cang {
                     if sign > 0.0 {
                         return FeatureId::Face(i1 as u32);
                     } else {
@@ -751,8 +760,8 @@ impl ConvexPolyhedron for Cuboid {
 
             // Check faces.
             for i1 in 0..3 {
-                let sign = local_dir[i1].signum();
-                if sign * local_dir[i1] >= cang {
+                let sign = local_dir.vget(i1).signum();
+                if sign * local_dir.vget(i1) >= cang {
                     if sign > 0.0 {
                         return FeatureId::Face(i1 as u32);
                     } else {
@@ -767,10 +776,10 @@ impl ConvexPolyhedron for Cuboid {
 
             // Check edges.
             for i in 0..3 {
-                let sign = local_dir[i].signum();
+                let sign = local_dir.vget(i).signum();
 
-                // sign * local_dir[i] <= cos(pi / 2 - angle)
-                if sign * local_dir[i] <= sang {
+                // sign * local_dir.vget(i) <= cos(pi / 2 - angle)
+                if sign * local_dir.vget(i) <= sang {
                     let mask_i = !(1 << i); // To ensure each edge has a unique id.
                     return FeatureId::Edge(i as u32 | ((support_point_id & mask_i) << 2));
                 }

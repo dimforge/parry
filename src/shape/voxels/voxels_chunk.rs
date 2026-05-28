@@ -242,10 +242,10 @@ impl<'a> VoxelsChunkRef<'a> {
         let mins = mins.max(chunk_mins);
         let maxs = maxs.min(chunk_maxs);
 
-        (mins[0]..maxs[0]).flat_map(move |ix| {
-            (mins[1]..maxs[1]).flat_map(move |iy| {
-                let id_in_chunk = (ix - chunk_mins[0]) as usize
-                    + (iy - chunk_mins[1]) as usize * VoxelsChunk::VOXELS_PER_CHUNK_DIM;
+        (mins.x..maxs.x).flat_map(move |ix| {
+            (mins.y..maxs.y).flat_map(move |iy| {
+                let id_in_chunk = (ix - chunk_mins.x) as usize
+                    + (iy - chunk_mins.y) as usize * VoxelsChunk::VOXELS_PER_CHUNK_DIM;
                 let state = self.states[id_in_chunk];
 
                 if state.is_empty() {
@@ -282,12 +282,12 @@ impl<'a> VoxelsChunkRef<'a> {
         let mins = mins.max(chunk_mins);
         let maxs = maxs.min(chunk_maxs);
 
-        (mins[0]..maxs[0]).flat_map(move |ix| {
-            (mins[1]..maxs[1]).flat_map(move |iy| {
-                (mins[2]..maxs[2]).filter_map(move |iz| {
-                    let id_in_chunk = (ix - chunk_mins[0]) as usize
-                        + (iy - chunk_mins[1]) as usize * VoxelsChunk::VOXELS_PER_CHUNK_DIM
-                        + (iz - chunk_mins[2]) as usize
+        (mins.x..maxs.x).flat_map(move |ix| {
+            (mins.y..maxs.y).flat_map(move |iy| {
+                (mins.z..maxs.z).filter_map(move |iz| {
+                    let id_in_chunk = (ix - chunk_mins.x) as usize
+                        + (iy - chunk_mins.y) as usize * VoxelsChunk::VOXELS_PER_CHUNK_DIM
+                        + (iz - chunk_mins.z) as usize
                             * VoxelsChunk::VOXELS_PER_CHUNK_DIM
                             * VoxelsChunk::VOXELS_PER_CHUNK_DIM;
                     let state = self.states[id_in_chunk];

@@ -379,8 +379,8 @@ pub fn push_xy_arc(radius: Real, nsubdiv: u32, dtheta: Real, out: &mut Vec<Vecto
     for _ in 0..nsubdiv {
         let mut pt_coords = Vector::ZERO;
 
-        pt_coords[0] = <Real as ComplexField>::cos(curr_theta) * radius;
-        pt_coords[1] = <Real as ComplexField>::sin(curr_theta) * radius;
+        pt_coords.x = <Real as ComplexField>::cos(curr_theta) * radius;
+        pt_coords.y = <Real as ComplexField>::sin(curr_theta) * radius;
         out.push(pt_coords);
 
         curr_theta += dtheta;

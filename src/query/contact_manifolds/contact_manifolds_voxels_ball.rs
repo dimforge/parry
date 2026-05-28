@@ -182,10 +182,10 @@ pub fn project_point_on_pseudo_cube(
             let i1 = pattern as usize - OctantPattern::FACE_X as usize;
             let i2 = (i1 + 1) % 2;
 
-            if unit_dpos[i2] > 1.0 || unit_dpos[i2] < 0.0 {
+            if unit_dpos.vget(i2) > 1.0 || unit_dpos.vget(i2) < 0.0 {
                 None
             } else {
-                let dist = unit_dpos[i1] - 1.0; // Subtract 1 to get the distance wrt. the boundary of the unit voxel.
+                let dist = unit_dpos.vget(i1) - 1.0; // Subtract 1 to get the distance wrt. the boundary of the unit voxel.
                 Some((Vector::ith(i1, 1.0), dist))
             }
         }
@@ -195,14 +195,14 @@ pub fn project_point_on_pseudo_cube(
             let i2 = (i1 + 1) % 3;
             let i3 = (i1 + 2) % 3;
 
-            if unit_dpos[i2] > 1.0
-                || unit_dpos[i2] < 0.0
-                || unit_dpos[i3] > 1.0
-                || unit_dpos[i3] < 0.0
+            if unit_dpos.vget(i2) > 1.0
+                || unit_dpos.vget(i2) < 0.0
+                || unit_dpos.vget(i3) > 1.0
+                || unit_dpos.vget(i3) < 0.0
             {
                 None
             } else {
-                let dist = unit_dpos[i1] - 1.0; // Subtract 1 to get the distance wrt. the boundary of the unit voxel.
+                let dist = unit_dpos.vget(i1) - 1.0; // Subtract 1 to get the distance wrt. the boundary of the unit voxel.
                 Some((Vector::ith(i1, 1.0), dist))
             }
         }

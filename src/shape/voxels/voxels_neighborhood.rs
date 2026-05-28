@@ -1,5 +1,5 @@
 use super::VoxelsChunk;
-use crate::math::{ivect_to_vect, IVector, DIM};
+use crate::math::{ivect_to_vect, IVector, IVectorExt, DIM};
 use crate::shape::{VoxelState, Voxels};
 
 impl Voxels {
@@ -18,8 +18,8 @@ impl Voxels {
         for k in 0..DIM {
             let mut left = key;
             let mut right = key;
-            left[k] -= 1;
-            right[k] += 1;
+            left.ivset(k, left.ivget(k) - 1);
+            right.ivset(k, right.ivget(k) + 1);
 
             // TODO PERF: all the calls to `linear_index` result in a hashmap lookup each time.
             //            We should instead be smarter and detect if left/right are in the same chunk
@@ -83,8 +83,8 @@ impl Voxels {
 
         for k in 0..DIM {
             let (mut prev, mut next) = (key, key);
-            prev[k] -= 1;
-            next[k] += 1;
+            prev.ivset(k, prev.ivget(k) - 1);
+            next.ivset(k, next.ivget(k) + 1);
 
             if let Some(next_id) = self.linear_index(next) {
                 if !self.chunks[next_id.chunk_id].states[next_id.id_in_chunk].is_empty() {

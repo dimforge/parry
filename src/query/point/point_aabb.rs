@@ -1,8 +1,9 @@
 use crate::bounding_volume::Aabb;
-use crate::math::{Real, Vector, DIM};
-use crate::num::{Bounded, Zero};
+use crate::math::{Real, Vector, VectorExt, DIM};
+use crate::num::Zero;
 use crate::query::{PointProjection, PointQuery};
 use crate::shape::FeatureId;
+use crate::utils::WSign;
 
 impl Aabb {
     fn do_project_local_point(&self, pt: Vector, solid: bool) -> (bool, Vector, Vector) {
@@ -10,44 +11,49 @@ impl Aabb {
         let pt_maxs = pt - self.maxs;
         let shift = mins_pt.max(Vector::ZERO) - pt_maxs.max(Vector::ZERO);
 
-        let inside = shift == Vector::ZERO;
-
-        if !inside {
+        if shift != Vector::ZERO {
             (false, pt + shift, shift)
         } else if solid {
-            (true, pt, shift)
+            (true, pt, Vector::ZERO)
         } else {
-            let _max: Real = Bounded::max_value();
-            let mut best = -_max;
-            let mut is_mins = false;
-            let mut best_id = 0;
+            // Projection for the case where the point is inside the box.
+            let centered_pt = pt - self.center();
+            let pt_sgn_with_zero = centered_pt.copy_sign_to(Vector::splat(1.0));
+            // This is the sign of pt, or -1 for components that were zero.
+            // This bias is arbitrary (we could have picked +1), but we picked it so
+            // it matches the previous implementation.
+            let pt_sgn = pt_sgn_with_zero + (pt_sgn_with_zero.abs() - Vector::ONE);
+            let diff = self.half_extents() - pt_sgn * centered_pt;
 
-            for i in 0..DIM {
-                let mins_pt_i = mins_pt[i];
-                let pt_maxs_i = pt_maxs[i];
-
-                if mins_pt_i < pt_maxs_i {
-                    if pt_maxs[i] > best {
-                        best_id = i;
-                        is_mins = false;
-                        best = pt_maxs_i
-                    }
-                } else if mins_pt_i > best {
-                    best_id = i;
-                    is_mins = true;
-                    best = mins_pt_i
+            #[cfg(feature = "dim2")]
+            let shift = {
+                let pick_x = diff.x <= diff.y;
+                let shift_x = Vector::new(diff.x * pt_sgn.x, 0.0);
+                let shift_y = Vector::new(0.0, diff.y * pt_sgn.y);
+                if pick_x {
+                    shift_x
+                } else {
+                    shift_y
                 }
-            }
+            };
 
-            let mut shift: Vector = Vector::ZERO;
+            #[cfg(feature = "dim3")]
+            let shift = {
+                let pick_x = diff.x <= diff.y && diff.x <= diff.z;
+                let pick_y = diff.y <= diff.x && diff.y <= diff.z;
+                let shift_x = Vector::new(diff.x * pt_sgn.x, 0.0, 0.0);
+                let shift_y = Vector::new(0.0, diff.y * pt_sgn.y, 0.0);
+                let shift_z = Vector::new(0.0, 0.0, diff.z * pt_sgn.z);
+                if pick_x {
+                    shift_x
+                } else if pick_y {
+                    shift_y
+                } else {
+                    shift_z
+                }
+            };
 
-            if is_mins {
-                shift[best_id] = best;
-            } else {
-                shift[best_id] = -best;
-            }
-
-            (inside, pt + shift, shift)
+            (true, pt + shift, shift)
         }
     }
 }
@@ -70,7 +76,7 @@ impl PointQuery for Aabb {
         let mut last_not_zero_shift = 0;
 
         for i in 0..DIM {
-            if shift[i].is_zero() {
+            if shift.vget(i).is_zero() {
                 nzero_shifts += 1;
                 last_zero_shift = i;
             } else {
@@ -80,10 +86,10 @@ impl PointQuery for Aabb {
 
         if nzero_shifts == DIM {
             for i in 0..DIM {
-                if ls_pt[i] > self.maxs[i] - crate::math::DEFAULT_EPSILON {
+                if ls_pt.vget(i) > self.maxs.vget(i) - crate::math::DEFAULT_EPSILON {
                     return (proj, FeatureId::Face(i as u32));
                 }
-                if ls_pt[i] <= self.mins[i] + crate::math::DEFAULT_EPSILON {
+                if ls_pt.vget(i) <= self.mins.vget(i) + crate::math::DEFAULT_EPSILON {
                     return (proj, FeatureId::Face((i + DIM) as u32));
                 }
             }
@@ -91,7 +97,7 @@ impl PointQuery for Aabb {
             (proj, FeatureId::Unknown)
         } else if nzero_shifts == DIM - 1 {
             // On a 3D face.
-            if ls_pt[last_not_zero_shift] < self.center()[last_not_zero_shift] {
+            if ls_pt.vget(last_not_zero_shift) < self.center().vget(last_not_zero_shift) {
                 (proj, FeatureId::Face((last_not_zero_shift + DIM) as u32))
             } else {
                 (proj, FeatureId::Face(last_not_zero_shift as u32))
@@ -102,7 +108,7 @@ impl PointQuery for Aabb {
             let center = self.center();
 
             for i in 0..DIM {
-                if ls_pt[i] < center[i] {
+                if ls_pt.vget(i) < center.vget(i) {
                     id |= 1 << i;
                 }
             }

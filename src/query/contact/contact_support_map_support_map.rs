@@ -71,3 +71,40 @@ where
     // Everything failed
     GJKResult::NoIntersection(Vector::X)
 }
+
+#[cfg(all(test, feature = "dim2"))]
+mod test {
+    use crate::bounding_volume::Aabb;
+    use crate::math::{Pose, Vector};
+    use crate::query::contact;
+    use crate::shape::{Cuboid, Segment};
+
+    /// Regression test for <https://github.com/dimforge/parry/issues/415>: a segment overlapping
+    /// a cuboid must report a penetrating contact. An absolute tolerance used in EPA's `FaceId`
+    /// construction used to spuriously reject valid faces (and make `contact` return `None`) when
+    /// using `f64` precision with large coordinates.
+    ///
+    /// NOTE: this is not in the `tests` directory since we want it for both f32 and f64 versions.
+    #[test]
+    fn contact_segment_cuboid_issue_415() {
+        let segment = Segment {
+            a: Vector::new(60.0, 10.0),
+            b: Vector::new(10.0, 0.0),
+        };
+        let aabb = Aabb {
+            mins: Vector::new(40.0, -50.0),
+            maxs: Vector::new(60.0, 150.0),
+        };
+        let cuboid = Cuboid::new(aabb.half_extents());
+        let pos_cuboid = Pose::from_translation(aabb.center());
+
+        let contact = contact(&Pose::IDENTITY, &segment, &pos_cuboid, &cuboid, 1.0)
+            .unwrap()
+            .expect("the overlapping segment and cuboid must report a contact");
+        assert!(
+            contact.dist < 0.0,
+            "expected a penetrating contact, got dist = {}",
+            contact.dist
+        );
+    }
+}

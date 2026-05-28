@@ -1,7 +1,3 @@
-#[cfg(feature = "alloc")]
-use alloc::{boxed::Box, vec::Vec};
-use core::fmt::Debug;
-
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::mass_properties::MassProperties;
 use crate::math::{Pose, Real, RealField, Vector};
@@ -16,6 +12,10 @@ use crate::shape::{
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+use core::any::Any;
+use core::fmt::Debug;
 
 #[cfg(feature = "dim3")]
 #[cfg(feature = "alloc")]
@@ -24,7 +24,6 @@ use crate::shape::{ConvexPolyhedron, RoundConvexPolyhedron, Voxels};
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]
 use crate::shape::{ConvexPolygon, RoundConvexPolygon, Voxels};
-use downcast_rs::{impl_downcast, DowncastSync};
 use num::Zero;
 use num_derive::FromPrimitive;
 
@@ -333,7 +332,7 @@ impl DeserializableTypedShape {
 }
 
 /// Trait implemented by shapes usable by Rapier.
-pub trait Shape: RayCast + PointQuery + DowncastSync {
+pub trait Shape: RayCast + PointQuery + Any + Send + Sync {
     /// Computes the [`Aabb`] of this shape.
     fn compute_local_aabb(&self) -> Aabb;
     /// Computes the bounding-sphere of this shape.
@@ -432,237 +431,235 @@ pub trait Shape: RayCast + PointQuery + DowncastSync {
     }
 }
 
-impl_downcast!(sync Shape);
-
 impl dyn Shape {
     /// Converts this abstract shape to the given shape, if it is one.
     pub fn as_shape<T: Shape>(&self) -> Option<&T> {
-        self.downcast_ref()
+        (self as &dyn Any).downcast_ref()
     }
     /// Converts this abstract shape to the given mutable shape, if it is one.
     pub fn as_shape_mut<T: Shape>(&mut self) -> Option<&mut T> {
-        self.downcast_mut()
+        (self as &mut dyn Any).downcast_mut()
     }
 
     /// Converts this abstract shape to a ball, if it is one.
     pub fn as_ball(&self) -> Option<&Ball> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable ball, if it is one.
     pub fn as_ball_mut(&mut self) -> Option<&mut Ball> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a cuboid, if it is one.
     pub fn as_cuboid(&self) -> Option<&Cuboid> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable cuboid, if it is one.
     pub fn as_cuboid_mut(&mut self) -> Option<&mut Cuboid> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a halfspace, if it is one.
     pub fn as_halfspace(&self) -> Option<&HalfSpace> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a halfspace, if it is one.
     pub fn as_halfspace_mut(&mut self) -> Option<&mut HalfSpace> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a segment, if it is one.
     pub fn as_segment(&self) -> Option<&Segment> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable segment, if it is one.
     pub fn as_segment_mut(&mut self) -> Option<&mut Segment> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a capsule, if it is one.
     pub fn as_capsule(&self) -> Option<&Capsule> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable capsule, if it is one.
     pub fn as_capsule_mut(&mut self) -> Option<&mut Capsule> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a triangle, if it is one.
     pub fn as_triangle(&self) -> Option<&Triangle> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable triangle, if it is one.
     pub fn as_triangle_mut(&mut self) -> Option<&mut Triangle> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to voxels, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_voxels(&self) -> Option<&Voxels> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to mutable voxels, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_voxels_mut(&mut self) -> Option<&mut Voxels> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a compound shape, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_compound(&self) -> Option<&Compound> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable compound shape, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_compound_mut(&mut self) -> Option<&mut Compound> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a triangle mesh, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_trimesh(&self) -> Option<&TriMesh> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable triangle mesh, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_trimesh_mut(&mut self) -> Option<&mut TriMesh> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a polyline, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_polyline(&self) -> Option<&Polyline> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable polyline, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_polyline_mut(&mut self) -> Option<&mut Polyline> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a heightfield, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_heightfield(&self) -> Option<&HeightField> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable heightfield, if it is one.
     #[cfg(feature = "alloc")]
     pub fn as_heightfield_mut(&mut self) -> Option<&mut HeightField> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round cuboid, if it is one.
     pub fn as_round_cuboid(&self) -> Option<&RoundCuboid> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable round cuboid, if it is one.
     pub fn as_round_cuboid_mut(&mut self) -> Option<&mut RoundCuboid> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round triangle, if it is one.
     pub fn as_round_triangle(&self) -> Option<&RoundTriangle> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a round triangle, if it is one.
     pub fn as_round_triangle_mut(&mut self) -> Option<&mut RoundTriangle> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     #[cfg(feature = "alloc")]
     pub fn as_convex_polygon(&self) -> Option<&ConvexPolygon> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     #[cfg(feature = "alloc")]
     pub fn as_convex_polygon_mut(&mut self) -> Option<&mut ConvexPolygon> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     #[cfg(feature = "alloc")]
     pub fn as_round_convex_polygon(&self) -> Option<&RoundConvexPolygon> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable round convex polygon, if it is one.
     #[cfg(feature = "dim2")]
     #[cfg(feature = "alloc")]
     pub fn as_round_convex_polygon_mut(&mut self) -> Option<&mut RoundConvexPolygon> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     #[cfg(feature = "dim3")]
     #[cfg(feature = "alloc")]
     pub fn as_convex_polyhedron(&self) -> Option<&ConvexPolyhedron> {
-        self.downcast_ref()
+        self.as_shape()
     }
     #[cfg(feature = "dim3")]
     #[cfg(feature = "alloc")]
     pub fn as_convex_polyhedron_mut(&mut self) -> Option<&mut ConvexPolyhedron> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cylinder(&self) -> Option<&Cylinder> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cylinder_mut(&mut self) -> Option<&mut Cylinder> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cone(&self) -> Option<&Cone> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_cone_mut(&mut self) -> Option<&mut Cone> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cylinder(&self) -> Option<&RoundCylinder> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable round cylinder, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cylinder_mut(&mut self) -> Option<&mut RoundCylinder> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cone(&self) -> Option<&RoundCone> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable round cone, if it is one.
     #[cfg(feature = "dim3")]
     pub fn as_round_cone_mut(&mut self) -> Option<&mut RoundCone> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 
     /// Converts this abstract shape to a round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
     #[cfg(feature = "alloc")]
     pub fn as_round_convex_polyhedron(&self) -> Option<&RoundConvexPolyhedron> {
-        self.downcast_ref()
+        self.as_shape()
     }
     /// Converts this abstract shape to a mutable round convex polyhedron, if it is one.
     #[cfg(feature = "dim3")]
     #[cfg(feature = "alloc")]
     pub fn as_round_convex_polyhedron_mut(&mut self) -> Option<&mut RoundConvexPolyhedron> {
-        self.downcast_mut()
+        self.as_shape_mut()
     }
 }
 

@@ -12,6 +12,7 @@ pub use self::eigen2::SymmetricEigen2;
 pub use self::eigen3::SymmetricEigen3;
 pub(crate) use self::inv::inv;
 pub use self::isometry_ops::{PoseOps, PoseOpt};
+#[cfg(feature = "alloc")]
 pub use self::median::median;
 pub use self::point_cloud_support_point::{
     point_cloud_support_point, point_cloud_support_point_id,
@@ -30,6 +31,7 @@ pub use self::hashable_partial_eq::HashablePartialEq;
 #[cfg(feature = "alloc")]
 pub use self::interval::{find_root_intervals, find_root_intervals_to, Interval, IntervalFunction};
 pub use self::obb::obb;
+pub use self::relative_eq::relative_eq_vector;
 pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersection};
 #[cfg(feature = "dim3")]
 pub use self::sort::sort2;
@@ -65,6 +67,7 @@ pub mod hashset;
 mod interval;
 mod inv;
 mod isometry_ops;
+#[cfg(feature = "alloc")]
 mod median;
 pub mod morton;
 mod obb;
@@ -82,5 +85,6 @@ mod wops;
 
 mod eigen2;
 mod eigen3;
+mod relative_eq;
 #[cfg(feature = "alloc")]
 mod vec_map;

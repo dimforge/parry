@@ -1,6 +1,7 @@
 use crate::math::Vector;
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Segment, SegmentPointLocation};
+use crate::utils::relative_eq_vector;
 
 impl PointQuery for Segment {
     #[inline]
@@ -75,7 +76,7 @@ impl PointQueryWithLocation for Segment {
         }
 
         // TODO: is this acceptable?
-        let inside = relative_eq!(proj, pt);
+        let inside = relative_eq_vector(proj, pt);
 
         (PointProjection::new(inside, proj), location)
     }

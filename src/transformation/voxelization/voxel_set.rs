@@ -1124,7 +1124,7 @@ fn convex_hull(vertices: &[Vector]) -> Vec<Vector> {
 #[cfg(feature = "dim3")]
 fn convex_hull(vertices: &[Vector]) -> (Vec<Vector>, Vec<[u32; DIM]>) {
     if vertices.len() > 2 {
-        crate::transformation::convex_hull(vertices)
+        crate::transformation::try_convex_hull(vertices).unwrap_or_default()
     } else {
         (Vec::new(), Vec::new())
     }

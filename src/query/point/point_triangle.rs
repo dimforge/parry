@@ -1,6 +1,8 @@
 use crate::math::{Real, Vector, DIM};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
+#[cfg(feature = "dim3")]
+use crate::utils::relative_eq_vector;
 
 #[inline]
 fn compute_result(pt: Vector, proj: Vector) -> PointProjection {
@@ -13,7 +15,8 @@ fn compute_result(pt: Vector, proj: Vector) -> PointProjection {
     {
         // TODO: is this acceptable to assume the point is inside of the
         // triangle if it is close enough?
-        PointProjection::new(relative_eq!(proj, pt), proj)
+        let inside = relative_eq_vector(proj, pt);
+        PointProjection::new(inside, proj)
     }
 }
 

@@ -1,6 +1,7 @@
 use core::iter::IntoIterator;
 
 use crate::bounding_volume::Aabb;
+use crate::math::VectorExt;
 use crate::math::{Pose, Vector, DIM};
 use crate::shape::SupportMap;
 
@@ -17,13 +18,13 @@ where
     for d in 0..DIM {
         // TODO: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = 1.0;
-        max[d] = i.support_point(m, basis)[d];
+        basis.vset(d, 1.0);
+        max.vset(d, i.support_point(m, basis).vget(d));
 
-        basis[d] = -1.0;
-        min[d] = i.support_point(m, basis)[d];
+        basis.vset(d, -1.0);
+        min.vset(d, i.support_point(m, basis).vget(d));
 
-        basis[d] = 0.0;
+        basis.vset(d, 0.0);
     }
 
     Aabb::new(min, max)
@@ -41,13 +42,13 @@ where
     for d in 0..DIM {
         // TODO: this could be further improved iterating on `m`'s columns, and passing
         // Id as the transformation matrix.
-        basis[d] = 1.0;
-        max[d] = i.local_support_point(basis)[d];
+        basis.vset(d, 1.0);
+        max.vset(d, i.local_support_point(basis).vget(d));
 
-        basis[d] = -1.0;
-        min[d] = i.local_support_point(basis)[d];
+        basis.vset(d, -1.0);
+        min.vset(d, i.local_support_point(basis).vget(d));
 
-        basis[d] = 0.0;
+        basis.vset(d, 0.0);
     }
 
     Aabb::new(min, max)

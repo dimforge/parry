@@ -32,8 +32,13 @@ where
         if time_of_impact > options.max_time_of_impact {
             None
         } else if (options.compute_impact_geometry_on_penetration || !options.stop_at_penetration)
-            && time_of_impact < 1.0e-5
+            && time_of_impact < 1.0e-4
         {
+            // The GJK-derived normal becomes unreliable for very small TOIs — typically
+            // when the cast starts at (or very close to) the `target_distance` boundary
+            // with a direction nearly tangent to the contact. Fall back on the contact
+            // query, which gives a robust closest-point normal and lets us detect the
+            // case where the cast direction is actually moving away from the contact.
             let contact = details::contact_support_map_support_map(pos12, g1, g2, Real::MAX)?;
             let normal_vel = contact.normal1.dot(vel12);
 

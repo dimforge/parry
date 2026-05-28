@@ -1,3 +1,41 @@
+## Unreleased
+
+### Breaking changes
+
+- `CompositeShapeRef::project_local_point` and `project_local_point_and_get_feature` now return
+  `Option<...>` instead of unwrapping internally, and take an additional `max_dist` parameter that
+  bounds the search distance.
+
+### Modified
+
+- Bump `glamx` to 0.3 (built on `glam` 0.33), `simba` to 0.10, `rstar` to 0.13, `hashbrown` to 0.17,
+  `rand` to 0.10, and `kiss3d` (visual examples) to 0.42.
+- Many shape, AABB, and voxel internals were reworked to avoid bracket-indexing of `glam` vectors,
+  which is not supported on SPIR-V targets. A new `VectorExt::vget`/`vset` API and a `for_each_dim!`
+  macro are now used in place of `v[i]`. `parry3d`'s `alloc` feature also now gates `smallvec`,
+  `downcast-rs`, `rstar`, and `glamx/approx`, so the no-alloc build can target SPIR-V.
+
+### Fixed
+
+- Fix multiple EPA failures on large coordinate magnitudes by scaling the face-rejection tolerance
+  relative to the simplex vertex magnitudes ([#415](https://github.com/dimforge/parry/issues/415)).
+- Fix CCD edge cases (in both ball-vs-ball and support-map-vs-support-map casts) where casts
+  starting at (or very close to) the contact boundary with a near-tangent direction would return
+  an unreliable normal. The fallback now uses the contact query to recover a robust closest-point
+  normal, and the small-TOI threshold was relaxed from `1e-5` to `1e-4`.
+- Fix `Aabb::cast_local_ray_and_get_normal` panicking with a subtraction overflow when casting a
+  zero-direction ray starting inside the AABB ([#383](https://github.com/dimforge/parry/issues/383)).
+- Fix infinite loop in `TriMesh::intersection_with_local_plane` on degenerate adjacency graphs
+  that don't loop cleanly back to the starting index
+  ([#398](https://github.com/dimforge/parry/issues/398)).
+- Fix panic in `mesh_intersection` when constraint edges overlap (e.g. for co-planar triangles).
+  Overlapping constraints are now skipped instead of crashing the CDT
+  ([#389](https://github.com/dimforge/parry/issues/389)).
+- Fix panic in 3D voxelization's internal convex-hull step by falling back to `try_convex_hull`
+  and returning an empty hull on failure ([#347](https://github.com/dimforge/parry/issues/347)).
+- Fix `WSign::copy_sign_to` on non-CUDA targets by using the native `copysign` (the bit-twiddling
+  workaround is now scoped to `nvptx64`, where `cuda_std`'s `copysign` does not compile).
+
 ## 0.27.0
 
 - Switched to `glamx 0.2` (`glam 0.32`).

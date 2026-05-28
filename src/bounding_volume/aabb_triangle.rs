@@ -1,6 +1,6 @@
 use crate::{
     bounding_volume::Aabb,
-    math::{Pose, Vector, DIM},
+    math::{Pose, Vector},
     shape::Triangle,
 };
 
@@ -21,9 +21,9 @@ impl Triangle {
         let mut min = Vector::ZERO;
         let mut max = Vector::ZERO;
 
-        for d in 0..DIM {
-            min[d] = a[d].min(b[d]).min(c[d]);
-            max[d] = a[d].max(b[d]).max(c[d]);
+        for_each_dim! {
+            min[ii] = a[ii].min(b[ii]).min(c[ii]);
+            max[ii] = a[ii].max(b[ii]).max(c[ii]);
         }
 
         Aabb::new(min, max)

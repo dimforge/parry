@@ -1,5 +1,6 @@
 use crate::math::{Pose, Real, Vector, VectorExt, DIM};
 use crate::shape::{Cuboid, SupportMap};
+use crate::utils::WSign;
 
 /// Computes the separation distance between two cuboids along a given axis.
 ///
@@ -63,7 +64,7 @@ pub fn cuboid_cuboid_compute_separation_wrt_local_line(
     axis1: Vector,
 ) -> (Real, Vector) {
     #[expect(clippy::unnecessary_cast)]
-    let signum = (1.0 as Real).copysign(pos12.translation.dot(axis1));
+    let signum = pos12.translation.dot(axis1).copy_sign_to(1.0 as Real);
     let axis1 = axis1 * signum;
     let axis2 = pos12.rotation.inverse() * -axis1;
     let local_pt1 = cuboid1.local_support_point(axis1);
@@ -262,12 +263,12 @@ pub fn cuboid_cuboid_find_local_separating_normal_oneway(
 
     for i in 0..DIM {
         #[expect(clippy::unnecessary_cast)]
-        let sign = (1.0 as Real).copysign(pos12.translation[i]);
+        let sign = pos12.translation.vget(i).copy_sign_to(1.0 as Real);
         let axis1 = Vector::ith(i, sign);
         let axis2 = pos12.rotation.inverse() * -axis1;
         let local_pt2 = cuboid2.local_support_point(axis2);
         let pt2 = pos12 * local_pt2;
-        let separation = pt2[i] * sign - cuboid1.half_extents[i];
+        let separation = pt2.vget(i) * sign - cuboid1.half_extents.vget(i);
 
         if separation > best_separation {
             best_separation = separation;
