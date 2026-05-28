@@ -1,6 +1,8 @@
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
-use crate::partitioning::{Bvh, BvhBuildStrategy, BvhNode, BvhNodeIndex, TraversalAction};
+use crate::partitioning::{
+    Bvh, BvhBuildStrategy, BvhNode, BvhNodeIndex, BvhWorkspace, TraversalAction,
+};
 
 fn make_test_aabb(i: usize) -> Aabb {
     Aabb::from_half_extents(Vector::splat(i as Real).into(), Vector::splat(1.0))
@@ -241,4 +243,39 @@ fn bvh_build_and_removal() {
             }
         }
     }
+}
+
+#[test]
+fn bvh_remove_to_partial_root_then_optimize() {
+    // Regression test for the bug reported in #409 where `Bvh::remove` would leave orphaned
+    // wide nodes in `self.nodes`/`self.parents` after reducing the tree to a
+    // partial root (a single surviving leaf at node 0). Earlier removals on a
+    // tree with more than one wide node would intentionally leave orphans for
+    // the next `refit` to compact, but if a partial root was created before
+    // any refit, those orphans remained reachable from `self.nodes` and
+    // `optimize_incremental` would walk them as if they were live, crashing
+    // on the corrupt structure.
+    //
+    // We pick enough leaves to ensure at least one orphan-leaving removal
+    // (`wide_node_index != 0`) before the final partial-root removal.
+    let leaves: std::vec::Vec<_> = (0..10).map(make_test_aabb).collect();
+    let mut bvh = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves);
+
+    // Remove all but the last leaf, without ever calling refit in between.
+    for i in 0..(leaves.len() as u32 - 1) {
+        bvh.remove(i);
+    }
+
+    // After the final remove, the tree should be a partial root with exactly
+    // one surviving leaf, and no orphaned wide nodes left over.
+    assert_eq!(bvh.leaf_count(), 1);
+
+    // Without the fix this call walks the orphan-laden tree as if it were
+    // live and ends up corrupting/crashing on the partial root.
+    let mut workspace = BvhWorkspace::default();
+    bvh.optimize_incremental(&mut workspace);
+
+    assert_eq!(bvh.nodes.len(), 1);
+    assert_eq!(bvh.parents.len(), 1);
+    bvh.assert_well_formed();
 }
