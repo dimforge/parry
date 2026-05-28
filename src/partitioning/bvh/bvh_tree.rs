@@ -2383,6 +2383,14 @@ impl Bvh {
 
                     // Now we can just clear the right leaf.
                     self.nodes[0].right = BvhNode::zeros();
+
+                    // Clean up orphaned nodes. With a partial root, only node[0] is
+                    // reachable. Previous removes may have left orphaned wide nodes
+                    // that were waiting for refit to compact them. If we don't truncate
+                    // here, the tree appears as a single-leaf tree with unreachable
+                    // nodes, which corrupts optimize_incremental.
+                    self.nodes.truncate(1);
+                    self.parents.truncate(1);
                 } else {
                     // The sibling isn’t a leaf. It becomes the new root at index 0.
                     self.nodes[0] = self.nodes[self.nodes[sibling].children as usize];
