@@ -1,4 +1,4 @@
-## Unreleased
+## 0.28.0
 
 ### Breaking changes
 
@@ -17,6 +17,16 @@
 
 ### Fixed
 
+- Fix `Bvh::scale`/`BvhNode::scale` producing an inverted AABB on negative scale components, which
+  silently broke queries on shapes scaled with reflections (e.g. `TriMesh::scaled`). Scale components
+  must now be non-zero (previously: positive) ([#406](https://github.com/dimforge/parry/pull/406)).
+- Fix `Voxels::scaled` not scaling the internal chunk BVH, causing queries on scaled voxels to miss
+  geometry ([#419](https://github.com/dimforge/parry/pull/419)).
+- Fix `Bvh::optimize_incremental` panicking after multiple `remove`s without an intervening `refit`
+  when the root collapses to a partial root, leaving orphaned wide nodes
+  ([#409](https://github.com/dimforge/parry/pull/409)).
+- Correct the assertion message on `Aabb`/`BoundingSphere`'s `loosen`/`tighten` (and their `*_ed`
+  variants) to "must be non-negative" ([#394](https://github.com/dimforge/parry/pull/394)).
 - Fix multiple EPA failures on large coordinate magnitudes by scaling the face-rejection tolerance
   relative to the simplex vertex magnitudes ([#415](https://github.com/dimforge/parry/issues/415)).
 - Fix CCD edge cases (in both ball-vs-ball and support-map-vs-support-map casts) where casts
