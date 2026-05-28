@@ -994,14 +994,14 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn loosen(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= 0.0, "The loosening margin must be non-negative.");
         self.mins += Vector::splat(-amount);
         self.maxs += Vector::splat(amount);
     }
 
     #[inline]
     fn loosened(&self, amount: Real) -> Aabb {
-        assert!(amount >= 0.0, "The loosening margin must be positive.");
+        assert!(amount >= 0.0, "The loosening margin must be non-negative.");
         Aabb {
             mins: self.mins + Vector::splat(-amount),
             maxs: self.maxs + Vector::splat(amount),
@@ -1010,7 +1010,7 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn tighten(&mut self, amount: Real) {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= 0.0, "The tightening margin must be non-negative.");
         self.mins += Vector::splat(amount);
         self.maxs += Vector::splat(-amount);
         assert!(
@@ -1021,7 +1021,7 @@ impl BoundingVolume for Aabb {
 
     #[inline]
     fn tightened(&self, amount: Real) -> Aabb {
-        assert!(amount >= 0.0, "The tightening margin must be positive.");
+        assert!(amount >= 0.0, "The tightening margin must be non-negative.");
 
         Aabb::new(
             self.mins + Vector::splat(amount),
