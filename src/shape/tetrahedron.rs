@@ -1,6 +1,6 @@
 //! Definition of the tetrahedron shape.
 
-use crate::math::{MatExt, Matrix, Real, Vector};
+use crate::math::{Matrix, Real, Vector};
 use crate::shape::{Segment, Triangle};
 use crate::utils;
 use core::mem;

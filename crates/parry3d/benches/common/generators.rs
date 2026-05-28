@@ -1,6 +1,6 @@
 use parry3d::math::Vec3;
 use parry3d::shape::TriMesh;
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 pub fn generate_trimesh_around_origin<R: Rng>(rng: &mut R) -> TriMesh {
     let pts = (0..3000)

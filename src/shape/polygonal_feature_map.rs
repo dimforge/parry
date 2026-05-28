@@ -2,6 +2,7 @@ use crate::math::Vector;
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, PackedFeatureId};
 use crate::shape::{Cuboid, PolygonalFeature, Segment, SupportMap, Triangle};
+#[cfg(feature = "dim3")]
 use crate::utils::WSign;
 
 /// Trait implemented by convex shapes with features with polyhedral approximations.

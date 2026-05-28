@@ -1,6 +1,7 @@
 use crate::math::{Real, Vector, DIM};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
 use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
+#[cfg(feature = "dim3")]
 use crate::utils::relative_eq_vector;
 
 #[inline]

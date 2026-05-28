@@ -3,7 +3,7 @@ use parry3d::math::{Pose3, Real, Rot3, Vec3, Vector};
 use parry3d::query::Ray;
 use parry3d::shape::ConvexPolyhedron;
 use parry3d::shape::{Ball, Capsule, Cone, Cuboid, Cylinder, Segment, Triangle};
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 pub trait DefaultGen {
     fn generate<R: Rng>(rng: &mut R) -> Self;
