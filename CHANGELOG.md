@@ -1,3 +1,7 @@
+## 0.27.0
+
+- Switched to `glamx 0.2` (`glam 0.32`).
+
 ## 0.26.1
 
 ### Added
