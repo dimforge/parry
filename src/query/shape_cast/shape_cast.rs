@@ -279,6 +279,6 @@ pub fn cast_shapes(
     options: ShapeCastOptions,
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
-    let vel12 = pos1.rotation.inverse() * vel2 - vel1;
+    let vel12 = pos1.rotation.inverse() * (vel2 - vel1);
     DefaultQueryDispatcher.cast_shapes(&pos12, vel12, g1, g2, options)
 }
