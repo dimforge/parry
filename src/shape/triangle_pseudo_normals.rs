@@ -32,62 +32,14 @@ impl NormalConstraints for TrianglePseudoNormals {
     /// Projects the given direction to it is contained in the polygonal
     /// cone defined `self`.
     fn project_local_normal_mut(&self, dir: &mut Vector) -> bool {
-        let dot_face = dir.dot(self.face);
-
         // Find the closest pseudo-normal.
         let dots = Vector3::new(
             dir.dot(self.edges[0]),
             dir.dot(self.edges[1]),
             dir.dot(self.edges[2]),
         );
-        let closest_dot = dots.max_position();
-        let closest_edge = self.edges[closest_dot];
-
-        // Apply the projection. Note that this isn’t 100% accurate since this approximates the
-        // vertex normal cone using the closest edge’s normal cone instead of the
-        // true polygonal cone on S² (but taking into account this polygonal cone exactly
-        // would be quite computationally expensive).
-
-        if closest_edge == self.face {
-            // The normal cone is degenerate, there is only one possible direction.
-            *dir = self.face;
-            return dot_face >= 0.0;
-        }
-
-        // TODO: take into account the two closest edges instead for better continuity
-        //       of vertex normals?
-        let dot_edge_face = self.face.dot(closest_edge);
-        let dot_dir_face = self.face.dot(*dir);
-        let dot_corrected_dir_face = 2.0 * dot_edge_face * dot_edge_face - 1.0; // cos(2 * angle(closest_edge, face))
-
-        if dot_dir_face >= dot_corrected_dir_face {
-            // The direction is in the pseudo-normal cone. No correction to apply.
-            return true;
-        }
-
-        // We need to correct.
-        let edge_on_normal = self.face * dot_edge_face;
-        let edge_orthogonal_to_normal = closest_edge - edge_on_normal;
-
-        let dir_on_normal = self.face * dot_dir_face;
-        let dir_orthogonal_to_normal = *dir - dir_on_normal;
-        let Some(unit_dir_orthogonal_to_normal) = dir_orthogonal_to_normal.try_normalize() else {
-            return dot_face >= 0.0;
-        };
-
-        // NOTE: the normalization might be redundant as the result vector is guaranteed to be
-        //       unit sized. Though some rounding errors could throw it off.
-        let adjusted_pseudo_normal =
-            edge_on_normal + unit_dir_orthogonal_to_normal * edge_orthogonal_to_normal.length();
-        let (adjusted_pseudo_normal, length) = adjusted_pseudo_normal.normalize_and_length();
-        if length <= 1.0e-6 {
-            return dot_face >= 0.0;
-        };
-
-        // The reflection of the face normal wrt. the adjusted pseudo-normal gives us the
-        // second end of the pseudo-normal cone the direction is projected on.
-        *dir = adjusted_pseudo_normal * (2.0 * self.face.dot(adjusted_pseudo_normal)) - self.face;
-        dot_face >= 0.0
+        let closest_edge = self.edges[dots.max_position()];
+        crate::shape::pseudo_normals::project_into_cone(self.face, closest_edge, dir)
     }
 }
 
