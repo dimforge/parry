@@ -44,7 +44,7 @@ rkyv = ["dep:rkyv", "glamx/rkyv"]
 bytemuck-serialize = ["bytemuck", "glamx/bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
-enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm"]
+enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm", "glamx/scalar-math"]
 parallel = ["rayon"]
 # Adds `TriMesh:to_obj_file` function.
 wavefront = ["obj"]
