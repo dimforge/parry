@@ -1,3 +1,10 @@
+## Unreleased
+
+### Fixed
+- Fix `enhanced-determinism` not producing cross-platform deterministic results for parry3d/parry3d-f64.
+  The feature now enables `glamx/scalar-math` to disable architecture-specific SIMD (NEON on arm64,
+  SSE2 on x86_64) which caused floating-point non-associativity in Vec3/Vec4/Quat dot products.
+
 ## 0.28.0
 
 ### Breaking changes
