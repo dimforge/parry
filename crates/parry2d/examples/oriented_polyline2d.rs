@@ -15,6 +15,9 @@
 //! (the same path the physics engine uses; this is where pseudo-normals apply, not the simpler
 //! `query::contact`) and draws the actual contact normal and where the solver would push the circle.
 //!
+//! The test circle turns magenta when its center is *inside* a boundary, with a line to the nearest
+//! surface of each. Only the oriented (lower) polylines have an interior, so only they light up.
+//!
 //! ```bash
 //! cargo run -p parry2d --example oriented_polyline2d
 //! ```
@@ -27,9 +30,13 @@ use kiss3d::prelude::*;
 use parry2d::math::{Pose, Rotation};
 use parry2d::query::{
     ContactManifold, ContactManifoldsWorkspace, DefaultQueryDispatcher, PersistentQueryDispatcher,
+    PointQuery,
 };
 use parry2d::shape::{Ball, Polyline, PolylineFlags, Shape};
 use utils2d::{draw_circle, draw_line_2d, lissajous_2d};
+
+/// The test circle's fill when its center is inside an oriented boundary.
+const INSIDE_COLOR: Color = Color::new(1.0, 0.30, 0.80, 1.0);
 
 /// One stop on the guided trace: where to be, how long to take getting there, and how long to dwell.
 struct Waypoint {
@@ -134,6 +141,13 @@ async fn main() {
             &font,
             WHITE,
         );
+        window.draw_text(
+            "magenta line + circle: center is inside that boundary (oriented panel only)",
+            Vec2::new(8.0, 78.0),
+            34.0,
+            &font,
+            INSIDE_COLOR,
+        );
     }
 }
 
@@ -153,7 +167,18 @@ fn draw_panel(
         draw_cones(window, boundary, offset);
     }
 
-    draw_circle(window, local_pos + offset, radius, YELLOW);
+    // Draw a line to the nearest surface of each boundary the center is inside (a point can be inside
+    // several), then tint the circle. Only oriented polylines report an interior.
+    let mut inside_any = false;
+    for boundary in boundaries {
+        let projection = boundary.project_local_point(local_pos, false);
+        if projection.is_inside {
+            inside_any = true;
+            draw_line_2d(window, local_pos + offset, projection.point + offset, INSIDE_COLOR);
+        }
+    }
+    let circle_color = if inside_any { INSIDE_COLOR } else { YELLOW };
+    draw_circle(window, local_pos + offset, radius, circle_color);
 
     for boundary in boundaries {
         draw_resolution(
@@ -170,6 +195,12 @@ fn draw_panel(
     }
 }
 
+/// Whether the polyline is a closed loop (last segment's end meets the first's start).
+fn is_closed(polyline: &Polyline) -> bool {
+    let num = polyline.num_segments();
+    num > 0 && (polyline.segment((num - 1) as u32).b - polyline.segment(0).a).length() < 1.0e-3
+}
+
 /// Builds a trace hugging each segment; at each corner it moves `corner_offset` along the outward
 /// bisector (negative dips inside, positive stays outside) and dwells.
 fn build_trace(boundaries: &[Polyline], radius: f32, corner_offset: f32) -> Vec<Waypoint> {
@@ -184,8 +215,7 @@ fn build_trace(boundaries: &[Polyline], radius: f32, corner_offset: f32) -> Vec<
         }
 
         // Closed loops (the box) wrap last->first; open chains (the peak) don't, so their ends aren't corners.
-        let closed =
-            (boundary.segment((num - 1) as u32).b - boundary.segment(0).a).length() < 1.0e-3;
+        let closed = is_closed(boundary);
 
         let normals: Vec<Vec2> = (0..num as u32)
             .map(|i| {
@@ -293,7 +323,7 @@ fn draw_cones(window: &mut Window, polyline: &Polyline, offset: Vec2) {
         return;
     }
 
-    let closed = (polyline.segment((num - 1) as u32).b - polyline.segment(0).a).length() < 1.0e-3;
+    let closed = is_closed(polyline);
 
     for i in 0..num {
         let next = if i + 1 < num {
@@ -413,7 +443,8 @@ fn print_legend() {
     println!("  white  boundary polylines: a peak (solid below) and a box (solid inside)");
     println!("  gray   reference outward (play-side) normal per segment");
     println!("  blue   valid-normal cone the oriented polyline allows at each corner (lower only)");
-    println!("  yellow test circle");
+    println!("  yellow test circle (center outside every boundary)");
+    println!("  magenta circle + line to each oriented boundary whose interior holds the center (lower only)");
     println!("  red    actual contact normal -- the direction the solver pushes the circle");
     println!("  green  where the circle is pushed out to");
     println!("phases: free roam, then a corner-pressing trace, then an outside-only trace.");

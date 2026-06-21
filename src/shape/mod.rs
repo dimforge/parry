@@ -20,10 +20,14 @@ pub use self::triangle::{Triangle, TriangleOrientation, TrianglePointLocation};
 pub use self::{
     composite_shape::{CompositeShape, CompositeShapeRef, TypedCompositeShape},
     compound::Compound,
-    polyline::{Polyline, PolylineFlags},
+    polyline::Polyline,
     shared_shape::SharedShape,
     voxels::{AxisMask, OctantPattern, VoxelData, VoxelState, VoxelType, Voxels, VoxelsChunkRef},
 };
+
+// `PolylineFlags` is a 2D-only feature.
+#[cfg(all(feature = "dim2", feature = "alloc"))]
+pub use self::polyline::PolylineFlags;
 
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]

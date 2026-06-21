@@ -134,17 +134,32 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
-        CompositeShapeRef(self)
-            .project_local_point(point, Real::MAX, solid)
-            .unwrap_or_else(|| unreachable!())
-            .1
+        let (proj, _) = self.project_local_point_and_get_location(point, solid);
+
+        if solid && proj.is_inside {
+            PointProjection::new(true, point)
+        } else {
+            proj
+        }
     }
 
     #[inline]
+    #[allow(unused_mut)] // Because we need mut in 2D but not in 3D.
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
-        let (seg_id, (proj, feature)) = CompositeShapeRef(self)
+        let (seg_id, (mut proj, feature)) = CompositeShapeRef(self)
             .project_local_point_and_get_feature(point, Real::MAX)
             .unwrap_or_else(|| unreachable!());
+
+        // A point behind the outward pseudo-normal is inside.
+        #[cfg(feature = "dim2")]
+        if let Some(constraints) = self.segment_normal_constraints(seg_id) {
+            let pseudo_normal = match feature {
+                FeatureId::Vertex(i) => constraints.edges[i as usize],
+                _ => constraints.face,
+            };
+            proj.is_inside = (point - proj.point).dot(pseudo_normal) <= 0.0;
+        }
+
         let polyline_feature = self.segment_feature_to_polyline_feature(seg_id, feature);
         (proj, polyline_feature)
     }
@@ -153,6 +168,15 @@ impl PointQuery for Polyline {
 
     #[inline]
     fn contains_local_point(&self, point: Vector) -> bool {
+        // An oriented polyline has a solid interior; reuse the projection's inside test.
+        #[cfg(feature = "dim2")]
+        if self.flags().contains(crate::shape::PolylineFlags::ORIENTED) {
+            return self
+                .project_local_point_and_get_location(point, true)
+                .0
+                .is_inside;
+        }
+
         CompositeShapeRef(self)
             .contains_local_point(point)
             .is_some()
@@ -253,10 +277,35 @@ impl PointQueryWithLocation for Polyline {
         point: Vector,
         solid: bool,
     ) -> (PointProjection, Self::Location) {
-        let (seg_id, (proj, loc)) = CompositeShapeRef(self)
-            .project_local_point_and_get_location(point, Real::MAX, solid)
-            .unwrap();
-        (proj, (seg_id, loc))
+        self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
+            .unwrap()
+    }
+
+    /// Projects a point on `self`, with a maximum projection distance.
+    fn project_local_point_and_get_location_with_max_dist(
+        &self,
+        point: Vector,
+        solid: bool,
+        max_dist: Real,
+    ) -> Option<(PointProjection, Self::Location)> {
+        #[allow(unused_mut)] // Because we need mut in 2D but not in 3D.
+        if let Some((seg_id, (mut proj, loc))) =
+            CompositeShapeRef(self).project_local_point_and_get_location(point, max_dist, solid)
+        {
+            // A point behind the outward pseudo-normal is inside.
+            #[cfg(feature = "dim2")]
+            if let Some(constraints) = self.segment_normal_constraints(seg_id) {
+                let pseudo_normal = match loc {
+                    SegmentPointLocation::OnVertex(i) => constraints.edges[i as usize],
+                    SegmentPointLocation::OnEdge(_) => constraints.face,
+                };
+                proj.is_inside = (point - proj.point).dot(pseudo_normal) <= 0.0;
+            }
+
+            Some((proj, (seg_id, loc)))
+        } else {
+            None
+        }
     }
 }
 

@@ -11,6 +11,7 @@ use alloc::vec::Vec;
 
 use crate::query::details::NormalConstraints;
 
+#[cfg(feature = "dim2")]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -21,6 +22,7 @@ use crate::query::details::NormalConstraints;
 /// Controls how a [`Polyline`] is loaded.
 pub struct PolylineFlags(u8);
 
+#[cfg(feature = "dim2")]
 bitflags::bitflags! {
     impl PolylineFlags: u8 {
         /// If set, the polyline is treated as one-sided: a pseudo-normal is computed at every
@@ -125,7 +127,9 @@ pub struct Polyline {
     indices: Vec<[u32; 2]>,
     /// Per-vertex outward pseudo-normals, present when [`PolylineFlags::ORIENTED`] is set; contact
     /// normals are then clamped to one side so the polyline acts as a one-sided surface.
+    #[cfg(feature = "dim2")]
     pseudo_normals: Option<Vec<Vector>>,
+    #[cfg(feature = "dim2")]
     flags: PolylineFlags,
 }
 
@@ -194,7 +198,28 @@ impl Polyline {
     /// # }
     /// ```
     pub fn new(vertices: Vec<Vector>, indices: Option<Vec<[u32; 2]>>) -> Self {
-        Self::with_flags(vertices, indices, PolylineFlags::empty())
+        // Index from 1 so empty input produces no segments instead of underflowing on `len - 1`.
+        let indices =
+            indices.unwrap_or_else(|| (1..vertices.len() as u32).map(|i| [i - 1, i]).collect());
+        let leaves = indices.iter().enumerate().map(|(i, idx)| {
+            let aabb =
+                Segment::new(vertices[idx[0] as usize], vertices[idx[1] as usize]).local_aabb();
+            (i, aabb)
+        });
+
+        // NOTE: we apply no dilation factor because we won't
+        // update this tree dynamically.
+        let bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves);
+
+        Self {
+            bvh,
+            vertices,
+            indices,
+            #[cfg(feature = "dim2")]
+            pseudo_normals: None,
+            #[cfg(feature = "dim2")]
+            flags: PolylineFlags::empty(),
+        }
     }
 
     /// Creates a new polyline with the given [`PolylineFlags`] controlling its optional associated
@@ -222,37 +247,19 @@ impl Polyline {
     /// assert!(bottom.face.abs_diff_eq(Vector::new(0.0, -1.0), 1.0e-5));
     /// # }
     /// ```
+    #[cfg(feature = "dim2")]
     pub fn with_flags(
         vertices: Vec<Vector>,
         indices: Option<Vec<[u32; 2]>>,
         flags: PolylineFlags,
     ) -> Self {
-        // Index from 1 so empty input produces no segments instead of underflowing on `len - 1`.
-        let indices =
-            indices.unwrap_or_else(|| (1..vertices.len() as u32).map(|i| [i - 1, i]).collect());
-        let leaves = indices.iter().enumerate().map(|(i, idx)| {
-            let aabb =
-                Segment::new(vertices[idx[0] as usize], vertices[idx[1] as usize]).local_aabb();
-            (i, aabb)
-        });
-
-        // NOTE: we apply no dilation factor because we won't
-        // update this tree dynamically.
-        let bvh = Bvh::from_iter(BvhBuildStrategy::Binned, leaves);
-
-        let mut result = Self {
-            bvh,
-            vertices,
-            indices,
-            pseudo_normals: None,
-            flags: PolylineFlags::empty(),
-        };
-        // Regenerate the pseudo_normals (if needed)
+        let mut result = Self::new(vertices, indices);
         result.set_flags(flags);
         result
     }
 
     /// Sets the [`PolylineFlags`], computing or discarding the polyline's optional associated data.
+    #[cfg(feature = "dim2")]
     pub fn set_flags(&mut self, flags: PolylineFlags) {
         self.flags = flags;
 
@@ -264,6 +271,7 @@ impl Polyline {
     }
 
     /// The [`PolylineFlags`] controlling this polyline's optional associated data.
+    #[cfg(feature = "dim2")]
     pub fn flags(&self) -> PolylineFlags {
         self.flags
     }
@@ -292,11 +300,6 @@ impl Polyline {
 
         self.pseudo_normals = Some(vertex_normals);
     }
-
-    /// Pseudo-normals are a 2D-only feature; in 3D this is a no-op. 3D stub so
-    /// `set_flags`/`scaled`/`reverse` compile; mirrors `TriMesh`'s dim2 stub.
-    #[cfg(feature = "dim3")]
-    fn compute_pseudo_normals(&mut self) {}
 
     /// Returns the [`SegmentPseudoNormals`] for the segment with index `i`, or `None` unless this
     /// polyline was built with [`PolylineFlags::ORIENTED`].
@@ -731,16 +734,28 @@ impl Polyline {
         self.vertices.iter_mut().for_each(|pt| *pt *= scale);
         let mut bvh = self.bvh.clone();
         bvh.scale(scale);
-        let mut result = Self {
-            bvh,
-            vertices: self.vertices,
-            indices: self.indices,
-            pseudo_normals: None,
-            flags: PolylineFlags::empty(),
-        };
-        // Regenerate the pseudo_normals (if needed)
-        result.set_flags(self.flags);
-        result
+
+        #[cfg(feature = "dim2")]
+        {
+            let mut result = Self {
+                bvh,
+                vertices: self.vertices,
+                indices: self.indices,
+                pseudo_normals: None,
+                flags: PolylineFlags::empty(),
+            };
+            // Recompute the pseudo-normals from the scaled geometry.
+            result.set_flags(self.flags);
+            result
+        }
+        #[cfg(feature = "dim3")]
+        {
+            Self {
+                bvh,
+                vertices: self.vertices,
+                indices: self.indices,
+            }
+        }
     }
 
     /// Reverses the orientation of this polyline.
@@ -803,6 +818,7 @@ impl Polyline {
         self.bvh = bvh;
 
         // Reversing flips the winding, so recompute the outward side.
+        #[cfg(feature = "dim2")]
         if self.flags.contains(PolylineFlags::ORIENTED) {
             self.compute_pseudo_normals();
         }
@@ -1001,7 +1017,7 @@ mod pseudo_normal_tests {
     use crate::shape::{Polyline, PolylineFlags};
 
     fn ccw_square() -> Polyline {
-        // CCW unit square: solid inside, outward away from the centre.
+        // CCW unit square: solid inside, outward away from the center.
         let vertices = vec![
             Vector::new(-1.0, -1.0),
             Vector::new(1.0, -1.0),
@@ -1030,7 +1046,7 @@ mod pseudo_normal_tests {
                 assert!((edge.length() - 1.0).abs() < 1.0e-5);
             }
 
-            // The square is centred on the origin, so a midpoint doubles as its outward direction.
+            // The square is centered on the origin, so a midpoint doubles as its outward direction.
             let midpoint = (segment.a + segment.b) * 0.5;
             assert!(constraints.face.dot(midpoint) > 0.0);
         }
@@ -1051,5 +1067,59 @@ mod pseudo_normal_tests {
         // Auto-generated indices must not underflow `len - 1` on 0- or 1-vertex input.
         assert_eq!(Polyline::new(vec![], None).num_segments(), 0);
         assert_eq!(Polyline::new(vec![Vector::ZERO], None).num_segments(), 0);
+    }
+
+    #[test]
+    fn oriented_point_query_treats_interior_as_inside() {
+        use crate::query::{PointQuery, PointQueryWithLocation};
+
+        let mut polyline = ccw_square();
+        polyline.set_flags(PolylineFlags::ORIENTED);
+        let inside = Vector::new(0.25, -0.5);
+
+        // Solid: an inside point is its own projection.
+        let solid = polyline.project_local_point(inside, true);
+        assert!(solid.is_inside);
+        assert!(solid.point.abs_diff_eq(inside, 1.0e-5));
+
+        // Non-solid: still inside, but projected to the boundary.
+        let hollow = polyline.project_local_point(inside, false);
+        assert!(hollow.is_inside);
+        assert!(!hollow.point.abs_diff_eq(inside, 1.0e-5));
+
+        assert!(polyline.contains_local_point(inside));
+        assert!(
+            polyline
+                .project_local_point_and_get_location(inside, false)
+                .0
+                .is_inside
+        );
+        assert!(polyline.project_local_point_and_get_feature(inside).0.is_inside);
+    }
+
+    #[test]
+    fn oriented_point_query_leaves_exterior_outside() {
+        use crate::query::PointQuery;
+
+        let mut polyline = ccw_square();
+        polyline.set_flags(PolylineFlags::ORIENTED);
+        let outside = Vector::new(2.0, 0.0);
+
+        let proj = polyline.project_local_point(outside, true);
+        assert!(!proj.is_inside);
+        assert!(proj.point.abs_diff_eq(Vector::new(1.0, 0.0), 1.0e-5));
+        assert!(!polyline.contains_local_point(outside));
+    }
+
+    #[test]
+    fn unoriented_polyline_has_no_interior() {
+        use crate::query::PointQuery;
+
+        // Unoriented: a hollow wireframe with no interior.
+        let polyline = ccw_square();
+        let center = Vector::ZERO;
+
+        assert!(!polyline.project_local_point(center, true).is_inside);
+        assert!(!polyline.contains_local_point(center));
     }
 }
