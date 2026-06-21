@@ -174,7 +174,12 @@ fn draw_panel(
         let projection = boundary.project_local_point(local_pos, false);
         if projection.is_inside {
             inside_any = true;
-            draw_line_2d(window, local_pos + offset, projection.point + offset, INSIDE_COLOR);
+            draw_line_2d(
+                window,
+                local_pos + offset,
+                projection.point + offset,
+                INSIDE_COLOR,
+            );
         }
     }
     let circle_color = if inside_any { INSIDE_COLOR } else { YELLOW };

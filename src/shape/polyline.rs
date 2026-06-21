@@ -1094,7 +1094,12 @@ mod pseudo_normal_tests {
                 .0
                 .is_inside
         );
-        assert!(polyline.project_local_point_and_get_feature(inside).0.is_inside);
+        assert!(
+            polyline
+                .project_local_point_and_get_feature(inside)
+                .0
+                .is_inside
+        );
     }
 
     #[test]
