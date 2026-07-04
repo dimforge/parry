@@ -25,6 +25,7 @@ EXAMPLES_2D=(
     aabb2d
     bounding_sphere2d
     convex_hull2d
+    oriented_polyline2d
     project_point2d
     point_in_poly2d
     polygons_intersection2d

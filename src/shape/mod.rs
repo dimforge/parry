@@ -25,6 +25,10 @@ pub use self::{
     voxels::{AxisMask, OctantPattern, VoxelData, VoxelState, VoxelType, Voxels, VoxelsChunkRef},
 };
 
+// `PolylineFlags` is a 2D-only feature.
+#[cfg(all(feature = "dim2", feature = "alloc"))]
+pub use self::polyline::PolylineFlags;
+
 #[cfg(feature = "dim2")]
 #[cfg(feature = "alloc")]
 pub use self::convex_polygon::ConvexPolygon;
@@ -46,6 +50,7 @@ pub use self::cylinder::Cylinder;
 pub use self::heightfield3::*;
 #[cfg(feature = "dim3")]
 pub use self::polygonal_feature3d::PolygonalFeature;
+pub use self::segment_pseudo_normals::SegmentPseudoNormals;
 #[cfg(feature = "dim3")]
 pub use self::tetrahedron::{Tetrahedron, TetrahedronPointLocation};
 pub use self::triangle_pseudo_normals::TrianglePseudoNormals;
@@ -120,6 +125,9 @@ pub(crate) mod trimesh;
 mod feature_id;
 #[cfg(feature = "dim2")]
 mod polygonal_feature2d;
+#[cfg(feature = "alloc")]
+mod pseudo_normals;
+mod segment_pseudo_normals;
 #[cfg(feature = "alloc")]
 mod shared_shape;
 mod triangle_pseudo_normals;
