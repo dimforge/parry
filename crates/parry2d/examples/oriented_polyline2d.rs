@@ -128,14 +128,14 @@ async fn main() {
         );
 
         window.draw_text(
-            "upper: double-sided polyline (the bug)",
+            "upper: double-sided polyline (unoriented)",
             Vec2::new(8.0, 6.0),
             34.0,
             &font,
             WHITE,
         );
         window.draw_text(
-            "lower: oriented polyline (fixed)",
+            "lower: oriented polyline (with pseudo-normals)",
             Vec2::new(8.0, 42.0),
             34.0,
             &font,

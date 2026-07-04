@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.28.0"
+version = "0.29.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 documentation = "https://parry.rs/docs"
 homepage = "https://parry.rs"
@@ -70,7 +70,7 @@ encase = "0.12"
 oorandom = "11"
 ptree = "0.4.0"
 rand = "0.10"
-kiss3d = "0.42"
+kiss3d = "0.44"
 rand_isaac = "0.5"
 web-time = "1"
 

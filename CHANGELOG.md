@@ -1,16 +1,22 @@
-## Unreleased
+## 0.29.0
+
+### Breaking changes
+
+- The `<Polyline as TypedCompositeShape>::PartNormalConstraints` is now `SegmentPseudoNormals` instead of `()`.
 
 ### Fixed
+
 - Fix `enhanced-determinism` not producing cross-platform deterministic results for parry3d/parry3d-f64.
   The feature now enables `glamx/scalar-math` to disable architecture-specific SIMD (NEON on arm64,
   SSE2 on x86_64) which caused floating-point non-associativity in Vec3/Vec4/Quat dot products.
 - Oriented (one-sided) 2D polylines ([#254](https://github.com/dimforge/parry/issues/254)). Build a `Polyline` with
-`PolylineFlags::ORIENTED` via `Polyline::with_flags`, or toggle it with `Polyline::set_flags`, to clamp contact normals
-to the outward side. This removes the spurious sideways push a body gets at a convex corner of a thin double-sided
-polyline. A single 2D flag covers what `TriMesh` splits across `TriMeshFlags::ORIENTED` (assume an outward orientation
-and compute pseudo-normals) and `TriMeshFlags::FIX_INTERNAL_EDGES` (use them to clamp contact normals). Also adds
-`Polyline::flags`, `Polyline::segment_normal_constraints`, and the `PolylineFlags` / `SegmentPseudoNormals` types.
-([#425](https://github.com/dimforge/parry/pull/425))
+  `PolylineFlags::ORIENTED` via `Polyline::with_flags`, or toggle it with `Polyline::set_flags`, to clamp contact normals
+  to the outward side. This removes the spurious sideways push a body gets at a convex corner of a thin double-sided
+  polyline. A single 2D flag covers what `TriMesh` splits across `TriMeshFlags::ORIENTED` (assume an outward orientation
+  and compute pseudo-normals) and `TriMeshFlags::FIX_INTERNAL_EDGES` (use them to clamp contact normals). Also adds
+  `Polyline::flags`, `Polyline::segment_normal_constraints`, and the `PolylineFlags` / `SegmentPseudoNormals` types.
+  ([#425](https://github.com/dimforge/parry/pull/425))
+
 ## 0.28.0
 
 ### Breaking changes
