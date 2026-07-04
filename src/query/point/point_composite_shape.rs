@@ -134,13 +134,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
 impl PointQuery for Polyline {
     #[inline]
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
-        let (proj, _) = self.project_local_point_and_get_location(point, solid);
-
-        if solid && proj.is_inside {
-            PointProjection::new(true, point)
-        } else {
-            proj
-        }
+        self.project_local_point_and_get_location(point, solid).0
     }
 
     #[inline]
@@ -300,6 +294,10 @@ impl PointQueryWithLocation for Polyline {
                     SegmentPointLocation::OnEdge(_) => constraints.face,
                 };
                 proj.is_inside = (point - proj.point).dot(pseudo_normal) <= 0.0;
+
+                if proj.is_inside && solid {
+                    proj.point = point;
+                }
             }
 
             Some((proj, (seg_id, loc)))
