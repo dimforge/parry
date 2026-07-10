@@ -59,3 +59,64 @@ fn ball_cuboid_toi() {
     ));
     assert_eq!(toi_wont_touch, None);
 }
+
+#[test]
+fn shape_cast_toi_accuracy_does_not_scale_with_shape_extent() {
+    const BALL_RADIUS: Real = 0.5166;
+    const MAX_ERROR: Real = 1.0e-4; // 0.1 mm.
+
+    let ball = Ball::new(BALL_RADIUS);
+    let direction = -Vector::Y;
+    let mut toi_errors = Vec::new();
+
+    for half_extent in [5.0, 50.0, 500.0] {
+        let ground = Cuboid::new(Vector::new(half_extent, 0.5, half_extent));
+        let ground_pose = Pose::translation(0.0, -0.5, 0.0);
+        let mut max_toi_error: Real = 0.0;
+        let mut max_witness_error: Real = 0.0;
+
+        // Sweep sub-millimetre start offsets at several lateral positions. This mirrors
+        // suspension probes near their resting pose while exercising large support points.
+        for i in 0..200 {
+            let y = 1.177 + i as Real * 5.0e-5;
+            for (x, z) in [(1.4, 2.8), (-1.4, -0.4), (1.4, -2.0), (-1.4, 2.0)] {
+                let ball_pose = Pose::translation(x, y, z);
+                let hit = query::cast_shapes(
+                    &ground_pose,
+                    Vector::ZERO,
+                    &ground,
+                    &ball_pose,
+                    direction,
+                    &ball,
+                    ShapeCastOptions::with_max_time_of_impact(2.0),
+                )
+                .unwrap()
+                .expect("the downward cast should hit the cuboid");
+
+                let expected_toi = y - BALL_RADIUS;
+                max_toi_error = max_toi_error.max((hit.time_of_impact - expected_toi).abs());
+
+                let witness1 = ground_pose.transform_point(hit.witness1);
+                max_witness_error = max_witness_error.max(witness1.y.abs());
+            }
+        }
+
+        assert!(
+            max_witness_error <= MAX_ERROR,
+            "shape-cast witness error {max_witness_error} exceeded {MAX_ERROR} for half-extent {half_extent}",
+        );
+        println!(
+            "half-extent {half_extent}: max TOI error = {} mm, max witness error = {} mm",
+            max_toi_error * 1000.0,
+            max_witness_error * 1000.0,
+        );
+        toi_errors.push((half_extent, max_toi_error));
+    }
+
+    for (half_extent, max_toi_error) in toi_errors {
+        assert!(
+            max_toi_error <= MAX_ERROR,
+            "shape-cast TOI error {max_toi_error} exceeded {MAX_ERROR} for half-extent {half_extent}",
+        );
+    }
+}
