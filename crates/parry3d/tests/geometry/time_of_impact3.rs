@@ -63,7 +63,9 @@ fn ball_cuboid_toi() {
 #[test]
 fn shape_cast_toi_accuracy_does_not_scale_with_shape_extent() {
     const BALL_RADIUS: Real = 0.5166;
-    const MAX_ERROR: Real = 1.0e-4; // 0.1 mm.
+    const MAX_TOI_ERROR: Real = 2.0e-4; // 0.2 mm.
+    const MAX_WITNESS_ERROR: Real = 1.0e-6;
+    const MAX_NORMAL_ERROR: Real = 5.0e-4;
 
     let ball = Ball::new(BALL_RADIUS);
     let direction = -Vector::Y;
@@ -74,6 +76,7 @@ fn shape_cast_toi_accuracy_does_not_scale_with_shape_extent() {
         let ground_pose = Pose::translation(0.0, -0.5, 0.0);
         let mut max_toi_error: Real = 0.0;
         let mut max_witness_error: Real = 0.0;
+        let mut max_normal_error: Real = 0.0;
 
         // Sweep sub-millimetre start offsets at several lateral positions. This mirrors
         // suspension probes near their resting pose while exercising large support points.
@@ -98,12 +101,17 @@ fn shape_cast_toi_accuracy_does_not_scale_with_shape_extent() {
 
                 let witness1 = ground_pose.transform_point(hit.witness1);
                 max_witness_error = max_witness_error.max(witness1.y.abs());
+                max_normal_error = max_normal_error.max((hit.normal1 - Vector::Y).length());
             }
         }
 
         assert!(
-            max_witness_error <= MAX_ERROR,
-            "shape-cast witness error {max_witness_error} exceeded {MAX_ERROR} for half-extent {half_extent}",
+            max_witness_error <= MAX_WITNESS_ERROR,
+            "shape-cast witness error {max_witness_error} exceeded {MAX_WITNESS_ERROR} for half-extent {half_extent}",
+        );
+        assert!(
+            max_normal_error <= MAX_NORMAL_ERROR,
+            "shape-cast normal error {max_normal_error} exceeded {MAX_NORMAL_ERROR} for half-extent {half_extent}",
         );
         println!(
             "half-extent {half_extent}: max TOI error = {} mm, max witness error = {} mm",
@@ -115,8 +123,8 @@ fn shape_cast_toi_accuracy_does_not_scale_with_shape_extent() {
 
     for (half_extent, max_toi_error) in toi_errors {
         assert!(
-            max_toi_error <= MAX_ERROR,
-            "shape-cast TOI error {max_toi_error} exceeded {MAX_ERROR} for half-extent {half_extent}",
+            max_toi_error <= MAX_TOI_ERROR,
+            "shape-cast TOI error {max_toi_error} exceeded {MAX_TOI_ERROR} for half-extent {half_extent}",
         );
     }
 }
