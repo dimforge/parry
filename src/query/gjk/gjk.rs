@@ -710,7 +710,8 @@ where
         }
 
         let support_point = if max_bound >= old_max_bound {
-            // Upper bounds inconsistencies. Consider the projection as a valid support point.
+            // Upper bounds inconsistencies. Keep the projection as a valid support point
+            // for the last-chance path below.
             last_chance = true;
             CsoPoint::single_point(proj + curr_ray.origin)
         } else {
@@ -718,7 +719,19 @@ where
         };
 
         if last_chance && ltoi > 0.0 {
-            // last_chance && ltoi > 0.0 && (support_point.point - curr_ray.origin).dot(ldir) >= 0.0 {
+            // The simplex witnesses remain precise even when large support coordinates
+            // prevent the upper bound from decreasing. Use their separation along the
+            // cast direction to refine the lower bound before accepting the impact.
+            let (witness1, witness2) = result(simplex, simplex.dimension() == DIM);
+            let witness_ltoi = (witness1 - witness2 - ray.origin).dot(curr_ray.dir);
+            if witness_ltoi.is_finite() && witness_ltoi > ltoi {
+                ltoi = witness_ltoi;
+
+                if ltoi / ray_length > max_time_of_impact {
+                    return None;
+                }
+            }
+
             return Some((ltoi / ray_length, ldir));
         }
 
