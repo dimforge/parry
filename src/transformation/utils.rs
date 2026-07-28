@@ -646,13 +646,14 @@ pub fn push_arc_and_idx(
     out_idx: &mut Vec<[u32; 2]>,
 ) {
     let base = out_vtx.len() as u32;
-    push_arc(
-        center,
-        out_vtx[start as usize],
-        out_vtx[end as usize],
-        nsubdivs,
-        out_vtx,
-    );
+    let start_point = out_vtx[start as usize];
+    let end_point = out_vtx[end as usize];
+    // This check is already performed inside of push_arc
+    // but cant be performed inside of push_arc_idx because it doesnt have access to the actual vertices
+    if start_point == center || end_point == center {
+        return;
+    }
+    push_arc(center, start_point, end_point, nsubdivs, out_vtx);
     push_arc_idx(start, base..base + nsubdivs - 1, end, out_idx);
 }
 
