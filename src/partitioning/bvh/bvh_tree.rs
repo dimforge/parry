@@ -144,7 +144,7 @@ pub struct BvhWorkspace {
 }
 
 /// A piece of data packing state flags as well as leaf counts for a BVH tree node.
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "rkyv",
@@ -184,6 +184,17 @@ impl BvhNodeData {
     #[inline(always)]
     pub(super) fn set_change_pending(&mut self) {
         self.0 |= CHANGE_PENDING << 30;
+    }
+
+    /// Collapses any change flag (pending or resolved) into the resolved `CHANGED` state.
+    ///
+    /// Used by partial refitting on internal nodes: a pending flag on an internal node
+    /// would otherwise read as "unchanged" (`is_changed() == false`) during traversals.
+    #[inline(always)]
+    pub(super) fn normalize_change_flag(&mut self) {
+        if self.0 >> 30 != 0 {
+            *self = Self((self.0 & 0x3fff_ffff) | (CHANGED << 30));
+        }
     }
 
     #[inline(always)]
@@ -441,7 +452,7 @@ static_assertions::assert_eq_size!(BvhNode, BvhNodeSimd);
 ///
 /// - `BvhNodeWide` - Pair of nodes stored together
 /// - [`Bvh`] - The main BVH structure
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
 #[cfg_attr(all(feature = "f32", feature = "dim3"), repr(align(16)))]
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
@@ -604,12 +615,40 @@ impl BvhNode {
 
     #[inline(always)]
     pub(super) fn merged(&self, other: &Self, children: u32) -> Self {
-        // TODO PERF: simd optimizations?
-        Self {
-            mins: self.mins.min(other.mins),
-            children,
-            maxs: self.maxs.max(other.maxs),
-            data: self.data.merged(other.data),
+        #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+        {
+            // Each node is two 16-byte rows: (mins, children) and (maxs, data).
+            // Min/max whole rows in one SIMD op each (the packed integer lanes
+            // produce garbage that is overwritten right after). This is the hot
+            // op of the refit passes, which rebuild every internal node.
+            let a = self.as_simd();
+            let b = other.as_simd();
+            let data = self.data.merged(other.data);
+            let mut out = Self {
+                mins: Vector::ZERO,
+                children,
+                maxs: Vector::ZERO,
+                data,
+            };
+            {
+                let out_simd: &mut BvhNodeSimd = unsafe { core::mem::transmute(&mut out) };
+                out_simd.mins = a.mins.min(b.mins);
+                out_simd.maxs = a.maxs.max(b.maxs);
+            }
+            // Restore the packed lanes clobbered by the row-wide min/max.
+            out.children = children;
+            out.data = data;
+            out
+        }
+
+        #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
+        {
+            Self {
+                mins: self.mins.min(other.mins),
+                children,
+                maxs: self.maxs.max(other.maxs),
+                data: self.data.merged(other.data),
+            }
         }
     }
 
@@ -1758,6 +1797,16 @@ pub struct Bvh {
     // NOTE: this cannot be in the workspace as we need this to survive serialization/deserialization
     //       to maintain determinism.
     pub(super) optimization: BvhIncrementalOptimizationState,
+    // Wide-node slots orphaned by leaf removals, reused by subsequent insertions
+    // so remove/insert cycles don't grow the node array unboundedly between
+    // compacting refits. The slots are zeroed when freed (a stale leaf copy left
+    // in an orphaned slot would be picked up by [`Bvh::rebuild`]'s raw node scan).
+    // Compacting refits and rebuilds (which recreate the node array and drop the
+    // orphaned slots) clear this list.
+    // NOTE: must survive serialization to maintain determinism (the slot reuse
+    //       order affects the tree topology produced by later insertions).
+    #[cfg_attr(feature = "serde-serialize", serde(default))]
+    pub(super) free_wide_nodes: Vec<u32>,
 }
 
 impl Bvh {
@@ -2193,10 +2242,12 @@ impl Bvh {
             parents,
             leaf_node_indices,
             optimization: _,
+            free_wide_nodes,
         } = self;
         nodes.capacity() * size_of::<BvhNodeWide>()
             + parents.capacity() * size_of::<BvhNodeIndex>()
             + leaf_node_indices.capacity() * size_of::<BvhNodeIndex>()
+            + free_wide_nodes.capacity() * size_of::<u32>()
     }
 
     /// Computes the depth of the subtree rooted at the specified node.
@@ -2364,6 +2415,7 @@ impl Bvh {
                 // We deleted the last leaf! Remove the root.
                 self.nodes.clear();
                 self.parents.clear();
+                self.free_wide_nodes.clear();
                 return;
             }
 
@@ -2391,9 +2443,13 @@ impl Bvh {
                     // nodes, which corrupts optimize_incremental.
                     self.nodes.truncate(1);
                     self.parents.truncate(1);
+                    self.free_wide_nodes.clear();
                 } else {
                     // The sibling isn’t a leaf. It becomes the new root at index 0.
-                    self.nodes[0] = self.nodes[self.nodes[sibling].children as usize];
+                    let old_sibling_slot = self.nodes[sibling].children;
+                    self.nodes[0] = self.nodes[old_sibling_slot as usize];
+                    self.nodes[old_sibling_slot as usize] = BvhNodeWide::zeros();
+                    self.free_wide_nodes.push(old_sibling_slot);
                     // Both parent pointers need to be updated since both nodes moved to the root.
                     let new_root = &mut self.nodes[0];
                     if new_root.left.is_leaf() {
@@ -2422,6 +2478,12 @@ impl Bvh {
                 }
 
                 self.nodes[parent] = *sibling;
+
+                // The removed leaf's wide node is now unreachable: zero it (so raw
+                // node scans like `Bvh::rebuild` can't pick up its stale leaf
+                // copies) and recycle its slot for later insertions.
+                self.nodes[wide_node_index] = BvhNodeWide::zeros();
+                self.free_wide_nodes.push(wide_node_index as u32);
 
                 // TODO: we could use that propagation as an opportunity to
                 //       apply some rotations?

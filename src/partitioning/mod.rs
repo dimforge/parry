@@ -2,8 +2,8 @@
 
 #[cfg(feature = "alloc")]
 pub use self::bvh::{
-    Bvh, BvhBuildStrategy, BvhLeafCost, BvhNode, BvhNodeIndex, BvhNodeWide, BvhWorkspace,
-    TraversalAction,
+    Bvh, BvhBuildStrategy, BvhLeafCost, BvhLeafUpdateStatus, BvhNode, BvhNodeIndex, BvhNodeWide,
+    BvhWorkspace, TraversalAction,
 };
 
 #[cfg(feature = "alloc")]

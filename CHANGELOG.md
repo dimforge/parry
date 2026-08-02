@@ -1,3 +1,11 @@
+## Unreleased
+
+### Added
+
+- `Bvh` gains incremental and parallel update APIs: `refit_partial`, flag-preserving
+  `refit_without_resolve` variants, `refit_parallel`, parallel BVTT traversal, and batched
+  parallel leaf updates.
+
 ## 0.29.0
 
 ### Breaking changes

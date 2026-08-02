@@ -1,9 +1,26 @@
-use super::bvh_tree::{BvhNodeIndex, BvhNodeWide};
 use super::BvhNode;
+use super::bvh_tree::{BvhNodeIndex, BvhNodeWide};
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Real, Vector};
 use crate::partitioning::Bvh;
 use alloc::vec;
+#[cfg(feature = "parallel")]
+use alloc::vec::Vec;
+
+/// Result of a leaf update through [`Bvh::insert_or_update_partially`] or
+/// [`Bvh::insert_with_change_detection`].
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum BvhLeafUpdateStatus {
+    /// The leaf already existed and its stored (fattened) AABB still contains the new
+    /// AABB: the tree was left completely untouched.
+    Unchanged,
+    /// The leaf already existed and its stored AABB was rewritten in place (with
+    /// [`Bvh::insert_or_update_partially`], its ancestors might no longer enclose it
+    /// until the next refit).
+    UpdatedInPlace,
+    /// The leaf didn't exist yet and was inserted (the tree topology changed).
+    Inserted,
+}
 
 impl Bvh {
     /// Inserts a new leaf into the BVH or updates an existing one.
@@ -124,7 +141,7 @@ impl Bvh {
     /// [`refit`]: Self::refit
     /// [`optimize_incremental`]: Self::optimize_incremental
     pub fn insert(&mut self, aabb: Aabb, leaf_index: u32) {
-        self.insert_with_change_detection(aabb, leaf_index, 0.0)
+        let _ = self.insert_with_change_detection(aabb, leaf_index, 0.0);
     }
 
     /// Inserts a leaf into this BVH, or updates it if already exists.
@@ -137,7 +154,7 @@ impl Bvh {
         aabb: Aabb,
         leaf_index: u32,
         change_detection_margin: Real,
-    ) {
+    ) -> BvhLeafUpdateStatus {
         if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
             let node = &mut self.nodes[*leaf];
 
@@ -148,7 +165,7 @@ impl Bvh {
                     node.data.set_change_pending();
                 } else {
                     // No change detected, no propagation needed.
-                    return;
+                    return BvhLeafUpdateStatus::Unchanged;
                 }
             } else {
                 node.mins = aabb.mins;
@@ -170,7 +187,7 @@ impl Bvh {
             let wide_node_id = leaf.decompose().0;
             if wide_node_id == 0 {
                 // Already at the root, no propagation possible.
-                return;
+                return BvhLeafUpdateStatus::UpdatedInPlace;
             }
 
             let mut parent = self.parents[wide_node_id];
@@ -191,8 +208,11 @@ impl Bvh {
 
                 parent = self.parents[wide_node_id];
             }
+
+            BvhLeafUpdateStatus::UpdatedInPlace
         } else {
             self.insert_new_unchecked(aabb, leaf_index);
+            BvhLeafUpdateStatus::Inserted
         }
     }
 
@@ -211,7 +231,7 @@ impl Bvh {
         aabb: Aabb,
         leaf_index: u32,
         change_detection_margin: Real,
-    ) {
+    ) -> BvhLeafUpdateStatus {
         if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
             let node = &mut self.nodes[*leaf];
 
@@ -220,13 +240,99 @@ impl Bvh {
                     node.mins = aabb.mins - Vector::splat(change_detection_margin);
                     node.maxs = aabb.maxs + Vector::splat(change_detection_margin);
                     node.data.set_change_pending();
+                    BvhLeafUpdateStatus::UpdatedInPlace
+                } else {
+                    // The new AABB is still inside the leaf's fat AABB: the tree
+                    // is left untouched.
+                    BvhLeafUpdateStatus::Unchanged
                 }
             } else {
                 node.mins = aabb.mins;
                 node.maxs = aabb.maxs;
+                BvhLeafUpdateStatus::UpdatedInPlace
             }
         } else {
             self.insert_new_unchecked(aabb, leaf_index);
+            BvhLeafUpdateStatus::Inserted
+        }
+    }
+
+    /// Batch, parallel version of [`Self::insert_or_update_partially`].
+    ///
+    /// Applies every update whose leaf already exists in parallel (existing
+    /// leaves are updated in place: distinct leaf indices map to distinct
+    /// [`BvhNode`]s, so the writes are disjoint — two sibling leaves share a
+    /// wide node but occupy its two disjoint halves), then inserts the new
+    /// leaves sequentially. `statuses` is filled with one entry per update, in
+    /// order.
+    ///
+    /// Like [`Self::insert_or_update_partially`], the ascendants of updated
+    /// leaves are **not** updated: the tree must be refitted (e.g.
+    /// [`Bvh::refit`]) before the next query for its results to be exact.
+    ///
+    /// # Panics
+    ///
+    /// May panic (or leave arbitrary leaf AABBs, but no memory unsafety beyond
+    /// a torn AABB) if the same leaf index appears twice in `updates`.
+    #[cfg(feature = "parallel")]
+    pub fn insert_or_update_batch_partially_parallel(
+        &mut self,
+        updates: &[(Aabb, u32, Real)],
+        statuses: &mut Vec<BvhLeafUpdateStatus>,
+    ) {
+        use rayon::prelude::*;
+
+        statuses.clear();
+        statuses.resize(updates.len(), BvhLeafUpdateStatus::Unchanged);
+
+        // Phase 1 (parallel): in-place updates of the existing leaves.
+        struct NodesPtr(*mut BvhNodeWide);
+        unsafe impl Sync for NodesPtr {}
+        let nodes = &NodesPtr(self.nodes.0.as_mut_ptr());
+        let leaf_node_indices = &self.leaf_node_indices;
+
+        updates.par_iter().zip(statuses.par_iter_mut()).for_each(
+            move |((aabb, leaf_index, change_detection_margin), status)| {
+                let Some(leaf) = leaf_node_indices.get(*leaf_index as usize) else {
+                    // Structural change: deferred to the sequential phase below.
+                    *status = BvhLeafUpdateStatus::Inserted;
+                    return;
+                };
+                let (wide_id, is_right) = leaf.decompose();
+                // SAFETY: distinct leaf indices map to distinct (wide, side)
+                //         slots, i.e. disjoint `BvhNode`s; `leaf_node_indices`
+                //         is only read during this phase.
+                let wide = unsafe { &mut *nodes.0.add(wide_id) };
+                let node = if is_right {
+                    &mut wide.right
+                } else {
+                    &mut wide.left
+                };
+
+                if *change_detection_margin > 0.0 {
+                    if !node.contains_aabb(aabb) {
+                        node.mins = aabb.mins - Vector::splat(*change_detection_margin);
+                        node.maxs = aabb.maxs + Vector::splat(*change_detection_margin);
+                        node.data.set_change_pending();
+                        *status = BvhLeafUpdateStatus::UpdatedInPlace;
+                    } else {
+                        // The new AABB is still inside the leaf's fat AABB: the
+                        // tree is left untouched.
+                        *status = BvhLeafUpdateStatus::Unchanged;
+                    }
+                } else {
+                    node.mins = aabb.mins;
+                    node.maxs = aabb.maxs;
+                    *status = BvhLeafUpdateStatus::UpdatedInPlace;
+                }
+            },
+        );
+
+        // Phase 2 (sequential): structural insertions.
+        for (update, status) in updates.iter().zip(statuses.iter()) {
+            if *status == BvhLeafUpdateStatus::Inserted {
+                self.insert_new_unchecked(update.0, update.1);
+            }
         }
     }
 
@@ -302,13 +408,11 @@ impl Bvh {
                 // We create a new wide leaf containing the current and new leaves and
                 // attach it to `left`.
                 if left.is_leaf() {
-                    let new_leaf_id = self.nodes.len();
                     let wide_node = BvhNodeWide {
                         left: *left,
                         right: BvhNode::leaf(aabb, leaf_index),
                     };
-                    self.nodes.push(wide_node);
-                    self.parents.push(BvhNodeIndex::left(curr_id));
+                    let new_leaf_id = self.alloc_wide_node(wide_node, BvhNodeIndex::left(curr_id));
 
                     let left = &mut self.nodes[curr_id as usize].left;
                     self.leaf_node_indices[left.children as usize] =
@@ -333,13 +437,11 @@ impl Bvh {
                 // We create a new wide leaf containing the current and new leaves and
                 // attach it to `right`.
                 if right.is_leaf() {
-                    let new_leaf_id = self.nodes.len();
                     let new_node = BvhNodeWide {
                         left: BvhNode::leaf(aabb, leaf_index),
                         right: *right,
                     };
-                    self.nodes.push(new_node);
-                    self.parents.push(BvhNodeIndex::right(curr_id));
+                    let new_leaf_id = self.alloc_wide_node(new_node, BvhNodeIndex::right(curr_id));
 
                     let right = &mut self.nodes[curr_id as usize].right;
                     self.leaf_node_indices[leaf_index as usize] =
@@ -366,6 +468,64 @@ impl Bvh {
             while let Some(node) = path_taken.pop() {
                 self.maybe_apply_rotation(node);
             }
+        }
+    }
+
+    /// Allocates a slot for a new wide node, preferring slots orphaned by earlier
+    /// leaf removals over growing the node array.
+    fn alloc_wide_node(&mut self, node: BvhNodeWide, parent: BvhNodeIndex) -> usize {
+        if let Some(free) = self.free_wide_nodes.pop() {
+            self.nodes[free as usize] = node;
+            self.parents[free as usize] = parent;
+            free as usize
+        } else {
+            let id = self.nodes.len();
+            self.nodes.push(node);
+            self.parents.push(parent);
+            id
+        }
+    }
+
+    /// Updates the leaf AABB like [`Self::insert_with_change_detection`], but
+    /// relocates the leaf through a removal + SAH re-insertion whenever its fattened
+    /// AABB must actually change.
+    ///
+    /// Unlike the in-place update of [`Self::insert_with_change_detection`] (which
+    /// keeps the leaf's tree position and only enlarges its ancestors), the
+    /// re-insertion picks a fresh position by SAH descent — including rotations —
+    /// so a stream of such updates keeps the tree quality high on its own, without
+    /// requiring periodic [`Self::optimize_incremental`] passes. The freed wide-node
+    /// slot is recycled by the re-insertion itself, so the node array doesn't grow.
+    ///
+    /// This is the preferred update path when only a small fraction of the leaves
+    /// move (the per-leaf cost is an O(log n) descent instead of O(1)); for bulk
+    /// updates, prefer in-place updates followed by a refit and periodic
+    /// optimization.
+    ///
+    /// Compatible with [`Self::refit_partial`] under the same rules as insertions.
+    pub fn reinsert_or_update_with_change_detection(
+        &mut self,
+        aabb: Aabb,
+        leaf_index: u32,
+        change_detection_margin: Real,
+    ) -> BvhLeafUpdateStatus {
+        if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
+            if self.nodes[*leaf].contains_aabb(&aabb) {
+                return BvhLeafUpdateStatus::Unchanged;
+            }
+
+            self.remove(leaf_index);
+            let fat_aabb = Aabb {
+                mins: aabb.mins - Vector::splat(change_detection_margin),
+                maxs: aabb.maxs + Vector::splat(change_detection_margin),
+            };
+            // The new leaf is created with a pending change flag, exactly like an
+            // in-place update that escaped its previous fattened AABB.
+            self.insert_new_unchecked(fat_aabb, leaf_index);
+            BvhLeafUpdateStatus::UpdatedInPlace
+        } else {
+            self.insert_new_unchecked(aabb, leaf_index);
+            BvhLeafUpdateStatus::Inserted
         }
     }
 

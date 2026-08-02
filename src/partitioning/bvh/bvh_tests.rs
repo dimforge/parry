@@ -279,3 +279,71 @@ fn bvh_remove_to_partial_root_then_optimize() {
     assert_eq!(bvh.parents.len(), 1);
     bvh.assert_well_formed();
 }
+
+#[cfg(feature = "parallel")]
+#[cfg(all(feature = "dim3", feature = "f32"))]
+mod parallel_batch_update {
+    use crate::bounding_volume::Aabb;
+    use crate::math::Vector;
+    use crate::partitioning::{Bvh, BvhLeafUpdateStatus, BvhWorkspace};
+    use alloc::vec::Vec;
+
+    /// The parallel batch leaf update must behave exactly like the sequential
+    /// per-leaf `insert_or_update_partially` calls (statuses and final tree).
+    #[test]
+    fn batch_partial_update_matches_sequential() {
+        let aabb = |i: usize, offset: f32| {
+            Aabb::new(
+                Vector::new(i as f32 + offset, 0.0, 0.0).into(),
+                Vector::new(i as f32 + offset + 1.0, 1.0, 1.0).into(),
+            )
+        };
+
+        let mut seq = Bvh::new();
+        let mut par = Bvh::new();
+        for i in 0..1000 {
+            seq.insert(aabb(i, 0.0), i as u32);
+            par.insert(aabb(i, 0.0), i as u32);
+        }
+        // Fatten every leaf so the batch below exercises the within-margin
+        // (`Unchanged`) path too.
+        for i in 0..1000 {
+            let _ = seq.insert_or_update_partially(aabb(i, 2.5), i as u32, 0.5);
+            let _ = par.insert_or_update_partially(aabb(i, 2.5), i as u32, 0.5);
+        }
+
+        // A mix of: moved-beyond-margin leaves, moved-within-margin leaves, and
+        // brand new leaves.
+        let updates: Vec<(Aabb, u32, f32)> = (0..1500)
+            .map(|i| {
+                let offset = if i % 3 == 0 { 2.51 } else { 5.0 };
+                (aabb(i, offset), i as u32, 0.1)
+            })
+            .collect();
+
+        let seq_statuses: Vec<BvhLeafUpdateStatus> = updates
+            .iter()
+            .map(|(aabb, leaf, margin)| seq.insert_or_update_partially(*aabb, *leaf, *margin))
+            .collect();
+
+        let mut par_statuses = Vec::new();
+        par.insert_or_update_batch_partially_parallel(&updates, &mut par_statuses);
+
+        assert_eq!(seq_statuses, par_statuses);
+        assert!(seq_statuses.contains(&BvhLeafUpdateStatus::Unchanged));
+        assert!(seq_statuses.contains(&BvhLeafUpdateStatus::UpdatedInPlace));
+        assert!(seq_statuses.contains(&BvhLeafUpdateStatus::Inserted));
+
+        let mut w1 = BvhWorkspace::default();
+        let mut w2 = BvhWorkspace::default();
+        seq.refit(&mut w1);
+        par.refit(&mut w2);
+        for i in 0..1500u32 {
+            assert_eq!(
+                seq.leaf_node(i).map(|n| n.aabb()),
+                par.leaf_node(i).map(|n| n.aabb()),
+                "leaf {i} differs between sequential and parallel updates"
+            );
+        }
+    }
+}
