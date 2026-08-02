@@ -1,4 +1,4 @@
-## Unreleased
+## 0.30.0
 
 ### Breaking changes
 
