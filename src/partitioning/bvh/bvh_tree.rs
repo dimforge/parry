@@ -397,16 +397,16 @@ impl BvhNodeWide {
 }
 
 #[repr(C)] // SAFETY: needed to ensure SIMD aabb checks rely on the layout.
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+#[cfg(all(feature = "dim3", feature = "f32"))]
 pub(super) struct BvhNodeSimd {
     mins: glamx::Vec3A,
     maxs: glamx::Vec3A,
 }
 
 // SAFETY: compile-time assertions to ensure we can transmute between `BvhNode` and `BvhNodeSimd`.
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+#[cfg(all(feature = "dim3", feature = "f32"))]
 static_assertions::assert_eq_align!(BvhNode, BvhNodeSimd);
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+#[cfg(all(feature = "dim3", feature = "f32"))]
 static_assertions::assert_eq_size!(BvhNode, BvhNodeSimd);
 
 /// A single node (internal or leaf) of a BVH.
@@ -606,7 +606,7 @@ impl BvhNode {
     }
 
     #[inline(always)]
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    #[cfg(all(feature = "dim3", feature = "f32"))]
     pub(super) fn as_simd(&self) -> &BvhNodeSimd {
         // SAFETY: BvhNode is declared with the alignment
         //         and size of two SimdReal.
@@ -934,8 +934,8 @@ impl BvhNode {
     ///
     /// # Performance
     ///
-    /// When SIMD is enabled (3D, f32, simd-is-enabled feature), this uses vectorized
-    /// comparisons for improved performance.
+    /// In 3D with f32, this uses vectorized comparisons for improved
+    /// performance.
     ///
     /// # Example
     ///
@@ -961,7 +961,7 @@ impl BvhNode {
     /// # See Also
     ///
     /// - [`contains`](Self::contains) - Check full containment
-    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
+    #[cfg(not(all(feature = "dim3", feature = "f32")))]
     pub fn intersects(&self, other: &Self) -> bool {
         self.mins.cmple(other.maxs).all() && self.maxs.cmpge(other.mins).all()
     }
@@ -1007,7 +1007,7 @@ impl BvhNode {
     /// # See Also
     ///
     /// - [`contains`](Self::contains) - Check full containment
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    #[cfg(all(feature = "dim3", feature = "f32"))]
     pub fn intersects(&self, other: &Self) -> bool {
         let simd_self = self.as_simd();
         let simd_other = other.as_simd();
@@ -1029,8 +1029,8 @@ impl BvhNode {
     ///
     /// # Performance
     ///
-    /// When SIMD is enabled (3D, f32, simd-is-enabled feature), this uses vectorized
-    /// comparisons for improved performance.
+    /// In 3D with f32, this uses vectorized comparisons for improved
+    /// performance.
     ///
     /// # Example
     ///
@@ -1055,7 +1055,7 @@ impl BvhNode {
     ///
     /// - [`intersects`](Self::intersects) - Check any overlap
     /// - [`contains_aabb`](Self::contains_aabb) - Contains an `Aabb` directly
-    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
+    #[cfg(not(all(feature = "dim3", feature = "f32")))]
     pub fn contains(&self, other: &Self) -> bool {
         self.mins.cmple(other.mins).all() && self.maxs.cmpge(other.maxs).all()
     }
@@ -1100,7 +1100,7 @@ impl BvhNode {
     ///
     /// - [`intersects`](Self::intersects) - Check any overlap
     /// - [`contains_aabb`](Self::contains_aabb) - Contains an `Aabb` directly
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    #[cfg(all(feature = "dim3", feature = "f32"))]
     pub fn contains(&self, other: &Self) -> bool {
         let simd_self = self.as_simd();
         let simd_other = other.as_simd();
@@ -1193,7 +1193,7 @@ impl BvhNode {
     /// Casts a ray on this AABB, with SIMD optimizations.
     ///
     /// Returns `Real::MAX` if there is no hit.
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    #[cfg(all(feature = "dim3", feature = "f32"))]
     pub(super) fn cast_inv_ray_simd(&self, ray: &super::bvh_queries::SimdInvRay) -> f32 {
         let simd_self = self.as_simd();
         let t1 = (simd_self.mins - ray.origin) * ray.inv_dir;

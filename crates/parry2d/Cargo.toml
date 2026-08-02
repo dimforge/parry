@@ -44,10 +44,8 @@ serde-serialize = [
 ]
 rkyv = ["dep:rkyv", "glamx/rkyv"]
 bytemuck-serialize = ["bytemuck", "glamx/bytemuck"]
-simd-stable = ["simba/wide", "simd-is-enabled"]
-simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
-# Widens SIMD from 4 to 8 lanes (f32 only). Modifier on top of
-# simd-stable/simd-nightly; needs an AVX-enabled target to emit 256-bit code.
+# Widens SIMD from 4 to 8 lanes (f32 only). Needs an AVX-enabled target to
+# emit 256-bit code.
 simd8 = []
 enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm", "glamx/scalar-math"]
 parallel = ["rayon"]
@@ -55,10 +53,6 @@ alloc = ["hashbrown", "smallvec", "downcast-rs", "glamx/approx"]
 spade = ["dep:spade", "alloc"]
 improved_fixed_point_support = []
 encase = [ "dep:encase", "glamx/encase" ]
-
-# Do not enable this feature directly. It is automatically
-# enabled with the "simd-stable" or "simd-nightly" feature.
-simd-is-enabled = []
 
 [lib]
 name = "parry2d"
@@ -72,7 +66,7 @@ downcast-rs = { workspace = true, optional = true }
 num-traits = { workspace = true }
 slab = { workspace = true, optional = true }
 arrayvec = { workspace = true }
-simba = { workspace = true }
+simba = { workspace = true, features = ["wide"] }
 glamx = { workspace = true, features = ["i32"] }
 approx = { workspace = true }
 serde = { workspace = true, optional = true }
@@ -93,7 +87,7 @@ foldhash = { workspace = true }
 encase = { workspace = true, optional = true }
 
 [dev-dependencies]
-simba = { workspace = true }
+simba = { workspace = true, features = ["wide"] }
 oorandom = { workspace = true }
 ptree = { workspace = true }
 rand = { workspace = true }

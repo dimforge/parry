@@ -35,10 +35,8 @@ jobs:
         run: cargo build --verbose -p parry2d;
       - name: Build parry3d
         run: cargo build --verbose -p parry3d;
-      - name: Build parry2d SIMD
-        run: cd crates/parry2d; cargo build --verbose --features simd-stable;
-      - name: Build parry3d SIMD
-        run: cd crates/parry3d; cargo build --verbose --features simd-stable;
+      - name: Build parry3d 8-lanes SIMD
+        run: cd crates/parry3d; cargo build --verbose --features simd8;
       - name: Check serialization
         run: cargo check --features bytemuck-serialize,serde-serialize,rkyv;
       - name: Check enhanced-determinism
