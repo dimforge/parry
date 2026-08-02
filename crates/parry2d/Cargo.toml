@@ -49,7 +49,7 @@ simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
 # Widens SIMD from 4 to 8 lanes (f32 only). Modifier on top of
 # simd-stable/simd-nightly; needs an AVX-enabled target to emit 256-bit code.
 simd8 = []
-enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm"]
+enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm", "glamx/scalar-math"]
 parallel = ["rayon"]
 alloc = ["hashbrown", "smallvec", "downcast-rs", "glamx/approx"]
 spade = ["dep:spade", "alloc"]
