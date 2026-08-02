@@ -3,7 +3,6 @@
 #[doc(inline)]
 pub use crate::bounding_volume::aabb::Aabb;
 
-// #[cfg(feature = "simd-is-enabled")]
 // pub use crate::bounding_volume::simd_aabb::SimdAabb;
 
 #[doc(inline)]
@@ -62,7 +61,6 @@ mod bounding_sphere_utils;
 #[cfg(feature = "alloc")]
 mod bounding_sphere_voxels;
 
-// #[cfg(feature = "simd-is-enabled")]
 // mod simd_aabb;
 
 /// Free functions for some special cases of bounding-volume computation.

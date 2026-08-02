@@ -2,13 +2,11 @@
 
 use crate::math::{Real, Vector2, Vector3};
 
-#[cfg(feature = "simd-is-enabled")]
 use {
     crate::math::{SimdBool, SimdReal},
     simba::simd::SimdValue,
 };
 
-#[cfg(feature = "simd-is-enabled")]
 #[allow(dead_code)]
 /// Conditionally swaps each lanes of `a` with those of `b`.
 ///
@@ -77,7 +75,6 @@ impl WSign<Vector3> for Vector3 {
     }
 }
 
-#[cfg(feature = "simd-is-enabled")]
 impl WSign<SimdReal> for SimdReal {
     fn copy_sign_to(self, to: SimdReal) -> SimdReal {
         use simba::simd::SimdRealField;

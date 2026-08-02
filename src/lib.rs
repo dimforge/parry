@@ -23,29 +23,21 @@ the rust programming language.
 #![cfg_attr(feature = "dim3", doc(html_root_url = "https://docs.rs/parry3d"))]
 #![no_std]
 
-#[cfg(all(
-    feature = "simd-is-enabled",
-    not(feature = "simd-stable"),
-    not(feature = "simd-nightly")
-))]
-std::compile_error!("The `simd-is-enabled` feature should not be enabled explicitly. Please enable the `simd-stable` or the `simd-nightly` feature instead.");
-#[cfg(all(feature = "simd-is-enabled", feature = "enhanced-determinism"))]
-std::compile_error!(
-    "SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled."
+#[cfg(all(feature = "simd8", feature = "enhanced-determinism"))]
+core::compile_error!(
+    "8-lanes SIMD cannot be enabled when the `enhanced-determinism` feature is also enabled because it breaks cross-platform determinism."
 );
 
-#[cfg(feature = "simd-is-enabled")]
 #[allow(unused_macros)]
 macro_rules! array(
     ($callback: expr; SIMD_WIDTH) => {
         {
             #[inline(always)]
             #[allow(dead_code)]
-            fn create_arr<T>(mut callback: impl FnMut(usize) -> T) -> [T; SIMD_WIDTH] {
-                #[cfg(not(feature = "simd-is-enabled"))]
-                return [callback(0usize)];
-                #[cfg(feature = "simd-is-enabled")]
-                return [callback(0usize), callback(1usize), callback(2usize), callback(3usize)];
+            fn create_arr<T>(callback: impl FnMut(usize) -> T) -> [T; SIMD_WIDTH] {
+                // Width-agnostic: `N` is inferred from the `[T; SIMD_WIDTH]` return type,
+                // so this covers the 1-, 4-, and 8-lane builds alike.
+                core::array::from_fn(callback)
             }
 
             create_arr($callback)
@@ -84,39 +76,36 @@ pub mod shape;
 pub mod transformation;
 pub mod utils;
 
-#[cfg(not(feature = "simd-is-enabled"))]
 mod simd {
-    /// The number of lanes of a SIMD number.
-    pub const SIMD_WIDTH: usize = 1;
-    /// SIMD_WIDTH - 1
-    pub const SIMD_LAST_INDEX: usize = 0;
+    // The `wide` types fall back to scalar code on targets without SIMD, so
+    // they are always used, whatever the platform.
 
-    /// A SIMD float with SIMD_WIDTH lanes.
-    #[cfg(feature = "f32")]
-    pub type SimdReal = f32;
+    // 8-lane SIMD (f32 only; simba has no `WideF64x8`). Opt-in via `simd8`.
+    // Requires an AVX-enabled target (`RUSTFLAGS="-C target-feature=+avx2,+fma"`
+    // or `-C target-cpu=native`) for the compiler to actually emit 256-bit
+    // instructions; otherwise it runs (correctly) as two 128-bit halves.
+    #[cfg(all(feature = "simd8", feature = "f32"))]
+    pub use simba::simd::{WideBoolF32x8 as SimdBool, WideF32x8 as SimdReal};
 
-    /// A SIMD float with SIMD_WIDTH lanes.
-    #[cfg(feature = "f64")]
-    pub type SimdReal = f64;
-
-    /// A SIMD bool with SIMD_WIDTH lanes.
-    pub type SimdBool = bool;
-}
-
-#[cfg(feature = "simd-is-enabled")]
-mod simd {
-    #[cfg(all(feature = "simd-nightly", feature = "f32"))]
-    pub use simba::simd::{f32x4 as SimdReal, mask32x4 as SimdBool};
-    #[cfg(all(feature = "simd-stable", feature = "f32"))]
+    // 4-lane SIMD (default width).
+    #[cfg(all(not(feature = "simd8"), feature = "f32"))]
     pub use simba::simd::{WideBoolF32x4 as SimdBool, WideF32x4 as SimdReal};
 
-    #[cfg(all(feature = "simd-nightly", feature = "f64"))]
-    pub use simba::simd::{f64x4 as SimdReal, mask64x4 as SimdBool};
-    #[cfg(all(feature = "simd-stable", feature = "f64"))]
+    // f64 stays 4-lane regardless of `simd8` (no 8-lane f64 type in simba).
+    #[cfg(feature = "f64")]
     pub use simba::simd::{WideBoolF64x4 as SimdBool, WideF64x4 as SimdReal};
 
     /// The number of lanes of a SIMD number.
+    #[cfg(all(feature = "simd8", feature = "f32"))]
+    pub const SIMD_WIDTH: usize = 8;
+    /// SIMD_WIDTH - 1
+    #[cfg(all(feature = "simd8", feature = "f32"))]
+    pub const SIMD_LAST_INDEX: usize = 7;
+
+    /// The number of lanes of a SIMD number.
+    #[cfg(not(all(feature = "simd8", feature = "f32")))]
     pub const SIMD_WIDTH: usize = 4;
     /// SIMD_WIDTH - 1
+    #[cfg(not(all(feature = "simd8", feature = "f32")))]
     pub const SIMD_LAST_INDEX: usize = 3;
 }

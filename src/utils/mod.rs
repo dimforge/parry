@@ -41,7 +41,6 @@ pub use self::sorted_pair::SortedPair;
 pub(crate) use self::spade::sanitize_spade_point;
 pub(crate) use self::wops::{WBasis, WCross, WSign};
 
-#[cfg(feature = "simd-is-enabled")]
 #[allow(unused_imports)]
 pub(crate) use self::wops::simd_swap;
 

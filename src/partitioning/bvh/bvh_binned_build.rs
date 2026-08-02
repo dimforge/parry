@@ -27,6 +27,7 @@ impl Bvh {
 
         self.nodes.clear();
         self.parents.clear();
+        self.free_wide_nodes.clear();
         self.nodes.push(BvhNodeWide::zeros());
         self.parents.push(BvhNodeIndex::default());
 

@@ -6,7 +6,7 @@ use crate::query::PointProjection;
 use crate::query::{PointQuery, Ray};
 use crate::shape::FeatureId;
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+#[cfg(all(feature = "dim3", feature = "f32"))]
 pub(super) struct SimdInvRay {
     // TODO: we need to use `glam` here instead of `wide` because `wide` is lacking
     //       operations for getting the min/max vector element.
@@ -15,7 +15,7 @@ pub(super) struct SimdInvRay {
     pub inv_dir: glamx::Vec3A,
 }
 
-#[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+#[cfg(all(feature = "dim3", feature = "f32"))]
 impl From<Ray> for SimdInvRay {
     fn from(ray: Ray) -> Self {
         let inv_dir = ray.dir.map(|r| {
@@ -256,7 +256,7 @@ impl Bvh {
     /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
     /// given to that closure is the distance to the closest ray hit found so far (or is equal to
     /// `max_time_of_impact` if no projection was found so far).
-    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
+    #[cfg(not(all(feature = "dim3", feature = "f32")))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
@@ -276,7 +276,7 @@ impl Bvh {
     /// is assumed to map a leaf index to an actual geometry to cast a ray on. The `Real` argument
     /// given to that closure is the distance to the closest ray hit found so far (or is equal to
     /// `max_time_of_impact` if no projection was found so far).
-    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    #[cfg(all(feature = "dim3", feature = "f32"))]
     pub fn cast_ray(
         &self,
         ray: &Ray,
@@ -311,7 +311,7 @@ impl Bvh {
         self.find_best(
             max_time_of_impact,
             |node: &BvhNode, _best_so_far| node.cast_inv_ray_simd(&simd_inv_ray),
-            |primitive, best_so_far| primitive_check(primitive, best_so_far),
+            primitive_check,
         )
     }
 }

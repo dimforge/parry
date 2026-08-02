@@ -1,3 +1,4 @@
+pub use bvh_insert::BvhLeafUpdateStatus;
 pub use bvh_traverse::{BvhLeafCost, TraversalAction};
 pub use bvh_tree::{Bvh, BvhBuildStrategy, BvhNode, BvhNodeIndex, BvhNodeWide, BvhWorkspace};
 

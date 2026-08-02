@@ -1,3 +1,33 @@
+## Unreleased
+
+### Breaking changes
+
+- The `simd-stable` and `simd-nightly` features were removed. 4-lane SIMD is now always enabled
+  (it falls back to scalar code on targets without SIMD support). The new opt-in `simd8` feature
+  widens SIMD to 8 lanes for `f32` builds; it requires an AVX-enabled target to actually emit
+  256-bit instructions, and is incompatible with `enhanced-determinism`.
+- `ContactManifold::subshape_pos1`/`subshape_pos2` are no longer public fields. They are replaced by
+  a single boxed `subshape_poses: Option<Box<SubshapePoses>>` field (to shrink `ContactManifold`),
+  accessed through the new `subshape_pos1()`/`subshape_pos2()` getters and
+  `set_subshape_pos1`/`set_subshape_pos2` setters.
+
+### Added
+
+- `query::sweep_toi`: sweep-based time-of-impact queries. A timestep is modeled as a `Sweep` between
+  two endpoint poses (linear translation + rotation nlerp), and `sweep_time_of_impact` (plus
+  `sweep_time_of_impact_composite` for composite shapes) computes the earliest time the swept shapes
+  reach a slop-based target separation, using conservative advancement. Also exports `ToiProxy`,
+  `SimplexCache`, `SweepToiOutput`, `SweepToiStatus`, and `SweepCompositeFastShape`.
+- `Bvh` gains incremental and parallel update APIs: `refit_partial`, flag-preserving
+  `refit_without_resolve` variants, `refit_parallel`, parallel BVTT traversal, and batched
+  parallel leaf updates (`insert_or_update_batch_partially_parallel`,
+  `reinsert_or_update_with_change_detection`, `reinsert_or_update_if_present`,
+  `update_partially_if_present`, and the `BvhLeafUpdateStatus` enum).
+
+### Modified
+
+- Cuboid support-face feature ids are now computed with bit operations instead of lookup tables.
+
 ## 0.29.0
 
 ### Breaking changes

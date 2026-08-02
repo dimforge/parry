@@ -492,14 +492,67 @@ pub struct ContactManifold<ManifoldData, ContactData> {
     ///
     /// This is zero if the second shape is not a composite shape.
     pub subshape2: u32,
-    /// If the first shape involved is a composite shape, this contains the position of its subshape
-    /// involved in this contact.
-    pub subshape_pos1: Option<Pose>,
-    /// If the second shape involved is a composite shape, this contains the position of its subshape
-    /// involved in this contact.
-    pub subshape_pos2: Option<Pose>,
+    /// If either shape involved is a composite shape, this contains the positions of the
+    /// subshapes involved in this contact.
+    pub subshape_poses: Option<alloc::boxed::Box<SubshapePoses>>,
     /// Additional tracked data associated to this contact manifold.
     pub data: ManifoldData,
+}
+
+/// The positions of the composite-shape subshapes involved in a contact manifold.
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+pub struct SubshapePoses {
+    /// The position of the first shape's subshape, if it is a composite shape.
+    pub pos1: Option<Pose>,
+    /// The position of the second shape's subshape, if it is a composite shape.
+    pub pos2: Option<Pose>,
+}
+
+impl<ManifoldData, ContactData> ContactManifold<ManifoldData, ContactData> {
+    /// The position of the first shape's subshape involved in this contact, if the first
+    /// shape is a composite shape.
+    #[inline]
+    pub fn subshape_pos1(&self) -> Option<&Pose> {
+        self.subshape_poses.as_ref().and_then(|p| p.pos1.as_ref())
+    }
+
+    /// The position of the second shape's subshape involved in this contact, if the second
+    /// shape is a composite shape.
+    #[inline]
+    pub fn subshape_pos2(&self) -> Option<&Pose> {
+        self.subshape_poses.as_ref().and_then(|p| p.pos2.as_ref())
+    }
+
+    /// Sets the position of the first shape's subshape, reusing the existing allocation.
+    #[inline]
+    pub fn set_subshape_pos1(&mut self, pos: Option<Pose>) {
+        match (&mut self.subshape_poses, pos) {
+            (Some(poses), pos) => poses.pos1 = pos,
+            (slot @ None, Some(pos)) => {
+                *slot = Some(alloc::boxed::Box::new(SubshapePoses {
+                    pos1: Some(pos),
+                    pos2: None,
+                }))
+            }
+            (None, None) => {}
+        }
+    }
+
+    /// Sets the position of the second shape's subshape, reusing the existing allocation.
+    #[inline]
+    pub fn set_subshape_pos2(&mut self, pos: Option<Pose>) {
+        match (&mut self.subshape_poses, pos) {
+            (Some(poses), pos) => poses.pos2 = pos,
+            (slot @ None, Some(pos)) => {
+                *slot = Some(alloc::boxed::Box::new(SubshapePoses {
+                    pos1: None,
+                    pos2: Some(pos),
+                }))
+            }
+            (None, None) => {}
+        }
+    }
 }
 
 impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, ContactData> {
@@ -522,8 +575,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             local_n2: Vector::ZERO,
             subshape1,
             subshape2,
-            subshape_pos1: None,
-            subshape_pos2: None,
+            subshape_poses: None,
             data,
         }
     }
@@ -545,8 +597,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             local_n2: self.local_n2,
             subshape1: self.subshape1,
             subshape2: self.subshape2,
-            subshape_pos1: self.subshape_pos1,
-            subshape_pos2: self.subshape_pos2,
+            subshape_poses: self.subshape_poses.clone(),
             data: self.data.clone(),
         }
     }
@@ -674,7 +725,7 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             return false;
         }
 
-        for pt in &mut self.points {
+        for pt in &self.points {
             let local_p2 = pos12 * pt.local_p2;
             let dpt = local_p2 - pt.local_p1;
             let dist = dpt.dot(self.local_n1);
@@ -689,12 +740,22 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
             if pt.local_p1.distance_squared(new_local_p1) > dist_sq_threshold {
                 return false;
             }
-
-            pt.dist = dist;
-            pt.local_p1 = new_local_p1;
         }
 
+        self.update_separations(pos12);
+
         true
+    }
+
+    /// Refreshes every contact point's separation (`dist`) from the current
+    /// relative pose of the two shapes, keeping the contact points (anchors)
+    /// frozen at their captured material positions.
+    #[inline]
+    pub fn update_separations(&mut self, pos12: &Pose) {
+        for pt in &mut self.points {
+            let local_p2 = pos12 * pt.local_p2;
+            pt.dist = (local_p2 - pt.local_p1).dot(self.local_n1);
+        }
     }
 
     /// Transfers contact data from previous frame's contacts to current contacts based on feature IDs.
