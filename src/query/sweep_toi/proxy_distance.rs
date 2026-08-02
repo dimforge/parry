@@ -83,8 +83,7 @@ pub fn proxy_distance(
     } else {
         0
     };
-    for i in 0..count {
-        let v = &mut simplex[i];
+    for (i, v) in simplex.iter_mut().enumerate().take(count) {
         v.index_a = cache.index_a[i];
         v.index_b = cache.index_b[i];
         v.wa = points_a[v.index_a as usize];
@@ -182,9 +181,9 @@ pub fn proxy_distance(
 
     // Cache the simplex.
     cache.count = count as u8;
-    for i in 0..count {
-        cache.index_a[i] = simplex[i].index_a;
-        cache.index_b[i] = simplex[i].index_b;
+    for (i, v) in simplex.iter().enumerate().take(count) {
+        cache.index_a[i] = v.index_a;
+        cache.index_b[i] = v.index_b;
     }
 
     // Apply radii if requested.
@@ -826,8 +825,7 @@ pub fn proxy_distance(
     } else {
         0
     };
-    for i in 0..count {
-        let v = &mut simplex[i];
+    for (i, v) in simplex.iter_mut().enumerate().take(count) {
         v.index_a = cache.index_a[i];
         v.index_b = cache.index_b[i];
         v.wa = points_a[v.index_a as usize];
@@ -1001,9 +999,9 @@ pub fn proxy_distance(
     let (pa, pb) = witness_points3(&simplex, count);
     cache.metric = simplex_metric(&simplex, count);
     cache.count = count.min(3) as u8;
-    for i in 0..count.min(3) {
-        cache.index_a[i] = simplex[i].index_a;
-        cache.index_b[i] = simplex[i].index_b;
+    for (i, v) in simplex.iter().enumerate().take(count.min(3)) {
+        cache.index_a[i] = v.index_a;
+        cache.index_b[i] = v.index_b;
     }
 
     // Results stay in frame A.

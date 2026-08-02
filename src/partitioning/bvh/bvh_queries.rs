@@ -311,7 +311,7 @@ impl Bvh {
         self.find_best(
             max_time_of_impact,
             |node: &BvhNode, _best_so_far| node.cast_inv_ray_simd(&simd_inv_ray),
-            |primitive, best_so_far| primitive_check(primitive, best_so_far),
+            primitive_check,
         )
     }
 }

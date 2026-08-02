@@ -987,7 +987,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use parry3d::math::Vector;
     ///
@@ -1081,7 +1081,7 @@ impl BvhNode {
     ///
     /// ```
     /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
-    /// use parry3d::partitioning::bvh::BvhNode;
+    /// use parry3d::partitioning::BvhNode;
     /// use parry3d::bounding_volume::Aabb;
     /// use parry3d::math::Vector;
     ///

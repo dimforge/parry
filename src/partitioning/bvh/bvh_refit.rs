@@ -629,7 +629,7 @@ impl Bvh {
     /// flag inherited by the wide node that used to hold the insertion sibling, the
     /// raw-merged flags written by its SAH rotations) lies on the inserted leaf's
     /// ancestor path, which the walk below rewrites all the way to the root — see
-    /// [`Self::refit_path`].
+    /// `refit_path`.
     ///
     /// [`BvhLeafUpdateStatus::Inserted`]: super::BvhLeafUpdateStatus::Inserted
     ///

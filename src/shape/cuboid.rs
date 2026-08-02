@@ -265,6 +265,9 @@ impl Cuboid {
 
     /// Computes the face with a normal that maximizes the dot-product with `local_dir`.
     #[cfg(feature = "dim3")]
+    // The identity ors/shifts below are kept so the bit patterns line up with the comments
+    // documenting the vertex/edge numbering.
+    #[allow(clippy::identity_op)]
     pub fn support_face(&self, local_dir: Vector) -> PolygonalFeature {
         // NOTE: can we use the orthonormal basis of local_dir
         // to make this AoSoA friendly?

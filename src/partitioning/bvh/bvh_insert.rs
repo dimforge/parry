@@ -245,7 +245,7 @@ impl Bvh {
     /// returns `None`, leaving the tree untouched, when `leaf_index` has no leaf yet.
     ///
     /// Lets a caller apply every in-place update before any structural insertion — the
-    /// order [`Self::insert_or_update_batch_partially_parallel`] imposes, since its updates
+    /// order `insert_or_update_batch_partially_parallel` imposes, since its updates
     /// run concurrently — without paying a second lookup to find out which updates are
     /// insertions.
     pub fn update_partially_if_present(
