@@ -274,8 +274,7 @@ impl Cuboid {
         let sign = match imax {
             0 => local_dir.x.copy_sign_to(1.0 as Real),
             1 => local_dir.y.copy_sign_to(1.0 as Real),
-            2 => local_dir.z.copy_sign_to(1.0 as Real),
-            _ => unreachable!(),
+            _ => local_dir.z.copy_sign_to(1.0 as Real),
         };
 
         let vertices = match imax {
@@ -291,13 +290,12 @@ impl Cuboid {
                 Vector::new(-he.x, he.y * sign, -he.z),
                 Vector::new(he.x, he.y * sign, -he.z),
             ],
-            2 => [
+            _ => [
                 Vector::new(he.x, he.y, he.z * sign),
                 Vector::new(he.x, -he.y, he.z * sign),
                 Vector::new(-he.x, -he.y, he.z * sign),
                 Vector::new(-he.x, he.y, he.z * sign),
-            ],
-            _ => unreachable!(),
+            ]
         };
 
         pub fn vid(i: u32) -> u32 {
@@ -305,25 +303,24 @@ impl Cuboid {
             i * 2
         }
 
-        let sign_index = ((sign as isize + 1) / 2) as usize;
+        let sign_index = ((sign as isize + 1) / 2) as u32;
         // The vertex id as numbered depending on the sign of the vertex
         // component. A + sign means the corresponding bit is 0 while a -
         // sign means the corresponding bit is 1.
         // For exampl the vertex [2.0, -1.0, -3.0] has the id 0b011
         let vids = match imax {
-            0 => [
-                [vid(0b000), vid(0b010), vid(0b011), vid(0b001)],
-                [vid(0b100), vid(0b110), vid(0b111), vid(0b101)],
-            ][sign_index],
-            1 => [
-                [vid(0b000), vid(0b100), vid(0b101), vid(0b001)],
-                [vid(0b010), vid(0b110), vid(0b111), vid(0b011)],
-            ][sign_index],
-            2 => [
-                [vid(0b000), vid(0b010), vid(0b110), vid(0b100)],
-                [vid(0b001), vid(0b011), vid(0b111), vid(0b101)],
-            ][sign_index],
-            _ => unreachable!(),
+            0 => {
+                let sbit = sign_index << 2;
+                [vid(0b000 | sbit), vid(0b010 | sbit), vid(0b011 | sbit), vid(0b001 | sbit)]
+            },
+            1 => {
+                let sbit = sign_index << 1;
+                [vid(0b000 | sbit), vid(0b100 | sbit), vid(0b101 | sbit), vid(0b001 | sbit)]
+            }
+            _ => {
+                let sbit = sign_index;
+                [vid(0b000 | sbit), vid(0b010 | sbit), vid(0b110 | sbit), vid(0b100 | sbit)]
+            }
         };
 
         // The feature ids of edges is obtained from the vertex ids
@@ -331,30 +328,29 @@ impl Cuboid {
         // Assuming vid1 > vid2, we do:   (vid1 << 3) | vid2 | 0b11000000
         //
         let eids = match imax {
-            0 => [
-                [0b11_010_000, 0b11_011_010, 0b11_011_001, 0b11_001_000],
-                [0b11_110_100, 0b11_111_110, 0b11_111_101, 0b11_101_100],
-            ][sign_index],
-            1 => [
-                [0b11_100_000, 0b11_101_100, 0b11_101_001, 0b11_001_000],
-                [0b11_110_010, 0b11_111_110, 0b11_111_011, 0b11_011_010],
-            ][sign_index],
-            2 => [
-                [0b11_010_000, 0b11_110_010, 0b11_110_100, 0b11_100_000],
-                [0b11_011_001, 0b11_111_011, 0b11_111_101, 0b11_101_001],
-            ][sign_index],
-            _ => unreachable!(),
+            0 => {
+                let sbits = (sign_index << 2) | (sign_index << 5); // 0b00_100_100
+                [0b11_010_000 | sbits, 0b11_011_010 | sbits, 0b11_011_001 | sbits, 0b11_001_000 | sbits]
+            }
+            1 => {
+                let sbits = (sign_index << 1) | (sign_index << 4); // 0b00_010_010
+                [0b11_100_000 | sbits, 0b11_101_100 | sbits, 0b11_101_001 | sbits, 0b11_001_000 | sbits]
+            }
+            _ => {
+                let sbits = (sign_index << 0) | (sign_index << 3); // 0b00_001_001
+                [0b11_010_000 | sbits, 0b11_110_010 | sbits, 0b11_110_100 | sbits, 0b11_100_000 | sbits]
+            }
         };
 
         // The face with normals [x, y, z] are numbered [10, 11, 12].
         // The face with negated normals are numbered [13, 14, 15].
-        let fid = imax + sign_index * 3 + 10;
+        let fid = imax as u32 + sign_index * 3 + 10;
 
         PolygonalFeature {
             vertices,
             vids: PackedFeatureId::vertices(vids),
             eids: PackedFeatureId::edges(eids),
-            fid: PackedFeatureId::face(fid as u32),
+            fid: PackedFeatureId::face(fid),
             num_vertices: 4,
         }
     }
