@@ -105,11 +105,11 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
                     if flipped {
                         manifold.subshape1 = 0;
                         manifold.subshape2 = leaf1;
-                        manifold.subshape_pos2 = part_pos1.copied();
+                        manifold.set_subshape_pos2(part_pos1.copied());
                     } else {
                         manifold.subshape1 = leaf1;
                         manifold.subshape2 = 0;
-                        manifold.subshape_pos1 = part_pos1.copied();
+                        manifold.set_subshape_pos1(part_pos1.copied());
                     };
 
                     manifolds.push(manifold);

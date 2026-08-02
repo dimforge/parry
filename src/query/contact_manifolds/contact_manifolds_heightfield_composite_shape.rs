@@ -111,11 +111,11 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
                         if flipped {
                             manifold.subshape1 = leaf2;
                             manifold.subshape2 = leaf1;
-                            manifold.subshape_pos1 = part_pos2.copied();
+                            manifold.set_subshape_pos1(part_pos2.copied());
                         } else {
                             manifold.subshape1 = leaf1;
                             manifold.subshape2 = leaf2;
-                            manifold.subshape_pos2 = part_pos2.copied();
+                            manifold.set_subshape_pos2(part_pos2.copied());
                         };
 
                         manifolds.push(manifold);

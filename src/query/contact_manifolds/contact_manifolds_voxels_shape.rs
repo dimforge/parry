@@ -215,13 +215,13 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 // and keep the point at the same "canonica-shape-space" location as in the previous frame.
                 let prev_center = if flipped {
                     manifold
-                        .subshape_pos2
+                        .subshape_pos2()
                         .as_ref()
                         .map(|p| p.translation)
                         .unwrap_or_default()
                 } else {
                     manifold
-                        .subshape_pos1
+                        .subshape_pos1()
                         .as_ref()
                         .map(|p| p.translation)
                         .unwrap_or_default()
@@ -240,7 +240,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
 
                 // Update contacts.
                 if flipped {
-                    manifold.subshape_pos2 = Some(Pose::from_translation(canonical_center1));
+                    manifold.set_subshape_pos2(Some(Pose::from_translation(canonical_center1)));
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12.inverse(),
                         shape2,
@@ -251,7 +251,7 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                         manifold,
                     );
                 } else {
-                    manifold.subshape_pos1 = Some(Pose::from_translation(canonical_center1));
+                    manifold.set_subshape_pos1(Some(Pose::from_translation(canonical_center1)));
                     let _ = dispatcher.contact_manifold_convex_convex(
                         &canonical_pos12,
                         canonical_shape1,
@@ -296,9 +296,9 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                 }
 
                 let pt_in_voxel_space = if flipped {
-                    manifold.subshape_pos2.transform_point(pt.local_p2) - vox1.center
+                    manifold.subshape_pos2().transform_point(pt.local_p2) - vox1.center
                 } else {
-                    manifold.subshape_pos1.transform_point(pt.local_p1) - vox1.center
+                    manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center
                 };
                 sub_detector.selected_contacts |=
                     (test_voxel.contains_local_point(pt_in_voxel_space) as u32) << i;

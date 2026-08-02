@@ -159,13 +159,13 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                 // So we need to adjust the local points to account for the position difference
                 // and keep the point at the same "canonical-shape-space" location as in the previous frame.
                 let prev_center1 = manifold
-                    .subshape_pos1
+                    .subshape_pos1()
                     .as_ref()
                     .map(|p| p.translation)
                     .unwrap_or_default();
                 let delta_center1 = canonical_center1 - prev_center1;
                 let prev_center2 = manifold
-                    .subshape_pos2
+                    .subshape_pos2()
                     .as_ref()
                     .map(|p| p.translation)
                     .unwrap_or_default();
@@ -177,8 +177,8 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                 }
 
                 // Update contacts.
-                manifold.subshape_pos1 = Some(Pose::from_translation(canonical_center1));
-                manifold.subshape_pos2 = Some(Pose::from_translation(canonical_center2));
+                manifold.set_subshape_pos1(Some(Pose::from_translation(canonical_center1)));
+                manifold.set_subshape_pos2(Some(Pose::from_translation(canonical_center2)));
                 let _ = dispatcher.contact_manifold_convex_convex(
                     &canonical_pos12,
                     &canonical_pseudo_cube1,
@@ -220,9 +220,9 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                 }
 
                 let pt_in_voxel_space1 =
-                    manifold.subshape_pos1.transform_point(pt.local_p1) - vox1.center;
+                    manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center;
                 let pt_in_voxel_space2 =
-                    manifold.subshape_pos2.transform_point(pt.local_p2) - vox2.center;
+                    manifold.subshape_pos2().transform_point(pt.local_p2) - vox2.center;
                 sub_detector.selected_contacts |=
                     ((test_voxel1.contains_local_point(pt_in_voxel_space1) as u32) << i)
                         & ((test_voxel2.contains_local_point(pt_in_voxel_space2) as u32) << i);
