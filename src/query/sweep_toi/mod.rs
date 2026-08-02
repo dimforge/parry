@@ -12,9 +12,7 @@ pub use self::sweep_toi::{sweep_time_of_impact, SweepToiOutput, SweepToiStatus};
 pub use self::toi_proxy::{ToiProxy, TOI_PROXY_INLINE_POINTS};
 
 #[cfg(feature = "alloc")]
-pub use self::composite::{
-    sweep_time_of_impact_composite, SweepCompositeFastShape, CORE_FRACTION,
-};
+pub use self::composite::{sweep_time_of_impact_composite, SweepCompositeFastShape, CORE_FRACTION};
 
 #[cfg(feature = "alloc")]
 mod composite;

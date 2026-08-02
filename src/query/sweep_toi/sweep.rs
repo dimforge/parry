@@ -48,7 +48,10 @@ pub(crate) fn nlerp(q1: &Rotation, q2: &Rotation, t: Real) -> Rotation {
 /// at both endpoints and a good approximation in between as long as the rotation delta stays
 /// below ~45°.
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde-serialize", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde-serialize",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Sweep {
     /// The center of mass expressed in the shape’s local frame.
     pub local_center: Vector,

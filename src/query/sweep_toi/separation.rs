@@ -317,8 +317,16 @@ impl<'a, 'b> SeparationFunction<'a, 'b> {
             2 => {
                 if unique_count_a == 2 && unique_count_b == 2 {
                     Self::init_edges(
-                        &mut result, proxy_a, proxy_b, &index_a, &index_b, &qa, &qb, delta_p,
-                        world_normal, 0.05,
+                        &mut result,
+                        proxy_a,
+                        proxy_b,
+                        &index_a,
+                        &index_b,
+                        &qa,
+                        &qb,
+                        delta_p,
+                        world_normal,
+                        0.05,
                     );
                 } else {
                     // Vertex versus edge, use world axis witness
@@ -331,14 +339,13 @@ impl<'a, 'b> SeparationFunction<'a, 'b> {
                     let va1 = proxy_a.points()[index_a[0] as usize];
                     let va2 = proxy_a.points()[index_a[1] as usize];
                     let va3 = proxy_a.points()[index_a[2] as usize];
-                    let mut local_axis_a =
-                        (va2 - va1).cross(va3 - va1).normalize_or_zero();
+                    let mut local_axis_a = (va2 - va1).cross(va3 - va1).normalize_or_zero();
                     let axis_a = rotate_vec(&qa, local_axis_a);
 
                     let local_point_a = (va1 + va2 + va3) / 3.0;
                     let local_point_b = proxy_b.points()[index_b[0] as usize];
-                    let delta = rotate_vec(&qb, local_point_b) - rotate_vec(&qa, local_point_a)
-                        + delta_p;
+                    let delta =
+                        rotate_vec(&qb, local_point_b) - rotate_vec(&qa, local_point_a) + delta_p;
 
                     if delta.dot(axis_a) < 0.0 {
                         // Make axis point from A to B
@@ -353,14 +360,13 @@ impl<'a, 'b> SeparationFunction<'a, 'b> {
                     let vb1 = proxy_b.points()[index_b[0] as usize];
                     let vb2 = proxy_b.points()[index_b[1] as usize];
                     let vb3 = proxy_b.points()[index_b[2] as usize];
-                    let mut local_axis_b =
-                        (vb2 - vb1).cross(vb3 - vb1).normalize_or_zero();
+                    let mut local_axis_b = (vb2 - vb1).cross(vb3 - vb1).normalize_or_zero();
                     let axis_b = rotate_vec(&qb, local_axis_b);
 
                     let local_point_a = proxy_a.points()[index_a[0] as usize];
                     let local_point_b = (vb1 + vb2 + vb3) / 3.0;
-                    let delta = rotate_vec(&qa, local_point_a) - rotate_vec(&qb, local_point_b)
-                        - delta_p;
+                    let delta =
+                        rotate_vec(&qa, local_point_a) - rotate_vec(&qb, local_point_b) - delta_p;
 
                     if delta.dot(axis_b) < 0.0 {
                         // Make axis point from B to A
@@ -384,8 +390,16 @@ impl<'a, 'b> SeparationFunction<'a, 'b> {
                     }
 
                     Self::init_edges(
-                        &mut result, proxy_a, proxy_b, &index_a, &index_b, &qa, &qb, delta_p,
-                        world_normal, 0.005,
+                        &mut result,
+                        proxy_a,
+                        proxy_b,
+                        &index_a,
+                        &index_b,
+                        &qa,
+                        &qb,
+                        delta_p,
+                        world_normal,
+                        0.005,
                     );
                 }
             }

@@ -194,7 +194,8 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                         // Update contacts.
                         if flipped {
                             manifold.set_subshape_pos1(part_pos2.copied());
-                            manifold.set_subshape_pos2(Some(Pose::from_translation(canonical_center1)));
+                            manifold
+                                .set_subshape_pos2(Some(Pose::from_translation(canonical_center1)));
                             let _ = dispatcher.contact_manifold_convex_convex(
                                 &relative_pos12.inverse(),
                                 part_shape2,
@@ -205,7 +206,8 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                                 manifold,
                             );
                         } else {
-                            manifold.set_subshape_pos1(Some(Pose::from_translation(canonical_center1)));
+                            manifold
+                                .set_subshape_pos1(Some(Pose::from_translation(canonical_center1)));
                             manifold.set_subshape_pos2(part_pos2.copied());
                             let _ = dispatcher.contact_manifold_convex_convex(
                                 &relative_pos12,

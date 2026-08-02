@@ -347,3 +347,114 @@ mod parallel_batch_update {
         }
     }
 }
+
+/// The contracts rapier's `parallel`-off ≡ `parallel`-on guarantee rests on: when rapier
+/// picks the parallel variant of one of these passes, it must get the exact result the
+/// sequential one would have produced — otherwise a build with the feature and a build
+/// without it are two different simulations.
+#[cfg(feature = "parallel")]
+#[cfg(all(feature = "dim3", feature = "f32"))]
+mod parallel_matches_sequential {
+    use crate::bounding_volume::Aabb;
+    use crate::math::Vector;
+    use crate::partitioning::{Bvh, BvhWorkspace};
+    use alloc::vec::Vec;
+
+    /// 17^3, past `refit_buffers_parallel`'s `SEQ_LEAF_THRESHOLD` so the parallel refit
+    /// really splits instead of delegating to the sequential one.
+    const SIDE: u32 = 17;
+    const LEAVES: u32 = SIDE * SIDE * SIDE;
+
+    /// A jittered grid whose cells overlap their neighbours: the tree needs real internal
+    /// structure, and the traversal real pairs, for the comparisons to mean anything.
+    fn scene() -> Bvh {
+        let mut bvh = Bvh::new();
+        for i in 0..LEAVES {
+            let (x, y, z) = (i % SIDE, (i / SIDE) % SIDE, i / (SIDE * SIDE));
+            let jitter = (i % 7) as f32 * 0.03;
+            let mins = Vector::new(x as f32, y as f32, z as f32) * 1.0
+                + Vector::new(jitter, jitter * 0.5, jitter * 0.25);
+            bvh.insert(
+                Aabb::new(mins.into(), (mins + Vector::new(1.5, 1.5, 1.5)).into()),
+                i,
+            );
+        }
+        bvh
+    }
+
+    /// Compares the node arrays themselves, not just the leaf AABBs: the refit rebuilds
+    /// them in depth-first order, and that order decides the traversal order downstream.
+    fn assert_same_nodes(seq: &Bvh, par: &Bvh) {
+        assert_eq!(
+            seq.nodes.len(),
+            par.nodes.len(),
+            "node array lengths differ after refit"
+        );
+        for (i, (a, b)) in seq.nodes.iter().zip(par.nodes.iter()).enumerate() {
+            for (side, a, b) in [("left", &a.left, &b.left), ("right", &a.right, &b.right)] {
+                assert_eq!(a.aabb(), b.aabb(), "node {i} ({side}) aabb differs");
+                assert_eq!(
+                    a.leaf_count(),
+                    b.leaf_count(),
+                    "node {i} ({side}) leaf count differs"
+                );
+                assert_eq!(
+                    a.is_leaf(),
+                    b.is_leaf(),
+                    "node {i} ({side}) leafness differs"
+                );
+            }
+        }
+        for i in 0..LEAVES {
+            assert_eq!(
+                seq.leaf_node(i).map(|n| n.aabb()),
+                par.leaf_node(i).map(|n| n.aabb()),
+                "leaf {i} differs after refit"
+            );
+        }
+    }
+
+    /// [`Bvh::refit_parallel`] documents that "only the work distribution differs".
+    #[test]
+    fn refit_parallel_matches_sequential() {
+        let (mut seq, mut par) = (scene(), scene());
+        let (mut w1, mut w2) = (BvhWorkspace::default(), BvhWorkspace::default());
+        seq.refit(&mut w1);
+        par.refit_parallel(&mut w2);
+        assert_same_nodes(&seq, &par);
+    }
+
+    /// Same, for the flag-preserving refit rapier runs in its deferred optimization pass.
+    #[test]
+    fn refit_without_resolve_parallel_matches_sequential() {
+        let (mut seq, mut par) = (scene(), scene());
+        let (mut w1, mut w2) = (BvhWorkspace::default(), BvhWorkspace::default());
+        seq.optimize_incremental(&mut w1);
+        par.optimize_incremental(&mut w2);
+        seq.refit_without_resolve(&mut w1);
+        par.refit_without_resolve_parallel(&mut w2);
+        assert_same_nodes(&seq, &par);
+    }
+
+    /// [`Bvh::traverse_bvtt_single_tree_parallel`] documents that it returns the pairs "in
+    /// the exact same order as the calls the sequential traversal would have made".
+    #[test]
+    fn bvtt_traversal_parallel_matches_sequential() {
+        let mut bvh = scene();
+        let mut workspace = BvhWorkspace::default();
+        bvh.refit(&mut workspace);
+
+        let mut sequential = Vec::new();
+        bvh.traverse_bvtt_single_tree::<false>(&mut workspace, &mut |a, b| sequential.push((a, b)));
+        let parallel = bvh.traverse_bvtt_single_tree_parallel::<false>();
+
+        assert!(
+            !sequential.is_empty(),
+            "the scene must actually report pairs"
+        );
+        assert_eq!(
+            sequential, parallel,
+            "the parallel BVTT traversal reported a different pair sequence"
+        );
+    }
+}

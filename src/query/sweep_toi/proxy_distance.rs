@@ -49,8 +49,12 @@ struct SimplexVertex {
 fn cache_is_valid(cache: &SimplexCache, proxy_a: &ToiProxy, proxy_b: &ToiProxy) -> bool {
     let (na, nb) = (proxy_a.points().len() as u32, proxy_b.points().len() as u32);
     cache.count <= 3
-        && cache.index_a[..cache.count as usize].iter().all(|i| *i < na)
-        && cache.index_b[..cache.count as usize].iter().all(|i| *i < nb)
+        && cache.index_a[..cache.count as usize]
+            .iter()
+            .all(|i| *i < na)
+        && cache.index_b[..cache.count as usize]
+            .iter()
+            .all(|i| *i < nb)
 }
 
 /// Computes the distance between two point-cloud proxies, warm-started by `cache`.
@@ -444,10 +448,8 @@ fn witness_points3(simplex: &[SimplexVertex; 4], count: usize) -> (Vector, Vecto
         ),
         4 => {
             // Force identical points and *zero* distance
-            let sum = vs[0].a * vs[0].wa
-                + vs[1].a * vs[1].wa
-                + vs[2].a * vs[2].wa
-                + vs[3].a * vs[3].wa;
+            let sum =
+                vs[0].a * vs[0].wa + vs[1].a * vs[1].wa + vs[2].a * vs[2].wa + vs[3].a * vs[3].wa;
             (sum, sum)
         }
         _ => unreachable!(),

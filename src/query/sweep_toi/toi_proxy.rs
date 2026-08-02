@@ -62,10 +62,9 @@ impl<'a> ToiProxy<'a> {
     pub fn from_shape(shape: &'a dyn Shape) -> Option<Self> {
         match shape.as_typed_shape() {
             TypedShape::Ball(ball) => Some(Self::point(Vector::ZERO, ball.radius)),
-            TypedShape::Cuboid(cuboid) => Some(Self::from_cuboid_half_extents(
-                cuboid.half_extents,
-                0.0,
-            )),
+            TypedShape::Cuboid(cuboid) => {
+                Some(Self::from_cuboid_half_extents(cuboid.half_extents, 0.0))
+            }
             TypedShape::RoundCuboid(round) => Some(Self::from_cuboid_half_extents(
                 round.inner_shape.half_extents,
                 round.border_radius,
@@ -78,10 +77,7 @@ impl<'a> ToiProxy<'a> {
             TypedShape::Triangle(tri) => Some(Self::from_array([tri.a, tri.b, tri.c], 0.0)),
             TypedShape::RoundTriangle(round) => {
                 let tri = &round.inner_shape;
-                Some(Self::from_array(
-                    [tri.a, tri.b, tri.c],
-                    round.border_radius,
-                ))
+                Some(Self::from_array([tri.a, tri.b, tri.c], round.border_radius))
             }
             #[cfg(feature = "dim2")]
             #[cfg(feature = "alloc")]

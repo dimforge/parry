@@ -255,8 +255,7 @@ pub fn sweep_time_of_impact_composite(
             #[cfg(feature = "dim3")]
             heightfield.map_elements_in_local_aabb(&local_aabb, &mut |_, triangle| {
                 if !context.one_sided_early_out(triangle) {
-                    let proxy =
-                        ToiProxy::from_array([triangle.a, triangle.b, triangle.c], 0.0);
+                    let proxy = ToiProxy::from_array([triangle.a, triangle.b, triangle.c], 0.0);
                     context.toi_against_element(&proxy, &composite_sweep);
                 }
             });

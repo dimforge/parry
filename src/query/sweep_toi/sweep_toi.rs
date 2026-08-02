@@ -397,11 +397,17 @@ mod tests {
         #[cfg(feature = "dim2")]
         let (bar, start, end) = (
             ToiProxy::from_array(
-                [Vector::new(-half_length, 0.0), Vector::new(half_length, 0.0)],
+                [
+                    Vector::new(-half_length, 0.0),
+                    Vector::new(half_length, 0.0),
+                ],
                 0.05,
             ),
             Pose::from_parts(Vector::ZERO, Rotation::identity()),
-            Pose::from_parts(Vector::ZERO, Rotation::from_angle(core::f32::consts::FRAC_PI_2 as Real)),
+            Pose::from_parts(
+                Vector::ZERO,
+                Rotation::from_angle(core::f32::consts::FRAC_PI_2 as Real),
+            ),
         );
         #[cfg(feature = "dim3")]
         let (bar, start, end) = (

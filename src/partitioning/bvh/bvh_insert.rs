@@ -1,5 +1,5 @@
-use super::BvhNode;
 use super::bvh_tree::{BvhNodeIndex, BvhNodeWide};
+use super::BvhNode;
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Real, Vector};
 use crate::partitioning::Bvh;
@@ -232,28 +232,46 @@ impl Bvh {
         leaf_index: u32,
         change_detection_margin: Real,
     ) -> BvhLeafUpdateStatus {
-        if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
-            let node = &mut self.nodes[*leaf];
+        match self.update_partially_if_present(aabb, leaf_index, change_detection_margin) {
+            Some(status) => status,
+            None => {
+                self.insert_new_unchecked(aabb, leaf_index);
+                BvhLeafUpdateStatus::Inserted
+            }
+        }
+    }
 
-            if change_detection_margin > 0.0 {
-                if !node.contains_aabb(&aabb) {
-                    node.mins = aabb.mins - Vector::splat(change_detection_margin);
-                    node.maxs = aabb.maxs + Vector::splat(change_detection_margin);
-                    node.data.set_change_pending();
-                    BvhLeafUpdateStatus::UpdatedInPlace
-                } else {
-                    // The new AABB is still inside the leaf's fat AABB: the tree
-                    // is left untouched.
-                    BvhLeafUpdateStatus::Unchanged
-                }
+    /// [`Self::insert_or_update_partially`] restricted to leaves already in the tree:
+    /// returns `None`, leaving the tree untouched, when `leaf_index` has no leaf yet.
+    ///
+    /// Lets a caller apply every in-place update before any structural insertion — the
+    /// order [`Self::insert_or_update_batch_partially_parallel`] imposes, since its updates
+    /// run concurrently — without paying a second lookup to find out which updates are
+    /// insertions.
+    pub fn update_partially_if_present(
+        &mut self,
+        aabb: Aabb,
+        leaf_index: u32,
+        change_detection_margin: Real,
+    ) -> Option<BvhLeafUpdateStatus> {
+        let leaf = *self.leaf_node_indices.get(leaf_index as usize)?;
+        let node = &mut self.nodes[leaf];
+
+        if change_detection_margin > 0.0 {
+            if !node.contains_aabb(&aabb) {
+                node.mins = aabb.mins - Vector::splat(change_detection_margin);
+                node.maxs = aabb.maxs + Vector::splat(change_detection_margin);
+                node.data.set_change_pending();
+                Some(BvhLeafUpdateStatus::UpdatedInPlace)
             } else {
-                node.mins = aabb.mins;
-                node.maxs = aabb.maxs;
-                BvhLeafUpdateStatus::UpdatedInPlace
+                // The new AABB is still inside the leaf's fat AABB: the tree
+                // is left untouched.
+                Some(BvhLeafUpdateStatus::Unchanged)
             }
         } else {
-            self.insert_new_unchecked(aabb, leaf_index);
-            BvhLeafUpdateStatus::Inserted
+            node.mins = aabb.mins;
+            node.maxs = aabb.maxs;
+            Some(BvhLeafUpdateStatus::UpdatedInPlace)
         }
     }
 
@@ -509,24 +527,38 @@ impl Bvh {
         leaf_index: u32,
         change_detection_margin: Real,
     ) -> BvhLeafUpdateStatus {
-        if let Some(leaf) = self.leaf_node_indices.get(leaf_index as usize) {
-            if self.nodes[*leaf].contains_aabb(&aabb) {
-                return BvhLeafUpdateStatus::Unchanged;
+        match self.reinsert_or_update_if_present(aabb, leaf_index, change_detection_margin) {
+            Some(status) => status,
+            None => {
+                self.insert_new_unchecked(aabb, leaf_index);
+                BvhLeafUpdateStatus::Inserted
             }
-
-            self.remove(leaf_index);
-            let fat_aabb = Aabb {
-                mins: aabb.mins - Vector::splat(change_detection_margin),
-                maxs: aabb.maxs + Vector::splat(change_detection_margin),
-            };
-            // The new leaf is created with a pending change flag, exactly like an
-            // in-place update that escaped its previous fattened AABB.
-            self.insert_new_unchecked(fat_aabb, leaf_index);
-            BvhLeafUpdateStatus::UpdatedInPlace
-        } else {
-            self.insert_new_unchecked(aabb, leaf_index);
-            BvhLeafUpdateStatus::Inserted
         }
+    }
+
+    /// [`Self::reinsert_or_update_with_change_detection`] restricted to leaves already in
+    /// the tree: returns `None`, leaving the tree untouched, when `leaf_index` has no leaf
+    /// yet. See [`Self::update_partially_if_present`].
+    pub fn reinsert_or_update_if_present(
+        &mut self,
+        aabb: Aabb,
+        leaf_index: u32,
+        change_detection_margin: Real,
+    ) -> Option<BvhLeafUpdateStatus> {
+        let leaf = *self.leaf_node_indices.get(leaf_index as usize)?;
+        if self.nodes[leaf].contains_aabb(&aabb) {
+            return Some(BvhLeafUpdateStatus::Unchanged);
+        }
+
+        self.remove(leaf_index);
+        let fat_aabb = Aabb {
+            mins: aabb.mins - Vector::splat(change_detection_margin),
+            maxs: aabb.maxs + Vector::splat(change_detection_margin),
+        };
+        // The new leaf is created with a pending change flag, exactly like an
+        // in-place update that escaped its previous fattened AABB.
+        self.insert_new_unchecked(fat_aabb, leaf_index);
+        Some(BvhLeafUpdateStatus::UpdatedInPlace)
     }
 
     // Applies a tree rotation at the given `node` if this improves the SAH metric at that node.
