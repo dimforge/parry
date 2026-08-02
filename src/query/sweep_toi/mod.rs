@@ -5,6 +5,9 @@
 //! poses (linear center-of-mass interpolation + rotation nlerp) and computes the earliest
 //! time at which two swept shapes reach a slop-based target separation, using conservative
 //! advancement with separation functions.
+//!
+//! NOTE: this is mostly ported from Box2D which had much better CCD quality than Rapier.
+//! TODO: see how we can combine that with `nonlinear_shape_cast` since they serve similar goals.
 
 pub use self::proxy_distance::{proxy_distance, ProxyDistanceOutput, SimplexCache};
 pub use self::sweep::Sweep;
