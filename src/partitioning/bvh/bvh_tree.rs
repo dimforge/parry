@@ -615,40 +615,11 @@ impl BvhNode {
 
     #[inline(always)]
     pub(super) fn merged(&self, other: &Self, children: u32) -> Self {
-        #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
-        {
-            // Each node is two 16-byte rows: (mins, children) and (maxs, data).
-            // Min/max whole rows in one SIMD op each (the packed integer lanes
-            // produce garbage that is overwritten right after). This is the hot
-            // op of the refit passes, which rebuild every internal node.
-            let a = self.as_simd();
-            let b = other.as_simd();
-            let data = self.data.merged(other.data);
-            let mut out = Self {
-                mins: Vector::ZERO,
-                children,
-                maxs: Vector::ZERO,
-                data,
-            };
-            {
-                let out_simd: &mut BvhNodeSimd = unsafe { core::mem::transmute(&mut out) };
-                out_simd.mins = a.mins.min(b.mins);
-                out_simd.maxs = a.maxs.max(b.maxs);
-            }
-            // Restore the packed lanes clobbered by the row-wide min/max.
-            out.children = children;
-            out.data = data;
-            out
-        }
-
-        #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
-        {
-            Self {
-                mins: self.mins.min(other.mins),
-                children,
-                maxs: self.maxs.max(other.maxs),
-                data: self.data.merged(other.data),
-            }
+        Self {
+            mins: self.mins.min(other.mins),
+            children,
+            maxs: self.maxs.max(other.maxs),
+            data: self.data.merged(other.data),
         }
     }
 
