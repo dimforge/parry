@@ -43,6 +43,11 @@ pub use self::query_dispatcher::{QueryDispatcher, QueryDispatcherChain};
 pub use self::ray::{Ray, RayCast, RayIntersection, SimdRay};
 pub use self::shape_cast::{cast_shapes, ShapeCastHit, ShapeCastOptions, ShapeCastStatus};
 pub use self::split::{IntersectResult, SplitResult};
+#[cfg(feature = "alloc")]
+pub use self::sweep_toi::{sweep_time_of_impact_composite, SweepCompositeFastShape};
+pub use self::sweep_toi::{
+    sweep_time_of_impact, SimplexCache, Sweep, SweepToiOutput, SweepToiStatus, ToiProxy,
+};
 
 #[cfg(all(feature = "dim3", feature = "alloc"))]
 pub use self::ray::RayCullingMode;
@@ -66,6 +71,7 @@ mod ray;
 pub mod sat;
 mod shape_cast;
 mod split;
+pub mod sweep_toi;
 
 /// Queries dedicated to specific pairs of shapes.
 pub mod details {
