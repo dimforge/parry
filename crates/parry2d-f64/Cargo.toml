@@ -46,6 +46,9 @@ rkyv = ["dep:rkyv", "glamx/rkyv"]
 bytemuck-serialize = ["bytemuck", "glamx/bytemuck"]
 simd-stable = ["simba/wide", "simd-is-enabled"]
 simd-nightly = ["simba/portable_simd", "simd-is-enabled"]
+# No-op for f64 (simba has no 8-lane f64 type); declared so the shared
+# `src/lib.rs` cfg resolves. f64 SIMD stays 4-lane.
+simd8 = []
 enhanced-determinism = ["simba/libm_force", "indexmap", "glamx/libm"]
 parallel = ["rayon"]
 alloc = ["hashbrown"]
