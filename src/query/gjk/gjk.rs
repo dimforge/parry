@@ -784,10 +784,14 @@ where
         proj = simplex.project_origin_and_reduce();
 
         if simplex.dimension() == DIM {
-            if min_bound >= _eps_tol {
+            if min_bound >= _eps_tol && ltoi == 0.0 {
+                // Origin is outside the Minkowski difference and the ray
+                // hasn't advanced — genuinely no collision.
                 return None;
             } else {
-                return Some((ltoi / ray_length, ldir)); // Vector inside of the cso.
+                // Either the origin is inside the CSO, or the ray has
+                // advanced (ltoi > 0) meaning contact was found.
+                return Some((ltoi / ray_length, ldir));
             }
         }
 
