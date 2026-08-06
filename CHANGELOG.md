@@ -1,3 +1,11 @@
+## 0.30.1
+
+### Fixed
+
+- Fix incorrect `closest_points_cuboid_cuboid` closest points (affecting `query::distance` too) in degenerate
+  configurations where the separating axis is ambiguous, e.g., axis-aligned cuboids closest at a
+  vertex or along parallel edges.
+
 ## 0.30.0
 
 ### Breaking changes
