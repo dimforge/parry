@@ -245,21 +245,16 @@ pub fn cuboid_cuboid_find_local_separating_edge_twoway(
 /// }
 /// # }
 /// ```
-///
-/// # Algorithm Details
-///
-/// For each axis (X, Y, and Z in 3D):
-/// 1. Computes the support point on cuboid2 in the negative axis direction
-/// 2. Transforms it to cuboid1's space
-/// 3. Measures the signed distance from cuboid1's boundary
-/// 4. Tracks the axis with maximum separation
 pub fn cuboid_cuboid_find_local_separating_normal_oneway(
     cuboid1: &Cuboid,
     cuboid2: &Cuboid,
     pos12: &Pose,
 ) -> (Real, Vector) {
+    // The largest separation over all axes, which is what SAT reports.
     let mut best_separation = -Real::MAX;
     let mut best_dir = Vector::ZERO;
+    let mut axis_acc = Vector::ZERO;
+    let mut num_positive = 0;
 
     for i in 0..DIM {
         #[expect(clippy::unnecessary_cast)]
@@ -274,7 +269,26 @@ pub fn cuboid_cuboid_find_local_separating_normal_oneway(
             best_separation = separation;
             best_dir = axis1;
         }
+
+        if separation >= 0.0 {
+            // Add the axis weighted by the separation.
+            // If the separation is exactly zero, add a little separation to
+            // keep a little nudge towards that direction. The resulting axis remains
+            // correct as it will be a linear combination of the separating axis (so it
+            // will be contained by the vertex/edge’s normal cone).
+            axis_acc[i] += sign * separation.max(Real::EPSILON);
+            num_positive += 1;
+        }
     }
 
-    (best_separation, best_dir)
+    if num_positive > 1 {
+        let axis_acc_dir = axis_acc.normalize();
+        let pt1 = cuboid1.local_support_point(axis_acc_dir);
+        let pt2 = cuboid2.support_point(pos12, -axis_acc_dir);
+        let separation = (pt2 - pt1).dot(axis_acc_dir);
+        debug_assert!(separation >= 0.0);
+        (separation, axis_acc_dir)
+    } else {
+        (best_separation, best_dir)
+    }
 }
