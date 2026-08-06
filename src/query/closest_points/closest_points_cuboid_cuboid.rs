@@ -38,15 +38,16 @@ pub fn closest_points_cuboid_cuboid(
     if sep1.0 >= sep2.0 && sep1.0 >= sep3.0 {
         // println!("AA: {:?}", sep1);
 
-        // To compute the closest points, we need to project the support point
-        // from cuboid2 on the support-face of cuboid1. For simplicity, we just
-        // project the support point from cuboid2 on cuboid1 itself (not just the face).
         let pt2_1 = cuboid2.support_point(pos12, -sep1.1);
+        // Use double-projection to converge to the closest points even in ambiguous cases
+        // where both cuboids have some parallel features.
         let proj1 = cuboid1.project_local_point(pt2_1, true);
+        let proj2 = cuboid2.project_local_point(pos21 * proj1.point, true);
+        let pt2_1 = pos12 * proj2.point;
         if (proj1.point - pt2_1).length_squared() > margin * margin {
             return ClosestPoints::Disjoint;
         } else {
-            return ClosestPoints::WithinMargin(proj1.point, pos21 * pt2_1);
+            return ClosestPoints::WithinMargin(proj1.point, proj2.point);
         }
     }
 
@@ -54,16 +55,17 @@ pub fn closest_points_cuboid_cuboid(
     if sep2.0 >= sep1.0 && sep2.0 >= sep3.0 {
         // println!("BB: {:?}", sep2);
 
-        // To compute the actual closest points, we need to project the support point
-        // from cuboid1 on the support-face of cuboid2. For simplicity, we just
-        // project the support point from cuboid1 on cuboid2 itself (not just the face).
+        // Use double-projection to converge to the closest points even in ambiguous cases
+        // where both cuboids have some parallel features.
         let pt1_2 = cuboid1.support_point(&pos21, -sep2.1);
         let proj2 = cuboid2.project_local_point(pt1_2, true);
+        let proj1 = cuboid1.project_local_point(pos12 * proj2.point, true);
+        let pt1_2 = pos21 * proj1.point;
 
         if (proj2.point - pt1_2).length_squared() > margin * margin {
             return ClosestPoints::Disjoint;
         } else {
-            return ClosestPoints::WithinMargin(pos12 * pt1_2, proj2.point);
+            return ClosestPoints::WithinMargin(proj1.point, proj2.point);
         }
     }
 
@@ -76,7 +78,19 @@ pub fn closest_points_cuboid_cuboid(
         // points between the two edges that generated the separating axis.
         let edge1 = cuboid1.local_support_edge_segment(sep3.1);
         let edge2 = cuboid2.local_support_edge_segment(pos21.rotation * -sep3.1);
-        return super::closest_points_segment_segment(pos12, &edge1, &edge2, margin);
+        let (_, loc2) = super::closest_points_segment_segment_with_locations(pos12, &edge1, &edge2);
+
+        // Use double-projection to converge to the closest points even in ambiguous cases
+        // where both cuboids have some parallel features.
+        let pt2_1 = pos12 * edge2.point_at(&loc2);
+        let proj1 = cuboid1.project_local_point(pt2_1, true);
+        let proj2 = cuboid2.project_local_point(pos21 * proj1.point, true);
+        let pt2_1 = pos12 * proj2.point;
+        if (proj1.point - pt2_1).length_squared() > margin * margin {
+            return ClosestPoints::Disjoint;
+        } else {
+            return ClosestPoints::WithinMargin(proj1.point, proj2.point);
+        }
     }
 
     unreachable!()
