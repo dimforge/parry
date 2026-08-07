@@ -16,7 +16,9 @@ fn ball_vs_heightfield_both_orders() {
     let pos_hf = Pose::identity();
     let pos_ball = Pose::from_translation(Vector::new(1.0, 0.3));
 
-    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 0.0).unwrap().unwrap();
+    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 0.0)
+        .unwrap()
+        .unwrap();
     assert!(
         (c.dist + 0.2).abs() < EPS,
         "expected dist ~ -0.2, got {}",
@@ -29,7 +31,9 @@ fn ball_vs_heightfield_both_orders() {
     );
     assert!((c.point1 - Vector::new(1.0, 0.0)).length() < EPS);
 
-    let c = contact(&pos_ball, &ball, &pos_hf, &hf, 0.0).unwrap().unwrap();
+    let c = contact(&pos_ball, &ball, &pos_hf, &hf, 0.0)
+        .unwrap()
+        .unwrap();
     assert!((c.dist + 0.2).abs() < EPS);
     assert!(
         (c.normal1 + Vector::Y).length() < EPS,
@@ -39,8 +43,14 @@ fn ball_vs_heightfield_both_orders() {
 
     // Separated within prediction.
     let pos_ball = Pose::from_translation(Vector::new(-2.0, 1.0));
-    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 1.0).unwrap().unwrap();
-    assert!((c.dist - 0.5).abs() < EPS, "expected dist ~ 0.5, got {}", c.dist);
+    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 1.0)
+        .unwrap()
+        .unwrap();
+    assert!(
+        (c.dist - 0.5).abs() < EPS,
+        "expected dist ~ 0.5, got {}",
+        c.dist
+    );
 
     // Separated beyond prediction: None, not Unsupported.
     let c = contact(&pos_hf, &hf, &pos_ball, &ball, 0.1).unwrap();

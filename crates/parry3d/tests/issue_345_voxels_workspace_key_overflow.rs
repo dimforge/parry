@@ -38,7 +38,14 @@ fn voxels_contact_manifold_at_domain_minimum_does_not_overflow() {
     // Run two frames to also exercise the workspace-reuse (occupied entry) path.
     for _ in 0..2 {
         DefaultQueryDispatcher
-            .contact_manifolds(&pos12, &voxels, &cuboid, 0.05, &mut manifolds, &mut workspace)
+            .contact_manifolds(
+                &pos12,
+                &voxels,
+                &cuboid,
+                0.05,
+                &mut manifolds,
+                &mut workspace,
+            )
             .expect("the voxels/cuboid pair must be supported");
     }
 

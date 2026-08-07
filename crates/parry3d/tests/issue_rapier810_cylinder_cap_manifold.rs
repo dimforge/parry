@@ -30,12 +30,12 @@ fn cap_manifold(x: Real, z: Real, sep: Real) -> ContactManifold<(), ()> {
 #[test]
 fn cuboid_on_cylinder_cap_has_multi_point_manifold() {
     for &(x, z) in &[
-        (0.0, 0.0),                 // cap center
-        (3.0, -2.0),                // mid cap
-        (5.54, 4.51),               // rim band: |x| + |z| > radius (used to get 1 point)
-        (-5.65, 5.65),              // worst-case azimuth on the rim band
-        (7.0, 7.0),                 // radius ~9.9, close to the rim
-        (9.9, 0.0),                 // right at the rim
+        (0.0, 0.0),    // cap center
+        (3.0, -2.0),   // mid cap
+        (5.54, 4.51),  // rim band: |x| + |z| > radius (used to get 1 point)
+        (-5.65, 5.65), // worst-case azimuth on the rim band
+        (7.0, 7.0),    // radius ~9.9, close to the rim
+        (9.9, 0.0),    // right at the rim
     ] {
         for &sep in &[-0.001, 0.0001] {
             let manifold = cap_manifold(x, z, sep);

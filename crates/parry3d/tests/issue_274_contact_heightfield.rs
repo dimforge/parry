@@ -13,7 +13,10 @@ const EPS: f32 = 1.0e-4;
 
 fn flat_heightfield() -> HeightField {
     // A flat heightfield at y = 0 spanning x, z in [-5, 5].
-    HeightField::new(Array2::new(3, 3, vec![0.0; 9]), Vector::new(10.0, 1.0, 10.0))
+    HeightField::new(
+        Array2::new(3, 3, vec![0.0; 9]),
+        Vector::new(10.0, 1.0, 10.0),
+    )
 }
 
 #[test]
@@ -32,7 +35,11 @@ fn capsule_above_heightfield() {
     let c = contact(&pos_hf, &hf, &pos_capsule, &capsule, 2.0)
         .unwrap()
         .unwrap();
-    assert!((c.dist - 1.3).abs() < EPS, "expected dist ~ 1.3, got {}", c.dist);
+    assert!(
+        (c.dist - 1.3).abs() < EPS,
+        "expected dist ~ 1.3, got {}",
+        c.dist
+    );
     assert!(
         (c.normal1 - Vector::Y).length() < EPS,
         "normal1 should be +Y, got {:?}",
@@ -113,7 +120,9 @@ fn ball_vs_heightfield() {
     let pos_hf = Pose::identity();
     let pos_ball = Pose::from_translation(Vector::new(1.0, 0.3, -2.0));
 
-    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 0.0).unwrap().unwrap();
+    let c = contact(&pos_hf, &hf, &pos_ball, &ball, 0.0)
+        .unwrap()
+        .unwrap();
     assert!(
         (c.dist + 0.2).abs() < EPS,
         "expected dist ~ -0.2, got {}",

@@ -76,10 +76,7 @@ fn vertex_face_rotated() {
     let c2 = Cuboid::new(Vector::new(1.0, 1.0));
     let p1 = Pose::identity();
     // c2 rotated by 45 degrees, its bottom vertex facing c1's top face.
-    let p2 = Pose::new(
-        Vector::new(0.0, 4.0),
-        core::f32::consts::FRAC_PI_4,
-    );
+    let p2 = Pose::new(Vector::new(0.0, 4.0), core::f32::consts::FRAC_PI_4);
 
     let expected = 3.0 - core::f32::consts::SQRT_2;
     check_symmetric_and_exact(&p1, &c1, &p2, &c2, expected);

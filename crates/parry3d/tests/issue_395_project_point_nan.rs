@@ -115,7 +115,10 @@ fn polyline_nan_point_queries_do_not_panic() {
 #[test]
 fn compound_nan_point_queries_do_not_panic() {
     let compound = Compound::new(vec![
-        (Pose::IDENTITY, SharedShape::new(Cuboid::new(Vector::splat(0.5)))),
+        (
+            Pose::IDENTITY,
+            SharedShape::new(Cuboid::new(Vector::splat(0.5))),
+        ),
         (
             Pose::from_translation(Vector::new(2.0, 0.0, 0.0)),
             SharedShape::new(Cuboid::new(Vector::splat(0.5))),
