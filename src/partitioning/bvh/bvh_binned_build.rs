@@ -57,8 +57,12 @@ impl Bvh {
         // Compute bins characteristics.
         let k1 = NUM_BINS as Real * (1.0 - BIN_EPSILON) / (bins_range[1] - bins_range[0]);
         let k0 = bins_range[0];
+        // NOTE: the clamp guards against degenerate leaf AABBs, whose non-finite or very
+        //       large coordinates would push the bin index outside [0, NUM_BINS - 1]
+        //       (`as usize` saturates).
+        let bin_id_unclamped = |center: Real| (k1 * (center - k0)) as usize;
         for leaf in &*leaves {
-            let bin_id = (k1 * (leaf.center().vget(bins_axis) - k0)) as usize;
+            let bin_id = bin_id_unclamped(leaf.center().vget(bins_axis)).min(NUM_BINS - 1);
             let bin = &mut bins[bin_id];
             bin.aabb.merge(&leaf.aabb());
             bin.leaf_count += 1;
@@ -106,7 +110,7 @@ impl Bvh {
             // TODO PERF: try with using teh leaves_tmp instead of in-place sorting.
             let bin = |leaves: &mut [BvhNode], id: usize| {
                 let node = &leaves[id];
-                (k1 * (node.center().vget(bins_axis) - k0)) as usize
+                bin_id_unclamped(node.center().vget(bins_axis)).min(NUM_BINS - 1)
             };
 
             let mut left_id = 0;
