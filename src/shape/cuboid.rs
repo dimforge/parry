@@ -310,7 +310,7 @@ impl Cuboid {
         // The vertex id as numbered depending on the sign of the vertex
         // component. A + sign means the corresponding bit is 0 while a -
         // sign means the corresponding bit is 1.
-        // For exampl the vertex [2.0, -1.0, -3.0] has the id 0b011
+        // For example the vertex [2.0, -1.0, -3.0] has the id 0b011
         let vids = match imax {
             0 => {
                 let sbit = sign_index << 2;
