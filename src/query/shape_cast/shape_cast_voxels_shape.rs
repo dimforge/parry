@@ -27,12 +27,16 @@ where
                 let center = g1.voxel_center(vox.grid_coords);
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
                 let vox_pos12 = Pose::from_translation(center).inverse() * pos12;
-                if let Some(new_hit) = dispatcher
+                if let Some(mut new_hit) = dispatcher
                     .cast_shapes(&vox_pos12, vel12, &cuboid, g2, options)
                     .ok()
                     .flatten()
                 {
                     if new_hit.time_of_impact < smallest_t {
+                        // The hit is expressed in the voxel cuboid's frame, i.e. the shape's
+                        // frame translated by `center`. Shift `witness1` back; the normals
+                        // and `witness2` are unaffected by a translation.
+                        new_hit.witness1 += center;
                         smallest_t = new_hit.time_of_impact;
                         hit = Some(new_hit);
                     }
