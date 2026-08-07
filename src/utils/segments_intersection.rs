@@ -51,7 +51,7 @@ pub fn segments_intersection2d(
     } else {
         let loc1 = if s == 0.0 {
             SegmentPointLocation::OnVertex(0)
-        } else if s == denom {
+        } else if s == 1.0 {
             SegmentPointLocation::OnVertex(1)
         } else {
             SegmentPointLocation::OnEdge([1.0 - s, s])
@@ -59,7 +59,7 @@ pub fn segments_intersection2d(
 
         let loc2 = if t == 0.0 {
             SegmentPointLocation::OnVertex(0)
-        } else if t == denom {
+        } else if t == 1.0 {
             SegmentPointLocation::OnVertex(1)
         } else {
             SegmentPointLocation::OnEdge([1.0 - t, t])
@@ -144,23 +144,32 @@ fn parallel_intersection(
 // Checks that `c` is in-between `a` and `b`.
 // Assumes the three points are collinear.
 fn between(a: Vector2, b: Vector2, c: Vector2) -> Option<SegmentPointLocation> {
+    // Classifies the barycentric coordinate of `c` along `ab`, snapping the
+    // exact endpoints to `OnVertex` instead of `OnEdge`.
+    fn classify(bcoord_b: Real) -> SegmentPointLocation {
+        if bcoord_b == 0.0 {
+            SegmentPointLocation::OnVertex(0)
+        } else if bcoord_b == 1.0 {
+            SegmentPointLocation::OnVertex(1)
+        } else {
+            SegmentPointLocation::OnEdge([1.0 - bcoord_b, bcoord_b])
+        }
+    }
+
     // If ab not vertical, check betweenness on x; else on y.
-    // TODO: handle cases where we actually are on a vertex (to return OnEdge instead of OnVertex)?
     if a.x != b.x {
         if a.x <= c.x && c.x <= b.x {
-            let bcoord = (c.x - a.x) / (b.x - a.x);
-            return Some(SegmentPointLocation::OnEdge([1.0 - bcoord, bcoord]));
+            return Some(classify((c.x - a.x) / (b.x - a.x)));
         } else if a.x >= c.x && c.x >= b.x {
             let bcoord = (c.x - b.x) / (a.x - b.x);
-            return Some(SegmentPointLocation::OnEdge([bcoord, 1.0 - bcoord]));
+            return Some(classify(1.0 - bcoord));
         }
     } else if a.y != b.y {
         if a.y <= c.y && c.y <= b.y {
-            let bcoord = (c.y - a.y) / (b.y - a.y);
-            return Some(SegmentPointLocation::OnEdge([1.0 - bcoord, bcoord]));
+            return Some(classify((c.y - a.y) / (b.y - a.y)));
         } else if a.y >= c.y && c.y >= b.y {
             let bcoord = (c.y - b.y) / (a.y - b.y);
-            return Some(SegmentPointLocation::OnEdge([bcoord, 1.0 - bcoord]));
+            return Some(classify(1.0 - bcoord));
         }
     } else if a.x == c.x && a.y == c.y {
         return Some(SegmentPointLocation::OnVertex(0));
