@@ -1,6 +1,6 @@
 use crate::math::{Real, Vector, DIM};
 use crate::query::{PointProjection, PointQuery, PointQueryWithLocation};
-use crate::shape::{FeatureId, Triangle, TrianglePointLocation};
+use crate::shape::{FeatureId, Segment, SegmentPointLocation, Triangle, TrianglePointLocation};
 #[cfg(feature = "dim3")]
 use crate::utils::relative_eq_vector;
 
@@ -217,22 +217,49 @@ impl PointQueryWithLocation for Triangle {
             }
             ProjectionInfo::OnFace(face_side, va, vb, vc) => {
                 // Voronoï region of the face.
-                if DIM != 2 {
-                    // NOTE: in some cases, numerical instability
-                    // may result in the denominator being zero
-                    // when the triangle is nearly degenerate.
-                    if va + vb + vc != 0.0 {
-                        let denom = 1.0 / (va + vb + vc);
-                        let v = vb * denom;
-                        let w = vc * denom;
-                        let bcoords = [1.0 - v - w, v, w];
-                        let res = a + ab * v + ac * w;
+                let denom = va + vb + vc;
 
-                        return (
-                            compute_result(pt, res),
-                            TrianglePointLocation::OnFace(face_side as u32, bcoords),
-                        );
-                    }
+                if denom == 0.0 {
+                    // Collinear vertices: the zero face normal skipped every edge Voronoï
+                    // test, so projecting on the "face" would report the point as inside
+                    // (or produce NaNs). A degenerate triangle has no interior, so project
+                    // on its longest edge regardless of `solid`.
+                    let sq_ab = ab.length_squared();
+                    let sq_ac = ac.length_squared();
+                    let sq_bc = bc.length_squared();
+
+                    // (segment, edge id, triangle vertex ids of the segment endpoints)
+                    let (seg, eid, vids) = if sq_ab >= sq_ac && sq_ab >= sq_bc {
+                        (Segment::new(a, b), 0, [0, 1])
+                    } else if sq_ac >= sq_bc {
+                        (Segment::new(a, c), 2, [0, 2])
+                    } else {
+                        (Segment::new(b, c), 1, [1, 2])
+                    };
+
+                    let (proj, loc) = seg.project_local_point_and_get_location(pt, solid);
+                    let loc = match loc {
+                        SegmentPointLocation::OnVertex(i) => {
+                            TrianglePointLocation::OnVertex(vids[i as usize])
+                        }
+                        SegmentPointLocation::OnEdge(bcoords) => {
+                            TrianglePointLocation::OnEdge(eid, bcoords)
+                        }
+                    };
+
+                    return (proj, loc);
+                } else if DIM != 2 {
+                    // NOTE: divide instead of multiplying by `1.0 / denom`, whose
+                    // reciprocal overflows to infinity for subnormal `denom`.
+                    let v = vb / denom;
+                    let w = vc / denom;
+                    let bcoords = [1.0 - v - w, v, w];
+                    let res = a + ab * v + ac * w;
+
+                    return (
+                        compute_result(pt, res),
+                        TrianglePointLocation::OnFace(face_side as u32, bcoords),
+                    );
                 }
             }
         }
