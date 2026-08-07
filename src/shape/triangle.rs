@@ -432,21 +432,16 @@ impl Triangle {
     /// The area of this triangle.
     #[inline]
     pub fn area(&self) -> Real {
-        // Kahan's formula.
-        let a = self.b.distance(self.a);
-        let b = self.c.distance(self.b);
-        let c = self.a.distance(self.c);
+        // Half the cross-product magnitude, which unlike Kahan's formula on the rounded
+        // side lengths is exactly 0.0 for bitwise-collinear vertices.
+        let ab = self.b - self.a;
+        let ac = self.c - self.a;
 
-        let (c, b, a) = utils::sort3(&a, &b, &c);
-        let a = *a;
-        let b = *b;
-        let c = *c;
+        #[cfg(feature = "dim2")]
+        return ab.perp_dot(ac).abs() * 0.5;
 
-        let sqr = (a + (b + c)) * (c - (a - b)) * (c + (a - b)) * (a + (b - c));
-
-        // We take the max(0.0) because it can be slightly negative
-        // because of numerical errors due to almost-degenerate triangles.
-        <Real as ComplexField>::sqrt(sqr.max(0.0)) * 0.25
+        #[cfg(feature = "dim3")]
+        return ab.cross(ac).length() * 0.5;
     }
 
     /// Computes the unit angular inertia of this triangle.
