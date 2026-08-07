@@ -9,10 +9,7 @@ use parry2d::query::{ContactManifold, DefaultQueryDispatcher, PersistentQueryDis
 use parry2d::shape::{Ball, Polyline};
 
 fn check_manifold_normals(pos12: Pose, prediction: Real) -> usize {
-    let polyline = Polyline::new(
-        vec![Vector::new(-10.0, 0.0), Vector::new(10.0, 0.0)],
-        None,
-    );
+    let polyline = Polyline::new(vec![Vector::new(-10.0, 0.0), Vector::new(10.0, 0.0)], None);
     let ball = Ball::new(1.0);
 
     let dispatcher = DefaultQueryDispatcher;
@@ -20,7 +17,14 @@ fn check_manifold_normals(pos12: Pose, prediction: Real) -> usize {
     let mut workspace = None;
 
     dispatcher
-        .contact_manifolds(&pos12, &polyline, &ball, prediction, &mut manifolds, &mut workspace)
+        .contact_manifolds(
+            &pos12,
+            &polyline,
+            &ball,
+            prediction,
+            &mut manifolds,
+            &mut workspace,
+        )
         .unwrap();
 
     let mut num_contacts = 0;

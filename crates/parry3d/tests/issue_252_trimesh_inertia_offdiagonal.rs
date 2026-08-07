@@ -67,7 +67,10 @@ fn aligned_box_mesh_inertia_matches_cuboid() {
     let i_cuboid = mp_cuboid.reconstruct_inertia_matrix();
 
     // Scale for the relative tolerance: the largest diagonal term.
-    let scale = i_cuboid.to_cols_array().iter().fold(0.0f32, |m, x| m.max(x.abs()));
+    let scale = i_cuboid
+        .to_cols_array()
+        .iter()
+        .fold(0.0f32, |m, x| m.max(x.abs()));
     assert_mat_relative_eq(i_mesh, i_cuboid, scale);
 
     // The aligned case must have (near-)zero off-diagonals.
@@ -100,7 +103,10 @@ fn rotated_box_mesh_inertia_matches_rotated_cuboid_tensor() {
     let r = Mat3::from_quat(rot);
     let i_expected = r * mp_cuboid.reconstruct_inertia_matrix() * r.transpose();
 
-    let scale = i_expected.to_cols_array().iter().fold(0.0f32, |m, x| m.max(x.abs()));
+    let scale = i_expected
+        .to_cols_array()
+        .iter()
+        .fold(0.0f32, |m, x| m.max(x.abs()));
     assert_mat_relative_eq(i_mesh, i_expected, scale);
 
     // Sanity: the rotated tensor really has significant off-diagonal terms.

@@ -40,7 +40,14 @@ fn voxels_shape_manifold_within_prediction_distance() {
     let mut manifolds: Vec<ContactManifold<(), ()>> = Vec::new();
     let mut workspace = None;
     DefaultQueryDispatcher
-        .contact_manifolds(&pos12, &voxels, &capsule, 0.1, &mut manifolds, &mut workspace)
+        .contact_manifolds(
+            &pos12,
+            &voxels,
+            &capsule,
+            0.1,
+            &mut manifolds,
+            &mut workspace,
+        )
         .expect("the voxels/capsule pair must be supported");
 
     let dist = closest_dist(&manifolds)

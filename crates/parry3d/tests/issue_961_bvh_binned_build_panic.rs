@@ -12,7 +12,10 @@ struct Lcg(u64);
 
 impl Lcg {
     fn next_u32(&mut self) -> u32 {
-        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         (self.0 >> 32) as u32
     }
 
@@ -101,8 +104,14 @@ fn non_finite_aabbs() {
         leaves.push(aabb(c - Vector::splat(0.5), c + Vector::splat(0.5)));
     }
     leaves.push(aabb(Vector::splat(f32::NAN), Vector::splat(f32::NAN)));
-    leaves.push(aabb(Vector::splat(f32::INFINITY), Vector::splat(f32::INFINITY)));
-    leaves.push(aabb(Vector::splat(f32::NEG_INFINITY), Vector::splat(f32::INFINITY)));
+    leaves.push(aabb(
+        Vector::splat(f32::INFINITY),
+        Vector::splat(f32::INFINITY),
+    ));
+    leaves.push(aabb(
+        Vector::splat(f32::NEG_INFINITY),
+        Vector::splat(f32::INFINITY),
+    ));
     leaves.push(Aabb::new_invalid());
     exercise(&leaves);
 }

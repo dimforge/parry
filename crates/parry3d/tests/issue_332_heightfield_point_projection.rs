@@ -48,7 +48,11 @@ fn pruned_projection_matches_brute_force() {
     for i in 0..1000 {
         // Mix of points: near the surface, inside the AABB, far outside, above, below.
         let pt = match i % 4 {
-            0 => Vector::new(rng.real(-8.0, 8.0), rng.real(-2.0, 2.0), rng.real(-8.0, 8.0)),
+            0 => Vector::new(
+                rng.real(-8.0, 8.0),
+                rng.real(-2.0, 2.0),
+                rng.real(-8.0, 8.0),
+            ),
             1 => Vector::new(
                 rng.real(-8.0, 8.0),
                 rng.real(-100.0, 100.0),
@@ -59,7 +63,11 @@ fn pruned_projection_matches_brute_force() {
                 rng.real(-10.0, 10.0),
                 rng.real(-100.0, 100.0),
             ),
-            _ => Vector::new(rng.real(-8.5, 8.5), rng.real(-3.0, 3.0), rng.real(-8.5, 8.5)),
+            _ => Vector::new(
+                rng.real(-8.5, 8.5),
+                rng.real(-3.0, 3.0),
+                rng.real(-8.5, 8.5),
+            ),
         };
 
         let proj = heightfield.project_local_point(pt, false);
