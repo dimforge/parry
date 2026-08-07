@@ -448,6 +448,35 @@ impl EPA {
             self.vertices.push(*simplex.point(i));
         }
 
+        if simplex.dimension() == 0 {
+            // The GJK simplex degenerated to a single point on the CSO boundary, typically
+            // an exactly-touching contact. Bootstrap a second vertex from an axis-aligned
+            // support direction so the expansion below can find the normal.
+            let candidates = [
+                Vector::X,
+                Vector::Y,
+                Vector::Z,
+                -Vector::X,
+                -Vector::Y,
+                -Vector::Z,
+            ];
+            let sep_tol = gjk::eps_tol();
+            let bootstrap = candidates.iter().find_map(|dir| {
+                let pt = CsoPoint::from_shapes(pos12, g1, g2, *dir);
+                ((pt.point - self.vertices[0].point).length_squared() > sep_tol * sep_tol)
+                    .then_some(pt)
+            });
+
+            match bootstrap {
+                Some(pt) => self.vertices.push(pt),
+                None => {
+                    // The CSO is degenerate (a single point): no meaningful normal exists.
+                    let v = self.vertices[0];
+                    return Some((v.orig1, v.orig2, Vector::Y));
+                }
+            }
+        }
+
         // Tolerance used to reject degenerate faces. It is scaled relative to the magnitude of
         // the simplex coordinates: dot products used to compute face distances accumulate
         // rounding errors proportional to the coordinate magnitudes, so an absolute tolerance
@@ -462,11 +491,7 @@ impl EPA {
             gjk::eps_tol() * scale.max(1.0)
         };
 
-        if simplex.dimension() == 0 {
-            let mut n: Vector = Vector::ZERO;
-            n.y = 1.0;
-            return Some((Vector::ZERO, Vector::ZERO, n));
-        } else if simplex.dimension() == 3 {
+        if simplex.dimension() == 3 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
             let dp3 = self.vertices[3] - self.vertices[0];
@@ -523,7 +548,9 @@ impl EPA {
                 return None;
             }
         } else {
-            if simplex.dimension() == 1 {
+            // NOTE: len == 2 covers both a 1-dimensional GJK simplex and a 0-dimensional
+            // one completed by the bootstrap above.
+            if self.vertices.len() == 2 {
                 let dpt = self.vertices[1] - self.vertices[0];
 
                 crate::math::orthonormal_subspace_basis(&[dpt], |dir| {
