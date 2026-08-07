@@ -51,7 +51,13 @@ where
                     normal2: contact.normal2,
                     witness1: contact.point1,
                     witness2: contact.point2,
-                    status: ShapeCastStatus::PenetratingOrWithinTargetDist,
+                    // A cast starting exactly touching, neither penetrating nor within
+                    // the target distance, converged like ball-ball does.
+                    status: if contact.dist < options.target_distance {
+                        ShapeCastStatus::PenetratingOrWithinTargetDist
+                    } else {
+                        ShapeCastStatus::Converged
+                    },
                 })
             }
         } else {
@@ -62,7 +68,15 @@ where
                 witness1: witness1 - normal1 * options.target_distance,
                 witness2: pos12.inverse_transform_point(witness2),
                 status: if time_of_impact.is_zero() {
-                    ShapeCastStatus::PenetratingOrWithinTargetDist
+                    // A zero TOI means either a real penetration (or a start within the
+                    // target distance) or a mere touching contact; only the former is
+                    // `PenetratingOrWithinTargetDist`, as for ball-ball.
+                    match details::contact_support_map_support_map(pos12, g1, g2, Real::MAX) {
+                        Some(contact) if contact.dist >= options.target_distance => {
+                            ShapeCastStatus::Converged
+                        }
+                        _ => ShapeCastStatus::PenetratingOrWithinTargetDist,
+                    }
                 } else {
                     ShapeCastStatus::Converged
                 },
