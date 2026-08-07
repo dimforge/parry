@@ -821,7 +821,10 @@ where
         proj = simplex.project_origin_and_reduce();
 
         if simplex.dimension() == DIM {
-            if min_bound >= _eps_tol {
+            // `min_bound` accumulates rounding errors proportional to the magnitude of the
+            // support coordinates, so we scale the tolerance accordingly.
+            let scale = support_point.point.length().max(curr_ray.origin.length());
+            if min_bound >= _eps_tol * scale.max(1.0) {
                 return None;
             } else {
                 return Some((ltoi / ray_length, ldir)); // Vector inside of the cso.
