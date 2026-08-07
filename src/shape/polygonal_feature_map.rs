@@ -10,6 +10,23 @@ pub trait PolygonalFeatureMap: SupportMap {
     /// Compute the support polygonal face of `self` towards the `dir`.
     fn local_support_feature(&self, dir: Vector, out_feature: &mut PolygonalFeature);
 
+    /// Compute the support polygonal face of `self` towards `dir`, oriented so that it best
+    /// covers the neighborhood of the local-space point `hint`.
+    ///
+    /// The default implementation ignores `hint`, which is exact for genuine polygons.
+    /// Shapes approximating a curved feature (like a cylinder cap by an inscribed square)
+    /// must orient it from `hint`: a fixed azimuth misses up to ~36% of the cap near its
+    /// rim, leaving contacts there with a single unclippable point.
+    fn local_support_feature_toward(
+        &self,
+        dir: Vector,
+        hint: Vector,
+        out_feature: &mut PolygonalFeature,
+    ) {
+        let _ = hint;
+        self.local_support_feature(dir, out_feature);
+    }
+
     // TODO: this is currently just a workaround for https://github.com/dimforge/rapier/issues/417
     //       until we get a better way to deal with the issue without breaking internal edges
     //       handling.
@@ -37,11 +54,43 @@ impl PolygonalFeatureMap for Cuboid {
     }
 }
 
+/// Azimuth (unit `xz` direction) orienting the polygonal approximation of a cylinder's or
+/// cone's curved features, taken from `hint` if it lies off the axis, else from `dir`.
+#[cfg(feature = "dim3")]
+fn feature_azimuth(dir: Vector, hint: Option<Vector>) -> crate::math::Vector2 {
+    use crate::math::Vector2;
+    hint.and_then(|hint| Vector2::new(hint.x, hint.z).try_normalize())
+        .or_else(|| Vector2::new(dir.x, dir.z).try_normalize())
+        .unwrap_or(Vector2::X)
+}
+
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cylinder {
     fn local_support_feature(&self, dir: Vector, out_features: &mut PolygonalFeature) {
-        use crate::math::Vector2;
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, None), out_features);
+    }
 
+    fn local_support_feature_toward(
+        &self,
+        dir: Vector,
+        hint: Vector,
+        out_features: &mut PolygonalFeature,
+    ) {
+        // Orienting the cap's square approximation so that one of its vertices (which lie on
+        // the cap's rim) sits at the contact's azimuth guarantees the approximation covers
+        // the cap's surface in the contact's neighborhood, wherever it lies on the cap.
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, Some(hint)), out_features);
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl Cylinder {
+    fn support_feature_with_azimuth(
+        &self,
+        dir: Vector,
+        dir2: crate::math::Vector2,
+        out_features: &mut PolygonalFeature,
+    ) {
         // About feature ids.
         // At all times, we consider our cylinder to be approximated as follows:
         // - The curved part is approximated by a single segment.
@@ -56,10 +105,6 @@ impl PolygonalFeatureMap for Cylinder {
         //   So its vertices have IDs 11,13,15,17, its edges 12,14,16,18, and its face 19.
         // - Note that at all times, one of each cap's vertices are the same as the curved-part
         //   segment endpoints.
-        let dir2 = Vector2::new(dir.x, dir.z)
-            .try_normalize()
-            .unwrap_or(Vector2::X);
-
         if dir.y.abs() < 0.5 {
             // We return a segment lying on the cylinder's curved part.
             out_features.vertices[0] = Vector::new(
@@ -99,8 +144,28 @@ impl PolygonalFeatureMap for Cylinder {
 #[cfg(feature = "dim3")]
 impl PolygonalFeatureMap for Cone {
     fn local_support_feature(&self, dir: Vector, out_features: &mut PolygonalFeature) {
-        use crate::math::Vector2;
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, None), out_features);
+    }
 
+    fn local_support_feature_toward(
+        &self,
+        dir: Vector,
+        hint: Vector,
+        out_features: &mut PolygonalFeature,
+    ) {
+        // See the comment in the cylinder's implementation.
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, Some(hint)), out_features);
+    }
+}
+
+#[cfg(feature = "dim3")]
+impl Cone {
+    fn support_feature_with_azimuth(
+        &self,
+        dir: Vector,
+        dir2: crate::math::Vector2,
+        out_features: &mut PolygonalFeature,
+    ) {
         // About feature ids. It is very similar to the feature ids of cylinders.
         // At all times, we consider our cone to be approximated as follows:
         // - The curved part is approximated by a single segment.
@@ -113,10 +178,6 @@ impl PolygonalFeatureMap for Cone {
         // - The bottom cap has its face feature ID of 9.
         // - Note that at all times, one of the cap's vertices are the same as the curved-part
         //   segment endpoints.
-        let dir2 = Vector2::new(dir.x, dir.z)
-            .try_normalize()
-            .unwrap_or(Vector2::X);
-
         if dir.y > 0.0 {
             // We return a segment lying on the cone's curved part.
             out_features.vertices[0] = Vector::new(
