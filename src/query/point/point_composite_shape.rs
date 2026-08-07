@@ -140,9 +140,14 @@ impl PointQuery for Polyline {
     #[inline]
     #[allow(unused_mut)] // Because we need mut in 2D but not in 3D.
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
-        let (seg_id, (mut proj, feature)) = CompositeShapeRef(self)
-            .project_local_point_and_get_feature(point, Real::MAX)
-            .unwrap_or_else(|| unreachable!());
+        // Every comparison involving a NaN is false, so the traversal finds no candidate
+        // at all when `point` (or `self`) isn’t finite. Report `point` itself rather than
+        // an arbitrary projection onto whichever part we happened to pick.
+        let Some((seg_id, (mut proj, feature))) =
+            CompositeShapeRef(self).project_local_point_and_get_feature(point, Real::MAX)
+        else {
+            return (PointProjection::new(false, point), FeatureId::Unknown);
+        };
 
         // A point behind the outward pseudo-normal is inside.
         #[cfg(feature = "dim2")]
@@ -182,8 +187,10 @@ impl PointQuery for TriMesh {
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
             .project_local_point(point, Real::MAX, solid)
-            .unwrap_or_else(|| unreachable!())
-            .1
+            .map(|(_, proj)| proj)
+            // No candidate: `point` (or `self`) isn’t finite. See
+            // `Polyline::project_local_point_and_get_feature`.
+            .unwrap_or(PointProjection::new(false, point))
     }
 
     #[inline]
@@ -197,9 +204,13 @@ impl PointQuery for TriMesh {
         }
 
         let solid = cfg!(feature = "dim2");
-        let (tri_id, proj) = CompositeShapeRef(self)
-            .project_local_point(point, Real::MAX, solid)
-            .unwrap_or_else(|| unreachable!());
+        // No candidate: `point` (or `self`) isn’t finite. See
+        // `Polyline::project_local_point_and_get_feature`.
+        let Some((tri_id, proj)) =
+            CompositeShapeRef(self).project_local_point(point, Real::MAX, solid)
+        else {
+            return (PointProjection::new(false, point), FeatureId::Unknown);
+        };
         (proj, FeatureId::Face(tri_id))
     }
 
@@ -238,8 +249,10 @@ impl PointQuery for Compound {
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
             .project_local_point(point, Real::MAX, solid)
-            .unwrap_or_else(|| unreachable!())
-            .1
+            .map(|(_, proj)| proj)
+            // No candidate: `point` (or `self`) isn’t finite. See
+            // `Polyline::project_local_point_and_get_feature`.
+            .unwrap_or(PointProjection::new(false, point))
     }
 
     #[inline]
@@ -247,9 +260,10 @@ impl PointQuery for Compound {
         (
             CompositeShapeRef(self)
                 .project_local_point_and_get_feature(point, Real::MAX)
-                .unwrap_or_else(|| unreachable!())
-                .1
-                 .0,
+                .map(|(_, (proj, _))| proj)
+                // No candidate: `point` (or `self`) isn’t finite. See
+                // `Polyline::project_local_point_and_get_feature`.
+                .unwrap_or(PointProjection::new(false, point)),
             FeatureId::Unknown,
         )
     }
@@ -272,7 +286,12 @@ impl PointQueryWithLocation for Polyline {
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
-            .unwrap()
+            // No candidate: `point` (or `self`) isn’t finite. See
+            // `Polyline::project_local_point_and_get_feature`.
+            .unwrap_or((
+                PointProjection::new(false, point),
+                (0, SegmentPointLocation::OnVertex(0)),
+            ))
     }
 
     /// Projects a point on `self`, with a maximum projection distance.
@@ -318,7 +337,12 @@ impl PointQueryWithLocation for TriMesh {
         solid: bool,
     ) -> (PointProjection, Self::Location) {
         self.project_local_point_and_get_location_with_max_dist(point, solid, Real::MAX)
-            .unwrap()
+            // No candidate: `point` (or `self`) isn’t finite. See
+            // `Polyline::project_local_point_and_get_feature`.
+            .unwrap_or((
+                PointProjection::new(false, point),
+                (0, TrianglePointLocation::OnVertex(0)),
+            ))
     }
 
     /// Projects a point on `self`, with a maximum projection distance.
