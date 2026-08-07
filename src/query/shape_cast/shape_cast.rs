@@ -35,9 +35,8 @@ pub enum ShapeCastStatus {
 ///
 /// The `witness1`/`normal1` (resp. `witness2`/`normal2`) fields are expressed in the frame the
 /// first (resp. second) shape was described in when performing the query:
-/// - For shape-local queries like [`cast_shapes`] or
-///   [`QueryDispatcher::cast_shapes`](crate::query::QueryDispatcher::cast_shapes), this is the
-///   local frame of the corresponding shape.
+/// - For shape-local queries like [`cast_shapes`] or [`QueryDispatcher::cast_shapes`], this is
+///   the local frame of the corresponding shape.
 /// - For queries where a shape is a composite with its parts posed in another frame (e.g.
 ///   casting a shape on Rapier's `QueryPipeline`, where the colliders hit are posed in world
 ///   space), the corresponding fields are expressed in that frame (e.g. world space).
