@@ -414,7 +414,10 @@ impl EPA {
                 }
             }
 
-            return Some((Vector::ZERO, Vector::ZERO, n));
+            // The CSO point lies at the origin, so both support points coincide at the
+            // touching location: report them instead of fabricated zeros.
+            let v = self.vertices[0];
+            return Some((v.orig1, v.orig2, n));
         } else if simplex.dimension() == 2 {
             let dp1 = self.vertices[1] - self.vertices[0];
             let dp2 = self.vertices[2] - self.vertices[0];
