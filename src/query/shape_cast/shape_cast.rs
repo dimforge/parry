@@ -29,29 +29,44 @@ pub enum ShapeCastStatus {
     PenetratingOrWithinTargetDist,
 }
 
-/// The result of a shape casting..
+/// The result of a shape casting.
+///
+/// # Frame conventions
+///
+/// The `witness1`/`normal1` (resp. `witness2`/`normal2`) fields are expressed in the frame the
+/// first (resp. second) shape was described in when performing the query:
+/// - For shape-local queries like [`cast_shapes`] or
+///   [`QueryDispatcher::cast_shapes`](crate::query::QueryDispatcher::cast_shapes), this is the
+///   local frame of the corresponding shape.
+/// - For queries where a shape is a composite with its parts posed in another frame (e.g.
+///   casting a shape on Rapier's `QueryPipeline`, where the colliders hit are posed in world
+///   space), the corresponding fields are expressed in that frame (e.g. world space).
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeCastHit {
     /// The time at which the objects touch.
     pub time_of_impact: Real,
-    /// The local-space closest point on the first shape at the time of impact.
+    /// The closest point on the first shape at the time of impact, expressed in the frame of
+    /// the query (see the [frame conventions](ShapeCastHit#frame-conventions)).
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`.
     pub witness1: Vector,
-    /// The local-space closest point on the second shape at the time of impact.
+    /// The closest point on the second shape at the time of impact, expressed in the frame of
+    /// the query (see the [frame conventions](ShapeCastHit#frame-conventions)).
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
     pub witness2: Vector,
-    /// The local-space outward normal on the first shape at the time of impact.
+    /// The outward normal on the first shape at the time of impact, expressed in the frame of
+    /// the query (see the [frame conventions](ShapeCastHit#frame-conventions)).
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
     /// when calling the time-of-impact function.
     pub normal1: Vector,
-    /// The local-space outward normal on the second shape at the time of impact.
+    /// The outward normal on the second shape at the time of impact, expressed in the frame of
+    /// the query (see the [frame conventions](ShapeCastHit#frame-conventions)).
     ///
     /// This value is unreliable if `status` is [`ShapeCastStatus::PenetratingOrWithinTargetDist`]
     /// and both [`ShapeCastOptions::compute_impact_geometry_on_penetration`] was set to `false`
