@@ -94,8 +94,12 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
             let mut feature1 = PolygonalFeature::default();
             let mut feature2 = PolygonalFeature::default();
-            pfm1.local_support_feature(local_n1, &mut feature1);
-            pfm2.local_support_feature(local_n2, &mut feature2);
+            pfm1.local_support_feature_toward(local_n1, p1, &mut feature1);
+            pfm2.local_support_feature_toward(
+                local_n2,
+                pos12.inverse_transform_point(p2_1),
+                &mut feature2,
+            );
 
             PolygonalFeature::contacts(
                 pos12,
