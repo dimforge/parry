@@ -1,4 +1,4 @@
-use crate::bounding_volume::Aabb;
+use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{IVector, IVectorExt, Int, Pose, Real, Vector, VectorExt, DIM};
 use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
@@ -138,7 +138,9 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
     let radius1 = voxels1.voxel_size() / 2.0;
 
     let aabb1 = voxels1.local_aabb();
-    let aabb2_1 = shape2.compute_aabb(pos12);
+    // Loosen by `prediction` (like the trimesh/heightfield/compound manifold generators do)
+    // so that speculative contacts within the prediction distance are generated too.
+    let aabb2_1 = shape2.compute_aabb(pos12).loosened(prediction);
     let domain2_1 = Aabb {
         mins: aabb2_1.mins - radius1 * 10.0,
         maxs: aabb2_1.maxs + radius1 * 10.0,
