@@ -380,13 +380,13 @@ where
     let mut max_bound = Real::max_value();
     let mut dir;
     let mut niter = 0;
-    // Separation is certified as soon as some support plane puts the origin strictly
-    // outside the CSO (`min_bound > 0`). Without such a certificate, a stalled simplex
-    // must not report the shapes as disjoint (issue #396): degenerate support directions
-    // (e.g. the symmetry axis of two coaxial cylinders) can stall the simplex while the
-    // origin is deeply inside the CSO. In that case we perturb the search direction and
-    // continue instead.
-    let mut separation_certified = false;
+    // Tightest lower bound on the distance from the origin to the CSO: `min_bound`
+    // maximized over the directions probed. Its sign classifies the origin: `> 0`
+    // means separation, `~ 0` puts it on the CSO boundary (touching),
+    // `< 0` bounds the penetration depth.
+    let mut best_min_bound = -Real::max_value();
+    // Largest CSO support magnitude seen, used to scale the tolerance below.
+    let mut support_scale: Real = 0.0;
     let mut nb_perturbs = 0usize;
     const MAX_PERTURBATIONS: usize = 2 * DIM;
 
@@ -404,17 +404,25 @@ where
         }
 
         if max_bound >= old_max_bound {
-            if exact_dist {
+            if best_min_bound > 0.0 {
+                // Separation certified: the converged witnesses are the answer.
+                if exact_dist {
+                    let (p1, p2) = result(simplex, true);
+                    return GJKResult::ClosestPoints(p1, p2, old_dir); // upper bounds inconsistencies
+                } else {
+                    return GJKResult::Proximity(old_dir);
+                }
+            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+                // Origin on the CSO boundary: the pair is touching, so the witnesses
+                // describe the contact.
                 let (p1, p2) = result(simplex, true);
-                return GJKResult::ClosestPoints(p1, p2, old_dir); // upper bounds inconsistencies
-            } else if separation_certified {
-                return GJKResult::Proximity(old_dir);
+                return GJKResult::ClosestPoints(p1, p2, old_dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {
+                // Try slight perturbations to avoid getting stuck into a numerical ambiguity.
                 nb_perturbs += 1;
                 dir = perturbed_dir(dir, nb_perturbs);
             } else {
-                // We could neither make progress nor certify separation:
-                // reporting an intersection is the safe answer.
+                // The CSO reaches past the origin in every direction probed.
                 return GJKResult::Intersection;
             }
         }
@@ -423,6 +431,9 @@ where
         let min_bound = -dir.dot(cso_point.point);
 
         assert!(min_bound.is_finite());
+
+        best_min_bound = best_min_bound.max(min_bound);
+        support_scale = support_scale.max(cso_point.point.length());
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
@@ -437,14 +448,18 @@ where
             }
         }
 
-        separation_certified = separation_certified || min_bound > 0.0;
-
         if !simplex.add_point(cso_point) {
-            if exact_dist {
+            // See the stagnation branch above for how `best_min_bound` classifies a stall.
+            if best_min_bound > 0.0 {
+                if exact_dist {
+                    let (p1, p2) = result(simplex, false);
+                    return GJKResult::ClosestPoints(p1, p2, dir);
+                } else {
+                    return GJKResult::Proximity(dir);
+                }
+            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
-            } else if separation_certified {
-                return GJKResult::Proximity(dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {
                 // The duplicate support point cannot enrich the simplex; jump back to
                 // the top of the loop where the stagnation branch will perturb `dir`.
