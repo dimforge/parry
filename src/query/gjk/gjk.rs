@@ -380,6 +380,15 @@ where
     let mut max_bound = Real::max_value();
     let mut dir;
     let mut niter = 0;
+    // Separation is certified as soon as some support plane puts the origin strictly
+    // outside the CSO (`min_bound > 0`). Without such a certificate, a stalled simplex
+    // must not report the shapes as disjoint (issue #396): degenerate support directions
+    // (e.g. the symmetry axis of two coaxial cylinders) can stall the simplex while the
+    // origin is deeply inside the CSO. In that case we perturb the search direction and
+    // continue instead.
+    let mut separation_certified = false;
+    let mut nb_perturbs = 0usize;
+    const MAX_PERTURBATIONS: usize = 2 * DIM;
 
     loop {
         let old_max_bound = max_bound;
@@ -398,8 +407,15 @@ where
             if exact_dist {
                 let (p1, p2) = result(simplex, true);
                 return GJKResult::ClosestPoints(p1, p2, old_dir); // upper bounds inconsistencies
-            } else {
+            } else if separation_certified {
                 return GJKResult::Proximity(old_dir);
+            } else if nb_perturbs < MAX_PERTURBATIONS {
+                nb_perturbs += 1;
+                dir = perturbed_dir(dir, nb_perturbs);
+            } else {
+                // We could neither make progress nor certify separation:
+                // reporting an intersection is the safe answer.
+                return GJKResult::Intersection;
             }
         }
 
@@ -421,12 +437,20 @@ where
             }
         }
 
+        separation_certified = separation_certified || min_bound > 0.0;
+
         if !simplex.add_point(cso_point) {
             if exact_dist {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
-            } else {
+            } else if separation_certified {
                 return GJKResult::Proximity(dir);
+            } else if nb_perturbs < MAX_PERTURBATIONS {
+                // The duplicate support point cannot enrich the simplex; jump back to
+                // the top of the loop where the stagnation branch will perturb `dir`.
+                continue;
+            } else {
+                return GJKResult::Intersection;
             }
         }
 
@@ -809,6 +833,18 @@ where
             return None;
         }
     }
+}
+
+// Deterministically perturbs the unit direction `dir` to escape degenerate support
+// directions that stall the GJK simplex without proving separation.
+// Successive seeds cycle through ±offsets along each coordinate axis.
+fn perturbed_dir(dir: Vector, seed: usize) -> Vector {
+    const OFFSET: Real = 1.0e-2;
+    let axis = (seed - 1) % DIM;
+    let sign = if ((seed - 1) / DIM) % 2 == 0 { 1.0 } else { -1.0 };
+    let mut res = dir;
+    res[axis] += sign * OFFSET;
+    res.try_normalize().unwrap_or(dir)
 }
 
 fn result(simplex: &VoronoiSimplex, prev: bool) -> (Vector, Vector) {
