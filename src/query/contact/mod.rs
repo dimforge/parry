@@ -13,6 +13,8 @@ pub use self::contact_cuboid_cuboid::contact_cuboid_cuboid;
 pub use self::contact_halfspace_support_map::{
     contact_halfspace_support_map, contact_support_map_halfspace,
 };
+#[cfg(feature = "alloc")]
+pub use self::contact_heightfield_shape::{contact_heightfield_shape, contact_shape_heightfield};
 pub use self::contact_shape_shape::contact;
 #[cfg(feature = "alloc")]
 pub use self::contact_support_map_support_map::{
@@ -26,6 +28,8 @@ mod contact_ball_convex_polyhedron;
 mod contact_composite_shape_shape;
 mod contact_cuboid_cuboid;
 mod contact_halfspace_support_map;
+#[cfg(feature = "alloc")]
+mod contact_heightfield_shape;
 mod contact_shape_shape;
 #[cfg(feature = "alloc")]
 mod contact_support_map_support_map;

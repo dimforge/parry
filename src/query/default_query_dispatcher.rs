@@ -344,6 +344,14 @@ impl QueryDispatcher for DefaultQueryDispatcher {
                 return Ok(query::details::contact_support_map_support_map(
                     pos12, s1, s2, prediction,
                 ));
+            } else if let Some(hf1) = shape1.as_heightfield() {
+                return Ok(query::details::contact_heightfield_shape(
+                    self, pos12, hf1, shape2, prediction,
+                ));
+            } else if let Some(hf2) = shape2.as_heightfield() {
+                return Ok(query::details::contact_shape_heightfield(
+                    self, pos12, shape1, hf2, prediction,
+                ));
             } else if let Some(c1) = shape1.as_composite_shape() {
                 return Ok(query::details::contact_composite_shape_shape(
                     self, pos12, c1, shape2, prediction,
