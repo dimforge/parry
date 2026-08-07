@@ -859,7 +859,11 @@ where
 fn perturbed_dir(dir: Vector, seed: usize) -> Vector {
     const OFFSET: Real = 1.0e-2;
     let axis = (seed - 1) % DIM;
-    let sign = if ((seed - 1) / DIM) % 2 == 0 { 1.0 } else { -1.0 };
+    let sign = if ((seed - 1) / DIM) % 2 == 0 {
+        1.0
+    } else {
+        -1.0
+    };
     let mut res = dir;
     res[axis] += sign * OFFSET;
     res.try_normalize().unwrap_or(dir)
