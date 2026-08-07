@@ -653,7 +653,10 @@ pub fn push_arc_and_idx(
         nsubdivs,
         out_vtx,
     );
-    push_arc_idx(start, base..base + nsubdivs - 1, end, out_idx);
+    // Rely on the actual number of pushed vertices so the index buffer can never
+    // reference vertices that were not pushed.
+    let pushed = out_vtx.len() as u32 - base;
+    push_arc_idx(start, base..base + pushed, end, out_idx);
 }
 
 /// Pushes points forming an arc between two points around a center.
@@ -664,6 +667,8 @@ pub fn push_arc_and_idx(
 ///
 /// The function interpolates both the angle and the radius, so it can handle arcs where
 /// the start and end points are at different distances from the center (spiral-like paths).
+/// On a degenerate arc (`start` and/or `end` coinciding with `center`), the intermediate
+/// points are linearly interpolated instead, so exactly `nsubdivs - 1` points are pushed.
 ///
 /// # Arguments
 /// * `center` - The center point of rotation
@@ -727,6 +732,13 @@ pub fn push_arc(center: Vector, start: Vector, end: Vector, nsubdivs: u32, out: 
             curr_len += len_inc;
 
             out.push(center + curr_dir * curr_len);
+        }
+    } else {
+        // Degenerate arc (e.g. a zero border radius): fall back to a straight line so the
+        // callers' index bookkeeping still gets exactly `nsubdivs - 1` points.
+        for i in 1..nsubdivs {
+            let t = i as Real / nsubdivs as Real;
+            out.push(start + (end - start) * t);
         }
     }
 }
