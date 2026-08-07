@@ -12,11 +12,7 @@ use parry3d::shape::{Ball, Capsule, Cuboid, HalfSpace};
 
 #[test]
 fn capsule_cuboid_sweep_has_no_false_negatives() {
-    let capsule = Capsule::new(
-        Vector::new(0.0, -0.5, 0.0),
-        Vector::new(0.0, 0.5, 0.0),
-        0.5,
-    );
+    let capsule = Capsule::new(Vector::new(0.0, -0.5, 0.0), Vector::new(0.0, 0.5, 0.0), 0.5);
     let ball = Ball::new(0.5);
     let halfspace = HalfSpace::new(Vector::new(0.0, 1.0, 0.0));
 

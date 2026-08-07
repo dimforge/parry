@@ -11,14 +11,8 @@ use parry2d::query::{self, ShapeCastOptions};
 use parry2d::shape::{Capsule, Cuboid, Segment};
 
 fn cast(pos12: Pose, vel12: Vector, segment: &Segment, cuboid: &Cuboid) -> bool {
-    cast_shapes_support_map_support_map(
-        &pos12,
-        vel12,
-        segment,
-        cuboid,
-        ShapeCastOptions::default(),
-    )
-    .is_some()
+    cast_shapes_support_map_support_map(&pos12, vel12, segment, cuboid, ShapeCastOptions::default())
+        .is_some()
 }
 
 #[test]
