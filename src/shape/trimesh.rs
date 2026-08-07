@@ -519,9 +519,26 @@ pub struct TriMesh {
     flags: TriMeshFlags,
 }
 
+// NOTE: can't be derived because of the `Bvh` and topology fields; print a
+// summary useful for quickly validating the mesh instead.
 impl fmt::Debug for TriMesh {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "GenericTriMesh")
+        let mut dbg = f.debug_struct("TriMesh");
+        let dbg = dbg
+            .field("num_vertices", &self.vertices.len())
+            .field("num_triangles", &self.indices.len())
+            .field("local_aabb", &self.local_aabb())
+            .field("flags", &self.flags);
+
+        #[cfg(feature = "dim3")]
+        let dbg = dbg.field("has_pseudo_normals", &self.pseudo_normals.is_some());
+
+        dbg.field("has_topology", &self.topology.is_some())
+            .field(
+                "has_connected_components",
+                &self.connected_components.is_some(),
+            )
+            .finish_non_exhaustive()
     }
 }
 
