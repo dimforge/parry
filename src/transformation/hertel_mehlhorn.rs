@@ -110,8 +110,10 @@ pub fn hertel_mehlhorn_idx(vertices: &[Vector], indices: &[[u32; 3]]) -> Vec<Vec
             new_polygon.extend(polygon1.iter().cycle().skip(i12).take(polygon1.len() - 1));
             new_polygon.extend(polygon2.iter().cycle().skip(i22).take(polygon2.len() - 1));
 
-            // Remove the polygon from the list.
-            let _ = indices.remove(i_poly2);
+            // `swap_remove` is O(1) and safe here: it moves the last polygon into slot
+            // `i_poly2 > i_poly1`, which the edge search above re-scans, so no merge
+            // candidate is skipped — only the output order changes.
+            let _ = indices.swap_remove(i_poly2);
             // Overwrite the first polygon with the new one.
             indices[i_poly1] = new_polygon;
             // Start from the first point.
@@ -130,6 +132,18 @@ pub fn hertel_mehlhorn_idx(vertices: &[Vector], indices: &[[u32; 3]]) -> Vec<Vec
 mod tests {
     use super::hertel_mehlhorn_idx;
     use crate::math::Vector;
+    use alloc::vec::Vec;
+
+    /// Normalizes a decomposition for an order-insensitive comparison, since the
+    /// algorithm's output order is unspecified.
+    fn canonicalize(mut polygons: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+        for poly in &mut polygons {
+            let min_pos = (0..poly.len()).min_by_key(|&i| poly[i]).unwrap();
+            poly.rotate_left(min_pos);
+        }
+        polygons.sort();
+        polygons
+    }
 
     #[test]
     fn origin_outside_shape() {
@@ -172,6 +186,8 @@ mod tests {
             vec![2, 3, 0, 1],
         ];
 
-        assert_eq!(indices, expected_indices);
+        // Compare the decompositions as sets of (cyclic) polygons: the output order
+        // is unspecified.
+        assert_eq!(canonicalize(indices), canonicalize(expected_indices));
     }
 }
