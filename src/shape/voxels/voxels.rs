@@ -907,10 +907,10 @@ impl Voxels {
         self.voxels_in_range(mins, maxs)
     }
 
-    /// The center point of all the voxels in this shape (including empty ones).
+    /// The center point of all the non-empty voxels in this shape.
     ///
     /// The voxel data associated to each center is provided to determine what kind of voxel
-    /// it is (and, in particular, if it is empty or full).
+    /// it is (in particular, its [`VoxelState`] indicating which of its faces are free).
     pub fn voxels(&self) -> impl Iterator<Item = VoxelData> + '_ {
         let aabb = self.chunk_bvh.root_aabb();
         self.voxels_in_range(
@@ -921,7 +921,7 @@ impl Voxels {
 
     /// Iterate through the data of all the voxels within the given (semi-open) voxel grid indices.
     ///
-    /// Note that this yields both empty and non-empty voxels within the range. This does not
+    /// Note that this only yields non-empty voxels within the range. This does not
     /// include any voxel that falls outside [`Self::domain`].
     pub fn voxels_in_range(
         &self,

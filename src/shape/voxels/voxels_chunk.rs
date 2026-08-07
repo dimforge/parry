@@ -270,7 +270,7 @@ impl<'a> VoxelsChunkRef<'a> {
 
     /// Iterate through the data of all the voxels within the given (semi-open) voxel grid indices.
     ///
-    /// Note that this yields both empty and non-empty voxels within the range. This does not
+    /// Note that this only yields non-empty voxels within the range. This does not
     /// include any voxel that falls outside [`Self::domain`].
     #[cfg(feature = "dim3")]
     pub fn voxels_in_range(
