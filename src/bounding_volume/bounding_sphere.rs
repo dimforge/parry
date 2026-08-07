@@ -97,7 +97,9 @@ use crate::math::{Pose, Real, Vector};
 /// let sphere2 = BoundingSphere::new(Vector::new(4.0, 0.0, 0.0), 1.0);
 ///
 /// let merged = sphere1.merged(&sphere2);
-/// // The merged sphere contains both original spheres
+/// // The merged sphere contains both original spheres.
+/// // Note: due to floating-point rounding, containment may fail by a tiny margin
+/// // for some inputs; apply `BoundingVolume::loosened` if strict containment matters.
 /// assert!(merged.contains(&sphere1));
 /// assert!(merged.contains(&sphere2));
 /// # }
@@ -352,6 +354,11 @@ impl BoundingVolume for BoundingSphere {
     /// After this operation, this sphere will be the smallest sphere that contains
     /// both the original sphere and the other sphere.
     ///
+    /// Note that due to floating-point rounding, [`contains`](BoundingVolume::contains)
+    /// is not guaranteed to return `true` for the two input spheres afterwards: the
+    /// result can be off by a tiny margin. Use [`loosened`](BoundingVolume::loosened)
+    /// with a small margin if strict containment is required.
+    ///
     /// # Arguments
     ///
     /// * `other` - The other bounding sphere to merge with
@@ -407,6 +414,11 @@ impl BoundingVolume for BoundingSphere {
     ///
     /// The returned sphere is the smallest sphere that contains both input spheres.
     /// This is the non-mutating version of `merge`.
+    ///
+    /// Note that due to floating-point rounding, [`contains`](BoundingVolume::contains)
+    /// is not guaranteed to return `true` for the two input spheres: the result can be
+    /// off by a tiny margin. Use [`loosened`](BoundingVolume::loosened) with a small
+    /// margin if strict containment is required.
     ///
     /// # Arguments
     ///
