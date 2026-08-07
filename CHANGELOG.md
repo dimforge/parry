@@ -1,3 +1,60 @@
+## Unreleased
+
+### Added
+
+- `Debug` for `TriMesh` now prints a summary instead of just the type name
+  ([#177](https://github.com/dimforge/parry/issues/177)).
+- `query::contact` now supports heightfields, instead of returning `Err(Unsupported)`
+  ([#274](https://github.com/dimforge/parry/issues/274)).
+
+### Fixed
+
+- Fix GJK reporting overlapping axisymmetric shapes as disjoint when the simplex stalls on a
+  degenerate support direction ([#396](https://github.com/dimforge/parry/issues/396)).
+- Fix wrong shape-cast normals and distances for stalled GJK simplices, now classified as touching
+  or penetrating from the solver's own distance bound ([#193](https://github.com/dimforge/parry/issues/193)).
+- Fix shape-casts missing grazing hits at large coordinates, by scaling the GJK ray-cast tolerance
+  with the support magnitude ([#180](https://github.com/dimforge/parry/issues/180)).
+- Fix shape-cast time of impact being short by an amount scaling with the shape's extent
+  ([#429](https://github.com/dimforge/parry/issues/429)).
+- Fix `ShapeCastStatus::PenetratingOrWithinTargetDist` being reported for merely touching support-map
+  casts ([#106](https://github.com/dimforge/parry/issues/106)).
+- Fix `contact` between exactly-touching shapes returning witness points at the shapes' centers
+  ([#315](https://github.com/dimforge/parry/issues/315)).
+- Fix `Triangle::area` returning wildly wrong values for degenerate triangles
+  ([#111](https://github.com/dimforge/parry/issues/111)).
+- Fix point projection on degenerate triangles reporting the point as inside
+  ([#76](https://github.com/dimforge/parry/issues/76)).
+- Fix `segments_intersection2d` classifying exact segment endpoints as `OnEdge` instead of `OnVertex`
+  ([#109](https://github.com/dimforge/parry/issues/109)).
+- Fix composite-shape point projection panicking on non-finite points
+  ([#395](https://github.com/dimforge/parry/issues/395)).
+- Fix `HeightField::project_local_point` iterating on every element, making it O(rows * cols)
+  ([rapier#332](https://github.com/dimforge/rapier/issues/332)).
+- Fix single-point contact manifolds on cylinder and cone caps, by orienting the cap's polygonal
+  approximation toward the contact ([rapier#810](https://github.com/dimforge/rapier/issues/810)).
+- Fix missing speculative contacts between a `Voxels` shape and a shape within the prediction
+  distance ([#404](https://github.com/dimforge/parry/issues/404)).
+- Fix `Voxels` shape-cast `witness1` not being expressed in the voxels shape's local frame
+  ([#373](https://github.com/dimforge/parry/issues/373)).
+- Fix an out-of-bounds panic in the binned BVH builder on degenerate leaf AABBs
+  ([rapier#961](https://github.com/dimforge/rapier/issues/961)).
+- Fix out-of-bounds indices in `to_outline` for round shapes with a zero border radius
+  ([rapier#969](https://github.com/dimforge/rapier/issues/969)).
+- Fix the quadratic polygon removal in `hertel_mehlhorn`
+  ([#408](https://github.com/dimforge/parry/issues/408)).
+- Require `spade` 2.15, the minimum version providing `try_bulk_load_cdt`
+  ([#428](https://github.com/dimforge/parry/issues/428)).
+
+### Modified
+
+- Document the frame conventions of the `ShapeCastHit` fields
+  ([rapier#933](https://github.com/dimforge/rapier/issues/933)).
+- Document that the `Voxels` iterators only yield non-empty voxels
+  ([#382](https://github.com/dimforge/parry/issues/382)).
+- Document that `BoundingVolume::merge`/`merged` don't guarantee strict containment of their inputs
+  ([#260](https://github.com/dimforge/parry/issues/260)).
+
 ## 0.30.1
 
 ### Fixed
