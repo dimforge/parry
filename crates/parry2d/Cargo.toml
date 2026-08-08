@@ -67,7 +67,7 @@ num-traits = { workspace = true }
 slab = { workspace = true, optional = true }
 arrayvec = { workspace = true }
 simba = { workspace = true, features = ["wide"] }
-glamx = { workspace = true, features = ["i32"] }
+glamx = { workspace = true }
 approx = { workspace = true }
 serde = { workspace = true, optional = true }
 serde_arrays = { workspace = true, optional = true }

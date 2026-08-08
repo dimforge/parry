@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.30.2"
+version = "0.30.2-glamx0.2"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 documentation = "https://parry.rs/docs"
 homepage = "https://parry.rs"
@@ -42,7 +42,7 @@ num-traits = { version = "0.2", default-features = false }
 slab = "0.4"
 arrayvec = { version = "0.7", default-features = false }
 simba = { version = "0.10.1", default-features = false }
-glamx = { version = "0.3", default-features = false, features = ["nostd-libm"] }
+glamx = { version = "0.2", default-features = false, features = ["nostd-libm"] }
 approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_arrays = "0.2"
