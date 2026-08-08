@@ -1,4 +1,4 @@
-use super::{Bvh, BvhNode};
+use super::{Bvh, BvhLeafCost, BvhNode};
 use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::Real;
 use crate::math::Vector;
@@ -247,6 +247,76 @@ impl Bvh {
                 let proj = primitive_check(primitive, max_distance)?;
                 Some((proj.0.point.distance(point), proj))
             },
+        )
+    }
+
+    /// Like [`cast_ray`](Self::cast_ray), but returns an arbitrary [`BvhLeafCost`]
+    /// type from the leaf test rather than just [`Real`].
+    ///
+    /// This lets callers collect richer per-hit data (e.g., a `RayIntersection`
+    /// which includes the surface normal) while still benefiting from
+    /// SIMD-accelerated AABB tests on supported platforms.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::math::Vector;
+    /// use parry3d::query::{Ray, RayCast, RayIntersection};
+    /// use parry3d::shape::TriMesh;
+    ///
+    /// let vertices = vec![
+    ///     Vector::new(-1.0, -1.0, 0.0),
+    ///     Vector::new(1.0, -1.0, 0.0),
+    ///     Vector::new(1.0, 1.0, 0.0),
+    ///     Vector::new(-1.0, 1.0, 0.0),
+    /// ];
+    /// let mesh = TriMesh::new(vertices, vec![[0, 1, 2], [0, 2, 3]]).unwrap();
+    /// let ray = Ray::new(Vector::new(0.5, 0.3, -2.0), Vector::new(0.0, 0.0, 1.0));
+    ///
+    /// // cast_ray_best returns RayIntersection (with normal) instead of just Real:
+    /// let hit = mesh.bvh().cast_ray_best(&ray, f32::MAX, |leaf_id, _best| {
+    ///     let tri = mesh.triangle(leaf_id);
+    ///     tri.cast_local_ray_and_get_normal(&ray, f32::MAX, false)
+    /// });
+    ///
+    /// assert!(hit.is_some());
+    /// let (_triangle_index, intersection) = hit.unwrap();
+    /// assert!((intersection.time_of_impact - 2.0).abs() < 1e-5);
+    /// # }
+    /// ```
+    #[cfg(not(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32")))]
+    pub fn cast_ray_best<L: BvhLeafCost>(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<L>,
+    ) -> Option<(u32, L)> {
+        self.find_best(
+            max_time_of_impact,
+            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+            primitive_check,
+        )
+    }
+
+    /// Like [`cast_ray`](Self::cast_ray), but returns an arbitrary [`BvhLeafCost`]
+    /// type from the leaf test rather than just [`Real`].
+    ///
+    /// This lets callers collect richer per-hit data (e.g., a `RayIntersection`
+    /// which includes the surface normal) while still benefiting from
+    /// SIMD-accelerated AABB tests on supported platforms.
+    #[cfg(all(feature = "simd-is-enabled", feature = "dim3", feature = "f32"))]
+    pub fn cast_ray_best<L: BvhLeafCost>(
+        &self,
+        ray: &Ray,
+        max_time_of_impact: Real,
+        primitive_check: impl Fn(u32, Real) -> Option<L>,
+    ) -> Option<(u32, L)> {
+        let simd_inv_ray = SimdInvRay::from(*ray);
+        self.find_best(
+            max_time_of_impact,
+            |node: &BvhNode, _best_so_far| node.cast_inv_ray_simd(&simd_inv_ray),
+            primitive_check,
         )
     }
 
