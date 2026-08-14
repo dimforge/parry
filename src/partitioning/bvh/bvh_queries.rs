@@ -219,8 +219,8 @@ impl Bvh {
         self.find_best(
             max_distance,
             |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
-            |primitive, _| {
-                let proj = primitive_check(primitive, max_distance)?;
+            |primitive, best_so_far| {
+                let proj = primitive_check(primitive, best_so_far)?;
                 Some((proj.point.distance(point), proj))
             },
         )
@@ -243,8 +243,8 @@ impl Bvh {
         self.find_best(
             max_distance,
             |node: &BvhNode, _| node.aabb().distance_to_local_point(point, true),
-            |primitive, _| {
-                let proj = primitive_check(primitive, max_distance)?;
+            |primitive, best_so_far| {
+                let proj = primitive_check(primitive, best_so_far)?;
                 Some((proj.0.point.distance(point), proj))
             },
         )
