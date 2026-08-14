@@ -116,6 +116,11 @@ name = "gjk_epa"
 path = "benches/gjk_epa.rs"
 harness = false
 
+[[bench]]
+name = "bvh_queries"
+path = "benches/bvh_queries.rs"
+harness = false
+
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

@@ -134,7 +134,66 @@ fn bench_trimesh_shape(c: &mut Criterion) {
     let prediction = 0.1;
     let terrain = make_terrain(48); // 4608 triangles
 
+    // Same terrain with internal-edge fixing: pseudo-normals are computed and
+    // fetched per candidate triangle every frame.
+    let (fixed_vtx, fixed_idx) = {
+        let t = make_terrain(48);
+        (t.vertices().to_vec(), t.indices().to_vec())
+    };
+    let terrain_fixed = TriMesh::with_flags(
+        fixed_vtx,
+        fixed_idx,
+        parry3d::shape::TriMeshFlags::FIX_INTERNAL_EDGES,
+    )
+    .unwrap();
+
     let mut g = c.benchmark_group("contact_manifolds_trimesh");
+
+    g.bench_function("trimesh_fixed_edges_vs_cuboid", |b| {
+        let cuboid = Cuboid::new(Vector::new(0.6, 0.6, 0.6));
+        let mut manifolds: Vec<Manifold> = Vec::new();
+        let mut workspace: Option<ContactManifoldsWorkspace> = None;
+        let mut step = 0u32;
+        b.iter(|| {
+            step = step.wrapping_add(1);
+            let t = step as Real * 0.02;
+            let pos12 = Pose::translation(t.sin() * 0.5, 0.5, t.cos() * 0.5);
+            dispatcher
+                .contact_manifolds(
+                    &pos12,
+                    &terrain_fixed,
+                    &cuboid,
+                    prediction,
+                    &mut manifolds,
+                    &mut workspace,
+                )
+                .unwrap();
+            black_box(manifolds.len())
+        })
+    });
+
+    g.bench_function("trimesh_fixed_edges_vs_ball", |b| {
+        let ball = Ball::new(0.7);
+        let mut manifolds: Vec<Manifold> = Vec::new();
+        let mut workspace: Option<ContactManifoldsWorkspace> = None;
+        let mut step = 0u32;
+        b.iter(|| {
+            step = step.wrapping_add(1);
+            let t = step as Real * 0.02;
+            let pos12 = Pose::translation(t.sin() * 0.5, 0.55, t.cos() * 0.5);
+            dispatcher
+                .contact_manifolds(
+                    &pos12,
+                    &terrain_fixed,
+                    &ball,
+                    prediction,
+                    &mut manifolds,
+                    &mut workspace,
+                )
+                .unwrap();
+            black_box(manifolds.len())
+        })
+    });
 
     g.bench_function("trimesh_vs_ball", |b| {
         let ball = Ball::new(0.7);
