@@ -39,10 +39,10 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
         (&seg2_1.a, &seg2_1.b),
     );
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = manifold.points.clone();
-    manifold.clear();
+    // Drain the previous points into a stack-first buffer to perform contact
+    // tracking and impulse transfer without a per-call heap allocation (the
+    // face/face case can emit up to 8 contacts).
+    let old_manifold_points: smallvec::SmallVec<[_; 8]> = manifold.points.drain(..).collect();
 
     let fid1 = if let SegmentPointLocation::OnVertex(v1) = loc1 {
         v1 * 2

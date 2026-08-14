@@ -149,6 +149,8 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     let mut old_inter_it = workspace.old_interferences.drain(..).peekable();
     let mut old_manifolds_it = old_manifolds.drain(..);
 
+    let pos21 = pos12.inverse();
+
     // TODO: don't redispatch at each frame (we should probably do the same as
     // the heightfield).
     for (i, triangle_id) in new_interferences.iter().enumerate() {
@@ -194,7 +196,7 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
 
         if flipped {
             let _ = dispatcher.contact_manifold_convex_convex(
-                &pos12.inverse(),
+                &pos21,
                 shape2,
                 &triangle1,
                 None,
