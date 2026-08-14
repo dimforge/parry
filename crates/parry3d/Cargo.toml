@@ -97,6 +97,29 @@ rand = { workspace = true }
 kiss3d = { workspace = true }
 rand_isaac = { workspace = true }
 web-time = { workspace = true }
+criterion = "0.8"
+
+# Declaring any [[bench]] disables bench auto-discovery, so the pre-existing
+# nightly libtest bench (`benches/all.rs`) is declared explicitly to keep it
+# available unchanged.
+[[bench]]
+name = "all"
+path = "benches/all.rs"
+
+[[bench]]
+name = "contact_manifolds"
+path = "benches/contact_manifolds.rs"
+harness = false
+
+[[bench]]
+name = "gjk_epa"
+path = "benches/gjk_epa.rs"
+harness = false
+
+[[bench]]
+name = "bvh_queries"
+path = "benches/bvh_queries.rs"
+harness = false
 
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]

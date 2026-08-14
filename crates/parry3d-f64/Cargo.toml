@@ -88,6 +88,7 @@ ordered-float = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+criterion = "0.8"
 oorandom = { workspace = true }
 ptree = { workspace = true }
 rand = { workspace = true }
@@ -95,3 +96,13 @@ rand = { workspace = true }
 [package.metadata.docs.rs]
 rustdoc-args = ["-Zunstable-options", "--generate-link-to-definition"]
 features = ["wavefront"]
+
+[[bench]]
+name = "contact_manifolds"
+path = "benches/contact_manifolds.rs"
+harness = false
+
+[[bench]]
+name = "gjk_epa"
+path = "benches/gjk_epa.rs"
+harness = false
