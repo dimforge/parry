@@ -87,6 +87,7 @@ foldhash = { workspace = true }
 encase = { workspace = true, optional = true }
 
 [dev-dependencies]
+criterion = "0.8"
 simba = { workspace = true, features = ["wide"] }
 oorandom = { workspace = true }
 ptree = { workspace = true }
@@ -186,3 +187,13 @@ doc-scrape-examples = true
 name = "time_of_impact_query2d"
 path = "examples/time_of_impact_query2d.rs"
 doc-scrape-examples = true
+
+[[bench]]
+name = "contact_manifolds"
+path = "benches/contact_manifolds.rs"
+harness = false
+
+[[bench]]
+name = "gjk_epa"
+path = "benches/gjk_epa.rs"
+harness = false

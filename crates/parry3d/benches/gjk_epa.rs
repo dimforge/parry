@@ -1,7 +1,7 @@
-//! Criterion benchmarks for GJK/EPA contact queries between smooth convex
-//! shapes (support-map path). Deep-penetration cases exercise the per-call
-//! `EPA::new()` allocation (audit finding P2); separated/shallow cases stay
-//! in pure GJK (finding P5's per-iteration sqrt).
+// Criterion benchmarks for GJK/EPA contact queries between smooth convex
+// shapes (support-map path). Deep-penetration cases exercise the per-call
+// `EPA::new()` allocation (audit finding P2); separated/shallow cases stay
+// in pure GJK (finding P5's per-iteration sqrt).
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use parry3d::math::Pose;

@@ -85,7 +85,18 @@ smallvec = { workspace = true }
 foldhash = { workspace = true }
 
 [dev-dependencies]
+criterion = "0.8"
 simba = { workspace = true, features = ["wide"] }
 oorandom = { workspace = true }
 ptree = { workspace = true }
 rand = { workspace = true }
+
+[[bench]]
+name = "contact_manifolds"
+path = "benches/contact_manifolds.rs"
+harness = false
+
+[[bench]]
+name = "gjk_epa"
+path = "benches/gjk_epa.rs"
+harness = false
