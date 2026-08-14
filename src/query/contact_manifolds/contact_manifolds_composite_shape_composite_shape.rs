@@ -174,13 +174,13 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
                 );
             };
 
-            for leaf_id in composite2.bvh().intersect_aabb(&ls_part_aabb1_2) {
+            for leaf_id in bvh2.intersect_aabb(&ls_part_aabb1_2) {
                 leaf_fn2(leaf_id);
             }
         });
     };
 
-    for leaf_id in composite1.bvh().intersect_aabb(&ls_aabb2_1) {
+    for leaf_id in bvh1.intersect_aabb(&ls_aabb2_1) {
         leaf_fn1(leaf_id);
     }
 

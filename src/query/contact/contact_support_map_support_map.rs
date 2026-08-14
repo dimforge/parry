@@ -63,9 +63,26 @@ where
     }
 
     // The point is inside of the CSO: use the fallback algorithm
-    let mut epa = EPA::new();
-    if let Some((p1, p2, n)) = epa.closest_points(pos12, g1, g2, simplex) {
-        return GJKResult::ClosestPoints(p1, p2, n);
+    #[cfg(feature = "std")]
+    {
+        // Reuse a thread-local EPA so repeated penetrating contacts don't
+        // re-grow its internal buffers on every call.
+        std::thread_local! {
+            static EPA_WORKSPACE: core::cell::RefCell<EPA> =
+                core::cell::RefCell::new(EPA::new());
+        }
+        if let Some((p1, p2, n)) =
+            EPA_WORKSPACE.with(|epa| epa.borrow_mut().closest_points(pos12, g1, g2, simplex))
+        {
+            return GJKResult::ClosestPoints(p1, p2, n);
+        }
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        let mut epa = EPA::new();
+        if let Some((p1, p2, n)) = epa.closest_points(pos12, g1, g2, simplex) {
+            return GJKResult::ClosestPoints(p1, p2, n);
+        }
     }
 
     // Everything failed

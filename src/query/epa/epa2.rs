@@ -198,7 +198,13 @@ impl EPA {
     /// # }
     /// ```
     pub fn new() -> Self {
-        EPA::default()
+        // Pre-reserve the internal buffers so a fresh EPA doesn't pay a series
+        // of reallocations on its first penetrating contact.
+        Self {
+            vertices: Vec::with_capacity(32),
+            faces: Vec::with_capacity(64),
+            heap: BinaryHeap::with_capacity(32),
+        }
     }
 
     fn reset(&mut self) {

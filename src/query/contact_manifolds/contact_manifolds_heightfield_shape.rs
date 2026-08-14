@@ -117,6 +117,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
     // TODO: somehow precompute the Aabb and reuse it?
     let ls_aabb2 = shape2.compute_aabb(pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
+    let pos21 = pos12.inverse();
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2, &mut |i, part1| {
         #[cfg(feature = "dim2")]
@@ -161,7 +162,7 @@ pub fn contact_manifolds_heightfield_shape<ManifoldData, ContactData>(
 
         if flipped {
             let _ = dispatcher.contact_manifold_convex_convex(
-                &pos12.inverse(),
+                &pos21,
                 shape2,
                 &sub_shape1,
                 None,

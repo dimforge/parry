@@ -74,8 +74,10 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         init_dir,
     );
 
-    let old_manifold_points = manifold.points.clone();
-    manifold.clear();
+    // Drain the previous points into a stack-first buffer to perform contact
+    // tracking and impulse transfer without a per-call heap allocation (the
+    // face/face case can emit up to 8 contacts).
+    let old_manifold_points: smallvec::SmallVec<[_; 8]> = manifold.points.drain(..).collect();
 
     match contact {
         GJKResult::ClosestPoints(p1, p2_1, dir) => {
