@@ -5,11 +5,13 @@ use crate::math::{Pose, Real};
 use crate::query::contact_manifolds::contact_manifolds_workspace::{
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::query::contact_manifolds::ContactManifoldsWorkspace;
+use crate::query::contact_manifolds::{
+    contact_manifolds_composite_shape_shape, ContactManifoldsWorkspace,
+};
 use crate::query::details::NormalConstraints;
 use crate::query::query_dispatcher::PersistentQueryDispatcher;
 use crate::query::ContactManifold;
-use crate::shape::{Shape, TriMesh};
+use crate::shape::{CompositeShape, Shape, TriMesh, TriMeshFlags};
 
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -49,7 +51,7 @@ pub fn contact_manifolds_trimesh_shape_shapes<ManifoldData, ContactData>(
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,
 ) where
-    ManifoldData: Default,
+    ManifoldData: Default + Clone,
     ContactData: Default + Copy,
 {
     if let Some(trimesh1) = shape1.as_trimesh() {
@@ -85,6 +87,10 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 }
 
 /// Computes the contact manifold between a triangle-mesh and a shape.
+///
+/// A mesh flagged [`TriMeshFlags::DEFORMABLE`] goes through
+/// [`contact_manifolds_composite_shape_shape`] instead: the interfering-triangle cache kept in
+/// this function's workspace assumes a rigid mesh.
 pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Pose,
@@ -95,9 +101,22 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     workspace: &mut Option<ContactManifoldsWorkspace>,
     flipped: bool,
 ) where
-    ManifoldData: Default,
+    ManifoldData: Default + Clone,
     ContactData: Default + Copy,
 {
+    if trimesh1.flags().contains(TriMeshFlags::DEFORMABLE) {
+        return contact_manifolds_composite_shape_shape(
+            dispatcher,
+            pos12,
+            trimesh1 as &dyn CompositeShape,
+            shape2,
+            prediction,
+            manifolds,
+            workspace,
+            flipped,
+        );
+    }
+
     ensure_workspace_exists(workspace);
     let workspace: &mut TriMeshShapeContactManifoldsWorkspace =
         workspace.as_mut().unwrap().0.downcast_mut().unwrap();

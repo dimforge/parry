@@ -81,6 +81,7 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
     let bvh2 = composite2.bvh();
     let ls_aabb2_1 = bvh2.root_aabb().transform_by(pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
+    let deformable = composite2.is_deformable();
 
     heightfield1.map_elements_in_local_aabb(&ls_aabb2_1, &mut |leaf1, part1| {
         #[cfg(feature = "dim2")]
@@ -124,6 +125,9 @@ pub fn contact_manifolds_heightfield_composite_shape<ManifoldData, ContactData>(
                 };
 
                 let manifold = &mut manifolds[sub_detector.manifold_id];
+                if deformable {
+                    manifold.mark_shapes_deformed();
+                }
 
                 #[cfg(feature = "dim2")]
                 let triangle_normals = None::<()>;

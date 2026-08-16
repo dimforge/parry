@@ -25,6 +25,9 @@ pub struct TrianglePseudoNormals {
     //       triangle_pseudo_normals code.
     /// The edges pseudo-normals, in no particular order.
     pub edges: [Vector; 3],
+    /// If `true`, a direction pointing to the back of the triangle is projected into the
+    /// mirrored cone (`-face`, `-edges`) and kept, instead of being discarded.
+    pub two_sided: bool,
 }
 
 #[cfg(feature = "alloc")]
@@ -32,6 +35,21 @@ impl NormalConstraints for TrianglePseudoNormals {
     /// Projects the given direction to it is contained in the polygonal
     /// cone defined `self`.
     fn project_local_normal_mut(&self, dir: &mut Vector) -> bool {
+        if self.two_sided && dir.dot(self.face) < 0.0 {
+            // The back cone is the front cone mirrored through the triangle's plane.
+            let mut mirrored = -*dir;
+            let _ = self.project_front(&mut mirrored);
+            *dir = -mirrored;
+            return true;
+        }
+
+        self.project_front(dir)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl TrianglePseudoNormals {
+    fn project_front(&self, dir: &mut Vector) -> bool {
         // Find the closest pseudo-normal.
         let dots = Vector3::new(
             dir.dot(self.edges[0]),
@@ -63,6 +81,7 @@ mod test {
         let pn = TrianglePseudoNormals {
             face: Vector::Y,
             edges: [Vector::Y; 3],
+            two_sided: false,
         };
 
         assert_eq!(
@@ -89,6 +108,7 @@ mod test {
         let pn = TrianglePseudoNormals {
             face: Vector::Y,
             edges: cones_axes.map(|v| v.normalize()),
+            two_sided: false,
         };
 
         for i in 0..3 {
@@ -147,6 +167,7 @@ mod test {
         let pn = TrianglePseudoNormals {
             face: Vector::Y,
             edges: cones_axes.map(|v| v.normalize()),
+            two_sided: false,
         };
 
         for i in 0..3 {
@@ -170,6 +191,49 @@ mod test {
                     .normalize();
                 assert!(pn.project_local_normal(v).is_none());
             }
+        }
+    }
+
+    #[test]
+    fn two_sided_pseudo_normals_mirror_the_cone() {
+        let one_sided = TrianglePseudoNormals {
+            face: Vector::Y,
+            edges: [Vector::Y; 3],
+            two_sided: false,
+        };
+        let two_sided = TrianglePseudoNormals {
+            two_sided: true,
+            ..one_sided.clone()
+        };
+
+        // Front directions behave the same.
+        let front = Vector::new(1.0, 1.0, 1.0);
+        assert_eq!(two_sided.project_local_normal(front), Some(Vector::Y));
+
+        // Back directions are kept and constrained to the mirrored cone.
+        let back = Vector::new(1.0, -1.0, 1.0);
+        assert!(one_sided.project_local_normal(back).is_none());
+        assert_eq!(two_sided.project_local_normal(back), Some(-Vector::Y));
+
+        // The mirrored projection is the negation of the front projection.
+        let cone_axes = [
+            bisector_y(-Vector::Z),
+            bisector_y(-Vector::X),
+            bisector_y(Vector::new(1.0, 0.0, 1.0).normalize()),
+        ];
+        let pn = TrianglePseudoNormals {
+            face: Vector::Y,
+            edges: cone_axes,
+            two_sided: true,
+        };
+        for dir in [
+            Vector::new(0.3, 1.0, -0.8).normalize(),
+            Vector::new(-1.0, 0.2, 0.1).normalize(),
+            Vector::new(0.9, 0.5, 0.9).normalize(),
+        ] {
+            let front = pn.project_local_normal(dir).unwrap();
+            let back = pn.project_local_normal(-dir).unwrap();
+            assert!(back.abs_diff_eq(-front, 1.0e-6));
         }
     }
 }

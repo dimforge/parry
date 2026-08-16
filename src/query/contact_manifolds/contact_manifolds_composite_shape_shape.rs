@@ -78,6 +78,7 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
 
     let pos12 = *pos12;
     let pos21 = pos12.inverse();
+    let deformable = composite1.is_deformable();
 
     // Traverse bvh1 first.
     let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
@@ -118,6 +119,9 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
             };
 
             let manifold = &mut manifolds[sub_detector.manifold_id];
+            if deformable {
+                manifold.mark_shapes_deformed();
+            }
 
             if flipped {
                 let _ = dispatcher.contact_manifold_convex_convex(

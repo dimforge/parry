@@ -25,8 +25,7 @@ pub use self::{
     voxels::{AxisMask, OctantPattern, VoxelData, VoxelState, VoxelType, Voxels, VoxelsChunkRef},
 };
 
-// `PolylineFlags` is a 2D-only feature.
-#[cfg(all(feature = "dim2", feature = "alloc"))]
+#[cfg(feature = "alloc")]
 pub use self::polyline::PolylineFlags;
 
 #[cfg(feature = "dim2")]

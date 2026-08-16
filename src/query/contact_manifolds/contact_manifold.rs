@@ -747,6 +747,15 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         true
     }
 
+    /// Forces the next contact-manifold computation to recompute this manifold's contact points
+    /// instead of reusing them through [`Self::try_update_contacts`]; call it when a shape's
+    /// geometry changed with its pose fixed. The points are kept for [`Self::match_contacts`].
+    #[inline]
+    pub fn mark_shapes_deformed(&mut self) {
+        // The coherence check compares the two cached normals; a zero second normal never passes it.
+        self.local_n2 = Vector::ZERO;
+    }
+
     /// Refreshes every contact point's separation (`dist`) from the current
     /// relative pose of the two shapes, keeping the contact points (anchors)
     /// frozen at their captured material positions.

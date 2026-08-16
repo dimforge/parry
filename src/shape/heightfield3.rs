@@ -496,6 +496,7 @@ impl HeightField {
                 // TODO: the normals are given in no particular order. So they are **not**
                 //       guaranteed to be provided in the same order as the triangle’s edge.
                 edges: [pseudo_normal1, pseudo_normal2, pseudo_normal3],
+                two_sided: false,
             })
         } else {
             None

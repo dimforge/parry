@@ -32,6 +32,18 @@ pub trait CompositeShape {
 
     /// Gets the acceleration structure of the composite shape.
     fn bvh(&self) -> &Bvh;
+
+    /// Whether the parts of this shape may change between two queries made at the same pose (a
+    /// deformable mesh whose vertices move).
+    ///
+    /// The contact-manifold queries then never reuse the contact points cached from a previous
+    /// call (see [`ContactManifold::mark_shapes_deformed`]); the caller must still make sure the
+    /// [`Self::bvh`] is up to date. Defaults to `false`.
+    ///
+    /// [`ContactManifold::mark_shapes_deformed`]: crate::query::ContactManifold::mark_shapes_deformed
+    fn is_deformable(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(feature = "alloc")]

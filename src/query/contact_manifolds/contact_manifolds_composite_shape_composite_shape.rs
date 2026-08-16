@@ -97,6 +97,7 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
     // Traverse bvh1 first.
     let ls_aabb2_1 = ls_aabb2.transform_by(&pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
+    let deformable = composite1.is_deformable() || composite2.is_deformable();
 
     let mut leaf_fn1 = |leaf1: u32| {
         composite1.map_part_at(leaf1, &mut |part_pos1, part_shape1, normal_constraints1| {
@@ -148,6 +149,9 @@ pub fn contact_manifolds_composite_shape_composite_shape<'a, ManifoldData, Conta
                         };
 
                         let manifold = &mut manifolds[sub_detector.manifold_id];
+                        if deformable {
+                            manifold.mark_shapes_deformed();
+                        }
 
                         if flipped {
                             let _ = dispatcher.contact_manifold_convex_convex(

@@ -77,6 +77,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
     // TODO: avoid reallocating the new `manifolds` vec at each step.
     let mut old_manifolds = core::mem::take(manifolds);
     let bvh2 = shape2.bvh();
+    let deformable = shape2.is_deformable();
 
     let radius1 = voxels1.voxel_size() / 2.0;
 
@@ -160,6 +161,10 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                     let relative_pos12 = part_pos2.prepend_to(&canonical_pose12);
 
                     if !manifold_updated {
+                        if deformable {
+                            manifold.mark_shapes_deformed();
+                        }
+
                         // If we already computed contacts in the previous simulation step, their
                         // local points are relative to the previously calculated canonical shape
                         // which might not have the same local center as the one computed in this
