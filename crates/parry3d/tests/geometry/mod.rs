@@ -10,3 +10,4 @@ mod time_of_impact3;
 mod trimesh_connected_components;
 mod trimesh_intersection;
 mod trimesh_trimesh_toi;
+mod volume_mesh;

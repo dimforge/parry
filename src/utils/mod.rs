@@ -37,7 +37,7 @@ pub use self::segments_intersection::{segments_intersection2d, SegmentsIntersect
 pub use self::sort::sort2;
 pub use self::sort::sort3;
 pub use self::sorted_pair::SortedPair;
-#[cfg(all(feature = "dim3", feature = "spade"))]
+#[cfg(feature = "spade")]
 pub(crate) use self::spade::sanitize_spade_point;
 pub(crate) use self::wops::{WBasis, WCross, WSign};
 
@@ -78,7 +78,7 @@ mod sdp_matrix;
 mod segments_intersection;
 mod sort;
 mod sorted_pair;
-#[cfg(all(feature = "dim3", feature = "spade"))]
+#[cfg(feature = "spade")]
 mod spade;
 mod wops;
 

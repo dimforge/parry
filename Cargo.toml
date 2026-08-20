@@ -53,6 +53,7 @@ hashbrown = { version = "0.17", default-features = false, features = [
     "default-hasher",
 ] }
 spade = { version = "2.15", default-features = false }
+robust = { version = "1.2", default-features = false }
 rayon = "1"
 bytemuck = { version = "1", features = ["derive"] }
 log = "0.4"
