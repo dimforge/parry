@@ -358,6 +358,15 @@ impl Polyline {
         self.pseudo_normals = Some(vertex_normals);
     }
 
+    /// The outward pseudo-normal of every vertex, if they have been computed (i.e. if this
+    /// polyline was built with [`PolylineFlags::ORIENTED`]).
+    ///
+    /// The returned slice is indexed by vertex index, like [`Self::vertices`].
+    #[cfg(feature = "dim2")]
+    pub fn pseudo_normals(&self) -> Option<&[Vector]> {
+        self.pseudo_normals.as_deref()
+    }
+
     /// Returns the [`SegmentPseudoNormals`] for the segment with index `i`, or `None` unless this
     /// polyline was built with [`PolylineFlags::ORIENTED`].
     ///
