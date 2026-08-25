@@ -4,14 +4,42 @@
 
 use crate::bounding_volume::{Aabb, BoundingSphere, BoundingVolume};
 use crate::math::Pose;
+#[cfg(feature = "dim2")]
+use crate::math::{Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
 use crate::shape::{CompositeShape, Shape, SharedShape, TypedCompositeShape};
 #[cfg(feature = "dim2")]
+use crate::shape::{CompoundEdgeCone, CompoundPseudoNormals};
+#[cfg(feature = "dim2")]
 use crate::shape::{ConvexPolygon, TriMesh, Triangle};
 #[cfg(feature = "dim2")]
 use crate::transformation::hertel_mehlhorn;
+#[cfg(feature = "dim2")]
+use crate::utils::hashmap::HashMap;
 use alloc::vec::Vec;
+
+#[cfg(feature = "dim2")]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// Controls how a [`Compound`] is loaded.
+pub struct CompoundFlags(u8);
+
+#[cfg(feature = "dim2")]
+bitflags::bitflags! {
+    impl CompoundFlags: u8 {
+        /// If set, the edges where two parts meet are treated as interior to the union: a
+        /// pseudo-normal is computed at every vertex of the outline, and contact normals are
+        /// clamped to it. This removes the ledge a body catches on when it slides across the cut
+        /// between two parts of a convex decomposition, which is only a seam in the decomposition
+        /// and not a surface of the shape.
+        ///
+        /// This is the [`Compound`] counterpart of `TriMeshFlags::FIX_INTERNAL_EDGES`, and like it
+        /// costs a one-off pass over the parts' edges when set.
+        const FIX_INTERNAL_EDGES = 1;
+    }
+}
 
 /// A compound shape with an aabb bounding volume.
 ///
@@ -25,6 +53,14 @@ pub struct Compound {
     bvh: Bvh,
     aabbs: Vec<Aabb>,
     aabb: Aabb,
+    #[cfg(feature = "dim2")]
+    #[cfg_attr(feature = "serde", serde(default))]
+    flags: CompoundFlags,
+    /// `None` for a part that constrains nothing: one that is not polygonal, or any part at all
+    /// while [`CompoundFlags::FIX_INTERNAL_EDGES`] is unset.
+    #[cfg(feature = "dim2")]
+    #[cfg_attr(feature = "serde", serde(default))]
+    pseudo_normals: Option<Vec<Option<CompoundPseudoNormals>>>,
 }
 
 impl Compound {
@@ -140,7 +176,155 @@ impl Compound {
             bvh,
             aabbs,
             aabb,
+            #[cfg(feature = "dim2")]
+            flags: CompoundFlags::empty(),
+            #[cfg(feature = "dim2")]
+            pseudo_normals: None,
         }
+    }
+
+    /// Sets the [`CompoundFlags`], computing or discarding the compound's optional associated data.
+    #[cfg(feature = "dim2")]
+    pub fn set_flags(&mut self, flags: CompoundFlags) {
+        self.flags = flags;
+
+        if flags.contains(CompoundFlags::FIX_INTERNAL_EDGES) {
+            self.compute_pseudo_normals();
+        } else {
+            self.pseudo_normals = None;
+        }
+    }
+
+    /// The [`CompoundFlags`] controlling this compound's optional associated data.
+    #[cfg(feature = "dim2")]
+    pub fn flags(&self) -> CompoundFlags {
+        self.flags
+    }
+
+    /// The parts' outlines in the compound's frame, wound counter-clockwise. `None` for a part
+    /// with no straight sides, which therefore shares none.
+    #[cfg(feature = "dim2")]
+    fn part_outlines(&self) -> Vec<Option<Vec<Vector>>> {
+        self.shapes
+            .iter()
+            .map(|(part_pos, part)| {
+                let corners: Vec<Vector> = if let Some(polygon) = part.as_convex_polygon() {
+                    polygon.points().to_vec()
+                } else if let Some(cuboid) = part.as_cuboid() {
+                    cuboid.to_polyline().to_vec()
+                } else if let Some(triangle) = part.as_triangle() {
+                    alloc::vec![triangle.a, triangle.b, triangle.c]
+                } else {
+                    return None;
+                };
+
+                let mut outline: Vec<Vector> = corners
+                    .into_iter()
+                    .map(|corner| part_pos.transform_point(corner))
+                    .collect();
+
+                if signed_area(&outline) < 0.0 {
+                    outline.reverse();
+                }
+
+                Some(outline)
+            })
+            .collect()
+    }
+
+    /// Builds the normal cones every part may report contacts in, from the outline of the union
+    /// rather than from each part's own faces.
+    ///
+    /// An edge two parts share is a cut, so it is dropped, and each surviving edge opens only
+    /// towards the neighbours that survived with it. That closes the corner where a surface runs
+    /// into a cut -- the ledge a body would otherwise catch on.
+    #[cfg(feature = "dim2")]
+    fn compute_pseudo_normals(&mut self) {
+        let outlines = self.part_outlines();
+
+        // Parts meet on coordinates both were built from, so shared endpoints agree exactly and
+        // the key can be the bits. Quantizing would merge edges that merely lie close together,
+        // which is how a real surface goes missing. Adding zero collapses -0.0 onto 0.0.
+        let edge_key = |a: Vector, b: Vector| {
+            let (mut first, mut second) = (
+                a.to_array().map(|coord| (coord + 0.0).to_bits()),
+                b.to_array().map(|coord| (coord + 0.0).to_bits()),
+            );
+            if second < first {
+                core::mem::swap(&mut first, &mut second);
+            }
+            (first, second)
+        };
+
+        let mut parts_sharing_edge = HashMap::default();
+        for outline in outlines.iter().flatten() {
+            for (a, b) in outline_edges(outline) {
+                *parts_sharing_edge.entry(edge_key(a, b)).or_insert(0u32) += 1;
+            }
+        }
+
+        let pseudo_normals = self
+            .shapes
+            .iter()
+            .zip(outlines.iter())
+            .map(|((part_pos, _), outline)| {
+                let outline = outline.as_ref()?;
+
+                let boundary_normals: Vec<Option<Vector>> = outline_edges(outline)
+                    .map(|(a, b)| {
+                        let shared = parts_sharing_edge
+                            .get(&edge_key(a, b))
+                            .is_some_and(|parts| *parts > 1);
+
+                        (!shared)
+                            .then(|| crate::utils::ccw_face_normal([a, b]))
+                            .flatten()
+                    })
+                    .collect();
+
+                let into_part = part_pos.rotation.inverse();
+                let count = boundary_normals.len();
+                let mut boundary_edges = Vec::new();
+
+                for (i, face) in boundary_normals.iter().enumerate() {
+                    let Some(face) = *face else {
+                        continue;
+                    };
+
+                    // Halfway, so the two edges at a corner split its range and neither cone grows
+                    // past a half turn, which the containment test could not represent.
+                    let halfway_to = |neighbour: Option<Vector>| match neighbour {
+                        Some(neighbour) => (face + neighbour).normalize_or(face),
+                        None => face,
+                    };
+
+                    // Walking counter-clockwise turns the normals the same way, so the previous
+                    // edge lies clockwise of this one. Cones are stated in the part's frame, which
+                    // is where the narrow phase applies them.
+                    boundary_edges.push(CompoundEdgeCone {
+                        face: into_part * face,
+                        clockwise_limit: into_part
+                            * halfway_to(boundary_normals[(i + count - 1) % count]),
+                        counter_clockwise_limit: into_part
+                            * halfway_to(boundary_normals[(i + 1) % count]),
+                    });
+                }
+
+                Some(CompoundPseudoNormals { boundary_edges })
+            })
+            .collect();
+
+        self.pseudo_normals = Some(pseudo_normals);
+    }
+
+    /// Returns the [`CompoundPseudoNormals`] of the part with index `i`.
+    ///
+    /// `None` unless this compound was given [`CompoundFlags::FIX_INTERNAL_EDGES`] and the part is
+    /// polygonal -- a part with curved sides has no edge that another part could cover, so it
+    /// constrains nothing.
+    #[cfg(feature = "dim2")]
+    pub fn part_normal_constraints(&self, i: u32) -> Option<&CompoundPseudoNormals> {
+        self.pseudo_normals.as_ref()?[i as usize].as_ref()
     }
 
     /// Creates a compound shape by decomposing a triangle mesh into convex polygons.
@@ -671,7 +855,13 @@ impl CompositeShape for Compound {
         f: &mut dyn FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>),
     ) {
         if let Some(shape) = self.shapes.get(shape_id as usize) {
-            f(Some(&shape.0), &*shape.1, None)
+            #[cfg(feature = "dim2")]
+            let constraints = self
+                .part_normal_constraints(shape_id)
+                .map(|c| c as &dyn NormalConstraints);
+            #[cfg(feature = "dim3")]
+            let constraints = None;
+            f(Some(&shape.0), &*shape.1, constraints)
         }
     }
 
@@ -681,8 +871,28 @@ impl CompositeShape for Compound {
     }
 }
 
+/// The edges of a closed outline, as consecutive corner pairs wrapping back to the start.
+#[cfg(feature = "dim2")]
+fn outline_edges(outline: &[Vector]) -> impl Iterator<Item = (Vector, Vector)> + '_ {
+    outline
+        .iter()
+        .enumerate()
+        .map(move |(i, corner)| (*corner, outline[(i + 1) % outline.len()]))
+}
+
+/// Twice the area enclosed by a closed outline, negative when it is wound clockwise.
+#[cfg(feature = "dim2")]
+fn signed_area(outline: &[Vector]) -> Real {
+    outline_edges(outline)
+        .map(|(a, b)| a.x * b.y - a.y * b.x)
+        .sum()
+}
+
 impl TypedCompositeShape for Compound {
     type PartShape = dyn Shape;
+    #[cfg(feature = "dim2")]
+    type PartNormalConstraints = CompoundPseudoNormals;
+    #[cfg(feature = "dim3")]
     type PartNormalConstraints = ();
 
     #[inline(always)]
@@ -692,7 +902,11 @@ impl TypedCompositeShape for Compound {
         mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
     ) -> Option<T> {
         let (part_pos, part) = &self.shapes[i as usize];
-        Some(f(Some(part_pos), &**part, None))
+        #[cfg(feature = "dim2")]
+        let constraints = self.part_normal_constraints(i);
+        #[cfg(feature = "dim3")]
+        let constraints = None;
+        Some(f(Some(part_pos), &**part, constraints))
     }
 
     #[inline(always)]
@@ -702,6 +916,169 @@ impl TypedCompositeShape for Compound {
         mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&dyn NormalConstraints>) -> T,
     ) -> Option<T> {
         let (part_pos, part) = &self.shapes[i as usize];
-        Some(f(Some(part_pos), &**part, None))
+        #[cfg(feature = "dim2")]
+        let constraints = self
+            .part_normal_constraints(i)
+            .map(|c| c as &dyn NormalConstraints);
+        #[cfg(feature = "dim3")]
+        let constraints = None;
+        Some(f(Some(part_pos), &**part, constraints))
+    }
+}
+
+#[cfg(test)]
+#[cfg(all(feature = "dim2", feature = "alloc", feature = "std"))]
+mod test {
+    use super::{Compound, CompoundFlags};
+    use crate::math::{Pose, Real, Vector};
+    use crate::query::{ContactManifold, DefaultQueryDispatcher, PersistentQueryDispatcher};
+    use crate::shape::{ConvexPolygon, Cuboid, SharedShape, Triangle};
+    use alloc::{vec, vec::Vec};
+
+    /// A flat run that turns into a ramp, decomposed the way a convex decomposition would leave it:
+    /// a big piece below and a wedge above, meeting along a cut that runs right from the ramp foot
+    /// at the origin. The ramp face and the cut leave the wedge with a tip pointing back along the
+    /// flat run, which is what a body slides into.
+    fn ramp_foot() -> Compound {
+        let part = |points: &[[Real; 2]]| {
+            let points = points.iter().map(|p| Vector::new(p[0], p[1])).collect();
+            (
+                Pose::IDENTITY,
+                SharedShape::new(
+                    ConvexPolygon::from_convex_polyline_unmodified(points).expect("convex part"),
+                ),
+            )
+        };
+
+        Compound::new(vec![
+            part(&[
+                [-3.825, -0.015],
+                [-11.913, -6.486],
+                [5.166, -6.486],
+                [5.165, -0.015],
+                [0.0, 0.0],
+            ]),
+            part(&[[0.0, 0.0], [5.165, -0.015], [3.432, 1.912], [2.135, 1.891]]),
+        ])
+    }
+
+    /// The normals the wedge reports against a box whose right edge sits `overshoot` past the tip.
+    fn normals_against_the_wedge(compound: &Compound, overshoot: Real) -> Vec<Vector> {
+        let slider = Cuboid::new(Vector::new(0.42, 0.20));
+        let pos12 = Pose::from_parts(Vector::new(overshoot - 0.42, 0.198), Default::default());
+
+        let mut manifolds: Vec<ContactManifold<(), ()>> = Vec::new();
+        let mut workspace = None;
+        DefaultQueryDispatcher
+            .contact_manifolds(
+                &pos12,
+                compound,
+                &slider,
+                0.02,
+                &mut manifolds,
+                &mut workspace,
+            )
+            .expect("dispatch");
+
+        manifolds
+            .iter()
+            .filter(|manifold| manifold.subshape1 == 1 && !manifold.points.is_empty())
+            .map(|manifold| manifold.local_n1)
+            .collect()
+    }
+
+    #[test]
+    fn cut_edges_are_dropped_and_close_the_corner_they_end_at() {
+        let mut compound = ramp_foot();
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+
+        // Each part loses exactly the cut it shares with the other.
+        assert_eq!(
+            compound
+                .part_normal_constraints(0)
+                .unwrap()
+                .boundary_edges
+                .len(),
+            4
+        );
+        let wedge = compound.part_normal_constraints(1).unwrap();
+        assert_eq!(wedge.boundary_edges.len(), 3);
+
+        // The ramp face runs into the cut at the tip, so its cone closes onto itself there.
+        let ramp = wedge
+            .boundary_edges
+            .iter()
+            .find(|cone| cone.face.x < -0.5)
+            .expect("ramp face");
+        assert_eq!(ramp.counter_clockwise_limit, ramp.face);
+    }
+
+    /// Nothing guarantees which way a part was wound, and a clockwise one would have every normal
+    /// pointing into itself.
+    #[test]
+    fn a_clockwise_part_still_faces_outwards() {
+        let clockwise = Triangle::new(
+            Vector::new(0.0, 0.0),
+            Vector::new(0.0, 1.0),
+            Vector::new(1.0, 0.0),
+        );
+        let mut compound = Compound::new(vec![(Pose::IDENTITY, SharedShape::new(clockwise))]);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+
+        let cones = compound.part_normal_constraints(0).expect("polygonal part");
+        assert_eq!(cones.boundary_edges.len(), 3);
+
+        // Every face points away from the triangle's interior, which lies towards the origin.
+        let interior = Vector::new(0.25, 0.25);
+        for cone in &cones.boundary_edges {
+            assert!(
+                cone.face.dot(interior) < 0.0 || cone.face.dot(Vector::new(1.0, 1.0)) > 0.0,
+                "inward face {:?}",
+                cone.face
+            );
+        }
+
+        // The hypotenuse is the only face pointing up and to the right.
+        let hypotenuse = cones
+            .boundary_edges
+            .iter()
+            .find(|cone| cone.face.x > 0.5 && cone.face.y > 0.5)
+            .expect("outward hypotenuse");
+        assert!(hypotenuse.face.dot(Vector::new(1.0, 1.0).normalize()) > 0.99);
+    }
+
+    #[test]
+    fn a_body_running_into_the_tip_reports_no_contact_with_the_cut() {
+        let plain = ramp_foot();
+        let mut fixed = ramp_foot();
+        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+
+        // Against the bare compound the wedge answers with its tip axis: a wall across the flat run.
+        let ghost = normals_against_the_wedge(&plain, 0.0);
+        assert_eq!(ghost.len(), 1);
+        assert!(
+            ghost[0].x < -0.99,
+            "expected a wall normal, got {:?}",
+            ghost[0]
+        );
+
+        // The cut cannot be touched, so the wedge reports nothing until the ramp itself is reached.
+        assert!(normals_against_the_wedge(&fixed, 0.0).is_empty());
+    }
+
+    #[test]
+    fn contacts_with_the_ramp_itself_are_left_alone() {
+        let plain = ramp_foot();
+        let mut fixed = ramp_foot();
+        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+
+        let expected = normals_against_the_wedge(&plain, 0.01);
+        assert_eq!(expected.len(), 1);
+        assert!(
+            expected[0].y > 0.7,
+            "expected the ramp face, got {:?}",
+            expected[0]
+        );
+        assert_eq!(normals_against_the_wedge(&fixed, 0.01), expected);
     }
 }
