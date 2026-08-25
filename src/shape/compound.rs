@@ -1066,6 +1066,31 @@ mod test {
     }
 
     #[test]
+    fn queries_identify_the_part_they_hit() {
+        use crate::query::{PointQuery, Ray, RayCast};
+        use crate::shape::FeatureId;
+
+        let compound = ramp_foot();
+
+        // Straight down onto the flat run: the big bottom piece, part 0.
+        let onto_the_flat = Ray::new(Vector::new(-2.0, 5.0), Vector::new(0.0, -1.0));
+        let hit = compound
+            .cast_local_ray_and_get_normal(&onto_the_flat, Real::MAX, true)
+            .expect("hits the flat");
+        assert_eq!(hit.feature, FeatureId::Face(0));
+
+        // Straight down onto the ramp: the wedge, part 1.
+        let onto_the_ramp = Ray::new(Vector::new(3.0, 5.0), Vector::new(0.0, -1.0));
+        let hit = compound
+            .cast_local_ray_and_get_normal(&onto_the_ramp, Real::MAX, true)
+            .expect("hits the ramp");
+        assert_eq!(hit.feature, FeatureId::Face(1));
+
+        let (_, feature) = compound.project_local_point_and_get_feature(Vector::new(3.0, 3.0));
+        assert_eq!(feature, FeatureId::Face(1));
+    }
+
+    #[test]
     fn contacts_with_the_ramp_itself_are_left_alone() {
         let plain = ramp_foot();
         let mut fixed = ramp_foot();

@@ -6,6 +6,9 @@
   interior to the union, so a body sliding across the cut between two parts of a convex
   decomposition no longer catches on it. `Compound::PartNormalConstraints` is now
   `CompoundPseudoNormals`, matching what `TriMesh` and `Polyline` already provide.
+- Ray casts and point projections against a `Compound` now identify the part that was hit:
+  the returned feature is `FeatureId::Face(part_index)`, the way `TriMesh` reports the
+  triangle. Both previously discarded the part index.
 
 ## 0.30.2
 
