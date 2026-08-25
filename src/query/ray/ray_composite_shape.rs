@@ -93,7 +93,7 @@ impl RayCast for Compound {
     }
 
     /// The returned intersection identifies the part that was hit: its `feature` is
-    /// `FeatureId::Face(part_index)`, the way [`TriMesh`] reports the triangle it hit.
+    /// `FeatureId::Face(part_index)`, the way [`TriMesh`](crate::shape::TriMesh) reports the triangle it hit.
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,

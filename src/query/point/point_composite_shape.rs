@@ -256,7 +256,7 @@ impl PointQuery for Compound {
     }
 
     /// The returned feature identifies the part the point projects onto:
-    /// `FeatureId::Face(part_index)`, the way [`TriMesh`] reports the triangle.
+    /// `FeatureId::Face(part_index)`, the way [`TriMesh`](crate::shape::TriMesh) reports the triangle.
     #[inline]
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
         CompositeShapeRef(self)
