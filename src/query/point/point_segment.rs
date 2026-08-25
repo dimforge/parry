@@ -54,26 +54,20 @@ impl PointQueryWithLocation for Segment {
         let ab_ap = ab.dot(ap);
         let sqnab = ab.length_squared();
 
-        let proj;
-        let location;
-
-        if ab_ap <= 0.0 {
+        let (location, proj) = if ab_ap <= 0.0 {
             // Voronoï region of vertex 'a'.
-            location = SegmentPointLocation::OnVertex(0);
-            proj = self.a;
+            (SegmentPointLocation::OnVertex(0), self.a)
         } else if ab_ap >= sqnab {
             // Voronoï region of vertex 'b'.
-            location = SegmentPointLocation::OnVertex(1);
-            proj = self.b;
+            (SegmentPointLocation::OnVertex(1), self.b)
         } else {
             assert!(sqnab != 0.0);
 
             // Voronoï region of the segment interior.
             let u = ab_ap / sqnab;
             let bcoords = [1.0 - u, u];
-            location = SegmentPointLocation::OnEdge(bcoords);
-            proj = self.a + ab * u;
-        }
+            (SegmentPointLocation::OnEdge(bcoords), self.a + ab * u)
+        };
 
         // TODO: is this acceptable?
         let inside = relative_eq_vector(proj, pt);
