@@ -212,10 +212,9 @@ impl Compound {
                     polygon.points().to_vec()
                 } else if let Some(cuboid) = part.as_cuboid() {
                     cuboid.to_polyline().to_vec()
-                } else if let Some(triangle) = part.as_triangle() {
-                    alloc::vec![triangle.a, triangle.b, triangle.c]
                 } else {
-                    return None;
+                    let triangle = part.as_triangle()?;
+                    alloc::vec![triangle.a, triangle.b, triangle.c]
                 };
 
                 let mut outline: Vec<Vector> = corners
