@@ -96,6 +96,67 @@ impl NormalConstraints for CompoundPseudoNormals {
     }
 }
 
+/// The directions one boundary face of a [`Compound`](crate::shape::Compound) part may push
+/// along.
+///
+/// Each edge pseudo-normal reaches halfway towards the face across that edge; at a cut it keeps
+/// the face's own normal, since the surface ends there.
+#[cfg(all(feature = "alloc", feature = "dim3"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
+pub struct CompoundFaceCone {
+    /// The face's outward normal.
+    pub face: Vector,
+    /// The outward pseudo-normal at each edge of the face.
+    pub edge_pseudo_normals: Vec<Vector>,
+}
+
+/// The outward normal cones of one [`Compound`](crate::shape::Compound) part.
+///
+/// The 3D counterpart of the 2D edge cones: faces two parts share are cuts made by a convex
+/// decomposition, interior to the union where nothing can reach them, so they are absent and no
+/// contact normal can be clamped onto one.
+#[cfg(all(feature = "alloc", feature = "dim3"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default)]
+pub struct CompoundPseudoNormals {
+    /// One cone per boundary face of the part, in the part's local frame.
+    pub boundary_faces: Vec<CompoundFaceCone>,
+}
+
+#[cfg(all(feature = "alloc", feature = "dim3"))]
+impl NormalConstraints for CompoundPseudoNormals {
+    /// Projects `dir` into the normal cone of the boundary face it points most directly out of,
+    /// the way [`TrianglePseudoNormals`](crate::shape::TrianglePseudoNormals) does for one
+    /// triangle.
+    ///
+    /// Returns `false` for a part with no boundary face at all: it is buried inside the union,
+    /// where nothing can touch it.
+    fn project_local_normal_mut(&self, dir: &mut Vector) -> bool {
+        let mut best: Option<(&CompoundFaceCone, Real)> = None;
+
+        for cone in &self.boundary_faces {
+            let alignment = dir.dot(cone.face);
+            match best {
+                Some((_, best_alignment)) if alignment <= best_alignment => {}
+                _ => best = Some((cone, alignment)),
+            }
+        }
+
+        let Some((cone, _)) = best else {
+            return false;
+        };
+
+        let closest_edge = cone
+            .edge_pseudo_normals
+            .iter()
+            .copied()
+            .max_by(|a, b| dir.dot(*a).total_cmp(&dir.dot(*b)))
+            .unwrap_or(cone.face);
+        crate::shape::pseudo_normals::project_into_cone(cone.face, closest_edge, dir)
+    }
+}
+
 #[cfg(test)]
 #[cfg(all(feature = "dim2", feature = "alloc"))]
 mod test {

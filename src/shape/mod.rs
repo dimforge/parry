@@ -38,10 +38,14 @@ pub use self::heightfield2::*;
 #[cfg(feature = "dim2")]
 pub use self::polygonal_feature2d::PolygonalFeature;
 
-#[cfg(all(feature = "alloc", feature = "dim2"))]
+#[cfg(feature = "alloc")]
 pub use self::compound::CompoundFlags;
 #[cfg(all(feature = "alloc", feature = "dim2"))]
-pub use self::compound_pseudo_normals::{CompoundEdgeCone, CompoundPseudoNormals};
+pub use self::compound_pseudo_normals::CompoundEdgeCone;
+#[cfg(all(feature = "alloc", feature = "dim3"))]
+pub use self::compound_pseudo_normals::CompoundFaceCone;
+#[cfg(feature = "alloc")]
+pub use self::compound_pseudo_normals::CompoundPseudoNormals;
 #[cfg(feature = "dim3")]
 pub use self::cone::Cone;
 #[cfg(feature = "dim3")]
@@ -126,7 +130,7 @@ mod tetrahedron;
 #[cfg(feature = "alloc")]
 pub(crate) mod trimesh;
 // TODO: move this elsewhere?
-#[cfg(all(feature = "alloc", feature = "dim2"))]
+#[cfg(feature = "alloc")]
 mod compound_pseudo_normals;
 mod feature_id;
 #[cfg(feature = "dim2")]
