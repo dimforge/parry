@@ -8,6 +8,8 @@ use crate::math::{Real, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::details::NormalConstraints;
 #[cfg(feature = "dim2")]
+use crate::shape::compound_pseudo_normals::turns_clockwise;
+#[cfg(feature = "dim2")]
 use crate::shape::CompoundEdgeCone;
 #[cfg(feature = "dim3")]
 use crate::shape::CompoundFaceCone;
@@ -226,9 +228,10 @@ impl Compound {
     /// Builds the normal cones every part may report contacts in, from the outline of the union
     /// rather than from each part's own faces.
     ///
-    /// An edge two parts share is a cut, so it is dropped, and each surviving edge opens only
-    /// towards the neighbours that survived with it. That closes the corner where a surface runs
-    /// into a cut -- the ledge a body would otherwise catch on.
+    /// An edge two parts share is a cut, so it is dropped, and each surviving edge opens towards
+    /// the edge next to it along the union's outline, which a cut may have left in another part.
+    /// That closes the corner where a surface runs into a cut -- the ledge a body would otherwise
+    /// catch on -- without closing one the cut merely passes through.
     #[cfg(feature = "dim2")]
     fn compute_pseudo_normals(&mut self) {
         let outlines = self.part_outlines();
@@ -249,6 +252,12 @@ impl Compound {
             (first, second)
         };
 
+        let vertex_key = |corner: Vector| {
+            corner
+                .to_array()
+                .map(|coord| without_negative_zero(coord).to_bits())
+        };
+
         let mut parts_sharing_edge = HashMap::default();
         for outline in outlines.iter().flatten() {
             for (a, b) in outline_edges(outline) {
@@ -256,30 +265,66 @@ impl Compound {
             }
         }
 
+        // Per part, the outward normal of every outline edge, or `None` where a sibling part covers
+        // it: that edge is a cut, interior to the union.
+        let boundary_normals: Vec<Option<Vec<Option<Vector>>>> = outlines
+            .iter()
+            .map(|outline| {
+                Some(
+                    outline_edges(outline.as_ref()?)
+                        .map(|(a, b)| {
+                            let shared = parts_sharing_edge
+                                .get(&edge_key(a, b))
+                                .is_some_and(|parts| *parts > 1);
+
+                            (!shared)
+                                .then(|| crate::utils::ccw_face_normal([a, b]))
+                                .flatten()
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+
+        // The union's boundary edge arriving at, and the one leaving, each corner. Gathered across
+        // every part, so a corner a cut splits still finds the neighbour that continues the
+        // outline into the sibling part. `None` marks a corner more than one edge claims, where no
+        // single neighbour can be picked.
+        let mut arriving = HashMap::default();
+        let mut leaving = HashMap::default();
+        for (outline, normals) in outlines.iter().zip(boundary_normals.iter()) {
+            let (Some(outline), Some(normals)) = (outline.as_ref(), normals.as_ref()) else {
+                continue;
+            };
+
+            for ((a, b), normal) in outline_edges(outline).zip(normals.iter()) {
+                let Some(normal) = *normal else {
+                    continue;
+                };
+
+                let _ = arriving
+                    .entry(vertex_key(b))
+                    .and_modify(|slot| *slot = None)
+                    .or_insert(Some(normal));
+                let _ = leaving
+                    .entry(vertex_key(a))
+                    .and_modify(|slot| *slot = None)
+                    .or_insert(Some(normal));
+            }
+        }
+
         let pseudo_normals = self
             .shapes
             .iter()
             .zip(outlines.iter())
-            .map(|((part_pos, _), outline)| {
-                let outline = outline.as_ref()?;
-
-                let boundary_normals: Vec<Option<Vector>> = outline_edges(outline)
-                    .map(|(a, b)| {
-                        let shared = parts_sharing_edge
-                            .get(&edge_key(a, b))
-                            .is_some_and(|parts| *parts > 1);
-
-                        (!shared)
-                            .then(|| crate::utils::ccw_face_normal([a, b]))
-                            .flatten()
-                    })
-                    .collect();
+            .zip(boundary_normals.iter())
+            .map(|(((part_pos, _), outline), normals)| {
+                let (outline, normals) = (outline.as_ref()?, normals.as_ref()?);
 
                 let into_part = part_pos.rotation.inverse();
-                let count = boundary_normals.len();
                 let mut boundary_edges = Vec::new();
 
-                for (i, face) in boundary_normals.iter().enumerate() {
+                for ((a, b), face) in outline_edges(outline).zip(normals.iter()) {
                     let Some(face) = *face else {
                         continue;
                     };
@@ -291,15 +336,27 @@ impl Compound {
                         None => face,
                     };
 
-                    // Walking counter-clockwise turns the normals the same way, so the previous
-                    // edge lies clockwise of this one. Cones are stated in the part's frame, which
-                    // is where the narrow phase applies them.
+                    // A concave corner has no outward range for its two edges to share, so the cone
+                    // stops on this edge's own normal, as it does where the surface runs into a cut.
+                    // Walking counter-clockwise turns the normals the same way, so the edge arriving
+                    // at a corner lies clockwise of the one leaving it.
+                    let clockwise = arriving
+                        .get(&vertex_key(a))
+                        .copied()
+                        .flatten()
+                        .filter(|previous| !turns_clockwise(*previous, face));
+                    let counter_clockwise = leaving
+                        .get(&vertex_key(b))
+                        .copied()
+                        .flatten()
+                        .filter(|next| !turns_clockwise(face, *next));
+
+                    // Cones are stated in the part's frame, which is where the narrow phase applies
+                    // them.
                     boundary_edges.push(CompoundEdgeCone {
                         face: into_part * face,
-                        clockwise_limit: into_part
-                            * halfway_to(boundary_normals[(i + count - 1) % count]),
-                        counter_clockwise_limit: into_part
-                            * halfway_to(boundary_normals[(i + 1) % count]),
+                        clockwise_limit: into_part * halfway_to(clockwise),
+                        counter_clockwise_limit: into_part * halfway_to(counter_clockwise),
                     });
                 }
 
@@ -345,8 +402,9 @@ impl Compound {
     /// rather than from each part's own faces.
     ///
     /// A face two parts share is a cut, so it is dropped, and each edge of a surviving face opens
-    /// only towards the face that survived with it. That closes the corner where a surface runs
-    /// into a cut -- the ledge a body would otherwise catch on.
+    /// towards the boundary face across it, which a cut may have left in another part. That closes
+    /// the corner where a surface runs into a cut -- the ledge a body would otherwise catch on --
+    /// without closing one the cut merely passes through.
     #[cfg(feature = "dim3")]
     fn compute_pseudo_normals(&mut self) {
         let part_faces = self.part_faces();
@@ -386,56 +444,79 @@ impl Compound {
             }
         }
 
+        // Per part, whether each face lies on the union's outline rather than being a cut two
+        // parts share.
+        let is_boundary: Vec<Option<Vec<bool>>> = part_faces
+            .iter()
+            .map(|faces| {
+                Some(
+                    faces
+                        .as_ref()?
+                        .iter()
+                        .map(|(_, corners)| {
+                            parts_sharing_face
+                                .get(&face_key(corners))
+                                .is_none_or(|parts| *parts <= 1)
+                        })
+                        .collect(),
+                )
+            })
+            .collect();
+
+        // The boundary faces meeting along each edge. Gathered across every part, so an edge a cut
+        // splits still finds the face continuing the surface into the sibling part.
+        let mut faces_along_edge = HashMap::default();
+        for (faces, boundary) in part_faces.iter().zip(is_boundary.iter()) {
+            let (Some(faces), Some(boundary)) = (faces.as_ref(), boundary.as_ref()) else {
+                continue;
+            };
+
+            for ((normal, corners), boundary) in faces.iter().zip(boundary.iter()) {
+                if !boundary {
+                    continue;
+                }
+
+                for i in 0..corners.len() {
+                    let edge = edge_key(corners[i], corners[(i + 1) % corners.len()]);
+                    faces_along_edge
+                        .entry(edge)
+                        .or_insert_with(Vec::new)
+                        .push(*normal);
+                }
+            }
+        }
+
         let pseudo_normals = self
             .shapes
             .iter()
             .zip(part_faces.iter())
-            .map(|((part_pos, _), faces)| {
-                let faces = faces.as_ref()?;
-
-                let is_boundary: Vec<bool> = faces
-                    .iter()
-                    .map(|(_, corners)| {
-                        parts_sharing_face
-                            .get(&face_key(corners))
-                            .is_none_or(|parts| *parts <= 1)
-                    })
-                    .collect();
-
-                // The boundary face on the other side of each edge, for the halfway pseudo-normal.
-                let mut boundary_normal_across_edge = HashMap::default();
-                for (face, boundary) in faces.iter().zip(is_boundary.iter()) {
-                    if !boundary {
-                        continue;
-                    }
-                    let (normal, corners) = face;
-                    for i in 0..corners.len() {
-                        let edge = edge_key(corners[i], corners[(i + 1) % corners.len()]);
-                        boundary_normal_across_edge
-                            .entry(edge)
-                            .or_insert_with(Vec::new)
-                            .push(*normal);
-                    }
-                }
+            .zip(is_boundary.iter())
+            .map(|(((part_pos, _), faces), boundary)| {
+                let (faces, boundary) = (faces.as_ref()?, boundary.as_ref()?);
 
                 let into_part = part_pos.rotation.inverse();
                 let mut boundary_faces = Vec::new();
 
-                for ((normal, corners), boundary) in faces.iter().zip(is_boundary.iter()) {
-                    if !boundary {
+                for ((normal, corners), on_boundary) in faces.iter().zip(boundary.iter()) {
+                    if !on_boundary {
                         continue;
                     }
 
                     let edge_pseudo_normals = (0..corners.len())
                         .map(|i| {
-                            let edge = edge_key(corners[i], corners[(i + 1) % corners.len()]);
-                            // Halfway to the boundary face across the edge; an edge whose other
-                            // face was cut away keeps this face's normal, closing the cone there.
-                            let across = boundary_normal_across_edge
-                                .get(&edge)
+                            let (from, to) = (corners[i], corners[(i + 1) % corners.len()]);
+                            // Halfway to the boundary face across the edge, which may belong to
+                            // another part where a cut splits the surface along it. A concave edge
+                            // has no outward range for its two faces to share, so the cone stops on
+                            // this face's own normal, as it does at an edge whose other face was
+                            // cut away. Faces are wound counter-clockwise around their normal, so
+                            // the edge is convex exactly when the two normals turn that way too.
+                            let across = faces_along_edge
+                                .get(&edge_key(from, to))
                                 .and_then(|normals| {
                                     normals.iter().find(|other| **other != *normal).copied()
                                 })
+                                .filter(|across| normal.cross(*across).dot(to - from) >= 0.0)
                                 .unwrap_or(*normal);
                             into_part * (*normal + across).normalize_or(*normal)
                         })
@@ -1220,6 +1301,91 @@ mod test {
         assert_eq!(feature, FeatureId::Face(1));
     }
 
+    /// An L wound counter-clockwise, split along the diagonal a convex decomposition would cut
+    /// from its reflex corner. The cut lands on two corners of the union: the convex one at the
+    /// origin, and the reflex one at `(1, 1)`.
+    fn cut_ell() -> Compound {
+        let part = |points: &[[Real; 2]]| {
+            let points = points.iter().map(|p| Vector::new(p[0], p[1])).collect();
+            (
+                Pose::IDENTITY,
+                SharedShape::new(
+                    ConvexPolygon::from_convex_polyline_unmodified(points).expect("convex part"),
+                ),
+            )
+        };
+
+        let mut compound = Compound::new(vec![
+            part(&[[0.0, 0.0], [2.0, 0.0], [2.0, 1.0], [1.0, 1.0]]),
+            part(&[[0.0, 0.0], [1.0, 1.0], [1.0, 2.0], [0.0, 2.0]]),
+        ]);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound
+    }
+
+    /// The cone of the boundary edge of `part` whose outward normal is `face`.
+    fn cone_facing(compound: &Compound, part: u32, face: Vector) -> super::CompoundEdgeCone {
+        *compound
+            .part_normal_constraints(part)
+            .expect("polygonal part")
+            .boundary_edges
+            .iter()
+            .find(|cone| (cone.face - face).length() < 1.0e-5)
+            .unwrap_or_else(|| panic!("no edge facing {face:?}"))
+    }
+
+    /// A corner a cut splits is still a corner of the union, so the two edges meeting there open
+    /// towards each other even though they belong to different parts.
+    #[test]
+    fn a_convex_corner_split_by_a_cut_opens_across_the_parts() {
+        let compound = cut_ell();
+
+        // Each part keeps its three outline edges and loses the diagonal it shares.
+        for part in 0..2 {
+            assert_eq!(
+                compound
+                    .part_normal_constraints(part)
+                    .unwrap()
+                    .boundary_edges
+                    .len(),
+                3,
+                "part {part}"
+            );
+        }
+
+        // The union turns 90 degrees at the origin, between the bottom edge of one part and the
+        // left edge of the other. Both cones reach the bisector, splitting the corner between them.
+        let bisector = Vector::new(-1.0, -1.0).normalize();
+        let bottom = cone_facing(&compound, 0, -Vector::Y);
+        let left = cone_facing(&compound, 1, -Vector::X);
+
+        assert!(
+            (bottom.clockwise_limit - bisector).length() < 1.0e-5,
+            "bottom stopped at {:?}",
+            bottom.clockwise_limit
+        );
+        assert!(
+            (left.counter_clockwise_limit - bisector).length() < 1.0e-5,
+            "left stopped at {:?}",
+            left.counter_clockwise_limit
+        );
+    }
+
+    /// A concave corner has no outward range for its edges to share, so each keeps its own normal
+    /// -- the same thing that happens where a surface runs into a cut.
+    #[test]
+    fn a_concave_corner_split_by_a_cut_stays_closed() {
+        let compound = cut_ell();
+
+        // The reflex corner of the L, at `(1, 1)`: the upwards edge of one part meets the
+        // rightwards edge of the other.
+        let upwards = cone_facing(&compound, 0, Vector::Y);
+        let rightwards = cone_facing(&compound, 1, Vector::X);
+
+        assert_eq!(upwards.counter_clockwise_limit, upwards.face);
+        assert_eq!(rightwards.clockwise_limit, rightwards.face);
+    }
+
     #[test]
     fn contacts_with_the_ramp_itself_are_left_alone() {
         let plain = ramp_foot();
@@ -1276,6 +1442,115 @@ mod dim3_test {
         for part in 0..2 {
             let cones = compound.part_normal_constraints(part).expect("polyhedron");
             assert_eq!(cones.boundary_faces.len(), 5, "part {part}");
+        }
+    }
+
+    /// The 2D cut L, extruded. The cut is a quad, and it reaches the union's surface along two
+    /// vertical edges: the convex one at the origin, and the reflex one above `(1, 1)`.
+    fn cut_ell() -> Compound {
+        let prism = |outline: &[[Real; 2]]| {
+            let corners: Vec<Vector> = outline
+                .iter()
+                .flat_map(|p| [Vector::new(p[0], p[1], -1.0), Vector::new(p[0], p[1], 1.0)])
+                .collect();
+            (
+                Pose::IDENTITY,
+                SharedShape::convex_hull(&corners).expect("convex prism"),
+            )
+        };
+
+        let mut compound = Compound::new(vec![
+            prism(&[[0.0, 0.0], [2.0, 0.0], [2.0, 1.0], [1.0, 1.0]]),
+            prism(&[[0.0, 0.0], [1.0, 1.0], [1.0, 2.0], [0.0, 2.0]]),
+        ]);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound
+    }
+
+    /// The pseudo-normal the cone of `part`'s face pointing along `face` carries at the vertical
+    /// edge standing over `corner`.
+    fn pseudo_normal_at_vertical_edge(
+        compound: &Compound,
+        part: u32,
+        face: Vector,
+        corner: [Real; 2],
+    ) -> Vector {
+        let (bottom, top) = (
+            Vector::new(corner[0], corner[1], -1.0),
+            Vector::new(corner[0], corner[1], 1.0),
+        );
+
+        let faces = compound.part_faces();
+        let (_, corners) = faces[part as usize]
+            .as_ref()
+            .expect("polyhedron")
+            .iter()
+            .find(|(normal, _)| (*normal - face).length() < 1.0e-5)
+            .unwrap_or_else(|| panic!("no face pointing along {face:?}"));
+
+        // `edge_pseudo_normals[i]` describes the edge from `corners[i]` to its successor.
+        let edge = (0..corners.len())
+            .find(|i| {
+                let ends = [corners[*i], corners[(*i + 1) % corners.len()]];
+                ends.iter().any(|end| (*end - bottom).length() < 1.0e-5)
+                    && ends.iter().any(|end| (*end - top).length() < 1.0e-5)
+            })
+            .unwrap_or_else(|| panic!("no vertical edge over {corner:?}"));
+
+        compound
+            .part_normal_constraints(part)
+            .expect("polyhedron")
+            .boundary_faces
+            .iter()
+            .find(|cone| (cone.face - face).length() < 1.0e-5)
+            .expect("cone")
+            .edge_pseudo_normals[edge]
+    }
+
+    /// An edge a cut splits is still an edge of the union, so the two faces meeting along it open
+    /// towards each other even though they belong to different parts.
+    #[test]
+    fn a_convex_edge_split_by_a_cut_opens_across_the_parts() {
+        let compound = cut_ell();
+
+        // Each prism keeps five faces and loses the cut quad it shares.
+        for part in 0..2 {
+            assert_eq!(
+                compound
+                    .part_normal_constraints(part)
+                    .unwrap()
+                    .boundary_faces
+                    .len(),
+                5,
+                "part {part}"
+            );
+        }
+
+        // The union turns 90 degrees along the vertical edge over the origin, between the front
+        // face of one prism and the left face of the other.
+        let halfway = Vector::new(-1.0, -1.0, 0.0).normalize();
+        for (part, face) in [(0, -Vector::Y), (1, -Vector::X)] {
+            let pseudo_normal = pseudo_normal_at_vertical_edge(&compound, part, face, [0.0, 0.0]);
+            assert!(
+                (pseudo_normal - halfway).length() < 1.0e-5,
+                "part {part} stopped at {pseudo_normal:?}"
+            );
+        }
+    }
+
+    /// A concave edge has no outward range for its faces to share, so each keeps its own normal --
+    /// the same thing that happens along an edge whose other face was cut away.
+    #[test]
+    fn a_concave_edge_split_by_a_cut_stays_closed() {
+        let compound = cut_ell();
+
+        // The reflex edge over `(1, 1)`, where the step rises out of the lower arm of the L.
+        for (part, face) in [(0, Vector::Y), (1, Vector::X)] {
+            let pseudo_normal = pseudo_normal_at_vertical_edge(&compound, part, face, [1.0, 1.0]);
+            assert!(
+                (pseudo_normal - face).length() < 1.0e-5,
+                "part {part} opened to {pseudo_normal:?}"
+            );
         }
     }
 

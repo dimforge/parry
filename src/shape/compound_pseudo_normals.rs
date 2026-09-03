@@ -7,15 +7,16 @@ use alloc::vec::Vec;
 
 /// Whether the turn from `from` to `to` is clockwise.
 #[cfg(all(feature = "alloc", feature = "dim2"))]
-fn turns_clockwise(from: Vector, to: Vector) -> bool {
+pub(crate) fn turns_clockwise(from: Vector, to: Vector) -> bool {
     from.x * to.y - from.y * to.x < 0.0
 }
 
 /// The directions one boundary edge of a [`Compound`](crate::shape::Compound) part may push along.
 ///
-/// Each limit reaches halfway towards the neighbouring boundary edge, so the two edges meeting at a
-/// corner split its range between them. A limit facing a cut stops at `face`: the surface ends
-/// there.
+/// Each limit reaches halfway towards the boundary edge next to it along the union's outline, which
+/// may belong to another part where a cut splits the outline at that corner, so the two edges
+/// meeting there split its range between them. A limit stops at `face` where the corner is concave,
+/// which leaves no range to share, or where the surface simply ends against a cut.
 #[cfg(all(feature = "alloc", feature = "dim2"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Debug)]
@@ -99,8 +100,10 @@ impl NormalConstraints for CompoundPseudoNormals {
 /// The directions one boundary face of a [`Compound`](crate::shape::Compound) part may push
 /// along.
 ///
-/// Each edge pseudo-normal reaches halfway towards the face across that edge; at a cut it keeps
-/// the face's own normal, since the surface ends there.
+/// Each edge pseudo-normal reaches halfway towards the boundary face across that edge, which may
+/// belong to another part where a cut splits the surface along it. It keeps the face's own normal
+/// where the edge is concave, which leaves no range to share, or where the surface ends against a
+/// cut.
 #[cfg(all(feature = "alloc", feature = "dim3"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
