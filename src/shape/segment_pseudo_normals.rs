@@ -10,6 +10,7 @@ use crate::query::details::NormalConstraints;
 /// `face` is the segment's outward normal and `edges` are the outward pseudo-normals at its two
 /// endpoints. An oriented polyline uses them to clamp contact normals to one side, so it acts as a
 /// one-sided surface.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug)]
 pub struct SegmentPseudoNormals {
     /// The segment's outward normal.

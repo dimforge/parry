@@ -1,3 +1,12 @@
+## Unreleased
+
+### Added
+
+- `CompoundFlags::FIX_INTERNAL_EDGES` makes a `Compound` treat the edges (2D) or faces (3D) its parts share as
+  interior to the union, so a body sliding across the cut between two parts of a convex
+  decomposition no longer catches on it. `Compound::PartNormalConstraints` is now
+  `CompoundPseudoNormals`, matching what `TriMesh` and `Polyline` already provide.
+
 ## 0.30.2
 
 ### Added
