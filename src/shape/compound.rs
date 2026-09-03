@@ -62,6 +62,13 @@ pub struct Compound {
 }
 
 impl Compound {
+    /// The tolerance [`Compound::set_flags`] welds part corners with, in ULPs.
+    ///
+    /// Two spellings of the same corner drift by about one ULP per rounding, and a corner reaches
+    /// the surface through a rotation and a translation, so a handful of ULPs covers the seams a
+    /// shared grid produces while staying far below any real feature.
+    pub const DEFAULT_WELD_TOLERANCE: Real = 4.0;
+
     /// Builds a new compound shape from a collection of sub-shapes.
     ///
     /// A compound shape combines multiple primitive shapes into a single composite shape,
@@ -179,12 +186,67 @@ impl Compound {
         }
     }
 
+    /// Builds a new compound shape from a collection of sub-shapes, with the given
+    /// [`CompoundFlags`] already applied.
+    ///
+    /// `weld_tolerance` is [`Compound::set_flags`]'s, and `None` selects
+    /// [`Compound::DEFAULT_WELD_TOLERANCE`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # #[cfg(all(feature = "dim2", feature = "f32"))] {
+    /// use parry2d::math::{Pose, Vector};
+    /// use parry2d::shape::{Compound, CompoundFlags, Cuboid, SharedShape};
+    ///
+    /// // Two boxes meeting along one edge, as a decomposition or a voxel grid leaves them.
+    /// let box_at = |x: f32| {
+    ///     (
+    ///         Pose::from_parts(Vector::new(x, 0.0), Default::default()),
+    ///         SharedShape::new(Cuboid::new(Vector::new(0.5, 0.5))),
+    ///     )
+    /// };
+    /// let compound = Compound::with_flags(
+    ///     vec![box_at(0.0), box_at(1.0)],
+    ///     CompoundFlags::FIX_INTERNAL_EDGES,
+    ///     None,
+    /// );
+    ///
+    /// // The edge they share is interior to the union, so neither part reports it.
+    /// assert_eq!(compound.part_normal_constraints(0).unwrap().boundary_edges.len(), 3);
+    /// # }
+    /// ```
+    pub fn with_flags(
+        shapes: Vec<(Pose, SharedShape)>,
+        flags: CompoundFlags,
+        weld_tolerance: Option<Real>,
+    ) -> Compound {
+        let mut compound = Self::new(shapes);
+        compound.set_flags(flags, weld_tolerance);
+        compound
+    }
+
     /// Sets the [`CompoundFlags`], computing or discarding the compound's optional associated data.
-    pub fn set_flags(&mut self, flags: CompoundFlags) {
+    ///
+    /// `weld_tolerance` says how far apart two part corners may be and still be treated as the same
+    /// point, in ULPs; `None` selects [`Compound::DEFAULT_WELD_TOLERANCE`].
+    ///
+    /// Parts of a decomposition meet on corners each computes for itself, and two spellings of the
+    /// same corner need not round to the same bits: a row of boxes on a shared grid, or any part
+    /// placed through a rotation, routinely leaves its seams a few ULPs apart. Corners that far
+    /// apart are welded so the edge or face between them is still recognized as shared.
+    ///
+    /// The tolerance is relative to each corner's own distance from the origin, not the whole
+    /// compound's, so detail near the origin keeps a tolerance of its own magnitude however far the
+    /// rest of the compound reaches. Zero leaves only corners at the very same coordinates welded.
+    ///
+    /// Only [`CompoundFlags::FIX_INTERNAL_EDGES`] reads the tolerance; without it nothing is
+    /// computed and the value is ignored.
+    pub fn set_flags(&mut self, flags: CompoundFlags, weld_tolerance: Option<Real>) {
         self.flags = flags;
 
         if flags.contains(CompoundFlags::FIX_INTERNAL_EDGES) {
-            self.compute_pseudo_normals();
+            self.compute_pseudo_normals(weld_tolerance.unwrap_or(Self::DEFAULT_WELD_TOLERANCE));
         } else {
             self.pseudo_normals = None;
         }
@@ -233,34 +295,31 @@ impl Compound {
     /// That closes the corner where a surface runs into a cut -- the ledge a body would otherwise
     /// catch on -- without closing one the cut merely passes through.
     #[cfg(feature = "dim2")]
-    fn compute_pseudo_normals(&mut self) {
+    fn compute_pseudo_normals(&mut self, weld_tolerance: Real) {
         let outlines = self.part_outlines();
 
-        // Parts meet on coordinates both were built from, so shared endpoints agree exactly and
-        // the key can be the bits. Quantizing would merge edges that merely lie close together,
-        // which is how a real surface goes missing. Adding zero collapses -0.0 onto 0.0.
-        let edge_key = |a: Vector, b: Vector| {
-            let (mut first, mut second) = (
-                a.to_array()
-                    .map(|coord| without_negative_zero(coord).to_bits()),
-                b.to_array()
-                    .map(|coord| without_negative_zero(coord).to_bits()),
-            );
-            if second < first {
-                core::mem::swap(&mut first, &mut second);
-            }
-            (first, second)
-        };
+        // Weld every part's corners into one vertex numbering, so two parts meeting along an edge
+        // key it on the same pair of vertices even though each rounded its own corners.
+        let corners: Vec<Vector> = outlines.iter().flatten().flatten().copied().collect();
+        let welded = weld_corners(&corners, weld_tolerance);
 
-        let vertex_key = |corner: Vector| {
-            corner
-                .to_array()
-                .map(|coord| without_negative_zero(coord).to_bits())
-        };
+        let mut vertex_ids: Vec<Option<Vec<u32>>> = Vec::with_capacity(outlines.len());
+        let mut next = 0;
+        for outline in &outlines {
+            match outline {
+                Some(outline) => {
+                    vertex_ids.push(Some(welded[next..next + outline.len()].to_vec()));
+                    next += outline.len();
+                }
+                None => vertex_ids.push(None),
+            }
+        }
+
+        let edge_key = |a: u32, b: u32| if a <= b { (a, b) } else { (b, a) };
 
         let mut parts_sharing_edge = HashMap::default();
-        for outline in outlines.iter().flatten() {
-            for (a, b) in outline_edges(outline) {
+        for ids in vertex_ids.iter().flatten() {
+            for (a, b) in outline_edge_ids(ids) {
                 *parts_sharing_edge.entry(edge_key(a, b)).or_insert(0u32) += 1;
             }
         }
@@ -269,12 +328,16 @@ impl Compound {
         // it: that edge is a cut, interior to the union.
         let boundary_normals: Vec<Option<Vec<Option<Vector>>>> = outlines
             .iter()
-            .map(|outline| {
+            .zip(vertex_ids.iter())
+            .map(|(outline, ids)| {
+                let (outline, ids) = (outline.as_ref()?, ids.as_ref()?);
+
                 Some(
-                    outline_edges(outline.as_ref()?)
-                        .map(|(a, b)| {
+                    outline_edges(outline)
+                        .zip(outline_edge_ids(ids))
+                        .map(|((a, b), (id_a, id_b))| {
                             let shared = parts_sharing_edge
-                                .get(&edge_key(a, b))
+                                .get(&edge_key(id_a, id_b))
                                 .is_some_and(|parts| *parts > 1);
 
                             (!shared)
@@ -292,22 +355,22 @@ impl Compound {
         // single neighbour can be picked.
         let mut arriving = HashMap::default();
         let mut leaving = HashMap::default();
-        for (outline, normals) in outlines.iter().zip(boundary_normals.iter()) {
-            let (Some(outline), Some(normals)) = (outline.as_ref(), normals.as_ref()) else {
+        for (ids, normals) in vertex_ids.iter().zip(boundary_normals.iter()) {
+            let (Some(ids), Some(normals)) = (ids.as_ref(), normals.as_ref()) else {
                 continue;
             };
 
-            for ((a, b), normal) in outline_edges(outline).zip(normals.iter()) {
+            for ((a, b), normal) in outline_edge_ids(ids).zip(normals.iter()) {
                 let Some(normal) = *normal else {
                     continue;
                 };
 
                 let _ = arriving
-                    .entry(vertex_key(b))
+                    .entry(b)
                     .and_modify(|slot| *slot = None)
                     .or_insert(Some(normal));
                 let _ = leaving
-                    .entry(vertex_key(a))
+                    .entry(a)
                     .and_modify(|slot| *slot = None)
                     .or_insert(Some(normal));
             }
@@ -316,15 +379,15 @@ impl Compound {
         let pseudo_normals = self
             .shapes
             .iter()
-            .zip(outlines.iter())
+            .zip(vertex_ids.iter())
             .zip(boundary_normals.iter())
-            .map(|(((part_pos, _), outline), normals)| {
-                let (outline, normals) = (outline.as_ref()?, normals.as_ref()?);
+            .map(|(((part_pos, _), ids), normals)| {
+                let (ids, normals) = (ids.as_ref()?, normals.as_ref()?);
 
                 let into_part = part_pos.rotation.inverse();
                 let mut boundary_edges = Vec::new();
 
-                for ((a, b), face) in outline_edges(outline).zip(normals.iter()) {
+                for ((a, b), face) in outline_edge_ids(ids).zip(normals.iter()) {
                     let Some(face) = *face else {
                         continue;
                     };
@@ -341,12 +404,12 @@ impl Compound {
                     // Walking counter-clockwise turns the normals the same way, so the edge arriving
                     // at a corner lies clockwise of the one leaving it.
                     let clockwise = arriving
-                        .get(&vertex_key(a))
+                        .get(&a)
                         .copied()
                         .flatten()
                         .filter(|previous| !turns_clockwise(*previous, face));
                     let counter_clockwise = leaving
-                        .get(&vertex_key(b))
+                        .get(&b)
                         .copied()
                         .flatten()
                         .filter(|next| !turns_clockwise(face, *next));
@@ -367,19 +430,19 @@ impl Compound {
         self.pseudo_normals = Some(pseudo_normals);
     }
 
-    /// The parts' faces in the compound's frame, each an outward normal with its vertex loop.
-    /// `None` for a part that is not a polyhedron, which therefore shares no face.
+    /// The parts' faces in the compound's frame, each an outward normal with its vertex loop wound
+    /// counter-clockwise around it. `None` for a part with no flat faces, which therefore shares
+    /// none.
     #[cfg(feature = "dim3")]
     #[allow(clippy::type_complexity)]
     fn part_faces(&self) -> Vec<Option<Vec<(Vector, Vec<Vector>)>>> {
         self.shapes
             .iter()
             .map(|(part_pos, part)| {
-                let polyhedron = part.as_convex_polyhedron()?;
-                let points = polyhedron.points();
-                let corner_indices = polyhedron.vertices_adj_to_face();
+                let faces = if let Some(polyhedron) = part.as_convex_polyhedron() {
+                    let points = polyhedron.points();
+                    let corner_indices = polyhedron.vertices_adj_to_face();
 
-                Some(
                     polyhedron
                         .faces()
                         .iter()
@@ -388,9 +451,28 @@ impl Compound {
                             let corners = corner_indices
                                 [first..first + face.num_vertices_or_edges as usize]
                                 .iter()
-                                .map(|index| part_pos.transform_point(points[*index as usize]))
+                                .map(|index| points[*index as usize])
                                 .collect();
-                            (part_pos.rotation * face.normal, corners)
+                            (face.normal, corners)
+                        })
+                        .collect()
+                } else {
+                    // A cuboid is a polyhedron the type system does not call one, and a row of them
+                    // is how a voxel grid reaches a compound.
+                    cuboid_faces(part.as_cuboid()?.half_extents)
+                };
+
+                Some(
+                    faces
+                        .into_iter()
+                        .map(|(normal, corners): (Vector, Vec<Vector>)| {
+                            (
+                                part_pos.rotation * normal,
+                                corners
+                                    .into_iter()
+                                    .map(|corner| part_pos.transform_point(corner))
+                                    .collect(),
+                            )
                         })
                         .collect(),
                 )
@@ -406,56 +488,62 @@ impl Compound {
     /// the corner where a surface runs into a cut -- the ledge a body would otherwise catch on --
     /// without closing one the cut merely passes through.
     #[cfg(feature = "dim3")]
-    fn compute_pseudo_normals(&mut self) {
+    fn compute_pseudo_normals(&mut self, weld_tolerance: Real) {
         let part_faces = self.part_faces();
 
-        // Parts of a decomposition meet on coordinates both were built from, so a shared face has
-        // the same corners exactly and the key can be the bits, order ignored. Quantizing would
-        // merge faces that only lie close together, which is how a real surface goes missing.
-        let face_key = |corners: &[Vector]| {
-            let mut key: Vec<_> = corners
-                .iter()
-                .map(|corner| {
-                    corner
-                        .to_array()
-                        .map(|coord| without_negative_zero(coord).to_bits())
-                })
-                .collect();
+        // Weld every part's corners into one vertex numbering, so two parts meeting along a face
+        // key it on the same set of vertices even though each rounded its own corners.
+        let corners: Vec<Vector> = part_faces
+            .iter()
+            .flatten()
+            .flatten()
+            .flat_map(|(_, corners)| corners.iter().copied())
+            .collect();
+        let welded = weld_corners(&corners, weld_tolerance);
+
+        let mut vertex_ids: Vec<Option<Vec<Vec<u32>>>> = Vec::with_capacity(part_faces.len());
+        let mut next = 0;
+        for faces in &part_faces {
+            match faces {
+                Some(faces) => {
+                    let mut per_face = Vec::with_capacity(faces.len());
+                    for (_, corners) in faces {
+                        per_face.push(welded[next..next + corners.len()].to_vec());
+                        next += corners.len();
+                    }
+                    vertex_ids.push(Some(per_face));
+                }
+                None => vertex_ids.push(None),
+            }
+        }
+
+        // A shared face has the same vertices on both sides, in some rotation and possibly reversed,
+        // so the key ignores their order.
+        let face_key = |ids: &[u32]| {
+            let mut key = ids.to_vec();
             key.sort_unstable();
             key
         };
-        let edge_key = |a: Vector, b: Vector| {
-            let (mut first, mut second) = (
-                a.to_array()
-                    .map(|coord| without_negative_zero(coord).to_bits()),
-                b.to_array()
-                    .map(|coord| without_negative_zero(coord).to_bits()),
-            );
-            if second < first {
-                core::mem::swap(&mut first, &mut second);
-            }
-            (first, second)
-        };
+        let edge_key = |a: u32, b: u32| if a <= b { (a, b) } else { (b, a) };
 
         let mut parts_sharing_face = HashMap::default();
-        for faces in part_faces.iter().flatten() {
-            for (_, corners) in faces {
-                *parts_sharing_face.entry(face_key(corners)).or_insert(0u32) += 1;
+        for ids in vertex_ids.iter().flatten() {
+            for face in ids {
+                *parts_sharing_face.entry(face_key(face)).or_insert(0u32) += 1;
             }
         }
 
         // Per part, whether each face lies on the union's outline rather than being a cut two
         // parts share.
-        let is_boundary: Vec<Option<Vec<bool>>> = part_faces
+        let is_boundary: Vec<Option<Vec<bool>>> = vertex_ids
             .iter()
-            .map(|faces| {
+            .map(|ids| {
                 Some(
-                    faces
-                        .as_ref()?
+                    ids.as_ref()?
                         .iter()
-                        .map(|(_, corners)| {
+                        .map(|face| {
                             parts_sharing_face
-                                .get(&face_key(corners))
+                                .get(&face_key(face))
                                 .is_none_or(|parts| *parts <= 1)
                         })
                         .collect(),
@@ -466,20 +554,26 @@ impl Compound {
         // The boundary faces meeting along each edge. Gathered across every part, so an edge a cut
         // splits still finds the face continuing the surface into the sibling part.
         let mut faces_along_edge = HashMap::default();
-        for (faces, boundary) in part_faces.iter().zip(is_boundary.iter()) {
-            let (Some(faces), Some(boundary)) = (faces.as_ref(), boundary.as_ref()) else {
+        for ((faces, ids), boundary) in part_faces
+            .iter()
+            .zip(vertex_ids.iter())
+            .zip(is_boundary.iter())
+        {
+            let (Some(faces), Some(ids), Some(boundary)) =
+                (faces.as_ref(), ids.as_ref(), boundary.as_ref())
+            else {
                 continue;
             };
 
-            for ((normal, corners), boundary) in faces.iter().zip(boundary.iter()) {
+            for (((normal, _), face), boundary) in faces.iter().zip(ids.iter()).zip(boundary.iter())
+            {
                 if !boundary {
                     continue;
                 }
 
-                for i in 0..corners.len() {
-                    let edge = edge_key(corners[i], corners[(i + 1) % corners.len()]);
+                for i in 0..face.len() {
                     faces_along_edge
-                        .entry(edge)
+                        .entry(edge_key(face[i], face[(i + 1) % face.len()]))
                         .or_insert_with(Vec::new)
                         .push(*normal);
                 }
@@ -490,21 +584,25 @@ impl Compound {
             .shapes
             .iter()
             .zip(part_faces.iter())
+            .zip(vertex_ids.iter())
             .zip(is_boundary.iter())
-            .map(|(((part_pos, _), faces), boundary)| {
-                let (faces, boundary) = (faces.as_ref()?, boundary.as_ref()?);
+            .map(|((((part_pos, _), faces), ids), boundary)| {
+                let (faces, ids, boundary) = (faces.as_ref()?, ids.as_ref()?, boundary.as_ref()?);
 
                 let into_part = part_pos.rotation.inverse();
                 let mut boundary_faces = Vec::new();
 
-                for ((normal, corners), on_boundary) in faces.iter().zip(boundary.iter()) {
+                for (((normal, corners), face), on_boundary) in
+                    faces.iter().zip(ids.iter()).zip(boundary.iter())
+                {
                     if !on_boundary {
                         continue;
                     }
 
                     let edge_pseudo_normals = (0..corners.len())
                         .map(|i| {
-                            let (from, to) = (corners[i], corners[(i + 1) % corners.len()]);
+                            let next = (i + 1) % corners.len();
+                            let (from, to) = (corners[i], corners[next]);
                             // Halfway to the boundary face across the edge, which may belong to
                             // another part where a cut splits the surface along it. A concave edge
                             // has no outward range for its two faces to share, so the cone stops on
@@ -512,7 +610,7 @@ impl Compound {
                             // cut away. Faces are wound counter-clockwise around their normal, so
                             // the edge is convex exactly when the two normals turn that way too.
                             let across = faces_along_edge
-                                .get(&edge_key(from, to))
+                                .get(&edge_key(face[i], face[next]))
                                 .and_then(|normals| {
                                     normals.iter().find(|other| **other != *normal).copied()
                                 })
@@ -1085,10 +1183,142 @@ impl CompositeShape for Compound {
     }
 }
 
-/// The identity for every value except `-0.0`, which IEEE 754 addition turns into `+0.0`. The
-/// part-matching keys hash raw bit patterns, and the two zeros compare equal but hash apart.
-fn without_negative_zero(coord: Real) -> Real {
-    coord + 0.0
+/// The six faces of a cuboid in its own frame, each an outward normal with its corner loop wound
+/// counter-clockwise around it.
+#[cfg(feature = "dim3")]
+#[allow(clippy::type_complexity)]
+fn cuboid_faces(half_extents: Vector) -> Vec<(Vector, Vec<Vector>)> {
+    let (x, y, z) = (half_extents.x, half_extents.y, half_extents.z);
+    let corner = |sx: Real, sy: Real, sz: Real| Vector::new(sx * x, sy * y, sz * z);
+
+    alloc::vec![
+        (
+            Vector::X,
+            alloc::vec![
+                corner(1.0, -1.0, -1.0),
+                corner(1.0, 1.0, -1.0),
+                corner(1.0, 1.0, 1.0),
+                corner(1.0, -1.0, 1.0),
+            ]
+        ),
+        (
+            -Vector::X,
+            alloc::vec![
+                corner(-1.0, -1.0, -1.0),
+                corner(-1.0, -1.0, 1.0),
+                corner(-1.0, 1.0, 1.0),
+                corner(-1.0, 1.0, -1.0),
+            ]
+        ),
+        (
+            Vector::Y,
+            alloc::vec![
+                corner(-1.0, 1.0, -1.0),
+                corner(-1.0, 1.0, 1.0),
+                corner(1.0, 1.0, 1.0),
+                corner(1.0, 1.0, -1.0),
+            ]
+        ),
+        (
+            -Vector::Y,
+            alloc::vec![
+                corner(-1.0, -1.0, -1.0),
+                corner(1.0, -1.0, -1.0),
+                corner(1.0, -1.0, 1.0),
+                corner(-1.0, -1.0, 1.0),
+            ]
+        ),
+        (
+            Vector::Z,
+            alloc::vec![
+                corner(-1.0, -1.0, 1.0),
+                corner(1.0, -1.0, 1.0),
+                corner(1.0, 1.0, 1.0),
+                corner(-1.0, 1.0, 1.0),
+            ]
+        ),
+        (
+            -Vector::Z,
+            alloc::vec![
+                corner(-1.0, -1.0, -1.0),
+                corner(-1.0, 1.0, -1.0),
+                corner(1.0, 1.0, -1.0),
+                corner(1.0, -1.0, -1.0),
+            ]
+        ),
+    ]
+}
+
+/// Assigns every corner the index of the vertex it welds onto, so parts that meet are keyed on
+/// the same point even when each computed it for itself.
+///
+/// Two corners weld when no coordinate differs by more than `tolerance` ULPs, measured at the
+/// scale of whichever of the two lies further from the origin. That scale has to come from the
+/// point rather than the coordinate: a corner reaching the outline through a rotation can land
+/// near an axis, leaving a coordinate whose own magnitude is pure cancellation and says nothing
+/// about the error in it, while its siblings still carry the magnitude the rounding happened at.
+///
+/// A tolerance of zero leaves only corners at the very same coordinates welded, matching what a
+/// shared vertex buffer produces and nothing else. The comparison stays numeric there rather than
+/// dropping to raw bits, so the two signed zeros still meet.
+fn weld_corners(corners: &[Vector], tolerance: Real) -> Vec<u32> {
+    let radius = |corner: &Vector| tolerance * Real::EPSILON * corner.abs().max_element();
+
+    // Union-find over the corners, so a chain of near-coincident corners collapses to one vertex
+    // whichever order the pairs turn up in.
+    let mut parent: Vec<u32> = (0..corners.len() as u32).collect();
+    fn find(parent: &mut [u32], mut i: u32) -> u32 {
+        while parent[i as usize] != i {
+            parent[i as usize] = parent[parent[i as usize] as usize];
+            i = parent[i as usize];
+        }
+        i
+    }
+
+    let leaves: Vec<Aabb> = corners
+        .iter()
+        .map(|corner| Aabb::new(*corner, *corner))
+        .collect();
+    let bvh = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves);
+
+    for (i, corner) in corners.iter().enumerate() {
+        // Querying every corner with its own radius finds every pair that should weld: the test is
+        // symmetric and scaled by the larger of the two, so the larger corner's own query reaches
+        // the smaller one even when the smaller one's radius would fall short.
+        let reach = radius(corner);
+        let query = Aabb::new(
+            *corner - Vector::splat(reach),
+            *corner + Vector::splat(reach),
+        );
+
+        for j in bvh.intersect_aabb(&query) {
+            let other = corners[j as usize];
+            let scale = corner.abs().max_element().max(other.abs().max_element());
+
+            if (*corner - other).abs().max_element() <= tolerance * Real::EPSILON * scale {
+                let (a, b) = (find(&mut parent, i as u32), find(&mut parent, j));
+                parent[a as usize] = b;
+            }
+        }
+    }
+
+    // Number the roots so the ids are dense.
+    let mut ids = HashMap::default();
+    (0..corners.len() as u32)
+        .map(|i| {
+            let root = find(&mut parent, i);
+            let next = ids.len() as u32;
+            *ids.entry(root).or_insert(next)
+        })
+        .collect()
+}
+
+/// The edges of a closed outline, as consecutive vertex-index pairs wrapping back to the start.
+#[cfg(feature = "dim2")]
+fn outline_edge_ids(ids: &[u32]) -> impl Iterator<Item = (u32, u32)> + '_ {
+    ids.iter()
+        .enumerate()
+        .map(move |(i, id)| (*id, ids[(i + 1) % ids.len()]))
 }
 
 /// The edges of a closed outline, as consecutive corner pairs wrapping back to the start.
@@ -1140,7 +1370,7 @@ impl TypedCompositeShape for Compound {
 #[cfg(all(feature = "dim2", feature = "alloc", feature = "std"))]
 mod test {
     use super::{Compound, CompoundFlags};
-    use crate::math::{Pose, Real, Vector};
+    use crate::math::{Pose, Real, Rotation, Vector};
     use crate::query::{ContactManifold, DefaultQueryDispatcher, PersistentQueryDispatcher};
     use crate::shape::{ConvexPolygon, Cuboid, SharedShape, Triangle};
     use alloc::{vec, vec::Vec};
@@ -1200,7 +1430,7 @@ mod test {
     #[test]
     fn cut_edges_are_dropped_and_close_the_corner_they_end_at() {
         let mut compound = ramp_foot();
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
 
         // Each part loses exactly the cut it shares with the other.
         assert_eq!(
@@ -1233,7 +1463,7 @@ mod test {
             Vector::new(1.0, 0.0),
         );
         let mut compound = Compound::new(vec![(Pose::IDENTITY, SharedShape::new(clockwise))]);
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
 
         let cones = compound.part_normal_constraints(0).expect("polygonal part");
         assert_eq!(cones.boundary_edges.len(), 3);
@@ -1261,7 +1491,7 @@ mod test {
     fn a_body_running_into_the_tip_reports_no_contact_with_the_cut() {
         let plain = ramp_foot();
         let mut fixed = ramp_foot();
-        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
 
         // Against the bare compound the wedge answers with its tip axis: a wall across the flat run.
         let ghost = normals_against_the_wedge(&plain, 0.0);
@@ -1319,7 +1549,7 @@ mod test {
             part(&[[0.0, 0.0], [2.0, 0.0], [2.0, 1.0], [1.0, 1.0]]),
             part(&[[0.0, 0.0], [1.0, 1.0], [1.0, 2.0], [0.0, 2.0]]),
         ]);
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
         compound
     }
 
@@ -1386,11 +1616,199 @@ mod test {
         assert_eq!(rightwards.clockwise_limit, rightwards.face);
     }
 
+    /// A row of boxes on a shared grid, the way a voxel body reaches a compound, optionally
+    /// rotated as a whole. Every part computes its own corners, so the seams are only found if
+    /// corners that round differently still weld.
+    fn voxel_row(n: u32, size: Real, origin: Real, angle: Real) -> Compound {
+        let half = size / 2.0;
+        let rotation = Rotation::from_angle(angle);
+        let parts = (0..n)
+            .map(|i| {
+                let center = Vector::new(origin + i as Real * size, 0.0);
+                (
+                    Pose::from_parts(rotation * center, rotation),
+                    SharedShape::new(Cuboid::new(Vector::new(half, half))),
+                )
+            })
+            .collect();
+
+        let mut compound = Compound::new(parts);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
+        compound
+    }
+
+    /// How many boundary edges each part of a row kept. A welded row leaves the two ends with
+    /// three and every box between them with two.
+    fn boundary_edge_counts(compound: &Compound, n: u32) -> Vec<usize> {
+        (0..n)
+            .map(|i| {
+                compound
+                    .part_normal_constraints(i)
+                    .map_or(99, |cones| cones.boundary_edges.len())
+            })
+            .collect()
+    }
+
+    /// Parts of a grid meet on corners each computes for itself, and the two spellings need not
+    /// round alike. Every row here leaves at least one seam a few ULPs wide.
+    #[test]
+    fn a_voxel_row_finds_seams_its_parts_rounded_differently() {
+        for &(size, origin, angle) in &[
+            (1.0 as Real, 0.0 as Real, 0.1 as Real),
+            (1.0, 0.0, 0.5236),
+            (1.0, 0.0, 0.7854),
+            (0.1, 0.0, 0.0),
+            (0.7, 0.0, 0.0),
+            (1.0, 0.05, 0.0),
+            (0.1, 1000.0, 0.0),
+            (1.0, 1000.0, 0.7854),
+        ] {
+            assert_eq!(
+                boundary_edge_counts(&voxel_row(5, size, origin, angle), 5),
+                alloc::vec![3, 2, 2, 2, 3],
+                "size {size} origin {origin} angle {angle}"
+            );
+        }
+    }
+
+    /// A zero tolerance is the exact comparison, which only recognizes a seam whose two spellings
+    /// round to the very same bits.
+    #[test]
+    fn a_zero_tolerance_welds_only_bit_identical_corners() {
+        let mut rotated = voxel_row(5, 1.0, 0.0, 0.1);
+        let welded = boundary_edge_counts(&rotated, 5);
+        assert_eq!(welded, alloc::vec![3, 2, 2, 2, 3]);
+
+        // Dropping the tolerance can only lose cuts, never find new ones, and this rotation puts
+        // at least one seam beyond an exact comparison.
+        rotated.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, Some(0.0));
+        let exact = boundary_edge_counts(&rotated, 5);
+        assert!(
+            exact.iter().zip(welded.iter()).all(|(a, b)| a >= b),
+            "exact found a cut the tolerance missed: {exact:?}"
+        );
+        assert!(
+            exact.iter().sum::<usize>() > welded.iter().sum::<usize>(),
+            "exact matched every seam: {exact:?}"
+        );
+
+        // A grid whose corners land on exact coordinates never needed the tolerance.
+        let mut exact = voxel_row(5, 1.0, 0.0, 0.0);
+        exact.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, Some(0.0));
+        assert_eq!(boundary_edge_counts(&exact, 5), alloc::vec![3, 2, 2, 2, 3]);
+    }
+
+    /// Every interior seam of a full grid is found, and only the perimeter survives: an `n` by `n`
+    /// grid of cells encloses exactly `4 * n` boundary edges. Four cells meet at every interior
+    /// corner, so this also exercises welding more than two coincident corners at once.
+    #[test]
+    fn a_voxel_grid_keeps_only_its_perimeter() {
+        for &(n, size, origin, angle) in &[
+            (3u32, 1.0 as Real, 0.0 as Real, 0.1 as Real),
+            (3, 0.1, 0.0, 0.0),
+            (4, 0.7, 5.0, 0.7854),
+        ] {
+            let half = size / 2.0;
+            let rotation = Rotation::from_angle(angle);
+            let parts = (0..n)
+                .flat_map(|i| {
+                    (0..n).map(move |j| {
+                        let center =
+                            Vector::new(origin + i as Real * size, origin + j as Real * size);
+                        (
+                            Pose::from_parts(rotation * center, rotation),
+                            SharedShape::new(Cuboid::new(Vector::new(half, half))),
+                        )
+                    })
+                })
+                .collect();
+
+            let mut compound = Compound::new(parts);
+            compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
+
+            let counts = boundary_edge_counts(&compound, n * n);
+            assert_eq!(
+                counts.iter().sum::<usize>(),
+                (4 * n) as usize,
+                "size {size} origin {origin} angle {angle}: {counts:?}"
+            );
+        }
+    }
+
+    /// The two signed zeros are the same point and hash apart, so a corner one part spells `0.0`
+    /// and another `-0.0` has to weld even where no tolerance is allowed at all.
+    #[test]
+    fn signed_zero_corners_weld_at_zero_tolerance() {
+        assert_ne!(
+            (0.0 as Real).to_bits(),
+            (-0.0 as Real).to_bits(),
+            "the two zeros are meant to differ bitwise"
+        );
+
+        // Two triangles sharing the edge from the origin to `(1, 0)`, the second spelling its end
+        // of that edge with negative zeros.
+        let mut compound = Compound::new(vec![
+            (
+                Pose::IDENTITY,
+                SharedShape::new(Triangle::new(
+                    Vector::new(0.0, 0.0),
+                    Vector::new(1.0, 0.0),
+                    Vector::new(0.5, 1.0),
+                )),
+            ),
+            (
+                Pose::IDENTITY,
+                SharedShape::new(Triangle::new(
+                    Vector::new(-0.0, -0.0),
+                    Vector::new(0.5, -1.0),
+                    Vector::new(1.0, -0.0),
+                )),
+            ),
+        ]);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, Some(0.0));
+
+        assert_eq!(boundary_edge_counts(&compound, 2), alloc::vec![2, 2]);
+    }
+
+    /// The tolerance follows each corner's own distance from the origin rather than the whole
+    /// compound's, so a part placed far away does not coarsen detail near it.
+    #[test]
+    fn a_distant_part_does_not_coarsen_detail_near_the_origin() {
+        let small = 1.0e-3;
+        let box_at = |x: Real, half: Real| {
+            (
+                Pose::from_parts(Vector::new(x, 0.0), Default::default()),
+                SharedShape::new(Cuboid::new(Vector::new(half, half))),
+            )
+        };
+
+        // Two small boxes with a gap between them, and one part 1e5 away. Scaled to the distant
+        // part the gap would vanish; scaled to the small boxes themselves it is enormous.
+        let mut compound = Compound::new(vec![
+            box_at(0.0, small),
+            box_at(4.0 * small, small),
+            box_at(1.0e5, 1.0),
+        ]);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
+
+        for part in 0..2 {
+            assert_eq!(
+                compound
+                    .part_normal_constraints(part)
+                    .unwrap()
+                    .boundary_edges
+                    .len(),
+                4,
+                "part {part} lost an edge to the distant part's scale"
+            );
+        }
+    }
+
     #[test]
     fn contacts_with_the_ramp_itself_are_left_alone() {
         let plain = ramp_foot();
         let mut fixed = ramp_foot();
-        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        fixed.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
 
         let expected = normals_against_the_wedge(&plain, 0.01);
         assert_eq!(expected.len(), 1);
@@ -1407,8 +1825,8 @@ mod test {
 #[cfg(all(feature = "dim3", feature = "alloc", feature = "std"))]
 mod dim3_test {
     use super::{Compound, CompoundFlags};
-    use crate::math::{Pose, Real, Vector};
-    use crate::shape::SharedShape;
+    use crate::math::{Pose, Real, Rotation, Vector};
+    use crate::shape::{Cuboid, SharedShape};
     use alloc::{vec, vec::Vec};
 
     /// A flat run turning into a ramp, split along the diagonal a convex decomposition would cut:
@@ -1435,7 +1853,7 @@ mod dim3_test {
     #[test]
     fn cut_faces_are_dropped_from_both_parts() {
         let mut compound = ramp_foot();
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
 
         // Each prism has 6 faces and loses the shared quad -- which only holds if `convex_hull`
         // produced the cut with the same corners on both sides, the premise everything rests on.
@@ -1463,7 +1881,7 @@ mod dim3_test {
             prism(&[[0.0, 0.0], [2.0, 0.0], [2.0, 1.0], [1.0, 1.0]]),
             prism(&[[0.0, 0.0], [1.0, 1.0], [1.0, 2.0], [0.0, 2.0]]),
         ]);
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
         compound
     }
 
@@ -1554,6 +1972,86 @@ mod dim3_test {
         }
     }
 
+    /// A row of cuboids on a shared grid, the way a voxel body reaches a compound, optionally
+    /// rotated as a whole.
+    fn voxel_row(n: u32, size: Real, origin: Real, angle: Real) -> Compound {
+        let half = size / 2.0;
+        let rotation = Rotation::from_rotation_z(angle);
+        let parts = (0..n)
+            .map(|i| {
+                let center = Vector::new(origin + i as Real * size, 0.0, 0.0);
+                (
+                    Pose::from_parts(rotation * center, rotation),
+                    SharedShape::new(Cuboid::new(Vector::new(half, half, half))),
+                )
+            })
+            .collect();
+
+        let mut compound = Compound::new(parts);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
+        compound
+    }
+
+    /// How many boundary faces each part of a row kept. A welded row leaves the two ends with
+    /// five and every box between them with four.
+    fn boundary_face_counts(compound: &Compound, n: u32) -> Vec<usize> {
+        (0..n)
+            .map(|i| {
+                compound
+                    .part_normal_constraints(i)
+                    .map_or(99, |cones| cones.boundary_faces.len())
+            })
+            .collect()
+    }
+
+    /// A cuboid is a polyhedron the type system does not call one, so a voxel body used to get no
+    /// cones at all; and its parts compute their own corners, which need not round alike.
+    #[test]
+    fn a_row_of_cuboids_shares_its_faces() {
+        for &(size, origin, angle) in &[
+            (1.0 as Real, 0.0 as Real, 0.0 as Real),
+            (0.1, 0.0, 0.0),
+            (0.7, 0.0, 0.0),
+            (1.0, 0.05, 0.0),
+            (0.1, 1000.0, 0.0),
+            (1.0, 0.0, 0.1),
+            (1.0, 1000.0, 0.7854),
+        ] {
+            assert_eq!(
+                boundary_face_counts(&voxel_row(5, size, origin, angle), 5),
+                vec![5, 4, 4, 4, 5],
+                "size {size} origin {origin} angle {angle}"
+            );
+        }
+    }
+
+    /// A zero tolerance is the exact comparison, which only recognizes a cut whose corners round
+    /// to the very same bits on both sides.
+    #[test]
+    fn a_zero_tolerance_welds_only_bit_identical_corners() {
+        let mut rotated = voxel_row(5, 1.0, 0.0, 0.1);
+        let welded = boundary_face_counts(&rotated, 5);
+        assert_eq!(welded, vec![5, 4, 4, 4, 5]);
+
+        // Dropping the tolerance can only lose cuts, never find new ones, and this rotation puts
+        // at least one seam beyond an exact comparison.
+        rotated.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, Some(0.0));
+        let exact = boundary_face_counts(&rotated, 5);
+        assert!(
+            exact.iter().zip(welded.iter()).all(|(a, b)| a >= b),
+            "exact found a cut the tolerance missed: {exact:?}"
+        );
+        assert!(
+            exact.iter().sum::<usize>() > welded.iter().sum::<usize>(),
+            "exact matched every seam: {exact:?}"
+        );
+
+        // A grid whose corners land on exact coordinates never needed the tolerance.
+        let mut exact = voxel_row(5, 1.0, 0.0, 0.0);
+        exact.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, Some(0.0));
+        assert_eq!(boundary_face_counts(&exact, 5), vec![5, 4, 4, 4, 5]);
+    }
+
     /// A body pressed into the wedge tip reports a normal along its own face, not a surface of
     /// the union; the cones pull it onto the one face that is.
     #[test]
@@ -1561,7 +2059,7 @@ mod dim3_test {
         use crate::query::details::NormalConstraints;
 
         let mut compound = ramp_foot();
-        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES);
+        compound.set_flags(CompoundFlags::FIX_INTERNAL_EDGES, None);
         let wedge = compound.part_normal_constraints(1).expect("polyhedron");
 
         let ramp = Vector::new(-0.6, 0.8, 0.0);
