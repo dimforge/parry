@@ -1,4 +1,5 @@
 use crate::math::{Pose, Real, Vector};
+use crate::shape::SubShapeId;
 use core::mem;
 
 /// Geometric description of a contact between two shapes.
@@ -97,6 +98,16 @@ pub struct Contact {
     ///
     /// For collision resolution, use `-dist` as the penetration depth when `dist < 0.0`.
     pub dist: Real,
+
+    /// The sub-shape of the first shape this contact is on.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape1: SubShapeId,
+
+    /// The sub-shape of the second shape this contact is on.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape2: SubShapeId,
 }
 
 impl Contact {
@@ -141,7 +152,17 @@ impl Contact {
             normal1,
             normal2,
             dist,
+            subshape1: 0,
+            subshape2: 0,
         }
+    }
+
+    /// Sets the sub-shapes this contact is between.
+    #[inline]
+    pub fn with_subshapes(mut self, subshape1: SubShapeId, subshape2: SubShapeId) -> Self {
+        self.subshape1 = subshape1;
+        self.subshape2 = subshape2;
+        self
     }
 }
 
@@ -151,6 +172,7 @@ impl Contact {
     pub fn flip(&mut self) {
         mem::swap(&mut self.point1, &mut self.point2);
         mem::swap(&mut self.normal1, &mut self.normal2);
+        mem::swap(&mut self.subshape1, &mut self.subshape2);
     }
 
     /// Returns a new contact containing the swapped points and normals of `self`.

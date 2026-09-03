@@ -1,7 +1,7 @@
 use crate::math::{IVectorExt, Real, Vector, VectorExt};
 use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{FeatureId, Voxels, VoxelsChunkRef};
+use crate::shape::{Voxels, VoxelsChunkRef};
 
 impl RayCast for Voxels {
     #[inline]
@@ -63,10 +63,9 @@ impl<'a> RayCast for VoxelsChunkRef<'a> {
                     let hit = aabb.cast_local_ray_and_get_normal(ray, max_t, solid);
 
                     if let Some(mut hit) = hit {
-                        // TODO: have the feature id be based on the voxel type?
-                        hit.feature = FeatureId::Face(
-                            self.flat_id(voxel_key).unwrap_or_else(|| unreachable!()),
-                        );
+                        // The feature stays the one the voxel's Aabb reported; `subshape` says
+                        // which voxel it belongs to.
+                        hit.subshape = self.flat_id(voxel_key).unwrap_or_else(|| unreachable!());
                         return Some(hit);
                     }
                 }

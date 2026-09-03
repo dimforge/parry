@@ -1,3 +1,58 @@
+use crate::shape::SubShapeId;
+
+/// The distance between two shapes, and the sub-shapes it was measured between.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ShapeDistance {
+    /// The separation between the two shapes; `0.0` when they touch or overlap.
+    pub distance: Real,
+    /// The sub-shape of the first shape the distance was measured to.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape1: SubShapeId,
+    /// The sub-shape of the second shape the distance was measured to.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape2: SubShapeId,
+}
+
+impl ShapeDistance {
+    /// A distance measured between shapes with no sub-shapes to distinguish.
+    pub fn new(distance: Real) -> Self {
+        Self {
+            distance,
+            subshape1: 0,
+            subshape2: 0,
+        }
+    }
+
+    /// Sets the sub-shapes this distance was measured between.
+    pub fn with_subshapes(mut self, subshape1: SubShapeId, subshape2: SubShapeId) -> Self {
+        self.subshape1 = subshape1;
+        self.subshape2 = subshape2;
+        self
+    }
+
+    /// Swaps the roles of the two shapes.
+    pub fn swapped(mut self) -> Self {
+        core::mem::swap(&mut self.subshape1, &mut self.subshape2);
+        self
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl crate::partitioning::BvhLeafCost for ShapeDistance {
+    #[inline]
+    fn cost(&self) -> Real {
+        self.distance
+    }
+}
+
+impl From<Real> for ShapeDistance {
+    fn from(distance: Real) -> Self {
+        Self::new(distance)
+    }
+}
+
 use crate::math::{Pose, Real};
 
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
@@ -53,7 +108,7 @@ use crate::shape::Shape;
 /// let pos2 = Pose::translation(10.0, 0.0, 0.0);
 ///
 /// // Compute distance
-/// let dist = distance(&pos1, &ball1, &pos2, &ball2).unwrap();
+/// let dist = distance(&pos1, &ball1, &pos2, &ball2).unwrap().distance;
 ///
 /// // Distance = 10.0 (separation) - 1.0 (radius1) - 2.0 (radius2) = 7.0
 /// assert_eq!(dist, 7.0);
@@ -74,7 +129,7 @@ use crate::shape::Shape;
 /// let pos1 = Pose::translation(0.0, 0.0, 0.0);
 /// let pos2 = Pose::translation(1.5, 0.0, 0.0); // Edge to edge
 ///
-/// let dist = distance(&pos1, &box1, &pos2, &box2).unwrap();
+/// let dist = distance(&pos1, &box1, &pos2, &box2).unwrap().distance;
 ///
 /// // They're touching, so distance is 0.0
 /// assert_eq!(dist, 0.0);
@@ -91,7 +146,7 @@ pub fn distance(
     g1: &dyn Shape,
     pos2: &Pose,
     g2: &dyn Shape,
-) -> Result<Real, Unsupported> {
+) -> Result<ShapeDistance, Unsupported> {
     let pos12 = pos1.inv_mul(pos2);
     DefaultQueryDispatcher.distance(&pos12, g1, g2)
 }

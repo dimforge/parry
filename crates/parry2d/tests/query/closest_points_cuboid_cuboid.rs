@@ -36,7 +36,9 @@ fn closest_points_cuboid_cuboid_axis_aligned_diagonal() {
         // The same failure is reachable through the public API: `query::distance`
         // dispatches cuboid-cuboid pairs to `distance_cuboid_cuboid`, which is
         // implemented on top of `closest_points_cuboid_cuboid`.
-        let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid).unwrap();
+        let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid)
+            .unwrap()
+            .distance;
         assert_relative_eq!(dist, true_dist, epsilon = 1e-5);
     }
 }
@@ -60,7 +62,9 @@ fn closest_points_cuboid_cuboid_axis_aligned_corner_touching() {
         other => panic!("expected WithinMargin at distance {gap}, got {other:?}"),
     }
 
-    let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid).unwrap();
+    let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid)
+        .unwrap()
+        .distance;
     assert_relative_eq!(dist, gap, epsilon = 1e-5);
 }
 
@@ -89,6 +93,8 @@ fn closest_points_cuboid_cuboid_axis_aligned_subulp_gap() {
         ClosestPoints::Disjoint => panic!("expected WithinMargin, got Disjoint"),
     }
 
-    let dist = query::distance(&Pose::IDENTITY, &c1, &pos12, &c2).unwrap();
+    let dist = query::distance(&Pose::IDENTITY, &c1, &pos12, &c2)
+        .unwrap()
+        .distance;
     assert!(dist < 1.0e-5, "distance = {dist}");
 }

@@ -3,6 +3,8 @@ use crate::bounding_volume::Aabb;
 use crate::math::VectorExt;
 use crate::math::{Pose, Vector};
 use crate::partitioning::{Bvh, BvhBuildStrategy};
+#[cfg(feature = "dim3")]
+use crate::shape::SubShapeId;
 use crate::shape::{FeatureId, Shape, Triangle, TrianglePseudoNormals, TypedCompositeShape};
 use crate::utils::HashablePartialEq;
 use alloc::{vec, vec::Vec};
@@ -1690,14 +1692,10 @@ impl TriMesh {
     }
 
     #[cfg(feature = "dim3")]
-    /// Gets the normal of the triangle represented by `feature`.
-    pub fn feature_normal(&self, feature: FeatureId) -> Option<Vector> {
-        match feature {
-            FeatureId::Face(i) => self
-                .triangle(i % self.num_triangles() as u32)
-                .feature_normal(FeatureId::Face(0)),
-            _ => None,
-        }
+    /// Gets the normal of the triangle `triangle_id`.
+    pub fn triangle_normal(&self, triangle_id: SubShapeId) -> Option<Vector> {
+        self.triangle(triangle_id % self.num_triangles() as u32)
+            .feature_normal(FeatureId::Face(0))
     }
 }
 
@@ -1853,11 +1851,9 @@ impl TriMesh {
 
     /// Does the given feature ID identify a backface of this trimesh?
     pub fn is_backface(&self, feature: FeatureId) -> bool {
-        if let FeatureId::Face(i) = feature {
-            i >= self.indices.len() as u32
-        } else {
-            false
-        }
+        // The feature is the hit triangle's own, which reports its back face as `Face(1)`; the
+        // triangle itself is identified by the result's `subshape`.
+        feature == FeatureId::Face(1)
     }
 
     /// Get the `i`-th triangle of this mesh.

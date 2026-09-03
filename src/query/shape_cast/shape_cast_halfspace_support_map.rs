@@ -53,6 +53,8 @@ pub fn cast_shapes_halfspace_support_map<G: ?Sized + SupportMap>(
             witness1,
             witness2: pos12.inverse_transform_point(witness2),
             status,
+            subshape1: 0,
+            subshape2: 0,
         })
     } else {
         None

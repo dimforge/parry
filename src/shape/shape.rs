@@ -8,7 +8,7 @@ use crate::shape::SharedShape;
 use crate::shape::{composite_shape::CompositeShape, Compound, HeightField, Polyline, TriMesh};
 use crate::shape::{
     Ball, Capsule, Cuboid, FeatureId, HalfSpace, PolygonalFeatureMap, RoundCuboid, RoundShape,
-    RoundTriangle, Segment, SupportMap, Triangle,
+    RoundTriangle, Segment, SubShapeId, SupportMap, Triangle,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, Cylinder, RoundCone, RoundCylinder};
@@ -418,7 +418,15 @@ pub trait Shape: RayCast + PointQuery + Any + Send + Sync {
     // }
 
     /// The shape's normal at the given point located on a specific feature.
-    fn feature_normal_at_point(&self, _feature: FeatureId, _point: Vector) -> Option<Vector> {
+    ///
+    /// `subshape` identifies the sub-shape the feature belongs to, as a query result reports it;
+    /// it is `0` for a shape with no sub-shapes. `feature` is that sub-shape's own feature.
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        _feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         None
     }
 
@@ -717,7 +725,12 @@ impl Shape for Ball {
 
     /// The shape's normal at the given point located on a specific feature.
     #[inline]
-    fn feature_normal_at_point(&self, _: FeatureId, point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _: SubShapeId,
+        _: FeatureId,
+        point: Vector,
+    ) -> Option<Vector> {
         (point).try_normalize()
     }
 }
@@ -777,7 +790,12 @@ impl Shape for Cuboid {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(&self, feature: FeatureId, _point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         self.feature_normal(feature)
     }
 }
@@ -898,7 +916,12 @@ impl Shape for Triangle {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(&self, _feature: FeatureId, _point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        _feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         #[cfg(feature = "dim2")]
         return None;
         #[cfg(feature = "dim3")]
@@ -961,7 +984,12 @@ impl Shape for Segment {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(&self, feature: FeatureId, _point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         self.feature_normal(feature)
     }
 }
@@ -1126,12 +1154,17 @@ impl Shape for TriMesh {
         Real::frac_pi_4()
     }
 
-    /// Gets the normal of the triangle represented by `feature`.
-    fn feature_normal_at_point(&self, _feature: FeatureId, _point: Vector) -> Option<Vector> {
+    /// Gets the normal of the triangle `subshape`.
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        _feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         #[cfg(feature = "dim2")]
         return None;
         #[cfg(feature = "dim3")]
-        return self.feature_normal(_feature);
+        return self.triangle_normal(_subshape);
     }
 
     #[cfg(feature = "alloc")]
@@ -1243,7 +1276,12 @@ impl Shape for ConvexPolygon {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(&self, feature: FeatureId, _point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         self.feature_normal(feature)
     }
 }
@@ -1307,7 +1345,12 @@ impl Shape for ConvexPolyhedron {
         Some((self as &dyn PolygonalFeatureMap, 0.0))
     }
 
-    fn feature_normal_at_point(&self, feature: FeatureId, _point: Vector) -> Option<Vector> {
+    fn feature_normal_at_point(
+        &self,
+        _subshape: SubShapeId,
+        feature: FeatureId,
+        _point: Vector,
+    ) -> Option<Vector> {
         self.feature_normal(feature)
     }
 }

@@ -10,9 +10,13 @@ fn main() {
     let ball_pos_disjoint = Pose::translation(3.0, 3.0, 3.0);
 
     let intersecting =
-        query::intersection_test(&ball_pos_intersecting, &ball, &cuboid_pos, &cuboid).unwrap();
+        query::intersection_test(&ball_pos_intersecting, &ball, &cuboid_pos, &cuboid)
+            .unwrap()
+            .intersecting;
     let not_intersecting =
-        !query::intersection_test(&ball_pos_disjoint, &ball, &cuboid_pos, &cuboid).unwrap();
+        !query::intersection_test(&ball_pos_disjoint, &ball, &cuboid_pos, &cuboid)
+            .unwrap()
+            .intersecting;
 
     assert!(intersecting);
     assert!(not_intersecting);

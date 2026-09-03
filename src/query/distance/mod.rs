@@ -1,6 +1,6 @@
 //! Implementation details of the `distance` function.
 
-pub use self::distance::distance;
+pub use self::distance::{distance, ShapeDistance};
 pub use self::distance_ball_ball::distance_ball_ball;
 pub use self::distance_ball_convex_polyhedron::{
     distance_ball_convex_polyhedron, distance_convex_polyhedron_ball,

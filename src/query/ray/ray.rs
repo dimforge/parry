@@ -1,7 +1,7 @@
 //! Traits and structure needed to cast rays.
 
 use crate::math::{Pose, Real, Vector};
-use crate::shape::FeatureId;
+use crate::shape::{FeatureId, SubShapeId};
 
 #[cfg(feature = "alloc")]
 use crate::partitioning::BvhLeafCost;
@@ -308,6 +308,14 @@ pub struct RayIntersection {
     /// This can be used for more detailed collision response or to identify
     /// exactly which part of the shape was struck.
     pub feature: FeatureId,
+
+    /// The sub-shape that was hit.
+    ///
+    /// Identifies the part of a composite shape the ray struck: a triangle of a
+    /// [`TriMesh`](crate::shape::TriMesh), a part of a [`Compound`](crate::shape::Compound), a
+    /// voxel of a [`Voxels`](crate::shape::Voxels), and so on. Always `0` for a shape with no
+    /// sub-shapes.
+    pub subshape: SubShapeId,
 }
 
 impl RayIntersection {
@@ -319,6 +327,7 @@ impl RayIntersection {
             time_of_impact,
             normal,
             feature,
+            subshape: 0,
         }
     }
 
@@ -330,7 +339,15 @@ impl RayIntersection {
             time_of_impact,
             normal,
             feature,
+            subshape: 0,
         }
+    }
+
+    /// Sets the sub-shape this intersection came from.
+    #[inline]
+    pub fn with_subshape(mut self, subshape: SubShapeId) -> Self {
+        self.subshape = subshape;
+        self
     }
 
     #[inline]
@@ -339,6 +356,7 @@ impl RayIntersection {
             time_of_impact: self.time_of_impact,
             normal: transform.rotation * self.normal,
             feature: self.feature,
+            subshape: self.subshape,
         }
     }
 }

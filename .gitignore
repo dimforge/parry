@@ -10,3 +10,4 @@ Makefile
 .vscode
 .idea
 .DS_store
+.claude
