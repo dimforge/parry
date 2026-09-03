@@ -1,7 +1,6 @@
 use crate::math::Real;
 use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::FeatureId;
 use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
 
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
@@ -92,8 +91,6 @@ impl RayCast for Compound {
             .map(|hit| hit.1)
     }
 
-    /// The returned intersection identifies the part that was hit: its `feature` is
-    /// `FeatureId::Face(part_index)`, the way [`TriMesh`](crate::shape::TriMesh) reports the triangle it hit.
     #[inline]
     fn cast_local_ray_and_get_normal(
         &self,
@@ -103,9 +100,6 @@ impl RayCast for Compound {
     ) -> Option<RayIntersection> {
         CompositeShapeRef(self)
             .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
-            .map(|(part_index, mut hit)| {
-                hit.feature = FeatureId::Face(part_index);
-                hit
-            })
+            .map(|hit| hit.1)
     }
 }

@@ -255,16 +255,17 @@ impl PointQuery for Compound {
             .unwrap_or(PointProjection::new(false, point))
     }
 
-    /// The returned feature identifies the part the point projects onto:
-    /// `FeatureId::Face(part_index)`, the way [`TriMesh`] reports the triangle.
     #[inline]
     fn project_local_point_and_get_feature(&self, point: Vector) -> (PointProjection, FeatureId) {
-        CompositeShapeRef(self)
-            .project_local_point_and_get_feature(point, Real::MAX)
-            .map(|(part_index, (proj, _))| (proj, FeatureId::Face(part_index)))
-            // No candidate: `point` (or `self`) isn’t finite. See
-            // `Polyline::project_local_point_and_get_feature`.
-            .unwrap_or((PointProjection::new(false, point), FeatureId::Unknown))
+        (
+            CompositeShapeRef(self)
+                .project_local_point_and_get_feature(point, Real::MAX)
+                .map(|(_, (proj, _))| proj)
+                // No candidate: `point` (or `self`) isn’t finite. See
+                // `Polyline::project_local_point_and_get_feature`.
+                .unwrap_or(PointProjection::new(false, point)),
+            FeatureId::Unknown,
+        )
     }
 
     #[inline]
