@@ -197,7 +197,7 @@ impl PointQuery for TriMesh {
         self.project_local_point_with_max_dist(point, solid, Real::MAX)
             // Shouldn’t happen (trimesh must not be empty). But return something
             // instead of crashing with `unwrap`.
-            .unwrap_or((PointProjection::new(false, point)))
+            .unwrap_or(PointProjection::new(false, point))
     }
 
     #[inline]
