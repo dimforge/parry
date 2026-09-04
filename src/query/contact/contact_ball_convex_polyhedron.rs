@@ -44,7 +44,7 @@ pub fn contact_convex_polyhedron_ball(
     } else {
         dist = -ball2.radius;
         normal1 = shape1
-            .feature_normal_at_point(f1, proj.point)
+            .feature_normal_at_point(proj.subshape, f1, proj.point)
             .or_else(|| (proj.point).try_normalize())
             .unwrap_or(Vector::Y);
     }

@@ -2,7 +2,7 @@ use crate::math::{Pose, Real, Vector};
 use crate::query::details::ShapeCastOptions;
 use crate::query::{
     self, details::NonlinearShapeCastMode, ClosestPoints, Contact, NonlinearRigidMotion,
-    QueryDispatcher, ShapeCastHit, Unsupported,
+    QueryDispatcher, ShapeCastHit, ShapeDistance, ShapeIntersection, Unsupported,
 };
 #[cfg(feature = "alloc")]
 use crate::query::{
@@ -104,11 +104,13 @@ use crate::shape::ShapeType;
 ///
 /// // Query intersection
 /// let intersects = dispatcher.intersection_test(&pos12, &ball, &cuboid)
-///     .expect("This shape pair is supported");
+///     .expect("This shape pair is supported")
+///     .intersecting;
 ///
 /// // Query distance
 /// let dist = dispatcher.distance(&pos12, &ball, &cuboid)
-///     .expect("This shape pair is supported");
+///     .expect("This shape pair is supported")
+///     .distance;
 ///
 /// println!("Distance: {}, Intersecting: {}", dist, intersects);
 /// # }
@@ -179,22 +181,16 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
-    ) -> Result<bool, Unsupported> {
+    ) -> Result<ShapeIntersection, Unsupported> {
         if let (Some(b1), Some(b2)) = (shape1.as_ball(), shape2.as_ball()) {
             let p12 = pos12.translation;
-            Ok(query::details::intersection_test_ball_ball(p12, b1, b2))
+            Ok(query::details::intersection_test_ball_ball(p12, b1, b2).into())
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
-            Ok(query::details::intersection_test_cuboid_cuboid(
-                pos12, c1, c2,
-            ))
+            Ok(query::details::intersection_test_cuboid_cuboid(pos12, c1, c2).into())
         } else if let (Some(t1), Some(c2)) = (shape1.as_triangle(), shape2.as_cuboid()) {
-            Ok(query::details::intersection_test_triangle_cuboid(
-                pos12, t1, c2,
-            ))
+            Ok(query::details::intersection_test_triangle_cuboid(pos12, t1, c2).into())
         } else if let (Some(c1), Some(t2)) = (shape1.as_cuboid(), shape2.as_triangle()) {
-            Ok(query::details::intersection_test_cuboid_triangle(
-                pos12, c1, t2,
-            ))
+            Ok(query::details::intersection_test_cuboid_triangle(pos12, c1, t2).into())
         } else if let Some(b1) = shape1.as_ball() {
             Ok(query::details::intersection_test_ball_point_query(
                 pos12, b1, shape2,
@@ -206,19 +202,13 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
-            Ok(query::details::intersection_test_halfspace_support_map(
-                pos12, p1, s2,
-            ))
+            Ok(query::details::intersection_test_halfspace_support_map(pos12, p1, s2).into())
         } else if let (Some(s1), Some(p2)) =
             (shape1.as_support_map(), shape2.as_shape::<HalfSpace>())
         {
-            Ok(query::details::intersection_test_support_map_halfspace(
-                pos12, s1, p2,
-            ))
+            Ok(query::details::intersection_test_support_map_halfspace(pos12, s1, p2).into())
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
-            Ok(query::details::intersection_test_support_map_support_map(
-                pos12, s1, s2,
-            ))
+            Ok(query::details::intersection_test_support_map_support_map(pos12, s1, s2).into())
         } else {
             #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {
@@ -251,41 +241,31 @@ impl QueryDispatcher for DefaultQueryDispatcher {
         pos12: &Pose,
         shape1: &dyn Shape,
         shape2: &dyn Shape,
-    ) -> Result<Real, Unsupported> {
+    ) -> Result<ShapeDistance, Unsupported> {
         let ball1 = shape1.as_ball();
         let ball2 = shape2.as_ball();
 
         if let (Some(b1), Some(b2)) = (ball1, ball2) {
             let p2 = pos12.translation;
-            Ok(query::details::distance_ball_ball(b1, p2, b2))
+            Ok(query::details::distance_ball_ball(b1, p2, b2).into())
         } else if let (Some(b1), true) = (ball1, shape2.is_convex()) {
-            Ok(query::details::distance_ball_convex_polyhedron(
-                pos12, b1, shape2,
-            ))
+            Ok(query::details::distance_ball_convex_polyhedron(pos12, b1, shape2).into())
         } else if let (true, Some(b2)) = (shape1.is_convex(), ball2) {
-            Ok(query::details::distance_convex_polyhedron_ball(
-                pos12, shape1, b2,
-            ))
+            Ok(query::details::distance_convex_polyhedron_ball(pos12, shape1, b2).into())
         } else if let (Some(c1), Some(c2)) = (shape1.as_cuboid(), shape2.as_cuboid()) {
-            Ok(query::details::distance_cuboid_cuboid(pos12, c1, c2))
+            Ok(query::details::distance_cuboid_cuboid(pos12, c1, c2).into())
         } else if let (Some(s1), Some(s2)) = (shape1.as_segment(), shape2.as_segment()) {
-            Ok(query::details::distance_segment_segment(pos12, s1, s2))
+            Ok(query::details::distance_segment_segment(pos12, s1, s2).into())
         } else if let (Some(p1), Some(s2)) =
             (shape1.as_shape::<HalfSpace>(), shape2.as_support_map())
         {
-            Ok(query::details::distance_halfspace_support_map(
-                pos12, p1, s2,
-            ))
+            Ok(query::details::distance_halfspace_support_map(pos12, p1, s2).into())
         } else if let (Some(s1), Some(p2)) =
             (shape1.as_support_map(), shape2.as_shape::<HalfSpace>())
         {
-            Ok(query::details::distance_support_map_halfspace(
-                pos12, s1, p2,
-            ))
+            Ok(query::details::distance_support_map_halfspace(pos12, s1, p2).into())
         } else if let (Some(s1), Some(s2)) = (shape1.as_support_map(), shape2.as_support_map()) {
-            Ok(query::details::distance_support_map_support_map(
-                pos12, s1, s2,
-            ))
+            Ok(query::details::distance_support_map_support_map(pos12, s1, s2).into())
         } else {
             #[cfg(feature = "alloc")]
             if let Some(c1) = shape1.as_composite_shape() {

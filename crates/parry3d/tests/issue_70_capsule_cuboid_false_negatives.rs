@@ -34,16 +34,28 @@ fn capsule_cuboid_sweep_has_no_false_negatives() {
         let y = y_min + step_size * step as f32;
         let test_pos = Pose::translation(0.0, y, 0.0);
 
-        if intersection_test(&test_pos, &capsule, &Pose::IDENTITY, &halfspace).unwrap() {
+        if intersection_test(&test_pos, &capsule, &Pose::IDENTITY, &halfspace)
+            .unwrap()
+            .intersecting
+        {
             capsule_halfspace += 1;
         }
-        if intersection_test(&test_pos, &capsule, &cuboid_pos, &cuboid).unwrap() {
+        if intersection_test(&test_pos, &capsule, &cuboid_pos, &cuboid)
+            .unwrap()
+            .intersecting
+        {
             capsule_cuboid += 1;
         }
-        if intersection_test(&test_pos, &ball, &Pose::IDENTITY, &halfspace).unwrap() {
+        if intersection_test(&test_pos, &ball, &Pose::IDENTITY, &halfspace)
+            .unwrap()
+            .intersecting
+        {
             ball_halfspace += 1;
         }
-        if intersection_test(&test_pos, &ball, &cuboid_pos, &cuboid).unwrap() {
+        if intersection_test(&test_pos, &ball, &cuboid_pos, &cuboid)
+            .unwrap()
+            .intersecting
+        {
             ball_cuboid += 1;
         }
     }

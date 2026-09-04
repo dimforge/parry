@@ -115,6 +115,8 @@ where
         witness1: Vector::ZERO,
         witness2: Vector::ZERO,
         status: ShapeCastStatus::PenetratingOrWithinTargetDist,
+        subshape1: 0,
+        subshape2: 0,
     };
 
     loop {
@@ -363,6 +365,8 @@ where
                     normal1: contact.normal1,
                     normal2: contact.normal2,
                     status: ShapeCastStatus::Converged,
+                    subshape1: 0,
+                    subshape2: 0,
                 };
 
                 if contact.dist > 0.0 {

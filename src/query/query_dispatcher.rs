@@ -133,7 +133,7 @@
 //!         pos12: &Pose,
 //!         g1: &dyn Shape,
 //!         g2: &dyn Shape,
-//!     ) -> Result<bool, Unsupported> {
+//!     ) -> Result<ShapeIntersection, Unsupported> {
 //!         // Try to downcast to your custom shape types
 //!         if let (Some(my_shape1), Some(my_shape2)) = (
 //!             g1.as_any().downcast_ref::<MyCustomShape>(),
@@ -152,7 +152,7 @@
 //!         pos12: &Pose,
 //!         g1: &dyn Shape,
 //!         g2: &dyn Shape,
-//!     ) -> Result<Real, Unsupported> {
+//!     ) -> Result<ShapeDistance, Unsupported> {
 //!         // Implement other query methods similarly
 //!         Err(Unsupported)
 //!     }
@@ -195,7 +195,10 @@ use crate::query::{
     contact_manifolds::{ContactManifoldsWorkspace, NormalConstraints},
     ContactManifold,
 };
-use crate::query::{ClosestPoints, Contact, NonlinearRigidMotion, ShapeCastHit, Unsupported};
+use crate::query::{
+    ClosestPoints, Contact, NonlinearRigidMotion, ShapeCastHit, ShapeDistance, ShapeIntersection,
+    Unsupported,
+};
 use crate::shape::Shape;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
@@ -355,10 +358,10 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 /// let pos12 = pos1.inv_mul(&pos2);
 ///
 /// // Test intersection
-/// let intersects = dispatcher.intersection_test(&pos12, &ball, &cuboid).unwrap();
+/// let intersects = dispatcher.intersection_test(&pos12, &ball, &cuboid).unwrap().intersecting;
 ///
 /// // Compute distance
-/// let dist = dispatcher.distance(&pos12, &ball, &cuboid).unwrap();
+/// let dist = dispatcher.distance(&pos12, &ball, &cuboid).unwrap().distance;
 ///
 /// println!("Intersects: {}, Distance: {}", intersects, dist);
 /// # }
@@ -378,7 +381,7 @@ pub trait PersistentQueryDispatcher<ManifoldData = (), ContactData = ()>: QueryD
 ///         pos12: &Pose,
 ///         g1: &dyn Shape,
 ///         g2: &dyn Shape,
-///     ) -> Result<Real, Unsupported> {
+///     ) -> Result<ShapeDistance, Unsupported> {
 ///         // Handle custom shape types
 ///         if let Some(my_shape) = g1.as_any().downcast_ref::<MyShape>() {
 ///             // ... custom distance computation
@@ -412,12 +415,17 @@ pub trait QueryDispatcher: Send + Sync {
         pos12: &Pose,
         g1: &dyn Shape,
         g2: &dyn Shape,
-    ) -> Result<bool, Unsupported>;
+    ) -> Result<ShapeIntersection, Unsupported>;
 
     /// Computes the minimum distance separating two shapes.
     ///
     /// Returns `0.0` if the objects are touching or penetrating.
-    fn distance(&self, pos12: &Pose, g1: &dyn Shape, g2: &dyn Shape) -> Result<Real, Unsupported>;
+    fn distance(
+        &self,
+        pos12: &Pose,
+        g1: &dyn Shape,
+        g2: &dyn Shape,
+    ) -> Result<ShapeDistance, Unsupported>;
 
     /// Computes one pair of contact points point between two shapes.
     ///
@@ -537,7 +545,7 @@ pub trait QueryDispatcher: Send + Sync {
 ///         pos12: &Pose,
 ///         g1: &dyn Shape,
 ///         g2: &dyn Shape,
-///     ) -> Result<Real, Unsupported> {
+///     ) -> Result<ShapeDistance, Unsupported> {
 ///         // Try to handle custom shapes
 ///         match (g1.as_any().downcast_ref::<MyShape>(),
 ///                g2.as_any().downcast_ref::<MyShape>()) {
@@ -595,9 +603,9 @@ where
         pos12: &Pose,
         g1: &dyn Shape,
         g2: &dyn Shape,
-    ) -> bool);
+    ) -> ShapeIntersection);
 
-    chain_method!(distance(pos12: &Pose, g1: &dyn Shape, g2: &dyn Shape,) -> Real);
+    chain_method!(distance(pos12: &Pose, g1: &dyn Shape, g2: &dyn Shape,) -> ShapeDistance);
 
     chain_method!(contact(
         pos12: &Pose,

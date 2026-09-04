@@ -1,5 +1,19 @@
 ## Unreleased
 
+### Modified
+
+- Query results now identify the sub-shape they came from, through the new `SubShapeId` type alias:
+  `RayIntersection` and `PointProjection` gained a `subshape` field, and `Contact` and `ShapeCastHit`
+  gained `subshape1`/`subshape2`. A shape with no sub-shapes reports `0`.
+- `QueryDispatcher::distance` and `QueryDispatcher::intersection_test`, and the `distance` and
+  `intersection_test` free functions, now return `ShapeDistance` and `ShapeIntersection` instead
+  of a bare `Real` and `bool`, so they can report the sub-shapes too. Read `.distance` or
+  `.intersecting` to recover the previous value.
+- Query results now report the feature of the sub-shape they hit rather than one encoding that
+  sub-shape's index: a `TriMesh` ray-cast reports the triangle's own face, and the triangle itself
+  is the result's `subshape`. `TriMesh::triangle_normal` and `HeightField::convert_triangle_feature_id`
+  take that sub-shape index directly, and `TriMesh::is_backface` tests the triangle's own face.
+
 ### Added
 
 - `CompoundFlags::FIX_INTERNAL_EDGES` makes a `Compound` treat the edges (2D) or faces (3D) its parts share as

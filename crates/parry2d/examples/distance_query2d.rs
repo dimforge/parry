@@ -13,9 +13,12 @@ fn main() {
     let ball_pos_intersecting = Pose::translation(0.0, 1.0);
     let ball_pos_disjoint = Pose::translation(0.0, 3.0);
 
-    let dist_intersecting =
-        query::distance(&ball_pos_intersecting, &ball, &cuboid_pos, &cuboid).unwrap();
-    let dist_disjoint = query::distance(&ball_pos_disjoint, &ball, &cuboid_pos, &cuboid).unwrap();
+    let dist_intersecting = query::distance(&ball_pos_intersecting, &ball, &cuboid_pos, &cuboid)
+        .unwrap()
+        .distance;
+    let dist_disjoint = query::distance(&ball_pos_disjoint, &ball, &cuboid_pos, &cuboid)
+        .unwrap()
+        .distance;
 
     assert_eq!(dist_intersecting, 0.0);
     assert!(relative_eq!(dist_disjoint, 1.0, epsilon = 1.0e-7));

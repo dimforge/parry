@@ -60,6 +60,8 @@ pub fn cast_shapes_ball_ball(
             witness1,
             witness2,
             status,
+            subshape1: 0,
+            subshape2: 0,
         })
     } else {
         None
