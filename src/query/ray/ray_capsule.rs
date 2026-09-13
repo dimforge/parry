@@ -30,6 +30,8 @@ impl RayCast for Capsule {
 /// Made robust to degenerate cases and ray origin inside the capsule.
 /// Switched to projecting onto the plane with cross products
 /// because they introduce much less error than a difference of dot products.
+/// Discriminants are measured at the ray's closest approach to the axis or cap center,
+/// so a distant ray origin doesn't cancel out the radius.
 fn ray_toi_with_capsule(
     segment: &Segment,
     radius: Real,
@@ -50,11 +52,9 @@ fn ray_toi_with_capsule(
     let dir_on_plane = cross(ray.dir, ab);
     let origin_on_plane = cross(ao, ab);
     let ray_step = dir_on_plane.length_squared();
-    let b = dir_on_plane.dot(origin_on_plane);
-    let separation = origin_on_plane.length_squared() - radius_squared * ab_ab;
-    let h = b * b - ray_step * separation;
+    let radius_on_plane_squared = radius_squared * ab_ab;
 
-    let inside = separation <= 0.0
+    let inside = origin_on_plane.length_squared() <= radius_on_plane_squared
         && (0.0 < ab_ao || ao.length_squared() <= radius_squared)
         && (ab_ao < ab_ab || (ray.origin - segment.b).length_squared() <= radius_squared);
 
@@ -62,41 +62,66 @@ fn ray_toi_with_capsule(
         return (true, Some(0.0));
     }
 
-    if h >= 0.0 {
-        let check_sphere_a = if ray_step == 0.0 {
-            // the ray is parallel to the capsule,
-            // so it can only hit one of the caps
-            (ab_dir > 0.0) ^ inside
-        } else {
-            // cylinder part
-            // when outside, take the first intersection, when inside, the second
-            let radical = <Real as ComplexField>::sqrt(h);
-            let t = (-b + if inside { radical } else { -radical }) / ray_step;
-            let y = ab_ao + t * ab_dir;
-            if 0.0 < y && y < ab_ab && t >= 0.0 {
-                return (inside, Some(t));
-            }
-            y <= 0.0
+    let check_sphere_a = if ray_step == 0.0 {
+        // the ray is parallel to the capsule,
+        // so it can only hit one of the caps
+        (ab_dir > 0.0) ^ inside
+    } else {
+        // cylinder part
+        let Some(t) = closest_approach_root(
+            origin_on_plane,
+            dir_on_plane,
+            ray_step,
+            radius_on_plane_squared,
+            inside,
+        ) else {
+            return (false, None);
         };
-
-        // caps
-        let oc = if check_sphere_a {
-            ao
-        } else {
-            ray.origin - segment.b
-        };
-        let b = ray.dir.dot(oc);
-        let c = oc.length_squared() - radius_squared;
-        let h = b * b - c * dir_dir;
-        if h >= 0.0 {
-            let radical = <Real as ComplexField>::sqrt(h);
-            let t = -b + if inside { radical } else { -radical };
-            if t >= 0.0 && dir_dir != 0.0 {
-                return (inside, Some(t / dir_dir));
-            }
+        let y = ab_ao + t * ab_dir;
+        if 0.0 < y && y < ab_ab && t >= 0.0 {
+            return (inside, Some(t));
         }
+        y <= 0.0
+    };
+
+    if dir_dir == 0.0 {
+        return (inside, None);
     }
-    (inside, None)
+
+    // caps
+    let oc = if check_sphere_a {
+        ao
+    } else {
+        ray.origin - segment.b
+    };
+    let t = closest_approach_root(oc, ray.dir, dir_dir, radius_squared, inside);
+    (inside, t.filter(|t| *t >= 0.0))
+}
+
+/// Solves `|origin + t * dir|² = radius²` for the entry (outside) or exit (inside) root.
+///
+/// Returns `None` if the line misses. When inside, rounding can't turn the exit into a miss or a
+/// negative time.
+#[inline]
+fn closest_approach_root(
+    origin: Vector,
+    dir: Vector,
+    dir_dir: Real,
+    radius_squared: Real,
+    inside: bool,
+) -> Option<Real> {
+    let t_closest = -dir.dot(origin) / dir_dir;
+    let closest = origin + dir * t_closest;
+    let h = radius_squared - closest.length_squared();
+    if h < 0.0 && !inside {
+        return None;
+    }
+    let half_chord = <Real as ComplexField>::sqrt(h.max(0.0) / dir_dir);
+    if inside {
+        Some((t_closest + half_chord).max(0.0))
+    } else {
+        Some(t_closest - half_chord)
+    }
 }
 
 #[cfg(feature = "dim3")]
@@ -134,12 +159,13 @@ fn ray_toi_and_normal_with_capsule(
             // the projection of the point onto the capsule's axis times the segment's length
             let proj_times_seg = a_to_p.dot(seg);
 
+            // zero-radius capsules hit on the axis, where the normal is undefined
             let n = if proj_times_seg <= 0.0 {
-                (a_to_p).normalize()
+                a_to_p.normalize_or_zero()
             } else if proj_times_seg >= seg_squared {
-                (p - segment.b).normalize()
+                (p - segment.b).normalize_or_zero()
             } else {
-                (a_to_p - (proj_times_seg / seg_squared) * seg).normalize()
+                (a_to_p - (proj_times_seg / seg_squared) * seg).normalize_or_zero()
             };
             if inside {
                 -n
@@ -243,6 +269,38 @@ mod tests {
         assert!(c
             .cast_local_ray_and_get_normal(&Ray::new(v2(0.0, 5.0), v2(0.0, -0.2)), 14.9, true)
             .is_none());
+    }
+
+    #[test]
+    fn distant_origin_precision() {
+        // A plain quadratic loses the radius against the origin's distance in f32 and reports
+        // hits up to a whole radius off at these scales.
+        let c = Capsule::new(v2(1.0e4, 0.0), v2(1.0e4, 5.0), 1.0);
+        let i = c
+            .cast_local_ray_and_get_normal(&Ray::new(v2(-1.0e4, 2.5), v2(2.0e4, 0.0)), 2.0, true)
+            .unwrap();
+        let hit = -1.0e4 + i.time_of_impact * 2.0e4;
+        assert!((hit - (1.0e4 - 1.0)).abs() < 1.0e-2, "hit at x = {hit}");
+
+        // Oblique hit on the cylinder's side at (-1, 2.5).
+        let c = Capsule::new(v2(0.0, 0.0), v2(0.0, 5.0), 1.0);
+        let dir = v2(1.0e4, 3.0e3);
+        let i = c
+            .cast_local_ray_and_get_normal(&Ray::new(v2(-1.0, 2.5) - dir, dir), 2.0, true)
+            .unwrap();
+        assert!((i.time_of_impact - 1.0).abs() * dir.length() < 1.0e-2);
+        assert!((i.normal - v2(-1.0, 0.0)).length() < 1.0e-3);
+    }
+
+    #[test]
+    fn zero_radius_normal_is_finite() {
+        let c = Capsule::new(v2(0.0, -1.0), v2(0.0, 1.0), 0.0);
+        for dir in [v2(1.0, 0.0), v2(0.0, -1.0)] {
+            let i = c
+                .cast_local_ray_and_get_normal(&Ray::new(v2(0.0, 0.0) - dir * 2.0, dir), 10.0, true)
+                .unwrap();
+            assert!(i.normal.is_finite(), "normal: {:?}", i.normal);
+        }
     }
 
     fn v2(x: Real, y: Real) -> Vector {
