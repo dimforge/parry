@@ -1,4 +1,4 @@
-use crate::math::{Real, Vector};
+use crate::math::{ComplexField, Real, Vector};
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{Capsule, FeatureId, Segment};
 
@@ -25,7 +25,7 @@ impl RayCast for Capsule {
 /// Computes the time of impact of a ray on a capsule.
 /// Returns true if the ray started inside the capsule and the time of impact.
 ///
-/// Adapted from Inigo Quilez (https://iquilezles.org/articles/intersectors/).
+/// Adapted from Inigo Quilez (<https://iquilezles.org/articles/intersectors/>).
 /// Adapted to unnormalized ray direction.
 /// Made robust to degenerate cases and ray origin inside the capsule.
 /// Switched to projecting onto the plane with cross products
@@ -70,7 +70,7 @@ fn ray_toi_with_capsule(
         } else {
             // cylinder part
             // when outside, take the first intersection, when inside, the second
-            let radical = h.sqrt();
+            let radical = <Real as ComplexField>::sqrt(h);
             let t = (-b + if inside { radical } else { -radical }) / ray_step;
             let y = ab_ao + t * ab_dir;
             if 0.0 < y && y < ab_ab && t >= 0.0 {
@@ -89,7 +89,7 @@ fn ray_toi_with_capsule(
         let c = oc.length_squared() - radius_squared;
         let h = b * b - c * dir_dir;
         if h >= 0.0 {
-            let radical = h.sqrt();
+            let radical = <Real as ComplexField>::sqrt(h);
             let t = -b + if inside { radical } else { -radical };
             if t >= 0.0 && dir_dir != 0.0 {
                 return (inside, Some(t / dir_dir));
