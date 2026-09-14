@@ -7,7 +7,9 @@ use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::shape::{CompositeShape, Cuboid, Shape, SupportMap, VoxelType, Voxels};
+use crate::shape::{
+    CompositeShape, Cuboid, QueriedVoxel, Shape, SupportMap, VoxelQuery, VoxelType,
+};
 use crate::utils::hashmap::Entry;
 use crate::utils::PoseOpt;
 use alloc::{boxed::Box, vec::Vec};
@@ -55,10 +57,12 @@ pub fn contact_manifolds_voxels_composite_shape_shapes<ManifoldData, ContactData
 }
 
 /// Computes the contact manifold between voxels and a composite shape.
-pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
+///
+/// The voxels shape can be any voxel storage implementing [`VoxelQuery`].
+pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData, V>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Pose,
-    voxels1: &Voxels,
+    voxels1: &V,
     shape2: &dyn CompositeShape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
@@ -67,6 +71,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
 ) where
     ManifoldData: Default + Clone,
     ContactData: Default + Copy,
+    V: ?Sized + VoxelQuery,
 {
     VoxelsShapeContactManifoldsWorkspace::<3>::ensure_exists(workspace);
     let workspace: &mut VoxelsShapeContactManifoldsWorkspace<3> =
@@ -89,7 +94,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
 
     if let Some(intersection_aabb1) = aabb1.intersection(&aabb2_1) {
         for vox1 in voxels1.voxels_intersecting_local_aabb(&intersection_aabb1) {
-            let vox_type1 = vox1.state.voxel_type();
+            let vox_type1 = vox1.voxel_type();
 
             // TODO: would be nice to have a strategy to handle interior voxels for depenetration.
             if vox_type1 == VoxelType::Empty || vox_type1 == VoxelType::Interior {
@@ -135,7 +140,7 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                                 timestamp: new_timestamp,
                             };
 
-                            let vox_id = vox1.linear_id.flat_id() as u32;
+                            let vox_id = vox1.linear_id();
                             let (id1, id2) = if flipped {
                                 (leaf2, vox_id)
                             } else {
@@ -237,7 +242,8 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                             // interior of the infinitely expanded canonical shape by checking if
                             // the opposite normal had led to a better vector.
                             let cuboid1 = Cuboid::new(radius1);
-                            let sp1 = cuboid1.local_support_point(-penetration_dir1) + vox1.center;
+                            let sp1 =
+                                cuboid1.local_support_point(-penetration_dir1) + vox1.center();
                             let sm2 = part_shape2
                                 .as_support_map()
                                 .expect("Unsupported collision pair.");
@@ -254,9 +260,9 @@ pub fn contact_manifolds_voxels_composite_shape<ManifoldData, ContactData>(
                         }
 
                         let pt_in_voxel_space = if flipped {
-                            manifold.subshape_pos2().transform_point(pt.local_p2) - vox1.center
+                            manifold.subshape_pos2().transform_point(pt.local_p2) - vox1.center()
                         } else {
-                            manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center
+                            manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center()
                         };
                         sub_detector.selected_contacts |=
                             (test_voxel.contains_local_point(pt_in_voxel_space) as u32) << i;

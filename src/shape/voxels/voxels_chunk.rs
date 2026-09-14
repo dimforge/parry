@@ -137,9 +137,7 @@ impl VoxelsChunk {
 ///
 /// // Query voxels within this chunk
 /// for voxel in chunk_ref.voxels() {
-///     if !voxel.state.is_empty() {
-///         println!("Voxel at {:?}", voxel.grid_coords);
-///     }
+///     println!("Voxel at {:?}", voxel.grid_coords);
 /// }
 ///
 /// // Get chunk's AABB
@@ -259,7 +257,8 @@ impl<'a> VoxelsChunkRef<'a> {
                     linear_id: VoxelIndex {
                         chunk_id: self.my_id,
                         id_in_chunk,
-                    },
+                    }
+                    .flat_id() as u32,
                     grid_coords,
                     center,
                     state,
@@ -303,7 +302,8 @@ impl<'a> VoxelsChunkRef<'a> {
                         linear_id: VoxelIndex {
                             chunk_id: self.my_id,
                             id_in_chunk,
-                        },
+                        }
+                        .flat_id() as u32,
                         grid_coords,
                         center,
                         state,

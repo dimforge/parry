@@ -2,7 +2,8 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::{Pose, Real, Vector, VectorExt};
 use crate::query::{ContactManifold, PointQuery, TrackedContact};
 use crate::shape::{
-    Ball, Cuboid, OctantPattern, PackedFeatureId, Shape, VoxelState, VoxelType, Voxels,
+    Ball, Cuboid, OctantPattern, PackedFeatureId, QueriedVoxel, Shape, VoxelQuery, VoxelState,
+    VoxelType,
 };
 use alloc::vec::Vec;
 
@@ -31,10 +32,12 @@ pub fn contact_manifolds_voxels_ball_shapes<ManifoldData, ContactData>(
     }
 }
 
-/// Computes the contact manifold between a convex shape and a ball.
-pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
+/// Computes the contact manifold between a voxels shape and a ball.
+///
+/// The voxels shape can be any voxel storage implementing [`VoxelQuery`].
+pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData, V>(
     pos12: &Pose,
-    voxels1: &'a Voxels,
+    voxels1: &'a V,
     ball2: &'a Ball,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
@@ -42,6 +45,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
 ) where
     ManifoldData: Default,
     ContactData: Default + Copy,
+    V: ?Sized + VoxelQuery,
 {
     // TODO: don’t generate one manifold per voxel.
     manifolds.clear();
@@ -55,7 +59,7 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
     let aabb2 = ball2.aabb(pos12).loosened(prediction / 2.0);
     if let Some(aabb_intersection) = aabb1.intersection(&aabb2) {
         for vox1 in voxels1.voxels_intersecting_local_aabb(&aabb_intersection) {
-            match vox1.state.voxel_type() {
+            match vox1.voxel_type() {
                 #[cfg(feature = "dim2")]
                 VoxelType::Vertex | VoxelType::Face => { /* Ok */ }
                 #[cfg(feature = "dim3")]
@@ -65,9 +69,9 @@ pub fn contact_manifolds_voxels_ball<'a, ManifoldData, ContactData>(
 
             detect_hit_voxel_ball(
                 *pos12,
-                vox1.center,
+                vox1.center(),
                 radius1,
-                vox1.state,
+                vox1.voxel_state(),
                 center2,
                 radius2,
                 prediction,

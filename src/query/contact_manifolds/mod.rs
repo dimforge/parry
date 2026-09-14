@@ -163,7 +163,9 @@ pub use self::contact_manifolds_pfm_pfm::{
 pub use self::contact_manifolds_trimesh_shape::{
     contact_manifolds_trimesh_shape, contact_manifolds_trimesh_shape_shapes,
 };
-pub use self::contact_manifolds_voxels_ball::contact_manifolds_voxels_ball_shapes;
+pub use self::contact_manifolds_voxels_ball::{
+    contact_manifolds_voxels_ball, contact_manifolds_voxels_ball_shapes,
+};
 pub use self::contact_manifolds_voxels_composite_shape::{
     contact_manifolds_voxels_composite_shape, contact_manifolds_voxels_composite_shape_shapes,
 };

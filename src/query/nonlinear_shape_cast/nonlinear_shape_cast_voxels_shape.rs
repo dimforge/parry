@@ -1,13 +1,15 @@
 use crate::bounding_volume::BoundingVolume;
 use crate::math::{IVector, IVectorExt, Real, Vector, VectorExt};
 use crate::query::{NonlinearRigidMotion, QueryDispatcher, ShapeCastHit};
-use crate::shape::{Cuboid, Shape, Voxels};
+use crate::shape::{Cuboid, QueriedVoxel, Shape, VoxelQuery, VoxelType};
 
 /// Time Of Impact of a voxels shape with any other shape, under a rigid motion (translation + rotation).
-pub fn cast_shapes_nonlinear_voxels_shape<D>(
+///
+/// The voxels shape can be any voxel storage implementing [`VoxelQuery`].
+pub fn cast_shapes_nonlinear_voxels_shape<D, V>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
-    g1: &Voxels,
+    g1: &V,
     motion2: &NonlinearRigidMotion,
     g2: &dyn Shape,
     start_time: Real,
@@ -16,6 +18,7 @@ pub fn cast_shapes_nonlinear_voxels_shape<D>(
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
+    V: ?Sized + VoxelQuery,
 {
     use num_traits::Bounded;
 
@@ -58,9 +61,9 @@ where
 
     let mut check_voxels_in_range = |search_domain: [IVector; 2]| {
         for vox in g1.voxels_in_range(search_domain[0], search_domain[1]) {
-            if !vox.state.is_empty() {
+            if vox.voxel_type() != VoxelType::Empty {
                 // PERF: could we check the canonical shape instead, and deduplicate accordingly?
-                let center = g1.voxel_center(vox.grid_coords);
+                let center = g1.voxel_center(vox.grid_coords());
                 let cuboid = Cuboid::new(g1.voxel_size() / 2.0);
                 let vox_motion1 = motion1.prepend_translation(center);
                 if let Some(new_hit) = dispatcher
@@ -170,19 +173,22 @@ where
     hit
 }
 
-/// Time Of Impact of any shape with a composite shape, under a rigid motion (translation + rotation).
-pub fn cast_shapes_nonlinear_shape_voxels<D>(
+/// Time Of Impact of any shape with a voxels shape, under a rigid motion (translation + rotation).
+///
+/// The voxels shape can be any voxel storage implementing [`VoxelQuery`].
+pub fn cast_shapes_nonlinear_shape_voxels<D, V>(
     dispatcher: &D,
     motion1: &NonlinearRigidMotion,
     g1: &dyn Shape,
     motion2: &NonlinearRigidMotion,
-    g2: &Voxels,
+    g2: &V,
     start_time: Real,
     end_time: Real,
     stop_at_penetration: bool,
 ) -> Option<ShapeCastHit>
 where
     D: ?Sized + QueryDispatcher,
+    V: ?Sized + VoxelQuery,
 {
     cast_shapes_nonlinear_voxels_shape(
         dispatcher,

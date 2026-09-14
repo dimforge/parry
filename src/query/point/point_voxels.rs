@@ -1,6 +1,6 @@
 use crate::math::{Real, Vector};
 use crate::query::{PointProjection, PointQuery};
-use crate::shape::{Cuboid, FeatureId, Voxels, VoxelsChunkRef};
+use crate::shape::{Cuboid, FeatureId, QueriedVoxel, Voxels, VoxelsChunkRef};
 
 impl PointQuery for Voxels {
     #[inline]
@@ -49,17 +49,17 @@ impl<'a> VoxelsChunkRef<'a> {
         let mut result_vox_id = 0;
 
         for vox in self.voxels() {
-            let mut candidate = base_cuboid.project_local_point(pt - vox.center, solid);
-            candidate.point += vox.center;
+            let mut candidate = base_cuboid.project_local_point(pt - vox.center(), solid);
+            candidate.point += vox.center();
 
             let candidate_dist = (candidate.point - pt).length();
             if candidate_dist < smallest_dist {
                 result = candidate;
-                result_vox_id = vox.linear_id.flat_id();
+                result_vox_id = vox.linear_id;
                 smallest_dist = candidate_dist;
             }
         }
 
-        (smallest_dist < Real::MAX).then_some((result, result_vox_id as u32))
+        (smallest_dist < Real::MAX).then_some((result, result_vox_id))
     }
 }

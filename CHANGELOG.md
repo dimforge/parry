@@ -1,11 +1,42 @@
 ## Unreleased
 
+### Breaking changes
+
+- The voxel query functions are now generic over the voxel storage instead of taking `&Voxels`:
+  `contact_manifolds_voxels_shape`, `contact_manifolds_voxels_ball`,
+  `contact_manifolds_voxels_composite_shape`, `contact_manifolds_voxels_voxels`,
+  `intersection_test_voxels_shape`, `intersection_test_shape_voxels`, `cast_shapes_voxels_shape`,
+  `cast_shapes_shape_voxels`, `cast_shapes_nonlinear_voxels_shape`,
+  `cast_shapes_nonlinear_shape_voxels`. Calls that pass a `&Voxels` keep working unchanged;
+  callers naming the functions with explicit turbofish generics gain one extra type parameter.
+- Reading a voxel's type, state, center, or grid coordinates from the item yielded by
+  `Voxels::voxels`, `Voxels::voxels_in_range`, and `Voxels::voxels_intersecting_local_aabb` should
+  go through the new `QueriedVoxel` trait methods (`voxel_type()`, `voxel_state()`, `center()`,
+  `grid_coords()`, `linear_id()`) for code that must also work with custom storages. The public
+  fields of `VoxelData` remain available.
+
 ### Added
 
 - `CompoundFlags::FIX_INTERNAL_EDGES` makes a `Compound` treat the edges (2D) or faces (3D) its parts share as
   interior to the union, so a body sliding across the cut between two parts of a convex
   decomposition no longer catches on it. `Compound::PartNormalConstraints` is now
   `CompoundPseudoNormals`, matching what `TriMesh` and `Polyline` already provide.
+- `VoxelQuery` trait, an abstraction over the storage of a shape made of axis-aligned, uniformly
+  sized voxels. Implementing it for a custom sparse structure (chunked grid, octree, VDB-like tree)
+  lets Parry's voxel collision algorithms (contact manifolds, intersection tests, linear and
+  nonlinear shape-casting) run directly on that structure without copying it into a `Voxels` shape. Implementors provide `voxel_size`, `domain`, and `voxels_in_range`; grid helpers
+  such as `voxel_at_point`, `voxel_center`, `voxel_aabb`, `voxel_range_intersecting_local_aabb`,
+  `align_aabb_to_grid`, and `local_aabb` have default implementations.
+- `QueriedVoxel` trait describing the per-voxel view handed out by a `VoxelQuery` storage. Views
+  may borrow from their storage so that `voxel_state()` can be computed lazily from local context,
+  while `voxel_type()` stays cheap for bulk iteration.
+- `Voxels` implements `VoxelQuery` with `VoxelData` as its voxel view, and `VoxelData` implements
+  `QueriedVoxel`.
+- `VoxelState::with_filled_neighbors(AxisMask)` builds the state of a non-empty voxel from the set
+  of its filled axis-aligned neighbors, for custom storages that only track occupancy.
+- `Default` implementations for `VoxelType` (`Empty`) and `VoxelState` (`EMPTY`).
+- `contact_manifolds_voxels_ball` is now re-exported from `parry::query`, alongside the other
+  voxel contact-manifold functions.
 
 ## 0.30.2
 

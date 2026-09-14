@@ -1,6 +1,6 @@
 use crate::bounding_volume::Aabb;
 use crate::math::Vector;
-use crate::shape::{VoxelType, Voxels};
+use crate::shape::{QueriedVoxel, VoxelType, Voxels};
 use alloc::{vec, vec::Vec};
 
 impl Voxels {
@@ -29,9 +29,10 @@ impl Voxels {
         let vtx = aabb.vertices();
 
         for vox in self.voxels() {
-            match vox.state.voxel_type() {
+            let state = vox.voxel_state();
+            match vox.voxel_type() {
                 VoxelType::Vertex => {
-                    let mask = vox.state.feature_mask();
+                    let mask = state.feature_mask();
 
                     for edge in Aabb::EDGES_VERTEX_IDS {
                         if mask & (1 << edge.0) != 0 || mask & (1 << edge.1) != 0 {
@@ -41,7 +42,7 @@ impl Voxels {
                 }
                 VoxelType::Edge => {
                     let vtx = aabb.vertices();
-                    let mask = vox.state.feature_mask();
+                    let mask = state.feature_mask();
 
                     for (i, edge) in Aabb::EDGES_VERTEX_IDS.iter().enumerate() {
                         if mask & (1 << i) != 0 {

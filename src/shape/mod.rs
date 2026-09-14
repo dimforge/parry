@@ -22,7 +22,10 @@ pub use self::{
     compound::Compound,
     polyline::Polyline,
     shared_shape::SharedShape,
-    voxels::{AxisMask, OctantPattern, VoxelData, VoxelState, VoxelType, Voxels, VoxelsChunkRef},
+    voxels::{
+        AxisMask, OctantPattern, QueriedVoxel, VoxelData, VoxelQuery, VoxelState, VoxelType,
+        Voxels, VoxelsChunkRef,
+    },
 };
 
 // `PolylineFlags` is a 2D-only feature.

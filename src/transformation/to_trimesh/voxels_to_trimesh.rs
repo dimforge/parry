@@ -1,6 +1,6 @@
-use crate::bounding_volume::Aabb;
 use crate::math::Vector;
 use crate::shape::Voxels;
+use crate::{bounding_volume::Aabb, shape::QueriedVoxel};
 use alloc::{vec, vec::Vec};
 
 impl Voxels {
@@ -15,7 +15,8 @@ impl Voxels {
         let mut vtx = vec![];
         let mut idx = vec![];
         for vox in self.voxels() {
-            let mask = vox.state.free_faces();
+            let state = vox.voxel_state();
+            let mask = state.free_faces();
             for i in 0..6 {
                 if mask.bits() & (1 << i) != 0 {
                     let fvid = Aabb::FACES_VERTEX_IDS[i];

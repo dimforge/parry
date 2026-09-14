@@ -89,9 +89,7 @@ impl Voxels {
     /// }
     ///
     /// // Count filled voxels
-    /// let filled = voxels.voxels()
-    ///     .filter(|v| !v.state.is_empty())
-    ///     .count();
+    /// let filled = voxels.voxels().count();
     /// assert_eq!(filled, 9);
     /// # }
     /// ```
@@ -199,9 +197,7 @@ impl Voxels {
     /// voxels.crop(IVector::new(1, 0, 0), IVector::new(2, 0, 0));
     ///
     /// // Only two voxels remain
-    /// let count = voxels.voxels()
-    ///     .filter(|v| !v.state.is_empty())
-    ///     .count();
+    /// let count = voxels.voxels().count();
     /// assert_eq!(count, 2);
     /// # }
     /// ```
