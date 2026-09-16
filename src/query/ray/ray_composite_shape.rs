@@ -1,5 +1,4 @@
 use crate::math::Real;
-use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
 use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
 
@@ -46,10 +45,9 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<(u32, RayIntersection)> {
-        self.0.bvh().find_best(
-            max_time_of_impact,
-            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
-            |primitive, best_so_far| {
+        self.0
+            .bvh()
+            .cast_ray_best(ray, max_time_of_impact, |primitive, best_so_far| {
                 self.0.map_typed_part_at(primitive, |pose, part, _| {
                     if let Some(pose) = pose {
                         part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
@@ -57,8 +55,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                         part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
                     }
                 })?
-            },
-        )
+            })
     }
 }
 
