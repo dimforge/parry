@@ -52,19 +52,28 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
     )));
 }
 
+/// Leaves reached by the query from which the sub-shape manifolds are computed in parallel
+/// (`parallel` feature).
+#[cfg(feature = "parallel")]
+const PARALLEL_LEAVES: usize = 256;
+
 /// Computes the contact manifolds between a composite shape and an abstract shape.
+///
+/// The manifolds are in the order of the composite's leaves reached by the query. Under the
+/// `parallel` feature, a query reaching many leaves computes their manifolds across threads
+/// (same manifolds, same order).
 pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Pose,
-    composite1: &dyn CompositeShape,
+    composite1: &(dyn CompositeShape + Sync),
     shape2: &dyn Shape,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,
     flipped: bool,
 ) where
-    ManifoldData: Default + Clone,
-    ContactData: Default + Copy,
+    ManifoldData: Default + Clone + Send + Sync,
+    ContactData: Default + Copy + Send + Sync,
 {
     ensure_workspace_exists(workspace);
     let workspace: &mut CompositeShapeShapeContactManifoldsWorkspace =
@@ -84,45 +93,55 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
     let ls_aabb2_1 = shape2.compute_aabb(&pos12).loosened(prediction);
     let mut old_manifolds = core::mem::take(manifolds);
 
-    let mut leaf1_fn = |leaf1: u32| {
-        composite1.map_part_at(leaf1, &mut |part_pos1, part_shape1, normal_constraints1| {
-            let sub_detector = match workspace.sub_detectors.entry(leaf1) {
-                Entry::Occupied(entry) => {
-                    let sub_detector = entry.into_mut();
-                    let manifold = old_manifolds[sub_detector.manifold_id].take();
-                    sub_detector.manifold_id = manifolds.len();
-                    sub_detector.timestamp = new_timestamp;
-                    manifolds.push(manifold);
-                    sub_detector
-                }
-                Entry::Vacant(entry) => {
-                    let sub_detector = SubDetector {
-                        manifold_id: manifolds.len(),
-                        timestamp: new_timestamp,
-                    };
-
-                    let mut manifold = ContactManifold::new();
-
-                    if flipped {
-                        manifold.subshape1 = 0;
-                        manifold.subshape2 = leaf1;
-                        manifold.set_subshape_pos2(part_pos1.copied());
-                    } else {
-                        manifold.subshape1 = leaf1;
-                        manifold.subshape2 = 0;
-                        manifold.set_subshape_pos1(part_pos1.copied());
-                    };
-
-                    manifolds.push(manifold);
-                    entry.insert(sub_detector)
-                }
-            };
-
-            let manifold = &mut manifolds[sub_detector.manifold_id];
+    // The manifold of a leaf: the one kept from the last query, or a fresh one (its sub-shape
+    // ids and pose set by the first computation), pushed in leaf order.
+    let mut bookkeep = |leaf1: u32, manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>| match workspace
+        .sub_detectors
+        .entry(leaf1)
+    {
+        Entry::Occupied(entry) => {
+            let sub_detector = entry.into_mut();
+            let mut manifold = old_manifolds[sub_detector.manifold_id].take();
+            sub_detector.manifold_id = manifolds.len();
+            sub_detector.timestamp = new_timestamp;
             if deformable {
                 manifold.mark_shapes_deformed();
             }
-
+            manifolds.push(manifold);
+            false
+        }
+        Entry::Vacant(entry) => {
+            let _ = entry.insert(SubDetector {
+                manifold_id: manifolds.len(),
+                timestamp: new_timestamp,
+            });
+            let mut manifold = ContactManifold::new();
+            if flipped {
+                manifold.subshape1 = 0;
+                manifold.subshape2 = leaf1;
+            } else {
+                manifold.subshape1 = leaf1;
+                manifold.subshape2 = 0;
+            }
+            if deformable {
+                manifold.mark_shapes_deformed();
+            }
+            manifolds.push(manifold);
+            true
+        }
+    };
+    // The manifold's sub-shape pose (a fresh manifold) and contacts.
+    let compute = |leaf1: u32,
+                   fresh: bool,
+                   manifold: &mut ContactManifold<ManifoldData, ContactData>| {
+        composite1.map_part_at(leaf1, &mut |part_pos1, part_shape1, normal_constraints1| {
+            if fresh {
+                if flipped {
+                    manifold.set_subshape_pos2(part_pos1.copied());
+                } else {
+                    manifold.set_subshape_pos1(part_pos1.copied());
+                }
+            }
             if flipped {
                 let _ = dispatcher.contact_manifold_convex_convex(
                     &part_pos1.prepend_to(&pos21),
@@ -147,8 +166,31 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
         });
     };
 
-    for leaf_id in composite1.bvh().intersect_aabb(&ls_aabb2_1) {
-        leaf1_fn(leaf_id);
+    #[cfg(feature = "parallel")]
+    {
+        let leaves: Vec<u32> = composite1.bvh().intersect_aabb(&ls_aabb2_1).collect();
+        if leaves.len() >= PARALLEL_LEAVES {
+            use rayon::prelude::*;
+            let fresh: Vec<bool> = leaves
+                .iter()
+                .map(|&leaf1| bookkeep(leaf1, manifolds))
+                .collect();
+            manifolds
+                .par_iter_mut()
+                .zip(leaves.par_iter())
+                .zip(fresh.par_iter())
+                .for_each(|((manifold, &leaf1), &fresh)| compute(leaf1, fresh, manifold));
+        } else {
+            for leaf1 in leaves {
+                let fresh = bookkeep(leaf1, manifolds);
+                compute(leaf1, fresh, manifolds.last_mut().unwrap());
+            }
+        }
+    }
+    #[cfg(not(feature = "parallel"))]
+    for leaf1 in composite1.bvh().intersect_aabb(&ls_aabb2_1) {
+        let fresh = bookkeep(leaf1, manifolds);
+        compute(leaf1, fresh, manifolds.last_mut().unwrap());
     }
 
     workspace

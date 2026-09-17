@@ -51,8 +51,8 @@ pub fn contact_manifolds_trimesh_shape_shapes<ManifoldData, ContactData>(
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,
 ) where
-    ManifoldData: Default + Clone,
-    ContactData: Default + Copy,
+    ManifoldData: Default + Clone + Send + Sync,
+    ContactData: Default + Copy + Send + Sync,
 {
     if let Some(trimesh1) = shape1.as_trimesh() {
         contact_manifolds_trimesh_shape(
@@ -101,14 +101,14 @@ pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     workspace: &mut Option<ContactManifoldsWorkspace>,
     flipped: bool,
 ) where
-    ManifoldData: Default + Clone,
-    ContactData: Default + Copy,
+    ManifoldData: Default + Clone + Send + Sync,
+    ContactData: Default + Copy + Send + Sync,
 {
     if trimesh1.flags().contains(TriMeshFlags::DEFORMABLE) {
         return contact_manifolds_composite_shape_shape(
             dispatcher,
             pos12,
-            trimesh1 as &dyn CompositeShape,
+            trimesh1 as &(dyn CompositeShape + Sync),
             shape2,
             prediction,
             manifolds,

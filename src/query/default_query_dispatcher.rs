@@ -614,8 +614,8 @@ impl QueryDispatcher for DefaultQueryDispatcher {
 impl<ManifoldData, ContactData> PersistentQueryDispatcher<ManifoldData, ContactData>
     for DefaultQueryDispatcher
 where
-    ManifoldData: Default + Clone,
-    ContactData: Default + Copy,
+    ManifoldData: Default + Clone + Send + Sync,
+    ContactData: Default + Copy + Send + Sync,
 {
     fn contact_manifolds(
         &self,

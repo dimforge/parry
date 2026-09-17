@@ -404,7 +404,7 @@ pub trait Shape: RayCast + PointQuery + Any + Send + Sync {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
+    fn as_composite_shape(&self) -> Option<&(dyn CompositeShape + Sync)> {
         None
     }
 
@@ -1054,8 +1054,8 @@ impl Shape for Compound {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
-        Some(self as &dyn CompositeShape)
+    fn as_composite_shape(&self) -> Option<&(dyn CompositeShape + Sync)> {
+        Some(self as &(dyn CompositeShape + Sync))
     }
 }
 
@@ -1104,8 +1104,8 @@ impl Shape for Polyline {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
-        Some(self as &dyn CompositeShape)
+    fn as_composite_shape(&self) -> Option<&(dyn CompositeShape + Sync)> {
+        Some(self as &(dyn CompositeShape + Sync))
     }
 }
 
@@ -1168,8 +1168,8 @@ impl Shape for TriMesh {
     }
 
     #[cfg(feature = "alloc")]
-    fn as_composite_shape(&self) -> Option<&dyn CompositeShape> {
-        Some(self as &dyn CompositeShape)
+    fn as_composite_shape(&self) -> Option<&(dyn CompositeShape + Sync)> {
+        Some(self as &(dyn CompositeShape + Sync))
     }
 }
 
