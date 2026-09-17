@@ -1,5 +1,5 @@
 use super::{Bvh, BvhNode};
-use crate::bounding_volume::{Aabb, BoundingVolume};
+use crate::bounding_volume::Aabb;
 use crate::math::Real;
 use crate::math::Vector;
 use crate::query::PointProjection;
@@ -201,7 +201,9 @@ impl Bvh {
     /// - [`traverse`](Self::traverse) - Custom traversal logic
     /// - [`leaves`](Self::leaves) - General leaf iteration with predicate
     pub fn intersect_aabb<'a>(&'a self, aabb: &'a Aabb) -> impl Iterator<Item = u32> + 'a {
-        self.leaves(|node: &BvhNode| node.aabb().intersects(aabb))
+        // The query as a node: the node-vs-node test is the SIMD one (same inclusive semantics).
+        let query = BvhNode::leaf(*aabb, 0);
+        self.leaves(move |node: &BvhNode| node.intersects(&query))
     }
 
     /// Projects a point on this BVH using the provided leaf projection function.
