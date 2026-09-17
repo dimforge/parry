@@ -57,6 +57,7 @@ pub fn triangulate(
      * Refinement: split the triangles that are too large or too sharp, and the boundary edges that
      * stand in the way, until every triangle inside the boundary is fit for simulation.
      */
+    #[cfg_attr(feature = "f64", expect(clippy::unnecessary_cast))]
     let angle_limit = AngleLimit::from_rad(params.min_angle as f64);
     // The area of the equilateral triangle of side `cell_size`.
     let max_area = cell_size * cell_size * Real::sqrt(0.75) / 2.0;

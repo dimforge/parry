@@ -96,8 +96,8 @@ impl MeshOracle<'_> {
     }
 
     /// Whether the shape's surface passes through the tetrahedron ([`MeshEnclosure::Crust`]):
-    /// unlike [`Self::intersects`], a buried tetrahedron is not reached and no orientation is
-    /// read, so the crust stays hollow and an open mesh can be crusted.
+    /// a buried tetrahedron is not reached and no orientation is read, so the crust stays
+    /// hollow and an open mesh can be crusted.
     pub fn surface_intersects(&self, tet: &[Vector; 4]) -> bool {
         let aabb = Aabb::from_points(tet.iter().copied());
         // Only the triangles the tetrahedron's Aabb can see are worth testing.

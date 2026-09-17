@@ -8,7 +8,6 @@ fn main() {
     params.enclosure = MeshEnclosure::Cover;
     params.cover_subdivisions = 2;
 
-    let start = Instant::now();
     let raw = volume_mesh(&vertices, &indices, &params).unwrap();
     let _warmup = volume_mesh(&vertices, &indices, &params).unwrap();
     let start = Instant::now();

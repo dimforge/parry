@@ -169,9 +169,10 @@ fn face_corners(axis: usize, positive: bool) -> [[i32; 3]; 4] {
     })
 }
 
-/// The background grid of a cover ([`MeshEnclosure::Cover`]): an octant that may cross the
-/// shape's boundary is refined [`VolumeMeshParameters::cover_subdivisions`] halvings below the
-/// cell size and one that cannot is not; balancing and transition cells keep the grid conforming.
+/// The background grid of a cover ([`MeshEnclosure::Cover`](super::MeshEnclosure::Cover)): an
+/// octant that may cross the shape's boundary is refined
+/// [`VolumeMeshParameters::cover_subdivisions`] halvings below the cell size and one that cannot
+/// is not; balancing and transition cells keep the grid conforming.
 pub(super) fn cover_octree_grid(
     oracle: &MeshOracle,
     aabb: Aabb,

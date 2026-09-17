@@ -95,76 +95,75 @@ pub fn contact_manifolds_composite_shape_shape<ManifoldData, ContactData>(
 
     // The manifold of a leaf: the one kept from the last query, or a fresh one (its sub-shape
     // ids and pose set by the first computation), pushed in leaf order.
-    let mut bookkeep = |leaf1: u32, manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>| match workspace
-        .sub_detectors
-        .entry(leaf1)
-    {
-        Entry::Occupied(entry) => {
-            let sub_detector = entry.into_mut();
-            let mut manifold = old_manifolds[sub_detector.manifold_id].take();
-            sub_detector.manifold_id = manifolds.len();
-            sub_detector.timestamp = new_timestamp;
-            if deformable {
-                manifold.mark_shapes_deformed();
-            }
-            manifolds.push(manifold);
-            false
-        }
-        Entry::Vacant(entry) => {
-            let _ = entry.insert(SubDetector {
-                manifold_id: manifolds.len(),
-                timestamp: new_timestamp,
-            });
-            let mut manifold = ContactManifold::new();
-            if flipped {
-                manifold.subshape1 = 0;
-                manifold.subshape2 = leaf1;
-            } else {
-                manifold.subshape1 = leaf1;
-                manifold.subshape2 = 0;
-            }
-            if deformable {
-                manifold.mark_shapes_deformed();
-            }
-            manifolds.push(manifold);
-            true
-        }
-    };
-    // The manifold's sub-shape pose (a fresh manifold) and contacts.
-    let compute = |leaf1: u32,
-                   fresh: bool,
-                   manifold: &mut ContactManifold<ManifoldData, ContactData>| {
-        composite1.map_part_at(leaf1, &mut |part_pos1, part_shape1, normal_constraints1| {
-            if fresh {
-                if flipped {
-                    manifold.set_subshape_pos2(part_pos1.copied());
-                } else {
-                    manifold.set_subshape_pos1(part_pos1.copied());
+    let mut bookkeep =
+        |leaf1: u32, manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>| {
+            match workspace.sub_detectors.entry(leaf1) {
+                Entry::Occupied(entry) => {
+                    let sub_detector = entry.into_mut();
+                    let mut manifold = old_manifolds[sub_detector.manifold_id].take();
+                    sub_detector.manifold_id = manifolds.len();
+                    sub_detector.timestamp = new_timestamp;
+                    if deformable {
+                        manifold.mark_shapes_deformed();
+                    }
+                    manifolds.push(manifold);
+                    false
+                }
+                Entry::Vacant(entry) => {
+                    let _ = entry.insert(SubDetector {
+                        manifold_id: manifolds.len(),
+                        timestamp: new_timestamp,
+                    });
+                    let mut manifold = ContactManifold::new();
+                    if flipped {
+                        manifold.subshape1 = 0;
+                        manifold.subshape2 = leaf1;
+                    } else {
+                        manifold.subshape1 = leaf1;
+                        manifold.subshape2 = 0;
+                    }
+                    if deformable {
+                        manifold.mark_shapes_deformed();
+                    }
+                    manifolds.push(manifold);
+                    true
                 }
             }
-            if flipped {
-                let _ = dispatcher.contact_manifold_convex_convex(
-                    &part_pos1.prepend_to(&pos21),
-                    shape2,
-                    part_shape1,
-                    None,
-                    normal_constraints1,
-                    prediction,
-                    manifold,
-                );
-            } else {
-                let _ = dispatcher.contact_manifold_convex_convex(
-                    &part_pos1.inv_mul(&pos12),
-                    part_shape1,
-                    shape2,
-                    normal_constraints1,
-                    None,
-                    prediction,
-                    manifold,
-                );
-            }
-        });
-    };
+        };
+    // The manifold's sub-shape pose (a fresh manifold) and contacts.
+    let compute =
+        |leaf1: u32, fresh: bool, manifold: &mut ContactManifold<ManifoldData, ContactData>| {
+            composite1.map_part_at(leaf1, &mut |part_pos1, part_shape1, normal_constraints1| {
+                if fresh {
+                    if flipped {
+                        manifold.set_subshape_pos2(part_pos1.copied());
+                    } else {
+                        manifold.set_subshape_pos1(part_pos1.copied());
+                    }
+                }
+                if flipped {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos1.prepend_to(&pos21),
+                        shape2,
+                        part_shape1,
+                        None,
+                        normal_constraints1,
+                        prediction,
+                        manifold,
+                    );
+                } else {
+                    let _ = dispatcher.contact_manifold_convex_convex(
+                        &part_pos1.inv_mul(&pos12),
+                        part_shape1,
+                        shape2,
+                        normal_constraints1,
+                        None,
+                        prediction,
+                        manifold,
+                    );
+                }
+            });
+        };
 
     #[cfg(feature = "parallel")]
     {

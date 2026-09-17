@@ -5,8 +5,6 @@
 use super::isosurface_stuffing::{par_map, MeshOracle};
 use super::{VolumeMesh, VolumeMeshParameters};
 use crate::bounding_volume::{Aabb, BoundingVolume};
-#[cfg(not(feature = "std"))]
-use crate::math::ComplexField;
 use crate::math::{Real, Vector};
 use alloc::vec::Vec;
 

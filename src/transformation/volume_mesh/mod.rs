@@ -82,6 +82,7 @@ impl VolumeMeshParameters {
         Self {
             cell_size,
             #[cfg(feature = "dim2")]
+            #[cfg_attr(feature = "f64", expect(clippy::unnecessary_cast))]
             min_angle: core::f64::consts::PI as Real / 6.0,
             #[cfg(feature = "dim3")]
             enclosure: MeshEnclosure::Cover,

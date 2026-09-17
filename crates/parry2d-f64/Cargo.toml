@@ -75,7 +75,6 @@ num-derive = { workspace = true }
 indexmap = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 spade = { workspace = true, optional = true }
-robust = { workspace = true }
 rayon = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 log = { workspace = true }

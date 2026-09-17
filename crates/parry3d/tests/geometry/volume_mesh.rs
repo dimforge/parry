@@ -1,5 +1,5 @@
 use parry3d::math::{Real, Vector};
-use parry3d::shape::{Ball, Capsule, Cone, Cuboid, TriMesh, TriMeshFlags};
+use parry3d::shape::{Ball, Cone, Cuboid};
 use parry3d::transformation::{volume_mesh, VolumeMesh, VolumeMeshParameters};
 use std::collections::HashMap;
 

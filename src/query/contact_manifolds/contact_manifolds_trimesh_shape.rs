@@ -89,8 +89,8 @@ fn ensure_workspace_exists(workspace: &mut Option<ContactManifoldsWorkspace>) {
 /// Computes the contact manifold between a triangle-mesh and a shape.
 ///
 /// A mesh flagged [`TriMeshFlags::DEFORMABLE`] goes through
-/// [`contact_manifolds_composite_shape_shape`] instead: the interfering-triangle cache kept in
-/// this function's workspace assumes a rigid mesh.
+/// [`contact_manifolds_composite_shape_shape`](fn@contact_manifolds_composite_shape_shape) instead:
+/// the interfering-triangle cache kept in this function's workspace assumes a rigid mesh.
 pub fn contact_manifolds_trimesh_shape<ManifoldData, ContactData>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Pose,

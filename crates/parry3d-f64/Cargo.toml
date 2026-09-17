@@ -76,7 +76,6 @@ indexmap = { workspace = true, optional = true }
 hashbrown = { workspace = true, optional = true }
 foldhash = { workspace = true }
 spade = { workspace = true, optional = true }
-robust = { workspace = true }
 rayon = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 rstar = { workspace = true }
