@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.30.2"
+version = "0.31.0"
 authors = ["Sébastien Crozet <developer@crozet.re>"]
 documentation = "https://parry.rs/docs"
 homepage = "https://parry.rs"
@@ -47,7 +47,7 @@ approx = { version = "0.5", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_arrays = "0.2"
 rkyv = { version = "0.8", default-features = false, features = ["bytecheck", "alloc"] }
-num-derive = "0.4"
+num-derive = "0.5"
 indexmap = { version = "2", features = ["serde"] }
 hashbrown = { version = "0.17", default-features = false, features = [
     "default-hasher",
@@ -68,9 +68,9 @@ encase = "0.12"
 
 # dev-dependencies
 oorandom = "11"
-ptree = "0.4.0"
+ptree = "0.5.0"
 rand = "0.10"
-kiss3d = "0.44"
+kiss3d = "0.46"
 rand_isaac = "0.5"
 web-time = "1"
 

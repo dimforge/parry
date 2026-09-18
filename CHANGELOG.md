@@ -1,25 +1,50 @@
-## Unreleased
+## 0.31.0
 
 ### Modified
 
 - Query results now identify the sub-shape they came from, through the new `SubShapeId` type alias:
   `RayIntersection` and `PointProjection` gained a `subshape` field, and `Contact` and `ShapeCastHit`
-  gained `subshape1`/`subshape2`. A shape with no sub-shapes reports `0`.
+  gained `subshape1`/`subshape2`. A shape with no sub-shapes reports `0`
+  ([#443](https://github.com/dimforge/parry/pull/443)).
 - `QueryDispatcher::distance` and `QueryDispatcher::intersection_test`, and the `distance` and
   `intersection_test` free functions, now return `ShapeDistance` and `ShapeIntersection` instead
   of a bare `Real` and `bool`, so they can report the sub-shapes too. Read `.distance` or
-  `.intersecting` to recover the previous value.
+  `.intersecting` to recover the previous value ([#443](https://github.com/dimforge/parry/pull/443)).
 - Query results now report the feature of the sub-shape they hit rather than one encoding that
   sub-shape's index: a `TriMesh` ray-cast reports the triangle's own face, and the triangle itself
   is the result's `subshape`. `TriMesh::triangle_normal` and `HeightField::convert_triangle_feature_id`
-  take that sub-shape index directly, and `TriMesh::is_backface` tests the triangle's own face.
+  take that sub-shape index directly, and `TriMesh::is_backface` tests the triangle's own face
+  ([#443](https://github.com/dimforge/parry/pull/443)).
+- `Shape::as_composite_shape` now returns `Option<&(dyn CompositeShape + Sync)>`, so composite-vs-shape
+  contact manifolds can be computed across threads under the `parallel` feature
+  ([#447](https://github.com/dimforge/parry/pull/447)).
+- Ray-casts against a `Capsule` now use an analytic intersection test instead of GJK: faster, and
+  accurate for rays starting far from the capsule ([#446](https://github.com/dimforge/parry/pull/446)).
+- Bump `num-derive` to 0.5, and `ptree` to 0.5 and `kiss3d` (visual examples) to 0.46 for the
+  dev-dependencies.
 
 ### Added
 
 - `CompoundFlags::FIX_INTERNAL_EDGES` makes a `Compound` treat the edges (2D) or faces (3D) its parts share as
   interior to the union, so a body sliding across the cut between two parts of a convex
   decomposition no longer catches on it. `Compound::PartNormalConstraints` is now
-  `CompoundPseudoNormals`, matching what `TriMesh` and `Polyline` already provide.
+  `CompoundPseudoNormals`, matching what `TriMesh` and `Polyline` already provide
+  ([#442](https://github.com/dimforge/parry/pull/442)).
+- Deformable meshes: `TriMeshFlags::DEFORMABLE` and `PolylineFlags::DEFORMABLE` mark a shape whose
+  vertices move while its pose stays fixed. Move them with the new `TriMesh::set_vertices` /
+  `Polyline::set_vertices` (or `update_vertices` for in-place edits), which refit the BVH and
+  recompute the pseudo-normals; the contact-manifold queries then recompute contacts instead of
+  reusing the cached ones. Also adds `CompositeShape::is_deformable` and
+  `ContactManifold::mark_shapes_deformed` ([#447](https://github.com/dimforge/parry/pull/447)).
+- `transformation::volume_mesh` fills a closed boundary with a simplex mesh for FEM simulation:
+  a refined constrained Delaunay triangulation in 2D, a lattice cover (optionally smoothed and
+  subdivided, or restricted to the surface's crust) in 3D. See `VolumeMesh`,
+  `VolumeMeshParameters` and `MeshEnclosure` ([#447](https://github.com/dimforge/parry/pull/447)).
+- `TriMeshFlags::FIX_INTERNAL_EDGES_TWO_SIDED` fixes internal edges on a mesh used as a two-sided
+  surface, keeping back-facing contact normals in the mirrored pseudo-normal cone instead of
+  discarding them ([#447](https://github.com/dimforge/parry/pull/447)).
+- `Polyline::pseudo_normals` exposes the per-vertex outward pseudo-normals (2D)
+  ([#447](https://github.com/dimforge/parry/pull/447)).
 
 ## 0.30.2
 
