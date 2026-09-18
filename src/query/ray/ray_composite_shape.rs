@@ -39,29 +39,30 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     }
 
     /// Same as [`Self::cast_local_ray`] but also computes the normal at the hit location.
+    ///
+    /// Returns the index of the sub-shape of `self` that was hit alongside the hit, which is
+    /// left as that sub-shape reported it (its `subshape` is the sub-shape's own, when it is a
+    /// composite too).
     #[inline]
     pub fn cast_local_ray_and_get_normal(
         &self,
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
-    ) -> Option<RayIntersection> {
-        self.0
-            .bvh()
-            .find_best(
-                max_time_of_impact,
-                |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
-                |primitive, best_so_far| {
-                    self.0.map_typed_part_at(primitive, |pose, part, _| {
-                        if let Some(pose) = pose {
-                            part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
-                        } else {
-                            part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
-                        }
-                    })?
-                },
-            )
-            .map(|(best_id, hit)| hit.with_subshape(best_id))
+    ) -> Option<(SubShapeId, RayIntersection)> {
+        self.0.bvh().find_best(
+            max_time_of_impact,
+            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+            |primitive, best_so_far| {
+                self.0.map_typed_part_at(primitive, |pose, part, _| {
+                    if let Some(pose) = pose {
+                        part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
+                    } else {
+                        part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
+                    }
+                })?
+            },
+        )
     }
 }
 
@@ -80,7 +81,9 @@ impl RayCast for Polyline {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        CompositeShapeRef(self).cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|(segment_id, hit)| hit.with_subshape(segment_id))
     }
 }
 
@@ -99,6 +102,8 @@ impl RayCast for Compound {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        CompositeShapeRef(self).cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|(part_id, hit)| hit.with_subshape(part_id))
     }
 }

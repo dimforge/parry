@@ -20,7 +20,9 @@ impl RayCast for TriMesh {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        CompositeShapeRef(self).cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+        CompositeShapeRef(self)
+            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
+            .map(|(triangle_id, hit)| hit.with_subshape(triangle_id))
     }
 }
 
@@ -152,11 +154,9 @@ mod ray_cast_with_culling {
                 culling,
                 ray,
             };
-            CompositeShapeRef(&mesh_with_culling).cast_local_ray_and_get_normal(
-                ray,
-                max_time_of_impact,
-                false,
-            )
+            CompositeShapeRef(&mesh_with_culling)
+                .cast_local_ray_and_get_normal(ray, max_time_of_impact, false)
+                .map(|(triangle_id, hit)| hit.with_subshape(triangle_id))
         }
     }
 
