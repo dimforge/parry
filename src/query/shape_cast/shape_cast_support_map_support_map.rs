@@ -58,6 +58,8 @@ where
                     } else {
                         ShapeCastStatus::Converged
                     },
+                    subshape1: 0,
+                    subshape2: 0,
                 })
             }
         } else {
@@ -80,6 +82,8 @@ where
                 } else {
                     ShapeCastStatus::Converged
                 },
+                subshape1: 0,
+                subshape2: 0,
             })
         }
     })

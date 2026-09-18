@@ -111,5 +111,5 @@ fn convex_polyhedra_intersection() {
     .unwrap();
 
     assert!(num_contained_points == 4);
-    assert!(intersects);
+    assert!(intersects.intersecting);
 }

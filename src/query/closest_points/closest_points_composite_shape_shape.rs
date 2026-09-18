@@ -2,7 +2,7 @@ use crate::bounding_volume::Aabb;
 use crate::math::{Pose, Real};
 use crate::partitioning::BvhNode;
 use crate::query::{ClosestPoints, QueryDispatcher};
-use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, SubShapeId, TypedCompositeShape};
 use crate::utils::PoseOpt;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
@@ -23,7 +23,7 @@ impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
         pose12: &Pose,
         shape2: &dyn Shape,
         margin: Real,
-    ) -> Option<(u32, ClosestPoints)> {
+    ) -> Option<(SubShapeId, ClosestPoints)> {
         let ls_aabb2 = shape2.compute_aabb(pose12);
         let msum_shift = -ls_aabb2.center();
         let msum_margin = ls_aabb2.half_extents();

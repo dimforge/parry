@@ -15,7 +15,10 @@ fn coaxial_overlapping_cylinders_intersect() {
     let big = Cylinder::new(50.0, 100.0);
     let small = Cylinder::new(1.5, 1.0);
 
-    assert_eq!(intersection_test(&iso, &big, &iso, &small), Ok(true));
+    assert_eq!(
+        intersection_test(&iso, &big, &iso, &small).map(|r| r.intersecting),
+        Ok(true)
+    );
 }
 
 #[test]
@@ -29,7 +32,10 @@ fn coaxial_cylinder_capsule_intersect() {
         10.0,
     );
 
-    assert_eq!(intersection_test(&iso, &big, &iso, &small), Ok(true));
+    assert_eq!(
+        intersection_test(&iso, &big, &iso, &small).map(|r| r.intersecting),
+        Ok(true)
+    );
 }
 
 #[test]
@@ -46,7 +52,7 @@ fn offset_and_rotated_cylinders_intersecting() {
     ] {
         let pos2 = Pose::from_translation(offset);
         assert_eq!(
-            intersection_test(&Pose::IDENTITY, &big, &pos2, &small),
+            intersection_test(&Pose::IDENTITY, &big, &pos2, &small).map(|r| r.intersecting),
             Ok(true),
             "offset {offset:?} should intersect"
         );
@@ -56,7 +62,7 @@ fn offset_and_rotated_cylinders_intersecting() {
     for angle in [0.01, 0.5, core::f32::consts::FRAC_PI_2] {
         let pos2 = Pose::rotation(Vector::new(0.0, 0.0, angle));
         assert_eq!(
-            intersection_test(&Pose::IDENTITY, &big, &pos2, &small),
+            intersection_test(&Pose::IDENTITY, &big, &pos2, &small).map(|r| r.intersecting),
             Ok(true),
             "rotation angle {angle} should intersect"
         );
@@ -74,7 +80,7 @@ fn coaxial_cylinders_separated() {
     for dy in [51.6, 60.0, 200.0] {
         let pos2 = Pose::translation(0.0, dy, 0.0);
         assert_eq!(
-            intersection_test(&Pose::IDENTITY, &big, &pos2, &small),
+            intersection_test(&Pose::IDENTITY, &big, &pos2, &small).map(|r| r.intersecting),
             Ok(false),
             "axial offset {dy} should be disjoint"
         );
@@ -84,7 +90,7 @@ fn coaxial_cylinders_separated() {
     for dx in [101.1, 110.0, 500.0] {
         let pos2 = Pose::translation(dx, 0.0, 0.0);
         assert_eq!(
-            intersection_test(&Pose::IDENTITY, &big, &pos2, &small),
+            intersection_test(&Pose::IDENTITY, &big, &pos2, &small).map(|r| r.intersecting),
             Ok(false),
             "radial offset {dx} should be disjoint"
         );
@@ -93,7 +99,7 @@ fn coaxial_cylinders_separated() {
     // Separated and rotated.
     let pos2 = Pose::new(Vector::new(0.0, 53.0, 0.0), Vector::new(0.0, 0.0, 0.7));
     assert_eq!(
-        intersection_test(&Pose::IDENTITY, &big, &pos2, &small),
+        intersection_test(&Pose::IDENTITY, &big, &pos2, &small).map(|r| r.intersecting),
         Ok(false),
         "rotated separated pair should be disjoint"
     );

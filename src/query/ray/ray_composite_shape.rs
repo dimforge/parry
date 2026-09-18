@@ -1,7 +1,7 @@
 use crate::math::Real;
 use crate::partitioning::BvhNode;
 use crate::query::{Ray, RayCast, RayIntersection};
-use crate::shape::{CompositeShapeRef, Compound, Polyline, TypedCompositeShape};
+use crate::shape::{CompositeShapeRef, Compound, Polyline, SubShapeId, TypedCompositeShape};
 
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Casts a ray on this composite shape.
@@ -22,7 +22,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
-    ) -> Option<(u32, Real)> {
+    ) -> Option<(SubShapeId, Real)> {
         let hit = self
             .0
             .bvh()
@@ -45,20 +45,23 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         ray: &Ray,
         max_time_of_impact: Real,
         solid: bool,
-    ) -> Option<(u32, RayIntersection)> {
-        self.0.bvh().find_best(
-            max_time_of_impact,
-            |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
-            |primitive, best_so_far| {
-                self.0.map_typed_part_at(primitive, |pose, part, _| {
-                    if let Some(pose) = pose {
-                        part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
-                    } else {
-                        part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
-                    }
-                })?
-            },
-        )
+    ) -> Option<RayIntersection> {
+        self.0
+            .bvh()
+            .find_best(
+                max_time_of_impact,
+                |node: &BvhNode, best_so_far| node.cast_ray(ray, best_so_far),
+                |primitive, best_so_far| {
+                    self.0.map_typed_part_at(primitive, |pose, part, _| {
+                        if let Some(pose) = pose {
+                            part.cast_ray_and_get_normal(pose, ray, best_so_far, solid)
+                        } else {
+                            part.cast_local_ray_and_get_normal(ray, best_so_far, solid)
+                        }
+                    })?
+                },
+            )
+            .map(|(best_id, hit)| hit.with_subshape(best_id))
     }
 }
 
@@ -77,9 +80,7 @@ impl RayCast for Polyline {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        CompositeShapeRef(self)
-            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
-            .map(|hit| hit.1)
+        CompositeShapeRef(self).cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
     }
 }
 
@@ -98,8 +99,6 @@ impl RayCast for Compound {
         max_time_of_impact: Real,
         solid: bool,
     ) -> Option<RayIntersection> {
-        CompositeShapeRef(self)
-            .cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
-            .map(|hit| hit.1)
+        CompositeShapeRef(self).cast_local_ray_and_get_normal(ray, max_time_of_impact, solid)
     }
 }

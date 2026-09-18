@@ -1,5 +1,5 @@
 use crate::math::{Pose, Real, Vector};
-use crate::shape::FeatureId;
+use crate::shape::{FeatureId, SubShapeId};
 
 /// The result of projecting a point onto a shape.
 ///
@@ -69,12 +69,30 @@ pub struct PointProjection {
     /// - `true`: Vector is in the interior (for solid shapes)
     /// - `false`: Vector is outside the shape
     pub is_inside: bool,
+
+    /// The sub-shape the point projects onto.
+    ///
+    /// Identifies the part of a composite shape that answered: a triangle of a
+    /// [`TriMesh`](crate::shape::TriMesh), a part of a [`Compound`](crate::shape::Compound), a
+    /// voxel of a [`Voxels`](crate::shape::Voxels), and so on. Always `0` for a shape with no
+    /// sub-shapes.
+    pub subshape: SubShapeId,
 }
 
 impl PointProjection {
     /// Initializes a new `PointProjection`.
     pub fn new(is_inside: bool, point: Vector) -> Self {
-        PointProjection { is_inside, point }
+        PointProjection {
+            is_inside,
+            point,
+            subshape: 0,
+        }
+    }
+
+    /// Sets the sub-shape this projection came from.
+    pub fn with_subshape(mut self, subshape: SubShapeId) -> Self {
+        self.subshape = subshape;
+        self
     }
 
     /// Transforms `self.point` by `pos`.
@@ -82,6 +100,7 @@ impl PointProjection {
         PointProjection {
             is_inside: self.is_inside,
             point: pos * self.point,
+            subshape: self.subshape,
         }
     }
 

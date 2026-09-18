@@ -11,8 +11,8 @@ use parry2d::query::{self, ClosestPoints};
 use parry2d::shape::Cuboid;
 
 fn check_symmetric_and_exact(p1: &Pose, c1: &Cuboid, p2: &Pose, c2: &Cuboid, expected: Real) {
-    let d12 = query::distance(p1, c1, p2, c2).unwrap();
-    let d21 = query::distance(p2, c2, p1, c1).unwrap();
+    let d12 = query::distance(p1, c1, p2, c2).unwrap().distance;
+    let d21 = query::distance(p2, c2, p1, c1).unwrap().distance;
 
     // Cross-check against the exact GJK closest points.
     let gjk_dist = match query::closest_points(p1, c1, p2, c2, Real::MAX).unwrap() {
@@ -91,8 +91,8 @@ fn touching_and_overlapping() {
 
     for x in [2.0, 1.5] {
         let p2 = Pose::new(Vector::new(x, 0.0), 0.0);
-        let d12 = query::distance(&p1, &c1, &p2, &c2).unwrap();
-        let d21 = query::distance(&p2, &c2, &p1, &c1).unwrap();
+        let d12 = query::distance(&p1, &c1, &p2, &c2).unwrap().distance;
+        let d21 = query::distance(&p2, &c2, &p1, &c1).unwrap().distance;
         assert!(d12.abs() < 1.0e-6, "expected zero distance, got {d12}");
         assert!(d21.abs() < 1.0e-6, "expected zero distance, got {d21}");
     }

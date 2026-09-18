@@ -30,7 +30,9 @@ fn closest_points_cuboid_cuboid_axis_aligned_vertex_vertex() {
                     ),
                 }
 
-                let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid).unwrap();
+                let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid)
+                    .unwrap()
+                    .distance;
                 assert_relative_eq!(dist, true_dist, epsilon = 1e-5);
             }
         }
@@ -66,7 +68,9 @@ fn closest_points_cuboid_cuboid_axis_aligned_edge_edge() {
         other => panic!("expected WithinMargin at distance {true_dist}, got {other:?}"),
     }
 
-    let dist = query::distance(&Pose::IDENTITY, &c1, &pos12, &c2).unwrap();
+    let dist = query::distance(&Pose::IDENTITY, &c1, &pos12, &c2)
+        .unwrap()
+        .distance;
     assert_relative_eq!(dist, true_dist, epsilon = 1e-5);
 }
 
@@ -87,6 +91,8 @@ fn closest_points_cuboid_cuboid_axis_aligned_edge_touching() {
         other => panic!("expected WithinMargin at distance {true_dist}, got {other:?}"),
     }
 
-    let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid).unwrap();
+    let dist = query::distance(&Pose::IDENTITY, &cuboid, &pos12, &cuboid)
+        .unwrap()
+        .distance;
     assert_relative_eq!(dist, true_dist, epsilon = 1e-4);
 }

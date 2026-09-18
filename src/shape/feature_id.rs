@@ -1,3 +1,15 @@
+/// The index of a sub-shape within a shape that has several.
+///
+/// Identifies a part of a [`Compound`](crate::shape::Compound), a triangle of a
+/// [`TriMesh`](crate::shape::TriMesh), a segment of a [`Polyline`](crate::shape::Polyline), a cell
+/// of a [`HeightField`](crate::shape::HeightField), or a voxel of a
+/// [`Voxels`](crate::shape::Voxels) shape.
+///
+/// Query results carry the sub-shape they came from, so a hit against a composite shape says which
+/// part answered. A shape with no sub-shapes, like a [`Ball`](crate::shape::Ball) or a
+/// [`Cuboid`](crate::shape::Cuboid), always reports `0`.
+pub type SubShapeId = u32;
+
 /// An identifier of a geometric feature (vertex, edge, or face) of a shape.
 ///
 /// Feature IDs are used throughout Parry to identify specific geometric features on shapes

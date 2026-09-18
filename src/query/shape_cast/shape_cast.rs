@@ -1,6 +1,6 @@
 use crate::math::{Pose, Real, Vector};
 use crate::query::{DefaultQueryDispatcher, QueryDispatcher, Unsupported};
-use crate::shape::Shape;
+use crate::shape::{Shape, SubShapeId};
 
 #[cfg(feature = "alloc")]
 use crate::partitioning::BvhLeafCost;
@@ -73,6 +73,14 @@ pub struct ShapeCastHit {
     pub normal2: Vector,
     /// The way the shape-casting algorithm terminated.
     pub status: ShapeCastStatus,
+    /// The sub-shape of the first shape that was hit.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape1: SubShapeId,
+    /// The sub-shape of the second shape that was hit.
+    ///
+    /// Always `0` for a shape with no sub-shapes.
+    pub subshape2: SubShapeId,
 }
 
 impl ShapeCastHit {
@@ -88,6 +96,8 @@ impl ShapeCastHit {
             normal1: self.normal2,
             normal2: self.normal1,
             status: self.status,
+            subshape1: self.subshape2,
+            subshape2: self.subshape1,
         }
     }
 
@@ -100,6 +110,8 @@ impl ShapeCastHit {
             normal1: pos.rotation * self.normal1,
             normal2: self.normal2,
             status: self.status,
+            subshape1: self.subshape1,
+            subshape2: self.subshape2,
         }
     }
 }

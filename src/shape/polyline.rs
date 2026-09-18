@@ -4,7 +4,8 @@ use crate::partitioning::{Bvh, BvhBuildStrategy};
 use crate::query::{PointProjection, PointQueryWithLocation};
 use crate::shape::composite_shape::CompositeShape;
 use crate::shape::{
-    FeatureId, Segment, SegmentPointLocation, SegmentPseudoNormals, Shape, TypedCompositeShape,
+    FeatureId, Segment, SegmentPointLocation, SegmentPseudoNormals, Shape, SubShapeId,
+    TypedCompositeShape,
 };
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
@@ -570,17 +571,26 @@ impl Polyline {
         )
     }
 
-    /// Transforms  the feature-id of a segment to the feature-id of this polyline.
+    /// Converts a FeatureId of the segment `segment` into a FeatureId of the whole polyline.
+    ///
+    /// An endpoint becomes the polyline vertex it indexes, so the two segments meeting at a corner
+    /// agree on it. In 2D a segment has a side facing each way, and they are numbered like the
+    /// segments themselves: the second side of segment `i` is `i + self.indices().len()`.
     pub fn segment_feature_to_polyline_feature(
         &self,
-        segment: u32,
-        _feature: FeatureId,
+        segment: SubShapeId,
+        feature: FeatureId,
     ) -> FeatureId {
-        // TODO: return a vertex feature when it makes sense.
-        #[cfg(feature = "dim2")]
-        return FeatureId::Face(segment);
-        #[cfg(feature = "dim3")]
-        return FeatureId::Edge(segment);
+        match feature {
+            FeatureId::Vertex(endpoint) => {
+                FeatureId::Vertex(self.indices[segment as usize][endpoint as usize])
+            }
+            #[cfg(feature = "dim2")]
+            FeatureId::Face(side) => FeatureId::Face(segment + side * self.indices.len() as u32),
+            #[cfg(feature = "dim3")]
+            FeatureId::Edge(_) => FeatureId::Edge(segment),
+            _ => FeatureId::Unknown,
+        }
     }
 
     /// Returns a slice containing all vertices of this polyline.

@@ -10,7 +10,7 @@ impl PointQuery for Voxels {
                 let chunk = self.chunk_ref(chunk_id);
                 chunk
                     .project_local_point_and_get_vox_id(pt, solid)
-                    .map(|(proj, _)| proj)
+                    .map(|(proj, vox)| proj.with_subshape(vox))
             })
             .map(|res| res.1 .1)
             .unwrap_or(PointProjection::new(false, Vector::splat(Real::MAX)))
@@ -21,10 +21,10 @@ impl PointQuery for Voxels {
         self.chunk_bvh()
             .project_point_and_get_feature(pt, Real::MAX, |chunk_id, _| {
                 let chunk = self.chunk_ref(chunk_id);
-                // TODO: we need a way to return both the voxel id, and the feature on the voxel.
+                // TODO: report the feature on the voxel; `subshape` already identifies the voxel.
                 chunk
                     .project_local_point_and_get_vox_id(pt, false)
-                    .map(|(proj, vox)| (proj, FeatureId::Face(vox)))
+                    .map(|(proj, vox)| (proj.with_subshape(vox), FeatureId::Unknown))
             })
             .map(|res| res.1 .1)
             .unwrap_or((

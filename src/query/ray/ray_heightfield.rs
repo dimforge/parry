@@ -48,15 +48,12 @@ impl RayCast for HeightField {
             if s >= 0.0 && t >= 0.0 && t <= 1.0 {
                 // Cast succeeded on the first element!
                 let n = seg.normal().unwrap();
-                let fid = if n.dot(ray.dir) > 0.0 {
-                    // The ray hit the back face.
-                    curr + self.num_cells()
-                } else {
-                    // The ray hit the front face.
-                    curr
-                };
+                // The feature is the hit segment's own side; `subshape` says which segment.
+                let fid = if n.dot(ray.dir) > 0.0 { 1 } else { 0 };
 
-                return Some(RayIntersection::new(s, n, FeatureId::Face(fid as u32)));
+                return Some(
+                    RayIntersection::new(s, n, FeatureId::Face(fid)).with_subshape(curr as u32),
+                );
             }
         }
 
@@ -98,14 +95,11 @@ impl RayCast for HeightField {
 
                 if t >= 0.0 && t <= 1.0 && s <= max_time_of_impact {
                     let n = seg.normal().unwrap();
-                    let fid = if n.dot(ray.dir) > 0.0 {
-                        // The ray hit the back face.
-                        curr + self.num_cells()
-                    } else {
-                        // The ray hit the front face.
-                        curr
-                    };
-                    return Some(RayIntersection::new(s, n, FeatureId::Face(fid as u32)));
+                    // The feature is the hit segment's own side; `subshape` says which segment.
+                    let fid = if n.dot(ray.dir) > 0.0 { 1 } else { 0 };
+                    return Some(
+                        RayIntersection::new(s, n, FeatureId::Face(fid)).with_subshape(curr as u32),
+                    );
                 }
             }
         }
@@ -158,26 +152,24 @@ impl RayCast for HeightField {
                 .1
                 .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
 
+            // The feature stays the one the triangle reported; `subshape` says which triangle it
+            // belongs to.
             match (inter1, inter2) {
                 (Some(mut inter1), Some(mut inter2)) => {
                     if inter1.time_of_impact < inter2.time_of_impact {
-                        inter1.feature =
-                            self.convert_triangle_feature_id(cell.0, cell.1, true, inter1.feature);
+                        inter1.subshape = self.triangle_id(cell.0, cell.1, true);
                         return Some(inter1);
                     } else {
-                        inter2.feature =
-                            self.convert_triangle_feature_id(cell.0, cell.1, false, inter2.feature);
+                        inter2.subshape = self.triangle_id(cell.0, cell.1, false);
                         return Some(inter2);
                     }
                 }
                 (Some(mut inter), None) => {
-                    inter.feature =
-                        self.convert_triangle_feature_id(cell.0, cell.1, true, inter.feature);
+                    inter.subshape = self.triangle_id(cell.0, cell.1, true);
                     return Some(inter);
                 }
                 (None, Some(mut inter)) => {
-                    inter.feature =
-                        self.convert_triangle_feature_id(cell.0, cell.1, false, inter.feature);
+                    inter.subshape = self.triangle_id(cell.0, cell.1, false);
                     return Some(inter);
                 }
                 (None, None) => {}

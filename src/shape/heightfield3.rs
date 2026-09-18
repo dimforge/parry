@@ -5,7 +5,7 @@ use crate::utils::Array2;
 
 use crate::bounding_volume::Aabb;
 use crate::math::{Real, Vector};
-use crate::shape::{FeatureId, Triangle, TrianglePseudoNormals};
+use crate::shape::{FeatureId, SubShapeId, Triangle, TrianglePseudoNormals};
 
 #[cfg(not(feature = "std"))]
 use crate::math::ComplexField;
@@ -127,7 +127,7 @@ impl HeightField {
         self.heights.ncols() - 1
     }
 
-    fn triangle_id(&self, i: usize, j: usize, left: bool) -> u32 {
+    pub(crate) fn triangle_id(&self, i: usize, j: usize, left: bool) -> u32 {
         let tid = j * (self.heights.nrows() - 1) + i;
         if left {
             tid as u32
@@ -586,15 +586,15 @@ impl HeightField {
         &self.aabb
     }
 
-    /// Converts the FeatureID of the left or right triangle at the cell `(i, j)` into a FeatureId
-    /// of the whole heightfield.
+    /// Converts a FeatureId of the triangle `triangle_id` into a FeatureId of the whole
+    /// heightfield.
     pub fn convert_triangle_feature_id(
         &self,
-        i: usize,
-        j: usize,
-        left: bool,
+        triangle_id: SubShapeId,
         fid: FeatureId,
     ) -> FeatureId {
+        let (i, j, left) = self.split_triangle_id(triangle_id);
+
         match fid {
             FeatureId::Vertex(ivertex) => {
                 let nrows = self.heights.nrows();
@@ -900,6 +900,40 @@ impl HeightFieldRadialTriangles<'_> {
                     .heightfield
                     .triangles_at(curr_cell.0 as usize, curr_cell.1 as usize);
             }
+        }
+    }
+}
+
+#[cfg(test)]
+#[cfg(all(feature = "dim3", feature = "alloc", feature = "std"))]
+mod test {
+    use super::HeightField;
+    use crate::math::{Real, Vector};
+    use crate::shape::FeatureId;
+    use crate::utils::Array2;
+    use alloc::vec::Vec;
+
+    /// The conversion recovers the cell and side from the triangle id, so every triangle has to
+    /// come out with a face of its own.
+    #[test]
+    fn every_triangle_converts_to_its_own_feature() {
+        let (nrows, ncols) = (4, 5);
+        let heights: Vec<Real> = (0..nrows * ncols).map(|k| k as Real * 0.13).collect();
+        let heightfield = HeightField::new(
+            Array2::new(nrows, ncols, heights),
+            Vector::new(2.0, 1.0, 3.0),
+        );
+
+        let num_triangles = (nrows - 1) * (ncols - 1) * 2;
+        let faces: Vec<_> = (0..num_triangles as u32)
+            .map(|triangle| heightfield.convert_triangle_feature_id(triangle, FeatureId::Face(0)))
+            .collect();
+
+        for (triangle, face) in faces.iter().enumerate() {
+            assert!(
+                !faces[..triangle].contains(face),
+                "triangle {triangle} reuses {face:?}"
+            );
         }
     }
 }
