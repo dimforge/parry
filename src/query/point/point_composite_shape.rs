@@ -26,8 +26,8 @@ fn triangle_point_location_feature(location: TrianglePointLocation) -> FeatureId
 impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Project a point on this composite shape.
     ///
-    /// The projection's `subshape` says which sub-shape of `self` answered. The second tuple
-    /// element contains some shape-specific information about the projected point.
+    /// Returns the index of the sub-shape of `self` that answered, the projection as that
+    /// sub-shape reported it, and some shape-specific information about the projected point.
     #[inline]
     pub fn project_local_point_and_get_location(
         &self,
@@ -35,6 +35,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
         max_dist: Real,
         solid: bool,
     ) -> Option<(
+        SubShapeId,
         PointProjection,
         <S::PartShape as PointQueryWithLocation>::Location,
     )>
@@ -58,20 +59,20 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                     Some((cost, proj))
                 },
             )
-            .map(|(best_id, (_, (proj, location)))| (proj.with_subshape(best_id), location))
+            .map(|(best_id, (_, (proj, location)))| (best_id, proj, location))
     }
 
     /// Project a point on this composite shape.
     ///
-    /// The projection's `subshape` says which sub-shape of `self` answered. If `solid` is `false`
-    /// then the point will be projected to the closest boundary of `self` even if it is contained
-    /// by one of its sub-shapes.
+    /// Returns the index of the sub-shape of `self` that answered and the projection as that
+    /// sub-shape reported it. If `solid` is `false` then the point will be projected to the
+    /// closest boundary of `self` even if it is contained by one of its sub-shapes.
     pub fn project_local_point(
         &self,
         point: Vector,
         max_dist: Real,
         solid: bool,
-    ) -> Option<PointProjection> {
+    ) -> Option<(SubShapeId, PointProjection)> {
         let (best_id, (_, proj)) = self.0.bvh().find_best(
             max_dist,
             |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
@@ -87,19 +88,19 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                 Some((dist, proj))
             },
         )?;
-        Some(proj.with_subshape(best_id))
+        Some((best_id, proj))
     }
 
     /// Project a point on this composite shape.
     ///
-    /// The projection's `subshape` says which sub-shape of `self` answered. The second tuple
-    /// element is the feature of that sub-shape the projection landed on.
+    /// Returns the index of the sub-shape of `self` that answered, the projection as that
+    /// sub-shape reported it, and the feature of that sub-shape the projection landed on.
     #[inline]
     pub fn project_local_point_and_get_feature(
         &self,
         point: Vector,
         max_dist: Real,
-    ) -> Option<(PointProjection, FeatureId)> {
+    ) -> Option<(SubShapeId, PointProjection, FeatureId)> {
         let (best_id, (_, (proj, feature_id))) = self.0.bvh().find_best(
             max_dist,
             |node: &BvhNode, _best_so_far| node.aabb().distance_to_local_point(point, true),
@@ -115,7 +116,7 @@ impl<S: TypedCompositeShape> CompositeShapeRef<'_, S> {
                 Some((cost, proj))
             },
         )?;
-        Some((proj.with_subshape(best_id), feature_id))
+        Some((best_id, proj, feature_id))
     }
 
     // TODO: implement distance_to_point too?
@@ -152,15 +153,16 @@ impl PointQuery for Polyline {
         // Every comparison involving a NaN is false, so the traversal finds no candidate
         // at all when `point` (or `self`) isn’t finite. Report `point` itself rather than
         // an arbitrary projection onto whichever part we happened to pick.
-        let Some((mut proj, feature)) =
+        let Some((segment_id, mut proj, feature)) =
             CompositeShapeRef(self).project_local_point_and_get_feature(point, Real::MAX)
         else {
             return (PointProjection::new(false, point), FeatureId::Unknown);
         };
+        proj.subshape = segment_id;
 
         // A point behind the outward pseudo-normal is inside.
         #[cfg(feature = "dim2")]
-        if let Some(constraints) = self.segment_normal_constraints(proj.subshape) {
+        if let Some(constraints) = self.segment_normal_constraints(segment_id) {
             let pseudo_normal = match feature {
                 FeatureId::Vertex(i) => constraints.edges[i as usize],
                 _ => constraints.face,
@@ -213,13 +215,16 @@ impl PointQuery for TriMesh {
         let solid = cfg!(feature = "dim2");
         // No candidate: `point` (or `self`) isn’t finite. See
         // `Polyline::project_local_point_and_get_feature`.
-        let Some((proj, location)) =
+        let Some((triangle_id, proj, location)) =
             CompositeShapeRef(self).project_local_point_and_get_location(point, Real::MAX, solid)
         else {
             return (PointProjection::new(false, point), FeatureId::Unknown);
         };
         // The feature is the triangle's own; `proj.subshape` says which triangle it belongs to.
-        (proj, triangle_point_location_feature(location))
+        (
+            proj.with_subshape(triangle_id),
+            triangle_point_location_feature(location),
+        )
     }
 
     // TODO: implement distance_to_point too?
@@ -257,6 +262,7 @@ impl PointQuery for Compound {
     fn project_local_point(&self, point: Vector, solid: bool) -> PointProjection {
         CompositeShapeRef(self)
             .project_local_point(point, Real::MAX, solid)
+            .map(|(part_id, proj)| proj.with_subshape(part_id))
             // No candidate: `point` (or `self`) isn’t finite. See
             // `Polyline::project_local_point_and_get_feature`.
             .unwrap_or(PointProjection::new(false, point))
@@ -267,6 +273,7 @@ impl PointQuery for Compound {
         // The feature is the part's own; `proj.subshape` says which part it belongs to.
         CompositeShapeRef(self)
             .project_local_point_and_get_feature(point, Real::MAX)
+            .map(|(part_id, proj, feature)| (proj.with_subshape(part_id), feature))
             // No candidate: `point` (or `self`) isn’t finite. See
             // `Polyline::project_local_point_and_get_feature`.
             .unwrap_or((PointProjection::new(false, point), FeatureId::Unknown))
@@ -306,10 +313,10 @@ impl PointQueryWithLocation for Polyline {
         max_dist: Real,
     ) -> Option<(PointProjection, Self::Location)> {
         #[allow(unused_mut)] // Because we need mut in 2D but not in 3D.
-        if let Some((mut proj, loc)) =
+        if let Some((seg_id, mut proj, loc)) =
             CompositeShapeRef(self).project_local_point_and_get_location(point, max_dist, solid)
         {
-            let seg_id = proj.subshape;
+            proj.subshape = seg_id;
 
             // A point behind the outward pseudo-normal is inside.
             #[cfg(feature = "dim2")]
@@ -359,10 +366,10 @@ impl PointQueryWithLocation for TriMesh {
         max_dist: Real,
     ) -> Option<(PointProjection, Self::Location)> {
         #[allow(unused_mut)] // mut is needed in 3D.
-        if let Some((mut proj, location)) =
+        if let Some((part_id, mut proj, location)) =
             CompositeShapeRef(self).project_local_point_and_get_location(point, max_dist, solid)
         {
-            let part_id = proj.subshape;
+            proj.subshape = part_id;
 
             #[cfg(feature = "dim3")]
             if let Some(pseudo_normals) = self.pseudo_normals_if_oriented() {

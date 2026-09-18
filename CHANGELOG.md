@@ -1,3 +1,17 @@
+## Unreleased
+
+### Modified
+
+- The `CompositeShapeRef` queries (`cast_local_ray_and_get_normal`, `project_local_point`,
+  `project_local_point_and_get_feature`, `project_local_point_and_get_location`, `cast_shape`,
+  `cast_shape_nonlinear`, `intersects_shape`, `contact_with_shape`, `distance_to_shape`) no longer
+  overwrite the result's sub-shape with the index of the part of the composite that answered:
+  they return that index alongside the result, which stays as the part reported it. The caller
+  stores it where it wants, so a composite of composites (a scene of trimeshes) can keep both
+  levels. `intersects_shape` returns `None` instead of a non-intersecting result. The `Shape`
+  impls of `TriMesh`, `Polyline` and `Compound`, and the `*_composite_shape_shape` free functions,
+  still report the part in the result's `subshape`/`subshape1`.
+
 ## 0.31.0
 
 ### Modified

@@ -2,44 +2,37 @@ use crate::bounding_volume::BoundingVolume;
 use crate::math::Pose;
 use crate::partitioning::BvhNode;
 use crate::query::{QueryDispatcher, ShapeIntersection};
-use crate::shape::{CompositeShapeRef, Shape, TypedCompositeShape};
+use crate::shape::{CompositeShapeRef, Shape, SubShapeId, TypedCompositeShape};
 use crate::utils::PoseOpt;
 
 impl<S: ?Sized + TypedCompositeShape> CompositeShapeRef<'_, S> {
     /// Tests whether the given other `shape`, positioned at `pose12` relative to `self`,
     /// intersects `self`.
     ///
-    /// The result's `subshape1` says which sub-shape of `self` it intersects.
+    /// Returns `None` when they do not intersect. Otherwise returns the index of a sub-shape of
+    /// `self` that `shape` intersects alongside that sub-shape's own result (its `subshape1` is
+    /// the sub-shape's own when it is a composite too, and `subshape2` is `shape`'s).
     pub fn intersects_shape<D: ?Sized + QueryDispatcher>(
         &self,
         dispatcher: &D,
         pose12: &Pose,
         shape: &dyn Shape,
-    ) -> ShapeIntersection {
+    ) -> Option<(SubShapeId, ShapeIntersection)> {
         let ls_aabb2 = shape.compute_aabb(pose12);
-        let found = self
-            .0
+        self.0
             .bvh()
             .leaves(|node: &BvhNode| node.aabb().intersects(&ls_aabb2))
             .find_map(|leaf_id| {
                 self.0
                     .map_untyped_part_at(leaf_id, |part_pose1, sub1, _| {
-                        // `shape` may be a composite too; keep the sub-shape it reported.
                         dispatcher
                             .intersection_test(&part_pose1.inv_mul(pose12), sub1, shape)
                             .ok()
                             .filter(|result| result.intersecting)
-                            .map(|result| (leaf_id, result.subshape2))
+                            .map(|result| (leaf_id, result))
                     })
                     .flatten()
-            });
-
-        match found {
-            Some((subshape1, subshape2)) => {
-                ShapeIntersection::new(true).with_subshapes(subshape1, subshape2)
-            }
-            None => ShapeIntersection::new(false),
-        }
+            })
     }
 }
 
@@ -54,7 +47,14 @@ where
     D: ?Sized + QueryDispatcher,
     G1: ?Sized + TypedCompositeShape,
 {
-    CompositeShapeRef(g1).intersects_shape(dispatcher, pos12, g2)
+    // `subshape2` is left as the dispatch set it: `g2` may be a composite too, and only it
+    // knows which of its parts answered.
+    match CompositeShapeRef(g1).intersects_shape(dispatcher, pos12, g2) {
+        Some((part_id, result)) => {
+            ShapeIntersection::new(true).with_subshapes(part_id, result.subshape2)
+        }
+        None => ShapeIntersection::new(false),
+    }
 }
 
 /// Proximity between a shape and a composite (`Mesh`, `Compound`) shape.
