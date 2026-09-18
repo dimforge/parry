@@ -275,7 +275,15 @@ impl EPA {
     /// # }
     /// ```
     pub fn new() -> Self {
-        Self::default()
+        // Pre-reserve the internal buffers: EPA typically visits a few dozen
+        // vertices/faces per query, and starting from empty buffers would pay
+        // a dozen-plus reallocations on every penetrating contact.
+        Self {
+            vertices: Vec::with_capacity(64),
+            faces: Vec::with_capacity(128),
+            silhouette: Vec::with_capacity(32),
+            heap: BinaryHeap::with_capacity(64),
+        }
     }
 
     fn reset(&mut self) {

@@ -270,6 +270,11 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
              * Filter-out points that don’t belong to this block.
              */
             let test_voxel = Cuboid::new(radius1 + Vector::splat(1.0e-2));
+            let cuboid1 = Cuboid::new(radius1);
+            // Resolve the support-map once instead of once per contact point
+            // (the `expect` below preserves the original panic timing: it only
+            // fires if a penetrating point actually needs the support-map).
+            let sm2_opt = shape2.as_support_map();
             let penetration_dir1 = if flipped {
                 manifold.local_n2
             } else {
@@ -281,11 +286,8 @@ pub fn contact_manifolds_voxels_shape<ManifoldData, ContactData>(
                     // If this is a penetration, double-check that we are not hitting the
                     // interior of the infinitely expanded canonical shape by checking if
                     // the opposite normal had led to a better vector.
-                    let cuboid1 = Cuboid::new(radius1);
                     let sp1 = cuboid1.local_support_point(-penetration_dir1) + vox1.center;
-                    let sm2 = shape2
-                        .as_support_map()
-                        .expect("Unsupported collision pair.");
+                    let sm2 = sm2_opt.expect("Unsupported collision pair.");
                     let sp2 = sm2.support_point(pos12, penetration_dir1);
                     let test_dist = (sp2 - sp1).dot(-penetration_dir1);
                     let keep = test_dist < pt.dist;

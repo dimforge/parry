@@ -138,7 +138,8 @@ pub enum GJKResult {
 /// # Returns
 ///
 /// The absolute tolerance value (10 * DEFAULT_EPSILON)
-pub fn eps_tol() -> Real {
+#[inline]
+pub const fn eps_tol() -> Real {
     let _eps = crate::math::DEFAULT_EPSILON;
     _eps * 10.0
 }
@@ -386,7 +387,9 @@ where
     // `< 0` bounds the penetration depth.
     let mut best_min_bound = -Real::max_value();
     // Largest CSO support magnitude seen, used to scale the tolerance below.
-    let mut support_scale: Real = 0.0;
+    // Squared while accumulated; max commutes with the monotonic sqrt, so the
+    // root is only taken at the (at most one) exit that consumes it.
+    let mut support_scale_sq: Real = 0.0;
     let mut nb_perturbs = 0usize;
     const MAX_PERTURBATIONS: usize = 2 * DIM;
 
@@ -412,7 +415,7 @@ where
                 } else {
                     return GJKResult::Proximity(old_dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale_sq.sqrt() {
                 // Origin on the CSO boundary: the pair is touching, so the witnesses
                 // describe the contact.
                 let (p1, p2) = result(simplex, true);
@@ -433,7 +436,7 @@ where
         assert!(min_bound.is_finite());
 
         best_min_bound = best_min_bound.max(min_bound);
-        support_scale = support_scale.max(cso_point.point.length());
+        support_scale_sq = support_scale_sq.max(cso_point.point.length_squared());
 
         if min_bound > max_dist {
             return GJKResult::NoIntersection(dir);
@@ -457,7 +460,7 @@ where
                 } else {
                     return GJKResult::Proximity(dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale_sq.sqrt() {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {

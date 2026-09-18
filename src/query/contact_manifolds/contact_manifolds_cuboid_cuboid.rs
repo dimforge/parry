@@ -76,10 +76,10 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
         best_sep = sep3;
     }
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = manifold.points.clone();
-    manifold.clear();
+    // Drain the previous points into a stack-first buffer to perform contact
+    // tracking and impulse transfer without a per-call heap allocation (the
+    // face/face case can emit up to 8 contacts).
+    let old_manifold_points: smallvec::SmallVec<[_; 8]> = manifold.points.drain(..).collect();
 
     let local_n2 = pos21.rotation * -best_sep.1;
 
