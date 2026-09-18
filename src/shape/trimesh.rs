@@ -499,6 +499,17 @@ bitflags::bitflags! {
         /// This is achieved by taking into account adjacent triangle normals when computing contact
         /// points for a given triangle.
         const FIX_INTERNAL_EDGES = (1 << 7) | Self::MERGE_DUPLICATE_VERTICES.bits();
+        /// If set, the vertices of this mesh are expected to move between queries while its pose
+        /// stays fixed (see [`TriMesh::set_vertices`]).
+        ///
+        /// The contact-manifold queries then recompute the triangles interfering with the other
+        /// shape at every call and never reuse cached contact points (see
+        /// [`CompositeShape::is_deformable`]).
+        const DEFORMABLE = 1 << 8;
+        /// Same as [`Self::FIX_INTERNAL_EDGES`] but treating the mesh as two-sided: a contact
+        /// coming from the back of a triangle is kept and its normal is constrained by the
+        /// mirrored pseudo-normal cone instead of being discarded.
+        const FIX_INTERNAL_EDGES_TWO_SIDED = (1 << 9) | Self::FIX_INTERNAL_EDGES.bits();
     }
 }
 
@@ -926,6 +937,78 @@ impl TriMesh {
                 n[2] = transform.rotation * n[2];
             });
         }
+    }
+
+    /// Replaces the vertex positions in place, keeping the index buffer and topology.
+    ///
+    /// The BVH is refitted (not rebuilt) and the pseudo-normals, if any, are recomputed. This
+    /// is the update path of a deformable mesh: `vertices.len()` must equal
+    /// [`Self::vertices`]`.len()`.
+    ///
+    /// The refit keeps the tree structure built for the original vertices; after very large
+    /// deformations, rebuilding the mesh gives a tighter tree.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `vertices.len()` differs from the current number of vertices.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "dim3", feature = "f32"))] {
+    /// use parry3d::shape::{TriMesh, TriMeshFlags};
+    /// use parry3d::math::Vector;
+    ///
+    /// let vertices = vec![
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 0.0),
+    /// ];
+    /// let indices = vec![[0, 1, 2]];
+    /// let mut mesh = TriMesh::with_flags(vertices, indices, TriMeshFlags::DEFORMABLE).unwrap();
+    ///
+    /// // Lift the third vertex.
+    /// mesh.set_vertices(&[
+    ///     Vector::ZERO,
+    ///     Vector::new(1.0, 0.0, 0.0),
+    ///     Vector::new(0.0, 1.0, 2.0),
+    /// ]);
+    /// assert_eq!(mesh.local_aabb().maxs, Vector::new(1.0, 1.0, 2.0));
+    /// # }
+    /// ```
+    pub fn set_vertices(&mut self, vertices: &[Vector]) {
+        assert_eq!(
+            vertices.len(),
+            self.vertices.len(),
+            "TriMesh::set_vertices: the number of vertices must not change."
+        );
+        self.update_vertices(|vtx| vtx.copy_from_slice(vertices));
+    }
+
+    /// Modifies the vertex positions in place through `f`, then refits the BVH and recomputes
+    /// the pseudo-normals, if any (see [`Self::set_vertices`]).
+    pub fn update_vertices(&mut self, f: impl FnOnce(&mut [Vector])) {
+        f(&mut self.vertices);
+        self.refit_bvh();
+
+        #[cfg(feature = "dim3")]
+        if self.pseudo_normals.is_some() {
+            self.compute_pseudo_normals();
+        }
+    }
+
+    /// Updates every triangle's leaf AABB and refits the BVH in place, keeping its structure.
+    fn refit_bvh(&mut self) {
+        for (i, idx) in self.indices.iter().enumerate() {
+            let aabb = Triangle::new(
+                self.vertices[idx[0] as usize],
+                self.vertices[idx[1] as usize],
+                self.vertices[idx[2] as usize],
+            )
+            .local_aabb();
+            let _ = self.bvh.insert_or_update_partially(aabb, i as u32, 0.0);
+        }
+        self.bvh.refit_without_opt();
     }
 
     /// Returns a scaled version of this triangle mesh.
@@ -1921,6 +2004,9 @@ impl TriMesh {
                     (edges_pseudo_normals[1]).try_normalize()?,
                     (edges_pseudo_normals[2]).try_normalize()?,
                 ],
+                two_sided: self
+                    .flags
+                    .contains(TriMeshFlags::FIX_INTERNAL_EDGES_TWO_SIDED),
             })
         } else {
             None
@@ -2134,6 +2220,10 @@ impl CompositeShape for TriMesh {
 
     fn bvh(&self) -> &Bvh {
         &self.bvh
+    }
+
+    fn is_deformable(&self) -> bool {
+        self.flags.contains(TriMeshFlags::DEFORMABLE)
     }
 }
 

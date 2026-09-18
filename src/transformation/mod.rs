@@ -13,6 +13,11 @@ pub use self::mesh_intersection::{
     intersect_meshes, intersect_meshes_with_tolerances, MeshIntersectionError,
     MeshIntersectionTolerances,
 };
+#[cfg(all(feature = "dim3", feature = "alloc"))]
+pub use self::volume_mesh::MeshEnclosure;
+#[cfg(all(feature = "alloc", any(feature = "dim3", feature = "spade")))]
+pub use self::volume_mesh::{volume_mesh, VolumeMesh, VolumeMeshParameters};
+
 pub use self::polygon_intersection::{
     convex_polygons_intersection, convex_polygons_intersection_points,
     convex_polygons_intersection_points_with_tolerances,
@@ -29,6 +34,8 @@ pub(crate) mod convex_hull_utils;
 mod polygon_intersection;
 /// Approximate convex decomposition using the VHACD algorithm.
 pub mod vhacd;
+#[cfg(all(feature = "alloc", any(feature = "dim3", feature = "spade")))]
+mod volume_mesh;
 /// Voxelization of a 2D polyline or 3D triangle mesh.
 pub mod voxelization;
 

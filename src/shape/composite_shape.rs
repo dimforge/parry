@@ -32,6 +32,18 @@ pub trait CompositeShape {
 
     /// Gets the acceleration structure of the composite shape.
     fn bvh(&self) -> &Bvh;
+
+    /// Whether the parts of this shape may change between two queries made at the same pose (a
+    /// deformable mesh whose vertices move).
+    ///
+    /// The contact-manifold queries then never reuse the contact points cached from a previous
+    /// call (see [`ContactManifold::mark_shapes_deformed`]); the caller must still make sure the
+    /// [`Self::bvh`] is up to date. Defaults to `false`.
+    ///
+    /// [`ContactManifold::mark_shapes_deformed`]: crate::query::ContactManifold::mark_shapes_deformed
+    fn is_deformable(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -55,35 +67,48 @@ pub trait TypedCompositeShape: CompositeShape {
     ) -> Option<T>;
 }
 
-#[cfg(feature = "alloc")]
-impl TypedCompositeShape for dyn CompositeShape + '_ {
-    type PartShape = dyn Shape;
-    type PartNormalConstraints = dyn NormalConstraints;
+/// The [`TypedCompositeShape`] view of a [`CompositeShape`] trait object (with or without the
+/// `Sync` marker: distinct trait-object types).
+macro_rules! impl_typed_composite_shape_for_dyn {
+    ($($object:tt)+) => {
+        #[cfg(feature = "alloc")]
+        impl TypedCompositeShape for $($object)+ {
+            type PartShape = dyn Shape;
+            type PartNormalConstraints = dyn NormalConstraints;
 
-    fn map_typed_part_at<T>(
-        &self,
-        shape_id: u32,
-        mut f: impl FnMut(Option<&Pose>, &Self::PartShape, Option<&Self::PartNormalConstraints>) -> T,
-    ) -> Option<T> {
-        let mut result = None;
-        self.map_part_at(shape_id, &mut |pose, part, normals| {
-            result = Some(f(pose, part, normals));
-        });
-        result
-    }
+            fn map_typed_part_at<T>(
+                &self,
+                shape_id: u32,
+                mut f: impl FnMut(
+                    Option<&Pose>,
+                    &Self::PartShape,
+                    Option<&Self::PartNormalConstraints>,
+                ) -> T,
+            ) -> Option<T> {
+                let mut result = None;
+                self.map_part_at(shape_id, &mut |pose, part, normals| {
+                    result = Some(f(pose, part, normals));
+                });
+                result
+            }
 
-    fn map_untyped_part_at<T>(
-        &self,
-        shape_id: u32,
-        mut f: impl FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
-    ) -> Option<T> {
-        let mut result = None;
-        self.map_part_at(shape_id, &mut |pose, part, normals| {
-            result = Some(f(pose, part, normals));
-        });
-        result
-    }
+            fn map_untyped_part_at<T>(
+                &self,
+                shape_id: u32,
+                mut f: impl FnMut(Option<&Pose>, &dyn Shape, Option<&dyn NormalConstraints>) -> T,
+            ) -> Option<T> {
+                let mut result = None;
+                self.map_part_at(shape_id, &mut |pose, part, normals| {
+                    result = Some(f(pose, part, normals));
+                });
+                result
+            }
+        }
+    };
 }
+
+impl_typed_composite_shape_for_dyn!(dyn CompositeShape + '_);
+impl_typed_composite_shape_for_dyn!(dyn CompositeShape + Sync + '_);
 
 /// A helper struct that implements scene queries on any composite shapes.
 ///
