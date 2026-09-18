@@ -1,4 +1,4 @@
-## Unreleased
+## 0.31.1
 
 ### Modified
 
@@ -12,7 +12,7 @@
   impls of `TriMesh`, `Polyline` and `Compound`, and the `*_composite_shape_shape` free functions,
   still report the part in the result's `subshape`/`subshape1`.
 
-## 0.31.0
+## 0.31.0 (yanked)
 
 ### Modified
 
