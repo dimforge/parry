@@ -1,3 +1,12 @@
+## Unreleased
+
+### Modified
+
+- Deserializing a `ContactManifoldsWorkspace` that was serialized by a custom contact-manifolds
+  algorithm no longer fails with `"Cannot deserialize custom shape."`. It now yields the new
+  `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
+  of the correct type at its next execution.
+
 ## 0.31.1
 
 ### Modified

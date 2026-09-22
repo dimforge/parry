@@ -178,7 +178,7 @@ pub use self::contact_manifolds_voxels_voxels::{
     contact_manifolds_voxels_voxels, contact_manifolds_voxels_voxels_shapes,
 };
 pub use self::contact_manifolds_workspace::{
-    ContactManifoldsWorkspace, TypedWorkspaceData, WorkspaceData,
+    ContactManifoldsWorkspace, TypedWorkspaceData, UnknownContactManifoldsWorkspace, WorkspaceData,
 };
 pub use self::normals_constraint::{NormalConstraints, NormalConstraintsPair};
 
