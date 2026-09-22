@@ -60,34 +60,56 @@ enum DeserializableWorkspaceData {
 
 #[cfg(feature = "serde-serialize")]
 impl DeserializableWorkspaceData {
-    pub fn into_contact_manifold_workspace(self) -> Option<ContactManifoldsWorkspace> {
+    pub fn into_contact_manifold_workspace(self) -> ContactManifoldsWorkspace {
         match self {
             DeserializableWorkspaceData::TriMeshShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::HeightfieldShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::HeightfieldCompositeShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::CompositeShapeCompositeShapeContactManifoldsWorkspace(
                 w,
-            ) => Some(ContactManifoldsWorkspace(Box::new(w))),
+            ) => ContactManifoldsWorkspace(Box::new(w)),
             DeserializableWorkspaceData::CompositeShapeShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::VoxelsShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::VoxelsCompositeShapeContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
             DeserializableWorkspaceData::VoxelsVoxelsContactManifoldsWorkspace(w) => {
-                Some(ContactManifoldsWorkspace(Box::new(w)))
+                ContactManifoldsWorkspace(Box::new(w))
             }
-            DeserializableWorkspaceData::Custom => None,
+            // The data of a custom workspace is unknown to parry, so we fall back to a placeholder.
+            // This can later be overwritten by algorithms that need the workspace and know its type.
+            DeserializableWorkspaceData::Custom => {
+                ContactManifoldsWorkspace(Box::new(UnknownContactManifoldsWorkspace))
+            }
         }
+    }
+}
+
+/// A placeholder workspace used for custom workspace types unknown to parry.
+///
+/// This is yielded when deserializing a custom [`ContactManifoldsWorkspace`],
+/// as its data is lost during serialization. Algorithms that access the workspace
+/// can replace the placeholder with the correct workspace type on their next call.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct UnknownContactManifoldsWorkspace;
+
+impl WorkspaceData for UnknownContactManifoldsWorkspace {
+    fn as_typed_workspace_data(&self) -> TypedWorkspaceData<'_> {
+        TypedWorkspaceData::Custom
+    }
+
+    fn clone_dyn(&self) -> Box<dyn WorkspaceData> {
+        Box::new(*self)
     }
 }
 
@@ -134,9 +156,7 @@ impl<'de> serde::Deserialize<'de> for ContactManifoldsWorkspace {
     where
         D: serde::Deserializer<'de>,
     {
-        use crate::serde::de::Error;
-        DeserializableWorkspaceData::deserialize(deserializer)?
-            .into_contact_manifold_workspace()
-            .ok_or(D::Error::custom("Cannot deserialize custom shape."))
+        Ok(DeserializableWorkspaceData::deserialize(deserializer)?
+            .into_contact_manifold_workspace())
     }
 }

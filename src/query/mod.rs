@@ -29,7 +29,8 @@ pub use self::closest_points::{closest_points, ClosestPoints};
 pub use self::contact::{contact, Contact};
 #[cfg(feature = "alloc")]
 pub use self::contact_manifolds::{
-    ContactManifold, ContactManifoldsWorkspace, TrackedContact, TypedWorkspaceData, WorkspaceData,
+    ContactManifold, ContactManifoldsWorkspace, TrackedContact, TypedWorkspaceData,
+    UnknownContactManifoldsWorkspace, WorkspaceData,
 };
 pub use self::default_query_dispatcher::DefaultQueryDispatcher;
 pub use self::distance::{distance, ShapeDistance};
