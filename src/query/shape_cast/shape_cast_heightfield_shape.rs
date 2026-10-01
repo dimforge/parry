@@ -1,10 +1,25 @@
-use crate::bounding_volume::BoundingVolume;
+use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Pose, Real, Vector};
 use crate::query::details::ShapeCastOptions;
-use crate::query::{QueryDispatcher, Ray, ShapeCastHit, Unsupported};
+use crate::query::{QueryDispatcher, Ray, RayCast, ShapeCastHit, Unsupported};
 use crate::shape::{HeightField, Shape};
-#[cfg(feature = "dim3")]
-use crate::{bounding_volume::Aabb, query::RayCast};
+
+/// Checks if a shape whose Aabb has the half-extents `hext2_1` and is centered on `ray.origin`
+/// can touch `part_aabb1` while moving along `ray.dir` for at most `max_time_of_impact`.
+///
+/// This is a cheap conservative test: a heightfield part failing it cannot be hit, so it
+/// doesn't need to be shape-cast.
+#[inline]
+fn aabb_may_be_hit(
+    part_aabb1: &Aabb,
+    hext2_1: Vector,
+    ray: &Ray,
+    max_time_of_impact: Real,
+) -> bool {
+    // Compute the minkowski sum of the two Aabbs.
+    let msum = Aabb::new(part_aabb1.mins - hext2_1, part_aabb1.maxs + hext2_1);
+    msum.cast_local_ray(ray, max_time_of_impact, true).is_some()
+}
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
@@ -18,6 +33,7 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
 ) -> Result<Option<ShapeCastHit>, Unsupported> {
     let aabb2_1 = g2.compute_aabb(pos12).loosened(options.target_distance);
     let ray = Ray::new(aabb2_1.center(), vel12);
+    let hext2_1 = aabb2_1.half_extents();
 
     let mut curr_range = heightfield1.unclamped_elements_range_in_local_aabb(&aabb2_1);
     // Enlarge the range by 1 to account for movement within a cell.
@@ -38,7 +54,10 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         ..curr_range.end.clamp(0, heightfield1.num_cells() as isize) as usize;
     for curr in clamped_curr_range {
         if let Some(seg) = heightfield1.segment_at(curr) {
-            // TODO: pre-check using a ray-cast on the Aabbs first?
+            if !aabb_may_be_hit(&seg.local_aabb(), hext2_1, &ray, options.max_time_of_impact) {
+                continue;
+            }
+
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
                 if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
@@ -79,7 +98,10 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         }
 
         if let Some(seg) = heightfield1.segment_at(curr_elt as usize) {
-            // TODO: pre-check using a ray-cast on the Aabbs first?
+            if !aabb_may_be_hit(&seg.local_aabb(), hext2_1, &ray, options.max_time_of_impact) {
+                continue;
+            }
+
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
                 if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
@@ -148,7 +170,10 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         if i >= 0 && j >= 0 {
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
             for tri in [tri_a, tri_b].into_iter().flatten() {
-                // TODO: pre-check using a ray-cast on the Aabbs first?
+                if !aabb_may_be_hit(&tri.local_aabb(), hext2_1, &ray, options.max_time_of_impact) {
+                    continue;
+                }
+
                 if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
                     if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX)
                     {
