@@ -268,11 +268,19 @@ impl PointQueryWithLocation for Tetrahedron {
                     // numbers and there are not enough decimal bits to perform
                     // the normalization.
                     let normal = n.try_normalize()?;
-                    let vc = normal.dot(ap.cross(bp));
-                    let va = normal.dot(bp.cross(cp));
-                    let vb = normal.dot(cp.cross(ap));
+                    let mut vc = normal.dot(ap.cross(bp));
+                    let mut va = normal.dot(bp.cross(cp));
+                    let mut vb = normal.dot(cp.cross(ap));
 
-                    let denom = va + vb + vc;
+                    let mut denom = va + vb + vc;
+                    if denom == 0.0 {
+                        // Use face edges to avoid cancellation between products of
+                        // nearly parallel vectors when the query point is far away.
+                        vc = normal.dot(ab.cross(ap));
+                        va = normal.dot((c - b).cross(bp));
+                        vb = normal.dot(cp.cross(ac));
+                        denom = va + vb + vc;
+                    }
                     assert!(denom != 0.0);
                     let inv_denom = 1.0 / denom;
 
