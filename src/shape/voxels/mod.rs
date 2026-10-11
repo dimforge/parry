@@ -1,8 +1,10 @@
+pub use voxel_query::*;
 pub use voxels::*;
 pub use voxels_chunk::*;
 
 use voxels_consts::*;
 
+mod voxel_query;
 mod voxels;
 mod voxels_chunk;
 mod voxels_consts;

@@ -6,7 +6,7 @@ use crate::query::{
     ContactManifold, ContactManifoldsWorkspace, PersistentQueryDispatcher, PointQuery,
     TypedWorkspaceData, WorkspaceData,
 };
-use crate::shape::{Cuboid, Shape, SupportMap, VoxelData, VoxelType, Voxels};
+use crate::shape::{Cuboid, QueriedVoxel, Shape, SupportMap, VoxelQuery, VoxelType, VoxelTypes};
 use crate::utils::hashmap::Entry;
 use crate::utils::PoseOpt;
 use alloc::{boxed::Box, vec::Vec};
@@ -41,18 +41,22 @@ pub fn contact_manifolds_voxels_voxels_shapes<ManifoldData, ContactData>(
     }
 }
 
-/// Computes the contact manifold between a convex shape and a ball.
-pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
+/// Computes the contact manifold between two voxels shapes.
+///
+/// The voxels shapes can be any voxel storages implementing [`VoxelQuery`].
+pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData, V1, V2>(
     dispatcher: &dyn PersistentQueryDispatcher<ManifoldData, ContactData>,
     pos12: &Pose,
-    voxels1: &'a Voxels,
-    voxels2: &'a Voxels,
+    voxels1: &'a V1,
+    voxels2: &'a V2,
     prediction: Real,
     manifolds: &mut Vec<ContactManifold<ManifoldData, ContactData>>,
     workspace: &mut Option<ContactManifoldsWorkspace>,
 ) where
     ManifoldData: Default + Clone,
     ContactData: Default + Copy,
+    V1: ?Sized + VoxelQuery,
+    V2: ?Sized + VoxelQuery,
 {
     VoxelsShapeContactManifoldsWorkspace::<4>::ensure_exists(workspace);
     let workspace: &mut VoxelsShapeContactManifoldsWorkspace<4> =
@@ -77,19 +81,25 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
         aabb1.aligned_intersections(pos12, &aabb2)
     {
         let domain_margin = (radius1 + radius2) * 10.0;
-        let full_domain2_1 = voxels2.compute_aabb(pos12).add_half_extents(domain_margin);
+        let full_domain2_1 = voxels2
+            .local_aabb()
+            .transform_by(pos12)
+            .add_half_extents(domain_margin);
         let domain2_1 = full_domain2_1
             .intersection(&aabb1.add_half_extents(domain_margin))
             .unwrap_or(full_domain2_1);
-        let full_domain1_2 = voxels1.compute_aabb(&pos21).add_half_extents(domain_margin);
+        let full_domain1_2 = voxels1
+            .local_aabb()
+            .transform_by(&pos21)
+            .add_half_extents(domain_margin);
         let domain1_2 = full_domain1_2
             .intersection(&aabb2.add_half_extents(domain_margin))
             .unwrap_or(full_domain1_2);
 
         let mut detect_hit = |canon1: CanonicalVoxelShape,
                               canon2: CanonicalVoxelShape,
-                              vox1: &VoxelData,
-                              vox2: &VoxelData| {
+                              vox1: &V1::Voxel<'_>,
+                              vox2: &V2::Voxel<'_>| {
             // Compute canonical shapes and dispatch.
             let workspace_key = [
                 canon1.workspace_key[0],
@@ -129,8 +139,8 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                         };
 
                         manifolds.push(ContactManifold::with_data(
-                            vox1.linear_id.flat_id() as u32,
-                            vox2.linear_id.flat_id() as u32,
+                            vox1.linear_id(),
+                            vox2.linear_id(),
                             ManifoldData::default(),
                         ));
 
@@ -204,9 +214,9 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                     // the opposite normal had led to a better vector.
                     let cuboid1 = Cuboid::new(radius1);
                     let cuboid2 = Cuboid::new(radius2);
-                    let sp1 = cuboid1.local_support_point(-penetration_dir1) + vox1.center;
+                    let sp1 = cuboid1.local_support_point(-penetration_dir1) + vox1.center();
                     let sp2 = cuboid2.support_point(
-                        &(pos12 * Pose::from_translation(vox2.center)),
+                        &(pos12 * Pose::from_translation(vox2.center())),
                         penetration_dir1,
                     );
                     let test_dist = (sp2 - sp1).dot(-penetration_dir1);
@@ -220,92 +230,66 @@ pub fn contact_manifolds_voxels_voxels<'a, ManifoldData, ContactData>(
                 }
 
                 let pt_in_voxel_space1 =
-                    manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center;
+                    manifold.subshape_pos1().transform_point(pt.local_p1) - vox1.center();
                 let pt_in_voxel_space2 =
-                    manifold.subshape_pos2().transform_point(pt.local_p2) - vox2.center;
+                    manifold.subshape_pos2().transform_point(pt.local_p2) - vox2.center();
                 sub_detector.selected_contacts |=
                     ((test_voxel1.contains_local_point(pt_in_voxel_space1) as u32) << i)
                         & ((test_voxel2.contains_local_point(pt_in_voxel_space2) as u32) << i);
             }
         };
 
-        for vox1 in voxels1.voxels_intersecting_local_aabb(&intersection_aabb1) {
-            let type1 = vox1.state.voxel_type();
-            match type1 {
+        // Voxel-voxel contacts are only generated between pairs of voxels whose types are compatible
+        // (see `partner_voxel_types`). Every such pair contains at least one voxel of these types, so
+        // each of the two passes below starts from these voxels on one side.
+        #[cfg(feature = "dim2")]
+        const OUTER_VOXEL_TYPES: VoxelTypes = VoxelTypes::VERTEX;
+        #[cfg(feature = "dim3")]
+        const OUTER_VOXEL_TYPES: VoxelTypes = VoxelTypes::VERTEX.union(VoxelTypes::EDGE);
+
+        /// The types of the voxels a voxel of type `voxel_type` may generate contacts with.
+        fn partner_voxel_types(voxel_type: VoxelType) -> VoxelTypes {
+            match voxel_type {
                 #[cfg(feature = "dim2")]
-                VoxelType::Vertex => { /* Ok */ }
+                VoxelType::Vertex => VoxelTypes::VERTEX.union(VoxelTypes::FACE),
                 #[cfg(feature = "dim3")]
-                VoxelType::Vertex | VoxelType::Edge => { /* Ok */ }
-                _ => continue,
+                VoxelType::Vertex => VoxelTypes::SURFACE,
+                #[cfg(feature = "dim3")]
+                VoxelType::Edge => VoxelTypes::VERTEX.union(VoxelTypes::EDGE),
+                VoxelType::Face => VoxelTypes::VERTEX,
+                VoxelType::Empty | VoxelType::Interior => VoxelTypes::empty(),
             }
+        }
+
+        for vox1 in
+            voxels1.voxels_intersecting_local_aabb_of_types(&intersection_aabb1, OUTER_VOXEL_TYPES)
+        {
+            let partner_types2 = partner_voxel_types(vox1.voxel_type());
 
             let canon1 = CanonicalVoxelShape::from_voxel(voxels1, &vox1);
             let centered_aabb1_2 = Cuboid::new(radius1 + Vector::splat(prediction))
-                .compute_aabb(&(pos21 * Pose::from_translation(vox1.center)));
+                .compute_aabb(&(pos21 * Pose::from_translation(vox1.center())));
 
-            for vox2 in voxels2.voxels_intersecting_local_aabb(&centered_aabb1_2) {
-                let type2 = vox2.state.voxel_type();
-
-                #[cfg(feature = "dim2")]
-                match (type1, type2) {
-                    (VoxelType::Vertex, VoxelType::Vertex)
-                    | (VoxelType::Vertex, VoxelType::Face)
-                    | (VoxelType::Face, VoxelType::Vertex) => { /* OK */ }
-                    _ => continue, /* Ignore */
-                }
-
-                #[cfg(feature = "dim3")]
-                match (type1, type2) {
-                    (VoxelType::Vertex, VoxelType::Vertex)
-                    | (VoxelType::Vertex, VoxelType::Edge)
-                    | (VoxelType::Vertex, VoxelType::Face)
-                    | (VoxelType::Edge, VoxelType::Vertex)
-                    | (VoxelType::Edge, VoxelType::Edge)
-                    | (VoxelType::Face, VoxelType::Vertex) => { /* OK */ }
-                    _ => continue, /* Ignore */
-                }
-
+            for vox2 in
+                voxels2.voxels_intersecting_local_aabb_of_types(&centered_aabb1_2, partner_types2)
+            {
                 let canon2 = CanonicalVoxelShape::from_voxel(voxels2, &vox2);
                 detect_hit(canon1, canon2, &vox1, &vox2);
             }
         }
 
-        for vox2 in voxels2.voxels_intersecting_local_aabb(&intersection_aabb2) {
-            let type2 = vox2.state.voxel_type();
-            match type2 {
-                #[cfg(feature = "dim2")]
-                VoxelType::Vertex => { /* Ok */ }
-                #[cfg(feature = "dim3")]
-                VoxelType::Vertex | VoxelType::Edge => { /* Ok */ }
-                _ => continue,
-            }
+        for vox2 in
+            voxels2.voxels_intersecting_local_aabb_of_types(&intersection_aabb2, OUTER_VOXEL_TYPES)
+        {
+            let partner_types1 = partner_voxel_types(vox2.voxel_type());
 
             let canon2 = CanonicalVoxelShape::from_voxel(voxels2, &vox2);
             let centered_aabb2_1 = Cuboid::new(radius2 + Vector::splat(prediction))
-                .compute_aabb(&(pos12 * Pose::from_translation(vox2.center)));
+                .compute_aabb(&(pos12 * Pose::from_translation(vox2.center())));
 
-            for vox1 in voxels1.voxels_intersecting_local_aabb(&centered_aabb2_1) {
-                let type1 = vox1.state.voxel_type();
-
-                #[cfg(feature = "dim2")]
-                match (type1, type2) {
-                    (VoxelType::Vertex, VoxelType::Vertex)
-                    | (VoxelType::Vertex, VoxelType::Face)
-                    | (VoxelType::Face, VoxelType::Vertex) => { /* OK */ }
-                    _ => continue, /* Ignore */
-                }
-
-                #[cfg(feature = "dim3")]
-                match (type1, type2) {
-                    (VoxelType::Vertex, VoxelType::Vertex)
-                    | (VoxelType::Vertex, VoxelType::Edge)
-                    | (VoxelType::Vertex, VoxelType::Face)
-                    | (VoxelType::Edge, VoxelType::Vertex)
-                    | (VoxelType::Edge, VoxelType::Edge)
-                    | (VoxelType::Face, VoxelType::Vertex) => { /* OK */ }
-                    _ => continue, /* Ignore */
-                }
-
+            for vox1 in
+                voxels1.voxels_intersecting_local_aabb_of_types(&centered_aabb2_1, partner_types1)
+            {
                 let canon1 = CanonicalVoxelShape::from_voxel(voxels1, &vox1);
                 detect_hit(canon1, canon2, &vox1, &vox2);
             }
