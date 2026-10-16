@@ -741,7 +741,11 @@ where
 
         let neg_proj_coords = -proj;
         let (normalized, dist) = neg_proj_coords.normalize_and_length();
-        if dist > _eps_tol {
+        let mut support_scale: Real = 1.0;
+        for i in 0..=simplex.dimension() {
+            support_scale = support_scale.max((simplex.point(i).point + curr_ray.origin).length());
+        }
+        if dist > _eps_tol * support_scale {
             dir = normalized;
             max_bound = dist;
         } else {
