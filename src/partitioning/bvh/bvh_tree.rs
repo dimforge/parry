@@ -1939,7 +1939,8 @@ impl Bvh {
                     right: BvhNode::zeros(),
                 });
                 result.parents.push(BvhNodeIndex::default());
-                result.leaf_node_indices[0] = BvhNodeIndex::left(0);
+                let leaf_id = workspace.rebuild_leaves[0].children as usize;
+                result.leaf_node_indices[leaf_id] = BvhNodeIndex::left(0);
             }
             2 => {
                 result.nodes.push(BvhNodeWide {
@@ -1947,8 +1948,10 @@ impl Bvh {
                     right: workspace.rebuild_leaves[1],
                 });
                 result.parents.push(BvhNodeIndex::default());
-                result.leaf_node_indices[0] = BvhNodeIndex::left(0);
-                result.leaf_node_indices[1] = BvhNodeIndex::right(0);
+                let left_id = workspace.rebuild_leaves[0].children as usize;
+                let right_id = workspace.rebuild_leaves[1].children as usize;
+                result.leaf_node_indices[left_id] = BvhNodeIndex::left(0);
+                result.leaf_node_indices[right_id] = BvhNodeIndex::right(0);
             }
             _ => {
                 result.nodes.reserve(capacity);

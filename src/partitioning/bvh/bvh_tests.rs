@@ -9,6 +9,23 @@ fn make_test_aabb(i: usize) -> Aabb {
 }
 
 #[test]
+fn bvh_from_iter_preserves_custom_leaf_ids_for_small_trees() {
+    let single = Bvh::from_iter(BvhBuildStrategy::Ploc, [(3usize, make_test_aabb(0))]);
+    assert!(single.leaf_node(3).is_some());
+
+    let mut pair = Bvh::from_iter(
+        BvhBuildStrategy::Ploc,
+        [(1usize, make_test_aabb(0)), (0usize, make_test_aabb(2))],
+    );
+    assert!(pair.leaf_node(1).is_some());
+    assert!(pair.leaf_node(0).is_some());
+
+    pair.remove(0);
+    assert!(pair.leaf_node(0).is_none());
+    assert!(pair.leaf_node(1).is_some());
+}
+
+#[test]
 fn test_leaves_iteration() {
     let leaves = [
         make_test_aabb(0), // mins at (0,0,0) - should pass
