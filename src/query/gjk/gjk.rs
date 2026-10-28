@@ -412,7 +412,7 @@ where
                 } else {
                     return GJKResult::Proximity(old_dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_tol * support_scale {
                 // Origin on the CSO boundary: the pair is touching, so the witnesses
                 // describe the contact.
                 let (p1, p2) = result(simplex, true);
@@ -457,7 +457,7 @@ where
                 } else {
                     return GJKResult::Proximity(dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_tol * support_scale {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {

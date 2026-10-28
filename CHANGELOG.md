@@ -1,5 +1,13 @@
 ## Unreleased
 
+### Fixed
+
+- GJK no longer reports a stalled simplex as "touching" when the penetration bound is merely within
+  `sqrt(eps)` of the largest CSO support magnitude. With a large shape (e.g. a 200x200 ground cuboid)
+  that tolerance exceeded the size of the other shape, and the stale search direction was returned as
+  the contact normal. The tolerance is now `10 * eps` of that magnitude, so such stalls are
+  perturbed and, failing that, resolved by EPA.
+
 ### Modified
 
 - Deserializing a `ContactManifoldsWorkspace` that was serialized by a custom contact-manifolds
