@@ -108,3 +108,34 @@ mod test {
         );
     }
 }
+
+#[cfg(all(test, feature = "dim2"))]
+mod test_touching_contact_points {
+    use super::*;
+    use crate::shape::{Capsule, Cuboid};
+
+    // Regression test for https://github.com/dimforge/parry/issues/378: when the shapes
+    // are exactly touching, EPA starts from a segment simplex and the contact point on the
+    // second shape was snapped to a support vertex (the cuboid corner).
+    #[test]
+    fn touching_capsule_cuboid_contact_points_are_consistent() {
+        let capsule = Capsule::new(Vector::new(0.0, -0.25), Vector::new(0.0, 0.25), 0.5);
+        let cuboid = Cuboid::new(Vector::new(4.0, 0.5));
+
+        for y in [2.749, 2.75, 2.751] {
+            let pos12 = Pose::from_translation(Vector::new(4.0, 1.5) - Vector::new(6.0373735, y));
+            let contact = contact_support_map_support_map(&pos12, &capsule, &cuboid, 0.002)
+                .expect("the shapes are within the prediction distance");
+
+            // The contact point on the cuboid must lie under the capsule, not at its corner.
+            let point1_in_2 = pos12.inverse_transform_point(contact.point1);
+            assert!(
+                (contact.point2.x - point1_in_2.x).abs() < 1.0e-2,
+                "y = {y}: point2 = {:?}, point1 in cuboid frame = {:?}",
+                contact.point2,
+                point1_in_2
+            );
+            assert!((contact.point2.y - 0.5).abs() < 1.0e-4);
+        }
+    }
+}

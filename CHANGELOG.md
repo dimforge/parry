@@ -6,6 +6,9 @@
   algorithm no longer fails with `"Cannot deserialize custom shape."`. It now yields the new
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
+- Fix the 2D EPA returning a contact point snapped to a support vertex when the shapes are exactly
+  touching and the GJK simplex is a segment through the origin
+  ([#378](https://github.com/dimforge/parry/issues/378)).
 
 ## 0.31.1
 
