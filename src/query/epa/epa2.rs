@@ -464,16 +464,23 @@ impl EPA {
             let pts1 = [0, 1];
             let pts2 = [1, 0];
 
+            // The origin lies on the segment: use its actual barycentric coordinates so the
+            // contact points are interpolated at the origin rather than snapped to vertex 0.
+            // See <https://github.com/dimforge/parry/issues/378>.
+            let bcoords = project_origin(self.vertices[0].point, self.vertices[1].point)
+                .map(|(_, bcoords)| bcoords)
+                .unwrap_or([1.0, 0.0]);
+
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
                 Vector::ZERO,
-                [1.0, 0.0],
+                bcoords,
                 pts1,
             ));
             self.faces.push(Face::new_with_proj(
                 &self.vertices,
                 Vector::ZERO,
-                [1.0, 0.0],
+                [bcoords[1], bcoords[0]],
                 pts2,
             ));
 
