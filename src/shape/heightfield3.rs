@@ -177,6 +177,65 @@ impl HeightField {
             .clamp(0.0, num_cells as Real) as usize
     }
 
+    /// Moves `cell`, a cell index along one axis, to the neighbouring cell where `coord` lies
+    /// outside of the cell as its triangles span it, from `start(cell)` to `start(cell + 1)`.
+    /// A `coord` on either end stays in `cell`.
+    fn snap_to_cell(
+        cell: usize,
+        num_cells: usize,
+        coord: Real,
+        start: impl Fn(usize) -> Real,
+    ) -> usize {
+        if cell > 0 && coord < start(cell) {
+            cell - 1
+        } else if cell + 1 < num_cells && coord > start(cell + 1) {
+            cell + 1
+        } else {
+            cell
+        }
+    }
+
+    /// The cell beside `cell`, a cell index along one axis, that shares the grid line `coord` lies
+    /// on exactly, if it lies on one of the two lines of `cell`, at `start(cell)` and
+    /// `start(cell + 1)`.
+    fn cell_beside(
+        cell: usize,
+        num_cells: usize,
+        coord: Real,
+        start: impl Fn(usize) -> Real,
+    ) -> Option<usize> {
+        if cell > 0 && coord == start(cell) {
+            Some(cell - 1)
+        } else if cell + 1 < num_cells && coord == start(cell + 1) {
+            Some(cell + 1)
+        } else {
+            None
+        }
+    }
+
+    /// The column beside column `j` that shares the grid line `x` lies on, if `x` lies exactly on
+    /// one of the two lines of column `j`.
+    pub(crate) fn column_beside(&self, j: usize, x: Real) -> Option<usize> {
+        Self::cell_beside(j, self.ncols(), x, |j| self.x_at(j))
+    }
+
+    /// The row beside row `i` that shares the grid line `z` lies on, if `z` lies exactly on one of
+    /// the two lines of row `i`.
+    pub(crate) fn row_beside(&self, i: usize, z: Real) -> Option<usize> {
+        Self::cell_beside(i, self.nrows(), z, |i| self.z_at(i))
+    }
+
+    /// The coordinate, before scaling, of grid line `line` of the `num_cells` cells of size
+    /// `cell_size` along one axis. The last line lies at exactly `0.5`, the edge of the
+    /// heightfield's Aabb, which `-0.5 + cell_size * num_cells` can round short of.
+    fn unit_line_at(line: usize, num_cells: usize, cell_size: Real) -> Real {
+        if line == num_cells {
+            0.5
+        } else {
+            -0.5 + cell_size * (line as Real)
+        }
+    }
+
     /// The pair of index of the cell containing the vertical projection of the given point.
     pub fn closest_cell_at_point(&self, pt: Vector) -> (usize, usize) {
         let scaled_pt = pt / self.scale;
@@ -191,6 +250,10 @@ impl HeightField {
     }
 
     /// The pair of index of the cell containing the vertical projection of the given point.
+    ///
+    /// Along an axis of positive scale, the point lies within the cell as its triangles span it,
+    /// edges included, unless the cells are so narrow that rounding the point's coordinate spans
+    /// more than one.
     pub fn cell_at_point(&self, pt: Vector) -> Option<(usize, usize)> {
         let scaled_pt = pt / self.scale;
         let cell_width = self.unit_cell_width();
@@ -204,6 +267,20 @@ impl HeightField {
         } else {
             let j = self.quantize_floor(scaled_pt.x, cell_width, ncells_x);
             let i = self.quantize_floor(scaled_pt.z, cell_height, ncells_z);
+            // `quantize_floor` divides by the cell size, while the triangles take their vertices
+            // from `x_at` and `z_at`, which multiply by it. Within a few rounding steps of a grid
+            // line, the two can put the point on opposite sides of that line. A mirrored axis
+            // (a negative scale) keeps the cell of `quantize_floor`: its lines run the other way.
+            let j = if self.scale.x > 0.0 {
+                Self::snap_to_cell(j, ncells_x, pt.x, |j| self.x_at(j))
+            } else {
+                j
+            };
+            let i = if self.scale.z > 0.0 {
+                Self::snap_to_cell(i, ncells_z, pt.z, |i| self.z_at(i))
+            } else {
+                i
+            };
             Some((i, j))
         }
     }
@@ -221,12 +298,12 @@ impl HeightField {
 
     /// The smallest x coordinate of the `j`-th column of this heightfield.
     pub fn x_at(&self, j: usize) -> Real {
-        (-0.5 + self.unit_cell_width() * (j as Real)) * self.scale.x
+        Self::unit_line_at(j, self.ncols(), self.unit_cell_width()) * self.scale.x
     }
 
     /// The smallest z coordinate of the start of the `i`-th row of this heightfield.
     pub fn z_at(&self, i: usize) -> Real {
-        (-0.5 + self.unit_cell_height() * (i as Real)) * self.scale.z
+        Self::unit_line_at(i, self.nrows(), self.unit_cell_height()) * self.scale.z
     }
 
     /// The smallest x coordinate of the `j`-th column of this heightfield.
@@ -352,11 +429,11 @@ impl HeightField {
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
-        let z0 = -0.5 + cell_height * (i as Real);
-        let z1 = -0.5 + cell_height * ((i + 1) as Real);
+        let z0 = Self::unit_line_at(i, self.nrows(), cell_height);
+        let z1 = Self::unit_line_at(i + 1, self.nrows(), cell_height);
 
-        let x0 = -0.5 + cell_width * (j as Real);
-        let x1 = -0.5 + cell_width * ((j + 1) as Real);
+        let x0 = Self::unit_line_at(j, self.ncols(), cell_width);
+        let x1 = Self::unit_line_at(j + 1, self.ncols(), cell_width);
 
         let y00 = self.heights[(i, j)];
         let y10 = self.heights[(i + 1, j)];
@@ -716,11 +793,11 @@ impl HeightField {
                     continue;
                 }
 
-                let z0 = -0.5 + cell_height * (i as Real);
-                let z1 = z0 + cell_height;
+                let z0 = Self::unit_line_at(i, ncells_z, cell_height);
+                let z1 = Self::unit_line_at(i + 1, ncells_z, cell_height);
 
-                let x0 = -0.5 + cell_width * (j as Real);
-                let x1 = x0 + cell_width;
+                let x0 = Self::unit_line_at(j, ncells_x, cell_width);
+                let x1 = Self::unit_line_at(j + 1, ncells_x, cell_width);
 
                 let y00 = self.heights[(i, j)];
                 let y10 = self.heights[(i + 1, j)];
