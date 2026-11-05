@@ -16,11 +16,11 @@
   a grid line also tests the cells on the line's other side, so it hits beside a removed cell too;
   and in 2D each segment ends exactly where the next one starts, which moves segment ends by a few
   rounding steps
-  ([#PR_NUMBER](https://github.com/dimforge/parry/pull/PR_NUMBER)).
+  ([#462](https://github.com/dimforge/parry/pull/462)).
 - Fix the last grid line of a `HeightField` (`x_at(ncols())`, `z_at(nrows())`, and the last
   triangles or segment) falling a rounding step short of the edge of its Aabb for some cell
   counts, 41 among them, which left rays along that edge without a hit. It now lies at exactly
-  half the scale ([#PR_NUMBER](https://github.com/dimforge/parry/pull/PR_NUMBER)).
+  half the scale ([#462](https://github.com/dimforge/parry/pull/462)).
 
 ## 0.31.1
 
