@@ -7,6 +7,13 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- Fix shape-casts onto a 3D `HeightField` with `HeightFieldFlags::FIX_INTERNAL_EDGES` returning the
+  normal of an internal edge between coplanar triangles, tilted a few degrees off the face, when
+  the cast stops on that edge. The hit's normals are now projected into the normal cone of the
+  surface where the hit lies, from the triangles there, so a real crease keeps its own.
+
 ## 0.31.1
 
 ### Modified
