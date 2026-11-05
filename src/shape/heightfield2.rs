@@ -131,6 +131,9 @@ impl HeightField {
     }
 
     /// Index of the cell a point is on after vertical projection.
+    ///
+    /// With a positive scale, the point lies within the segment of that cell, ends included,
+    /// unless the cells are so narrow that rounding the point's coordinate spans more than one.
     pub fn cell_at_point(&self, pt: Vector2) -> Option<usize> {
         let scaled_pt = pt / self.scale;
         let seg_length = self.unit_cell_width();
@@ -139,7 +142,51 @@ impl HeightField {
             // Outside of the heightfield bounds.
             None
         } else {
-            Some(self.quantize_floor(scaled_pt.x, seg_length))
+            let i = self.quantize_floor(scaled_pt.x, seg_length);
+            // `quantize_floor` divides by the cell width, while the segments take their ends
+            // from `unit_x_at`, which multiplies by it. Within a few rounding steps of a grid
+            // point, the two can put the point on opposite sides of it. A mirrored heightfield
+            // (a negative scale) keeps the cell of `quantize_floor`: its segments run the other way.
+            if self.scale.x > 0.0 {
+                Some(self.snap_to_cell(i, pt.x))
+            } else {
+                Some(i)
+            }
+        }
+    }
+
+    /// The x-coordinate, before scaling, where the `i`-th segment starts and the one before it
+    /// ends. The last segment ends at exactly `0.5`, the edge of the heightfield's Aabb, which
+    /// `-0.5 + unit_cell_width * num_cells` can round short of.
+    fn unit_x_at(&self, i: usize) -> Real {
+        if i == self.num_cells() {
+            0.5
+        } else {
+            -0.5 + self.unit_cell_width() * (i as Real)
+        }
+    }
+
+    /// Moves `cell` to the neighbouring cell where `x` lies outside of the cell's segment, beyond
+    /// one of its ends. An `x` on either end stays in `cell`.
+    fn snap_to_cell(&self, cell: usize, x: Real) -> usize {
+        if cell > 0 && x < self.unit_x_at(cell) * self.scale.x {
+            cell - 1
+        } else if cell + 1 < self.num_cells() && x > self.unit_x_at(cell + 1) * self.scale.x {
+            cell + 1
+        } else {
+            cell
+        }
+    }
+
+    /// The cell beside `cell` whose segment shares the end `x` lies on, if `x` lies exactly on one
+    /// of the two ends of the segment of `cell`.
+    pub(crate) fn cell_beside(&self, cell: usize, x: Real) -> Option<usize> {
+        if cell > 0 && x == self.unit_x_at(cell) * self.scale.x {
+            Some(cell - 1)
+        } else if cell + 1 < self.num_cells() && x == self.unit_x_at(cell + 1) * self.scale.x {
+            Some(cell + 1)
+        } else {
+            None
         }
     }
 
@@ -169,10 +216,8 @@ impl HeightField {
             return None;
         }
 
-        let seg_length = 1.0 / (self.heights.len() as Real - 1.0);
-
-        let x0 = -0.5 + seg_length * (i as Real);
-        let x1 = x0 + seg_length;
+        let x0 = self.unit_x_at(i);
+        let x1 = self.unit_x_at(i + 1);
 
         let y0 = self.heights[i];
         let y1 = self.heights[i + 1];
@@ -229,8 +274,8 @@ impl HeightField {
                 continue;
             }
 
-            let x0 = -0.5 + seg_length * (i as Real);
-            let x1 = x0 + seg_length;
+            let x0 = self.unit_x_at(i);
+            let x1 = self.unit_x_at(i + 1);
 
             let y0 = self.heights[i];
             let y1 = self.heights[i + 1];

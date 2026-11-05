@@ -38,30 +38,47 @@ impl RayCast for HeightField {
         /*
          * Test the segment under the ray.
          */
-        if let Some(seg) = self.segment_at(curr) {
-            let (s, t) = query::details::closest_points_line_line_parameters(
-                ray.origin,
-                ray.dir,
-                seg.a,
-                seg.scaled_direction(),
-            );
+        let cast_first_segment = |i: usize| {
+            let seg = self.segment_at(i)?;
+            let (s, t) = if ray.dir.x == 0.0 {
+                // With a positive scale, `cell_at_point` puts a vertical ray within the segment's
+                // span, so this `t` lies in `[0, 1]`. The line-line parameters can round it out of
+                // that range near the segment's ends, on a sloped segment.
+                let t = (ray.origin.x - seg.a.x) / (seg.b.x - seg.a.x);
+                let y = seg.a.y + (seg.b.y - seg.a.y) * t;
+                ((y - ray.origin.y) / ray.dir.y, t)
+            } else {
+                query::details::closest_points_line_line_parameters(
+                    ray.origin,
+                    ray.dir,
+                    seg.a,
+                    seg.scaled_direction(),
+                )
+            };
             if s >= 0.0 && t >= 0.0 && t <= 1.0 {
-                // Cast succeeded on the first element!
                 let n = seg.normal().unwrap();
                 // The feature is the hit segment's own side; `subshape` says which segment.
                 let fid = if n.dot(ray.dir) > 0.0 { 1 } else { 0 };
-
-                return Some(
-                    RayIntersection::new(s, n, FeatureId::Face(fid)).with_subshape(curr as u32),
-                );
+                Some(RayIntersection::new(s, n, FeatureId::Face(fid)).with_subshape(i as u32))
+            } else {
+                None
             }
+        };
+
+        if let Some(inter) = cast_first_segment(curr) {
+            // Cast succeeded on the first element!
+            return Some(inter);
         }
 
         /*
          * Test other segments in the path of the ray.
          */
         if ray.dir.x == 0.0 {
-            return None;
+            // A vertical ray on a grid point touches the segments on both of its sides, and the
+            // one `cell_at_point` gives may be removed.
+            return self
+                .cell_beside(curr, ray.origin.x)
+                .and_then(cast_first_segment);
         }
 
         let right = ray.dir.x > 0.0;
@@ -143,8 +160,9 @@ impl RayCast for HeightField {
             }
         };
 
-        loop {
-            let tris = self.triangles_at(cell.0, cell.1);
+        // The nearest hit among the triangles of the cell `(i, j)`.
+        let cast_cell = |i: usize, j: usize| {
+            let tris = self.triangles_at(i, j);
             let inter1 = tris
                 .0
                 .and_then(|tri| tri.cast_local_ray_and_get_normal(ray, max_time_of_impact, solid));
@@ -157,22 +175,48 @@ impl RayCast for HeightField {
             match (inter1, inter2) {
                 (Some(mut inter1), Some(mut inter2)) => {
                     if inter1.time_of_impact < inter2.time_of_impact {
-                        inter1.subshape = self.triangle_id(cell.0, cell.1, true);
-                        return Some(inter1);
+                        inter1.subshape = self.triangle_id(i, j, true);
+                        Some(inter1)
                     } else {
-                        inter2.subshape = self.triangle_id(cell.0, cell.1, false);
-                        return Some(inter2);
+                        inter2.subshape = self.triangle_id(i, j, false);
+                        Some(inter2)
                     }
                 }
                 (Some(mut inter), None) => {
-                    inter.subshape = self.triangle_id(cell.0, cell.1, true);
-                    return Some(inter);
+                    inter.subshape = self.triangle_id(i, j, true);
+                    Some(inter)
                 }
                 (None, Some(mut inter)) => {
-                    inter.subshape = self.triangle_id(cell.0, cell.1, false);
-                    return Some(inter);
+                    inter.subshape = self.triangle_id(i, j, false);
+                    Some(inter)
                 }
-                (None, None) => {}
+                (None, None) => None,
+            }
+        };
+
+        // A ray that runs exactly along a grid line, never crossing it, touches the cells on both
+        // of its sides: the triangles' rounding decides which of the two reports a hit on their
+        // shared edge, and the cell `cell_at_point` gives may be removed. Both meet the ray only
+        // on that edge, so either one's hit will do. The ray stays on that line as it walks, so
+        // the column (row) beside it stays the same.
+        let column_beside = if ray.dir.x == 0.0 {
+            self.column_beside(cell.1, clip_ray_a.x)
+        } else {
+            None
+        };
+        let row_beside = if ray.dir.z == 0.0 {
+            self.row_beside(cell.0, clip_ray_a.z)
+        } else {
+            None
+        };
+
+        loop {
+            for i in core::iter::once(cell.0).chain(row_beside) {
+                for j in core::iter::once(cell.1).chain(column_beside) {
+                    if let Some(inter) = cast_cell(i, j) {
+                        return Some(inter);
+                    }
+                }
             }
 
             /*
