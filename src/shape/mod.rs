@@ -135,7 +135,7 @@ mod feature_id;
 #[cfg(feature = "dim2")]
 mod polygonal_feature2d;
 #[cfg(feature = "alloc")]
-mod pseudo_normals;
+pub(crate) mod pseudo_normals;
 mod segment_pseudo_normals;
 #[cfg(feature = "alloc")]
 mod shared_shape;

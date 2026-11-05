@@ -349,6 +349,19 @@ impl HeightField {
             return (None, None);
         }
 
+        let (tri1, tri2) = self.cell_triangles(i, j);
+        (
+            (!status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED)).then_some(tri1),
+            (!status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED)).then_some(tri2),
+        )
+    }
+
+    /// The two triangles of the cell (i, j) of this heightfield, whether removed or not.
+    ///
+    /// The cell must lie within the heightfield.
+    pub(crate) fn cell_triangles(&self, i: usize, j: usize) -> (Triangle, Triangle) {
+        let status = self.status[(i, j)];
+
         let cell_width = self.unit_cell_width();
         let cell_height = self.unit_cell_height();
 
@@ -375,33 +388,9 @@ impl HeightField {
         p11 *= self.scale;
 
         if status.contains(HeightFieldCellStatus::ZIGZAG_SUBDIVISION) {
-            let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
-                None
-            } else {
-                Some(Triangle::new(p00, p10, p11))
-            };
-
-            let tri2 = if status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED) {
-                None
-            } else {
-                Some(Triangle::new(p00, p11, p01))
-            };
-
-            (tri1, tri2)
+            (Triangle::new(p00, p10, p11), Triangle::new(p00, p11, p01))
         } else {
-            let tri1 = if status.contains(HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED) {
-                None
-            } else {
-                Some(Triangle::new(p00, p10, p01))
-            };
-
-            let tri2 = if status.contains(HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED) {
-                None
-            } else {
-                Some(Triangle::new(p10, p11, p01))
-            };
-
-            (tri1, tri2)
+            (Triangle::new(p00, p10, p01), Triangle::new(p10, p11, p01))
         }
     }
 

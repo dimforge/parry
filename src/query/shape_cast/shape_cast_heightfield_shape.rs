@@ -4,7 +4,11 @@ use crate::query::details::ShapeCastOptions;
 use crate::query::{QueryDispatcher, Ray, ShapeCastHit, Unsupported};
 use crate::shape::{HeightField, Shape};
 #[cfg(feature = "dim3")]
-use crate::{bounding_volume::Aabb, query::RayCast};
+use crate::{
+    bounding_volume::Aabb,
+    query::{PointQuery, RayCast},
+    shape::{pseudo_normals::project_into_cone, HeightFieldCellStatus, HeightFieldFlags, Triangle},
+};
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
@@ -144,14 +148,30 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     let clamped_curr_range_j = curr_range_j.start.clamp(0, ncells_j as isize)
         ..curr_range_j.end.clamp(0, ncells_j as isize);
 
+    let fix_internal_edges = heightfield1
+        .flags()
+        .contains(HeightFieldFlags::FIX_INTERNAL_EDGES);
     let mut hit_triangles = |i, j| {
         if i >= 0 && j >= 0 {
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
             for tri in [tri_a, tri_b].into_iter().flatten() {
                 // TODO: pre-check using a ray-cast on the Aabbs first?
-                if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
+                if let Some(mut hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
                     if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX)
                     {
+                        // Each triangle is cast on its own, so the hit may lie on an internal edge,
+                        // with a normal the heightfield's surface doesn't have.
+                        if fix_internal_edges {
+                            if let Some(normal1) = project_into_surface_cone(
+                                heightfield1,
+                                &tri,
+                                hit.witness1,
+                                hit.normal1,
+                            ) {
+                                hit.normal1 = normal1;
+                                hit.normal2 = pos12.rotation.inverse() * -normal1;
+                            }
+                        }
                         best_hit = Some(hit);
                     }
                 }
@@ -254,6 +274,195 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     }
 
     Ok(best_hit)
+}
+
+/// `normal`, the normal of a hit at `witness` on `triangle` of `heightfield`, projected into the
+/// normal cone of the surface there, as the triangles of `heightfield` within a band around
+/// `witness` approximate it: a cone around the face normal reaching the normal of the triangle in
+/// the band that lies farthest from it. Inside a face, on an edge to a coplanar triangle, or at a
+/// vertex of a flat region, that leaves only the face normal; on a real crease, the normals
+/// between its faces.
+///
+/// `None`, leaving `normal` as it is, where the band reaches the heightfield's border or a removed
+/// triangle, as the cone opens towards the missing surface there, or if `normal` points to the
+/// triangle's back.
+#[cfg(feature = "dim3")]
+fn project_into_surface_cone(
+    heightfield: &HeightField,
+    triangle: &Triangle,
+    witness: Vector,
+    mut normal: Vector,
+) -> Option<Vector> {
+    let face = triangle.normal()?;
+    // The witness lies on the surface up to the cast's rounding. A wider band only widens the cone.
+    let tolerance = 1.0e-3
+        * triangle
+            .edges()
+            .iter()
+            .map(|edge| edge.length())
+            .fold(0.0, Real::max);
+    let band = Aabb::new(
+        witness - Vector::splat(tolerance),
+        witness + Vector::splat(tolerance),
+    );
+    let (cells_i, cells_j) = heightfield.unclamped_elements_range_in_local_aabb(&band);
+
+    let mut farthest = face;
+    for i in cells_i {
+        for j in cells_j.clone() {
+            let (Ok(i), Ok(j)) = (usize::try_from(i), usize::try_from(j)) else {
+                return None;
+            };
+            if i >= heightfield.nrows() || j >= heightfield.ncols() {
+                return None;
+            }
+            let status = heightfield.cell_status(i, j);
+            let (left, right) = heightfield.cell_triangles(i, j);
+            for (other, removed) in [
+                (left, HeightFieldCellStatus::LEFT_TRIANGLE_REMOVED),
+                (right, HeightFieldCellStatus::RIGHT_TRIANGLE_REMOVED),
+            ] {
+                if status.contains(removed) {
+                    if reaches_cylinder(&other, witness, tolerance) {
+                        return None;
+                    }
+                    continue;
+                }
+                if other.distance_to_local_point(witness, true) <= tolerance {
+                    let other_normal = other.normal()?;
+                    if other_normal.dot(face) < farthest.dot(face) {
+                        farthest = other_normal;
+                    }
+                }
+            }
+        }
+    }
+
+    let pseudo_normal = (face + farthest).try_normalize()?;
+    project_into_cone(face, pseudo_normal, &mut normal).then_some(normal)
+}
+
+/// Whether `triangle` reaches the cylinder around `point` of radius and half-height `tolerance`,
+/// which holds the ball of radius `tolerance` around it.
+///
+/// Only the triangle's part between the cylinder's heights is measured, seen from above, so heights
+/// far from `point`, however extreme, cannot round it away. A non-finite height counts as reaching.
+#[cfg(feature = "dim3")]
+fn reaches_cylinder(triangle: &Triangle, point: Vector, tolerance: Real) -> bool {
+    let corners = [triangle.a, triangle.b, triangle.c];
+    if corners.iter().any(|corner| !corner.y.is_finite()) {
+        return true;
+    }
+    let (low, high) = (point.y - tolerance, point.y + tolerance);
+
+    // The triangle clipped to the slab between `low` and `high`: each edge adds its start, where
+    // within the slab, and where it crosses the slab's bounds, in order along the edge.
+    let mut part = [Vector::ZERO; 9];
+    let mut len = 0;
+    for k in 0..3 {
+        let (a, b) = (corners[k], corners[(k + 1) % 3]);
+        if (low..=high).contains(&a.y) {
+            part[len] = a;
+            len += 1;
+        }
+        let bounds = if a.y <= b.y { [low, high] } else { [high, low] };
+        for bound in bounds {
+            if (a.y < bound) != (b.y < bound) && a.y != bound && b.y != bound {
+                // Halved, the heights' differences cannot overflow; only `x` and `z` are read below.
+                let t = (bound * 0.5 - a.y * 0.5) / (b.y * 0.5 - a.y * 0.5);
+                part[len] = Vector::new(a.x + (b.x - a.x) * t, bound, a.z + (b.z - a.z) * t);
+                len += 1;
+            }
+        }
+    }
+
+    // The clipped part seen from above, relative to `point`: within `tolerance` of its boundary,
+    // or with `point` inside it.
+    let plan = |v: Vector| Vector::new(v.x - point.x, 0.0, v.z - point.z);
+    let mut nearest = Real::MAX;
+    let mut side = 0.0;
+    let mut inside = true;
+    for k in 0..len {
+        let a = plan(part[k]);
+        let edge = plan(part[(k + 1) % len]) - a;
+        let length_squared = edge.length_squared();
+        let t = if length_squared > 0.0 {
+            (-a.dot(edge) / length_squared).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        nearest = nearest.min((a + edge * t).length());
+        let cross = edge.z * a.x - edge.x * a.z;
+        if cross != 0.0 {
+            if side == 0.0 {
+                side = cross.signum();
+            } else if cross.signum() != side {
+                inside = false;
+            }
+        }
+    }
+    len > 0 && (nearest <= tolerance || (inside && side != 0.0))
+}
+
+#[cfg(all(test, feature = "dim3"))]
+mod test {
+    use super::reaches_cylinder;
+    use crate::math::{Real, Vector};
+    use crate::shape::Triangle;
+
+    /// The triangle of the cell between `x = 2` and `x = 3`, `z = -1` and `z = 0` where
+    /// `x + z >= 2`, on the plane of `height`.
+    fn removed(height: impl Fn(Real, Real) -> Real) -> Triangle {
+        let corner = |x: Real, z: Real| Vector::new(x, height(x, z), z);
+        Triangle::new(corner(3.0, -1.0), corner(3.0, 0.0), corner(2.0, 0.0))
+    }
+
+    #[test]
+    fn a_triangle_reaches_the_cylinder_on_its_border() {
+        let triangle = removed(|x, z| x + z);
+        let on_border = Vector::new(2.5, 2.0, -0.5);
+        assert!(reaches_cylinder(&triangle, on_border, 1.0e-3));
+        let beside = Vector::new(2.45, 1.9, -0.55);
+        assert!(!reaches_cylinder(&triangle, beside, 1.0e-3));
+        let inside = Vector::new(2.8, 2.6, -0.2);
+        assert!(reaches_cylinder(&triangle, inside, 1.0e-3));
+    }
+
+    #[test]
+    fn a_far_corner_does_not_round_the_border_away() {
+        let triangle = removed(|x, z| if x == 3.0 && z == 0.0 { 1.0e20 } else { x + z });
+        let on_border = Vector::new(2.5, 2.0, -0.5);
+        assert!(reaches_cylinder(&triangle, on_border, 1.0e-3));
+        let below = removed(|x, z| if x == 3.0 && z == 0.0 { -1.0e20 } else { x + z });
+        assert!(reaches_cylinder(&below, on_border, 1.0e-3));
+        for height in [Real::INFINITY, Real::NAN] {
+            let triangle = removed(|x, z| if x == 3.0 && z == 0.0 { height } else { x + z });
+            assert!(reaches_cylinder(&triangle, on_border, 1.0e-3));
+        }
+    }
+
+    #[test]
+    fn heights_of_opposite_extremes_do_not_overflow_the_clipping() {
+        // The point lies on the edge from 3e38 below to 3e38 above, whose rise overflows.
+        let triangle = Triangle::new(
+            Vector::new(3.0, -3.0e38, -1.0),
+            Vector::new(3.0, 3.0e38, 0.0),
+            Vector::new(2.0, 3.0e38, 0.0),
+        );
+        assert!(reaches_cylinder(
+            &triangle,
+            Vector::new(3.0, 0.0, -0.5),
+            1.0e-3
+        ));
+    }
+
+    #[test]
+    fn a_steep_triangle_metres_away_does_not_reach_the_cylinder() {
+        // Seen from above, the triangle lies 3.5 cm from the point; in space, 5 m.
+        let triangle = removed(|x, z| 100.0 * (x + z));
+        let point = Vector::new(2.0, 195.0, -0.05);
+        assert!(!reaches_cylinder(&triangle, point, 0.1));
+    }
 }
 
 /// Time Of Impact between a moving shape and a heightfield.
