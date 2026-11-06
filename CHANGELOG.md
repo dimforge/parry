@@ -6,7 +6,7 @@
   the moving shape can't hit within `max_time_of_impact`, or before the nearest hit found so far,
   which skips running GJK on most of the triangles it walks through. The results are unchanged,
   except for some hits GJK reports on shapes a few 1e-3 across that stay clear of the triangle
-  by about their own size ([#PR_NUMBER](https://github.com/dimforge/parry/pull/PR_NUMBER)).
+  by about their own size ([#464](https://github.com/dimforge/parry/pull/464)).
 - Deserializing a `ContactManifoldsWorkspace` that was serialized by a custom contact-manifolds
   algorithm no longer fails with `"Cannot deserialize custom shape."`. It now yields the new
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
