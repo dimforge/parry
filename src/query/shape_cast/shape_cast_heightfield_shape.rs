@@ -1,10 +1,101 @@
-use crate::bounding_volume::BoundingVolume;
+use crate::bounding_volume::{Aabb, BoundingVolume};
 use crate::math::{Pose, Real, Vector};
 use crate::query::details::ShapeCastOptions;
-use crate::query::{QueryDispatcher, Ray, ShapeCastHit, Unsupported};
-use crate::shape::{HeightField, Shape};
 #[cfg(feature = "dim3")]
-use crate::{bounding_volume::Aabb, query::RayCast};
+use crate::query::RayCast;
+use crate::query::{QueryDispatcher, Ray, ShapeCastHit, Unsupported};
+#[cfg(feature = "dim2")]
+use crate::shape::Segment as HeightFieldPart;
+#[cfg(feature = "dim3")]
+use crate::shape::Triangle as HeightFieldPart;
+use crate::shape::{HeightField, Shape, SupportMap};
+
+/// How much farther than the target distance a shape may stay from a triangle that GJK reports
+/// as hit, relative to the length of the sweep and the target distance, and in absolute terms
+/// below 1. Chosen from measurements, not derived from GJK: random shape-casts with shapes from
+/// 1e-4 to 100 across found no hit beyond it, except on shapes a few 1e-3 across that GJK
+/// reports as hit while they stay clear of the triangle by about their own size.
+const GJK_TOLERANCE: Real = 2.0e-3;
+
+/// The rounding of the coordinates the clearance is computed from, relative to their magnitude.
+const ROUNDING: Real = 1.0e-5;
+
+/// The shape moving in a shape-cast against a heightfield, to tell which of the heightfield's
+/// triangles (segments in 2D) it can't hit.
+struct CastShape<'a> {
+    pos12: &'a Pose,
+    vel12: Vector,
+    aabb: Aabb,
+    support_map: Option<&'a dyn SupportMap>,
+    target_distance: Real,
+}
+
+impl<'a> CastShape<'a> {
+    fn new(pos12: &'a Pose, vel12: Vector, g2: &'a dyn Shape, target_distance: Real) -> Self {
+        Self {
+            pos12,
+            vel12,
+            aabb: g2.compute_aabb(pos12),
+            support_map: g2.as_support_map(),
+            target_distance,
+        }
+    }
+
+    /// Whether the shape stays farther than the target distance from `part` until the time
+    /// `reach`, so that the shape-cast against `part` can't hit before `reach`.
+    ///
+    /// The shape must stay farther by a margin above GJK's tolerance and the rounding of the
+    /// coordinates involved. A value that isn't finite, or a negative target distance, keeps the
+    /// part within reach.
+    fn misses(&self, part: &HeightFieldPart, reach: Real) -> bool {
+        let sweep = self.vel12 * reach;
+        let part_aabb = part.local_aabb();
+        let corners = [
+            part_aabb.mins,
+            part_aabb.maxs,
+            self.aabb.mins,
+            self.aabb.maxs,
+            sweep,
+        ];
+        if !corners.iter().all(|corner| corner.is_finite())
+            || !self.target_distance.is_finite()
+            || self.target_distance < 0.0
+        {
+            return false;
+        }
+        let scale = corners
+            .iter()
+            .map(|corner| corner.abs().max_element())
+            .fold(0.0, Real::max);
+        let clearance = self.target_distance
+            + GJK_TOLERANCE * (1.0 + sweep.length() + self.target_distance)
+            + ROUNDING * scale;
+
+        // Apart along an axis over the whole sweep.
+        let start = self.aabb.loosened(clearance);
+        if !start
+            .merged(&start.translated(sweep))
+            .intersects(&part_aabb)
+        {
+            return true;
+        }
+
+        // On one side of the part's line (2D) or plane (3D) over the whole sweep.
+        let (Some(support_map), Some(normal)) = (self.support_map, part.normal()) else {
+            return false;
+        };
+        let nearest = normal.dot(support_map.support_point(self.pos12, -normal) - part.a);
+        let farthest = normal.dot(support_map.support_point(self.pos12, normal) - part.a);
+        let approach = normal.dot(sweep);
+        nearest + approach.min(0.0) > clearance || farthest + approach.max(0.0) < -clearance
+    }
+}
+
+/// The time up to which a triangle (segment in 2D) of a heightfield must be shape-cast against:
+/// one the shape can't hit before can't yield a hit nearer than the nearest one so far.
+fn reach(best_hit: Option<ShapeCastHit>, options: &ShapeCastOptions) -> Real {
+    best_hit.map_or(options.max_time_of_impact, |hit| hit.time_of_impact)
+}
 
 /// Time Of Impact between a moving shape and a heightfield.
 #[cfg(feature = "dim2")]
@@ -30,6 +121,7 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
     }
 
     let mut best_hit = None::<ShapeCastHit>;
+    let cast_shape = CastShape::new(pos12, vel12, g2, options.target_distance);
 
     /*
      * Test the segment under the ray.
@@ -38,7 +130,9 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         ..curr_range.end.clamp(0, heightfield1.num_cells() as isize) as usize;
     for curr in clamped_curr_range {
         if let Some(seg) = heightfield1.segment_at(curr) {
-            // TODO: pre-check using a ray-cast on the Aabbs first?
+            if cast_shape.misses(&seg, reach(best_hit, &options)) {
+                continue;
+            }
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
                 if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
@@ -79,7 +173,9 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         }
 
         if let Some(seg) = heightfield1.segment_at(curr_elt as usize) {
-            // TODO: pre-check using a ray-cast on the Aabbs first?
+            if cast_shape.misses(&seg, reach(best_hit, &options)) {
+                continue;
+            }
             if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &seg, g2, options)? {
                 if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX) {
                     best_hit = Some(hit);
@@ -120,6 +216,7 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         heightfield1.unclamped_elements_range_in_local_aabb(&aabb2_1);
     let (ncells_i, ncells_j) = heightfield1.num_cells_ij();
     let mut best_hit = None::<ShapeCastHit>;
+    let cast_shape = CastShape::new(pos12, vel12, g2, options.target_distance);
 
     /*
      * Enlarge the ranges by 1 to account for any movement within one cell.
@@ -148,7 +245,9 @@ pub fn cast_shapes_heightfield_shape<D: ?Sized + QueryDispatcher>(
         if i >= 0 && j >= 0 {
             let (tri_a, tri_b) = heightfield1.triangles_at(i as usize, j as usize);
             for tri in [tri_a, tri_b].into_iter().flatten() {
-                // TODO: pre-check using a ray-cast on the Aabbs first?
+                if cast_shape.misses(&tri, reach(best_hit, &options)) {
+                    continue;
+                }
                 if let Some(hit) = dispatcher.cast_shapes(pos12, vel12, &tri, g2, options)? {
                     if hit.time_of_impact < best_hit.map(|h| h.time_of_impact).unwrap_or(Real::MAX)
                     {
