@@ -426,25 +426,37 @@ impl Bvh {
     ) -> LeafPairs<'a, F> {
         if let (Some(root1), Some(root2)) = (self.nodes.first(), other.nodes.first()) {
             let mut stack = SmallVec::default();
+            // The root-level pairs must go through `check` like any other pair, otherwise a
+            // pair of root leaves would be yielded unconditionally by `LeafPairs::next`.
+            let next = if root1.left.leaf_count() > 0
+                && root2.left.leaf_count() > 0
+                && check(&root1.left, &root2.left)
+            {
+                Some((&root1.left, &root2.left))
+            } else {
+                None
+            };
 
-            if root1.left.leaf_count() > 0 && root2.right.leaf_count() > 0 {
+            if root1.left.leaf_count() > 0
+                && root2.right.leaf_count() > 0
+                && check(&root1.left, &root2.right)
+            {
                 stack.push((&root1.left, &root2.right));
-                // NOTE: we don’t need to push (&root1.left, &root2.left), it is already given as
-                //       the initial value of `LeafPairs::next`.
-                // stack.push((&root1.left, &root2.left))
             }
 
             if root1.right.leaf_count() > 0 {
-                if root2.right.leaf_count() > 0 {
+                if root2.right.leaf_count() > 0 && check(&root1.right, &root2.right) {
                     stack.push((&root1.right, &root2.right));
                 }
-                stack.push((&root1.right, &root2.left))
+                if check(&root1.right, &root2.left) {
+                    stack.push((&root1.right, &root2.left));
+                }
             }
 
             LeafPairs {
                 tree1: self,
                 tree2: other,
-                next: Some((&root1.left, &root2.left)),
+                next,
                 stack,
                 check,
             }
