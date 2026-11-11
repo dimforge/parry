@@ -34,6 +34,46 @@ fn test_leaves_iteration() {
 }
 
 #[test]
+fn test_leaf_pairs_checks_root_pairs() {
+    use crate::bounding_volume::BoundingVolume;
+
+    let check = |a: &BvhNode, b: &BvhNode| a.aabb().intersects(&b.aabb());
+
+    // Trees of one, two and three leaves whose boxes are all far apart: every root-level
+    // pair fails `check`, so no pair may be yielded.
+    for n in 1..=3 {
+        let leaves1: std::vec::Vec<_> = (0..n).map(|i| make_test_aabb(i * 3)).collect();
+        let leaves2: std::vec::Vec<_> = (0..n).map(|i| make_test_aabb(100 + i * 3)).collect();
+        let bvh1 = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves1);
+        let bvh2 = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves2);
+        let pairs: std::vec::Vec<_> = bvh1.leaf_pairs(&bvh2, check).collect();
+        assert!(pairs.is_empty(), "{n} leaves: unexpected pairs {pairs:?}");
+    }
+
+    // Partially overlapping trees: the yielded pairs must match a brute-force check.
+    for (n1, n2) in [(1, 1), (1, 2), (2, 1), (2, 2), (3, 5), (16, 9)] {
+        let leaves1: std::vec::Vec<_> = (0..n1).map(|i| make_test_aabb(i * 3)).collect();
+        let leaves2: std::vec::Vec<_> = (0..n2).map(|i| make_test_aabb(i * 4 + 1)).collect();
+        let bvh1 = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves1);
+        let bvh2 = Bvh::from_leaves(BvhBuildStrategy::Binned, &leaves2);
+
+        let mut pairs: std::vec::Vec<_> = bvh1.leaf_pairs(&bvh2, check).collect();
+        pairs.sort_unstable();
+
+        let mut expected = std::vec::Vec::new();
+        for (i, a) in leaves1.iter().enumerate() {
+            for (j, b) in leaves2.iter().enumerate() {
+                if a.intersects(b) {
+                    expected.push((i as u32, j as u32));
+                }
+            }
+        }
+
+        assert_eq!(pairs, expected, "{n1} x {n2} leaves");
+    }
+}
+
+#[test]
 fn test_traverse_indexed() {
     // Empty tree: callback must never fire, regardless of `subtree` being `None`.
     let empty = Bvh::new();

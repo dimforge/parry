@@ -7,6 +7,12 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- `Bvh::leaf_pairs` no longer yields root-level leaf pairs without calling `check` on them. Trees
+  with one or two leaves, or whose root has a leaf child, used to return such pairs even when
+  `check` rejected them.
+
 ## 0.31.1
 
 ### Modified
