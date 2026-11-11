@@ -7,6 +7,12 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- A 3D `HeightField` ray cast parallel to a cell line (for example straight down) that lands exactly
+  on that line no longer misses the heightfield when the cell count is not a power of two. The
+  starting cell is now picked from the same bounds the cell's triangles are built from.
+
 ## 0.31.1
 
 ### Modified
