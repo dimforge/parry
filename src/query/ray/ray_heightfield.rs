@@ -143,6 +143,22 @@ impl RayCast for HeightField {
             }
         };
 
+        // `cell_at_point` quantizes the scaled point, which can round to the cell on the other
+        // side of a cell line from the one whose triangles (built from `x_at`/`z_at`) contain
+        // it. A ray parallel to that line never steps into the neighbor, so it would miss the
+        // heightfield. Pick the cell that matches the triangles' own bounds instead.
+        if cell.1 > 0 && clip_ray_a.x < self.x_at(cell.1) {
+            cell.1 -= 1;
+        } else if cell.1 + 1 < self.ncols() && clip_ray_a.x >= self.x_at(cell.1 + 1) {
+            cell.1 += 1;
+        }
+
+        if cell.0 > 0 && clip_ray_a.z < self.z_at(cell.0) {
+            cell.0 -= 1;
+        } else if cell.0 + 1 < self.nrows() && clip_ray_a.z >= self.z_at(cell.0 + 1) {
+            cell.0 += 1;
+        }
+
         loop {
             let tris = self.triangles_at(cell.0, cell.1);
             let inter1 = tris
