@@ -1,7 +1,6 @@
 use crate::math::{Real, Vector, DIM};
 use crate::shape::{FeatureId, PackedFeatureId, PolygonalFeature, PolygonalFeatureMap, SupportMap};
 // use crate::transformation;
-#[cfg(not(feature = "std"))]
 use crate::math::ComplexField;
 use crate::utils::hashmap::{Entry, HashMap};
 use crate::utils::{self, SortedPair};
@@ -870,7 +869,7 @@ impl ConvexPolyhedron {
     }
 
     fn support_feature_id_toward_eps(&self, local_dir: Vector, eps: Real) -> FeatureId {
-        let (seps, ceps) = eps.sin_cos();
+        let (seps, ceps) = <Real as ComplexField>::sin_cos(eps);
         let support_pt_id = utils::point_cloud_support_point_id(local_dir, &self.points);
         let vertex = &self.vertices[support_pt_id];
 

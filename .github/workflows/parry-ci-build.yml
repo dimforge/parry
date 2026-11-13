@@ -66,6 +66,8 @@ jobs:
         run: cargo test --features wavefront
       - name: Run tests (parallel)
         run: cargo test --features parallel
+      - name: Run tests (enhanced-determinism)
+        run: cargo test -p parry3d --features enhanced-determinism --lib enhanced_determinism
   build-wasm:
     runs-on: ubuntu-latest
     env:

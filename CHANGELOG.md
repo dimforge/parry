@@ -7,6 +7,13 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- `enhanced-determinism` now also covers `std` builds (which `serde-serialize` enables) for
+  `Bvh::optimize_incremental`, `VectorExt::angle`, `ConvexPolyhedron::support_feature_id_toward`
+  and the mesh intersection: their `log2`, `acos` and `sin_cos` calls were going to the platform's
+  math library instead of `libm`, so results could differ across platforms.
+
 ## 0.31.1
 
 ### Modified

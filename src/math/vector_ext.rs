@@ -2,7 +2,6 @@
 
 use crate::math::{IVector, Int, Matrix, Real, Vector};
 
-#[cfg(not(feature = "std"))]
 use simba::scalar::ComplexField;
 
 /// Extension trait for glam vector types to provide additional functionality.
@@ -57,7 +56,7 @@ impl VectorExt for Vector {
         let len_self = self.length();
         let len_other = other.length();
         if len_self > 0.0 && len_other > 0.0 {
-            (dot / (len_self * len_other)).clamp(-1.0, 1.0).acos()
+            <Real as ComplexField>::acos((dot / (len_self * len_other)).clamp(-1.0, 1.0))
         } else {
             0.0
         }
@@ -150,5 +149,21 @@ impl IVectorExt for IVector {
         {
             self[i] = val;
         }
+    }
+}
+
+#[cfg(all(
+    test,
+    feature = "enhanced-determinism",
+    feature = "dim3",
+    feature = "f32"
+))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn angle_is_bit_exact_with_enhanced_determinism() {
+        let angle = Vector::new(1.0, 0.0, 0.0).angle(Vector::new(1.0, 3.0, 0.5));
+        assert_eq!(angle.to_bits(), 0x3fa066aa);
     }
 }

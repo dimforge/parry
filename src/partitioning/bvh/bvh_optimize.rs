@@ -3,8 +3,7 @@ use crate::math::Real;
 use core::cmp::Ordering;
 use ordered_float::OrderedFloat;
 
-#[cfg(not(feature = "std"))]
-use crate::math::ComplexField; // For `round` and `sqrt` in no-std+alloc builds.
+use crate::math::ComplexField;
 
 impl Bvh {
     fn optimization_config(&self, frame_index: u32) -> OptimizationConfig {
@@ -23,8 +22,9 @@ impl Bvh {
 
         let target_root_node_count = num_leaves_sqrt.ceil();
         let target_subtree_leaf_count = (num_leaves_sqrt * 4.0).ceil();
-        let root_refinement_cost = target_root_node_count * target_root_node_count.log2()
-            / (target_subtree_leaf_count * target_subtree_leaf_count.log2());
+        let root_refinement_cost = target_root_node_count
+            * <Real as ComplexField>::log2(target_root_node_count)
+            / (target_subtree_leaf_count * <Real as ComplexField>::log2(target_subtree_leaf_count));
         let mut target_optimized_subtree_count =
             (num_optimized_leaves as Real / target_subtree_leaf_count - root_refinement_cost)
                 .round()
