@@ -1,6 +1,6 @@
 use super::{MeshIntersectionError, TriangleTriangleIntersection};
 use crate::bounding_volume::BoundingVolume;
-use crate::math::{Pose, Real, Vector3};
+use crate::math::{ComplexField, Pose, Real, Vector3};
 use crate::partitioning::BvhNode;
 use crate::query::point::point_query::PointQueryWithLocation;
 use crate::query::PointQuery;
@@ -557,7 +557,7 @@ fn smallest_angle(points: &[Vector3]) -> Real {
         }
     }
 
-    worst_cos.acos()
+    <Real as ComplexField>::acos(worst_cos)
 }
 
 fn planar_gram_schmidt(v1: Vector3, v2: Vector3) -> (Vector3, Vector3) {
