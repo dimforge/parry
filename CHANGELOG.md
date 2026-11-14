@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Added
+
+- Add `SharedShape::polyline_with_flags` and `SharedShape::compound_with_flags` for building a
+  Polyline or Compound with pre-processing flags.
+
 ### Modified
 
 - Deserializing a `ContactManifoldsWorkspace` that was serialized by a custom contact-manifolds
