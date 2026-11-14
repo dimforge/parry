@@ -7,8 +7,8 @@ use crate::shape::DeserializableTypedShape;
 #[cfg(feature = "dim3")]
 use crate::shape::HeightFieldFlags;
 use crate::shape::{
-    Ball, Capsule, Compound, Cuboid, HalfSpace, HeightField, Polyline, RoundShape, Segment, Shape,
-    TriMesh, TriMeshFlags, Triangle, TypedShape, Voxels,
+    Ball, Capsule, Compound, CompoundFlags, Cuboid, HalfSpace, HeightField, Polyline,
+    PolylineFlags, RoundShape, Segment, Shape, TriMesh, TriMeshFlags, Triangle, TypedShape, Voxels,
 };
 #[cfg(feature = "dim3")]
 use crate::shape::{Cone, ConvexPolyhedron, Cylinder};
@@ -189,6 +189,21 @@ impl SharedShape {
         SharedShape(Arc::new(compound))
     }
 
+    /// Initializes a compound shape defined by its sub-shapes and pre-processing flags.
+    ///
+    /// See [`Compound::with_flags`] for details and an example.
+    pub fn compound_with_flags(
+        shapes: Vec<(Pose, SharedShape)>,
+        flags: CompoundFlags,
+        weld_tolerance: Option<Real>,
+    ) -> Self {
+        SharedShape(Arc::new(Compound::with_flags(
+            shapes,
+            flags,
+            weld_tolerance,
+        )))
+    }
+
     /// Creates a ball (sphere in 3D, circle in 2D) with the specified radius.
     ///
     /// A ball is the simplest and most efficient collision shape.
@@ -362,6 +377,18 @@ impl SharedShape {
     /// If no index buffer is provided, the polyline is assumed to describe a line strip.
     pub fn polyline(vertices: Vec<Vector>, indices: Option<Vec<[u32; 2]>>) -> Self {
         SharedShape(Arc::new(Polyline::new(vertices, indices)))
+    }
+
+    /// Initializes a polyline shape defined by its vertex and index buffers and
+    /// pre-processing flags.
+    ///
+    /// See [`Polyline::with_flags`] for details and an example.
+    pub fn polyline_with_flags(
+        vertices: Vec<Vector>,
+        indices: Option<Vec<[u32; 2]>>,
+        flags: PolylineFlags,
+    ) -> Self {
+        SharedShape(Arc::new(Polyline::with_flags(vertices, indices, flags)))
     }
 
     /// Creates a triangle mesh shape from vertices and triangle indices.
