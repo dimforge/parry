@@ -2,7 +2,6 @@
 
 use crate::math::{IVector, Int, Matrix, Real, Vector};
 
-#[cfg(not(feature = "std"))]
 use simba::scalar::ComplexField;
 
 /// Extension trait for glam vector types to provide additional functionality.
@@ -57,7 +56,9 @@ impl VectorExt for Vector {
         let len_self = self.length();
         let len_other = other.length();
         if len_self > 0.0 && len_other > 0.0 {
-            (dot / (len_self * len_other)).clamp(-1.0, 1.0).acos()
+            // Through `ComplexField` so `simba/libm_force` (the `enhanced-determinism` feature) reaches it:
+            // with `std` on, the inherent `f32::acos` is the platform's maths library.
+            ComplexField::acos((dot / (len_self * len_other)).clamp(-1.0, 1.0))
         } else {
             0.0
         }
