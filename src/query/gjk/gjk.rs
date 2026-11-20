@@ -412,9 +412,10 @@ where
                 } else {
                     return GJKResult::Proximity(old_dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_tol * support_scale {
                 // Origin on the CSO boundary: the pair is touching, so the witnesses
-                // describe the contact.
+                // describe the contact. The tolerance is the rounding error at the CSO's
+                // scale: `_eps_rel` would grow to decimeters on large shapes.
                 let (p1, p2) = result(simplex, true);
                 return GJKResult::ClosestPoints(p1, p2, old_dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {
@@ -457,7 +458,7 @@ where
                 } else {
                     return GJKResult::Proximity(dir);
                 }
-            } else if exact_dist && best_min_bound >= -_eps_rel * support_scale {
+            } else if exact_dist && best_min_bound >= -_eps_tol * support_scale {
                 let (p1, p2) = result(simplex, false);
                 return GJKResult::ClosestPoints(p1, p2, dir);
             } else if nb_perturbs < MAX_PERTURBATIONS {
