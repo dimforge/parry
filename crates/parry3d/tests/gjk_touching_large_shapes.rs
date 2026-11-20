@@ -142,3 +142,46 @@ fn cuboid_touching_a_large_slab_gets_the_face_normal() {
         check_top_face_contacts(&cuboid, &points, SLAB_HALF, SLAB_CENTER, SLAB_AT, init_dir);
     }
 }
+
+/// A 2 km by 2 km slab, 2 m thick, and three points of its top face: its center, a point
+/// 500 m from it, and a point 20 m in from a corner.
+const BIG_SLAB_HALF: Vector = Vector::new(1000.0, 1.0, 1000.0);
+const BIG_SLAB_CENTER: Vector = Vector::new(0.0, -1.0, 0.0);
+const BIG_SLAB_AT: [Vector; 3] = [
+    Vector::ZERO,
+    Vector::new(300.0, 0.0, -400.0),
+    Vector::new(980.0, 0.0, 980.0),
+];
+
+// On the 2 km slab the support points' coordinates are rounded to about 1e-4 m, more than
+// the gap, so when the search stalls its last direction is noise. The direction that gave
+// the best lower bound on the distance is the face's normal.
+#[test]
+fn hull_touching_a_2km_slab_gets_the_face_normal() {
+    let points = hull_points();
+    let hull = ConvexPolyhedron::from_convex_hull(&points).unwrap();
+    for at in BIG_SLAB_AT {
+        for init_dir in [Some(Vector::Y), None] {
+            check_top_face_contacts(&hull, &points, BIG_SLAB_HALF, BIG_SLAB_CENTER, at, init_dir);
+        }
+    }
+}
+
+#[test]
+fn cuboid_touching_a_2km_slab_gets_the_face_normal() {
+    let half = Vector::new(0.9, 0.6, 2.2);
+    let cuboid = Cuboid::new(half);
+    let points = cuboid_points(half);
+    for at in BIG_SLAB_AT {
+        for init_dir in [Some(Vector::Y), None] {
+            check_top_face_contacts(
+                &cuboid,
+                &points,
+                BIG_SLAB_HALF,
+                BIG_SLAB_CENTER,
+                at,
+                init_dir,
+            );
+        }
+    }
+}
