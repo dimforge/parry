@@ -39,9 +39,8 @@ pub fn contact_manifold_capsule_capsule<'a, ManifoldData, ContactData>(
         (&seg2_1.a, &seg2_1.b),
     );
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = manifold.points.clone();
+    // We keep a copy to perform contact tracking and transfer impulses.
+    let old_manifold_points = manifold.old_points();
     manifold.clear();
 
     let fid1 = if let SegmentPointLocation::OnVertex(v1) = loc1 {

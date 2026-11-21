@@ -74,7 +74,7 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
         init_dir,
     );
 
-    let old_manifold_points = manifold.points.clone();
+    let old_manifold_points = manifold.old_points();
     manifold.clear();
 
     match contact {
