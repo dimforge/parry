@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Fixed
+
+- Ray casts on a `Cylinder` are now exact. They used the generic GJK ray cast, which could miss
+  rays crossing the cylinder near the cap rim, or land off the surface (#473).
+
 ### Modified
 
 - Deserializing a `ContactManifoldsWorkspace` that was serialized by a custom contact-manifolds
