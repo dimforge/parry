@@ -56,9 +56,10 @@ pub fn contact_manifold_halfspace_pfm<'a, ManifoldData, ContactData, S2>(
     let mut feature2 = PolygonalFeature::default();
     pfm2.local_support_feature(-normal1_2, &mut feature2);
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = core::mem::take(&mut manifold.points);
+    // We keep a copy to perform contact tracking and transfer impulses, and clear the
+    // points in place so their buffer keeps its capacity.
+    let old_manifold_points = manifold.old_points();
+    manifold.points.clear();
 
     for i in 0..feature2.num_vertices {
         let vtx2 = feature2.vertices[i];

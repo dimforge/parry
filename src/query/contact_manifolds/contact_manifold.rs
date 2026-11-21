@@ -1,6 +1,5 @@
 use crate::math::{Pose, Real, Vector};
 use crate::shape::PackedFeatureId;
-#[cfg(feature = "dim3")]
 use alloc::vec::Vec;
 
 #[derive(Copy, Clone, Debug)]
@@ -858,6 +857,17 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
     }
 
+    /// A copy of the contact points, for `match_contacts` to transfer their data once an
+    /// update has cleared and refilled them. Kept on the stack when they fit (always, for
+    /// the polygonal-feature clips), so the update doesn't allocate.
+    pub(crate) fn old_points(&self) -> OldPoints<ContactData> {
+        if self.points.len() <= OLD_POINTS_INLINE {
+            OldPoints::Inline(self.points.iter().copied().collect())
+        } else {
+            OldPoints::Spilled(self.points.to_vec())
+        }
+    }
+
     /// Removes all the contacts from `self`.
     pub fn clear(&mut self) {
         self.points.clear();
@@ -911,5 +921,27 @@ impl<ManifoldData, ContactData: Default + Copy> ContactManifold<ManifoldData, Co
         }
 
         Some(deepest)
+    }
+}
+
+/// How many old contact points `ContactManifold::old_points` keeps on the stack: the most
+/// a face/face clip of two quadrilaterals produces (each face's 4 vertices inside the
+/// other, plus 8 edge crossings).
+const OLD_POINTS_INLINE: usize = 16;
+
+/// The points a manifold had before an update (`ContactManifold::old_points`).
+pub(crate) enum OldPoints<Data> {
+    Inline(arrayvec::ArrayVec<TrackedContact<Data>, OLD_POINTS_INLINE>),
+    Spilled(Vec<TrackedContact<Data>>),
+}
+
+impl<Data> core::ops::Deref for OldPoints<Data> {
+    type Target = [TrackedContact<Data>];
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            OldPoints::Inline(points) => points,
+            OldPoints::Spilled(points) => points,
+        }
     }
 }

@@ -140,9 +140,8 @@ pub fn contact_manifold_cuboid_triangle<'a, ManifoldData, ContactData>(
         feature2 = PolygonalFeature::from(*triangle2);
     }
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = manifold.points.clone();
+    // We keep a copy to perform contact tracking and transfer impulses.
+    let old_manifold_points = manifold.old_points();
     manifold.clear();
 
     PolygonalFeature::contacts(

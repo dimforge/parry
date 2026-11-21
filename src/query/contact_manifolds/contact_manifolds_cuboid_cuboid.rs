@@ -76,9 +76,8 @@ pub fn contact_manifold_cuboid_cuboid<'a, ManifoldData, ContactData: Default + C
         best_sep = sep3;
     }
 
-    // We do this clone to perform contact tracking and transfer impulses.
-    // TODO: find a more efficient way of doing this.
-    let old_manifold_points = manifold.points.clone();
+    // We keep a copy to perform contact tracking and transfer impulses.
+    let old_manifold_points = manifold.old_points();
     manifold.clear();
 
     let local_n2 = pos21.rotation * -best_sep.1;
