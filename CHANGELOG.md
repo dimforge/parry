@@ -7,6 +7,11 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- Fix ball ray casts from far away (a few thousand radii in f32) hitting the ball's center with a NaN
+  normal instead of its surface.
+
 ## 0.31.1
 
 ### Modified
