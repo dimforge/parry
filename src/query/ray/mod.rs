@@ -3,6 +3,8 @@
 #[doc(inline)]
 pub use self::ray::{Ray, RayCast, RayIntersection};
 pub use self::ray_ball::ray_toi_with_ball;
+#[cfg(feature = "dim3")]
+pub use self::ray_cylinder::ray_toi_and_normal_with_cylinder;
 pub use self::ray_halfspace::{line_toi_with_halfspace, ray_toi_with_halfspace};
 pub use self::ray_support_map::local_ray_intersection_with_support_map_with_params;
 #[cfg(feature = "dim3")]
@@ -20,6 +22,8 @@ mod ray_capsule;
 #[cfg(feature = "alloc")]
 mod ray_composite_shape;
 mod ray_cuboid;
+#[cfg(feature = "dim3")]
+mod ray_cylinder;
 mod ray_halfspace;
 #[cfg(feature = "alloc")]
 mod ray_heightfield;
