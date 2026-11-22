@@ -117,3 +117,48 @@ mod test {
         assert_eq!(solid.unwrap().feature, FeatureId::Unknown);
     }
 }
+
+#[cfg(all(test, feature = "dim3"))]
+mod tie_tests {
+    use crate::bounding_volume::Aabb;
+    use crate::math::Vector;
+    use crate::query::{Ray, RayCast};
+
+    #[test]
+    fn edge_and_vertex_ties_get_a_normal_of_the_edge_or_vertex() {
+        let aabb = Aabb::new(Vector::splat(-1.0), Vector::splat(1.0));
+        let cases = [
+            // Entering through the vertical edge x = z = 1.
+            (
+                Vector::new(3.0, 1.0, 3.0),
+                Vector::new(-1.0, -0.25, -1.0),
+                true,
+                Vector::new(1.0, 0.0, 1.0),
+            ),
+            // Through the vertex (1, 1, 1).
+            (
+                Vector::splat(3.0),
+                Vector::splat(-1.0),
+                true,
+                Vector::splat(1.0),
+            ),
+            // Leaving through the edge x = z = 1 (hollow: the normal faces the ray's origin).
+            (
+                Vector::ZERO,
+                Vector::new(1.0, 0.0, 1.0),
+                false,
+                Vector::new(-1.0, 0.0, -1.0),
+            ),
+        ];
+        for (o, d, solid, expected) in cases {
+            let hit = aabb
+                .cast_local_ray_and_get_normal(&Ray::new(o, d), 10.0, solid)
+                .unwrap();
+            assert!(
+                (hit.normal - expected.normalize()).length() < 1.0e-6,
+                "{:?}",
+                hit.normal
+            );
+        }
+    }
+}
