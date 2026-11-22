@@ -7,6 +7,12 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- Fix ray casts on a cuboid or `Aabb` (and `clip_aabb_line`) that pass exactly through an edge or
+  vertex returning minus the ray direction as the normal. They now return the normalized sum of the
+  normals of the faces meeting there.
+
 ## 0.31.1
 
 ### Modified

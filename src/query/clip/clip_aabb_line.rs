@@ -87,6 +87,10 @@ pub fn clip_aabb_line(
     let mut far_side = 0;
     let mut near_diag = false;
     let mut far_diag = false;
+    // The sum of the normals of the faces tied for the near (or far) time: on an exact tie
+    // the ray crosses their common edge or vertex, and this sum is in its normal cone.
+    let mut near_tied_normals = Vector::ZERO;
+    let mut far_tied_normals = Vector::ZERO;
 
     for i in 0usize..DIM {
         if dir.vget(i).is_zero() {
@@ -109,6 +113,10 @@ pub fn clip_aabb_line(
                 flip_sides = false;
             }
 
+            // Both the near and the far face of this slab face against the ray.
+            let mut face_normal = Vector::ZERO;
+            face_normal.vset(i, if flip_sides { 1.0 } else { -1.0 });
+
             if inter_with_near_halfspace > tmin {
                 tmin = inter_with_near_halfspace;
                 near_side = if flip_sides {
@@ -117,8 +125,10 @@ pub fn clip_aabb_line(
                     i as isize + 1
                 };
                 near_diag = false;
+                near_tied_normals = face_normal;
             } else if inter_with_near_halfspace == tmin {
                 near_diag = true;
+                near_tied_normals += face_normal;
             }
 
             if inter_with_far_halfspace < tmax {
@@ -129,8 +139,10 @@ pub fn clip_aabb_line(
                     i as isize + 1
                 };
                 far_diag = false;
+                far_tied_normals = face_normal;
             } else if inter_with_far_halfspace == tmax {
                 far_diag = true;
+                far_tied_normals += face_normal;
             }
 
             if tmax < 0.0 || tmin > tmax {
@@ -140,7 +152,7 @@ pub fn clip_aabb_line(
     }
 
     let near = if near_diag {
-        (tmin, -dir.normalize(), near_side)
+        (tmin, near_tied_normals.normalize(), near_side)
     } else {
         // If near_side is 0, we are in a special case where `dir` is
         // zero or NaN. Return `Some` only if the ray starts inside the
@@ -162,7 +174,7 @@ pub fn clip_aabb_line(
     };
 
     let far = if far_diag {
-        (tmax, -dir.normalize(), far_side)
+        (tmax, far_tied_normals.normalize(), far_side)
     } else {
         // If far_side is 0, we are in a special case where `dir` is
         // zero or NaN. Return `Some` only if the ray starts inside the
