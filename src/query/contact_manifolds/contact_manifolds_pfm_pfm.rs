@@ -59,7 +59,11 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
     // We use very small thresholds for the manifold update because something to high would
     // cause numerical drifts with the effect of introducing bumps in
     // what should have been smooth rolling motions.
-    if manifold.try_update_contacts_eps(pos12, crate::utils::COS_1_DEGREES, 1.0e-6) {
+    // Never for a curved surface: when it rolls, its material contact point barely moves
+    // relative to the other shape (so the update would pass) but leaves the true contact point,
+    // up to `r·sin(1°)` behind it, and that lever arm makes the normal force spin the roll up.
+    let curved = is_curved(pfm1, border_radius1) || is_curved(pfm2, border_radius2);
+    if !curved && manifold.try_update_contacts_eps(pos12, crate::utils::COS_1_DEGREES, 1.0e-6) {
         return;
     }
 
@@ -116,13 +120,36 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
                 // If normal constraints changed the GJK direction, it is no longer valid so we cant use it for this additional contact.
                 && local_n1 == dir
             {
-                let contact = TrackedContact::new(
+                let mut contact = TrackedContact::new(
                     p1,
                     pos12.inverse_transform_point(p2_1),
                     PackedFeatureId::UNKNOWN, // TODO: We don't know what features are involved.
                     PackedFeatureId::UNKNOWN,
                     (p2_1 - p1).dot(local_n1),
                 );
+
+                // On a curved surface the GJK witness point is only near the contact (a few
+                // tenths of a millimetre to millimetres off it, across the contact line of a
+                // cylinder's side), which gives its normal force a lever arm about the axis.
+                // When the features gave a contact line, the extra point is moved onto it,
+                // unless that line is farther than the witness (a capsule's segment on the far
+                // side of a box edge), which would lose the actual contact.
+                if curved && manifold.points.len() == 2 {
+                    let (a, b) = (&manifold.points[0], &manifold.points[1]);
+                    let ab = b.local_p1 - a.local_p1;
+                    let t = if ab.length_squared() > 0.0 {
+                        ((p1 - a.local_p1).dot(ab) / ab.length_squared()).clamp(0.0, 1.0)
+                    } else {
+                        0.5
+                    };
+                    let dist = a.dist + (b.dist - a.dist) * t;
+                    if dist <= contact.dist + 1.0e-4 * (1.0 + ab.length()) {
+                        contact.local_p1 = a.local_p1 + ab * t;
+                        contact.local_p2 = a.local_p2 + (b.local_p2 - a.local_p2) * t;
+                        contact.dist = dist;
+                    }
+                }
+
                 manifold.points.push(contact);
             }
 
@@ -162,4 +189,9 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
     // Transfer impulses.
     manifold.match_contacts(&old_manifold_points);
+}
+
+/// A curved surface: a cylinder's or cone's side, or any rounded shape.
+fn is_curved<S: ?Sized + PolygonalFeatureMap>(pfm: &S, border_radius: Real) -> bool {
+    border_radius != 0.0 || pfm.has_curved_surface()
 }

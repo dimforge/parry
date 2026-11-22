@@ -27,6 +27,16 @@ pub trait PolygonalFeatureMap: SupportMap {
         self.local_support_feature(dir, out_feature);
     }
 
+    /// Does this shape have a curved surface that its polygonal features only approximate
+    /// (like the lateral surface of a cylinder or a cone)?
+    ///
+    /// A contact point fixed to such a surface stops being the contact point as soon as the
+    /// shape rolls, so contact manifolds involving it must be recomputed rather than carried
+    /// over by their material points. Defaults to `false`, which is exact for genuine polyhedra.
+    fn has_curved_surface(&self) -> bool {
+        false
+    }
+
     // TODO: this is currently just a workaround for https://github.com/dimforge/rapier/issues/417
     //       until we get a better way to deal with the issue without breaking internal edges
     //       handling.
@@ -79,7 +89,15 @@ impl PolygonalFeatureMap for Cylinder {
         // Orienting the cap's square approximation so that one of its vertices (which lie on
         // the cap's rim) sits at the contact's azimuth guarantees the approximation covers
         // the cap's surface in the contact's neighborhood, wherever it lies on the cap.
-        self.support_feature_with_azimuth(dir, feature_azimuth(dir, Some(hint)), out_features);
+        // The curved-part segment is exact only at the azimuth of `dir` itself: the hint (a GJK
+        // witness point) is off by up to a few degrees there, which would put the contact line
+        // beside the true one and give the normal force a lever arm about the axis.
+        let hint = (dir.y.abs() >= 0.5).then_some(hint);
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, hint), out_features);
+    }
+
+    fn has_curved_surface(&self) -> bool {
+        true
     }
 }
 
@@ -153,8 +171,14 @@ impl PolygonalFeatureMap for Cone {
         hint: Vector,
         out_features: &mut PolygonalFeature,
     ) {
-        // See the comment in the cylinder's implementation.
-        self.support_feature_with_azimuth(dir, feature_azimuth(dir, Some(hint)), out_features);
+        // See the comment in the cylinder's implementation: the hint orients the cap's square,
+        // the curved-part segment (taken when `dir.y > 0`) follows `dir`.
+        let hint = (dir.y <= 0.0).then_some(hint);
+        self.support_feature_with_azimuth(dir, feature_azimuth(dir, hint), out_features);
+    }
+
+    fn has_curved_surface(&self) -> bool {
+        true
     }
 }
 
