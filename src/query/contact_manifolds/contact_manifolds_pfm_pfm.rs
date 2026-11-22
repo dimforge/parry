@@ -83,6 +83,13 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 
     match contact {
         GJKResult::ClosestPoints(p1, p2_1, dir) => {
+            #[cfg(feature = "dim3")]
+            let (p1, p2_1, dir) = if curved {
+                refine_normal(pos12, pfm1, pfm2, init_dir, (p1, p2_1, dir))
+            } else {
+                (p1, p2_1, dir)
+            };
+
             let mut local_n1 = dir;
             let mut local_n2 = pos12.rotation.inverse() * -dir;
             let dist = (p2_1 - p1).dot(local_n1);
@@ -194,4 +201,62 @@ pub fn contact_manifold_pfm_pfm<'a, ManifoldData, ContactData, S1, S2>(
 /// A curved surface: a cylinder's or cone's side, or any rounded shape.
 fn is_curved<S: ?Sized + PolygonalFeatureMap>(pfm: &S, border_radius: Real) -> bool {
     border_radius != 0.0 || pfm.has_curved_surface()
+}
+
+/// GJK's and EPA's normal for a curved shape can be tens of degrees off when the shapes are
+/// barely apart or barely overlap. The face either shape shows toward that normal is a
+/// separating-axis candidate, and if the shapes are farther apart along it, it's the better
+/// normal (always so for a curved shape resting on a flat face).
+#[cfg(feature = "dim3")]
+fn refine_normal<S1, S2>(
+    pos12: &Pose,
+    pfm1: &S1,
+    pfm2: &S2,
+    prev_dir: Option<Vector>,
+    (p1, p2_1, dir): (Vector, Vector, Vector),
+) -> (Vector, Vector, Vector)
+where
+    S1: ?Sized + PolygonalFeatureMap,
+    S2: ?Sized + PolygonalFeatureMap,
+{
+    let face_normal = |f: &PolygonalFeature| {
+        (f.num_vertices >= 3)
+            .then(|| (f.vertices[1] - f.vertices[0]).cross(f.vertices[2] - f.vertices[0]))
+            .and_then(|n| n.try_normalize())
+    };
+    let faces_toward = |n: Vector| {
+        let mut feature1 = PolygonalFeature::default();
+        let mut feature2 = PolygonalFeature::default();
+        pfm1.local_support_feature(n, &mut feature1);
+        pfm2.local_support_feature(pos12.rotation.inverse() * -n, &mut feature2);
+        [
+            face_normal(&feature1),
+            face_normal(&feature2).map(|n2| pos12.rotation * -n2),
+        ]
+    };
+    // The faces toward GJK's normal, toward the other shape's center, and last step's normal
+    // with the faces toward it.
+    let [a, b] = faces_toward(dir);
+    let [c, d] = pos12
+        .translation
+        .try_normalize()
+        .map_or([None, None], faces_toward);
+    let [e, f] = prev_dir.map_or([None, None], faces_toward);
+    let candidates = [a, b, c, d, prev_dir, e, f];
+
+    // Separation along `n` measured on the shapes themselves, not GJK's witness points.
+    let separation = |n: Vector| {
+        let a = pfm1.local_support_point(n);
+        let b = pos12 * pfm2.local_support_point(pos12.rotation.inverse() * -n);
+        ((b - a).dot(n), b)
+    };
+    let mut best = (separation(dir).0, (p1, p2_1, dir));
+    // Each axis is tried both ways since GJK's normal may be too far off to orient it.
+    for n in candidates.into_iter().flatten().flat_map(|n| [n, -n]) {
+        let (sep, b) = separation(n);
+        if sep > best.0 + 1.0e-6 {
+            best = (sep, (b - n * sep, b, n));
+        }
+    }
+    best.1
 }
