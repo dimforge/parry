@@ -7,6 +7,12 @@
   `UnknownContactManifoldsWorkspace`, which the relevant algorithm can replace with a workspace
   of the correct type at its next execution.
 
+### Fixed
+
+- Fix cylinders, cones, capsules and rounded shapes speeding up by themselves while rolling on a flat face,
+  because their contact points sat beside the line under their axis. Contact manifolds involving a
+  curved surface are now recomputed every step instead of being carried over.
+
 ## 0.31.1
 
 ### Modified
